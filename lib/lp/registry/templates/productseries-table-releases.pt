@@ -5,7 +5,7 @@
   omit-tag="">
 
 <table class="listing"
-  tal:condition="context/milestones"
+  tal:condition="view/released_and_active_milestones"
   tal:attributes="id string:series_${context/name}">
   <thead>
     <tr>
@@ -16,7 +16,7 @@
     </tr>
   </thead>
   <tbody>
-    <tal:row repeat="milestone context/all_milestones">
+    <tal:row repeat="milestone view/released_and_active_milestones">
       <tal:milestone replace="structure milestone/@@+productseries-table-row" />
     </tal:row>
   </tbody>

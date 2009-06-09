@@ -591,6 +591,14 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         return (branch is not None and
                 check_permission('launchpad.View', branch))
 
+    @cachedproperty
+    def released_and_active_milestones(self):
+        """Milestones that are active or have releases."""
+        return [
+            milestone
+            for milestone in self.context.all_milestones
+            if milestone.active or milestone.product_release is not None]
+
 
 class ProductSeriesEditView(LaunchpadEditFormView):
 
