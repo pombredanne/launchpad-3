@@ -415,7 +415,11 @@ class Builder(SQLBase):
 
         msg = 'Building %s' % currentjob.build.title
         if currentjob.build.archive.is_ppa:
-            return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
+            return '%s [%s/%s]' % (
+                msg,
+                currentjob.build.archive.owner.name,
+                currentjob.build.archive.name,
+                )
         if currentjob.build.archive.is_copy:
             return ('%s [%s/%s]' %
                     (msg, currentjob.build.archive.owner.name,
