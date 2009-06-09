@@ -195,13 +195,13 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         job = BranchUpgradeJob.create(branch)
 
         format = job.upgrade_format
-        self.assertTrue(isinstance(
-            format.get_branch_format(),
-            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_5)))
-        self.assertTrue(isinstance(
-            format._repository_format,
+        self.assertIs(
+            type(format.get_branch_format()),
+            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_5))
+        self.assertIs(
+            type(format._repository_format),
             REPOSITORY_FORMAT_UPGRADE_PATH.get(
-                RepositoryFormat.BZR_REPOSITORY_4)))
+                RepositoryFormat.BZR_REPOSITORY_4))
 
     def make_format(self, branch_format=None, repo_format=None):
         # Return a Bzr MetaDir format with the provided branch and repository
@@ -228,13 +228,12 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         job = BranchUpgradeJob.create(branch)
 
         format = job.upgrade_format
-        self.assertTrue(isinstance(
-            format.get_branch_format(),
-            BzrBranchFormat7))
-        self.assertTrue(isinstance(
-            format._repository_format,
-            REPOSITORY_FORMAT_UPGRADE_PATH.get(
-                RepositoryFormat.BZR_KNIT_1)))
+        self.assertIs(
+            type(format.get_branch_format()),
+            BzrBranchFormat7)
+        self.assertIs(
+            type(format._repository_format),
+            REPOSITORY_FORMAT_UPGRADE_PATH.get(RepositoryFormat.BZR_KNIT_1))
 
     def test_upgrade_format_no_repository_upgrade_needed(self):
         # getUpgradeFormat should not downgrade the branch format when it is
@@ -249,12 +248,12 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         job = BranchUpgradeJob.create(branch)
 
         format = job.upgrade_format
-        self.assertTrue(isinstance(
-            format.get_branch_format(),
-            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_4)))
-        self.assertTrue(isinstance(
-            format._repository_format,
-            RepositoryFormatKnitPack6))
+        self.assertIs(
+            type(format.get_branch_format()),
+            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_4))
+        self.assertIs(
+            type(format._repository_format),
+            RepositoryFormatKnitPack6)
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
