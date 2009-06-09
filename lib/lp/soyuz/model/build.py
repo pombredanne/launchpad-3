@@ -47,7 +47,7 @@ from canonical.launchpad.helpers import (
      get_contact_email_addresses, filenameToContentType, get_email_template)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
-    BuildStatus, BuildSetStatus, IBuild, IBuildSet)
+    BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
 from lp.soyuz.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
@@ -274,6 +274,13 @@ class Build(SQLBase):
         self.upload_log = None
         self.dependencies = None
         self.createBuildQueueEntry()
+
+    def rescore(self, score):
+        """See `IBuild`."""
+        if not self.can_be_rescored:
+            raise CannotBeRescored("Build cannot be rescored.")
+
+        self.buildqueue_record.manualScore(score)
 
     def getEstimatedBuildStartTime(self):
         """See `IBuild`.
