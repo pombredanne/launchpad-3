@@ -618,16 +618,16 @@ with a hyphen.
 The any() and all() search combinators are taken into consideration
 when searching for the absence of tags too. The following search says
 "give me bugs that don't have the test-tag-2 tag set *OR* that don't
-have the layout-test tag set".
+have the layout-test tag set". Only test-bug-1 is elimininated because
+it has no tags other than those requested in the search.
 
     >>> search_tasks_and_print_bugs(
-    ...     tag=any('-test-tag-2', '-layout-test'))
+    ...     tag=any('-test-tag-1', '-test-tag-2'))
     Firefox does not support SVG []
     Reflow problems with complex page layouts [layout-test]
     Firefox install instructions should be complete [doc]
     Firefox crashes when Save As dialog for a nonexistent window is closed []
     Some bug []
-    test bug a [test-tag-1, test-tag-2]
     test bug b [test-tag-1]
 
 Whereas the following search says "give me bugs that don't have the
