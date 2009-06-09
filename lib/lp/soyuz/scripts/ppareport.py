@@ -5,8 +5,8 @@ Generate several reports about the PPA repositories.
 
  * Over-quota
  * Users emails
- * Orphan repositories (need disk acces on the PPA host machine)
- * Missing repositories (need disk acces on the PPA host machine)
+ * Orphan repositories (requires access to the PPA host machine disk)
+ * Missing repositories (requires access to the PPA host machine disk)
 """
 
 import operator
@@ -129,6 +129,12 @@ class PPAReportScript(LaunchpadScript):
             self.options.archive_owner_name is not None):
             raise LaunchpadScriptFailure(
                 'Cannot calculate repository paths for a single PPA.')
+
+        if ((self.options.gen_orphan_repos or
+             self.options.gen_missing_repos) and
+            not os.path.exists(config.personalpackagearchive.root)):
+            raise LaunchpadScriptFailure(
+                'Cannot access PPA root directory.')
 
     def main(self):
         self.checkOptions()

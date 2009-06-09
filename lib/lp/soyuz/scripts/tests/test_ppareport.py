@@ -78,6 +78,7 @@ class TestPPAReport(unittest.TestCase):
         return reporter
 
     def testDeniedOptionCombination(self):
+        # Command-line options are checked before runs.
         denied_combinations = (
             {'gen_over_quota': True, 'gen_user_emails': True},
             {'gen_orphan_repos': True, 'gen_user_emails': True},
@@ -89,7 +90,21 @@ class TestPPAReport(unittest.TestCase):
         for kwargs in denied_combinations:
             reporter = self.getReporter(**kwargs)
             self.assertRaises(
-                LaunchpadScriptFailure, reporter.checkOptions)
+                LaunchpadScriptFailure, reporter.main)
+
+    def testDiskReportsBlockedWithoutDiskAccess(self):
+        # OrphanRepos and MissingRepos reports cannot be generated
+        # if the script cannot access the PPA root.
+        shutil.rmtree(config.personalpackagearchive.root)
+
+        reporter = self.getReporter(gen_orphan_repos=True)
+        self.assertRaises(
+            LaunchpadScriptFailure, reporter.main)
+
+        reporter = self.getReporter(gen_missing_repos=True)
+        self.assertRaises(
+            LaunchpadScriptFailure, reporter.main)
+
 
     def testGetActivePPAs(self):
         # `PPAReportScript.getActivePPAs` returns a list of `IArchive`
@@ -114,7 +129,7 @@ class TestPPAReport(unittest.TestCase):
         # OverQuota report lists PPA urls, quota and current size values
         # one by line in a CSV format.
 
-        # Quota threshould defaults to 80%
+        # Quota threshould defaults to 80%.
         reporter = self.getReporter()
         ppas = reporter.getActivePPAs()
         reporter.setOutput()
@@ -142,7 +157,7 @@ class TestPPAReport(unittest.TestCase):
     def testUserEmails(self):
         # UserEmails report lists user name, user displayname and user
         # preferred emails address one by line in a CSV format for users
-        # involed with the given PPAs.
+        # involved with the given PPAs.
         reporter = self.getReporter()
         ppas = reporter.getActivePPAs()
         reporter.setOutput()
