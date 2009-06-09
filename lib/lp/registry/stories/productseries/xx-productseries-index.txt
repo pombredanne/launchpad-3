@@ -67,12 +67,14 @@ The milestone summary column in the table may also contain a summary of
 the status of the bugs and blueprints.
 
     >>> print extract_text(rows[-1])
-    Mozilla Firefox 1.0  2056-10-16   not yet released   Blueprints: 1 Unknown
+    Mozilla Firefox 1.0  2056-10-16   not yet released
+    Blueprints targeted: 1 Unknown
 
 The driver can see a link to create a release for the milestone.
 
     >>> print extract_text(driver_rows[-1])
-    Mozilla Firefox 1.0  2056-10-16   Release now       Blueprints: 1 Unknown
+    Mozilla Firefox 1.0  2056-10-16   Release now
+    Blueprints targeted: 1 Unknown
 
     >>> driver_browser.getLink('Release now')
     <Link ... url='http://launchpad.dev/firefox/+milestone/1.0/+addrelease'>
