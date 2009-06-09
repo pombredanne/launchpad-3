@@ -605,9 +605,9 @@ Searching for bugs with all of the tags returns only test bug a.
     test bug a [test-tag-1, test-tag-2]
 
 Search for the absence of a tag is possible by prefixing the tag name
-with an exclamation mark.
+with a hyphen.
 
-    >>> search_tasks_and_print_bugs(tag=any('!test-tag-2'))
+    >>> search_tasks_and_print_bugs(tag=any('-test-tag-2'))
     Firefox does not support SVG []
     Reflow problems with complex page layouts [layout-test]
     Firefox install instructions should be complete [doc]
@@ -621,7 +621,7 @@ when searching for the absence of tags too. The following search says
 have the layout-test tag set".
 
     >>> search_tasks_and_print_bugs(
-    ...     tag=any('!test-tag-2', '!layout-test'))
+    ...     tag=any('-test-tag-2', '-layout-test'))
     Firefox does not support SVG []
     Reflow problems with complex page layouts [layout-test]
     Firefox install instructions should be complete [doc]
@@ -634,7 +634,7 @@ Whereas the following search says "give me bugs that don't have the
 test-tag-2 tag set *AND* that don't have the layout-test tag set".
 
     >>> search_tasks_and_print_bugs(
-    ...     tag=all('!test-tag-2', '!layout-test'))
+    ...     tag=all('-test-tag-2', '-layout-test'))
     Firefox does not support SVG []
     Firefox install instructions should be complete [doc]
     Firefox crashes when Save As dialog for a nonexistent window is closed []
@@ -642,8 +642,8 @@ test-tag-2 tag set *AND* that don't have the layout-test tag set".
     test bug b [test-tag-1]
 
 Searching for the presence of any tags at all is also possible using a
-wildcard. If prefixed with an exclamation mark it searches for the
-absence of tags.
+wildcard. If prefixed with a hyphen mark it searches for the absence
+of tags.
 
     >>> search_tasks_and_print_bugs(tag=all('*'))
     Reflow problems with complex page layouts [layout-test]
@@ -651,7 +651,7 @@ absence of tags.
     test bug a [test-tag-1, test-tag-2]
     test bug b [test-tag-1]
 
-    >>> search_tasks_and_print_bugs(tag=all('!*'))
+    >>> search_tasks_and_print_bugs(tag=all('-*'))
     Firefox does not support SVG []
     Firefox crashes when Save As dialog for a nonexistent window is closed []
     Some bug []
@@ -659,18 +659,18 @@ absence of tags.
 Searching for the presence and absence of tags finds no
 matches. Unsurprisingly.
 
-    >>> search_tasks_and_print_bugs(tag=all('*', '!*'))
+    >>> search_tasks_and_print_bugs(tag=all('*', '-*'))
 
 Wildcards can be combined with non-wildcard tags. The following finds
 all bugs with tags, but without test-tag-1:
 
-    >>> search_tasks_and_print_bugs(tag=all('*', '!test-tag-1'))
+    >>> search_tasks_and_print_bugs(tag=all('*', '-test-tag-1'))
     Reflow problems with complex page layouts [layout-test]
     Firefox install instructions should be complete [doc]
 
 The following finds all untagged bugs and bugs with the doc tag.
 
-    >>> search_tasks_and_print_bugs(tag=any('!*', 'doc'))
+    >>> search_tasks_and_print_bugs(tag=any('-*', 'doc'))
     Firefox does not support SVG []
     Firefox install instructions should be complete [doc]
     Firefox crashes when Save As dialog for a nonexistent window is closed []

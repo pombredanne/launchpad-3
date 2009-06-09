@@ -1435,10 +1435,10 @@ class BugTaskSet:
 
         if params.tag:
             tags = set(params.tag.query_values)
-            tags_wildcards = [tag for tag in tags if tag in ('*', '!*')]
+            tags_wildcards = [tag for tag in tags if tag in ('*', '-*')]
             tags.difference_update(tags_wildcards)
-            tags_include = [tag for tag in tags if not tag.startswith('!')]
-            tags_exclude = [tag[1:] for tag in tags if tag.startswith('!')]
+            tags_include = [tag for tag in tags if not tag.startswith('-')]
+            tags_exclude = [tag[1:] for tag in tags if tag.startswith('-')]
             tags_clauses = []
 
             # Search for the *presence* of any tag.
@@ -1448,7 +1448,7 @@ class BugTaskSet:
                 clauseTables.append('BugTag')
 
             # Search for the *absence* of any tag.
-            if '!*' in tags_wildcards:
+            if '-*' in tags_wildcards:
                 tags_clauses.append(
                     "BugTask.bug NOT IN ("
                     "    SELECT BugTag.bug FROM BugTag)")
