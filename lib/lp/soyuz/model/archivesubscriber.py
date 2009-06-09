@@ -105,15 +105,12 @@ class ArchiveSubscriber(Storm):
             non_active_subscribers.order_by(Person.name)
             return non_active_subscribers
         else:
-            # The interface we are implementing says that the return
-            # value must be :rtype: `storm.store.ResultSet`, so just
-            # for consistency, create a ResultSet here instead of
-            # simply returning self.subscriber
+            # Subscriber is not a team.
             if store.find(
                 ArchiveAuthToken,
                 ArchiveAuthToken.person_id == self.subscriber_id,
                 ArchiveAuthToken.archive_id == self.archive_id,
-                ArchiveAuthToken.date_deactivated == None).count() > 0:
+                ArchiveAuthToken.date_deactivated == None).any():
                 # There are active tokens, so return an empty result
                 # set.
                 return EmptyResultSet()
