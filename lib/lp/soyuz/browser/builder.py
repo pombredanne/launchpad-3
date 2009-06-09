@@ -304,6 +304,17 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         """Hide Builder info, see BuildRecordsView for further details"""
         return False
 
+    @property
+    def current_build_duration(self):
+        """Return the delta representing the duration of the current job."""
+        if (self.context.currentjob is None or 
+            self.context.currentjob.buildstart is None):
+            return None
+        else:
+            UTC = pytz.timezone('UTC')
+            return (
+                datetime.datetime.now(UTC) - self.context.currentjob.buildstart)
+
 
 class BuilderSetAddView(LaunchpadFormView):
     """View class for adding new Builders."""
