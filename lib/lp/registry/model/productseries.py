@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 import datetime
+import operator
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
@@ -58,6 +59,16 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+
+def landmark_key(landmark):
+    """Sorts landmarks by date and name."""
+    if landmark['date'] is None:
+        # Null dates are assumed to be in the future.
+        date = '9999-99-99'
+    else:
+        date = landmark['date']
+    return date + landmark['name']
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -474,6 +485,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 uri=uri)
             landmarks.append(entry)
 
+        landmarks = sorted_dotted_numbers(landmarks, key=landmark_key)
+        landmarks.reverse()
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
