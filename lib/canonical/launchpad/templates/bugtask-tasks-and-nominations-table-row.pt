@@ -17,7 +17,7 @@
             href tasklink;
             onclick string:return toggleFormVisibility('${form_row_id}')"
             class="sprite bug-status-expand">
-          <span class="invisible-link">edit</span>
+          <span class="invisible-link"></span>
           <tal:link_text tal:replace="expander_link_text" />
         </a>
         <tal:no_expander tal:condition="not: expandable"
