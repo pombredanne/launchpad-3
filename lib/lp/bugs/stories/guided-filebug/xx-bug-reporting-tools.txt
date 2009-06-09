@@ -12,8 +12,8 @@ that are important not to change are marked with a "Don't change!"
 comment.
 
     >>> import os.path
-    >>> from canonical.launchpad import ftests
-    >>> testfiles = os.path.join(os.path.dirname(ftests.__file__), 'testfiles')
+    >>> from canonical.config import config
+    >>> testfiles = os.path.join(config.root, 'lib/lp/bugs/tests/testfiles')
     >>> extra_filebug_data = open(
     ...     os.path.join(testfiles, 'extra_filebug_data.msg'))
 
