@@ -12,6 +12,7 @@ import pytz
 
 from storm.expr import And, Desc, LeftJoin, Select
 from storm.locals import DateTime, Int, Reference, Store, Storm, Unicode
+from storm.store import EmptyResultSet
 
 from zope.interface import implements
 
@@ -83,7 +84,8 @@ class ArchiveSubscriber(Storm):
 
             # We want to get all participants who are themselves
             # individuals, not teams:
-            all_subscribers = store.find(Person,
+            all_subscribers = store.find(
+                Person,
                 TeamParticipation.teamID == self.subscriber_id,
                 TeamParticipation.personID == Person.id,
                 Person.teamowner == None)
@@ -91,7 +93,8 @@ class ArchiveSubscriber(Storm):
             # Then we get all the people who already have active
             # tokens for this archive (for example, through separate
             # subscriptions).
-            active_subscribers = store.find(Person,
+            active_subscribers = store.find(
+                Person,
                 Person.id == ArchiveAuthToken.person_id,
                 ArchiveAuthToken.archive_id == self.archive_id,
                 ArchiveAuthToken.date_deactivated == None)
@@ -106,6 +109,17 @@ class ArchiveSubscriber(Storm):
             # value must be :rtype: `storm.store.ResultSet`, so just
             # for consistency, create a ResultSet here instead of
             # simply returning self.subscriber
+            if store.find(
+                ArchiveAuthToken,
+                ArchiveAuthToken.person_id == self.subscriber_id,
+                ArchiveAuthToken.archive_id == self.archive_id,
+                ArchiveAuthToken.date_deactivated == None).count() > 0:
+                # There are active tokens, so return an empty result
+                # set.
+                return EmptyResultSet()
+
+            # Otherwise return a result set containing only the
+            # subscriber.
             return store.find(Person, Person.id == self.subscriber_id)
 
 
