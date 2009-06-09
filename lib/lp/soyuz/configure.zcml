@@ -465,7 +465,13 @@
         class="canonical.launchpad.database.Build">
         <require
             permission="launchpad.View"
-            interface="lp.soyuz.interfaces.build.IBuild"/>
+            interface="lp.soyuz.interfaces.build.IBuildView"/>
+        <require
+            permission="launchpad.Edit"
+            interface="lp.soyuz.interfaces.build.IBuildEdit"/>
+        <require
+            permission="launchpad.Admin"
+            interface="lp.soyuz.interfaces.build.IBuildAdmin"/>
         
         <!-- XXX cprov 2005-10-27
                      
