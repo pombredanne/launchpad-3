@@ -9,6 +9,7 @@ Generate several reports about the PPA repositories.
  * Missing repositories (need disk acces on the PPA host machine)
 """
 
+import operator
 import os
 import sys
 
@@ -30,12 +31,6 @@ class PPAReportScript(LaunchpadScript):
     output = None
 
     def add_my_options(self):
-
-        self.parser.add_option(
-            '-d', '--distribution', dest='distribution_name',
-            default='ubuntu', action='store',
-            help='Distribution name.')
-
         self.parser.add_option(
             '-p', '--ppa', dest='archive_owner_name', action='store',
             help='Archive owner name in case of PPA operations')
@@ -44,6 +39,11 @@ class PPAReportScript(LaunchpadScript):
             '-o', '--output', metavar='FILENAME', action='store',
             type='string', dest='output', default=None,
             help='Optional file to store output.')
+
+        self.parser.add_option(
+            '-t', '--quota-threshould', dest='quota_threshould',
+            action='store', type=float, default=80,
+            help='Quota threshould percentage, defaults to 80 %%')
 
         self.parser.add_option(
             '--gen-over-quota', action='store_true', default=False,
@@ -61,12 +61,11 @@ class PPAReportScript(LaunchpadScript):
             '--gen-missing-repos', action='store_true', default=False,
             help='Generate PPAs missing repositories list.')
 
-    def getActivePPAs(self, distribution, owner_name=None):
-        """Return a list of active PPAs.
+    def getActivePPAs(self):
+        """Return a list of active PPAs for 'ubuntu'.
 
-        :param distribution: a `IDistribution` for which the PPAs are
-            targeted
-        :param owner_name: optional string for filtering the returned PPAs.
+        if `self.options.archive_owner_name` is defined only return PPAs
+        with matching owner names.
 
         :return: a list of `IArchive` objects.
         """
@@ -76,6 +75,7 @@ class PPAReportScript(LaunchpadScript):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         from lp.registry.model.person import Person
 
+        distribution = getUtility(IDistributionSet).getByName('ubuntu')
         store = Store.of(distribution)
         origin = [
             Archive,
@@ -88,6 +88,7 @@ class PPAReportScript(LaunchpadScript):
             Archive.enabled == True,
             ]
 
+        owner_name = self.options.archive_owner_name
         if owner_name is not None:
             origin.append(Join(Person, Archive.owner == Person.id))
             clauses.append(Person.name == owner_name)
@@ -98,30 +99,44 @@ class PPAReportScript(LaunchpadScript):
 
         return list(results.config(distinct=True))
 
-    def main(self):
-        if ((self.options.gen_orphan_repos or
-            self.options.gen_missing_repos) and
-            self.options.archive_owner_name is not None):
-            raise LaunchpadScriptFailure(
-                'Cannot calculate repositry paths for a single PPA')
+    def setOutput(self):
+        """Set the output file descriptor.
 
-        distribution = getUtility(IDistributionSet).getByName(
-            self.options.distribution_name)
-        if distribution is None:
-            raise LaunchpadScriptFailure(
-                'Could not find distribution: %s' %
-                self.options.distribution_name)
-
+        If the 'output' options was passed open a file named as its
+        content, otherwise use `sys.stdout`.
+        """
         if self.options.output is not None:
             self.logger.info('Report file: %s' % self.options.output)
             self.output = open(self.options.output, 'w')
         else:
             self.output = sys.stdout
 
-        ppas = self.getActivePPAs(
-            distribution=distribution,
-            owner_name=self.options.archive_owner_name)
+    def closeOutput(self):
+        """Closes the `output` file descriptor """
+        self.output.close()
+
+    def checkOptions(self):
+        """Verify if the given command-line options are sane."""
+        if ((self.options.gen_orphan_repos or
+             self.options.gen_missing_repos or
+             self.options.gen_over_quota) and
+            self.options.gen_user_emails):
+            raise LaunchpadScriptFailure(
+                'Users-list cannot be combined with other reports.')
+
+        if ((self.options.gen_orphan_repos or
+             self.options.gen_missing_repos) and
+            self.options.archive_owner_name is not None):
+            raise LaunchpadScriptFailure(
+                'Cannot calculate repository paths for a single PPA.')
+
+    def main(self):
+        self.checkOptions()
+
+        ppas = self.getActivePPAs()
         self.logger.info('Considering %d active PPAs.' % len(ppas))
+
+        self.setOutput()
 
         if self.options.gen_over_quota:
             self.reportOverQuota(ppas)
@@ -135,14 +150,15 @@ class PPAReportScript(LaunchpadScript):
         if self.options.gen_missing_repos:
             self.reportMissingRepos(ppas)
 
-        if self.output is not None:
-            self.output.close()
+        self.closeOutput()
 
         self.logger.info('Done')
 
-    def reportOverQuota(self, ppas, threshould=.80):
+    def reportOverQuota(self, ppas):
         self.output.write(
-            '\n= PPAs over %s%% of their quota =\n' % int(threshould * 100))
+            '\n= PPAs over %.2f%% of their quota =\n' %
+            self.options.quota_threshould)
+        threshould = self.options.quota_threshould / 100.0
         for ppa in ppas:
             limit = ppa.authorized_size
             size = ppa.estimated_size / (2 ** 20)
@@ -161,7 +177,9 @@ class PPAReportScript(LaunchpadScript):
         people_to_email = set()
         for ppa in ppas:
             people_to_email.update(emailPeople(ppa.owner))
-        for user in people_to_email:
+        sorted_people_to_email = sorted(
+            people_to_email, key=operator.attrgetter('name'))
+        for user in sorted_people_to_email:
             values = (
                 user.name,
                 user.displayname,
@@ -170,27 +188,26 @@ class PPAReportScript(LaunchpadScript):
             line = ' | '.join(values).encode('utf-8')
             self.output.write(line + '\n')
 
-    def calculatePPAPaths(self, ppas):
-        active_ppas = [ppa for ppa in ppas if not ppa.private]
-        active_paths = set(ppa.owner.name for ppa in active_ppas)
+    def _calculatePPAPaths(self, ppas):
+        active_paths = set(ppa.owner.name for ppa in ppas)
         existing_paths = set(
             os.listdir(config.personalpackagearchive.root))
         return active_paths, existing_paths
 
     def reportOrphanRepos(self, ppas):
         self.output.write('\n= Orphan PPA repositories =\n')
-        active_paths, existing_paths = self.calculatePPAPaths(ppas)
+        active_paths, existing_paths = self._calculatePPAPaths(ppas)
         orphan_paths = existing_paths - active_paths
-        for orphan in orphan_paths:
+        for orphan in sorted(orphan_paths):
             repo_path = os.path.join(
                 config.personalpackagearchive.root, orphan)
             self.output.write('%s\n' % repo_path)
 
     def reportMissingRepos(self, ppas):
         self.output.write('\n= Missing PPA repositories =\n')
-        active_paths, existing_paths = self.calculatePPAPaths(ppas)
+        active_paths, existing_paths = self._calculatePPAPaths(ppas)
         missing_paths = active_paths - existing_paths
-        for missing in missing_paths:
+        for missing in sorted(missing_paths):
             repo_path = os.path.join(
                 config.personalpackagearchive.root, missing)
             self.output.write('%s\n' % repo_path)
