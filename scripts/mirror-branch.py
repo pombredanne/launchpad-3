@@ -29,6 +29,7 @@ Where:
 
 import _pythonpath
 from optparse import OptionParser
+import resource
 import sys
 
 import bzrlib.repository
@@ -81,6 +82,8 @@ if __name__ == '__main__':
     globalErrorUtility.configure(section_name)
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
+
+    resource.setrlimit(resource.RLIMIT_AS, (1000000000, 1000000000))
 
     protocol = PullerWorkerProtocol(sys.stdout)
     install_worker_ui_factory(protocol)
