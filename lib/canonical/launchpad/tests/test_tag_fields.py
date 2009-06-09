@@ -24,6 +24,15 @@ class TestTag(unittest.TestCase):
         self.assertEqual(self.field.validate(u'one-2'), None)
         self.assertEqual(self.field.validate(u'one-2-3---5-'), None)
 
+    def test_too_short(self):
+        # Tag rejects tags that are less than 2 characters long.
+        self.assertRaises(
+            ConstraintNotSatisfied,
+            self.field.validate, u'')
+        self.assertRaises(
+            ConstraintNotSatisfied,
+            self.field.validate, u'x')
+
     def test_invalid_characters(self):
         # Tag rejects characters outside of the range [a-z0-9-].
         # Hyphens are also rejected at the start of a tag; see
@@ -44,6 +53,19 @@ class TestTag(unittest.TestCase):
         self.assertRaises(
             ConstraintNotSatisfied,
             self.field.validate, u'-fred')
+
+    def test_wildcard(self):
+        # Tag rejects a solitary asterisk, or an asterisk preceeded by
+        # a hyphen. This is not surprising seeing as asterisks are
+        # forbidden anyway, as are leading hyphens. However, this form
+        # is special because it is reserved to mean "any tag" or "not
+        # any tag".
+        self.assertRaises(
+            ConstraintNotSatisfied,
+            self.field.validate, u'*')
+        self.assertRaises(
+            ConstraintNotSatisfied,
+            self.field.validate, u'-*')
 
 
 def test_suite():
