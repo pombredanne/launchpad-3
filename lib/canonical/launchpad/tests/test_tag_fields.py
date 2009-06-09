@@ -6,7 +6,7 @@ import unittest
 
 from zope.schema.interfaces import ConstraintNotSatisfied
 
-from canonical.launchpad.fields import Tag
+from canonical.launchpad.fields import SearchTag, Tag
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -66,6 +66,29 @@ class TestTag(unittest.TestCase):
         self.assertRaises(
             ConstraintNotSatisfied,
             self.field.validate, u'-*')
+
+
+class TestSearchTag(TestTag):
+
+    field = SearchTag()
+
+    def test_negated_search_form(self):
+        # SearchTag allows tags beginning with hyphens. This form is
+        # reserved to mean "not <tag>".
+        self.assertEqual(self.field.validate(u'-fred'), None)
+
+    def test_wildcard(self):
+        # SearchTag allows a solitary asterisk, or an asterisk
+        # preceeded by a hyphen. This means "any tag" or "not any
+        # tag".
+        self.assertEqual(self.field.validate(u'*'), None)
+        self.assertEqual(self.field.validate(u'-*'), None)
+
+    def test_wildcard_elsewhere(self):
+        # Asterisks are not allowed to appear anywhere else in a tag.
+        self.assertRaises(
+            ConstraintNotSatisfied,
+            self.field.validate, u'sn*t-allowed')
 
 
 def test_suite():
