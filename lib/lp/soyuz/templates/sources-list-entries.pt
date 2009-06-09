@@ -27,14 +27,13 @@
   </tal:comment>
 
   <pre id="sources-list-entries">
-<tal:apt-comment condition="view/comment" content="string:# ${view/comment}" />
 deb <a tal:attributes="href context/archive_url"
        tal:content="context/archive_url"
     /> <span id="series-deb" tal:content="view/default_series_name"
-    >gutsy</span> main
+    >gutsy</span> main <tal:apt-comment condition="view/comment" content="string:#${view/comment}" />
 deb-src <a tal:attributes="href context/archive_url"
            tal:content="context/archive_url"
     /> <span id="series-deb-src" tal:content="view/default_series_name"
-    >gutsy</span> main</pre>
+    >gutsy</span> main <tal:apt-comment condition="view/comment" content="string:#${view/comment}" /></pre>
 
 </tal:root>

@@ -124,7 +124,7 @@ class TestSourcesListComment(TestCaseWithFactory):
         view.initialize()
 
         html = view.__call__()
-        self.assertTrue('# ' + my_comment in html,
+        self.assertTrue('#' + my_comment in html,
             "The comment was not included in the sources.list snippet.")
 
 

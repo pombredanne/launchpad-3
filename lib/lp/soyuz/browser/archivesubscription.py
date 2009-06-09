@@ -261,8 +261,6 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         """Process any posted actions."""
         super(PersonArchiveSubscriptionView, self).initialize()
 
-        self.sources_list_entries = None
-
         # If an activation was requested and there isn't a currently
         # active token, then create a token, provided a notification
         # and redirect.
@@ -293,14 +291,12 @@ class PersonArchiveSubscriptionView(LaunchpadView):
 
             self.request.response.redirect(self.request.getURL())
 
-        # If the request was not posted with an action, and
-        # we already have an active token, then setup the sources-list
-        # entries:
-        elif self.active_token is not None:
-            self.setupSourcesListEntries()
+    @cachedproperty
+    def sources_list_entries(self):
+        """Setup and return the sources list entries widget."""
+        if self.active_token is None:
+            return None
 
-    def setupSourcesListEntries(self):
-        """Setup of the sources list entries widget."""
         comment = "Personal subscription of %s to %s" % (
             self.context.subscriber.displayname,
             self.context.archive.displayname)
@@ -309,8 +305,8 @@ class PersonArchiveSubscriptionView(LaunchpadView):
             self.context.archive.distribution,
             self.active_token.archive_url,
             self.context.archive.series_with_sources)
-        self.sources_list_entries = SourcesListEntriesView(
-            entries, self.request, comment=comment)
+
+        return SourcesListEntriesView(entries, self.request, comment=comment)
 
     @cachedproperty
     def active_token(self):
