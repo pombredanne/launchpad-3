@@ -48,5 +48,9 @@ class ArchiveArchSet:
                 ArchiveArch.processorfamily == processorfamily,)
         else:
             optional_clauses = ()
-        return store.find(
+
+        results = store.find(
             ArchiveArch, *(base_clauses + optional_clauses))
+        results = results.order_by(ArchiveArch.id)
+
+        return results
