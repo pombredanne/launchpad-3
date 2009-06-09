@@ -35,7 +35,6 @@ setup(
         'setuptools',
         'sourcecodegen',
         'transaction',
-        'Twisted',
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
