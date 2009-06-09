@@ -32,7 +32,7 @@ But we're happy, so we add the bug watch.
 
     >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
     >>> for li in bug_watches('li'):
-    ...     print li.findAll('a')[1].renderContents()
+    ...     print li.findAll('a')[0].renderContents()
     gnome-bugzilla #42
 
 It's possible to supply an HTTPS URL, even though the bug tracker's
@@ -56,7 +56,7 @@ The URL was automatically converted to HTTP:
 
     >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
     >>> for li in bug_watches('li'):
-    ...     print li.findAll('a')[1]['href']
+    ...     print li.findAll('a')[0]['href']
     http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42
     http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84
 
@@ -118,7 +118,7 @@ registered automatically.
 
     >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
     >>> for li in bug_watches('li'):
-    ...     print li.findAll('a')[1].renderContents()
+    ...     print li.findAll('a')[0].renderContents()
     gnome-bugzilla #42
     gnome-bugzilla #84
     auto-new.trac #42
@@ -142,7 +142,7 @@ to HTTP on their behalf:
 
     >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
     >>> for li in bug_watches('li'):
-    ...     print li.findAll('a')[1]['href']
+    ...     print li.findAll('a')[0]['href']
     http://bugzilla.gnome.org/bugs/show_bug.cgi?id=168
     http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42
     http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84
@@ -211,7 +211,7 @@ confirmation.
     ...                     affects, assignee, assignee_link['href'])
 
     >>> print_remote_bug_watches_portlet(user_browser)
-    auto-dark-master-o-bugs
+    auto-dark-master-o-bugs...
       --> mailto:dark-master-o-bugs@mylittlepony.com
 
     >>> print_assigned_bugtasks(user_browser)
@@ -228,7 +228,7 @@ not logged in.
 
     >>> anon_browser.open(user_browser.url)
     >>> print_remote_bug_watches_portlet(anon_browser)
-    auto-dark-master-o-bugs
+    auto-dark-master-o-bugs...
       --> None
 
     >>> print_assigned_bugtasks(anon_browser)
