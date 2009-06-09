@@ -39,8 +39,8 @@ from canonical.launchpad.interfaces import (
 from lp.code.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
 from canonical.launchpad.interfaces.hwdb import (
-    IHWDeviceSet, IHWDriverNameSet, IHWDriverPackageNameSet, IHWDriverSet,
-    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet, ParameterError)
+    IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
+    IHWVendorIDSet, ParameterError)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lazr.restful import ServiceRootResource
 
@@ -253,12 +253,12 @@ class HWDBApplication:
     @property
     def driver_names(self):
         """See `IHWDBApplication`."""
-        return getUtility(IHWDriverNameSet).all()
+        return getUtility(IHWDriverSet).all_driver_names()
 
     @property
     def package_names(self):
         """See `IHWDBApplication`."""
-        return getUtility(IHWDriverPackageNameSet).all()
+        return getUtility(IHWDriverSet).all_package_names()
 
     def getDistroTarget(self, distribution, distroseries, distroarchseries):
         distro_targets = [

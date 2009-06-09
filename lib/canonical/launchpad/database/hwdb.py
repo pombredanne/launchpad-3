@@ -14,9 +14,7 @@ __all__ = [
     'HWDeviceNameVariantSet',
     'HWDriver',
     'HWDriverName',
-    'HWDriverNameSet',
     'HWDriverPackageName',
-    'HWDriverPackageNameSet',
     'HWDriverSet',
     'HWSubmission',
     'HWSubmissionBug',
@@ -46,7 +44,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.bug import Bug, BugAffectsPerson, BugTag
 from canonical.launchpad.database.bugsubscription import BugSubscription
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.validators.name import valid_name
 from lp.registry.model.distribution import Distribution
 from lp.soyuz.model.distroarchseries import DistroArchSeries
@@ -59,12 +56,12 @@ from canonical.launchpad.interfaces.hwdb import (
     HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
     IHWDeviceClass, IHWDeviceClassSet, IHWDeviceDriverLink,
     IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
-    IHWDeviceSet, IHWDriver, IHWDriverName, IHWDriverNameSet,
-    IHWDriverPackageName, IHWDriverPackageNameSet, IHWDriverSet,
-    IHWSubmission, IHWSubmissionBug, IHWSubmissionBugSet, IHWSubmissionDevice,
-    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
-    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
-    IHWVendorNameSet, IllegalQuery, ParameterError)
+    IHWDeviceSet, IHWDriver, IHWDriverName, IHWDriverPackageName,
+    IHWDriverSet, IHWSubmission, IHWSubmissionBug, IHWSubmissionBugSet,
+    IHWSubmissionDevice, IHWSubmissionDeviceSet, IHWSubmissionSet,
+    IHWSystemFingerprint, IHWSystemFingerprintSet, IHWVendorID,
+    IHWVendorIDSet, IHWVendorName, IHWVendorNameSet, IllegalQuery,
+    ParameterError)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -943,31 +940,19 @@ class HWDriverSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(HWDriver, HWDriver.id == id).one()
 
-    @property
-    def package_names(self):
+    def all_driver_names(self):
         """See `IHWDriverSet`."""
-        # We want to return a distinct set of the values of the column
-        # package_name. The attempt to do this the "standard way" with
-        # Storm has two problems:
-        # - The Storm API allows at present only the values None, True,
-        #   False for result_set.config(distinct=...), but we would need
-        #   here a value which results in the SQL clause
-        #   DISTINCT ON (package_name)
-        # - The result set entries would be tuples (package name, driver
-        #   name), but the driver name is pure noise in this context.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.execute("""
-            SELECT DISTINCT ON (package_name) package_name
-                FROM HWDriver
-                ORDER BY package_name
-                """)
-        # Return a shortlist, because returning result_set itself (which
-        # is of type PostgresResult, while results of ordinary queries are
-        # of type storm.store.ResultSet) would lead to ForbiddenAttribute
-        # errors. We have currently (2009-02-12) ca. 350 distinct package
-        # names, which is reasonably small.
-        return shortlist([record[0] for record in result_set],
-                         longest_expected=1000)
+        result = store.find(HWDriverName)
+        result.order_by(HWDriverName.name)
+        return result
+
+    def all_package_names(self):
+        """See `IHWDriverSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result = store.find(HWDriverPackageName)
+        result.order_by(HWDriverPackageName.package_name)
+        return result
 
 
 class HWDriverName(SQLBase):
@@ -979,19 +964,6 @@ class HWDriverName(SQLBase):
     name = StringCol(notNull=True)
 
 
-class HWDriverNameSet:
-    """See `IHWDriverNameSet`."""
-
-    implements(IHWDriverNameSet)
-
-    def all(self):
-        """See `IHWDriverNameSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(HWDriverName)
-        result.order_by(HWDriverName.name)
-        return result
-
-
 class HWDriverPackageName(SQLBase):
     """See `IHWDriverPackageName`."""
 
@@ -999,19 +971,6 @@ class HWDriverPackageName(SQLBase):
     _table = 'HWDriverPackageNames'
 
     package_name = StringCol(notNull=True)
-
-
-class HWDriverPackageNameSet:
-    """See `IHWDriverPackageNameSet`."""
-
-    implements(IHWDriverPackageNameSet)
-
-    def all(self):
-        """See `IHWDriverPackageNameSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(HWDriverPackageName)
-        result.order_by(HWDriverPackageName.package_name)
-        return result
 
 
 class HWDeviceDriverLink(SQLBase):

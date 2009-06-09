@@ -1480,24 +1480,15 @@ And We can search for submissions from a particular user.
 
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
-HWDriverSet.packages_names is a distinct list of known package names.
-
-    >>> for name in driver_set.package_names:
-    ...     print name
-    <BLANKLINE>
-    linux-image-2.6.24-19-generic
-    linux-image-generic
-
 
 == Driver names and package names ==
 
 The same driver names can appear multiple times in HWDriver.
-HWDriverNameSet.all() returns a list of distinct driver names
-used in the table HWDriver.
+HWDriverSet.all_driver_names() returns a list of distinct driver
+names used in the table HWDriver.
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWDriverNameSet
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> for driver_name in getUtility(IHWDriverNameSet).all():
+    >>> for driver_name in driver_set.all_driver_names():
     ...     print driver_name.name
     ahci
     bar
@@ -1511,11 +1502,10 @@ used in the table HWDriver.
     whatever
 
 Similary, the same package names appear more than once in HWDriver.
-HWDriverPackageNameSet.all() returns a list of distinct package
+HWDriverSet.all_package_names() returns a list of distinct package
 names.
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWDriverPackageNameSet
-    >>> for package_name in getUtility(IHWDriverPackageNameSet).all():
+    >>> for package_name in driver_set.all_package_names():
     ...     print package_name.package_name
     <BLANKLINE>
     linux-image-2.6.24-19-generic
