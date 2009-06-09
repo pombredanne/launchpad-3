@@ -1,14 +1,19 @@
 #!/usr/bin/python2.4
-#
-# Remove all translations from upstream. This script is useful to recover from
-# breakages after importing bad .po files like the one reported at #32610
-#
 # Copyright 2006 Canonical Ltd.  All rights reserved.
-#
+# pylint: disable-msg=W0403
+"""Remove all translations from upstream.
+
+This script is useful to recover from breakages after importing bad
+.po files like the one reported at #32610.
+"""
+
 
 import sys
 import logging
 from optparse import OptionParser
+
+import _pythonpath
+
 from zope.component import getUtility
 
 from canonical.config import config

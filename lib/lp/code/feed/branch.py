@@ -16,7 +16,6 @@ __all__ = [
 
 from storm.locals import Asc, Desc
 
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -27,6 +26,8 @@ from canonical.launchpad.webapp import canonical_url, LaunchpadView, urlparse
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import IFeedPerson
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from lp.code.browser.branch import BranchView
 from lp.code.interfaces.branch import (
@@ -142,13 +143,12 @@ class BranchListingFeed(BranchFeedBase):
         Only `self.quantity` revisions are returned.
         """
         from lp.code.model.branch import Branch
-        from lp.registry.model.product import Product
         collection = self._getCollection().visibleByUser(
             None).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
         branches = collection.getBranches()
         branches.order_by(
             Desc(Branch.date_last_modified),
-            Asc(Product.name),
+            Asc(Branch.target_suffix),
             Desc(Branch.lifecycle_status),
             Asc(Branch.name))
         branches.config(limit=self.quantity)

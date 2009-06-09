@@ -2056,7 +2056,11 @@ Repeating this source copy gives an error:
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
     Traceback (most recent call last):
     ...
-    CannotCopy: Packages already copied.
+    CannotCopy:
+    package1 1.1 in hoary (same version already building in the
+        destination archive for Hoary)
+    package2 1.0 in hoary (same version already building in the
+        destination archive for Hoary)
 
 Repeating this copy with binaries also gives an error:
 

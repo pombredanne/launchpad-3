@@ -115,31 +115,27 @@
     </p>
   </tal:no-results>
 
-  <p i18n:translate=""
-     id="found-matching-faqs"
+  <p id="found-matching-faqs"
      tal:condition="view/matching_faqs_count">
     You can also consult the list of
     <a href="#" tal:attributes="href view/matching_faqs_url"
-       ><tal:count i18n:name="count"
-                   replace="view/matching_faqs_count" /> FAQ(s)</a>
+       ><tal:count replace="view/matching_faqs_count" /> FAQ(s)</a>
     matching
-    &ldquo;<tal:keywords i18n:name="search_text"
-                          replace="view/search_text"
-                          >Keywords</tal:keywords>&rdquo;.
+    &ldquo;<tal:keywords replace="view/search_text"
+                         >Keywords</tal:keywords>&rdquo;.
   </p>
 
   <tal:block condition="questions/batch">
     <table class="listing" id="question-listing">
       <thead>
         <tr>
-          <th colspan="3" i18n:translate="">Summary</th>
-          <th i18n:translate="">Created</th>
-          <th i18n:translate="">Submitter</th>
-          <th tal:condition="view/display_target_column"
-              i18n:translate="">In</th>
+          <th colspan="3">Summary</th>
+          <th>Created</th>
+          <th>Submitter</th>
+          <th tal:condition="view/display_target_column">In</th>
           <th tal:condition="view/display_sourcepackage_column"
-              i18n:translate="">Source Package</th>
-          <th i18n:translate="">Status</th>
+              >Source Package</th>
+          <th>Status</th>
         </tr>
       </thead>
       <tbody>

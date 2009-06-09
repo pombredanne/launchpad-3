@@ -21,7 +21,7 @@
                            getIndirectSubscribers
                            mentoring_offers canMentor isMentor
                            getNullBugTask is_complete who_made_private
-                           date_made_private"
+                           date_made_private userCanView"
                            />
         <require
             permission="launchpad.View"
@@ -41,7 +41,8 @@
                         message_count comment_count getQuestionCreatedFromBug
                         canBeAQuestion getBugTasksByPackageName
                         users_affected_count users_unaffected_count
-                        readonly_duplicateof users_affected bug_messages"
+                        readonly_duplicateof users_affected bug_messages
+                        isUserAffected"
             />
         <require
             permission="launchpad.Edit"
@@ -52,7 +53,7 @@
                         addAttachment
                         unsubscribeFromDupes subscribe unsubscribe addNomination
                         expireNotifications setStatus setPrivate
-                        convertToQuestion isUserAffected
+                        convertToQuestion
                         markUserAffected addTask addChange markAsDuplicate"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore

@@ -23,11 +23,11 @@ from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.traversing.interfaces import ITraversable, IPathAdapter
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
 import pytz
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.launchpad import _
@@ -1173,15 +1173,10 @@ class BranchFormatterAPI(ObjectFormatterAPI):
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
-        if branch.title is not None:
-            title = branch.title
-        else:
-            title = "(no title)"
         return {
             'bzr_identity': branch.bzr_identity,
             'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
-            'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
             'url': self.url(view_name),
             }
@@ -1340,11 +1335,8 @@ class CodeImportFormatterAPI(CustomizableFormatter):
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        branch_title = self._context.branch.title
-        if branch_title is None:
-            branch_title = _('(no title)')
         return {'product': self._context.product.displayname,
-                'branch': branch_title,
+                'branch': self._context.branch.bzr_identity,
                }
 
     def url(self, view_name=None):
@@ -1586,8 +1578,25 @@ class NumberFormatterAPI:
             return self.float(float(format))
         elif name == 'bytes':
             return self.bytes()
+        elif name == 'intcomma':
+            return self.intcomma()
         else:
             raise TraversalError(name)
+
+    def intcomma(self):
+        """Return this number with its thousands separated by comma.
+
+        This can only be used for integers.
+        """
+        if not isinstance(self._number, int):
+            raise AssertionError("This can't be used with non-integers")
+            format = "%d"
+        L = []
+        for index, char in enumerate(reversed(str(self._number))):
+            if index != 0 and (index % 3) == 0:
+                L.insert(0, ',')
+            L.insert(0, char)
+        return ''.join(L)
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
