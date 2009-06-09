@@ -329,10 +329,10 @@ class TestPrecachePermissionForObjects(TestCase):
     layer = DatabaseFunctionalLayer
 
     def test_precaching_permissions(self):
-        # The _precacheViewPermissions method updates the policy cache for
-        # launchpad.View.
+        # The precache_permission_for_objects function updates the security
+        # policy cache for the permission specified.
         class Boring(object):
-            """A Boring object."""
+            """A boring, but weakref-able object."""
         objects = [Boring(), Boring()]
         request = LaunchpadTestRequest()
         login(ANONYMOUS, request)

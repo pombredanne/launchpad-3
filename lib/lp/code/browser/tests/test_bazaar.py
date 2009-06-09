@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 import unittest
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -62,6 +63,7 @@ class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         code_import = self.factory.makeCodeImport()
         branch = code_import.branch
+        removeSecurityProxy(branch).stacked_on = private_branch
         self.makeBranchScanned(branch)
         recent_branches = self.getViewBranches('recently_imported_branches')
         self.assertEqual(branch, recent_branches[0])
