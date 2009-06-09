@@ -2567,8 +2567,11 @@ class PersonSet:
         store = IStore(Person)
 
         # The call to order_by() is necessary to avoid having the default
-        # ordering applied.  The final result set will have the appropriate
-        # order by set.
+        # ordering applied.  Since no value is passed the effect is to remove
+        # the generation of an 'ORDER BY' clause on the intermediate results.
+        # Otherwise the default ordering is taken from the ordering
+        # declaration on the class.  The final result set will have the
+        # appropriate ordering set.
         results = store.find(
             Person, person_email_query).order_by()
 
