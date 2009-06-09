@@ -619,8 +619,8 @@ keyserver.
 Another link in this section point users to the expanded instructions
 about how to use the signing_key.
 
-    >>> print anon_browser.getLink('these instructions').url
-    https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories
+    >>> print anon_browser.getLink('How do I do that?').url
+    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
 
 
 == PPA Builds ==
