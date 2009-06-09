@@ -1190,8 +1190,10 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
             url=download_url, filename=file_.libraryfile.filename,
             md5_url=md5_url, link_title=link_title)
         html = (
-            '<img alt="download icon" src="/@@/download" /> '
-            '<a title="%(link_title)s" href="%(url)s">%(filename)s</a> '
+            '<img alt="download icon" src="/@@/download" />'
+            '<strong>'
+            '  <a title="%(link_title)s" href="%(url)s">%(filename)s</a> '
+            '</strong>'
             '(<a href="%(md5_url)s">md5</a>')
         if file_.signature is not None:
             html += ', <a href="%(signature_url)s">sig</a>)'
