@@ -28,9 +28,9 @@
       </ul>
 
       <tal:no-languages condition="not:view/productserieslanguages">
-        <p>There are no translations for this project release series.</p>
+        <p>There are no translations for this release series.</p>
 
-        <p>To
+        <p tal:condition="context/product/required:launchpad.Edit">To
           <a href="https://help.launchpad.net/Translations/YourProject">start
             translating your project</a>,
           <tal:uses-translations condition="not:

@@ -14,7 +14,9 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="language_stats view/productserieslanguages">
+          <tr tal:repeat="language_stats view/productserieslanguages"
+             tal:attributes="class
+                 string:stats language-${language_stats/language/code}">
             <td>
               <tal:multiple_pofile condition="not:view/single_potemplate">
               <a tal:attributes="href language_stats/fmt:url"
@@ -22,7 +24,7 @@
               </tal:multiple_pofile>
               <tal:single_pofile condition="view/single_potemplate">
                 <a tal:attributes="href language_stats/pofile/fmt:url/+translate"
-                   tal:content="language_stats/title">Serbian</a>
+                   tal:content="language_stats/language/englishname">Serbian</a>
               </tal:single_pofile>
             </td>
             <td style="white-space: nowrap">
