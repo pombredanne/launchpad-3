@@ -266,12 +266,12 @@ class IBuild(Interface):
     upload_changesfile = Attribute(
         "The `LibraryFileAlias` object containing the changesfile which "
         "was originally uploaded with the results of this build. It's "
-        "'None' if it is a gina-inserted record.")
+        "'None' if it is build imported by Gina.")
 
     package_upload = Attribute(
         "The `PackageUpload` record corresponding to the original upload "
         "of the binaries resulted from this build. It's 'None' if it is "
-        "a gina-inserted record.")
+        "a build imported by Gina.")
 
     def retry():
         """Restore the build record to its initial state.

@@ -127,11 +127,12 @@ class ISourcePackageRelease(Interface):
     upload_changesfile = Attribute(
         "The `LibraryFileAlias` object containing the changesfile which "
         "was originally uploaded with this source package release. It's "
-        "'None' if it is a gina-inserted record.")
+        "'None' if it is a source imported by Gina.")
 
     package_upload = Attribute(
         "The `PackageUpload` record corresponding to original upload of "
-        "this source package release.")
+        "this source package release. It's 'None' if it is a source "
+        "imported by Gina.")
 
     def addFile(file):
         """Add the provided library file alias (file) to the list of files

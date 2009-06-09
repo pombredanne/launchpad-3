@@ -171,11 +171,11 @@ class Build(SQLBase):
             PackageUpload.archive == self.archive,
             PackageUpload.distroseries == self.distroseries)
 
-        # Return only the oldest `PackageUpload`, let the `LibraryFileAlias`
+        # Return the unique `PackageUpload` record that correspond to the
+        # upload of the result of this `Build`, let the `LibraryFileAlias`
         # and the `LibraryFileContent` in cache because it's most likely
         # they will be needed.
-        results = results.order_by(PackageUpload.id)
-        return DecoratedResultSet(results, operator.itemgetter(0)).first()
+        return DecoratedResultSet(results, operator.itemgetter(0)).one()
 
     @property
     def distroseries(self):
