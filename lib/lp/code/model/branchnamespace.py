@@ -15,19 +15,18 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import Branch
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus,
-    BranchMergeControlStatus, IBranch, NoSuchBranch)
+    BranchMergeControlStatus, IBranch, NoSuchBranch,
+    user_has_special_branch_access)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
 from lp.code.interfaces.branchsubscription import (
@@ -84,7 +83,7 @@ class _BaseNamespace:
             sourcepackagename = sourcepackage.sourcepackagename
 
         # If branches can be private, make them private initially.
-        private = self.canBranchesBePrivate()
+        private = self.areNewBranchesPrivate()
 
         branch = Branch(
             registrant=registrant,
@@ -124,6 +123,8 @@ class _BaseNamespace:
 
     def validateRegistrant(self, registrant):
         """See `IBranchNamespace`."""
+        if user_has_special_branch_access(registrant):
+            return
         owner = self.owner
         if not registrant.inTeam(owner):
             if owner.isTeam():
@@ -151,6 +152,13 @@ class _BaseNamespace:
         # here to give a nicer error message than 'ERROR: new row for relation
         # "branch" violates check constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
+
+    def validateMove(self, branch, mover, name=None):
+        """See `IBranchNamespace`."""
+        if name is None:
+            name = branch.name
+        self.validateBranchName(name)
+        self.validateRegistrant(mover)
 
     def createBranchWithPrefix(self, branch_type, prefix, registrant,
                                url=None):
@@ -201,6 +209,11 @@ class _BaseNamespace:
             return False
         else:
             return True
+
+    def areNewBranchesPrivate(self):
+        """See `IBranchNamespace`."""
+        # Always delegates to canBranchesBePrivate for now.
+        return self.canBranchesBePrivate()
 
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
@@ -366,8 +379,6 @@ class PackageNamespace(_BaseNamespace):
     implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, sourcepackage):
-        if not config.codehosting.package_branches_enabled:
-            raise Unauthorized("Package branches are disabled.")
         self.owner = person
         self.sourcepackage = sourcepackage
 

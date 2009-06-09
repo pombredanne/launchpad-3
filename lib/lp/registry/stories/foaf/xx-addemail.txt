@@ -9,7 +9,7 @@ Sample Person will now add a couple email addresses to his account.
 
     # Workaround while https://launchpad.net/launchpad/+bug/39016 is not
     # fixed.
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> stub.test_emails[:] = []
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')

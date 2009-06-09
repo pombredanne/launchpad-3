@@ -169,7 +169,12 @@ multi_slashes_re = re.compile('/+')
 
 def get_method_and_file_id(request):
     """Extract the method of the request and the ID of the requested file."""
-    method, path, protocol = request.split(' ')
+    L = request.split(' ')
+    # HTTP 1.0 requests might omit the HTTP version so we must cope with them.
+    if len(L) == 2:
+        method, path = L
+    else:
+        method, path, protocol = L
 
     if path.startswith('http://') or path.startswith('https://'):
         uri = URI(path)

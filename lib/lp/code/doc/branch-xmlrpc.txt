@@ -206,9 +206,12 @@ We get the same error if we try to register the branch with a slash appended:
 Attempting to register a branch for a product where the branch visibility
 policy is forbidden will cause a fault result.
 
-    >>> branchset_api.register_branch(
+    >>> test_user_api = xmlrpclib.ServerProxy(
+    ...     'http://no-priv@canonical.com:test@xmlrpc.launchpad.dev/bazaar/',
+    ...     transport=XMLRPCTestTransport())
+    >>> test_user_api.register_branch(
     ...     'http://foo.com/bar', 'branch_name', 'branch_title',
-    ...     'branch description', 'test@canonical.com', 'landscape')
+    ...     'branch description', 'no-priv@canonical.com', 'landscape')
     Traceback (most recent call last):
     ...
     Fault: <Fault 110: 'You are not allowed to create a branch for project:

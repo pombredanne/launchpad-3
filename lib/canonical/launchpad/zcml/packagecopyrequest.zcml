@@ -7,18 +7,18 @@
 
     <!-- PackageCopyRequestSet -->
     <securedutility
-        class="canonical.launchpad.database.packagecopyrequest.PackageCopyRequestSet"
-        provides="canonical.launchpad.interfaces.packagecopyrequest.IPackageCopyRequestSet">
-        <allow interface="canonical.launchpad.interfaces.packagecopyrequest.IPackageCopyRequestSet" />
+        class="lp.soyuz.model.packagecopyrequest.PackageCopyRequestSet"
+        provides="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequestSet">
+        <allow interface="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequestSet" />
     </securedutility>
 
 
     <!-- PackageCopyRequest -->
-    <class class="canonical.launchpad.database.packagecopyrequest.PackageCopyRequest">
-        <allow interface="canonical.launchpad.interfaces.packagecopyrequest.IPackageCopyRequest"/>
+    <class class="lp.soyuz.model.packagecopyrequest.PackageCopyRequest">
+        <allow interface="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequest"/>
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.packagecopyrequest.IPackageCopyRequest"
+            set_schema="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequest"
         />
     </class>
 

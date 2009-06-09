@@ -9,11 +9,10 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, ITranslationImportQueue)
+    IPersonSet, ITranslationImportQueue, OutdatedTranslationError)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory)
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.launchpad.translationformat.translation_import import (
@@ -88,7 +87,7 @@ msgid "%s"
 msgstr "format specifier changes %%s"
 '''  % (TEST_MSGID_ERROR)
 
-class FileImporterTestCase(unittest.TestCase):
+class FileImporterTestCase(TestCaseWithFactory):
     """Class test for translation importer component"""
     layer = LaunchpadZopelessLayer
 
@@ -160,7 +159,7 @@ class FileImporterTestCase(unittest.TestCase):
             template_entry, GettextPOImporter(), None )
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(FileImporterTestCase, self).setUp()
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 
@@ -459,7 +458,47 @@ class FileImporterTestCase(unittest.TestCase):
             po_importer.translation_import_queue_entry.importer)
 
 
+class CreateFileImporterTestCase(TestCaseWithFactory):
+    """Class test for translation importer creation."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(CreateFileImporterTestCase, self).setUp()
+        self.translation_import_queue = getUtility(ITranslationImportQueue)
+        self.importer_person = self.factory.makePerson()
+
+    def _make_queue_entry(self, is_published):
+        pofile = self.factory.makePOFile('eo')
+        # Create a header with a newer date than what is found in
+        # TEST_TRANSLATION_FILE.
+        pofile.header = ("PO-Revision-Date: 2009-01-05 13:22+0000\n"
+                         "Content-Type: text/plain; charset=UTF-8\n")
+        po_content = TEST_TRANSLATION_FILE % ("", "foo", "bar")
+        queue_entry = self.translation_import_queue.addOrUpdateEntry(
+            pofile.path, po_content, is_published, self.importer_person,
+            productseries=pofile.potemplate.productseries, pofile=pofile)
+        transaction.commit()
+        return queue_entry
+
+    def test_raises_OutdatedTranslationError_on_user_uploads(self):
+        queue_entry = self._make_queue_entry(False)
+        self.assertRaises(OutdatedTranslationError, POFileImporter,
+            queue_entry, GettextPOImporter(), None )
+
+    def test_not_raises_OutdatedTranslationError_on_published_uploads(self):
+        queue_entry = self._make_queue_entry(True)
+        try:
+            importer = POFileImporter(queue_entry, GettextPOImporter(), None )
+        except OutdatedTranslationError:
+            self.fail("OutdatedTranslationError raised.")
+
+    def test_old_published_upload_not_changes_header(self):
+        queue_entry = self._make_queue_entry(True)
+        pofile = queue_entry.pofile
+        old_raw_header = pofile.header
+        importer = POFileImporter(queue_entry, GettextPOImporter(), None )
+        self.assertEqual(old_raw_header, pofile.header)
+
+
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(FileImporterTestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)

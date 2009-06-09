@@ -56,3 +56,17 @@ class IPOFileTranslatorSet(Interface):
         `POFileTranslator` objects in the user interface, to reduce the
         number of queries needed while rendering the page.
         """
+
+    def getForPersonPOFile(person, pofile):
+        """Retrieve `POFileTranslator` for given `Person` and `POFile`.
+
+        :return: one `POFileTranslator` object matching the requested
+            person and pofile, or None.
+        """
+
+    def getForPOTMsgSet(potmsgset):
+        """Retrieve `POFileTranslator`s for translations of `potmsgset`.
+
+        :return: a query result of `POFileTranslator`s whose
+            `latest_message` are translations of `potmsgset`.
+        """

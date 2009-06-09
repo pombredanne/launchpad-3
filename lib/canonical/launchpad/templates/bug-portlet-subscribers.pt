@@ -32,6 +32,9 @@
           });
       }
       Y.on('domready', function() {
+        if (Y.UA.ie) {
+            return null;
+        }
 
         Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
 
@@ -48,7 +51,10 @@
           // it's safe to setup subscriber link callbacks.
           // XXX deryck 2009-04-30 bug=369874 Now this object exists,
           // the inline js here should be moved to bugtask-index.js.
-          Y.bugs.portlet.fire('bugs:portletloaded');
+          // Moving will also prevent having the paranoia check for Y.bugs.
+          if (Y.bugs) {
+              Y.bugs.portlet.fire('bugs:portletloaded');
+          }
         }
 
         var config = {on: {success: on_success,

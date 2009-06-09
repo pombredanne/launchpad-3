@@ -12,6 +12,8 @@ __all__ = [
 
 from datetime import timedelta
 
+from storm.expr import Select, And, Desc, Func
+from storm.locals import Store
 from storm.references import Reference
 from sqlobject import (
     ForeignKey, IntervalCol, StringCol, SQLMultipleJoin,
@@ -39,7 +41,9 @@ from lp.code.interfaces.codeimportjob import CodeImportJobState
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
 from lp.code.interfaces.codeimport import RevisionControlSystems
-from canonical.launchpad.mailout.codeimport import code_import_updated
+from lp.code.model.codeimportresult import (
+    CodeImportResult, CodeImportResultStatus)
+from lp.code.mail.codeimport import code_import_updated
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -117,6 +121,8 @@ class CodeImport(SQLBase):
             return '%s %s' % (self.cvs_root, self.cvs_module)
         elif self.rcs_type == RevisionControlSystems.SVN:
             return self.svn_branch_url
+        elif self.rcs_type == RevisionControlSystems.GIT:
+            return self.git_repo_url
         else:
             raise AssertionError(
                 'Unknown rcs type: %s'% self.rcs_type.title)
@@ -151,6 +157,26 @@ class CodeImport(SQLBase):
             return True
         else:
             return False
+
+    @property
+    def consecutive_failure_count(self):
+        """See `ICodeImport`."""
+        # This SQL translates as "how many code import results have there been
+        # for this code import since the last successful one".
+        # This is not very efficient for long lists of code imports.
+        last_success = Func(
+            "coalesce",
+            Select(
+                CodeImportResult.id,
+                And(CodeImportResult.status == CodeImportResultStatus.SUCCESS,
+                    CodeImportResult.code_import == self),
+                order_by=Desc(CodeImportResult.id),
+                limit=1),
+            0)
+        return Store.of(self).find(
+            CodeImportResult,
+            CodeImportResult.code_import == self,
+            CodeImportResult.id > last_success).count()
 
     def updateFromData(self, data, user):
         """See `ICodeImport`."""

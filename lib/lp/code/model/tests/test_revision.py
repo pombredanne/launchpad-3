@@ -17,11 +17,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests.logger import MockLogger
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import DatabaseFunctionalLayer
@@ -31,6 +30,8 @@ from lp.code.interfaces.branch import BranchLifecycleStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.revision import RevisionCache, RevisionSet
 from lp.registry.model.karma import Karma
+from lp.testing import TestCaseWithFactory, time_counter
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):
@@ -165,7 +166,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         # The person registers with Launchpad.
         author = self.factory.makePerson(email=email)
         # Garbo runs the RevisionAuthorEmailLinker job.
-        RevisionAuthorEmailLinker().run()
+        RevisionAuthorEmailLinker(log=MockLogger()).run()
         # Now the kama needs allocating.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))

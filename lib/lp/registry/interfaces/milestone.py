@@ -21,14 +21,14 @@ from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, Description
-    )
+    ContentNameField, Description, NoneableDescription, NoneableTextLine)
 from canonical.launchpad.validators.name import name_validator
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_factory_operation, exported,
-    export_operation_as, export_write_operation, rename_parameters_as,
+    export_operation_as, export_read_operation, export_write_operation,
+    operation_parameters, operation_returns_entry, rename_parameters_as,
     REQUEST_USER)
 
 
@@ -78,8 +78,9 @@ class IMilestone(IHasBugs):
                 "Only letters, numbers, and simple punctuation are allowed."),
             constraint=name_validator))
     code_name = exported(
-        TextLine(title=u'Code name', required=False,
-                 description=_('An alternative name for the milestone.')))
+        NoneableTextLine(
+            title=u'Code name', required=False,
+            description=_('An alternative name for the milestone.')))
     product = Choice(
         title=_("Project"),
         description=_("The project to which this milestone is associated"),
@@ -109,7 +110,7 @@ class IMilestone(IHasBugs):
                           "in web forms for bug targeting.")),
         exported_as='is_active')
     summary = exported(
-        Description(
+        NoneableDescription(
             title=_("Summary"),
             required=False,
             description=_(
@@ -132,11 +133,13 @@ class IMilestone(IHasBugs):
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
 
-    product_release = Reference(
-        schema=IProductRelease,
-        title=_("The release for this milestone."),
-        required=False,
-        readonly=True)
+    product_release = exported(
+        Reference(
+            schema=IProductRelease,
+            title=_("The release for this milestone."),
+            required=False,
+            readonly=True),
+        exported_as='release')
 
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(datereleased='date_released')
@@ -221,6 +224,10 @@ class IHasMilestones(Interface):
 class ICanGetMilestonesDirectly(Interface):
     """ An interface for classes providing getMilestone(name)."""
 
+    @operation_parameters(
+        name=TextLine(title=_("Name"), required=True))
+    @operation_returns_entry(IMilestone)
+    @export_read_operation()
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
 

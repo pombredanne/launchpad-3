@@ -15,11 +15,13 @@ import re
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.pofiletranslator import (
+    IPOFileTranslatorSet)
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 
 
@@ -74,7 +76,37 @@ def template_precedence(left, right):
         return 1
 
 
-def merge_translationtemplateitems(subordinate, representative):
+def merge_pofiletranslators(from_potmsgset, to_template):
+    """Merge POFileTranslator entries from one template into another.
+    """
+    pofiletranslatorset = getUtility(IPOFileTranslatorSet)
+    affected_rows = pofiletranslatorset.getForPOTMsgSet(from_potmsgset)
+    for pofiletranslator in affected_rows:
+        person = pofiletranslator.person
+        from_pofile = pofiletranslator.pofile
+        to_pofile = to_template.getPOFileByLang(
+            from_pofile.language.code, variant=from_pofile.variant)
+
+        pofiletranslator = removeSecurityProxy(pofiletranslator)
+        if to_pofile is None:
+            # There's no POFile to move this to.  We could create one,
+            # but it's probably not worth the trouble.
+            pofiletranslator.destroySelf()
+        else:
+            existing_row = pofiletranslatorset.getForPersonPOFile(
+                person, to_pofile)
+            date_last_touched = pofiletranslator.date_last_touched
+            if existing_row is None:
+                # Move POFileTranslator over to representative POFile.
+                pofiletranslator.pofile = to_pofile
+            elif existing_row.date_last_touched < date_last_touched:
+                removeSecurityProxy(existing_row).destroySelf()
+            else:
+                pofiletranslator.destroySelf()
+
+
+def merge_translationtemplateitems(subordinate, representative,
+                                   representative_template):
     """Merge subordinate POTMsgSet into its representative POTMsgSet.
 
     This adds all of the subordinate's TranslationTemplateItems to the
@@ -97,6 +129,8 @@ def merge_translationtemplateitems(subordinate, representative):
             item.potmsgset = representative
             templates.add(item.potemplate)
 
+        merge_pofiletranslators(item.potmsgset, representative_template)
+
 
 def merge_potmsgsets(potemplates):
     """Merge POTMsgSets for given sequence of sharing templates."""
@@ -109,6 +143,10 @@ def merge_potmsgsets(potemplates):
     # POTMsgSets it represents.
     subordinates = {}
 
+    # Map each representative POTMsgSet to its representative
+    # POTemplate.
+    representative_templates = {}
+
     # Figure out representative potmsgsets and their subordinates.  Go
     # through the templates, starting at the most representative and
     # moving towards the least representative.  For any unique potmsgset
@@ -120,6 +158,7 @@ def merge_potmsgsets(potemplates):
             key = get_potmsgset_key(potmsgset)
             if key not in representatives:
                 representatives[key] = potmsgset
+                representative_templates[potmsgset] = template
             representative = representatives[key]
             if representative in subordinates:
                 subordinates[representative].append(potmsgset)
@@ -171,7 +210,10 @@ def merge_potmsgsets(potemplates):
 
                 message.potmsgset = representative
 
-            merge_translationtemplateitems(subordinate, representative)
+            merge_translationtemplateitems(
+                subordinate, representative,
+                representative_templates[representative])
+
             removeSecurityProxy(subordinate).destroySelf()
 
 

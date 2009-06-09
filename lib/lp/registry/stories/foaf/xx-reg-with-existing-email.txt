@@ -36,7 +36,7 @@ on with the registration process.
     >>> print extract_text(find_tag_by_id(browser.contents, 'address'))
     Instructions on completing your registration have been sent to...
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> from canonical.launchpad.ftests.logintoken import (
     ...     get_token_url_from_email)
     >>> from_addr, to_addr, msg = stub.test_emails.pop()

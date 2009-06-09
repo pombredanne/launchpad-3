@@ -48,10 +48,16 @@ from operator import attrgetter
 import re
 
 # Ensure correct plugins are loaded. Do not delete this line.
-import canonical.codehosting
+import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
     BzrBranchFormat6, BzrBranchFormat7)
+try:
+    from bzrlib.branch import BzrBranchFormat8
+    # Shut up, pyflakes.
+    BzrBranchFormat8
+except ImportError:
+    BzrBranchFormat8 = None
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
@@ -82,7 +88,7 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
+    ParticipatingPersonChoice, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
@@ -239,6 +245,12 @@ class BranchFormat(DBEnumeratedType):
 
     BZR_BRANCH_7 = _format_enum(7, BzrBranchFormat7)
 
+    # Format string copied from Bazaar 1.15 code. This should be replaced with
+    # a line that looks like _format_enum(8, BzrBranchFormat8) when we upgrade
+    # to Bazaar 1.15.
+    BZR_BRANCH_8 = DBItem(
+        8, "Bazaar Branch Format 8 (needs bzr 1.15)\n", "Branch format 8")
+
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
     BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
@@ -254,9 +266,21 @@ BRANCH_FORMAT_UPGRADE_PATH = {
     BranchFormat.BZR_BRANCH_5: BzrBranchFormat7,
     BranchFormat.BZR_BRANCH_6: BzrBranchFormat7,
     BranchFormat.BZR_BRANCH_7: None,
+    BranchFormat.BZR_BRANCH_8: None,
     BranchFormat.BZR_LOOM_1: None,
     BranchFormat.BZR_LOOM_2: None,
-    BranchFormat.BZR_LOOM_3: None}
+    BranchFormat.BZR_LOOM_3: None,
+    }
+
+
+# BzrBranchFormat8 was added in Bazaar 1.15. We can move this into the main
+# BranchFormat enum definition once we've upgraded to Bazaar 1.15.
+if BzrBranchFormat8 is not None:
+    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_4] = BzrBranchFormat8
+    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_5] = BzrBranchFormat8
+    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_6] = BzrBranchFormat8
+    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_7] = BzrBranchFormat8
+    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_8] = None
 
 
 class RepositoryFormat(DBEnumeratedType):
@@ -729,7 +753,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Owner'),
             required=True,
             vocabulary='UserTeamsParticipationPlusSelf',
@@ -852,15 +876,23 @@ class IBranch(IHasOwner, IHasBranchTarget):
         "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
-    bug_branches = Attribute(
-        "The bug-branch link objects that link this branch to bugs. ")
+    bug_branches = exported(
+        CollectionField(
+            title=_("The bug-branch link objects that link this branch "
+                    "to bugs."),
+            readonly=True,
+            value_type=Reference(schema=Interface))) # Really IBugBranch
 
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
 
     # Specification attributes
-    spec_links = Attribute("Specifications linked to this branch")
+    spec_links = exported(
+        CollectionField(
+            title=_("Specification linked to this branch."),
+            readonly=True,
+            value_type=Reference(Interface))) # Really ISpecificationBranch
 
     pending_writes = Attribute(
         "Whether there is new Bazaar data for this branch.")
@@ -938,6 +970,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
                 'on this branch.'),
             readonly=True,
             value_type=Reference(Interface)))
+
+    def isBranchMergeable(other_branch):
+        """Is the other branch mergeable into this branch (or vice versa)."""
 
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
@@ -1293,11 +1328,6 @@ class IBranchSet(Interface):
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
         """
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
-        # to change for source package branches.
-
-    def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targeted before."""
         # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
         # to change for source package branches.
 

@@ -7,7 +7,7 @@ __all__ = []
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing import lpuser
+from canonical.launchpad.windmill.testing import constants, lpuser
 
 def test_official_bug_tags_management():
     """Test the official bug tags management interface."""
@@ -16,13 +16,13 @@ def test_official_bug_tags_management():
 # Firefox is a product - an official bug tags target.
 
     client.open(url='http://bugs.launchpad.dev:8085/firefox')
-    client.waits.forPageLoad(timeout=u'20000')
+    client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
 # foobar has the permission to edit the official bug tags for firefox.
 
     lpuser.FOO_BAR.ensure_login(client)
     client.click(link=u'Edit official tags')
-    client.waits.forPageLoad(timeout=u'20000')
+    client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
 # There are no official tags defined (the rest of the test depends on that).
 
@@ -145,13 +145,13 @@ def test_official_bug_tags_management():
 # the bugs index page.
 
     client.click(id=u'save-button')
-    client.waits.forPageLoad(timeout=u'20000')
+    client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
 # When we go back to the tags management page we can see that our tags are
 # still there.
 
     client.click(link=u'Edit official tags')
-    client.waits.forPageLoad(timeout=u'20000')
+    client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
     client.asserts.assertNode(
         xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' % a_new_tag)
     client.asserts.assertNode(
@@ -167,4 +167,4 @@ def test_official_bug_tags_management():
         client.click(id=u'tag-checkbox-%s' % tag)
     client.click(id=u'remove-official-tags')
     client.click(id=u'save-button')
-    client.waits.forPageLoad(timeout=u'20000')
+    client.waits.forPageLoad(timeout=constants.PAGE_LOAD)

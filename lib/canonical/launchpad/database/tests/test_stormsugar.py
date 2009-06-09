@@ -12,7 +12,7 @@ from storm.locals import Int, Store
 
 from canonical.launchpad.database.stormsugar import (
     ForeignKey, ObjectNotFound, Sugar, UnknownProperty)
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 
 
 

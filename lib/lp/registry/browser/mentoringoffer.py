@@ -15,9 +15,10 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.mentoringoffer import IMentoringOffer, IMentoringOfferSet
+from lp.registry.interfaces.mentoringoffer import (
+    IMentoringOffer, IMentoringOfferSet)
 from lp.registry.interfaces.milestone import IBugTask
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct

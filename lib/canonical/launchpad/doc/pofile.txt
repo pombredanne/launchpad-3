@@ -87,6 +87,32 @@ We need a helper method to better display test results.
     ...             potmsgset.sequence, singular, plural, translation)
 
 
+== getFullLanguageCode ==
+
+Returns the complete code for this POFile's language, including variant
+if present.
+
+    >>> print potemplate.getPOFileByLang('es').getFullLanguageCode()
+    es
+
+    >>> print potemplate.getDummyPOFile('sr', variant=u'Latn'
+    ...     ).getFullLanguageCode()
+    sr@Latn
+
+
+== getFullLanguageName ==
+
+Returns the complete English name for this POFile's language, including
+variant if present.
+
+    >>> print potemplate.getPOFileByLang('es').getFullLanguageName()
+    Spanish
+
+    >>> print potemplate.getDummyPOFile('sr', variant=u'Latn'
+    ...     ).getFullLanguageName()
+    Serbian ("Latn" variant)
+
+
 == findPOTMsgSetsContaining ==
 
 It is common to want to find those POTMsgSets which contain a certain
@@ -799,6 +825,8 @@ Launchpad/updatesCount):
     1
     >>> print pofile_changed.updatesCount()
     1
+    >>> print pofile_changed.newCount()
+    0
 
 We make sure that submissions on untranslated strings are not considered
 'changed in Launchpad', since this method is mainly designed to help

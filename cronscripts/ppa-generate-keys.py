@@ -10,7 +10,7 @@ __metaclass__ = type
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.ppakeygenerator import PPAKeyGenerator
+from lp.soyuz.scripts.ppakeygenerator import PPAKeyGenerator
 
 
 if __name__ == '__main__':

@@ -10,16 +10,30 @@
 >
 
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
+    <script type="text/javascript"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js">
+    </script>
+    <script type="text/javascript">
+        YUI().use(
+          'base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
+            Y.bugs.setup_dupe_finder();
+        });
+      </script>
+
+  </metal:block>
 
 <div metal:fill-slot="main">
 
       <div tal:condition="view/isPrivate" id="privacy" class="aside private"
       >This report will be private, though you can disclose it later.</div>
       <h1>
-        <tal:heading condition="not:view/similar_bugs">
+        <tal:heading condition="not:view/show_duplicate_list">
           Report a bug
         </tal:heading>
-        <tal:heading condition="view/similar_bugs">
+        <tal:heading condition="view/show_duplicate_list">
           Is the bug you&rsquo;re reporting one of these?
         </tal:heading>
       </h1>
@@ -29,41 +43,29 @@
 
   <tal:uses_malone tal:condition="view/contextUsesMalone">
 
-  <div metal:use-macro="context/@@launchpad_form/form">
+    <p tal:condition="not: view/similar_bugs">
+      No similar bug reports were found.
+    </p>
 
-    <div metal:fill-slot="extra_info">
-      <p tal:condition="not: view/similar_bugs">
-        No similar bug reports were found.
-      </p>
-    </div>
-
-    <metal:widgets metal:fill-slot="widgets">
-
-      <div id="bug_reporting_form" tal:condition="not: view/similar_bugs">
-        <table class="form">
-          <metal:basic_filebug_widgets
-              metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
-        </table>
-        <div class="actions">
+    <div id="bug_reporting_form" tal:condition="not: view/similar_bugs">
+      <metal:form use-macro="context/@@launchpad_form/form">
+        <metal:widgets metal:fill-slot="widgets">
+          <table class="form">
+            <metal:basic_filebug_widgets
+                metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+          </table>
+        </metal:widgets>
+        <div class="actions" metal:fill-slot="buttons">
           <input tal:replace="structure view/submit_bug_action/render" />
         </div>
-      </div>
-
-      <div tal:condition="view/similar_bugs">
-        <metal:display-similar-bugs
-            use-macro="context/@@+filebug-macros/show-similar-bugs-and-filebug-form"
-        />
-      </div>
-
-    </metal:widgets>
-
-    <div class="actions" metal:fill-slot="buttons">
-      <tal:comment replace="nothing">
-        This suppresses the normal action buttons.
-      </tal:comment>
+      </metal:form>
     </div>
 
-  </div>
+    <div tal:condition="view/similar_bugs">
+      <metal:display-similar-bugs
+          use-macro="context/@@+filebug-macros/show-similar-bugs-and-filebug-form"
+      />
+    </div>
 
   </tal:uses_malone>
 

@@ -1,0 +1,10 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+    <class class=".openidserver.OpenIDPersistentIdentity">
+      <allow interface="..interfaces.openidserver.IOpenIDPersistentIdentity" />
+    </class>
+
+    <adapter factory=".openidserver.OpenIDPersistentIdentity" />
+    <adapter factory=".openidserver.person_to_openidpersistentidentity" />
+
+</configure>

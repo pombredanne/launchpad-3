@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """The content classes for links from source packages to branches.."""
 
@@ -18,7 +19,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
     ISeriesSourcePackageBranch)

@@ -30,13 +30,13 @@ from canonical.launchpad.database.bugbranch import BugBranch
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.registry.model.product import ProductSet
-from canonical.launchpad.database.specificationbranch import (
+from lp.blueprints.model.specificationbranch import (
     SpecificationBranch)
 from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
     ANONYMOUS, login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic, BranchType,
@@ -55,10 +55,10 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, run_with_login, TestCase, TestCaseWithFactory,
-    time_counter)
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.testing import (
+    run_with_login, TestCase, TestCaseWithFactory, time_counter)
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
@@ -353,8 +353,12 @@ class TestBranch(TestCaseWithFactory):
         # A branch has a needs_upgrading attribute that returns whether or not
         # a branch needs to be upgraded or not.  If a branch is up to date, it
         # doesn't need to be upgraded.
+        #
+        # XXX: JonathanLange 2009-06-06: This test needs to be changed every
+        # time Bazaar adds a new branch format. Surely we can think of a
+        # better way of testing this?
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_7)
+            branch_format=BranchFormat.BZR_BRANCH_8)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_branch_format_upgrade_needed(self):
@@ -1046,23 +1050,11 @@ class BranchAddLandingTarget(TestCaseWithFactory):
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
 
-    def test_targetIsABranch(self):
-        """The target of must be a branch."""
-        self.assertRaises(
-            InvalidBranchMergeProposal, self.source.addLandingTarget,
-            self.user, self.product)
-
     def test_targetMustNotBeTheSource(self):
         """The target and source branch cannot be the same."""
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.source)
-
-    def test_dependentIsABranch(self):
-        """The dependent branch, if it is there, must be a branch."""
-        self.assertRaises(
-            InvalidBranchMergeProposal, self.source.addLandingTarget,
-            self.user, self.target, dependent_branch=self.product)
 
     def test_dependentBranchSameProduct(self):
         """The dependent branch, if it is there, must be for the same product.

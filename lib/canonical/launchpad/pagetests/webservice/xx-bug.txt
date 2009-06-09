@@ -473,6 +473,43 @@ target, we reset it in order to avoid data inconsistencies.
   HTTP/1.1 200 Ok
   ...
 
+It's possible to get a list of similar bugs for a bug task by calling
+its findSimilarBugs() method. As it happens, there aren't any bugs
+similar to bug 1 for Firefox.
+
+  >>> print webservice.named_get(
+  ...     firefox_bugtask['self_link'],
+  ...     'findSimilarBugs')
+  HTTP/1.1 200 Ok...
+  {"total_size": 0, "start": null, "entries": []}
+
+If we add a new bug that's quite similar to others, findSimilarBugs()
+will return something more useful.
+
+    >>> print webservice.named_post(
+    ...     '/bugs', 'createBug',
+    ...     title='a', description='Test bug',
+    ...     target=firefox['self_link'])
+    HTTP/1.1 201 Created...
+
+    >>> bugs = webservice.get("/bugs").jsonBody()
+    >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
+    >>> new_bug = webservice.get(bug_entries[-1]['self_link']).jsonBody()
+
+    >>> new_bug_task = webservice.get(
+    ...     webservice.getAbsoluteUrl('/firefox/+bug/%s' % new_bug['id'])
+    ...     ).jsonBody()
+
+    >>> print webservice.named_get(
+    ...     new_bug_task['self_link'],
+    ...     'findSimilarBugs')
+    HTTP/1.1 200 Ok...
+    {"total_size": 4, "start": 0, "entries":...
+    "id": 1... "title": "Firefox does not support SVG"...
+    "id": 4... "title": "Reflow problems with complex page layouts"...
+    "id": 5... "title": "Firefox install instructions should be complete"...
+    "id": ...  "title": "Test bug"...
+
 
 == Bug subscriptions ==
 
@@ -518,11 +555,80 @@ We can also create new subscriptions.
     self_link: u'http://.../bugs/1/+subscription/cprov'
     ...
 
-But we can only unsubscribe ourselves.
+An individual can only unsubscribe him or her self.  If
+the person argument is not provided, the web service
+uses the calling user.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe')
     HTTP/1.1 200 Ok...
+
+If one person tries to unsubscribe another individual, the web
+service will return an unauthorized error.
+
+    >>> print user_webservice.named_post(
+    ...     bug_one['self_link'], 'unsubscribe',
+    ...     person=webservice.getAbsoluteUrl('/~sabdfl'))
+    HTTP/1.1 401 Unauthorized...
+
+An individual can, however, unsubscribe a team to which
+he or she belongs.
+
+For this example, we need a member of the ubuntu-team group,
+any member will do.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from zope.component import getUtility
+
+    >>> login(ANONYMOUS)
+    >>> ubuntu_team_member = getUtility(IPersonSet).getByName(
+    ...     'ubuntu-team').activemembers[0]
+    >>> logout()
+
+Once we have a member, a web service must be created for that user.
+Then, the user can unsubsribe the group from the bug.
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+
+    >>> member_webservice = webservice_for_person(
+    ...     ubuntu_team_member, permission=OAuthPermission.WRITE_PRIVATE)
+
+    >>> print member_webservice.named_post(
+    ...     bug_one['self_link'], 'unsubscribe',
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    HTTP/1.1 200 Ok...
+
+If someone who is not a member tries to unsubscribe the group,
+the web service will raise an unauthorized error.  To demonstrate
+this, the group must first be re-subscribed.
+
+    >>> print webservice.named_post(
+    ...     bug_one['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    HTTP/1.1 200 Ok...
+
+    >>> print user_webservice.named_post(
+    ...     bug_one['self_link'], 'unsubscribe',
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    HTTP/1.1 401 Unauthorized...
+
+To determine if a user can unsubscribe a person or team,
+use the bug subscription's canBeUnsubscribedByUser method.
+This method checks that the requesting user can unsubscribe
+the person of the subscription.
+
+This example uses a subscription of SteveA.
+
+    >>> print subscription['person_link']
+    http://.../~stevea
+
+Salgado is the webservice user and cannot unsubscribe SteveA.
+
+    >>> print webservice.named_get(
+    ...     subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody()
+    False
 
 
 == Bug Watches ==
@@ -879,7 +985,7 @@ bug tasks for the target.
     >>> pprint_collection(webservice.named_get(
     ...     '/firefox', 'searchTasks').jsonBody())
     start: 0
-    total_size: 4
+    total_size: 5
     ---
     ...
     self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5'
@@ -954,9 +1060,7 @@ setting the tags_combinator parameter to 'All'.
 It is possible to search for bugs targeted to a milestone within a
 project group.
 
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IMilestoneSet, IProductSet
-    >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> product_set = getUtility(IProductSet)
     >>> milestone_set = getUtility(IMilestoneSet)

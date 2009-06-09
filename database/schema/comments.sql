@@ -681,9 +681,10 @@ COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last su
 COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
 COMMENT ON COLUMN ProductSeries.branch IS 'The branch for this product
 series.';
-COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'At what
-level the import of translations from a branch in codehosting will happen:
-None, POT files only, POT and PO files. See also the corresponding Enum.';
+COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'Level of
+translations imports from codehosting branch: None, templates only, templates
+and translations. See TranslationsBranchImportMode.';
+COMMENT ON COLUMN ProductSeries.translations_branch IS 'Branch to push translations updates to.';
 
 -- ProductSeriesCodeImport
 
@@ -2096,6 +2097,12 @@ COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
 COMMENT ON COLUMN HWDriver.package_name IS 'The Debian package name a driver is a part of';
 COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
+
+COMMENT ON VIEW HWDriverNames IS 'A view returning the distinct driver names stored in HWDriver.';
+COMMENT ON COLUMN HWDriverNames.name IS 'The name of a driver.';
+
+COMMENT ON VIEW HWDriverPackageNames IS 'A view returning the distinct Debian package names stored in HWDriver.';
+COMMENT ON COLUMN HWDriverPackageNames.package_name IS 'The Debian package name a driver is a part of.';
 
 COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
 COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';

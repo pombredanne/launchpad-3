@@ -31,10 +31,12 @@ import cgi
 import os.path
 
 from bzrlib.revision import NULL_REVISION
+
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -46,7 +48,7 @@ from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from lp.code.interfaces.codeimport import (
     ICodeImportSet)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from canonical.launchpad.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.interfaces.translations import (

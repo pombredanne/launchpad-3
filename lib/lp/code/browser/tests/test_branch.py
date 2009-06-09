@@ -28,7 +28,7 @@ from lp.code.interfaces.branch import BranchLifecycleStatus, BranchType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branchlookup import IBranchLookup
-from canonical.launchpad.testing import (
+from lp.testing import (
     login, login_person, logout, ANONYMOUS, TestCaseWithFactory)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
@@ -111,11 +111,12 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             "<private server>", view.mirror_location)
 
 
-class TestBranchView(unittest.TestCase):
+class TestBranchView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
         login(ANONYMOUS)
         self.request = LaunchpadTestRequest()
 
@@ -179,6 +180,32 @@ class TestBranchView(unittest.TestCase):
                 % (add_view.branch.next_mirror_time, now))
         finally:
             logout()
+
+    def testShowMergeLinksOnManyBranchProject(self):
+        # The merge links are shown on projects that have multiple branches.
+        product = self.factory.makeProduct(name='super-awesome-project')
+        branch1 = self.factory.makeAnyBranch(product=product)
+        branch2 = self.factory.makeAnyBranch(product=product)
+        view = BranchView(branch1, self.request)
+        view.initialize()
+        self.assertTrue(view.show_merge_links)
+
+    def testShowMergeLinksOnJunkBranch(self):
+        # The merge links are not shown on junk branches because they do not
+        # support merge proposals.
+        junk_branch = self.factory.makeBranch(product=None)
+        view = BranchView(junk_branch, self.request)
+        view.initialize()
+        self.assertFalse(view.show_merge_links)
+
+    def testShowMergeLinksOnSingleBranchProject(self):
+        # The merge links are not shown on branches attached to a project that
+        # only has one branch because it's pointless to propose it for merging
+        # if there's nothing to merge into.
+        branch = self.factory.makeAnyBranch()
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertFalse(view.show_merge_links)
 
 
 class TestBranchReviewerEditView(TestCaseWithFactory):

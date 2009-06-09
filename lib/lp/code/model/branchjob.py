@@ -29,7 +29,7 @@ from lp.code.interfaces.branch import (BRANCH_FORMAT_UPGRADE_PATH,
     REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
 from canonical.launchpad.database.diff import StaticDiff
-from canonical.launchpad.database.job import Job
+from lp.services.job.model.job import Job
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.database.translationbranchapprover import (
     TranslationBranchApprover)
@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue)
-from canonical.launchpad.mailout.branch import BranchMailer
+from lp.code.mail.branch import BranchMailer
 from canonical.launchpad.translationformat.translation_import import (
     TranslationImporter)
 from canonical.launchpad.webapp.interfaces import (

@@ -7,8 +7,10 @@ __metaclass__ = type
 
 __all__ = [
     'Bug',
+    'BugAffectsPerson',
     'BugBecameQuestionEvent',
     'BugSet',
+    'BugTag',
     'get_bug_tags',
     'get_bug_tags_open_count',
     ]
@@ -41,7 +43,8 @@ from canonical.launchpad.components.bugchange import (
 from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue)
+    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue,
+    UserCannotUnsubscribePerson)
 from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -97,9 +100,8 @@ from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.mailnotification import BugNotificationRecipients
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
+    ILaunchBag, IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 
 # XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
@@ -254,6 +256,11 @@ class Bug(SQLBase):
     users_unaffected_count = IntCol(notNull=True, default=0)
 
     @property
+    def comment_count(self):
+        """See `IBug`."""
+        return self.message_count - 1
+
+    @property
     def users_affected(self):
         """See `IBug`."""
         return [bap.person for bap
@@ -398,8 +405,17 @@ class Bug(SQLBase):
 
     def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
+        if person is None:
+            person = getUtility(ILaunchBag).user
+
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                    raise UserCannotUnsubscribePerson(
+                        '%s does not have permission to unsubscribe %s.' % (
+                            unsubscribed_by.displayname,
+                            person.displayname))
+
                 self.addChange(UnsubscribedFromBug(
                     when=UTC_NOW, person=unsubscribed_by,
                     unsubscribed_user=person))
@@ -1330,6 +1346,23 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
+    def userCanView(self, user):
+        """See `IBug`."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if not self.private:
+            # This is a public bug.
+            return True
+        elif user.inTeam(admins):
+            # Admins can view all bugs.
+            return True
+        else:
+            # This is a private bug. Only explicit subscribers may view it.
+            for subscription in self.subscriptions:
+                if user.inTeam(subscription.person):
+                    return True
+
+        return False
+
 
 class BugSet:
     """See BugSet."""
@@ -1527,6 +1560,34 @@ class BugSet:
         bug.markUserAffected(bug.owner)
 
         return bug
+
+    def getDistinctBugsForBugTasks(self, bug_tasks, user, limit=10):
+        """See `IBugSet`."""
+        # XXX: Graham Binns 2009-05-28 bug=75764
+        #      We slice bug_tasks here to prevent this method from
+        #      causing timeouts, since if we try to iterate over it
+        #      Transaction.iterSelect() will try to listify the results.
+        #      This can be fixed by selecting from Bugs directly, but
+        #      that's non-trivial.
+        # We select more than :limit: since if a bug affects more than
+        # one source package, it will be returned more than one time. 4
+        # is an arbitrary number that should be large enough.
+        bugs = []
+        for bug_task in bug_tasks[:4*limit]:
+            bug = bug_task.bug
+            duplicateof = bug.duplicateof
+            if duplicateof is not None:
+                bug = duplicateof
+
+            if not bug.userCanView(user):
+                continue
+
+            if bug not in bugs:
+                bugs.append(bug)
+                if len(bugs) >= limit:
+                    break
+
+        return bugs
 
 
 class BugAffectsPerson(SQLBase):

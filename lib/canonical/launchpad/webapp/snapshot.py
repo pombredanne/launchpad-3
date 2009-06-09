@@ -18,4 +18,4 @@ def snapshot_sql_result(value):
     # SelectResults, which doesn't really help the Snapshot
     # object. We therefore list()ify the values; this isn't
     # perfect but allows deltas to be generated reliably.
-    return shortlist(value, longest_expected=100, hardlimit=1000)
+    return shortlist(value, longest_expected=100, hardlimit=5000)

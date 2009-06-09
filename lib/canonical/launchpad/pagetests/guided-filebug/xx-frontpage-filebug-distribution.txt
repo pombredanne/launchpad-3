@@ -55,7 +55,8 @@ duplicates are presented.
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #9 Thunderbird crashes
-    Open, last updated 2006-07-14
+    Open (0 comments) last updated 2006-07-14
+    Every time I start Thunderbird it crashes.
 
 Entering a description and submitting the bug takes the user to the bug
 page.

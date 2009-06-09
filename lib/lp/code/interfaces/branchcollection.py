@@ -98,6 +98,13 @@ class IBranchCollection(Interface):
     def inSourcePackage(package):
         """Restrict the collection to branches in 'package'."""
 
+    def isJunk():
+        """Restrict the collection to junk branches.
+
+        A junk branch is a branch that's not associated with a product nor
+        with a sourcepackage.
+        """
+
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
 
@@ -139,6 +146,12 @@ class IBranchCollection(Interface):
     def scannedSince(epoch):
         """Restrict the collection to branches scanned since `epoch`."""
 
+    def targetedBy(person):
+        """Restrict the collection to branches targeted by person.
+
+        A branch is targeted by a person if that person has registered a merge
+        proposal with the branch as the target.
+        """
 
 class IAllBranches(IBranchCollection):
     """An `IBranchCollection` representing all branches in Launchpad."""

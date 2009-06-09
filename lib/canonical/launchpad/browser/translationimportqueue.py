@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
     ITranslationImportQueue, RosettaImportStatus,
     SpecialTranslationImportTargetFilter, TranslationFileType)
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.pofile import IPOFileSet
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp.interfaces import (

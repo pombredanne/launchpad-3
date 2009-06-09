@@ -4,7 +4,7 @@ Go to the register page.
 
     # Workaround while https://launchpad.net/launchpad/+bug/39016 is not
     # fixed.
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> stub.test_emails[:] = []
 
     >>> print http(r"""

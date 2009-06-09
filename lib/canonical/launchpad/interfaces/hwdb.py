@@ -51,6 +51,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
@@ -60,8 +61,9 @@ from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import ITopLevelEntryLink
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of, webservice_error)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_read_operation, exported, operation_parameters,
+    operation_returns_collection_of, webservice_error)
 
 
 def validate_new_submission_key(submission_key):
@@ -287,6 +289,86 @@ class IHWSubmissionSet(Interface):
         :param distro_target: Limit the count to submissions made for the
             given distribution, distroseries or distroarchseries.
             (optional).
+        """
+
+    def numOwnersOfDevice(bus, vendor_id, product_id, driver_name=None,
+                          package_name=None, distro_target=None):
+        """Count the number who subitted hardware reports mentioning a device.
+
+        :return: A tuple (device_owners, all_hardware_reporters)
+           where device_owners is the number of people who made a HWDB
+           submission containing the given device, optionally limited
+           to submissions where the device is controlled by a given
+           driver from the given package, and/or limited to submissions
+           made for the given distro_target.
+           all_hardware_reporters is the number of persons who made
+           a HWDB submission, optionally limited to submission made
+           on the given distro_target installation.
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: The name of the driver used for the device
+            (optional).
+        :param package_name: The name of the package the driver is a part of.
+            (optional).
+        :param distro_target: Limit the count to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
+        """
+
+    def deviceDriverOwnersAffectedByBugs(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """Return persons affected by given bugs and owning a given device.
+
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: Limit the search to devices controlled by the
+            given driver.
+        :param package_name: Limit the search to devices controlled by a
+            driver from the given package.
+        :param bug_ids: A sequence of bug IDs for which affected device
+            owners are looked up.
+        :param bug_tags: A sequence of bug tags.
+        :param affected_by_bug: If True, those persons are looked up that
+            have marked themselves as being affected by a one of the bugs
+            matching the bug criteria.
+        :param subscribed_to_bug: If True, those persons are looked up that
+            are subscribed to a bug matching one of the bug criteria.
+        :param user: The person making the query.
+
+        `bug_ids` must be a non-empty sequence of bug IDs, or `bug_tags`
+        must be a non-empty sequence of bug tags.
+
+        The parameters `bus`, `vendor_id`, `product_id` must not be None, or
+        `driver_name` must not be None.
+
+        By default, only those persons are returned which have reported a
+        bug matching the given bug conditions.
+
+        Owners of private submissions are returned only if user is the
+        owner of the private submission or if user is an admin.
+        """
+
+    def hwInfoByBugRelatedUsers(
+        bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """Return a list of owners and devices related to given bugs.
+
+        Actually returns a list of tuples where the tuple is of the form,
+        (person name, bus name, vendor id, product id).`
+
+        :param bug_ids: A sequence of bug IDs for which affected
+            are looked up.
+        :param bug_tags: A sequence of bug tags
+        :param affected_by_bug: If True, those persons are looked up that
+            have marked themselves as being affected by a one of the bugs
+            matching the bug criteria.
+        :param subscribed_to_bug: If True, those persons are looked up that
+            are subscribed to a bug matching one of the bug criteria.
+        :param user: The person making the query.
         """
 
 
@@ -1068,6 +1150,337 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
                  u'All known distinct package names appearing in HWDriver.',
              value_type=TextLine(),
              readonly=True))
+
+    @operation_parameters(
+        bus=Choice(
+            title=u'The device bus', vocabulary=HWBus, required=True),
+        vendor_id=TextLine(
+            title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
+             required=True),
+        product_id=TextLine(
+            title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
+            required=True),
+        driver_name=TextLine(
+            title=u'A driver name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        'controlled by this driver.'),
+        package_name=TextLine(
+            title=u'A package name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        u'controlled by a driver from this package.'),
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for this distribution.'),
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distribution series.'),
+            required=False),
+        distroarchseries=Reference(
+            IDistroArchSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distroarchseries.'),
+            required=False))
+    @export_read_operation()
+    def numSubmissionsWithDevice(
+        bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distribution=None, distroseries=None, distroarchseries=None):
+        """Count the number of submissions mentioning a device.
+
+        Returns a dictionary {'submissions_with_device: n1,
+        'all_submissions': n2}, where submissions_with_device is the number
+        of submissions having the given device and matching the
+        distro target criterion and where all_submissions is the number of
+        submissions matching the distro target criterion.
+
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: The name of the driver used for the device
+            (optional).
+        :param package_name: The name of the package the driver is a part of.
+            (optional).
+        :param distribution: Limit the count to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
+        :param distroseries: Limit the count to submissions made for the
+            given distroseries.
+            (optional).
+        :param distroarchseries: Limit the count to submissions made for the
+            given distroarchseries.
+            (optional).
+
+        You may specify at most one of the parameters distribution,
+        distroseries or distroarchseries.
+        """
+
+    @operation_parameters(
+        bus=Choice(
+            title=u'The device bus', vocabulary=HWBus, required=True),
+        vendor_id=TextLine(
+            title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
+             required=True),
+        product_id=TextLine(
+            title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
+            required=True),
+        driver_name=TextLine(
+            title=u'A driver name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        u'controlled by this driver.'),
+        package_name=TextLine(
+            title=u'A package name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        u'controlled by a driver from this package.'),
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for this distribution.'),
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distribution series.'),
+            required=False),
+        distroarchseries=Reference(
+            IDistroArchSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distroarchseries.'),
+            required=False))
+    @export_read_operation()
+    def numOwnersOfDevice(
+        bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distribution=None, distroseries=None, distroarchseries=None):
+        """Count the number who subitted hardware reports mentioning a device.
+
+        Returns a dictionary {'owners': n1, 'all_submitters': n2}
+        where owners is the number of people who made a HWDB
+        submission containing the given device, optionally limited
+        to submissions where the device is controlled by a given
+        driver from the given package, and/or limited to submissions
+        made for the given distro target.
+        all_submitters is the number of persons who made
+        a HWDB submission, optionally limited to submission made
+        on the given distro target installation.
+
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: The name of the driver used for the device
+            (optional).
+        :param package_name: The name of the package the driver is a part of.
+            (optional).
+        :param distribution: Limit the count to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
+        :param distroseries: Limit the count to submissions made for the
+            given distroseries.
+            (optional).
+        :param distroarchseries: Limit the count to submissions made for the
+            given distroarchseries.
+            (optional).
+
+        You may specify at most one of the parameters distribution,
+        distroseries or distroarchseries.
+        """
+
+    @operation_parameters(
+        bus=Choice(
+            title=u'The device bus', vocabulary=HWBus, required=True),
+        vendor_id=TextLine(
+            title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
+             required=True),
+        product_id=TextLine(
+            title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
+            required=True),
+        driver_name=TextLine(
+            title=u'A driver name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        u'controlled by this driver.'),
+        package_name=TextLine(
+            title=u'A package name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        u'controlled by a driver from this package.'),
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for this distribution.'),
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distribution series.'),
+            required=False),
+        distroarchseries=Reference(
+            IDistroArchSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distroarchseries.'),
+            required=False))
+    @export_read_operation()
+    def numDevicesInSubmissions(
+        bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distribution=None, distroseries=None, distroarchseries=None):
+        """Count how often a device appears in HWDB submissions.
+
+        Returns The number how often the given device appears in HWDB
+
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: Limit the count to devices controlled by the given
+            driver (optional).
+        :param package_name: Limit the count to devices controlled by a driver
+            from the given package (optional).
+        :param distribution: Limit the count to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
+        :param distroseries: Limit the count to submissions made for the
+            given distroseries.
+            (optional).
+        :param distroarchseries: Limit the count to submissions made for the
+            given distroarchseries.
+            (optional).
+
+        You may specify at most one of the parameters distribution,
+        distroseries or distroarchseries.
+        """
+
+    @operation_parameters(
+        bus=Choice(
+            title=u'The device bus', vocabulary=HWBus, required=False),
+        vendor_id=TextLine(
+            title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
+             required=False),
+        product_id=TextLine(
+            title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
+            required=False),
+        driver_name=TextLine(
+            title=u'A driver name', required=False,
+            description=u'If specified, the search is limited to devices '
+                        u'controlled by this driver.'),
+        package_name=TextLine(
+            title=u'A package name', required=False,
+            description=u'If specified, the search is limited to devices '
+                        u'controlled by a driver from this package.'),
+        bug_ids=List(title=u'A set of bug IDs',
+             description=u'Search submitters, subscribers or affected users '
+                         u'of bugs with these IDs.',
+             value_type=Int(),
+             required=False),
+        bug_tags=List(title=u'A set of bug tags',
+             description=u'Search submitters, subscribers or affected users '
+                         u'of bugs having one of these tags.',
+             value_type=TextLine(),
+             required=False),
+        affected_by_bug=Bool(
+            title=u'Search for users affected by a bug',
+            description=u'If true, those device owners are looked up which '
+                        u'are affected by one of the selected bugs.',
+            required=False),
+        subscribed_to_bug=Bool(
+            title=u'Search for users who subscribed to a bug',
+            description=u'If true, those device owners are looked up which '
+                        u'to one of the selected bugs.',
+            required=False))
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(IPerson)
+    @export_read_operation()
+    def deviceDriverOwnersAffectedByBugs(
+        bus, vendor_id, product_id, driver_name=None, package_name=None,
+        bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """Return persons affected by given bugs and owning a given device.
+
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: Limit the search to devices controlled by the
+            given driver.
+        :param package_name: Limit the search to devices controlled by a
+            driver from the given package.
+        :param bug_ids: A sequence of bug IDs for which affected
+            are looked up.
+        :param bug_tags: A sequence of bug tags
+        :param affected_by_bug: If True, those persons are looked up that
+            have marked themselves as being affected by a one of the bugs
+            matching the bug criteria.
+        :param subscribed_to_bug: If True, those persons are looked up that
+            are subscribed to a bug matching one of the bug criteria.
+        :param user: The person making the query.
+
+        bug_ids must be a non-empty sequence of bug IDs, or bug_tags
+        must be a non-empty sequence of bug tags.
+
+        The parameters bus, vendor_id, product_id must not be None, or
+        driver_name must not be None.
+
+        By default, only those persons are returned which have reported a
+        bug matching the given bug conditions.
+
+        Owners of private submissions are returned only if user is the
+        owner of the private submission or if user is an admin.
+        """
+
+    @operation_parameters(
+        bug_ids=List(title=u'A set of bug IDs',
+             description=u'Search for devices and their owners related to '
+                         u'bugs with these IDs.',
+             value_type=Int(),
+             required=False),
+        bug_tags=List(title=u'A set of bug tags',
+             description=u'Search for devices and their owners related to '
+                         u'bugs having one of these tags.',
+             value_type=TextLine(),
+             required=False),
+        affected_by_bug=Bool(
+            title=u'Search for users affected by a bug',
+            description=u'If true, those device owners are looked up which '
+                        u'are affected by one of the selected bugs.',
+            required=False),
+        subscribed_to_bug=Bool(
+            title=u'Search for users who subscribed to a bug',
+            description=u'If true, those device owners are looked up which '
+                        u'to one of the selected bugs.',
+            required=False))
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
+    def hwInfoByBugRelatedUsers(
+        bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """Return a list of owners and devices related to given bugs.
+
+        Actually returns a list of tuples where the tuple is of the form,
+        (person name, bus name, vendor id, product id).`
+
+        :param bug_ids: A sequence of bug IDs for which affected
+            are looked up.
+        :param bug_tags: A sequence of bug tags
+        :param affected_by_bug: If True, those persons are looked up that
+            have marked themselves as being affected by a one of the bugs
+            matching the bug criteria.
+        :param subscribed_to_bug: If True, those persons are looked up that
+            are subscribed to a bug matching one of the bug criteria.
+        :param user: The person making the query.
+        """
 
 
 class IllegalQuery(Exception):

@@ -427,7 +427,6 @@ class ValidateTeamEmailView(ValidateEmailView):
 
 
 class MergePeopleView(BaseAuthTokenView, LaunchpadView):
-
     expected_token_types = (LoginTokenType.ACCOUNTMERGE,)
     mergeCompleted = False
 

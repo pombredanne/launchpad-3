@@ -42,7 +42,7 @@
                         asEmailHeaderValue getDelta pillar
                         target_uses_malone bugtask_branches
                         conjoined_master conjoined_slave subscribe
-                        getConjoinedMaster" />
+                        getConjoinedMaster findSimilarBugs" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
@@ -102,6 +102,10 @@
         for="canonical.launchpad.interfaces.IBugTask"
         provides="canonical.launchpad.interfaces.IBug"
         factory="canonical.launchpad.database.bugtask.BugTaskToBugAdapter" />
+
+    <adapter
+        factory="canonical.launchpad.browser.bugtask.assignee_renderer"
+        name="assignee"/>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugTask"
