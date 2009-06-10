@@ -579,7 +579,7 @@
     <browser:page
         name="+filebug-advanced"
         for="lp.registry.interfaces.project.IProject"
-        class="lp.bugs.browser.bugtarget.ProjectFileBugGuidedView"
+        class="lp.bugs.browser.bugtarget.ProjectFileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:defaultView
