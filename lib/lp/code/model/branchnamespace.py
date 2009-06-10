@@ -22,7 +22,10 @@ from storm.locals import And
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import Branch
 from lp.registry.model.sourcepackage import SourcePackage
-from lp.code.enums import BranchLifecycleStatus, BranchMergeControlStatus
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchMergeControlStatus,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner, BranchExists,
@@ -30,9 +33,6 @@ from lp.code.interfaces.branch import (
     user_has_special_branch_access)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)

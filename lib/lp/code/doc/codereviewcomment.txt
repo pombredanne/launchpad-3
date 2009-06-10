@@ -54,7 +54,7 @@ Comments can be marked as replies to particular comments.
 If there is a subscriber to any of the branches involved in the merge,
 a notification is produced when the comment is created.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
     >>> source_subscriber = factory.makePerson(email='subscriber@example.com',

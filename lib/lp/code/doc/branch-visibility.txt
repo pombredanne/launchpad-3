@@ -130,7 +130,7 @@ The Jeff Waugh is a member of the Ubuntu team, but not a Luanchpad admin.
 Subscribing the Ubuntu team to the branch will allow Jeff to have access
 to the branch.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     ...     CodeReviewNotificationLevel)
 

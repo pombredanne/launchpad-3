@@ -296,9 +296,11 @@ Both of these attributes are contolled through the UI through the use
 of the enumerated types: BranchSubscriptionDiffSize, and
 BranchSubscriptionNotificationLevel.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    ...     CodeReviewNotificationLevel, IBranchSubscription)
+    ...     CodeReviewNotificationLevel)
+    >>> from lp.code.interfaces.branchsubscription import (
+    ...     IBranchSubscription)
     >>> subscriber = factory.makePerson(name='subscriber')
     >>> branch = factory.makeProductBranch(
     ...     owner=user, product=product, name='subscribed')

@@ -32,9 +32,7 @@ from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    CodeReviewNotificationLevel, IBranchSubscription)
+from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
 from lp.code.interfaces.codereviewvote import (
@@ -69,12 +67,6 @@ IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
 IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
-IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
-    'notification_level'].vocabulary = BranchSubscriptionNotificationLevel
-IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
-    'max_diff_lines'].vocabulary = BranchSubscriptionDiffSize
-IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
-    'code_review_level'].vocabulary = CodeReviewNotificationLevel
 IBranch['bug_branches'].value_type.schema = IBugBranch
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 

@@ -39,13 +39,13 @@ from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.code.bzr import BranchFormat, RepositoryFormat
-from lp.code.enums import BranchLifecycleStatus, BranchType
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
+    CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     CannotDeleteBranch)
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import IPersonSet

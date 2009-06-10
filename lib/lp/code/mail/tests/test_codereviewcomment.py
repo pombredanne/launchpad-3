@@ -10,9 +10,9 @@ from zope.component import getUtility
 
 from canonical.testing import LaunchpadFunctionalLayer
 
-from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    CodeReviewVote)
+from lp.code.enums import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mail import format_address
 from lp.code.mail.codereviewcomment import (

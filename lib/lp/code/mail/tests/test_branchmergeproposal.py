@@ -14,7 +14,7 @@ from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.database.diff import StaticDiff
 from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.ftests import login, login_person
-from canonical.launchpad.interfaces import (
+from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import (

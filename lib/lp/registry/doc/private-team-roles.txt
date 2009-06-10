@@ -120,7 +120,7 @@ Branch subscriptions
 
 Private teams can subscribe to branches.
 
-    >>> from lp.code.interfaces.branchsubscription import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize,
     ...     BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)

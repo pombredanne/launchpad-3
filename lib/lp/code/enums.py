@@ -8,7 +8,10 @@ __all__ = [
     'BranchLifecycleStatusFilter',
     'BranchMergeControlStatus',
     'BranchMergeProposalStatus',
+    'BranchSubscriptionDiffSize',
+    'BranchSubscriptionNotificationLevel',
     'BranchType',
+    'CodeReviewNotificationLevel',
     'UICreatableBranchType',
     ]
 
@@ -216,4 +219,109 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         Superseded
 
         This proposal has been superseded by anther proposal to merge.
+        """)
+
+
+class BranchSubscriptionDiffSize(DBEnumeratedType):
+    """Branch Subscription Diff Size
+
+    When getting branch revision notifications, the person can set a size
+    limit of the diff to send out. If the generated diff is greater than
+    the specified number of lines, then it is omitted from the email.
+    This enumerated type defines the number of lines as a choice
+    so we can sensibly limit the user to a number of size choices.
+    """
+
+    NODIFF = DBItem(0, """
+        Don't send diffs
+
+        Don't send generated diffs with the revision notifications.
+        """)
+
+    HALFKLINES = DBItem(500, """
+        500 lines
+
+        Limit the generated diff to 500 lines.
+        """)
+
+    ONEKLINES  = DBItem(1000, """
+        1000 lines
+
+        Limit the generated diff to 1000 lines.
+        """)
+
+    FIVEKLINES = DBItem(5000, """
+        5000 lines
+
+        Limit the generated diff to 5000 lines.
+        """)
+
+    WHOLEDIFF  = DBItem(-1, """
+        Send entire diff
+
+        Don't limit the size of the diff.
+        """)
+
+
+class BranchSubscriptionNotificationLevel(DBEnumeratedType):
+    """Branch Subscription Notification Level
+
+    The notification level is used to control the amount and content
+    of the email notifications send with respect to modifications
+    to branches whether it be to branch attributes in the UI, or
+    to the contents of the branch found by the branch scanner.
+    """
+
+    NOEMAIL = DBItem(0, """
+        No email
+
+        Do not send any email about changes to this branch.
+        """)
+
+    ATTRIBUTEONLY = DBItem(1, """
+        Branch attribute notifications only
+
+        Only send notifications for branch attribute changes such
+        as name, description and whiteboard.
+        """)
+
+    DIFFSONLY = DBItem(2, """
+        Branch revision notifications only
+
+        Only send notifications about new revisions added to this
+        branch.
+        """)
+
+    FULL = DBItem(3, """
+        Branch attribute and revision notifications
+
+        Send notifications for both branch attribute updates
+        and new revisions added to the branch.
+        """)
+
+
+class CodeReviewNotificationLevel(DBEnumeratedType):
+    """Code Review Notification Level
+
+    The notification level is used to control the amount and content
+    of the email notifications send with respect to code reviews related
+    to this branch.
+    """
+
+    NOEMAIL = DBItem(0, """
+        No email
+
+        Do not send any email about code review for this branch.
+        """)
+
+    STATUS = DBItem(1, """
+        Status changes only
+
+        Send email when votes are cast or status is changed.
+        """)
+
+    FULL = DBItem(2, """
+        Email about all changes
+
+        Send email about any code review activity for this branch.
         """)

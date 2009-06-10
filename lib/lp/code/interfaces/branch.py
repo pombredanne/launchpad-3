@@ -57,6 +57,8 @@ from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeControlStatus,
+    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
+    CodeReviewNotificationLevel,
     UICreatableBranchType,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -728,13 +730,13 @@ class IBranch(IHasOwner, IHasBranchTarget):
             schema=IPerson),
         notification_level=Choice(
             title=_("The level of notification to subscribe to."),
-            vocabulary='BranchSubscriptionNotificationLevel'),
+            vocabulary=BranchSubscriptionNotificationLevel),
         max_diff_lines=Choice(
             title=_("The max number of lines for diff email."),
-            vocabulary='BranchSubscriptionDiffSize'),
+            vocabulary=BranchSubscriptionDiffSize),
         code_review_level=Choice(
             title=_("The level of code review notification emails."),
-            vocabulary='CodeReviewNotificationLevel'))
+            vocabulary=CodeReviewNotificationLevel))
     @operation_returns_entry(Interface) # Really IBranchSubscription
     @export_write_operation()
     def subscribe(person, notification_level, max_diff_lines,

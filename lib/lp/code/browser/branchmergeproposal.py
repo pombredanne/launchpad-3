@@ -45,11 +45,10 @@ from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
-from lp.code.enums import BranchMergeProposalStatus, BranchType
+from lp.code.enums import (
+    BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, WrongBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    CodeReviewNotificationLevel)
 from lp.code.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
 from lp.code.interfaces.codereviewvote import (
