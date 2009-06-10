@@ -1457,7 +1457,7 @@ class LayerProcessController:
         LaunchpadTestSetup().setUp()
         _config = cls.appserver_config
         cmd = [
-            os.path.join(_config.root, 'runlaunchpad.py'),
+            os.path.join(_config.root, 'bin', 'run'),
             '-C', 'configs/%s/launchpad.conf' % _config.instance_name]
         environ = dict(os.environ)
         environ['LPCONFIG'] = _config.instance_name

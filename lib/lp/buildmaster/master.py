@@ -218,10 +218,7 @@ class BuilddMaster:
                 % distroseries.name)
             return
 
-        architectures_available = [
-            arch for arch in distroseries_architectures
-            if arch.getPocketChroot() is not None]
-
+        architectures_available = list(distroseries.enabled_architectures)
         if not architectures_available:
             self._logger.debug(
                 "Chroots missing for %s, skipping" % distroseries.name)
