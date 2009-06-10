@@ -975,7 +975,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         lower_timeout_script = """
         from bzrlib import lockdir
         lockdir._DEFAULT_TIMEOUT_SECONDS = 2.0
-        from canonical.launchpad.interfaces import BranchType
+        from lp.code.enums import BranchType
         from lp.codehosting.puller.worker import (
             PullerWorker, install_worker_ui_factory)
         branch_type = BranchType.items[branch_type_name]
