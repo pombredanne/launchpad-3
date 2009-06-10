@@ -49,8 +49,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImportSet)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.services.worlddata.interfaces.country import ICountry
-from canonical.launchpad.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
