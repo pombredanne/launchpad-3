@@ -303,20 +303,17 @@ For branches, fmt:link links to the branch page.
     >>> branch = factory.makeProductBranch(
     ...     owner=eric, product=fooix, name='bar', title='The branch title')
     >>> print test_tales("branch/fmt:link", branch=branch)
-    <a href=".../~eric/fooix/bar"><img src="/@@/branch"
-       alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
+    <a href=".../~eric/fooix/bar" class="sprite branch">lp://dev/~eric/fooix/bar</a>
 
 The bzr-link formatter uses the bzr identity.
 
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
-    <a href="http://code.launchpad.dev/~eric/fooix/bar"><img src="/@@/branch"
-    alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
+    <a href="http://code.launchpad.dev/~eric/fooix/bar" class="sprite branch">lp://dev/~eric/fooix/bar</a>
 
     >>> login_person(fooix.owner, LaunchpadTestRequest())
     >>> fooix.development_focus.branch = branch
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
-    <a href=".../~eric/fooix/bar"><img src="/@@/branch"
-       alt=""/>&nbsp;lp://dev/fooix</a>
+    <a href=".../~eric/fooix/bar" class="sprite branch">lp://dev/fooix</a>
 
 
 === Bugs ===
@@ -958,8 +955,6 @@ do with 'None/fmt:foo'.
     ''
     >>> test_tales('foo/fmt:exactduration', foo=None)
     ''
-    >>> print test_tales('foo/image:icon', foo=None)
-    None
 
 
 == The lp: namespace for presenting DBSchema items ==

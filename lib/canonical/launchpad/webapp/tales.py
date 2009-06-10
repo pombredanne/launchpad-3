@@ -559,10 +559,6 @@ class ObjectImageDisplayAPI:
         else:
             return None
 
-    #XXX: Remove me!
-    def icon(self):
-        return None
-
     def logo(self):
         """Return the appropriate <img> tag for this object's logo.
 
@@ -1155,9 +1151,8 @@ class BranchFormatterAPI(ObjectFormatterAPI):
     def link(self, view_name):
         """A hyperlinked branch icon with the displayname."""
         return (
-            '<a href="%(url)s">'
-            '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(display_name)s</a>' % self._args(view_name))
+            '<a href="%(url)s" class="sprite branch">'
+            '%(display_name)s</a>' % self._args(view_name))
 
     def bzrLink(self, view_name):
         """A hyperlinked branch icon with the bazaar identity."""
