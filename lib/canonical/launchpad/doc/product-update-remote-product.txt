@@ -12,7 +12,7 @@ automatically.
     >>> store.execute("UPDATE Product SET remote_product = 'not-None'")
     <storm...>
 
-    >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from canonical.launchpad.scripts.logger import (
     ...     FakeLogger, QuietFakeLogger)
     >>> from canonical.launchpad.scripts.updateremoteproduct import (
@@ -76,7 +76,7 @@ it's skipped as well.
     ...     def updateByBugTrackerType(self, bugtracker_type):
     ...         self.looped_over_bug_tracker_types.add(bugtracker_type)
 
-    >>> from canonical.launchpad.interfaces.bugtracker import (
+    >>> from lp.bugs.interfaces.bugtracker import (
     ...     SINGLE_PRODUCT_BUGTRACKERTYPES)
     >>> multi_product_trackers = set(
     ...     bugtracker_type for bugtracker_type in BugTrackerType.items
@@ -215,7 +215,7 @@ tracker don't break the run for all bug trackers.
     ...     '42', bugtracker=rt, bug=new_rt_bugtask.bug)
     >>> new_rt_bugtask.bugwatch = new_rt_bugwatch
 
-    >>> from canonical.launchpad.components.externalbugtracker.base import (
+    >>> from lp.bugs.externalbugtracker.base import (
     ...     BugNotFound, BugWatchUpdateError)
     >>> class BrokenOnInitExternalBugTracker(
     ...         FakeExternalBugTracker):

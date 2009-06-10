@@ -74,7 +74,7 @@ from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.bugtask import (
+from lp.bugs.interfaces.bugtask import (
     IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus

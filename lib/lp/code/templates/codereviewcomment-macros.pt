@@ -31,7 +31,7 @@
 
       </div>
       <div class="boardCommentBody codereviewcomment" tal:condition="message">
-        <tal:message replace="structure message/fmt:nice_pre" />
+        <tal:message replace="structure message/fmt:obfuscate-email/fmt:nice_pre" />
         <tal:short-message-view condition="view/message_summary|nothing">
           <tal:long-message condition="view/is_long_message">
             (<a tal:attributes="href comment/fmt:url;

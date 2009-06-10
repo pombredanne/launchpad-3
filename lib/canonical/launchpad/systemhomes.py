@@ -22,7 +22,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.bug import (
+from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet, InvalidBugTargetType)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.distribution import IDistribution

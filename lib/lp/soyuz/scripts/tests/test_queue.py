@@ -22,8 +22,8 @@ from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import (
     LibraryFileAlias, PackageUploadBuild)
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus

@@ -693,7 +693,7 @@ reject it for the BugSubscription.person and
 BugSubscription.subscribed_by attributes.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet, PersonVisibility)
     >>> from canonical.launchpad.database import BugSubscription
