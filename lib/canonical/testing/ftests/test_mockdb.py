@@ -118,43 +118,43 @@ class MockDbTestCase(unittest.TestCase):
     #    self.assertRaises(RetryTest, con.rollback)
 
     # @dont_retry
-    def testMultipleConnections(self):
+    #def testMultipleConnections(self):
         # Ensure that commands issued via different connections
         # maintain their global order.
-        con1 = self.connect()
-        con2 = self.connect()
-        con1.close()
-        con2.close()
-        self.script.store()
+    #    con1 = self.connect()
+    #    con2 = self.connect()
+    #    con1.close()
+    #    con2.close()
+    #    self.script.store()
 
-        # Replay correctly.
-        self.switchToReplayMode()
-        con1 = self.connect()
-        con2 = self.connect()
-        con1.close()
-        con2.close()
+    #    # Replay correctly.
+    #    self.switchToReplayMode()
+    #    con1 = self.connect()
+    #    con2 = self.connect()
+    #    con1.close()
+    #    con2.close()
 
-        # Replay in the wrong order.
-        self.switchToReplayMode()
-        con1 = self.connect()
-        con2 = self.connect()
-        self.assertRaises(RetryTest, con2.close)
+    #    # Replay in the wrong order.
+    #    self.switchToReplayMode()
+    #    con1 = self.connect()
+    #    con2 = self.connect()
+    #    self.assertRaises(RetryTest, con2.close)
 
     # @dont_retry
-    def testConnectionParams(self):
+    #def testConnectionParams(self):
         # Make sure we can correctly connect with different connection parms.
-        for mode in self.modes():
-            for dbuser in ['launchpad', 'testadmin']:
-                connection_string = "%s user=%s" % (
-                        config.database.main_master, dbuser)
-                con = self.connect(connection_string)
-                cur = con.cursor()
-                cur.execute("SHOW session authorization")
-                self.failUnlessEqual(cur.fetchone()[0], dbuser)
+    #    for mode in self.modes():
+    #        for dbuser in ['launchpad', 'testadmin']:
+    #            connection_string = "%s user=%s" % (
+    #                    config.database.main_master, dbuser)
+    #            con = self.connect(connection_string)
+    #            cur = con.cursor()
+    #            cur.execute("SHOW session authorization")
+    #            self.failUnlessEqual(cur.fetchone()[0], dbuser)
 
         # Confirm that unexpected connection parameters raises a RetryTest.
-        self.switchToReplayMode()
-        self.assertRaises(RetryTest, self.connect, "whoops")
+    #    self.switchToReplayMode()
+    #    self.assertRaises(RetryTest, self.connect, "whoops")
 
     # @dont_retry
     def testFailedConnection(self):
@@ -210,35 +210,35 @@ class MockDbTestCase(unittest.TestCase):
                     )
 
     # @dont_retry
-    def testUnexpectedQuery(self):
-        for mode in self.modes():
-            con = self.connect()
-            cur = con.cursor()
-            if mode != 'replay':
-                cur.execute("SELECT name FROM Person WHERE name='sabdfl'")
-            else:
+    #def testUnexpectedQuery(self):
+    #    for mode in self.modes():
+    #        con = self.connect()
+    #        cur = con.cursor()
+    #        if mode != 'replay':
+    #            cur.execute("SELECT name FROM Person WHERE name='sabdfl'")
+    #        else:
                 # Issue an unexpected query in replay mode. A RetryTest
                 # exception should be raised.
-                self.assertRaises(
-                        RetryTest, cur.execute,
-                        "SELECT name FROM Person WHERE name='stub'"
-                        )
+    #            self.assertRaises(
+    #                    RetryTest, cur.execute,
+    #                    "SELECT name FROM Person WHERE name='stub'"
+    #                    )
 
     # @dont_retry
-    def testUnexpectedQueryParameters(self):
-        for mode in self.modes():
-            con = self.connect()
-            cur = con.cursor()
-            query = "SELECT name FROM Person WHERE name=%s"
-            if mode != 'replay':
-                cur.execute(query, ('sabdfl',))
-            else:
+    #def testUnexpectedQueryParameters(self):
+    #    for mode in self.modes():
+    #        con = self.connect()
+    #        cur = con.cursor()
+    #        query = "SELECT name FROM Person WHERE name=%s"
+    #        if mode != 'replay':
+    #            cur.execute(query, ('sabdfl',))
+    #        else:
                 # Issue a query with unexpected bound parameters in replay
                 # mode. A RetryTest should be raised.
-                self.assertRaises(
-                        RetryTest, cur.execute,
-                        query, ('stub',)
-                        )
+    #            self.assertRaises(
+    #                    RetryTest, cur.execute,
+    #                    query, ('stub',)
+    #                    )
 
     # @dont_retry
     def testCommit(self):

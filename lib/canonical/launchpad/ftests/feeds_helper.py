@@ -14,9 +14,13 @@ __all__ = [
     ]
 
 
-import feedvalidator
-from cStringIO import StringIO
 import socket
+original_timeout = socket.getdefaulttimeout()
+import feedvalidator
+if socket.getdefaulttimeout() != original_timeout:
+    # feedvalidator's __init__ uses setdefaulttimeout promiscuously
+    socket.setdefaulttimeout(original_timeout)
+from cStringIO import StringIO
 from textwrap import wrap
 
 from zope.interface import implements, Interface, Attribute
