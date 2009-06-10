@@ -57,6 +57,7 @@ from canonical.launchpad.browser.packagerelationship import *
 from canonical.launchpad.browser.packaging import *
 from lp.registry.browser.peoplemerge import *
 from lp.registry.browser.poll import *
+from canonical.launchpad.browser.productserieslanguage import *
 from lp.soyuz.browser.publishedpackage import *
 from lp.soyuz.browser.publishing import *
 from lp.answers.browser.question import *
