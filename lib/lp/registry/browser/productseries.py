@@ -59,6 +59,7 @@ from canonical.launchpad.interfaces.translationimporter import (
     ITranslationImporter)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
@@ -614,7 +615,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         milestones = [
             milestone.id for milestone in self.released_and_active_milestones]
         if len(milestones) > 0:
-            params = BugTaskSearchParams(self.user, milestone=milestones)
+            params = BugTaskSearchParams(
+                self.user, milestone=any(*milestones))
             all_bugtasks = all_bugtasks.union(
                 list(bugtaskset.search(params)))
         return get_status_counts(all_bugtasks, 'status')
@@ -626,7 +628,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         all_specifications = set(
             list(self.context.all_specifications))
         # Targeted to be fixed in this series.
-        for milestone in self.milestones:
+        for milestone in self.released_and_active_milestones:
             all_specifications = all_specifications.union(
                 list(milestone.specifications))
         return get_status_counts(all_specifications, 'implementation_status')
