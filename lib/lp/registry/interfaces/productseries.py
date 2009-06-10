@@ -19,7 +19,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Title)
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)

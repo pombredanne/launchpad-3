@@ -339,10 +339,11 @@ We'll also create a new test milestone within the "trunk" series:
     >>> print browser.title
     Overview of Mozilla Firefox Series: trunk
 
-    >>> print extract_text(find_portlet(browser.contents,
-    ...                                 'Active milestones'))
-    Active milestones...
-    test-milestone...
+    >>> print extract_text(find_tag_by_id(browser.contents, 'series_trunk'))
+    Version "Codename"               Expected     Released      Summary
+    Mozilla Firefox 0.9.2 ...        Set          2004-10-16    ...
+    Mozilla Firefox test-milestone   2100-08-08   Release now
+    ...
 
     >>> browser.getLink('test-milestone').click()
     >>> print browser.title

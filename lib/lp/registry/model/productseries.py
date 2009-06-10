@@ -22,10 +22,10 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bug import (
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging

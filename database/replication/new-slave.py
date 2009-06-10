@@ -161,13 +161,6 @@ def main():
 
     script += dedent("""\
         } on error { echo 'Failed.'; exit 1; }
-
-        echo 'Waiting for sync.';
-        echo 'This will hang if no slon daemon is running for the new slave';
-        sync (id = @master_node);
-        wait for event (
-            origin = ALL, confirmed = ALL,
-            wait on = @master_node, timeout = 0);
         """)
 
     for set_id in set_ids:

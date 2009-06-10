@@ -81,6 +81,7 @@ class SourcesListEntriesView(LaunchpadView):
         ubuntu_index = 0
         if user_agent is not None:
             ubuntu_index = user_agent.find('Ubuntu/')
+
         if ubuntu_index > 0:
             # Great, the browser is telling us the platform is Ubuntu.
             # Now grab the Ubuntu series/version number:

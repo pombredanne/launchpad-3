@@ -135,7 +135,7 @@ from canonical.launchpad.interfaces.account import AccountStatus
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.bugtask import (
+from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.emailaddress import (
@@ -173,7 +173,7 @@ from lp.registry.interfaces.teammembership import (
 from lp.registry.interfaces.wikiname import IWikiNameSet
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.launchpad import (
@@ -195,7 +195,7 @@ from canonical.launchpad.interfaces.translationrelicensingagreement import (
 from canonical.launchpad.interfaces.translationsperson import (
     ITranslationsPerson)
 
-from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
@@ -2861,6 +2861,16 @@ class PersonView(LaunchpadView, FeedsMixin):
             return ', '.join(sorted(englishnames))
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
+
+    @cachedproperty
+    def has_karma(self):
+        """Does the have karma?"""
+        return bool(self.context.karma_category_caches)
+
+    @cachedproperty
+    def has_expired_karma(self):
+        """Did the user have karm?."""
+        return self.context.latestKarma().count() > 0
 
     @property
     def public_private_css(self):

@@ -33,6 +33,8 @@ of properties:
     archive_link: u'http://.../~cprov/+archive/ppa'
     build_log_url: u'http://.../~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz'
     buildstate: u'Failed to build'
+    can_be_rescored: False
+    can_be_retried: True
     current_source_publication_link: u'http://.../~cprov/+archive/ppa/+sourcepub/27'
     date_first_dispatched: None
     datebuilt: u'2007-07-08T00:00:01+00:00'
@@ -71,3 +73,103 @@ proxied by the webapp.
 
     >>> print builds['entries'][0]['upload_log_url']
     http://launchpad.dev/~cprov/+archive/ppa/+build/26/+files/...
+
+
+Re-trying builds
+================
+
+If a build is in a retry-able state, the retry method can be invoked
+to cause a new build request for that build.  The caller must also have
+permission to retry the build.  See doc/build.txt and
+stories/soyuz/xx-build-record.txt for more information.
+
+    >>> a_build = builds['entries'][0]
+
+Plain users have no permission to call retry:
+
+    >>> print user_webservice.named_post(
+    ...     a_build['self_link'], 'retry')
+    HTTP/1.1 401 Unauthorized
+    ...
+
+Set up some more webservice users:
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> admin_person = getUtility(IPersonSet).getByName('sabdfl')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> logout()
+
+Admin users can call it:
+
+    >>> admin_webservice = webservice_for_person(
+    ...     admin_person, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> print admin_webservice.named_post(
+    ...     a_build['self_link'], 'retry')
+    HTTP/1.1 200 Ok
+    ...
+
+As can cprov who owns the PPA for the build:
+
+    >>> cprov_webservice = webservice_for_person(
+    ...     cprov, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> print cprov_webservice.named_post(
+    ...     a_build['self_link'], 'retry')
+    HTTP/1.1 500 Internal Server Error
+    ...
+    AssertionError: Build ... cannot be retried
+    <BLANKLINE>
+
+but in this case, although he has permission to retry the build, it
+failed because it was already retried by an admin.  This is reflected in the
+can_be_retried property:
+
+    >>> builds = webservice.named_get(
+    ...     source_pub['self_link'], 'getBuilds').jsonBody()
+    >>> print builds['entries'][0]['can_be_retried']
+    False
+
+
+Rescoring builds
+================
+
+When a build is in NEEDSBUILD state, it may be rescored using the 'rescore'
+custom operation.  However, the caller must be a member of the buildd admins
+team.
+
+    >>> print user_webservice.named_post(
+    ...     a_build['self_link'], 'rescore', score=1000)
+    HTTP/1.1 401 Unauthorized
+    ...
+
+The user cprov is a buildd admin.
+
+    >>> login('foo.bar@canonical.com')
+    >>> buildd_admins = getUtility(
+    ...     IPersonSet).getByName('launchpad-buildd-admins')
+    >>> logout()
+
+    >>> cprov.inTeam(buildd_admins)
+    True
+
+    >>> print cprov_webservice.named_post(
+    ...     a_build['self_link'], 'rescore', score=1000)
+    HTTP/1.1 200 Ok
+    ...
+
+If the build cannot be retried, then a 400 code is returned.  Let's
+alter the buildstate to one that cannot be retried:
+
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> build.buildstate = BuildStatus.FAILEDTOUPLOAD
+    >>> logout()
+
+    >>> print cprov_webservice.named_post(
+    ...     a_build['self_link'], 'rescore', score=1000)
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotBeRescored: Build cannot be rescored.
+    <BLANKLINE>
