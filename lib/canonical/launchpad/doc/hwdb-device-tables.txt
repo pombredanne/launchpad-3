@@ -2187,7 +2187,7 @@ By default, only bug reporters are looked up. Sample Person has made
 a hardware report containing the IDE disk Seagate ST3250820NS, and
 he has filed bug 1.
 
-    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_set = getUtility(IBugSet)
     >>> bug_one = bug_set.get(1)
     >>> print bug_one.owner.displayname

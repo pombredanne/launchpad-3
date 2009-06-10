@@ -51,12 +51,15 @@
                 set_schema="canonical.launchpad.interfaces.ISecureBinaryPackagePublishingHistory"/>
         </class>
     </facet>
-    <securedutility
-        class="lp.soyuz.model.archivearch.ArchiveArch"
-        provides="lp.soyuz.interfaces.archivearch.IArchiveArch">
+
+    <!-- ArchiveArch -->
+    <class
+        class="lp.soyuz.model.archivearch.ArchiveArch">
         <allow
-            interface="lp.soyuz.interfaces.archivearch.IArchiveArch"/>
-    </securedutility>
+            interface="lp.soyuz.interfaces.archivearch.IArchiveArch" />
+    </class>
+
+    <!-- ArchiveArchSet -->
     <securedutility
         class="lp.soyuz.model.archivearch.ArchiveArchSet"
         provides="lp.soyuz.interfaces.archivearch.IArchiveArchSet">
@@ -65,7 +68,6 @@
     </securedutility>
     
     <!-- DistroSeriesPackageCache -->
-    
     <class
         class="canonical.launchpad.database.DistroSeriesPackageCache">
         <allow
@@ -388,7 +390,7 @@
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
         provides="canonical.launchpad.interfaces.IPerson"
-        factory="canonical.launchpad.browser.archive_to_person"/>
+        factory="lp.registry.browser.person.archive_to_person"/>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
         provides="canonical.launchpad.webapp.badge.IHasBadges"

@@ -29,7 +29,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.browser.queue import QueueItemsView
@@ -62,7 +62,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
         """Retrieve the DistroSeriesLanguage or a dummy if one it is None."""
-        # We do not want users to see the 'en' potemplate because
+        # We do not want users to see the 'en' pofile because
         # we store the messages we want to translate as English.
         if langcode == 'en':
             raise NotFoundError(langcode)

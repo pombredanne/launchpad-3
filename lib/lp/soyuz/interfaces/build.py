@@ -234,8 +234,8 @@ class IBuildView(Interface):
             description=_("The current source publication for this build.")))
 
     current_component = Attribute(
-        "Component where the ISourcePackageRelease related to "
-        "this build was published.")
+        "Component where the source related to this build was last "
+        "published.")
     title = exported(Text(title=_("Build Title"), required=False))
     changesfile = Attribute("The Build Changesfile object, returns None if "
                             "it is a gina-inserted record.")

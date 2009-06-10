@@ -46,8 +46,9 @@ class ProductRelease(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
-    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
-                            orderBy='-date_uploaded')
+    files = SQLMultipleJoin(
+        'ProductReleaseFile', joinColumn='productrelease',
+        orderBy='-date_uploaded', prejoins=['productrelease'])
 
     # properties
     @property
@@ -244,4 +245,4 @@ class ProductReleaseSet(object):
             """ProductReleaseFile.productrelease IN %s""" % (
             sqlvalues([release.id for release in releases])),
             orderBy='-date_uploaded',
-            prejoins=['libraryfile'])
+            prejoins=['libraryfile', 'libraryfile.content', 'productrelease'])

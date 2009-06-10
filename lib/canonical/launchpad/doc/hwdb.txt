@@ -533,7 +533,7 @@ Searching for other statuses is possible too.
 HWDB submissions can be linked to bugs. These links are created by
 IHWSubmissionBugSet.create().
 
-    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> submission_bug_set = getUtility(IHWSubmissionBugSet)
