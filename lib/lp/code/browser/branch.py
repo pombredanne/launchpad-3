@@ -51,8 +51,8 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)

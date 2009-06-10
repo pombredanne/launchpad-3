@@ -295,7 +295,7 @@ An IBugNomination.
 == Remote Bug Trackers and Remote Bugs ==
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> from canonical.launchpad.browser.bugtracker import RemoteBug
+    >>> from lp.bugs.browser.bugtracker import RemoteBug
 
 An IBugTrackerSet.
 
