@@ -12,10 +12,8 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeImportReviewStatus,
-    RevisionControlSystems)
-from lp.code.interfaces.codeimportevent import (
-    CodeImportEventDataType, CodeImportEventType)
+    BranchSubscriptionNotificationLevel, CodeImportEventDataType,
+    CodeImportEventType, CodeImportReviewStatus, RevisionControlSystems)
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import canonical_url

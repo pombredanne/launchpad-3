@@ -23,7 +23,7 @@ from twisted.trial.unittest import TestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.enums import CodeImportReviewStatus
+from lp.code.enums import CodeImportResultStatus, CodeImportReviewStatus
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     CodeImportSourceDetails, get_default_bazaar_branch_store)
@@ -45,7 +45,6 @@ from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
-from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):

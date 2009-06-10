@@ -21,15 +21,15 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.enums import CodeImportReviewStatus
+from lp.code.enums import (
+    CodeImportJobState, CodeImportMachineState, CodeImportResultStatus,
+    CodeImportReviewStatus)
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJob, ICodeImportJobSet,
+    ICodeImportJob, ICodeImportJobSet,
     ICodeImportJobSetPublic, ICodeImportJobWorkflow)
-from lp.code.interfaces.codeimportmachine import (
-    CodeImportMachineState, ICodeImportMachineSet)
-from lp.code.interfaces.codeimportresult import (
-    CodeImportResultStatus, ICodeImportResultSet)
+from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
+from lp.code.interfaces.codeimportresult import  ICodeImportResultSet
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.registry.interfaces.person import validate_public_person

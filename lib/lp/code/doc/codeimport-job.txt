@@ -352,7 +352,7 @@ The details are tested in unit tests in
     >>> new_events = NewEvents()
     >>> finished_job_id = running_job.id
     >>> finished_date_due = running_job.date_due
-    >>> from lp.code.interfaces.codeimportresult import CodeImportResultStatus
+    >>> from lp.code.enums import CodeImportResultStatus
     >>> workflow.finishJob(
     ...     running_job, CodeImportResultStatus.SUCCESS, None)
 
