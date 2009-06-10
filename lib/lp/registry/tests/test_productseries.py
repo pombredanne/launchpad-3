@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, logout, syncUpdate
 from lp.registry.model.productseries import ProductSeriesSet
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer

@@ -42,7 +42,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.code.bzr import (
     BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
     REPOSITORY_FORMAT_UPGRADE_PATH)
-from lp.code.enum import (
+from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus, BranchType)
 from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (

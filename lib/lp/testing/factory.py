@@ -65,7 +65,8 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
-from lp.code.interfaces.branch import BranchType, UnknownBranchTypeError
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import UnknownBranchTypeError
 from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace

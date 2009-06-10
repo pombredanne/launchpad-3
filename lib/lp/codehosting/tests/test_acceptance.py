@@ -29,7 +29,7 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.testing import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
 
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 
 

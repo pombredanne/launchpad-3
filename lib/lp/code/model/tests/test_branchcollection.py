@@ -14,10 +14,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import (
     GenericBranchCollection)
-from lp.registry.model.product import Product
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.interfaces.branch import (
-    BranchLifecycleStatus, BranchType)
+from lp.code.enums import BranchLifecycleStatus, BranchType
 from lp.code.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
 from lp.code.interfaces.branchmergeproposal import (

@@ -20,10 +20,11 @@ from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from lp.code.enums import BranchType
 from lp.codehosting.vfs import get_lp_server
 from lp.services.job.runner import JobRunner
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, BranchType,
+    BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel, CodeReviewVote)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (

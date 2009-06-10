@@ -54,7 +54,7 @@ from canonical.launchpad.fields import (
     ParticipatingPersonChoice, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
-from lp.code.enum import (
+from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeControlStatus,
     UICreatableBranchType,

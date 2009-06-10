@@ -45,7 +45,7 @@ from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposal, WrongBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import (

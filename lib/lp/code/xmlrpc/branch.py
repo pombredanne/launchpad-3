@@ -20,8 +20,9 @@ from lazr.uri import URI
 from canonical.config import config
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from lp.code.enums import BranchType
 from lp.code.interfaces.branch import (
-    BranchCreationException, BranchCreationForbidden, BranchType, IBranch)
+    BranchCreationException, BranchCreationForbidden, IBranch)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branch import NoSuchBranch

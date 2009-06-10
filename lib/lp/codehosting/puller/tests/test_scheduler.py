@@ -26,7 +26,7 @@ from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing.factory import ObjectFactory
 from canonical.launchpad.webapp import errorlog

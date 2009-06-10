@@ -30,7 +30,7 @@ from lp.code.event.branchmergeproposal import (
     ReviewerNominatedEvent)
 from canonical.launchpad.ftests import (
     ANONYMOUS, import_secret_test_key, login, logout, syncUpdate)
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchmergeproposal import (
     BadStateTransition, BranchMergeProposalStatus,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,

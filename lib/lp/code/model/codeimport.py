@@ -33,7 +33,7 @@ from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.codeimport import (
     CodeImportReviewStatus, ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet

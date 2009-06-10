@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.model.branchtarget import (
     check_default_stacked_on,
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket

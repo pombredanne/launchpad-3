@@ -16,10 +16,10 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.code.model.branchnamespace import (
     PackageNamespace, PersonalNamespace, ProductNamespace)
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.code.enums import BranchLifecycleStatus, BranchType,
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus, BranchType,
-    NoSuchBranch)
+    BranchCreatorNotOwner, BranchExists, NoSuchBranch)
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespacePolicy, IBranchNamespace,
     IBranchNamespaceSet, lookup_branch_namespace, InvalidNamespace)

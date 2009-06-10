@@ -38,11 +38,11 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
+from lp.code.bzr import BranchFormat, RepositoryFormat
+from lp.code.enums import BranchLifecycleStatus, BranchType
 from lp.code.interfaces.branch import (
-    BranchCannotBePrivate, BranchCannotBePublic, BranchType,
+    BranchCannotBePrivate, BranchCannotBePublic,
     CannotDeleteBranch)
-from lp.code.interfaces.branch import (BranchFormat, RepositoryFormat,
-    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -50,8 +50,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.branch import (
-    BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
