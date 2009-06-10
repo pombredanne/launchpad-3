@@ -325,14 +325,14 @@ For bugs, fmt:link takes to the bug redirect page.
 
     >>> bug = getUtility(IBugSet).get(1)
     >>> test_tales("bug/fmt:link", bug=bug)
-    u'<a href=".../bugs/1">Bug #1: Firefox does not support SVG</a>'
+    u'<a href=".../bugs/1" class="sprite bug">Bug #1: Firefox does not support SVG</a>'
 
 For bugtasks, fmt:link shows the severity bug icon, and links to the
 appropriate project's bug.
 
     >>> bugtask = bug.bugtasks[0]
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1"><span alt="(low)" title="Low importance" class="sprite bug-low" />&nbsp;Bug #1: Firefox does not support SVG</a>'
+    u'<a href=".../firefox/+bug/1" class="sprite bug-low">Bug #1: Firefox does not support SVG</a>'
 
 Bug titles may contain markup (when describing issue regarding markup).
 Their titles are escaped so that they display correctly. This also
@@ -342,10 +342,10 @@ title might be interpreted by the browser.
     >>> login('test@canonical.com')
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
-    u'<a href=".../bugs/1">Bug #1: Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+    u'<a href=".../bugs/1" class="sprite bug">Bug #1: Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1"><span alt="(low)" title="Low importance" class="sprite bug-low" />&nbsp;Bug #1: Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+    u'<a href=".../firefox/+bug/1" class="sprite bug-low">Bug #1: Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 
 === Branch subscriptions ===
@@ -398,7 +398,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> bug = factory.makeBug()
     >>> bugbranch = bug.addBranch(branch, branch.owner)
     >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
-    u'<a href="...+bug..."><span ... />&nbsp;Bug #...</a>'
+    u'<a href="...+bug...">Bug #...</a>'
 
 
 === Code imports ===
@@ -425,7 +425,7 @@ to support the branch deletion code.
     >>> login('test@canonical.com')
     >>> specification = factory.makeSpecification()
     >>> test_tales("specification/fmt:link", specification=specification)
-    u'<a...<span ... class="sprite blueprint-undefined" />&nbsp;...</a>'
+    u'<a...<span ... class="sprite blueprint-undefined" />...</a>'
 
 
 === Blueprint branches ===
@@ -435,14 +435,14 @@ to support the branch deletion code.
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
     ...     specification_branch=specification_branch)
-    u'<a...<span ... class="sprite blueprint-undefined" />&nbsp;...</a>'
+    u'<a...<span ... class="sprite blueprint-undefined" />...</a>'
 
 
 === Projects ===
 
     >>> product = factory.makeProduct()
     >>> test_tales('product/fmt:link', product=product)
-    u'<a href=... class="sprite product">&nbsp;...</a>'
+    u'<a href=... class="sprite product">...</a>'
 
 
 === Questions ===
@@ -450,7 +450,7 @@ to support the branch deletion code.
     >>> from canonical.launchpad.interfaces import IQuestionSet
     >>> question = getUtility(IQuestionSet).get(1)
     >>> test_tales("question/fmt:link", question=question)
-    u'<a...<img ... src="/@@/question" />&nbsp;1:...</a>'
+    u'<a...<img ... src="/@@/question" />1:...</a>'
 
 
 == The fmt: namespace for specially formatted object info ===

@@ -550,7 +550,6 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return None
 
-    #def icon_url(self, rootsite):
     def _get_custom_icon(self):
         """Return the URL for this object's icon."""
         context = self._context
@@ -1071,12 +1070,12 @@ class CustomizableFormatter(ObjectFormatterAPI):
                 values[key] = cgi.escape(value)
         return self._link_summary_template % values
 
-    def _get_icon(self):
+    def sprite_css(self):
         """Retrieve the icon for the _context, if any.
 
-        :return: The icon HTML or None if no icon is available.
+        :return: The icon css or None if no icon is available.
         """
-        return queryAdapter(self._context, IPathAdapter, 'image').icon()
+        return queryAdapter(self._context, IPathAdapter, 'image').sprite_css()
 
     def link(self, view_name):
         """Return html including a link, description and icon.
@@ -1086,19 +1085,21 @@ class CustomizableFormatter(ObjectFormatterAPI):
         for the icon, self._should_link to determine whether to link, and
         self.url() to generate the url.
         """
-        html = self._get_icon()
-        if html is None:
-            html = ''
+        sprite = self.sprite_css()
+        if sprite is None:
+            css = ''
         else:
-            html += '&nbsp;'
-        html += self._make_link_summary()
+            css = ' class="' + sprite + '"'
+
+        summary = self._make_link_summary()
         if check_permission(self._link_permission, self._context):
             url = self.url(view_name)
         else:
             url = ''
         if url:
-            html = '<a href="%s">%s</a>' % (url, html)
-        return html
+            return '<a href="%s"%s>%s</a>' % (url, css, summary)
+        else:
+            return summary
 
 
 class PillarFormatterAPI(CustomizableFormatter):
