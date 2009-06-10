@@ -2877,4 +2877,9 @@
     <browser:menus
         module="lp.registry.browser.distributionmirror"
         classes="DistributionMirrorOverviewMenu" />
+    <browser:page
+        name="+macros"
+        for="lp.registry.interfaces.productrelease.IProductReleaseFile"
+        permission="zope.Public"
+        template="../templates/productreleasefile-macros.pt" />
 </configure>
