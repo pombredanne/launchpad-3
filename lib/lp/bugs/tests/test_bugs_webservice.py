@@ -12,7 +12,7 @@ from simplejson import dumps
 
 from zope.component import getMultiAdapter
 
-from canonical.launchpad.browser.bugtask import get_comments_for_bugtask
+from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from canonical.launchpad.ftests import login
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
