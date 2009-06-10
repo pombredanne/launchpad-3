@@ -161,8 +161,7 @@ Private teams can have branch visibility policies.
     ...     for item in context.getBranchVisibilityTeamPolicies():
     ...         print "%s: %s" % (teamname(item.team), item.rule.title)
 
-    >>> from lp.code.interfaces.branchvisibilitypolicy import (
-    ...     BranchVisibilityRule)
+    >>> from lp.code.enums import BranchVisibilityRule
     >>> from lp.registry.interfaces.product import IProductSet
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> print_team_policies(evolution)

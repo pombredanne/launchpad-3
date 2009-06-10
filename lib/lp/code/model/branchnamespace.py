@@ -25,7 +25,7 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchVisibilityRule, CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner, BranchExists,
@@ -34,8 +34,6 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.branchvisibilitypolicy import (
-    BranchVisibilityRule)
 from lp.registry.interfaces.distribution import (
     IDistributionSet, NoSuchDistribution)
 from lp.registry.interfaces.distroseries import (

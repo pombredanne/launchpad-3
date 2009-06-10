@@ -41,7 +41,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.enums import (
     BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
-    CodeReviewNotificationLevel)
+    BranchVisibilityRule, CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     CannotDeleteBranch)
@@ -61,7 +61,6 @@ from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
 
 
 class TestCodeImport(TestCase):
