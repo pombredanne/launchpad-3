@@ -85,8 +85,7 @@ recent branch merge proposals first.
     ...     target_branch=target_branch, dependent_branch=scanned_branch)
     >>> proposal = proposal.resubmit(proposal.registrant)
     >>> proposal.rejectBranch(sample_person, 'some-revision')
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchMergeProposalStatus)
+    >>> from lp.code.enums import BranchMergeProposalStatus
     >>> proposal = factory.makeBranchMergeProposal(
     ...     target_branch=target_branch, dependent_branch=scanned_branch,
     ...     set_state=BranchMergeProposalStatus.MERGED)
@@ -136,7 +135,6 @@ recent branch merge proposals first.
 
 A branch merge proposal can be in one of several states:
 
-    >>> from canonical.launchpad.interfaces import BranchMergeProposalStatus
     >>> for state in BranchMergeProposalStatus:
     ...     print state.title
     Work in progress

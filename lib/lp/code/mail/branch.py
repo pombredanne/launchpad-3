@@ -6,7 +6,7 @@ __metaclass__ = type
 
 
 from lp.code.adapters.branch import BranchDelta
-from lp.code.interfaces.branchsubscription import (
+from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.mail import format_address

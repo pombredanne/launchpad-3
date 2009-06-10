@@ -15,10 +15,7 @@ from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalView, BranchMergeProposalChangeStatusView,
     BranchMergeProposalMergedView, BranchMergeProposalVoteView)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
-from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote)
+from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
 from canonical.launchpad.database.diff import StaticDiff

@@ -9,9 +9,8 @@ the things on Launchpad.
     >>> from datetime import datetime
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import BranchType, IBranch
-    >>> from canonical.launchpad.ftests import (
-    ...     login, logout, ANONYMOUS)
+    >>> from lp.code.enums import BranchType
+    >>> from lp.code.interfaces.branch import IBranch
     >>> from lazr.restful.marshallers import DateTimeFieldMarshaller
 
 To make this document a little more readable, we'll have to define some

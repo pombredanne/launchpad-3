@@ -202,7 +202,7 @@ by any user.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from lp.code.interfaces.branchsubscription import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     ...     CodeReviewNotificationLevel)
     >>> login('foo.bar@canonical.com')
