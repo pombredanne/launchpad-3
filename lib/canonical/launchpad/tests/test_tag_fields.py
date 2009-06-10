@@ -9,8 +9,10 @@ from zope.schema.interfaces import ConstraintNotSatisfied
 from canonical.launchpad.fields import SearchTag, Tag
 from canonical.testing import LaunchpadFunctionalLayer
 
+from lp.testing import TestCase
 
-class TestTag(unittest.TestCase):
+
+class TestTag(TestCase):
 
     layer = LaunchpadFunctionalLayer
     field = Tag()
@@ -19,10 +21,10 @@ class TestTag(unittest.TestCase):
         # Tag allows names all in lowercase, starting with any letter
         # of the English alphabet, followed by 1 or more letters,
         # numbers or minuses.
-        self.assertEqual(self.field.validate(u'fred'), None)
-        self.assertEqual(self.field.validate(u'one-two'), None)
-        self.assertEqual(self.field.validate(u'one-2'), None)
-        self.assertEqual(self.field.validate(u'one-2-3---5-'), None)
+        self.assertIs(None, self.field.validate(u'fred'))
+        self.assertIs(None, self.field.validate(u'one-two'))
+        self.assertIs(None, self.field.validate(u'one-2'))
+        self.assertIs(None, self.field.validate(u'one-2-3---5-'))
 
     def test_too_short(self):
         # Tag rejects tags that are less than 2 characters long.
@@ -75,14 +77,14 @@ class TestSearchTag(TestTag):
     def test_negated_search_form(self):
         # SearchTag allows tags beginning with minuses. This form is
         # reserved to mean "not <tag>".
-        self.assertEqual(self.field.validate(u'-fred'), None)
+        self.assertIs(None, self.field.validate(u'-fred'))
 
     def test_wildcard(self):
         # SearchTag allows a solitary asterisk, or an asterisk
         # preceeded by a minus. This means "any tag" or "not any
         # tag".
-        self.assertEqual(self.field.validate(u'*'), None)
-        self.assertEqual(self.field.validate(u'-*'), None)
+        self.assertIs(None, self.field.validate(u'*'))
+        self.assertIs(None, self.field.validate(u'-*'))
 
     def test_wildcard_elsewhere(self):
         # Asterisks are not allowed to appear anywhere else in a tag.
