@@ -159,7 +159,7 @@
             permission="launchpad.View"/>
     </facet>
     <adapter
-         factory="canonical.launchpad.browser.bugcomment.BugCommentXHTMLRepresentation"
+         factory="lp.bugs.browser.bugcomment.BugCommentXHTMLRepresentation"
          name="lazr.restful.EntryResource"
         />
     <browser:url
