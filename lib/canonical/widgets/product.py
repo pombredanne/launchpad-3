@@ -231,10 +231,11 @@ class LicenseWidget(CheckBoxMatrixWidget):
     allow_pending_license = False
 
     def textForValue(self, term):
+        """See `ItemsWidgetBase`."""
         # This will return just the DBItem's text.  We want to wrap that text
         # in the URL to the license, which is stored in the DBItem's
         # description.
-        value = LicenseWidget.textForValue(self, term)
+        value = CheckBoxMatrixWidget.textForValue(self, term)
         if term.value.url is None:
             # There's no link.
             return value
@@ -242,7 +243,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
             return '<a href="%s">%s</a>' % (term.value.url, value)
 
     def __call__(self):
-        self.checkbox_matrix = LicenseWidget.__call__(self)
+        self.checkbox_matrix = CheckBoxMatrixWidget.__call__(self)
         return self.template()
 
 
