@@ -143,7 +143,7 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     summary = exported(
         NoneableDescription(title=_("Summary"),
              description=_('A single paragraph that explains the goals of '
-                           'of this series, and who are the intended users. '
+                           'of this series and the intended users. '
                            'For example: "The 2.0 series of Apache '
                            'represents the current stable series, '
                            'and is recommended for all new deployments".'),

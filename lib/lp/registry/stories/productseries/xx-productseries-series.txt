@@ -23,7 +23,7 @@ Each project has a page that lists the status of all its series.
     Mozilla Firefox timeline
 
 Each series, the status, milestones, releases, bugs and blueprints are
-listed
+listed.
 
     >>> content = find_main_content(anon_browser.contents)
     >>> series_trunk = find_tag_by_id(content, 'series-trunk')
@@ -40,7 +40,7 @@ it is highlighted.
     >>> print series_trunk['class']
     highlighted
 
-The 1.0 is not the focus of development, it is active, so it is not
+The 1.0 series is not the focus of development, it is active, so it is not
 highlighted.
 
     >>> series_1_0 = find_tag_by_id(content, 'series-1-0')

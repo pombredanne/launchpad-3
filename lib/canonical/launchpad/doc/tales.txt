@@ -772,7 +772,8 @@ if the start of the string is not a letter.
     >>> test_tales('foo/fmt:css-id', foo='1.0.1_series')
     'j1-0-1-series'
 
-An optional prefix for the can be added to the path. It too will be escaped.
+An optional prefix for the if can be added to the path. It too will
+be escaped.
 
     >>> test_tales('foo/fmt:css-id/series-', foo='1.0.1_series')
     'series-1-0-1-series'
