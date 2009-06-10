@@ -44,7 +44,7 @@ class PPAReportScript(LaunchpadScript):
         self.parser.add_option(
             '-t', '--quota-threshold', dest='quota_threshold',
             action='store', type=float, default=80,
-            help='Quota threshold percentage, defaults to 80 %')
+            help='Quota threshold percentage, defaults to %default%')
 
         self.parser.add_option(
             '--gen-over-quota', action='store_true', default=False,

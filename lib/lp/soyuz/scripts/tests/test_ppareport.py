@@ -6,6 +6,7 @@ __metaclass__ = type
 import os
 from StringIO import StringIO
 import shutil
+import tempfile
 import unittest
 
 from canonical.config import config
@@ -252,7 +253,8 @@ class TestPPAReport(unittest.TestCase):
     def testOutput(self):
         # When requested in the command-line the report output is
         # stored correctly in the specified file.
-        output_path = '/tmp/report.output'
+        unused_fd, output_path = tempfile.mkstemp()
+        os.close(unused_fd)
         reporter = self.getReporter(
             gen_missing_repos=True, output=output_path)
         reporter.main()
