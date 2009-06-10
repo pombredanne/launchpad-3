@@ -212,7 +212,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.browser.BugTaskListingItem"
+        for="lp.bugs.browser.bugtask.BugTaskListingItem"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskListingItemImageDisplayAPI"
         name="image"

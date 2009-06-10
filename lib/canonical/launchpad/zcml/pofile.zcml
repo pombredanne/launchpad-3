@@ -26,7 +26,7 @@
         factory="canonical.launchpad.database.POFileToChangedFromPackagedAdapter" />
 
     <browser:navigation
-        module="canonical.launchpad.browser"
+        module="canonical.launchpad.browser.pofile"
         classes="POFileNavigation"
         />
 
@@ -50,7 +50,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
-        class="canonical.launchpad.browser.POFileView"
+        class="canonical.launchpad.browser.pofile.POFileView"
         layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
             name="+index"
@@ -76,7 +76,7 @@
     <browser:page
         name="+upload"
         permission="launchpad.Edit"
-        class="canonical.launchpad.browser.POFileUploadView"
+        class="canonical.launchpad.browser.pofile.POFileUploadView"
         for="canonical.launchpad.interfaces.IPOFile"
         template="../templates/pofile-upload.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"
@@ -86,7 +86,7 @@
         name="+translate"
         for="canonical.launchpad.interfaces.IPOFile"
         facet="overview"
-        class="canonical.launchpad.browser.TranslateRedirectView"
+        class="canonical.launchpad.browser.translations.TranslateRedirectView"
         permission="zope.Public"
         />
 
@@ -95,7 +95,7 @@
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         template="../templates/pofile-translate.pt"
-        class="canonical.launchpad.browser.POFileTranslateView"
+        class="canonical.launchpad.browser.pofile.POFileTranslateView"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
@@ -104,7 +104,7 @@
         for="canonical.launchpad.interfaces.IPOFile"
         permission="launchpad.AnyPerson"
         template="../templates/pofile-export.pt"
-        class="canonical.launchpad.browser.POExportView"
+        class="canonical.launchpad.browser.pofile.POExportView"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
@@ -113,7 +113,7 @@
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         template="../templates/pofile-filter.pt"
-        class="canonical.launchpad.browser.POFileFilteredView"
+        class="canonical.launchpad.browser.pofile.POFileFilteredView"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
