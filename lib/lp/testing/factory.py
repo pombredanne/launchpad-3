@@ -67,7 +67,8 @@ from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel)
+    BranchType, CodeImportReviewStatus, CodeReviewNotificationLevel,
+    RevisionControlSystems)
 from lp.code.interfaces.branch import UnknownBranchTypeError
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
@@ -77,8 +78,6 @@ from lp.code.interfaces.codeimportmachine import (
     CodeImportMachineState, ICodeImportMachineSet)
 from lp.code.interfaces.codeimportresult import (
     CodeImportResultStatus, ICodeImportResultSet)
-from lp.code.interfaces.codeimport import (
-    CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)

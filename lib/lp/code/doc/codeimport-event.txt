@@ -106,7 +106,7 @@ CodeImportEvent, we need to use the CodeImport constructor directly.
 
 First we create a Subversion import.
 
-    >>> from canonical.launchpad.interfaces import RevisionControlSystems
+    >>> from lp.code.enums import RevisionControlSystems
     >>> svn_url = 'svn://svn.example.com/trunk'
     >>> svn_import = new_code_import('svn-trunk',
     ...     rcs_type=RevisionControlSystems.SVN, svn_branch_url=svn_url)
@@ -202,7 +202,7 @@ state of the code import.
 
 Then changes can be applied.
 
-    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
+    >>> from lp.code.enums import CodeImportReviewStatus
     >>> svn_import.review_status = CodeImportReviewStatus.REVIEWED
 
 After applying changes, the newModify method can create an event that

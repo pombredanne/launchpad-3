@@ -10,10 +10,10 @@ from zope.component import getUtility
 
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template)
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeImportReviewStatus,
-    ILaunchpadCelebrities)
-from lp.code.interfaces.codeimport import RevisionControlSystems
+    RevisionControlSystems)
 from lp.code.interfaces.codeimportevent import (
     CodeImportEventDataType, CodeImportEventType)
 from lp.registry.interfaces.person import IPerson

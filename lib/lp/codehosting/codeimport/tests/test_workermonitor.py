@@ -23,6 +23,7 @@ from twisted.trial.unittest import TestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.code.enums import CodeImportReviewStatus
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     CodeImportSourceDetails, get_default_bazaar_branch_store)
@@ -37,7 +38,7 @@ from canonical.config import config
 from canonical.launchpad.database import CodeImport, CodeImportJob
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
-    CodeImportReviewStatus, ICodeImportJobSet, ICodeImportJobWorkflow,
+    ICodeImportJobSet, ICodeImportJobWorkflow,
     ICodeImportSet)
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import (

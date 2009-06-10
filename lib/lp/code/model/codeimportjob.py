@@ -21,7 +21,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.interfaces.codeimport import CodeImportReviewStatus
+from lp.code.enums import CodeImportReviewStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJob, ICodeImportJobSet,

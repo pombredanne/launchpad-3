@@ -148,7 +148,7 @@ handled by the CodeImport.updateFromData method.
 When the review status an import changes to REVIEWED, an associated job
 is created.
 
-    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
+    >>> from lp.code.enums import CodeImportReviewStatus
     >>> unproxied_new_import = removeSecurityProxy(new_import)
     >>> unproxied_new_import.review_status = CodeImportReviewStatus.REVIEWED
     >>> new_job = workflow.newJob(new_import)

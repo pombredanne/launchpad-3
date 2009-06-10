@@ -12,7 +12,9 @@ __all__ = [
     'BranchSubscriptionNotificationLevel',
     'BranchType',
     'BranchVisibilityRule',
+    'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
+    'RevisionControlSystems',
     'TeamBranchVisibilityRule',
     'UICreatableBranchType',
     ]
@@ -363,3 +365,68 @@ class TeamBranchVisibilityRule(EnumeratedType):
     use_template(BranchVisibilityRule, exclude='FORBIDDEN')
 
 
+class RevisionControlSystems(DBEnumeratedType):
+    """Revision Control Systems
+
+    Bazaar brings code from a variety of upstream revision control
+    systems into bzr. This schema documents the known and supported
+    revision control systems.
+    """
+
+    CVS = DBItem(1, """
+        Concurrent Versions System
+
+        Imports from CVS via CSCVS.
+        """)
+
+    SVN = DBItem(2, """
+        Subversion
+
+        Imports from SVN using CSCVS.
+        """)
+
+    BZR_SVN = DBItem(3, """
+        Subversion via bzr-svn
+
+        Imports from SVN using bzr-svn.
+        """)
+
+    GIT = DBItem(4, """
+        Git
+
+        Imports from Git using bzr-git.
+        """)
+
+
+class CodeImportReviewStatus(DBEnumeratedType):
+    """CodeImport review status.
+
+    Before a code import is performed, it is reviewed. Only reviewed imports
+    are processed.
+    """
+
+    NEW = DBItem(1, """Pending Review
+
+        This code import request has recently been filed and has not
+        been reviewed yet.
+        """)
+
+    INVALID = DBItem(10, """Invalid
+
+        This code import will not be processed.
+        """)
+
+    REVIEWED = DBItem(20, """Reviewed
+
+        This code import has been approved and will be processed.
+        """)
+
+    SUSPENDED = DBItem(30, """Suspended
+
+        This code import has been approved, but it has been suspended
+        and is not processed.""")
+
+    FAILING = DBItem(40, """Failing
+
+        The code import is failing for some reason and is no longer being
+        attempted.""")

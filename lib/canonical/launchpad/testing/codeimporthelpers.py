@@ -17,10 +17,9 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.ftests import sync
-from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportReviewStatus)
+from lp.code.enums import CodeImportJobState, CodeImportReviewStatus
+from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 from lp.testing import time_counter

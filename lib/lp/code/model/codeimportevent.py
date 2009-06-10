@@ -25,7 +25,7 @@ from lp.code.interfaces.codeimportevent import (
     ICodeImportEventSet, ICodeImportEventToken)
 from lp.code.interfaces.codeimportmachine import (
     CodeImportMachineOfflineReason)
-from lp.code.interfaces.codeimport import RevisionControlSystems
+from lp.code.enums import RevisionControlSystems
 from lp.registry.interfaces.person import validate_public_person
 
 
