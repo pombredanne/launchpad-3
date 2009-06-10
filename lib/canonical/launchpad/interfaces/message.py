@@ -25,7 +25,7 @@ from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.registry.interfaces.person import IPerson

@@ -29,7 +29,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.browser.queue import QueueItemsView

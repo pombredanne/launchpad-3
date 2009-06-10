@@ -184,7 +184,7 @@ is widely available:
 
     >>> print frog.status
     Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
-        RELEASE [cprov]
+        RELEASE [cprov/ppa]
 
 Accessing the view for $builder/+index as a Foo Bar, which has
 launchpad.View permission on the target archive of the 'currentjob',
@@ -211,7 +211,7 @@ all the 'private' information is exposed.
 
     >>> print admin_view.context.status
     Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
-        RELEASE [cprov]
+        RELEASE [cprov/ppa]
 
 When accessing the same view as a unprivileged user, No-Priv, the
 sensitive information is hidden (the context class is 'cloaked', see

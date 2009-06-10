@@ -19,8 +19,8 @@ from lazr.restful.declarations import (
     rename_parameters_as)
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
