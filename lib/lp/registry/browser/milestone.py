@@ -14,6 +14,7 @@ __all__ = [
     'MilestoneSetNavigation',
     ]
 
+
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice
@@ -32,32 +33,29 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import DateWidget
 
-from lp.registry.browser import RegistryDeleteViewMixin
+from lp.registry.browser import get_status_counts, RegistryDeleteViewMixin
 from lp.registry.browser.product import ProductDownloadFileMixin
 
 
 class MilestoneSetNavigation(GetitemNavigation):
-
+    """The navigation to traverse to milestones."""
     usedfor = IMilestoneSet
 
 
-# XXX: jamesh 2005-12-14:
-# This class is required in order to make use of a side effect of
-# Navigation.publishTraverse: adding context objects to
-# request.traversed_objects.
 class MilestoneNavigation(Navigation):
-
+    """The navigation to traverse to a milestone."""
     usedfor = IMilestone
 
 
 class MilestoneContextMenu(ContextMenu):
-
+    """The menu for this milestone."""
     usedfor = IMilestone
 
-    links = ['edit', 'subscribe', 'create_release', 'view_release']
+    links = ['edit', 'subscribe', 'create_release']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
+        """The link to edit this milestone."""
         text = 'Change details'
         # ProjectMilestones are virtual milestones and do not have
         # any properties which can be edited.
@@ -67,30 +65,22 @@ class MilestoneContextMenu(ContextMenu):
             '+edit', text, icon='edit', summary=summary, enabled=enabled)
 
     def subscribe(self):
+        """The link to subscribe to bug mail."""
         enabled = not IProjectMilestone.providedBy(self.context)
         return Link('+subscribe', 'Subscribe to bug mail',
                     icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def create_release(self):
+        """The link to create a release for this milestone."""
         text = 'Create release'
+        summary = 'Create a release from this milestone'
         # Releases only exist for products.
         # A milestone can only have a single product release.
         enabled = (not IProjectMilestone.providedBy(self.context)
                    and self.context.product_release is None)
-        return Link('+addrelease', text, icon='add', enabled=enabled)
-
-    def view_release(self):
-        text = 'View release'
-        # Releases only exist for products.
-        if (not IProjectMilestone.providedBy(self.context)
-            and self.context.product_release is not None):
-            enabled = True
-            url = canonical_url(self.context.product_release)
-        else:
-            enabled = False
-            url = '.'
-        return Link(url, text, enabled=enabled)
+        return Link(
+            '+addrelease', text, summary, icon='add', enabled=enabled)
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu):
@@ -134,6 +124,14 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     def getReleases(self):
         """See `ProductDownloadFileMixin`."""
         return set([self.release])
+
+    @cachedproperty
+    def download_files(self):
+        """The release's files as DownloadFiles."""
+        if self.release is None or self.release.files.count() == 0:
+            return None
+        return [self.getDownloadFile(file_, self.release)
+                for file_ in self.release.files]
 
     # Listify and cache the specifications, ProductReleaseFiles and bugtasks
     # to avoid making the same query over and over again when evaluating in
@@ -200,6 +198,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             return '<strong>%d bugs</strong>' % count
 
     @property
+    def bugtask_status_counts(self):
+        """A list StatusCounts summarising the targeted bugtasks."""
+        return get_status_counts(self.bugtasks, 'status')
+
+    @property
     def specification_count_text(self):
         """The formatted count of specifications for this milestone."""
         count = len(self.specifications)
@@ -207,6 +210,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             return '<strong>1 blueprint</strong>'
         else:
             return '<strong>%d blueprints</strong>' % count
+
+    @property
+    def specification_status_counts(self):
+        """A list StatusCounts summarising the targeted specification."""
+        return get_status_counts(self.specifications, 'implementation_status')
 
     @cachedproperty
     def total_downloads(self):
@@ -240,7 +248,7 @@ class MilestoneAddView(LaunchpadFormView):
     @action(_('Register Milestone'), name='register')
     def register_action(self, action, data):
         """Use the newMilestone method on the context to make a milestone."""
-        milestone = self.context.newMilestone(
+        self.context.newMilestone(
             name=data.get('name'),
             code_name=data.get('code_name'),
             dateexpected=data.get('dateexpected'),
@@ -249,10 +257,12 @@ class MilestoneAddView(LaunchpadFormView):
 
     @property
     def action_url(self):
+        """See `LaunchpadFormView`."""
         return "%s/+addmilestone" % canonical_url(self.context)
 
     @property
     def cancel_url(self):
+        """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
 
@@ -314,6 +324,7 @@ class MilestoneEditView(LaunchpadEditFormView):
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
+        """Update the milestone."""
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
@@ -350,6 +361,7 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
 
     @action('Delete this Milestone', name='delete')
     def delete_action(self, action, data):
+        """Delete the milestone anddelete or unlink subordinate objects."""
         # Any associated bugtasks and specifications are untargeted.
         series = self.context.productseries
         name = self.context.name
