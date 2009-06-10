@@ -12,12 +12,12 @@ from twisted.conch.interfaces import ISession
 from twisted.internet.process import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from lp.codehosting.sshserver.auth import LaunchpadAvatar
-from lp.codehosting.tests.helpers import AvatarTestCase
-
+from canonical.config import config
 from lp.codehosting import get_bzr_path, get_bzr_plugins_path
+from lp.codehosting.sshserver.auth import LaunchpadAvatar
 from lp.codehosting.sshserver.session import (
     ExecOnlySession, ForbiddenCommand, RestrictedExecOnlySession)
+from lp.codehosting.tests.helpers import AvatarTestCase
 
 
 class MockReactor:
@@ -308,8 +308,8 @@ class TestSessionIntegration(AvatarTestCase):
             'bzr serve --inet --directory=/ --allow-writes')
         self.assertEqual(sys.executable, executable)
         self.assertEqual(
-            [sys.executable, get_bzr_path(), 'lp-serve', '--inet',
-             str(self.avatar.user_id)],
+            ['%(root)s/bin/py' % config.root, get_bzr_path(), 'lp-serve',
+             '--inet', str(self.avatar.user_id)],
             list(arguments))
         self.assertRaises(
             ForbiddenCommand, session.getCommandToRun, 'rm -rf /')
