@@ -197,10 +197,10 @@ specifications etc.
     ...         description_cell = row.fetch('td')[2]
     ...         anchors = description_cell.fetch('a')
     ...         badge_cell = row.fetch('td')[3]
-    ...         imgs = badge_cell.fetch('img')
+    ...         spans = badge_cell.fetch('span')
     ...         print anchors[0].get('href')
-    ...         for img in imgs:
-    ...            print "  Badge:", img.get('alt')
+    ...         for span in spans:
+    ...            print "  Badge:", span.get('alt')
 
 For instance, these are the badges on the firefox bug listing:
 

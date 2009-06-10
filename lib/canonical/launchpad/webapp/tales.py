@@ -634,8 +634,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         '<span alt="%s" title="%s" class="%s" />')
 
     linked_icon_template = (
-        '<a href="%s"><img height="14" width="14"'
-        ' alt="%s" title="%s" src="%s" /></a>')
+        '<a href="%s" alt="%s" title="%s" class="%s"></a>')
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
