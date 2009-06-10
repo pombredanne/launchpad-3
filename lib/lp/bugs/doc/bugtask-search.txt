@@ -582,27 +582,99 @@ The second bug is tagged with only 'test-tag-1'.
 
 Searching for bugs with any of the tags returns both of them.
 
+    >>> from operator import attrgetter
     >>> from canonical.launchpad.searchbuilder import all, any
-    >>> any_params = BugTaskSearchParams(
-    ...     tag=any('test-tag-1', 'test-tag-2'),
-    ...     orderby='-title', user=None)
-    >>> any_tasks = firefox.searchTasks(any_params)
-    >>> for task in any_tasks:
-    ...    print task.bug.title, task.bug.tags
-    test bug b [u'test-tag-1']
-    test bug a [u'test-tag-1', u'test-tag-2']
-    test bug a [u'test-tag-1', u'test-tag-2']
 
+    >>> def search_tasks_and_print_bugs(user=None, **args):
+    ...     params = BugTaskSearchParams(user=user, **args)
+    ...     tasks = firefox.searchTasks(params)
+    ...     bugs = set(task.bug for task in tasks)
+    ...     bugs = sorted(bugs, key=attrgetter('id'))
+    ...     for bug in bugs:
+    ...         print "%s [%s]" % (bug.title, ", ".join(bug.tags))
 
-Searching for bugs with any of the tags returns only test bug a.
+    >>> search_tasks_and_print_bugs(
+    ...     tag=any('test-tag-1', 'test-tag-2'))
+    test bug a [test-tag-1, test-tag-2]
+    test bug b [test-tag-1]
 
-    >>> from sets import Set
-    >>> all_params = BugTaskSearchParams(
-    ...     tag=all('test-tag-1', 'test-tag-2'), user=None)
-    >>> all_tasks = Set(list(firefox.searchTasks(all_params)))
-    >>> for task in all_tasks:
-    ...    print task.bug.title, task.bug.tags
-    test bug a [u'test-tag-1', u'test-tag-2']
+Searching for bugs with all of the tags returns only test bug a.
+
+    >>> search_tasks_and_print_bugs(
+    ...     tag=all('test-tag-1', 'test-tag-2'))
+    test bug a [test-tag-1, test-tag-2]
+
+Search for the absence of a tag is possible by prefixing the tag name
+with a minus.
+
+    >>> search_tasks_and_print_bugs(tag=any('-test-tag-2'))
+    Firefox does not support SVG []
+    Reflow problems with complex page layouts [layout-test]
+    Firefox install instructions should be complete [doc]
+    Firefox crashes when Save As dialog for a nonexistent window is closed []
+    Some bug []
+    test bug b [test-tag-1]
+
+The any() and all() search combinators are taken into consideration
+when searching for the absence of tags too. The following search says
+"give me bugs that don't have the test-tag-2 tag set *OR* that don't
+have the layout-test tag set". Only test-bug-1 is elimininated because
+it has no tags other than those requested in the search.
+
+    >>> search_tasks_and_print_bugs(
+    ...     tag=any('-test-tag-1', '-test-tag-2'))
+    Firefox does not support SVG []
+    Reflow problems with complex page layouts [layout-test]
+    Firefox install instructions should be complete [doc]
+    Firefox crashes when Save As dialog for a nonexistent window is closed []
+    Some bug []
+    test bug b [test-tag-1]
+
+Whereas the following search says "give me bugs that don't have the
+test-tag-2 tag set *AND* that don't have the layout-test tag set".
+
+    >>> search_tasks_and_print_bugs(
+    ...     tag=all('-test-tag-2', '-layout-test'))
+    Firefox does not support SVG []
+    Firefox install instructions should be complete [doc]
+    Firefox crashes when Save As dialog for a nonexistent window is closed []
+    Some bug []
+    test bug b [test-tag-1]
+
+Searching for the presence of any tags at all is also possible using a
+wildcard. If prefixed with a minus it searches for the absence of
+tags.
+
+    >>> search_tasks_and_print_bugs(tag=all('*'))
+    Reflow problems with complex page layouts [layout-test]
+    Firefox install instructions should be complete [doc]
+    test bug a [test-tag-1, test-tag-2]
+    test bug b [test-tag-1]
+
+    >>> search_tasks_and_print_bugs(tag=all('-*'))
+    Firefox does not support SVG []
+    Firefox crashes when Save As dialog for a nonexistent window is closed []
+    Some bug []
+
+Searching for the presence and absence of tags finds no
+matches. Unsurprisingly.
+
+    >>> search_tasks_and_print_bugs(tag=all('*', '-*'))
+
+Wildcards can be combined with non-wildcard tags. The following finds
+all bugs with tags, but without test-tag-1:
+
+    >>> search_tasks_and_print_bugs(tag=all('*', '-test-tag-1'))
+    Reflow problems with complex page layouts [layout-test]
+    Firefox install instructions should be complete [doc]
+
+The following finds all untagged bugs and bugs with the doc tag.
+
+    >>> search_tasks_and_print_bugs(tag=any('-*', 'doc'))
+    Firefox does not support SVG []
+    Firefox install instructions should be complete [doc]
+    Firefox crashes when Save As dialog for a nonexistent window is closed []
+    Some bug []
 
 
 == Searching by date_closed ==
