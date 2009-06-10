@@ -174,12 +174,16 @@
         <th>Stacked on:</th>
         <td tal:content="structure context/stacked_on/fmt:bzr-link" />
       </tr>
-      <tr id="branch-description" tal:condition="context/description">
-        <th>Description:</th>
-        <td tal:content="structure context/description" />
-      </tr>
       </tbody>
   </table>
+
+  <div id="branch-description" tal:condition="context/description">
+    <fieldset>
+      <legend>Description</legend>
+      <tal:branch-description
+         replace="structure context/description/fmt:text-to-html" />
+    </fieldset>
+  </div>
 
   <tal:branch-errors tal:replace="structure context/@@+messages" />
 

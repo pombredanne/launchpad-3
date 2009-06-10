@@ -73,7 +73,10 @@ are no subscribers so there whould be no emails.
     Status: Experimental
     Location: http://trekkies.example.com/gnome-terminal/klingon
     Last mirrored: ...
-    Description: Klingon support for Gnome Terminal
+
+    >>> print extract_text(find_tag_by_id(browser.contents,
+    ...     'branch-description').p)
+    Klingon support for Gnome Terminal
 
 
 == Editing the Lifecycle Status ==
