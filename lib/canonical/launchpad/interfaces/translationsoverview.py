@@ -38,3 +38,7 @@ class ITranslationsOverview(Interface):
         either a product or a distribution, and size is the relative
         amount of contribution a pillar has received.
         """
+
+
+class IProjectTranslationsOverview(Interface):
+    """Overview of translations for a project."""

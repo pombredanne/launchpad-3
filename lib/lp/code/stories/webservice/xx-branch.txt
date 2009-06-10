@@ -111,6 +111,8 @@ time goes on.
     display_name: u'lp://dev/~eric/fooix/trunk'
     landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
     landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
+    last_mirror_attempt: None
+    last_mirrored: None
     last_scanned: None
     last_scanned_id: None
     lifecycle_status: u'Development'

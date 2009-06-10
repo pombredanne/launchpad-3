@@ -42,11 +42,11 @@ from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
-from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus
-from canonical.launchpad.interfaces.bugtracker import (
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
-from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
@@ -469,6 +469,20 @@ class LaunchpadObjectFactory(ObjectFactory):
             milestone = self.makeMilestone()
         return milestone.createProductRelease(
             milestone.product.owner, datetime.now(pytz.UTC))
+
+    def makeProductReleaseFile(self, signed=True):
+        signature_filename = None
+        signature_content = None
+        if signed:
+            signature_filename = 'test.txt.asc'
+            signature_content = '123'
+        release = self.makeProductRelease()
+        return release.addReleaseFile(
+            'test.txt', 'test', 'text/plain',
+            uploader=release.milestone.product.owner,
+            signature_filename=signature_filename,
+            signature_content=signature_content,
+            description="test file")
 
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an implicit transaction commit.

@@ -18,7 +18,7 @@ from zope.interface import Interface, implements
 from lazr.uri import URI
 
 from canonical.config import config
-from canonical.launchpad.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import (

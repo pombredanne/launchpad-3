@@ -21,9 +21,9 @@ from canonical.launchpad.components.apihelpers import (
     patch_collection_return_type, patch_plain_parameter_type,
     patch_choice_parameter_type, patch_reference_property)
 
-from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.interfaces.bugbranch import IBugBranch
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -85,6 +85,12 @@ IBug['addBranch'].queryTaggedValue(
 
 IBugTask['findSimilarBugs'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBug
+patch_plain_parameter_type(
+    IBug, 'linkHWSubmission', 'submission', IHWSubmission)
+patch_plain_parameter_type(
+    IBug, 'unlinkHWSubmission', 'submission', IHWSubmission)
+patch_collection_return_type(
+    IBug, 'getHWSubmissions', IHWSubmission)
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 

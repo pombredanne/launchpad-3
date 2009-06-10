@@ -468,16 +468,18 @@ class IBranch(IHasOwner, IHasBranchTarget):
     # Mirroring attributes. For more information about how these all relate to
     # each other, look at
     # 'lib/canonical/launchpad/doc/puller-state-table.ods'.
-    last_mirrored = Datetime(
-        title=_("Last time this branch was successfully mirrored."),
-        required=False)
+    last_mirrored = exported(
+        Datetime(
+            title=_("Last time this branch was successfully mirrored."),
+            required=False, readonly=True))
     last_mirrored_id = Text(
         title=_("Last mirrored revision ID"), required=False,
         description=_("The head revision ID of the branch when last "
                       "successfully mirrored."))
-    last_mirror_attempt = Datetime(
-        title=_("Last time a mirror of this branch was attempted."),
-        required=False)
+    last_mirror_attempt = exported(
+        Datetime(
+            title=_("Last time a mirror of this branch was attempted."),
+            required=False, readonly=True))
     mirror_failures = Attribute(
         "Number of failed mirror attempts since the last successful mirror.")
     next_mirror_time = Datetime(
