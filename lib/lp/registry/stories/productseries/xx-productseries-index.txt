@@ -1,0 +1,130 @@
+Product Series Overview
+=======================
+
+The product series overview page summarises the series.
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> print extract_text(anon_browser.title)
+    Overview of Mozilla Firefox Series: trunk
+
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(content.h1)
+    Mozilla Firefox Series: trunk
+
+    >>> print extract_text(find_tag_by_id(content, 'series-details'))
+    Project: Mozilla Firefox ...
+    Series: trunk
+    Status: Active Development
+    Drivers: Sample Person
+
+    >>> print extract_text(find_tag_by_id(content, 'description'))
+    Summary
+    The "trunk" series represents the primary line of development rather than
+    a stable release branch. This is sometimes also called MAIN or HEAD.
+
+Someone with edit permissions, such as the project owner or series driver
+can see links to change the series. Sample person is the owner of the project,
+and thus a member of the series drivers.
+
+    >>> driver_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> driver_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> driver_browser.getLink('Delete series')
+    <Link ... url='http://launchpad.dev/firefox/trunk/+delete'>
+
+    >>> driver_browser.getLink('Change details', index=0)
+    <Link ... url='http://launchpad.dev/firefox/trunk/+edit'>
+
+    >>> driver_browser.getLink('Appoint driver')
+    <Link ... url='http://launchpad.dev/firefox/trunk/+driver'>
+
+Any user can subscribe to bug mail via the link on the page.
+
+    >>> anon_browser.getLink('Subscribe to bug mail')
+    <Link ... url='http://launchpad.dev/firefox/trunk/+subscribe'>
+
+The series page lists the milestones and releases for the series.
+
+    >>> rows = find_tag_by_id(content, 'series_trunk').findAll('tr')
+    >>> for row in rows[0:2]:
+    ...     print extract_text(row)
+    Version "Codename"               Expected   Released     Summary
+    Mozilla Firefox 0.9.2 "One ...   None       2004-10-15   This was a ...
+
+The driver can see a link to set the expected date.
+
+    >>> driver_content = find_main_content(driver_browser.contents)
+    >>> driver_rows = find_tag_by_id(
+    ...     driver_content, 'series_trunk').findAll('tr')
+    >>> for row in driver_rows[0:2]:
+    ...     print extract_text(row)
+    Version "Codename"               Expected   Released     Summary
+    Mozilla Firefox 0.9.2 "One ...   Set        2004-10-16   This was a ...
+
+    >>> driver_browser.getLink('Set', index=0)
+    <Link ... url='http://launchpad.dev/firefox/+milestone/0.9.2/+edit'>
+
+The milestone summary column in the table may also contain a summary of
+the status of the bugs and blueprints.
+
+    >>> print extract_text(rows[-1])
+    Mozilla Firefox 1.0  2056-10-16   not yet released
+    Blueprints targeted: 1 Unknown
+
+The driver can see a link to create a release for the milestone.
+
+    >>> print extract_text(driver_rows[-1])
+    Mozilla Firefox 1.0  2056-10-16   Release now
+    Blueprints targeted: 1 Unknown
+
+    >>> driver_browser.getLink('Release now')
+    <Link ... url='http://launchpad.dev/firefox/+milestone/1.0/+addrelease'>
+
+The driver also has links to create milestones and releases.
+
+    >>> driver_browser.getLink('Create milestone')
+    <Link ... url='http://launchpad.dev/firefox/trunk/+addmilestone'>
+
+    >>> driver_browser.getLink('Create release', index=1)
+    <Link ... url='http://launchpad.dev/firefox/trunk/+addrelease'>
+
+The user can learn where the code of the series is located if a branch
+is set. Otherwise, there is a message explaining that the information has
+not been set.
+
+    >>> print extract_text(find_tag_by_id(content, 'branch-details'))
+    No revision control details recorded for Mozilla Firefox Series: trunk.
+
+The driver sees that he can link a branch to this series, and there is
+an explanation where he can push the branch.
+
+    >>> print extract_text(find_tag_by_id(driver_content, 'branch-details'))
+    You haven't yet told Launchpad where your source code is ...
+    bzr push lp:~name12/firefox/trunk ...
+
+    >>> driver_browser.getLink('Link to branch')
+    <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
+
+Distribution packaging is listed too. There is a link to the source package
+in each Ubuntu series.
+
+    >>> print extract_text(find_tag_by_id(content, 'distribution-packaging'))
+    Ubuntu Warty mozilla-firefox
+
+    >>> anon_browser.getLink('mozilla-firefox')
+    <Link ... url='http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox'>
+
+The driver sees two packaging links near the distribution packaging.
+
+    >>> driver_browser.getLink('Link to Ubuntu package')
+    <Link ... url='http://launchpad.dev/firefox/trunk/+ubuntupkg'>
+
+    >>> driver_browser.getLink('Link to other package')
+    <Link ... url='http://launchpad.dev/firefox/trunk/+addpackage'>
+
+There is a section that lists related links to this series
+
+    >>> anon_browser.getLink('All series for the Mozilla Firefox project')
+    <Link ... url='http://launchpad.dev/firefox/+series'>
+    >>> anon_browser.getLink('All milestones for the Mozilla Firefox project')
+    <Link ... url='http://launchpad.dev/firefox/+milestones'>
+
