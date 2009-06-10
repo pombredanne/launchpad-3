@@ -15,7 +15,7 @@ import _pythonpath
 
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.bugexpire import BugJanitor
+from lp.bugs.scripts.bugexpire import BugJanitor
 
 
 class ExpireBugTasks(LaunchpadCronScript):

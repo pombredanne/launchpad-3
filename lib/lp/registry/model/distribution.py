@@ -29,11 +29,11 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.bug import (
+from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import (
+from lp.bugs.model.bugtarget import (
     BugTargetBase, OfficialBugTagTargetMixin)
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distributionbounty import DistributionBounty
@@ -73,8 +73,8 @@ from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.bugtask import (
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -86,7 +86,7 @@ from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.soyuz.interfaces.publishing import (
@@ -927,7 +927,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
         cache.changelog = ' '.join(sorted(sprchangelog))
 
-    def searchSourcePackages(self, text):
+    def searchSourcePackageCaches(self, text):
         """See `IDistribution`."""
         # The query below tries exact matching on the source package
         # name as well; this is because source package names are
@@ -951,7 +951,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Note: When attempting to convert the query below into straight
         # Storm expressions, a 'tuple index out-of-range' error was always
         # raised.
-        dsp_caches = store.using(*origin).find(
+        dsp_caches_with_ranks = store.using(*origin).find(
             find_spec,
             """distribution = %s AND
             archive IN %s AND
@@ -961,7 +961,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    quote(text), quote_like(text))
             ).order_by('rank DESC')
 
-        # Create a function that will decorate the results, converting
+        return dsp_caches_with_ranks
+
+    def searchSourcePackages(self, text):
+        """See `IDistribution`."""
+
+        dsp_caches_with_ranks = self.searchSourcePackageCaches(text)
+
+        # Create a function that will decorate the resulting
+        # DistributionSourcePackageCaches, converting
         # them from the find_spec above into DSPs:
         def result_to_dsp(result):
             cache, source_package_name, rank = result
@@ -972,7 +980,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # Return the decorated result set so the consumer of these
         # results will only see DSPs
-        return DecoratedResultSet(dsp_caches, result_to_dsp)
+        return DecoratedResultSet(dsp_caches_with_ranks, result_to_dsp)
 
     @property
     def _binaryPackageSearchClause(self):

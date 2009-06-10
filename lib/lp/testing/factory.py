@@ -42,11 +42,11 @@ from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
-from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus
-from canonical.launchpad.interfaces.bugtracker import (
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
-from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
@@ -454,12 +454,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, url, owner)
 
-    def makeMilestone(self, product=None, distribution=None, name=None):
-        if product is None and distribution is None:
+    def makeMilestone(
+        self, product=None, distribution=None, productseries=None, name=None):
+        if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
+        if productseries is not None:
+            product = productseries.product
         if name is None:
             name = self.getUniqueString()
         return Milestone(product=product, distribution=distribution,
+                         productseries=productseries,
                          name=name)
 
     def makeProductRelease(self, milestone=None):

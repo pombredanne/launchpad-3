@@ -21,9 +21,9 @@ from canonical.launchpad.components.apihelpers import (
     patch_collection_return_type, patch_plain_parameter_type,
     patch_choice_parameter_type, patch_reference_property)
 
-from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.interfaces.bugbranch import IBugBranch
-from canonical.launchpad.interfaces.hwdb import IHWSubmission
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -46,6 +46,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
+from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.soyuz.interfaces.archive import IArchive
@@ -88,8 +89,15 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
+# IBug
+
 IBug['addBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBugBranch
+
+# IBugTask
+
+IBugTask['findSimilarBugs'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBug
 patch_plain_parameter_type(
     IBug, 'linkHWSubmission', 'submission', IHWSubmission)
 patch_plain_parameter_type(

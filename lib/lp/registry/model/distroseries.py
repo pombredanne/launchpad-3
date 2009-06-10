@@ -18,6 +18,7 @@ from sqlobject import (
     SQLObjectNotFound, SQLRelatedJoin)
 
 from storm.locals import SQL, Join
+from storm.store import Store
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -36,12 +37,13 @@ from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
         BinaryPackageRelease)
-from canonical.launchpad.database.bug import (
+from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.component import Component
-from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.distroarchseries import (
+    DistroArchSeries, PocketChroot)
 from lp.soyuz.model.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
 from canonical.launchpad.database.distroserieslanguage import (
@@ -86,7 +88,7 @@ from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -162,9 +164,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
 
-    architectures = SQLMultipleJoin(
-        'DistroArchSeries', joinColumn='distroseries',
-        orderBy='architecturetag')
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
     sections = SQLRelatedJoin(
@@ -193,12 +192,51 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % self.id,
             clauseTables=["ComponentSelection"])
 
+    # DistroArchSeries lookup properties/methods.
+    architectures = SQLMultipleJoin(
+        'DistroArchSeries', joinColumn='distroseries',
+        orderBy='architecturetag')
+
+    def __getitem__(self, archtag):
+        """See `IDistroSeries`."""
+        return self.getDistroArchSeries(archtag)
+
+    def getDistroArchSeries(self, archtag):
+        """See `IDistroSeries`."""
+        item = DistroArchSeries.selectOneBy(
+            distroseries=self, architecturetag=archtag)
+        if item is None:
+            raise NotFoundError('Unknown architecture %s for %s %s' % (
+                archtag, self.distribution.name, self.name))
+        return item
+
+    @property
+    def enabled_architectures(self):
+        # Avoiding circular imports.
+        from canonical.launchpad.database.librarian import (
+            LibraryFileAlias)
+        store = Store.of(self)
+        origin = [
+            DistroArchSeries,
+            Join(PocketChroot,
+                 PocketChroot.distroarchseries == DistroArchSeries.id),
+            Join(LibraryFileAlias,
+                 PocketChroot.chroot == LibraryFileAlias.id),
+            ]
+        results = store.using(*origin).find(
+            DistroArchSeries,
+            DistroArchSeries.distroseries == self)
+        return results.order_by(DistroArchSeries.architecturetag)
+
     @property
     def virtualized_architectures(self):
-        return DistroArchSeries.select("""
-        DistroArchSeries.distroseries = %s AND
-        DistroArchSeries.supports_virtualized = True
-        """ % sqlvalues(self), orderBy='architecturetag')
+        store = Store.of(self)
+        results = store.find(
+            DistroArchSeries,
+            DistroArchSeries.distroseries == self,
+            DistroArchSeries.supports_virtualized == True)
+        return results.order_by(DistroArchSeries.architecturetag)
+    # End of DistroArchSeries lookup methods
 
     @property
     def parent(self):
@@ -656,19 +694,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             (self.getSourcePackage(release.sourcepackagename),
              DistroSeriesSourcePackageRelease(self, release))
             for release in releases)
-
-    def __getitem__(self, archtag):
-        """See `IDistroSeries`."""
-        return self.getDistroArchSeries(archtag)
-
-    def getDistroArchSeries(self, archtag):
-        """See `IDistroSeries`."""
-        item = DistroArchSeries.selectOneBy(
-            distroseries=self, architecturetag=archtag)
-        if item is None:
-            raise NotFoundError('Unknown architecture %s for %s %s' % (
-                archtag, self.distribution.name, self.name))
-        return item
 
     def checkTranslationsViewable(self):
         """See `IDistroSeries`."""

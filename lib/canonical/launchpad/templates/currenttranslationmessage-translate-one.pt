@@ -439,8 +439,7 @@
                 dir context/pofile/language/abbreviated_text_dir;
                 id string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index};
                 for string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}_radiobutton;"
-              tal:content="
-                structure translation_dictionary/imported_translation">
+              tal:content="structure translation_dictionary/imported_translation">
               imported translation
             </label>
           </td>
