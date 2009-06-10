@@ -560,6 +560,10 @@ class ObjectImageDisplayAPI:
         else:
             return None
 
+    def icon(self):
+        #XXX: this should go away as soon as all image:icon where replaced
+        return None
+
     def logo(self):
         """Return the appropriate <img> tag for this object's logo.
 
@@ -766,7 +770,6 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
             css = "sprite blueprint"
 
         return self.icon_template % (alt, title, css)
-
 
     def badges(self):
 
