@@ -1643,7 +1643,6 @@ class NumberFormatterAPI:
         """
         if not isinstance(self._number, int):
             raise AssertionError("This can't be used with non-integers")
-            format = "%d"
         L = []
         for index, char in enumerate(reversed(str(self._number))):
             if index != 0 and (index % 3) == 0:

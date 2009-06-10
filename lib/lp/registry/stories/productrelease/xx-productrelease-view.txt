@@ -34,7 +34,7 @@ downloaded and the date of the last download on that table as well.
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'downloads'))
     File                            Description  Downloads
     firefox-0.9.2.orig.tar.gz (md5)              1 ... since last download
-                                        Total:   1
+                              Total downloads:   1
 
 When a file has been downloaded on the present day, all we can say is that
 it's been downloaded "today".  That's because we don't have the time it was
@@ -46,4 +46,4 @@ downloaded, so we can't say it was downloaded a few minutes/hours ago.
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'downloads'))
     File                            Description  Downloads
     firefox-0.9.2.orig.tar.gz (md5)              4,357 last downloaded today
-                                        Total:   4,357
+                              Total downloads:   4,357
