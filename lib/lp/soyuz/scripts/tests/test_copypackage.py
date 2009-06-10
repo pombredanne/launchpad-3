@@ -9,8 +9,6 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.tests.test_uploadprocessor import (
-    MockLogger as TestLogger)
 from canonical.config import config
 from lp.soyuz.adapters.packagelocation import (
     PackageLocationError)
@@ -18,9 +16,9 @@ from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces.bug import (
+from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet)
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -30,7 +28,7 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingPocket, PackagePublishingStatus,
     active_publishing_status)
-from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.scripts import BufferLogger
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
     PackageCopier, UnembargoSecurityPackage)
@@ -164,7 +162,7 @@ class TestCopyPackage(TestCase):
         test_args.append(sourcename)
 
         copier = PackageCopier(name='copy-package', test_args=test_args)
-        copier.logger = QuietFakeLogger()
+        copier.logger = BufferLogger()
         copier.setupLocation()
         return copier
 
@@ -314,26 +312,45 @@ class TestCopyPackage(TestCase):
 
         That's why PackageCopier refuses to copy publications with versions
         older or equal the ones already present in the destination.
+
+        The script output informs the user that no packages were copied,
+        and for repeated source-only copies, the second attempt is actually
+        an error since the source previously copied is already building and
+        if the copy worked conflicting binaries would have been generated.
         """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+        test_publisher.getPubBinaries()
+
+        # Repeating the copy of source and it's binaries.
         copy_helper = self.getCopier(
-            from_suite='warty', to_suite='warty-updates')
+            sourcename='foo', from_suite='hoary', to_suite='hoary',
+            to_ppa='sabdfl')
         copied = copy_helper.mainTask()
         target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 5)
+        self.checkCopies(copied, target_archive, 3)
 
-        copy_helper = self.getCopier(
-            from_suite='warty', to_suite='warty-updates')
-
-        # Use a TestLogger object to store log messages issued during
-        # the copy.
-        copy_helper.logger = TestLogger()
-
-        copied = copy_helper.mainTask()
-        self.assertEqual(len(copied), 0)
-
-        # The script output informs the user that no packages were copied.
+        nothing_copied = copy_helper.mainTask()
+        self.assertEqual(len(nothing_copied), 0)
         self.assertEqual(
-            copy_helper.logger.lines[-1], 'No packages copied.')
+            copy_helper.logger.buffer.getvalue().splitlines()[-1],
+            'INFO: No packages copied.')
+
+        # Repeating the copy of source only.
+        copy_helper = self.getCopier(
+            sourcename='foo', from_suite='hoary', to_suite='hoary',
+            include_binaries=False, to_ppa='cprov')
+        copied = copy_helper.mainTask()
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 1)
+
+        nothing_copied = copy_helper.mainTask()
+        self.assertEqual(len(nothing_copied), 0)
+        self.assertEqual(
+            copy_helper.logger.buffer.getvalue().splitlines()[-1],
+            'ERROR: foo 666 in hoary (same version already building in '
+            'the destination archive for Hoary)')
 
     def testCopyAcrossPartner(self):
         """Check the copy operation across PARTNER archive.
@@ -606,16 +623,15 @@ class TestCopyPackage(TestCase):
         copy_helper = self.getCopier(
             sourcename='probe', from_ppa='cprov', include_binaries=True,
             from_suite='warty', to_suite='warty-updates')
-        copy_helper.logger = TestLogger()
         copied = copy_helper.mainTask()
 
         # The copy request was denied and the error message is clear about
         # why it happened.
         self.assertEqual(0, len(copied))
         self.assertEqual(
-            'probe 1.1 in warty (a different source with the same version '
-            'is published in the destination archive)',
-            copy_helper.logger.lines[-1])
+            copy_helper.logger.buffer.getvalue().splitlines()[-1],
+            'ERROR: probe 1.1 in warty (a different source with the '
+            'same version is published in the destination archive)')
 
     def _setupSecurityPropagationContext(self, sourcename):
         """Setup a security propagation publishing context.
@@ -762,11 +778,11 @@ class TestCopyPackage(TestCase):
         lazy_bin_hppa = test_publisher.uploadBinaryForBuild(
             build_hppa, 'lazy-bin')
 
-        copy_helper = self.getCopier(
-            sourcename=sourcename, include_binaries=True,
-            from_suite='hoary-security', to_suite='hoary-updates')
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
+        self.assertEqual(
+            copy_helper.logger.buffer.getvalue().splitlines()[-1],
+            'INFO: No packages copied.')
 
         # Publishing the hppa binary and re-issuing the full copy procedure
         # will copy only the new binary.
@@ -775,11 +791,7 @@ class TestCopyPackage(TestCase):
             pocket=PackagePublishingPocket.SECURITY,
             status=PackagePublishingStatus.PUBLISHED)
 
-        copy_helper = self.getCopier(
-            sourcename=sourcename, include_binaries=True,
-            from_suite='hoary-security', to_suite='hoary-updates')
         copied_increment = copy_helper.mainTask()
-
         [hppa_copy] = copied_increment
         self.assertEqual(hppa_copy.displayname, 'lazy-bin 1.0 in hoary hppa')
 
@@ -793,11 +805,11 @@ class TestCopyPackage(TestCase):
 
         # At this point, trying to copy stuff from -security to -updates will
         # not copy anything again.
-        copy_helper = self.getCopier(
-            sourcename=sourcename, include_binaries=True,
-            from_suite='hoary-security', to_suite='hoary-updates')
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
+        self.assertEqual(
+            copy_helper.logger.buffer.getvalue().splitlines()[-1],
+            'INFO: No packages copied.')
 
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.
@@ -819,6 +831,49 @@ class TestCopyPackage(TestCase):
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
+
+    def testCopyAvoidsBinaryConflicts(self):
+        # Creating a source and 2 binary publications in the primary
+        # archive for ubuntu/hoary (default name, 'foo').
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+        test_publisher.getPubBinaries()
+
+        # Successfully copy the source from PRIMARY archive to Celso's PPA
+        copy_helper = self.getCopier(
+            sourcename='foo', to_ppa='cprov', include_binaries=False,
+            from_suite='hoary', to_suite='hoary')
+        copied = copy_helper.mainTask()
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 1)
+
+        # Build binaries for the copied source in Celso's PPA domain.
+        [copied_source] = copied
+        for build in copied_source.getBuilds():
+            binary = test_publisher.uploadBinaryForBuild(build, 'foo-bin')
+            test_publisher.publishBinaryInArchive(binary, build.archive)
+
+        # Delete the copied source and its local binaries in Celso's PPA.
+        copied_source.requestDeletion(target_archive.owner)
+        for binary in copied_source.getPublishedBinaries():
+            binary.requestDeletion(target_archive.owner)
+        self.layer.txn.commit()
+
+        # Refuse to copy new binaries which conflicts with the ones we
+        # just deleted. Since the deleted binaries were once published
+        # there is a chance that someone has installed them and if we let
+        # other files to be published under the same name APT client would
+        # be confused.
+        copy_helper = self.getCopier(
+            sourcename='foo', to_ppa='cprov', include_binaries=True,
+            from_suite='hoary', to_suite='hoary')
+        nothing_copied = copy_helper.mainTask()
+        self.assertEqual(len(nothing_copied), 0)
+        self.assertEqual(
+            copy_helper.logger.buffer.getvalue().splitlines()[-1],
+            'ERROR: foo 666 in hoary (binaries conflicting with the '
+            'existing ones)')
 
     def testSourceLookupFailure(self):
         """Check if it raises when the target source can't be found.
@@ -967,14 +1022,13 @@ class TestCopyPackage(TestCase):
         copy_helper = self.getCopier(
             sourcename='foo', from_ppa='cprov', include_binaries=True,
             from_suite='hoary', to_suite='hoary')
-        copy_helper.logger = TestLogger()
         copied = copy_helper.mainTask()
 
         # Nothing was copied and an error message was printed explaining why.
         self.assertEqual(len(copied), 0)
         self.assertEqual(
-            copy_helper.logger.lines[-1],
-            'foo 1.0 in hoary '
+            copy_helper.logger.buffer.getvalue().splitlines()[-1],
+            'ERROR: foo 1.0 in hoary '
             '(Cannot copy private source into public archives.)')
 
     def testUnembargoing(self):
@@ -1047,7 +1101,7 @@ class TestCopyPackage(TestCase):
 
         script = UnembargoSecurityPackage(
             name='unembargo', test_args=test_args)
-        script.logger = QuietFakeLogger()
+        script.logger = BufferLogger()
 
         copied = script.mainTask()
 
@@ -1114,7 +1168,7 @@ class TestCopyPackage(TestCase):
         test_args[3] = "hoary"
         script = UnembargoSecurityPackage(
             name='unembargo', test_args=test_args)
-        script.logger = QuietFakeLogger()
+        script.logger = BufferLogger()
         self.assertFalse(script.setUpCopierOptions())
 
     def testCopyClosesBugs(self):

@@ -105,6 +105,15 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertEqual(
             [(pocket, branch)], list(sourcepackage.linked_branches))
 
+    def test_getSuiteSourcePackage(self):
+        # ISourcePackage.getSuiteSourcePackage returns the suite source
+        # package object for the given pocket.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        ssp = sourcepackage.getSuiteSourcePackage(pocket)
+        self.assertEqual(sourcepackage, ssp.sourcepackage)
+        self.assertEqual(pocket, ssp.pocket)
+
     def test_path_to_release_pocket(self):
         # ISourcePackage.getPocketPath returns the path to a pocket. For the
         # RELEASE pocket, it's the same as the package path.

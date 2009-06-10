@@ -229,7 +229,7 @@
             class="lp.blueprints.browser.specificationbranch.SpecificationBranchBranchInlineEditView"
             facet="branches"
             permission="launchpad.AnyPerson"
-            template="../../../canonical/launchpad/templates/bugbranch-inline-edit.pt"/>
+            template="../../bugs/templates/bugbranch-inline-edit.pt"/>
     </facet>
     <facet
         facet="specifications">

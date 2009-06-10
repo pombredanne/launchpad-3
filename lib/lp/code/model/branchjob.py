@@ -8,10 +8,12 @@ __all__ = [
 
 from StringIO import StringIO
 
+from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
+from bzrlib.upgrade import upgrade
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lazr.enum import DBEnumeratedType, DBItem
@@ -23,6 +25,8 @@ import transaction
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from lp.code.interfaces.branch import (BRANCH_FORMAT_UPGRADE_PATH,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
 from canonical.launchpad.database.diff import StaticDiff
 from lp.services.job.model.job import Job
@@ -32,8 +36,9 @@ from canonical.launchpad.database.translationbranchapprover import (
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IRevisionMailJob,
-    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
+    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
+    IBranchUpgradeJobSource, IRevisionMailJob, IRevisionMailJobSource,
+    IRosettaUploadJob, IRosettaUploadJobSource)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -72,6 +77,12 @@ class BranchJobType(DBEnumeratedType):
         Rosetta Upload
 
         This job runs against a branch to upload translation files to rosetta.
+        """)
+
+    UPGRADE_BRANCH = DBItem(4, """
+        Upgrade Branch
+
+        This job upgrades the branch in the hosted area.
         """)
 
 
@@ -183,6 +194,43 @@ class BranchDiffJob(BranchJobDerived):
         static_diff = StaticDiff.acquire(
             from_revision_id, to_revision_id, bzr_branch.repository)
         return static_diff
+
+
+class BranchUpgradeJob(BranchJobDerived):
+    """A Job that upgrades branches to the current stable format."""
+
+    implements(IBranchUpgradeJob)
+
+    classProvides(IBranchUpgradeJobSource)
+    @classmethod
+    def create(cls, branch):
+        """See `IBranchUpgradeJobSource`."""
+        branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
+        return cls(branch_job)
+
+    def run(self):
+        """See `IBranchUpgradeJob`."""
+        branch = self.branch.getBzrBranch()
+        to_format = self.upgrade_format
+        upgrade(branch.base, to_format)
+
+    @property
+    def upgrade_format(self):
+        """See `IBranch`."""
+        format = BzrDirMetaFormat1()
+        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(
+            self.branch.branch_format)
+        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
+            self.branch.repository_format)
+        if branch_format is None or repository_format is None:
+            branch = self.branch.getBzrBranch()
+            if branch_format is None:
+                branch_format = type(branch._format)
+            if repository_format is None:
+                repository_format = type(branch.repository._format)
+        format.set_branch_format(branch_format())
+        format._set_repository_format(repository_format())
+        return format
 
 
 class RevisionMailJob(BranchDiffJob):

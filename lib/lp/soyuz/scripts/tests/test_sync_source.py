@@ -10,7 +10,7 @@ import sys
 import tempfile
 from unittest import TestCase, TestLoader
 
-from canonical.archiveuploader.tagfiles import parse_tagfile
+from lp.archiveuploader.tagfiles import parse_tagfile
 from canonical.config import config
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)

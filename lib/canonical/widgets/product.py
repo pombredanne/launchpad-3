@@ -15,9 +15,10 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.schema import Choice
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import (
@@ -228,6 +229,18 @@ class LicenseWidget(CheckBoxMatrixWidget):
     """
     template = ViewPageTemplateFile('templates/license.pt')
     allow_pending_license = False
+
+    def textForValue(self, term):
+        """See `ItemsWidgetBase`."""
+        # This will return just the DBItem's text.  We want to wrap that text
+        # in the URL to the license, which is stored in the DBItem's
+        # description.
+        value = super(LicenseWidget, self).textForValue(term)
+        if term.value.url is None:
+            # There's no link.
+            return value
+        else:
+            return '<a href="%s">%s</a>' % (term.value.url, value)
 
     def __call__(self):
         self.checkbox_matrix = super(LicenseWidget, self).__call__()

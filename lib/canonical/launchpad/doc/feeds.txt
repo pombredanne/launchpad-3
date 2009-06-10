@@ -108,7 +108,7 @@ and Cache-Control headers so that the feeds will be cached longer
 by browsers and the reverse-proxy in front of the feeds servers.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.feed.bug import BugsFeedBase
+    >>> from lp.bugs.feed.bug import BugsFeedBase
     >>> from canonical.lazr.feed.feed import FeedBase
     >>> config.launchpad.max_feed_cache_minutes
     60

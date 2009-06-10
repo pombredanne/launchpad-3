@@ -13,7 +13,7 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.interfaces import IDistroSeriesSet
 from canonical.launchpad.scripts.copy_distroseries_translations import (
-    update_translations)
+    copy_distroseries_translations)
 
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -39,7 +39,7 @@ class TestCopying(TestCase):
         sid.hide_all_translations = True
         sid.defer_translation_imports = True
         syncUpdate(sid)
-        update_translations(sid, self.txn, logging)
+        copy_distroseries_translations(sid, self.txn, logging)
         sid = series_set.findByName('sid')[0]
         self.assertTrue(sid.hide_all_translations)
         self.assertTrue(sid.defer_translation_imports)
@@ -47,7 +47,7 @@ class TestCopying(TestCase):
         sid.hide_all_translations = True
         sid.defer_translation_imports = False
         syncUpdate(sid)
-        update_translations(sid, self.txn, logging)
+        copy_distroseries_translations(sid, self.txn, logging)
         sid = series_set.findByName('sid')[0]
         self.assertTrue(sid.hide_all_translations)
         self.assertFalse(sid.defer_translation_imports)
@@ -55,7 +55,7 @@ class TestCopying(TestCase):
         sid.hide_all_translations = False
         sid.defer_translation_imports = True
         syncUpdate(sid)
-        update_translations(sid, self.txn, logging)
+        copy_distroseries_translations(sid, self.txn, logging)
         sid = series_set.findByName('sid')[0]
         self.assertFalse(sid.hide_all_translations)
         self.assertTrue(sid.defer_translation_imports)
@@ -63,7 +63,7 @@ class TestCopying(TestCase):
         sid.hide_all_translations = False
         sid.defer_translation_imports = False
         syncUpdate(sid)
-        update_translations(sid, self.txn, logging)
+        copy_distroseries_translations(sid, self.txn, logging)
         sid = series_set.findByName('sid')[0]
         self.assertFalse(sid.hide_all_translations)
         self.assertFalse(sid.defer_translation_imports)

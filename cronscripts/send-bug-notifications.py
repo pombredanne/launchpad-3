@@ -18,7 +18,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import IBugNotificationSet
 from canonical.launchpad.mail import sendmail
-from canonical.launchpad.scripts.bugnotification import get_email_notifications
+from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.services.scripts.base import LaunchpadCronScript
 
 

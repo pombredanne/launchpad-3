@@ -85,7 +85,7 @@ class CodeImportReviewStatus(DBEnumeratedType):
         This code import has been approved, but it has been suspended
         and is not processed.""")
 
-    FAILING = DBItem(40, """Failing
+    FAILING = DBItem(40, """Failed
 
         The code import is failing for some reason and is no longer being
         attempted.""")
@@ -245,9 +245,20 @@ class ICodeImport(Interface):
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
-            `CodeImportEvent`.
+            `CodeImportEvent`.  May be ``None``.
         :return: The MODIFY `CodeImportEvent`, if any changes were made, or
             None if no changes were made.
+        """
+
+    def tryFailingImportAgain(user):
+        """Try a failing import again.
+
+        This method sets the review_status back to REVIEWED and requests the
+        import be attempted as soon as possible.
+
+        The import must be in the FAILING state.
+
+        :param user: the user who is requesting the import be tried again.
         """
 
 
