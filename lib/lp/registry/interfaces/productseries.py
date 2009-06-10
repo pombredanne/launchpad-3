@@ -118,12 +118,13 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     driver = exported(
         PublicPersonChoice(
-            title=_("Driver"),
+            title=_("Release manager"),
             description=_(
                 "The person or team responsible for decisions about features "
                 "and bugs that will be targeted to this series. If you don't "
                 "nominate someone here, then the owner of this series will "
-                "automatically have those permissions."),
+                "automatically have those permissions, as will the project "
+                "and project group drivers."),
             required=False, vocabulary='ValidPersonOrTeam'))
 
     title = exported(

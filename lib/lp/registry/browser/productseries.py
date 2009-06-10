@@ -168,7 +168,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        text = 'Appoint release manager'
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 

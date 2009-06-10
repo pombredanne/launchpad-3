@@ -1,4 +1,4 @@
-= Appointing a Product Series Driver =
+= Appointing a Product Series Driver (release manager) =
 
 Sample Person as the driver of Firefox 1.0 series because he is also
 the project owner. He can delegate the responsibility of release manager
@@ -10,18 +10,19 @@ by appointing someone else as the driver.
   Project: Mozilla Firefox ...
   Series: 1.0
   Status: Active Development
-  Drivers: Sample Person
+  Project drivers: Sample Person
+  Release manager: None
 
-  >>> browser.getLink('Appoint driver').click()
+  >>> browser.getLink('Appoint release manager').click()
 
   >>> browser.url
   'http://launchpad.dev/firefox/1.0/+driver'
   >>> browser.title
-  'Appoint the driver for Mozilla Firefox Series: 1.0'
-  >>> browser.getControl('Driver').value
+  'Appoint the release manager for Mozilla Firefox Series: 1.0'
+  >>> browser.getControl('Release manager').value
   ''
 
-  >>> browser.getControl('Driver').value = 'salgado'
+  >>> browser.getControl('Release manager').value = 'salgado'
   >>> browser.getControl('Change').click()
 
 After changing the driver, the browser shows the overview page where a
@@ -32,7 +33,7 @@ message explains that the driver changed.
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()
-  'Successfully changed the driver to Guilherme Salgado'
+  'Successfully changed the release manager to Guilherme Salgado'
 
 Sample Person and Guilherme Salgado are listed as the drivers of Firefox 1.0.
 
@@ -40,5 +41,6 @@ Sample Person and Guilherme Salgado are listed as the drivers of Firefox 1.0.
     Project: Mozilla Firefox ...
     Series: 1.0
     Status: Active Development
-    Drivers: Guilherme Salgado, Sample Person
+    Project drivers: Guilherme Salgado, Sample Person
+    Release manager: Guilherme Salgado
 
