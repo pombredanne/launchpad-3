@@ -5,4 +5,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE PackageUpload ALTER COLUMN changesfile DROP NOT NULL;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 60, 0);
