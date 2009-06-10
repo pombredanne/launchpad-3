@@ -5,7 +5,6 @@
   tal:attributes="
     class string:menu-link-${context/name} sprite ${context/icon};
     href context/url;
-    style string:
     title context/summary;
   "
   tal:content="structure context/escapedtext"

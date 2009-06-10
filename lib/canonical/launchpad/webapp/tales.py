@@ -955,9 +955,10 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
         #image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
         custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon()
-        if(custom_icon is None):
-            return (u'<a href="%s" class="sprite person">%s</a>') % (
-                url, cgi.escape(person.browsername))
+        if custom_icon is None:
+            css_class= ObjectImageDisplayAPI(person).sprite_css()
+            return (u'<a href="%s" class="%s">%s</a>') % (
+                url, css_class, cgi.escape(person.browsername))
         else:
             return (u'<a href="%s" class="bg-image" '
                      'style="background-image: url(%s)">%s</a>') % (
@@ -2643,7 +2644,7 @@ class FormattersAPI:
                 person_formatter = PersonFormatterAPI(person)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
-                    canonical_url(person), image_html, address))
+                    canonical_url(person), css_sprite, address))
         return text
 
     def lower(self):
