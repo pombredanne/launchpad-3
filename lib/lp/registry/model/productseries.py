@@ -11,7 +11,6 @@ __all__ = [
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from storm.expr import In
-from warnings import warn
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc

@@ -13,7 +13,7 @@ __all__ = [
     'NoSuchProductSeries',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
