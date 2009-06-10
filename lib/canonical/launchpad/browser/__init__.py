@@ -86,6 +86,7 @@ from lp.registry.browser.product import *
 from lp.registry.browser.productrelease import *
 from lp.registry.browser.productseries import *
 from lp.registry.browser.project import *
+from canonical.launchpad.browser.productserieslanguage import *
 from lp.soyuz.browser.publishedpackage import *
 from lp.soyuz.browser.publishing import *
 from lp.answers.browser.question import *
