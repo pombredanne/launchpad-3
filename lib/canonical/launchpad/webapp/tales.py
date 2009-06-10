@@ -651,12 +651,8 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         else:
             return "sprite bug"
 
-    def icon(self, rootsite=None):
+    def icon(self):
         """Display the icon dependent on the IBugTask.importance."""
-        if rootsite is not None:
-            root_url = allvhosts.configs[rootsite].rooturl[:-1]
-        else:
-            root_url = ''
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -665,13 +661,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
-            src = "%s/@@/bug-%s" % (root_url, importance)
+            css = "sprite bug-%s" % importance
         else:
             alt = ""
             title = ""
-            src = "%s/@@/bug" % root_url
+            css = "sprite bug"
 
-        return self.icon_template % (alt, title, src)
+        return self.icon_template % (alt, title, css)
 
     def _hasMentoringOffer(self):
         """Return whether the bug has a mentoring offer."""
@@ -767,13 +763,13 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
                 title += " priority"
             else:
                 title += " a priority"
-            src = "/@@/blueprint-%s" % priority
+            css = "sprite blueprint-%s" % priority
         else:
             alt = ""
             title = ""
-            src = "/@@/blueprint"
+            css = "sprite blueprint"
 
-        return self.icon_template % (alt, title, src)
+        return self.icon_template % (alt, title, css)
 
 
     def badges(self):
@@ -953,7 +949,6 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         """
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
-        #image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
         custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon()
         if custom_icon is None:
             css_class= ObjectImageDisplayAPI(person).sprite_css()
@@ -969,7 +964,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         person = self._context
         return person.displayname
 
-    def unique_displayname(self, view_name, rootsite=None):
+    def unique_displayname(self, view_name):
         """Return the unique_displayname as a string."""
         person = self._context
         return person.unique_displayname
@@ -1008,7 +1003,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            return '<span class="team"">%s</span>' % cgi.escape(self.hidden)
+            return '<span class="sprite team">%s</span>' % cgi.escape(self.hidden)
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
 
     def displayname(self, view_name, rootsite=None):
@@ -1019,25 +1014,13 @@ class TeamFormatterAPI(PersonFormatterAPI):
             return self.hidden
         return super(TeamFormatterAPI, self).displayname(view_name, rootsite)
 
-    def unique_displayname(self, view_name, rootsite=None):
+    def unique_displayname(self, view_name):
         """See `PersonFormatterAPI`."""
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
             return self.hidden
-        return super(TeamFormatterAPI, self).unique_displayname(view_name,
-                                                                rootsite)
-    def icon_url(self, view_name, rootsite=None):
-        """Return the URL for the team's icon.
-
-        If the team is private use the default team icon url.
-        """
-        person = self._context
-        if not check_permission('launchpad.View', person):
-            return None
-
-        return ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
-
+        return super(TeamFormatterAPI, self).unique_displayname(view_name)
 
 class CustomizableFormatter(ObjectFormatterAPI):
     """A ObjectFormatterAPI that is easy to customize.

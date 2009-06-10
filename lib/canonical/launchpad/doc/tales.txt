@@ -325,15 +325,14 @@ For bugs, fmt:link takes to the bug redirect page.
 
     >>> bug = getUtility(IBugSet).get(1)
     >>> test_tales("bug/fmt:link", bug=bug)
-    u'<a href=".../bugs/1">&nbsp;Bug #1: Firefox does not support SVG</a>'
+    u'<a href=".../bugs/1">Bug #1: Firefox does not support SVG</a>'
 
 For bugtasks, fmt:link shows the severity bug icon, and links to the
 appropriate project's bug.
 
     >>> bugtask = bug.bugtasks[0]
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
-    Firefox does not support SVG</a>'
+    u'<a href=".../firefox/+bug/1"><span alt="(low)" title="Low importance" class="sprite bug-low" />&nbsp;Bug #1: Firefox does not support SVG</a>'
 
 Bug titles may contain markup (when describing issue regarding markup).
 Their titles are escaped so that they display correctly. This also
@@ -343,10 +342,10 @@ title might be interpreted by the browser.
     >>> login('test@canonical.com')
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
-    u'<a href=".../bugs/1">&nbsp;Bug #1: Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+    u'<a href=".../bugs/1">Bug #1: Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1">&nbsp;Bug #1: Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+    u'<a href=".../firefox/+bug/1"><span alt="(low)" title="Low importance" class="sprite bug-low" />&nbsp;Bug #1: Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 
 === Branch subscriptions ===
@@ -399,7 +398,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> bug = factory.makeBug()
     >>> bugbranch = bug.addBranch(branch, branch.owner)
     >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
-    u'<a href="...+bug..."><img .../>&nbsp;Bug #...</a>'
+    u'<a href="...+bug..."><span ... />&nbsp;Bug #...</a>'
 
 
 === Code imports ===
@@ -426,7 +425,7 @@ to support the branch deletion code.
     >>> login('test@canonical.com')
     >>> specification = factory.makeSpecification()
     >>> test_tales("specification/fmt:link", specification=specification)
-    u'<a...<img ... src="/@@/blueprint-undefined" />&nbsp;...</a>'
+    u'<a...<span ... class="sprite blueprint-undefined" />&nbsp;...</a>'
 
 
 === Blueprint branches ===
@@ -436,7 +435,7 @@ to support the branch deletion code.
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
     ...     specification_branch=specification_branch)
-    u'<a...<img ... src="/@@/blueprint-undefined" />&nbsp;...</a>'
+    u'<a...<span ... class="sprite blueprint-undefined" />&nbsp;...</a>'
 
 
 === Projects ===
@@ -820,23 +819,18 @@ emphasise the linkage.
 
     >>> test_tales('foo/fmt:linkify-email',
     ...    foo='I am the mighty foo.bar@canonical.com hear me roar.')
-    u'...<a href="http://launchpad.dev/~name16"><img ...src="/@@/person"
-    />&nbsp;foo.bar@canonical.com</a>...'
+    u'...<a href="http://launchpad.dev/~name16" class="sprite person">&nbsp;foo.bar@canonical.com</a>...'
 
 Multiple addresses may be linkified at once:
 
     >>> test_tales('foo/fmt:linkify-email',
     ...     foo='foo.bar@canonical.com and cprov@ubuntu.com')
-    u'<a href="http://launchpad.dev/~name16"><img ...src="/@@/person"
-    />&nbsp;foo.bar@canonical.com</a> and
-    <a href="http://launchpad.dev/~cprov"><img ...src="/@@/person"
-    />&nbsp;cprov@ubuntu.com</a>'
+    u'<a href="http://launchpad.dev/~name16" class="sprite person">&nbsp;foo.bar@canonical.com</a> and <a href="http://launchpad.dev/~cprov" class="sprite person">&nbsp;cprov@ubuntu.com</a>'
 
 Team addresses are linkified with a team icon:
 
     >>> test_tales('foo/fmt:linkify-email', foo='support@ubuntu.com')
-    u'<a href="http://launchpad.dev/~ubuntu-team"><img ...src="/@@/team"
-    />&nbsp;support@ubuntu.com</a>'
+    u'<a href="http://launchpad.dev/~ubuntu-team" class="sprite team">&nbsp;support@ubuntu.com</a>'
 
 Unknown email addresses are not altered in any way:
 
@@ -1125,9 +1119,8 @@ The link can be rendered as an anchored icon.
 The link can be rendered as text with an icon to the right.
 
     >>> print test_tales('menu_link/fmt:link-icon', menu_link=menu_link)
-    <a style="
-       href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite icon">text</a>
+    <a href="http://launchpad.dev/+place"
+       class="menu-link-test_link sprite icon" title="summary">text</a>
 
 The default rendering can be explicitly called too, text with an icon to
 the left.
@@ -1135,14 +1128,14 @@ the left.
     >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
     <a style="
        href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite icon">text</a>
+       class="menu-link-test_link sprite icon" title="">text</a>
 
 fmt:icon-link is an alias for fmt:link so that the fmt names are consistent.
 
     >>> print test_tales('menu_link/fmt:icon-link', menu_link=menu_link)
     <a style="
        href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite icon">text</a>
+       class="menu-link-test_link sprite icon" title="">text</a>
 
 
 And the url format is also available.
@@ -1177,7 +1170,7 @@ Foo Bar is an administrator so he can see all.
     >>> login('foo.bar@canonical.com')
     >>> myteam = getUtility(IPersonSet).getByName('myteam')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<a ...url(/@@/team)...>My Team</a>'
+    u'<a ...class="sprite team"...>My Team</a>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'My Team'
@@ -1189,7 +1182,7 @@ Owner is a member of myteam so he can see all.
 
     >>> login('owner@canonical.com')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<a ...url(/@@/team)...>My Team</a>'
+    u'<a ...class="sprite team"...>My Team</a>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'My Team'
@@ -1202,7 +1195,7 @@ information about myteam is hidden.
 
     >>> login('no-priv@canonical.com')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<span ...url(/@@/team)...>&lt;hidden&gt;</span>'
+    u'<span ...class="sprite team"...>&lt;hidden&gt;</span>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'<hidden>'
@@ -1214,7 +1207,7 @@ The anonymous user is not allowed to see private team details.
 
     >>> login(ANONYMOUS)
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<span ...url(/@@/team)...>&lt;hidden&gt;</span>'
+    u'<span ...class="sprite team"...>&lt;hidden&gt;</span>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'<hidden>'
