@@ -19,8 +19,9 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, urlparse
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.browser import (
-    BugsBugTaskSearchListingView, BugTargetView,
+from lp.bugs.browser.bugtask import (
+    BugsBugTaskSearchListingView, BugTargetView)
+from lp.registry.browser.person import (
     PersonRelatedBugTaskSearchListingView)
 from canonical.launchpad.interfaces._schema_circular_imports import IBug, IPerson
 from lp.bugs.interfaces.bug import IBugSet
