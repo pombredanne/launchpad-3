@@ -9,13 +9,17 @@ from operator import attrgetter
 
 from zope.component import getUtility
 
-from lp.archivepublisher.config import getPubConfig
 from canonical.config import config
+from canonical.launchpad.mail import format_address, simple_sendmail
+from canonical.launchpad.webapp import canonical_url
+
+from lp.archivepublisher.config import getPubConfig
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet)
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -134,6 +138,51 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         return False
 
+    def sendCancellationEmail(token):
+        """Send an email to the person whose subscription was cancelled."""
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archivesubscriber import (
+            IArchiveSubscriberSet)
+
+        subscription = getUtility(IArchiveSubscriberSet).getByToken(token)
+        send_to_person = token.person
+        cancelled_by_person = subscription.cancelled_by
+        ppa_name = token.archive.displayname
+        subject = "PPA subscription cancelled for %s" % ppa_name
+        template = get_email_template("ppa-subscription-cancelled.txt")
+
+        if send_to_person.isTeam():
+            recipients = list(send_to_person)
+        else:
+            recipients = [send_to_person]
+
+        for person in recipients:
+            if person.preferredemail is None:
+                # The person has no preferred email set, so we don't
+                # email them.
+                continue
+
+            to_address = [person.preferredemail.email]
+            cancelled_by_name_url = canonical_url(cancelled_by_person)
+            replacements = {
+                'recipient_name' : send_to_person.displayname,
+                'cancelled_by_name' : cancelled_by_person.displayname,
+                'ppa_name' : ppa_name,
+                'cancelled_by_name_url' : cancelled_by_name_url,
+                }
+            body = MailWrapper(72).format(
+                template % replacements, force_wrap=True)
+
+            from_address = format_address(
+                cancelled_by_person.displayname,
+                config.canonical.noreply_from_address)
+
+            headers = {
+                'Sender' : config.canonical.bounce_address,
+                }
+
+            simple_sendmail(from_address, to_address, subject, body, headers)
+
     def deactivateTokens(self, ppa):
         """Deactivate tokens as necessary.
 
@@ -158,6 +207,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             if result.count() == 0:
                 # The subscriber's token is no longer active,
                 # deactivate it.
+                self.sendCancellationEmail(token)
                 token.deactivate()
             else:
                 valid_tokens.append(token)
