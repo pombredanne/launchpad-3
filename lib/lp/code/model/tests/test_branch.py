@@ -26,7 +26,7 @@ from lp.code.model.branch import (
 from lp.code.model.branchjob import BranchDiffJob
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
-from canonical.launchpad.database.bugbranch import BugBranch
+from lp.bugs.model.bugbranch import BugBranch
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.registry.model.product import ProductSet
@@ -35,7 +35,7 @@ from lp.blueprints.model.specificationbranch import (
 from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
     ANONYMOUS, login, login_person, logout, syncUpdate)
-from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.code.interfaces.branch import (

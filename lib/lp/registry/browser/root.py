@@ -22,7 +22,7 @@ from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from lp.code.interfaces.branchcollection import IAllBranches
-from canonical.launchpad.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.person import IPersonSet

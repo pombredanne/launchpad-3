@@ -4,5 +4,5 @@
 """Feeds symbols."""
 
 from lp.registry.feed.announcement import *
-from canonical.launchpad.feed.bug import *
+from lp.bugs.feed.bug import *
 from lp.code.feed.branch import *
