@@ -13,8 +13,7 @@ from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalChangeStatusView,
     BranchMergeProposalMergedView, BranchMergeProposalVoteView)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
+from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.codereviewcomment import (
     CodeReviewVote)
 from lp.testing import (

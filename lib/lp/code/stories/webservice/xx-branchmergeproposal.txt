@@ -250,8 +250,7 @@ proposals by their status.
 Or I can look for anything that is approved.
 
     >>> login('admin@canonical.com')
-    >>> from lp.code.interfaces.branchmergeproposal import (
-    ...     BranchMergeProposalStatus)
+    >>> from lp.code.enums import BranchMergeProposalStatus
     >>> fixit_proposal.approveBranch(fixit_proposal.target_branch.owner, '1')
     >>> logout()
 

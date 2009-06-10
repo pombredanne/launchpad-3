@@ -18,10 +18,8 @@ from lp.codehosting.scanner import mergedetection
 from lp.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase, run_as_db_user)
 from canonical.config import config
-from lp.code.enums import BranchLifecycleStatus
+from lp.code.enums import BranchLifecycleStatus, BranchMergeProposalStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
 from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 

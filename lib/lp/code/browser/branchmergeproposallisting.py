@@ -20,9 +20,10 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
+from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposal,
+    IBranchMergeProposal,
     IBranchMergeProposalGetter, IBranchMergeProposalListingBatchNavigator)
 from lp.code.interfaces.codereviewcomment import (
     CodeReviewVote)

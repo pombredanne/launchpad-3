@@ -37,9 +37,9 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
+from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, BranchMergeProposalStatus)
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import (

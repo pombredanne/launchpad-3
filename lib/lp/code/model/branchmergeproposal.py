@@ -39,6 +39,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
+from lp.code.enums import BranchMergeProposalStatus
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
@@ -55,7 +56,6 @@ from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
-    BranchMergeProposalStatus,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,

@@ -43,7 +43,8 @@ from lp.code.bzr import (
     BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
     REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeControlStatus, BranchType)
+    BranchLifecycleStatus, BranchMergeControlStatus,
+    BranchMergeProposalStatus, BranchType)
 from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal, BranchMergeProposalGetter)
@@ -59,7 +60,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
-     BranchMergeProposalStatus, InvalidBranchMergeProposal)
+     InvalidBranchMergeProposal)
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget

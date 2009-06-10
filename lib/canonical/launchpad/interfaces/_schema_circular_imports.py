@@ -31,8 +31,7 @@ from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposal)
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     CodeReviewNotificationLevel, IBranchSubscription)
@@ -104,9 +103,6 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 IPersonPublic['getMergeProposals'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
         IBranchMergeProposal
-IPersonPublic['getMergeProposals'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['status'].value_type.vocabulary = \
-        BranchMergeProposalStatus
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
