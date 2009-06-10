@@ -31,7 +31,7 @@
 
       </div>
       <div class="boardCommentBody codereviewcomment" tal:condition="message">
-        <tal:message replace="structure message/fmt:nice_pre" />
+        <tal:message replace="structure message/fmt:obfuscate-email/fmt:nice_pre" />
         <tal:short-message-view condition="view/message_summary|nothing">
           <tal:long-message condition="view/is_long_message">
             (<a tal:attributes="href comment/fmt:url;
@@ -46,7 +46,7 @@
           </div>
         </tal:good-attachments>
         <tal:other-attachments repeat="attachment view/other_attachments">
-          <tal:comment replace="structure string:<!-- '${attachment/filename}' '${attachment/mimetype}' -->"/>
+          <tal:comment replace="structure string:&lt;!-- '${attachment/filename}' '${attachment/mimetype}' --&gt;"/>
         </tal:other-attachments>
       </div>
     </div>

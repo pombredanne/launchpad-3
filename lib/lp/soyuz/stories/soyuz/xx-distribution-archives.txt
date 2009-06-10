@@ -83,7 +83,7 @@ present:
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> print find_tag_by_id(anon_browser.contents, 'sources-list-entries')
-    <pre id="sources-list-entries">
+    <pre id="sources-list-entries"...
     ...
     deb-src ...</pre>
 

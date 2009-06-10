@@ -13,7 +13,7 @@ import _pythonpath
 
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadScript
-from canonical.launchpad.scripts.importdebianbugs import import_debian_bugs
+from lp.bugs.scripts.importdebianbugs import import_debian_bugs
 
 
 class DebianBugImportScript(LaunchpadScript):

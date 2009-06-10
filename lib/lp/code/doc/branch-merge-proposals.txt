@@ -249,14 +249,6 @@ branches also record the revision that was rejected.
     >>> proposal.reviewed_revision_id == tip.revision_id
     True
 
-Rejected proposals cannot be approved again.  They must be resubmitted
-(see below).
-
-    >>> proposal.approveBranch(sample_person, tip.revision_id)
-    Traceback (most recent call last):
-    BadStateTransition: Invalid state transition for merge proposal:
-      Rejected -> Approved
-
 Proposals that are `Approved` can be moved back into the
 `Needs review` state.
 

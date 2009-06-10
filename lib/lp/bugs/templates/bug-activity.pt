@@ -1,0 +1,47 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+>
+  <body>
+<div metal:fill-slot="main">
+
+  <div id="maincontent">
+    <p tal:content="structure view/current_bugtask/fmt:link" />
+    <h1>Activity log for bug #<span tal:replace="context/bug/id" /></h1>
+
+    <table class="listing">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Who</th>
+          <th>What changed</th>
+          <th>Old value</th>
+          <th>New value</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="log context/bug/activity">
+          <td tal:content="python:log.datechanged.strftime('%d %b %y %H:%M')">
+            13 Sep 04 14:15
+          </td>
+          <td><tal:person tal:replace="structure log/person/fmt:link">person</tal:person></td>
+	  <td tal:content="log/whatchanged">description</td>
+	  <td><tal:oldvalue tal:replace="log/oldvalue">this</tal:oldvalue></td>
+	  <td><tal:newvalue tal:replace="log/newvalue">that</tal:newvalue></td>
+	  <td><tal:message  tal:replace="log/message">message</tal:message></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+</body>
+</html>

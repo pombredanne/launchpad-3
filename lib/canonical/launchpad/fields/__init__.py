@@ -277,7 +277,7 @@ class DuplicateBug(BugField):
         bug isn't a duplicate of itself, otherwise
         return False.
         """
-        from canonical.launchpad.interfaces.bug import IBugSet
+        from lp.bugs.interfaces.bug import IBugSet
         bugset = getUtility(IBugSet)
         current_bug = self.context
         dup_target = value
@@ -500,7 +500,7 @@ class ProductBugTracker(Choice):
     @property
     def schema(self):
         # The IBugTracker needs to be imported here to avoid an import loop.
-        from canonical.launchpad.interfaces.bugtracker import IBugTracker
+        from lp.bugs.interfaces.bugtracker import IBugTracker
         return IBugTracker
 
     def get(self, ob):
