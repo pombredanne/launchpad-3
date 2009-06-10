@@ -8,14 +8,14 @@ of templates.
 We are pretending to be coming from 255.255.255.255 so no GeoIP data
 will match (otherwise, we'll get a couple of African languages as
 preferred languages, and we are testing behaviour when no languages are
-wanted).  255.255.255.255 is just a random choice of an IP address for
-which we hold no GeoIP mappings.
+wanted other than those an app is translated to).  255.255.255.255 is just
+a random choice of an IP address for which we hold no GeoIP mappings.
 
     >>> anon_browser.addHeader('X-Forwarded-For', '255.255.255.255')
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+translations')
     >>> find_tag_by_id(anon_browser.contents, 'legend') is None
-    True
+    False
 
 When looking at a specific template with at least one translation, he
 will again see the legend.

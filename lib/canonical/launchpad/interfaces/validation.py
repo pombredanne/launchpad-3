@@ -160,7 +160,7 @@ def non_duplicate_branch(value):
 
 
 def valid_bug_number(value):
-    from canonical.launchpad.interfaces.bug import IBugSet
+    from lp.bugs.interfaces.bug import IBugSet
     bugset = getUtility(IBugSet)
     try:
         bugset.get(value)
@@ -306,7 +306,7 @@ def valid_upstreamtask(bug, product):
     If it exists, WidgetsError will be raised.
     """
     # Local import to avoid circular imports.
-    from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
+    from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     errors = []
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)

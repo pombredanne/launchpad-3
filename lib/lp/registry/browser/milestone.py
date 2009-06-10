@@ -21,8 +21,8 @@ from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.browser.bugtask import BugTaskListingItem
-from canonical.launchpad.interfaces.bugtask import (
+from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
@@ -130,8 +130,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The release's files as DownloadFiles."""
         if self.release is None or self.release.files.count() == 0:
             return None
-        return [self.getDownloadFile(file_, self.release)
-                for file_ in self.release.files]
+        return list(self.release.files)
 
     # Listify and cache the specifications, ProductReleaseFiles and bugtasks
     # to avoid making the same query over and over again when evaluating in

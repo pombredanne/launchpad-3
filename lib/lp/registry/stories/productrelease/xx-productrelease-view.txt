@@ -16,7 +16,8 @@ release. Each file is linked.
     firefox-0.9.2.orig.tar.gz (md5)              -
 
     >>> print table.a
-    <a href=".../firefox/trunk/0.9.2/+download/firefox-0.9.2.orig.tar.gz">...
+    <a title="firefox-0.9.2.orig.tar.gz (9.5 MiB)"
+       href=".../firefox/trunk/0.9.2/+download/firefox-0.9.2.orig.tar.gz">...
 
 If the file had been downloaded, we'd see the number of times it was
 downloaded and the date of the last download on that table as well.

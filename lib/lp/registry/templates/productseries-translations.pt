@@ -1,0 +1,92 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+  <body>
+    <div metal:fill-slot="main">
+      <h1>
+        Translations for
+        <tal:title replace="context/title">
+          evolution trunk
+        </tal:title>
+      </h1>
+
+      <ul class="helplinks">
+        <li>
+          <a href="https://help.launchpad.net/Translations"
+             id="link-to-translations-help"
+             >Help for translations
+          </a>
+        </li>
+      </ul>
+
+      <tal:no-languages condition="not:view/productserieslanguages">
+        <p>There are no translations for this release series.</p>
+
+        <p tal:condition="context/product/required:launchpad.Edit">To
+          <a href="https://help.launchpad.net/Translations/YourProject">start
+            translating your project</a>,
+          <tal:uses-translations condition="not:
+                                            context/product/official_rosetta">
+            you should enable translations in your project settings, and
+          </tal:uses-translations>
+          you can either
+          <a
+                tal:define="link context/menu:navigation/translationupload"
+                tal:attributes="href link/url"
+              >upload</a> templates and translations, or set up
+              <a
+                tal:define="link context/menu:navigation/settings"
+                tal:attributes="href link/url"
+              >import from branches</a>
+              (<a href="https://help.launchpad.net/Translations/ImportingFromBazaarBranches">read more</a>).
+        </p>
+
+        <tal:user condition="view/user">
+          <p tal:condition="not:view/user/languages">Please <a
+            tal:attributes="href string:${view/user/fmt:url}/+editlanguages">
+            set your languages</a> to start translating.</p>
+        </tal:user>
+      </tal:no-languages>
+
+      <tal:languages condition="view/productserieslanguages">
+          <p id="translation-permissions">
+            <tal:product replace="structure context/product/fmt:link">This
+            project</tal:product> is translated
+            <tal:hasgroup condition="context/product/translationgroup">by
+              <a tal:attributes="href context/product/translationgroup/fmt:url"
+                 tal:content="context/product/translationgroup/title">translators</a>
+            </tal:hasgroup>
+            with <a href="https://help.launchpad.net/Translations/YourProject#Choosing%20a%20permissions%20policy"
+              tal:content="context/product/translationpermission/title">certain</a>
+            permissions.
+            <tal:permissions condition="context/product/required:launchpad.Edit">
+              You can modify permissions on the
+              <a
+                tal:define="link context/product/menu:navigation/translators"
+                tal:attributes="href link/url"
+              >project settings</a> page.
+            </tal:permissions>
+
+        <p tal:condition="view/has_translation_documentation">
+          Before translating, please look at
+          <a tal:attributes="
+             href
+             context/product/translationgroup/translation_guide_url
+           ">translation instructions</a> first.</p>
+
+        <div tal:replace="structure context/@@+languages" />
+
+        <div style="height:1em;"></div>
+        <div tal:replace="structure context/@@+rosetta-status-legend" />
+      </tal:languages>
+    </div>
+  </body>
+</html>

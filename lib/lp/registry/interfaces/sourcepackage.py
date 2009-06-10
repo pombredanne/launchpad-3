@@ -19,7 +19,7 @@ from zope.schema import Choice, Object, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.soyuz.interfaces.component import IComponent
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
