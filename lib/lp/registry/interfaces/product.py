@@ -196,8 +196,9 @@ class License(DBEnumeratedType):
         url='http://www.opensource.org/licenses/artistic-license-2.0.php')
     BSD = DBItem(50, "Simplified BSD License",
                  url='http://www.opensource.org/licenses/bsd-license.php')
-    COMMON_PUBLIC = DBItem(80, "Common Public License",
-                           url='http://www.opensource.org/licenses/cpl1.0.php')
+    COMMON_PUBLIC = DBItem(
+        80, "Common Public License",
+        url='http://www.opensource.org/licenses/cpl1.0.php')
     ECLIPSE = DBItem(90, "Eclipse Public License",
                      url='http://www.opensource.org/licenses/eclipse-1.0.php')
     EDUCATIONAL_COMMUNITY = DBItem(
