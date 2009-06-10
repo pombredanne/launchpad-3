@@ -6,7 +6,6 @@ __metaclass__ = type
 import os
 from StringIO import StringIO
 import shutil
-import tempfile
 import unittest
 
 from canonical.config import config
@@ -30,7 +29,7 @@ class TestPPAReport(unittest.TestCase):
     def getReporter(self, ppa_owner=None, gen_over_quota=False,
                     gen_user_emails=False, gen_orphan_repos=False,
                     gen_missing_repos=False, output=None,
-                    quota_threshould=None):
+                    quota_threshold=None):
         """Return a `PPAReportScript` instance.
 
         When the 'output' command-line options is not set it overrides the
@@ -45,8 +44,8 @@ class TestPPAReport(unittest.TestCase):
         if output is not None:
             test_args.extend(['-o', output])
 
-        if quota_threshould is not None:
-            test_args.extend(['-t', quota_threshould])
+        if quota_threshold is not None:
+            test_args.extend(['-t', quota_threshold])
 
         if gen_over_quota:
             test_args.append('--gen-over-quota')
@@ -65,14 +64,13 @@ class TestPPAReport(unittest.TestCase):
 
         # Override the output handlers if no 'output' option was passed
         # via command-line.
-        def set_test_output():
-            reporter.output = StringIO()
-
-        def close_test_output():
-            pass
-
         if output is None:
+            def set_test_output():
+                reporter.output = StringIO()
             reporter.setOutput = set_test_output
+
+            def close_test_output():
+                pass
             reporter.closeOutput = close_test_output
 
         return reporter
@@ -105,82 +103,78 @@ class TestPPAReport(unittest.TestCase):
         self.assertRaises(
             LaunchpadScriptFailure, reporter.main)
 
-
     def testGetActivePPAs(self):
         # `PPAReportScript.getActivePPAs` returns a list of `IArchive`
         # objects representing the PPAs with active publications.
         # Supports filtering by a specific PPA owner name.
         reporter = self.getReporter()
         self.assertEquals(
-            [ppa.owner.name for ppa in reporter.getActivePPAs()],
+            [ppa.owner.name for ppa in reporter.ppas],
             ['cprov', 'sabdfl'])
 
         reporter = self.getReporter(ppa_owner='cprov')
         self.assertEquals(
-            [ppa.owner.name for ppa in reporter.getActivePPAs()],
+            [ppa.owner.name for ppa in reporter.ppas],
             ['cprov'])
 
         reporter = self.getReporter(ppa_owner='foobar')
         self.assertEquals(
-            [ppa.owner.name for ppa in reporter.getActivePPAs()],
+            [ppa.owner.name for ppa in reporter.ppas],
             [])
 
     def testOverQuota(self):
-        # OverQuota report lists PPA urls, quota and current size values
-        # one by line in a CSV format.
+        # OverQuota report lists PPA urls, quota and current size values,
+        # line by line in a CSV format.
 
-        # Quota threshould defaults to 80%.
+        # Quota threshold defaults to 80%.
         reporter = self.getReporter()
-        ppas = reporter.getActivePPAs()
         reporter.setOutput()
-        reporter.reportOverQuota(ppas)
+        reporter.reportOverQuota()
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
-                '',
                 '= PPAs over 80.00% of their quota =',
+                '',
                 ]
             )
 
-        # Quota threshould can be specified.
-        reporter = self.getReporter(quota_threshould=.01)
+        # Quota threshold can be specified.
+        reporter = self.getReporter(quota_threshold=.01)
         reporter.setOutput()
-        reporter.reportOverQuota(ppas)
+        reporter.reportOverQuota()
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
-                '',
                 '= PPAs over 0.01% of their quota =',
                 'http://launchpad.dev/~cprov/+archive/ppa | 1024 | 9',
                 'http://launchpad.dev/~sabdfl/+archive/ppa | 1024 | 9',
+                '',
                 ]
             )
 
     def testUserEmails(self):
         # UserEmails report lists user name, user displayname and user
-        # preferred emails address one by line in a CSV format for users
-        # involved with the given PPAs.
+        # preferred emails address, line by line in a CSV format, for
+        # users involved with the given PPAs.
         reporter = self.getReporter()
-        ppas = reporter.getActivePPAs()
         reporter.setOutput()
-        reporter.reportUserEmails(ppas)
+        reporter.reportUserEmails()
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
-                '',
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
                 'sabdfl | Mark Shuttleworth | mark@hbd.com',
+                '',
                 ]
             )
 
         # UserEmails report can be generated for a single PPA.
         reporter = self.getReporter(ppa_owner='cprov')
-        ppas = reporter.getActivePPAs()
         reporter.setOutput()
-        reporter.reportUserEmails(ppas)
+        reporter.reportUserEmails()
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
-                '',
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
+                '',
                 ]
             )
 
@@ -188,14 +182,13 @@ class TestPPAReport(unittest.TestCase):
         # OrphanRepos report lists all directories in the PPA root that
         # do not correspond to a existing active PPA. Since the test
         # setup resets PPA root, there is nothing to report.
-        reporter = self.getReporter(ppa_owner='cprov')
-        ppas = reporter.getActivePPAs()
+        reporter = self.getReporter()
         reporter.setOutput()
-        reporter.reportOrphanRepos(ppas)
+        reporter.reportOrphanRepos()
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
-                '',
                 '= Orphan PPA repositories =',
+                '',
                 ]
             )
         # We create a 'orphan' repository.
@@ -204,13 +197,14 @@ class TestPPAReport(unittest.TestCase):
         os.mkdir(orphan_repo)
 
         # It gets listed in the OrphanRepos reports.
+        reporter = self.getReporter()
         reporter.setOutput()
-        reporter.reportOrphanRepos(ppas)
+        reporter.reportOrphanRepos()
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
-                '',
                 '= Orphan PPA repositories =',
                 '/var/tmp/ppa.test/orphan',
+                '',
                 ]
             )
         # Remove the orphan directory.
@@ -219,22 +213,20 @@ class TestPPAReport(unittest.TestCase):
     def testMissingRepos(self):
         # MissingRepos report lists all repositories that should exist
         # in the PPA root that in other to satisfy the active PPAs in DB.
-        reporter = self.getReporter()
-        ppas = reporter.getActivePPAs()
-
         # Since setup resets PPA root, both active PPAs are listed.
+        reporter = self.getReporter()
         reporter.setOutput()
-        reporter.reportMissingRepos(ppas)
+        reporter.reportMissingRepos()
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
-                '',
                 '= Missing PPA repositories =',
                 '/var/tmp/ppa.test/cprov',
                 '/var/tmp/ppa.test/sabdfl',
+                '',
                 ]
             )
         # We create both active PPA repositories.
-        owner_names = [ppa.owner.name for ppa in ppas]
+        owner_names = [ppa.owner.name for ppa in reporter.ppas]
         created_repos = []
         for owner_name in owner_names:
             repo_path = os.path.join(
@@ -243,12 +235,13 @@ class TestPPAReport(unittest.TestCase):
             created_repos.append(repo_path)
 
         # They are not listed in the MissingRepos report anymore.
+        reporter = self.getReporter()
         reporter.setOutput()
-        reporter.reportMissingRepos(ppas)
+        reporter.reportMissingRepos()
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
-                '',
                 '= Missing PPA repositories =',
+                '',
                 ]
             )
 
@@ -259,20 +252,20 @@ class TestPPAReport(unittest.TestCase):
     def testOutput(self):
         # When requested in the command-line the report output is
         # stored correctly in the specified file.
-        tmp_path = tempfile.mktemp()
+        output_path = '/tmp/report.output'
         reporter = self.getReporter(
-            gen_missing_repos=True, output=tmp_path)
+            gen_missing_repos=True, output=output_path)
         reporter.main()
         self.assertEquals(
-            open(tmp_path).read().splitlines(),[
-                '',
+            open(output_path).read().splitlines(),[
                 '= Missing PPA repositories =',
                 '/var/tmp/ppa.test/cprov',
                 '/var/tmp/ppa.test/sabdfl',
+                '',
                 ]
             )
         # Remove the report file.
-        os.remove(tmp_path)
+        os.remove(output_path)
 
     def testRunMain(self):
         # Run the main() script function with the full report options
@@ -283,7 +276,6 @@ class TestPPAReport(unittest.TestCase):
         reporter.main()
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
-                '',
                 '= PPAs over 80.00% of their quota =',
                 '',
                 '= Orphan PPA repositories =',
@@ -291,6 +283,7 @@ class TestPPAReport(unittest.TestCase):
                 '= Missing PPA repositories =',
                 '/var/tmp/ppa.test/cprov',
                 '/var/tmp/ppa.test/sabdfl',
+                '',
                 ]
             )
         # Another run for generating user emails report
@@ -298,10 +291,10 @@ class TestPPAReport(unittest.TestCase):
         reporter.main()
         self.assertEquals(
             reporter.output.getvalue().splitlines(), [
-                '',
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
                 'sabdfl | Mark Shuttleworth | mark@hbd.com',
+                '',
                 ]
             )
 

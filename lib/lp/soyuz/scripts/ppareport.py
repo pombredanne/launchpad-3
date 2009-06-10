@@ -4,7 +4,7 @@
 Generate several reports about the PPA repositories.
 
  * Over-quota
- * Users emails
+ * User's emails
  * Orphan repositories (requires access to the PPA host machine disk)
  * Missing repositories (requires access to the PPA host machine disk)
 """
@@ -17,6 +17,7 @@ from storm.locals import Join
 from storm.store import Store
 from zope.component import getUtility
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import emailPeople
 from canonical.launchpad.webapp import canonical_url
@@ -41,9 +42,9 @@ class PPAReportScript(LaunchpadScript):
             help='Optional file to store output.')
 
         self.parser.add_option(
-            '-t', '--quota-threshould', dest='quota_threshould',
+            '-t', '--quota-threshold', dest='quota_threshold',
             action='store', type=float, default=80,
-            help='Quota threshould percentage, defaults to 80 %%')
+            help='Quota threshold percentage, defaults to 80 %')
 
         self.parser.add_option(
             '--gen-over-quota', action='store_true', default=False,
@@ -61,13 +62,12 @@ class PPAReportScript(LaunchpadScript):
             '--gen-missing-repos', action='store_true', default=False,
             help='Generate PPAs missing repositories list.')
 
-    def getActivePPAs(self):
-        """Return a list of active PPAs for 'ubuntu'.
+    @cachedproperty
+    def ppas(self):
+        """A cached tuple containing relevant PPAs objects for 'ubuntu'.
 
         if `self.options.archive_owner_name` is defined only return PPAs
         with matching owner names.
-
-        :return: a list of `IArchive` objects.
         """
         # Avoiding circular imports.
         from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -97,7 +97,7 @@ class PPAReportScript(LaunchpadScript):
             Archive, *clauses)
         results.order_by(Archive.date_created)
 
-        return list(results.config(distinct=True))
+        return tuple(results.config(distinct=True))
 
     def setOutput(self):
         """Set the output file descriptor.
@@ -139,82 +139,77 @@ class PPAReportScript(LaunchpadScript):
     def main(self):
         self.checkOptions()
 
-        ppas = self.getActivePPAs()
-        self.logger.info('Considering %d active PPAs.' % len(ppas))
+        self.logger.info('Considering %d active PPAs.' % len(self.ppas))
 
         self.setOutput()
 
         if self.options.gen_over_quota:
-            self.reportOverQuota(ppas)
+            self.reportOverQuota()
 
         if self.options.gen_user_emails:
-            self.reportUserEmails(ppas)
+            self.reportUserEmails()
 
         if self.options.gen_orphan_repos:
-            self.reportOrphanRepos(ppas)
+            self.reportOrphanRepos()
 
         if self.options.gen_missing_repos:
-            self.reportMissingRepos(ppas)
+            self.reportMissingRepos()
 
         self.closeOutput()
 
         self.logger.info('Done')
 
-    def reportOverQuota(self, ppas):
+    def reportOverQuota(self):
         self.output.write(
-            '\n= PPAs over %.2f%% of their quota =\n' %
-            self.options.quota_threshould)
-        threshould = self.options.quota_threshould / 100.0
-        for ppa in ppas:
+            '= PPAs over %.2f%% of their quota =\n' %
+            self.options.quota_threshold)
+        threshold = self.options.quota_threshold / 100.0
+        for ppa in self.ppas:
             limit = ppa.authorized_size
             size = ppa.estimated_size / (2 ** 20)
-            if size <= (threshould * limit):
+            if size <= (threshold * limit):
                 continue
-            values = (
-                canonical_url(ppa),
-                str(limit),
-                str(size),
-                )
-            line = ' | '.join(values).encode('utf-8')
-            self.output.write(line + '\n')
+            line = "%s | %d | %d\n" % (canonical_url(ppa), limit, size)
+            self.output.write(line.encode('utf-8'))
+        self.output.write('\n')
 
-    def reportUserEmails(self, ppas):
-        self.output.write('\n= PPA user emails =\n')
+    def reportUserEmails(self):
+        self.output.write('= PPA user emails =\n')
         people_to_email = set()
-        for ppa in ppas:
+        for ppa in self.ppas:
             people_to_email.update(emailPeople(ppa.owner))
         sorted_people_to_email = sorted(
             people_to_email, key=operator.attrgetter('name'))
         for user in sorted_people_to_email:
-            values = (
-                user.name,
-                user.displayname,
-                user.preferredemail.email,
-                )
-            line = ' | '.join(values).encode('utf-8')
-            self.output.write(line + '\n')
+            line = u"%s | %s | %s\n" % (
+                user.name, user.displayname, user.preferredemail.email)
+            self.output.write(line.encode('utf-8'))
+        self.output.write('\n')
 
-    def _calculatePPAPaths(self, ppas):
-        active_paths = set(ppa.owner.name for ppa in ppas)
-        existing_paths = set(
-            os.listdir(config.personalpackagearchive.root))
-        return active_paths, existing_paths
+    @cachedproperty
+    def expected_paths(self):
+        """Frozenset containing the expected PPA repository paths."""
+        return frozenset(ppa.owner.name for ppa in self.ppas)
 
-    def reportOrphanRepos(self, ppas):
-        self.output.write('\n= Orphan PPA repositories =\n')
-        active_paths, existing_paths = self._calculatePPAPaths(ppas)
-        orphan_paths = existing_paths - active_paths
+    @cachedproperty
+    def existing_paths(self):
+        """Frozenset containing the existing PPA repository paths."""
+        return frozenset(os.listdir(config.personalpackagearchive.root))
+
+    def reportOrphanRepos(self):
+        self.output.write('= Orphan PPA repositories =\n')
+        orphan_paths = self.existing_paths - self.expected_paths
         for orphan in sorted(orphan_paths):
             repo_path = os.path.join(
                 config.personalpackagearchive.root, orphan)
             self.output.write('%s\n' % repo_path)
+        self.output.write('\n')
 
-    def reportMissingRepos(self, ppas):
-        self.output.write('\n= Missing PPA repositories =\n')
-        active_paths, existing_paths = self._calculatePPAPaths(ppas)
-        missing_paths = active_paths - existing_paths
+    def reportMissingRepos(self):
+        self.output.write('= Missing PPA repositories =\n')
+        missing_paths = self.expected_paths - self.existing_paths
         for missing in sorted(missing_paths):
             repo_path = os.path.join(
                 config.personalpackagearchive.root, missing)
             self.output.write('%s\n' % repo_path)
-
+        self.output.write('\n')
