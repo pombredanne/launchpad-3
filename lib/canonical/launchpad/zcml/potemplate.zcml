@@ -129,6 +129,13 @@
             />
     </class>
 
+    <class class="canonical.launchpad.database.potemplate.POTemplateSharingSubset">
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IPOTemplateSharingSubset"
+            />
+    </class>
+
     <browser:url
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
         urldata="canonical.launchpad.browser.POTemplateSubsetURL"

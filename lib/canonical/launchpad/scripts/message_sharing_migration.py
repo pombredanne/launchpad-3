@@ -107,7 +107,7 @@ def merge_potmsgsets(potemplates):
     # moving towards the least representative.  For any unique potmsgset
     # key we find, the first POTMsgSet is the representative one.
     order_check = OrderingCheck(
-        cmp=getUtility(IPOTemplateSet).getPOTemplatePrecedence)
+        cmp=getUtility(IPOTemplateSet).compareSharingPrecedence)
     for template in potemplates:
         order_check.check(template)
         for potmsgset in template.getPOTMsgSets(False):
@@ -176,7 +176,7 @@ def merge_potmsgsets(potemplates):
 def merge_translationmessages(potemplates):
     """Share `TranslationMessage`s between `potemplates` where possible."""
     order_check = OrderingCheck(
-        cmp=getUtility(IPOTemplateSet).getPOTemplatePrecedence)
+        cmp=getUtility(IPOTemplateSet).compareSharingPrecedence)
     for template in potemplates:
         order_check.check(template)
         for potmsgset in template.getPOTMsgSets(False):
@@ -254,11 +254,11 @@ class MessageSharingMerge(LaunchpadScript):
                     "Unknown source package name: '%s'" %
                         self.options.sourcepackage)
 
-        equivalence_classes = getUtility(
-            IPOTemplateSet).findPOTemplateEquivalenceClassesFor(
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
                 product=product, distribution=distribution,
-                name_pattern=self.options.template_names,
                 sourcepackagename=sourcepackagename)
+        equivalence_classes = subset.groupEquivalentPOTemplates(
+                                                self.options.template_names)
 
         class_count = len(equivalence_classes)
         self.logger.info(

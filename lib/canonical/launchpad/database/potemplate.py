@@ -39,10 +39,11 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOFileSet, IPOTemplate, IPOTemplateSet,
-    IPOTemplateSubset, ITranslationExporter, ITranslationFileData,
-    ITranslationImporter, IVPOTExportSet, LanguageNotFound, NotFoundError,
-    RosettaImportStatus, TranslationFileFormat,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+    IPOTemplateSharingSubset, IPOTemplateSubset, ITranslationExporter,
+    ITranslationFileData, ITranslationImporter, IVPOTExportSet,
+    LanguageNotFound, NotFoundError, RosettaImportStatus,
+    TranslationFileFormat, TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError)
 from canonical.launchpad.interfaces.potmsgset import BrokenTextError
 from canonical.launchpad.translationformat import TranslationMessageData
 
@@ -1064,6 +1065,13 @@ class POTemplateSet:
             sourcepackagename=sourcepackagename,
             iscurrent=iscurrent)
 
+    def getSharingSubset(self, distribution=None, sourcepackagename=None,
+                         product=None):
+        """See `IPOTemplateSet`."""
+        return POTemplateSharingSubset(self, distribution=distribution,
+                                       sourcepackagename=sourcepackagename,
+                                       product=product)
+
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
         distroseries=None, sourcepackagename=None):
         """See `IPOTemplateSet`."""
@@ -1109,7 +1117,7 @@ class POTemplateSet:
                 ' not None.')
 
     @staticmethod
-    def getPOTemplatePrecedence(left, right):
+    def compareSharingPrecedence(left, right):
         """See IPOTemplateSet."""
         if left == right:
             return 0
@@ -1145,6 +1153,27 @@ class POTemplateSet:
             return 1
 
 
+class POTemplateSharingSubset(object):
+    implements(IPOTemplateSharingSubset)
+
+    distribution = None
+    sourcepackagename = None
+    product = None
+
+    def __init__(self, potemplateset,
+                 distribution=None, sourcepackagename=None,
+                 product=None):
+        assert product or distribution, "Pick a product or distribution!"
+        assert not (product and distribution), (
+            "Pick a product or distribution, not both!")
+        assert distribution or not sourcepackagename, (
+            "Picking a source package only makes sense with a distribution.")
+        self.potemplateset = potemplateset
+        self.distribution = distribution
+        self.sourcepackagename = sourcepackagename
+        self.product = product
+
+
     def _get_potemplate_equivalence_class(self, template):
         """Return whatever we group `POTemplate`s by for sharing purposes."""
         if template.sourcepackagename is None:
@@ -1153,25 +1182,24 @@ class POTemplateSet:
             package = template.sourcepackagename.name
         return (template.name, package)
 
-
-    def _iterate_potemplates(self, product=None, distribution=None,
-                             name_pattern=None, sourcepackagename=None):
-        """Yield all templates matching the provided arguments.
+    def _iterate_potemplates(self, name_pattern=None):
+        """Yield all templates matching the provided argument.
 
         This is much like a `IPOTemplateSubset`, except it operates on
         `Product`s and `Distribution`s rather than `ProductSeries` and
         `DistroSeries`.
         """
-        if product:
+        if self.product:
             subsets = [
-                self.getSubset(productseries=series)
-                for series in product.serieses
+                self.potemplateset.getSubset(productseries=series)
+                for series in self.product.serieses
                 ]
         else:
             subsets = [
-                self.getSubset(
-                    distroseries=series, sourcepackagename=sourcepackagename)
-                for series in distribution.serieses
+                self.potemplateset.getSubset(
+                    distroseries=series,
+                    sourcepackagename=self.sourcepackagename)
+                for series in self.distribution.serieses
                 ]
         for subset in subsets:
             for template in subset:
@@ -1179,25 +1207,11 @@ class POTemplateSet:
                                                     template.name):
                     yield template
 
-    def findPOTemplateEquivalenceClassesFor(self,
-                                            product=None, distribution=None,
-                                            name_pattern=None,
-                                            sourcepackagename=None):
-        """See IPOTemplateSet."""
-        assert product or distribution, "Pick a product or distribution!"
-        assert not (product and distribution), (
-            "Pick a product or distribution, not both!")
-        assert distribution or not sourcepackagename, (
-            "Picking a source package only makes sense with a distribution.")
-
+    def groupEquivalentPOTemplates(self, name_pattern=None):
+        """See IPOTemplateSharingSubset."""
         equivalents = {}
 
-        templates = self._iterate_potemplates(
-            product=product, distribution=distribution,
-            name_pattern=name_pattern,
-            sourcepackagename=sourcepackagename)
-
-        for template in templates:
+        for template in self._iterate_potemplates(name_pattern):
             key = self._get_potemplate_equivalence_class(template)
             if key not in equivalents:
                 equivalents[key] = []
@@ -1206,7 +1220,7 @@ class POTemplateSet:
         for equivalence_list in equivalents.itervalues():
             # Sort potemplates from "most representative" to "least
             # representative."
-            equivalence_list.sort(cmp=self.getPOTemplatePrecedence)
+            equivalence_list.sort(cmp=POTemplateSet.compareSharingPrecedence)
 
         return equivalents
 

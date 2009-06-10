@@ -7,9 +7,9 @@ from unittest import TestLoader
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.database.potemplate import POTemplateSet
-from canonical.launchpad.interfaces import (
-    ILanguageSet, IPOTemplateSet)
+from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.testing import TestCaseWithFactory
@@ -88,8 +88,8 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
         self.trunk = self.product.getSeries('trunk')
         self.stable = self.factory.makeProductSeries(
             product=self.product)
-        self.find_potemplate_equivalence_classes_for = getUtility(
-            IPOTemplateSet).findPOTemplateEquivalenceClassesFor
+        self.subset = getUtility(IPOTemplateSet).getSharingSubset(
+            product=self.product)
 
     def test_ProductTemplateEquivalence(self):
         # Within a product, two identically named templates form an
@@ -99,8 +99,7 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name='foo')
 
-        classes = self.find_potemplate_equivalence_classes_for(
-            product=self.product)
+        classes = self.subset.groupEquivalentPOTemplates()
         expected = { ('foo', None): [trunk_template, stable_template] }
         self._compareResult(expected, classes)
 
@@ -112,8 +111,7 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name='bar')
 
-        classes = self.find_potemplate_equivalence_classes_for(
-            product=self.product)
+        classes = self.subset.groupEquivalentPOTemplates()
         expected = {
             ('foo', None): [trunk_template],
             ('bar', None): [stable_template],
@@ -129,13 +127,13 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
         template2 = self.factory.makePOTemplate(
             productseries=external_series, name='foo')
 
-        classes = self.find_potemplate_equivalence_classes_for(
-            product=self.product)
+        classes = self.subset.groupEquivalentPOTemplates()
         expected = { ('foo', None): [template1] }
         self._compareResult(expected, classes)
 
-        classes = self.find_potemplate_equivalence_classes_for(
+        external_subset = getUtility(IPOTemplateSet).getSharingSubset(
             product=external_series.product)
+        classes = external_subset.groupEquivalentPOTemplates()
         expected = { ('foo', None): [template2] }
         self._compareResult(expected, classes)
 
@@ -151,8 +149,8 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
         self.hoary = self.ubuntu['hoary']
         self.warty = self.ubuntu['warty']
         self.package = self.factory.makeSourcePackageName()
-        self.find_potemplate_equivalence_classes_for = getUtility(
-            IPOTemplateSet).findPOTemplateEquivalenceClassesFor
+        self.subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=self.ubuntu, sourcepackagename=self.package)
 
     def test_PackageTemplateEquivalence(self):
         # Two identically-named templates in the same source package in
@@ -165,8 +163,7 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             distroseries=self.warty, sourcepackagename=self.package,
             name='foo')
 
-        classes = self.find_potemplate_equivalence_classes_for(
-            distribution=self.ubuntu, sourcepackagename=self.package)
+        classes = self.subset.groupEquivalentPOTemplates()
 
         expected = {
             ('foo', self.package.name): [hoary_template, warty_template],
@@ -183,8 +180,7 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             distroseries=self.warty, sourcepackagename=self.package,
             name='bar')
 
-        classes = self.find_potemplate_equivalence_classes_for(
-            distribution=self.ubuntu, sourcepackagename=self.package)
+        classes = self.subset.groupEquivalentPOTemplates()
 
         expected = {
             ('foo', self.package.name): [hoary_template],
@@ -204,8 +200,7 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             distroseries=self.warty, sourcepackagename=other_package,
             name='foo')
 
-        classes = self.find_potemplate_equivalence_classes_for(
-            distribution=self.ubuntu)
+        classes = self.subset.groupEquivalentPOTemplates()
 
         self.assertTrue(('foo', self.package.name) in classes)
         self.assertEqual(classes[('foo', self.package.name)], [our_template])
@@ -222,8 +217,7 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             distroseries=self.hoary, sourcepackagename=self.package,
             name=unique_name)
 
-        classes = self.find_potemplate_equivalence_classes_for(
-            distribution=self.ubuntu,
+        classes = self.subset.groupEquivalentPOTemplates(
             name_pattern='krungthepmahanakorn.*-etc')
 
         expected = {
@@ -276,7 +270,7 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         """Order templates by precedence."""
         if templates is None:
             templates = self.templates
-        return sorted(templates, cmp=POTemplateSet.getPOTemplatePrecedence)
+        return sorted(templates, cmp=POTemplateSet.compareSharingPrecedence)
 
     def _getPrimaryTemplate(self, templates=None):
         """Get first template in order of precedence."""
