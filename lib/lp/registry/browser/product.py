@@ -70,7 +70,7 @@ from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFile, IProductReleaseSet)
+    IProductRelease, IProductReleaseSet)
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
@@ -705,6 +705,14 @@ class SeriesWithReleases:
             if len(release.files) > 0:
                 return True
         return False
+
+    @cachedproperty
+    def total_downloads(self):
+        """Total downloads of files associated with this series."""
+        total = 0
+        for release in self.releases:
+            total += sum(file.libraryfile.hits for file in release.files)
+        return total
 
 
 class ReleaseWithFiles:
