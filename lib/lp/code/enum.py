@@ -1,0 +1,159 @@
+# Copyright 2009 Canonical Ltd.  All rights reserved.
+
+"""Enumerations used in the lp/code modules."""
+
+__metaclass__ = type
+__all__ = [
+    'BranchLifecycleStatus',
+    'BranchLifecycleStatusFilter',
+    'BranchMergeControlStatus',
+    'BranchType',
+    'UICreatableBranchType',
+    ]
+
+from lazr.enum import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+
+
+class BranchLifecycleStatus(DBEnumeratedType):
+    """Branch Lifecycle Status
+
+    This indicates the status of the branch, as part of an overall
+    "lifecycle". The idea is to indicate to other people how mature this
+    branch is, or whether or not the code in the branch has been deprecated.
+    Essentially, this tells us what the author of the branch thinks of the
+    code in the branch.
+    """
+
+    EXPERIMENTAL = DBItem(10, """
+        Experimental
+
+        Still under active development, and not suitable for merging into
+        release branches.
+        """)
+
+    DEVELOPMENT = DBItem(30, """
+        Development
+
+        Shaping up nicely, but incomplete or untested, and not yet ready for
+        merging or production use.
+        """)
+
+    MATURE = DBItem(50, """
+        Mature
+
+        Completely addresses the issues it is supposed to, tested, and stable
+        enough for merging into other branches.
+        """)
+
+    MERGED = DBItem(70, """
+        Merged
+
+        Successfully merged into its target branch(es). No further development
+        is anticipated.
+        """)
+
+    ABANDONED = DBItem(80, "Abandoned")
+
+
+class BranchMergeControlStatus(DBEnumeratedType):
+    """Branch Merge Control Status
+
+    Does the branch want Launchpad to manage a merge queue, and if it does,
+    how does the branch owner handle removing items from the queue.
+    """
+
+    NO_QUEUE = DBItem(1, """
+        Does not use a merge queue
+
+        The branch does not use the merge queue managed by Launchpad.  Merges
+        are tracked and managed elsewhere.  Users will not be able to queue up
+        approved branch merge proposals.
+        """)
+
+    MANUAL = DBItem(2, """
+        Manual processing of the merge queue
+
+        One or more people are responsible for manually processing the queued
+        branch merge proposals.
+        """)
+
+    ROBOT = DBItem(3, """
+        A branch merge robot is used to process the merge queue
+
+        An external application, like PQM, is used to merge in the queued
+        approved proposed merges.
+        """)
+
+    ROBOT_RESTRICTED = DBItem(4, """
+        The branch merge robot used to process the queue is in restricted mode
+
+        When the robot is in restricted mode, normal queued branches are not
+        returned for merging, only those with "Queued for Restricted
+        merging" will be.
+        """)
+
+
+class BranchType(DBEnumeratedType):
+    """Branch Type
+
+    The type of a branch determins the branch interaction with a number
+    of other subsystems.
+    """
+
+    HOSTED = DBItem(1, """
+        Hosted
+
+        Launchpad is the primary location of this branch.
+        """)
+
+    MIRRORED = DBItem(2, """
+        Mirrored
+
+        Primarily hosted elsewhere and is periodically mirrored
+        from the external location into Launchpad.
+        """)
+
+    IMPORTED = DBItem(3, """
+        Imported
+
+        Branches that have been converted from some other revision
+        control system into bzr and are made available through Launchpad.
+        """)
+
+    REMOTE = DBItem(4, """
+        Remote
+
+        Registered in Launchpad with an external location,
+        but is not to be mirrored, nor available through Launchpad.
+        """)
+
+
+class UICreatableBranchType(EnumeratedType):
+    """The types of branches that can be created through the web UI."""
+    use_template(BranchType, exclude='IMPORTED')
+
+
+class BranchLifecycleStatusFilter(EnumeratedType):
+    """Branch Lifecycle Status Filter
+
+    Used to populate the branch lifecycle status filter widget.
+    UI only.
+    """
+    use_template(BranchLifecycleStatus)
+
+    sort_order = (
+        'CURRENT', 'ALL', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
+        'MERGED', 'ABANDONED')
+
+    CURRENT = Item("""
+        Any active status
+
+        Show the currently active branches.
+        """)
+
+    ALL = Item("""
+        Any status
+
+        Show all the branches.
+        """)
