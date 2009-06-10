@@ -31,9 +31,11 @@ class SourcesListEntriesView(LaunchpadView):
     __used_for__ = SourcesListEntries
     template = ViewPageTemplateFile('../templates/sources-list-entries.pt')
 
-    def __init__(self, context, request, initially_without_selection=False):
-        LaunchpadView.__init__(self, context, request)
+    def __init__(self, context, request, initially_without_selection=False,
+        comment=None):
         self._initially_without_selection = initially_without_selection
+        self.comment = comment
+        super(SourcesListEntriesView, self).__init__(context, request)
 
     def initialize(self):
         self.terms = []
@@ -75,7 +77,11 @@ class SourcesListEntriesView(LaunchpadView):
         # number, we check for a corresponding valid distroseries and, if one
         # is found, return it's name.
         user_agent = self.request.getHeader('HTTP_USER_AGENT')
-        ubuntu_index = user_agent.find('Ubuntu/')
+
+        ubuntu_index = 0
+        if user_agent is not None:
+            ubuntu_index = user_agent.find('Ubuntu/')
+
         if ubuntu_index > 0:
             # Great, the browser is telling us the platform is Ubuntu.
             # Now grab the Ubuntu series/version number:
