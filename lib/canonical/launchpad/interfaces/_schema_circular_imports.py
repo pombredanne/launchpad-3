@@ -71,8 +71,6 @@ IBranch['spec_links'].value_type.schema = ISpecificationBranch
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
 IBranchMergeProposal['createComment'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['vote'].vocabulary = CodeReviewVote
-IBranchMergeProposal['createComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['parent'].schema = \
         ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment

@@ -7,8 +7,9 @@ Some branches are also considered "private".  These are branches that
 are only visible to the owner of the branch, and the subscribers.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, IBranchSet, IPersonSet)
+    >>> from lp.code.enums import BranchType
+    >>> from lp.code.interfaces.branch import IBranchSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> no_priv_person = person_set.getByName('no-priv')
 
