@@ -18,14 +18,19 @@ from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.security import AuthorizationBase
-from lp.testing.factory import ObjectFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.authorization import (
+    check_permission, LaunchpadSecurityPolicy,
+    precache_permission_for_objects)
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, IAuthorization, ILaunchpadPrincipal, ILaunchpadContainer,
     IStoreSelector)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
-from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
+from canonical.launchpad.webapp.servers import (
+    LaunchpadBrowserRequest, LaunchpadTestRequest)
+from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import ANONYMOUS, login, TestCase
+from lp.testing.factory import ObjectFactory
 
 
 class Checker(AuthorizationBase):
@@ -316,6 +321,25 @@ class LoneObject:
 def adapt_loneobject_to_container(loneobj):
     """Adapt a LoneObject to an `ILaunchpadContainer`."""
     return loneobj
+
+
+class TestPrecachePermissionForObjects(TestCase):
+    """Test the precaching of permissions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_precaching_permissions(self):
+        # The precache_permission_for_objects function updates the security
+        # policy cache for the permission specified.
+        class Boring(object):
+            """A boring, but weakref-able object."""
+        objects = [Boring(), Boring()]
+        request = LaunchpadTestRequest()
+        login(ANONYMOUS, request)
+        precache_permission_for_objects(request, 'launchpad.View', objects)
+        # Confirm that the objects have the permission set.
+        self.assertTrue(check_permission('launchpad.View', objects[0]))
+        self.assertTrue(check_permission('launchpad.View', objects[1]))
 
 
 def test_suite():

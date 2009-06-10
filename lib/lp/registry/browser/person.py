@@ -2862,6 +2862,16 @@ class PersonView(LaunchpadView, FeedsMixin):
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
 
+    @cachedproperty
+    def has_karma(self):
+        """Does the have karma?"""
+        return bool(self.context.karma_category_caches)
+
+    @cachedproperty
+    def has_expired_karma(self):
+        """Did the user have karm?."""
+        return self.context.latestKarma().count() > 0
+
     @property
     def public_private_css(self):
         """The CSS classes that represent the public or private state."""
