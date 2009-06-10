@@ -1092,6 +1092,25 @@ class IHWSubmissionBugSet(Interface):
         :param bug: An IBug instance.
         """
 
+    def remove(hwsubmission, bug):
+        """Remove the link between `hwsubmission` and `bug`.
+
+        :param hwsubmission: An IHWSubmission instance.
+        :param bug: An IBug instance.
+        """
+
+    def submissionsForBug(bug, user=None):
+        """Return the HWDB submissions linked to the bug `bug`.
+
+        :return: A sequence of HWDB submissions linked to `bug`.
+        :param user: The user making the request.
+
+        Only those submissions are returned which the user can access.
+        Public submissions are always included; private submisisons only
+        if the user is the owner or an admin.
+        """
+
+
 class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
     """Hardware database application application root."""
 

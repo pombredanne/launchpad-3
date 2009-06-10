@@ -44,7 +44,6 @@ Both bugs are returned.
     ...     find_tag_by_id(anon_browser.contents, 'buglisting'))
     Summary        Importance  Status
     16 test bug a  Undecided   New
-    16 test bug a  Undecided   New
     17 test bug b  Undecided   New
 
 When we search for bugs with all the tags, though, only the first bug is

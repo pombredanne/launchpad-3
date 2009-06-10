@@ -98,6 +98,12 @@ IBug['addBranch'].queryTaggedValue(
 
 IBugTask['findSimilarBugs'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBug
+patch_plain_parameter_type(
+    IBug, 'linkHWSubmission', 'submission', IHWSubmission)
+patch_plain_parameter_type(
+    IBug, 'unlinkHWSubmission', 'submission', IHWSubmission)
+patch_collection_return_type(
+    IBug, 'getHWSubmissions', IHWSubmission)
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
