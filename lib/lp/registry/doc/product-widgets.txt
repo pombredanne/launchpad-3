@@ -49,14 +49,14 @@ Firefox has not yet selected a bug tracker.
     ...     labels = soup('label')
     ...     for label in labels:
     ...         if label.previous.previous.get('checked'):
-    ...             print '(*)', extract_text(label)
+    ...             print '[X]', extract_text(label)
     ...         else:
-    ...             print '( )', extract_text(label)
+    ...             print '[ ]', extract_text(label)
     >>> print_items(widget())
-    ( ) In Launchpad
-    ( ) In a registered bug tracker:
-    ( ) By emailing an upstream bug contact:
-    (*) Somewhere else
+    [ ] In Launchpad
+    [ ] In a registered bug tracker:
+    [ ] By emailing an upstream bug contact:
+    [X] Somewhere else
 
 Firefox chooses to use the Gnome Bugzilla bug tracker, and the widget displays
 this bug tracker as selected.
@@ -69,10 +69,10 @@ this bug tracker as selected.
     >>> firefox.project.bugtracker = gnome_bugzilla
 
     >>> print_items(widget())
-    ( ) In Launchpad
-    ( ) In a registered bug tracker:
-    ( ) By emailing an upstream bug contact:
-    (*) In the the Mozilla Project bug tracker (GnomeGBug GTracker)
+    [ ] In Launchpad
+    [ ] In a registered bug tracker:
+    [ ] By emailing an upstream bug contact:
+    [X] In the the Mozilla Project bug tracker (GnomeGBug GTracker)
 
 On second thought, Firefox has no specified bug tracker.
 
@@ -80,10 +80,10 @@ On second thought, Firefox has no specified bug tracker.
     >>> firefox.project = None
 
     >>> print_items(widget())
-    ( ) In Launchpad
-    ( ) In a registered bug tracker:
-    ( ) By emailing an upstream bug contact:
-    (*) Somewhere else
+    [ ] In Launchpad
+    [ ] In a registered bug tracker:
+    [ ] By emailing an upstream bug contact:
+    [X] Somewhere else
 
 Calling the widget's setRenderedValue() with a specific bug tracker overrides
 the display of the selected bug tracker.
@@ -92,10 +92,10 @@ the display of the selected bug tracker.
     >>> widget.setRenderedValue(mozilla_bugtracker)
 
     >>> print_items(widget())
-    ( ) In Launchpad
-    (*) In a registered bug tracker:
-    ( ) By emailing an upstream bug contact:
-    ( ) Somewhere else
+    [ ] In Launchpad
+    [X] In a registered bug tracker:
+    [ ] By emailing an upstream bug contact:
+    [ ] Somewhere else
 
 When the bug tracker is an Email Address bug tracker, the "By emailing" option
 is shown as selected instead.
@@ -104,20 +104,20 @@ is shown as selected instead.
     >>> widget.setRenderedValue(email_bugtracker)
 
     >>> print_items(widget())
-    ( ) In Launchpad
-    ( ) In a registered bug tracker:
-    (*) By emailing an upstream bug contact:
-    ( ) Somewhere else
+    [ ] In Launchpad
+    [ ] In a registered bug tracker:
+    [X] By emailing an upstream bug contact:
+    [ ] Somewhere else
 
 When the bug tracker is the marker attribute representing Launchpad, the
 widget is displayed as having the 'In Launchpad' option selected.
 
     >>> widget.setRenderedValue(widget.context.malone_marker)
     >>> print_items(widget())
-    (*) In Launchpad
-    ( ) In a registered bug tracker:
-    ( ) By emailing an upstream bug contact:
-    ( ) Somewhere else
+    [X] In Launchpad
+    [ ] In a registered bug tracker:
+    [ ] By emailing an upstream bug contact:
+    [ ] Somewhere else
 
 A user selects the Malone bug tracker, indicating that bugs are tracked in
 Launchpad.
@@ -233,10 +233,10 @@ license policy.
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> len(License)
-    25
+    27
     >>> len(soup.table('input'))
-    25
-    >>> print soup.a['href']
+    27
+    >>> print soup.p.a['href']
     https://help.launchpad.net/Legal/ProjectLicensing
 
 No licenses are selected.
@@ -252,25 +252,30 @@ One license, the GNU GPL v2, is selected.
     >>> request = LaunchpadTestRequest(form=form)
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
-    >>> def print_checked_items(html):
+    >>> def print_checked_items(html, links=False):
     ...     soup = BeautifulSoup(html)
-    ...     inputs = soup('input')
-    ...     for input in inputs:
-    ...         if input.get('checked'):
-    ...             print '(*)', input.get('value')
+    ...     labels = soup('label')
+    ...     for label in labels:
+    ...         if label.next.get('checked'):
+    ...             print '[X]',
     ...         else:
-    ...             print '( )', input.get('value')
+    ...             print '[ ]',
+    ...         print extract_text(label),
+    ...         if links and label.a is not None:
+    ...             print '<%s>' % label.a.get('href')
+    ...         else:
+    ...             print
 
     >>> license_widget.getInputValue()
     Set([<DBItem License.GNU_GPL_V2, (130) ...>])
 
     >>> print_checked_items(license_widget())
-    ( ) ACADEMIC
+    [ ] Academic Free License
     ...
-    (*) GNU_GPL_V2
-    ( ) GNU_GPL_V3
-    ( ) GNU_LGPL_V2_1
-    ( ) GNU_LGPL_V3
+    [X] GNU GPL v2
+    [ ] GNU GPL v3
+    [ ] GNU LGPL v2.1
+    [ ] GNU LGPL v3
     ...
 
 A second license is selected.
@@ -284,12 +289,12 @@ A second license is selected.
      <DBItem License.GNU_LGPL_V2_1, (150) GNU LGPL v2.1>]
 
     >>> print_checked_items(license_widget())
-    ( ) ACADEMIC
+    [ ] Academic Free License
     ...
-    (*) GNU_GPL_V2
-    ( ) GNU_GPL_V3
-    (*) GNU_LGPL_V2_1
-    ( ) GNU_LGPL_V3
+    [X] GNU GPL v2
+    [ ] GNU GPL v3
+    [X] GNU LGPL v2.1
+    [ ] GNU LGPL v3
     ...
 
 There are three Creative Commons licenses.
@@ -299,11 +304,11 @@ There are three Creative Commons licenses.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
     >>> print_checked_items(license_widget())
-    ( ) ACADEMIC
+    [ ] Academic Free License
     ...
-    ( ) CC_BY
-    ( ) CC_BY_SA
-    ( ) CC_0
+    [ ] Creative Commons - Attribution
+    [ ] Creative Commons - Attribution Share Alike
+    [ ] Creative Commons - No Rights Reserved
     ...
 
 Any of the three Creative Commons licenses can be selected.
@@ -313,9 +318,69 @@ Any of the three Creative Commons licenses can be selected.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
     >>> print_checked_items(license_widget())
-    ( ) ACADEMIC
+    [ ] Academic Free License
     ...
-    (*) CC_BY
-    (*) CC_BY_SA
-    (*) CC_0
+    [X] Creative Commons - Attribution
+    [X] Creative Commons - Attribution Share Alike
+    [X] Creative Commons - No Rights Reserved
+    ...
+
+The BSD License can be selected.
+
+    >>> form['field.licenses'] = ['BSD']
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> print_checked_items(license_widget())
+    [ ] Academic Free License
+    ...
+    [X] Simplified BSD License
+    ...
+
+There's also a placeholder for when a user knows they want an open source
+license but hasn't yet decided on one.  In this case, the user should not be
+blocked from creating their project.
+
+    >>> form['field.licenses'] = ['DONT_KNOW']
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> print_checked_items(license_widget())
+    [ ] Academic Free License
+    ...
+    [X] I don't know yet
+    ...
+
+There are two Perl-inspired Artistic licenses.  The first is the original 1.0
+license which most of Perl-land is licensed by, and there's the 2.0 version
+that is used by newer project such as Parrot.
+
+    >>> form['field.licenses'] = ['ARTISTIC', 'ARTISTIC_2_0']
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> print_checked_items(license_widget())
+    [ ] Academic Free License
+    ...
+    [X] Artistic License 1.0
+    [X] Artistic License 2.0
+    ...
+
+Many licenses have links to the official pages describing their licenses.
+
+    >>> print_checked_items(license_widget(), links=True)
+    [ ] Academic Free License <http://www.opensource.org/licenses/afl-3.0.php>
+    ...
+    [X] Artistic License 1.0
+        <http://opensource.org/licenses/artistic-license-1.0.php>
+    [X] Artistic License 2.0
+        <http://www.opensource.org/licenses/artistic-license-2.0.php>
+    ...
+
+But not all of them.
+
+    >>> print_checked_items(license_widget(), links=True)
+    [ ] Academic Free License <http://www.opensource.org/licenses/afl-3.0.php>
+    ...
+    [ ] Perl License
     ...

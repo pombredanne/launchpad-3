@@ -24,11 +24,12 @@ from operator import attrgetter
 from urllib import urlencode
 
 from zope.app.form.browser import DropdownWidget
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, queryMultiAdapter
 from zope.formlib import form
 from zope.schema import Bool, Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _

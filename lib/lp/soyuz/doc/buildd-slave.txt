@@ -53,7 +53,7 @@ to retrieve files from the slave. Verify it works...
 == BuilddMaster class ==
 
     >>> import logging
-    >>> from canonical.buildmaster.master import BuilddMaster
+    >>> from lp.buildmaster.master import BuilddMaster
 
     >>> bm = BuilddMaster(logging.getLogger(), transaction)
 

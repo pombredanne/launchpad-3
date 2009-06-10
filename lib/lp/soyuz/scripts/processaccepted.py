@@ -11,9 +11,9 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.tagfiles import parse_tagfile_lines
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus
+from lp.archiveuploader.tagfiles import parse_tagfile_lines
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose

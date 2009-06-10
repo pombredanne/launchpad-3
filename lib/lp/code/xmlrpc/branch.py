@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 
 # Disable pylint 'should have "self" as first argument' warnings.
 # pylint: disable-msg=E0213
@@ -18,17 +18,18 @@ from zope.interface import Interface, implements
 from lazr.uri import URI
 
 from canonical.config import config
-from canonical.launchpad.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.code.interfaces.branch import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branch import NoSuchBranch
-from lp.code.interfaces.branchlookup import (
-    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, NoLinkedBranch)
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import (

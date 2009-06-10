@@ -10,7 +10,7 @@ take affect till the next publishing run.
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.changeoverride import ChangeOverride
+from lp.soyuz.scripts.changeoverride import ChangeOverride
 
 if __name__ == '__main__':
     script = ChangeOverride(

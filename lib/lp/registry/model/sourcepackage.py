@@ -21,9 +21,9 @@ from storm.store import Store
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from lp.code.model.branch import Branch
-from canonical.launchpad.database.bug import get_bug_tags_open_count
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bug import get_bug_tags_open_count
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -55,6 +55,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
+from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -636,6 +637,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
              == self.sourcepackagename.id),
             SeriesSourcePackageBranch.branch == Branch.id).order_by(
                 SeriesSourcePackageBranch.pocket)
+
+    def getSuiteSourcePackage(self, pocket):
+        """See `ISourcePackage`."""
+        return SuiteSourcePackage(
+            self.distroseries, pocket, self.sourcepackagename)
 
     def getPocketPath(self, pocket):
         """See `ISourcePackage`."""

@@ -211,6 +211,17 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                 return bool(result)
 
 
+def precache_permission_for_objects(participation, permission_name, objects):
+    """Precaches the permission for the objects into the policy cache."""
+    permission_cache = participation.annotations.setdefault(
+        LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+        weakref.WeakKeyDictionary())
+    for obj in objects:
+        naked_obj = removeSecurityProxy(obj)
+        obj_permission_cache = permission_cache.setdefault(naked_obj, {})
+        obj_permission_cache[permission_name] = True
+
+
 def check_permission(permission_name, context):
     """Like zope.security.management.checkPermission, but also ensures that
     permission_name is real permission.

@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Initial setup for PPA cronscripts.
+
+# Export LPCONFIG and define common variables.
+LPCONFIG=ppa
+export LPCONFIG
+LPCURRENT=/srv/launchpad.net/codelines/current
+PPAROOT=/srv/launchpad.net/ppa-archive
+P3AROOT=/srv/launchpad.net/private-ppa-archive
+LOCKFILE=$PPAROOT/.lock
+# Default lockfile options, retry once if it's locked.
+if [ "$LOCKFILEOPTIONS" == "" ]; then
+   LOCKFILEOPTIONS="-r1"
+fi
+
+# Claim the lockfile.
+if ! lockfile $LOCKFILEOPTIONS $LOCKFILE; then
+  echo "Could not claim lock file."
+  exit 1
+fi
+
+# Cleanup the lockfile on exit.
+cleanup () {
+  echo "Cleaning up lockfile."
+  rm -f $LOCKFILE
+}
+
+trap cleanup EXIT

@@ -17,8 +17,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
 from lp.registry.interfaces.productrelease import IProductRelease
-from canonical.launchpad.interfaces.bugtarget import IHasBugs
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtask import IBugTask
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description, NoneableDescription, NoneableTextLine)
