@@ -605,7 +605,7 @@ Searching for bugs with all of the tags returns only test bug a.
     test bug a [test-tag-1, test-tag-2]
 
 Search for the absence of a tag is possible by prefixing the tag name
-with a hyphen.
+with a minus.
 
     >>> search_tasks_and_print_bugs(tag=any('-test-tag-2'))
     Firefox does not support SVG []
@@ -642,8 +642,8 @@ test-tag-2 tag set *AND* that don't have the layout-test tag set".
     test bug b [test-tag-1]
 
 Searching for the presence of any tags at all is also possible using a
-wildcard. If prefixed with a hyphen mark it searches for the absence
-of tags.
+wildcard. If prefixed with a minus it searches for the absence of
+tags.
 
     >>> search_tasks_and_print_bugs(tag=all('*'))
     Reflow problems with complex page layouts [layout-test]

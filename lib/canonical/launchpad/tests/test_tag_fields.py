@@ -18,7 +18,7 @@ class TestTag(unittest.TestCase):
     def test_allow_valid_names(self):
         # Tag allows names all in lowercase, starting with any letter
         # of the English alphabet, followed by 1 or more letters,
-        # numbers or hyphens.
+        # numbers or minuses.
         self.assertEqual(self.field.validate(u'fred'), None)
         self.assertEqual(self.field.validate(u'one-two'), None)
         self.assertEqual(self.field.validate(u'one-2'), None)
@@ -48,7 +48,7 @@ class TestTag(unittest.TestCase):
             self.field.validate, u'really\no-whitespace')
 
     def test_negated_search_form(self):
-        # Tag rejects tags beginning with hyphens. This form is
+        # Tag rejects tags beginning with minuses. This form is
         # reserved to mean "not <tag>".
         self.assertRaises(
             ConstraintNotSatisfied,
@@ -56,8 +56,8 @@ class TestTag(unittest.TestCase):
 
     def test_wildcard(self):
         # Tag rejects a solitary asterisk, or an asterisk preceeded by
-        # a hyphen. This is not surprising seeing as asterisks are
-        # forbidden anyway, as are leading hyphens. However, this form
+        # a minus. This is not surprising seeing as asterisks are
+        # forbidden anyway, as are leading minuses. However, this form
         # is special because it is reserved to mean "any tag" or "not
         # any tag".
         self.assertRaises(
@@ -73,13 +73,13 @@ class TestSearchTag(TestTag):
     field = SearchTag()
 
     def test_negated_search_form(self):
-        # SearchTag allows tags beginning with hyphens. This form is
+        # SearchTag allows tags beginning with minuses. This form is
         # reserved to mean "not <tag>".
         self.assertEqual(self.field.validate(u'-fred'), None)
 
     def test_wildcard(self):
         # SearchTag allows a solitary asterisk, or an asterisk
-        # preceeded by a hyphen. This means "any tag" or "not any
+        # preceeded by a minus. This means "any tag" or "not any
         # tag".
         self.assertEqual(self.field.validate(u'*'), None)
         self.assertEqual(self.field.validate(u'-*'), None)

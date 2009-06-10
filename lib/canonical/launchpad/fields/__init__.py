@@ -319,8 +319,8 @@ class SearchTag(Tag):
         """Make sure the value is a valid search tag.
 
         A valid search tag is a valid name or a valid name prepended
-        with a hypehn, denoting "not this tag". A simple wildcard - an
-        asterisk - is also valid, with or without a leading hyphen.
+        with a minus, denoting "not this tag". A simple wildcard - an
+        asterisk - is also valid, with or without a leading minus.
         """
         if value in ('*', '-*'):
             return True
