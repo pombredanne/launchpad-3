@@ -306,9 +306,10 @@ class TestSessionIntegration(AvatarTestCase):
 
         executable, arguments = session.getCommandToRun(
             'bzr serve --inet --directory=/ --allow-writes')
-        self.assertEqual(sys.executable, executable)
+        interpreter = '%s/bin/py' % config.root
+        self.assertEqual(interpreter, executable)
         self.assertEqual(
-            ['%(root)s/bin/py' % config.root, get_bzr_path(), 'lp-serve',
+            [interpreter, get_bzr_path(), 'lp-serve',
              '--inet', str(self.avatar.user_id)],
             list(arguments))
         self.assertRaises(

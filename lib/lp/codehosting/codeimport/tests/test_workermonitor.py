@@ -611,8 +611,9 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
         # goes to the test runner's console rather than to pipes that noone is
         # listening too.
         reactor.spawnProcess(
-            DeferredOnExit(process_end_deferred), sys.executable,
-            [sys.executable, script_path, str(job_id), '-q'],
+            DeferredOnExit(process_end_deferred),
+            '%s/bin/py' % config.root,
+            ['%s/bin/py' % config.root, script_path, str(job_id), '-q'],
             childFDs={0:0, 1:1, 2:2}, env=os.environ)
         return process_end_deferred
 

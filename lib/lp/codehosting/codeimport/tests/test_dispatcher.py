@@ -79,7 +79,7 @@ class TestCodeImportDispatcherUnit(TestCase):
         executable.
         """
         script = open(script_path, 'w')
-        script.write("#!%s\n" % sys.executable)
+        script.write("#!%s/bin/py\n" % config.root)
         for script_line in script_body:
             script.write(script_line + '\n')
         os.chmod(script_path, 0700)
