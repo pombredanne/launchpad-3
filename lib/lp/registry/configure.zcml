@@ -896,7 +896,7 @@
                 createProductRelease
                 destroySelf"/>
         <allow
-            interface="canonical.launchpad.interfaces.bugtarget.IHasBugs"/>
+            interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
         <allow
             interface="canonical.launchpad.webapp.interfaces.IAuthorization"/>
         <require

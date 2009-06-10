@@ -24,11 +24,11 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import (
     IBranchSubscription)
-from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.interfaces.bugattachment import IBugAttachment
-from canonical.launchpad.interfaces.bugbranch import IBugBranch
-from canonical.launchpad.interfaces.bugnomination import IBugNomination
-from canonical.launchpad.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugattachment import IBugAttachment
+from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.soyuz.interfaces.build import IBuild
 from lp.soyuz.interfaces.builder import IBuilder, IBuilderSet
 from lp.code.interfaces.codeimport import ICodeImport

@@ -51,7 +51,7 @@ class ArchivePopulator(SoyuzScript):
     def populateArchive(
         self, from_archive, from_distribution, from_suite, from_user,
         component, to_distribution, to_suite, to_archive, to_user, reason,
-        include_binaries, proc_family_names, merge_copy_flag,
+        include_binaries, arch_tags, merge_copy_flag,
         packageset_delta_flag):
         """Create archive, populate it with packages and builds.
 
@@ -72,7 +72,7 @@ class ArchivePopulator(SoyuzScript):
         :param reason: reason for the package copy operation.
 
         :param include_binaries: whether binaries should be copied as well.
-        :param proc_family_names: processor families for which to create
+        :param arch_tags: architecture tags for which to create
             builds.
         :param merge_copy_flag: whether this is a repeated population of an
             existing copy archive.
@@ -87,15 +87,15 @@ class ArchivePopulator(SoyuzScript):
         from lp.soyuz.interfaces.packagecopyrequest import (
             IPackageCopyRequestSet)
 
-        def loadProcessorFamilies(proc_family_names):
-            """Load processor families for specified family names."""
+        def loadProcessorFamilies(arch_tags):
+            """Load processor families for specified arch tags."""
             proc_family_set = getUtility(IProcessorFamilySet)
             proc_families = set()
-            for name in proc_family_names:
-                proc_family = proc_family_set.getByName(name)
+            for name in arch_tags:
+                proc_family = proc_family_set.getByProcessorName(name)
                 if proc_family is None:
                     raise SoyuzScriptError(
-                        "Invalid processor family: '%s'" % name)
+                        "Invalid architecture tag: '%s'" % name)
                 else:
                     proc_families.add(proc_family)
 
@@ -187,28 +187,28 @@ class ArchivePopulator(SoyuzScript):
             if merge_copy_flag:
                 raise SoyuzScriptError(
                     "error: merge copy requested for non-existing archive.")
-            # The processor families should only be specified if the
+            # The architecture tags should only be specified if the
             # destination copy archive does not exist yet and needs to be
             # created.
-            if not specified(proc_family_names):
+            if not specified(arch_tags):
                 raise SoyuzScriptError(
-                    "error: processor families not specified.")
+                    "error: architecture tags not specified.")
 
-            # First load the processor families for the specified family names
-            # from the database. This will fail if an invalid processor family
+            # First load the processor families for the specified arch tags
+            # from the database. This will fail if an invalid arch tag
             # name was specified on the command line; that's why it should be
             # done before creating the copy archive.
-            proc_families = loadProcessorFamilies(proc_family_names)
+            proc_families = loadProcessorFamilies(arch_tags)
 
             # The copy archive is created in disabled mode. This gives the
             # archive owner the chance to tweak the build dependencies
             # before the switch is flipped and build activity starts.
-            # Also, builds for copy archives should be carried out on
-            # non-virtual builders.
+            # Also, builds for copy archives should default to using
+            # virtual builders.
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant, name=to_archive,
                 distribution=the_destination.distribution,
-                description=reason, enabled=False, require_virtualized=False)
+                description=reason, enabled=False, require_virtualized=True)
             the_destination.archive = copy_archive
             # Associate the newly created copy archive with the processor
             # families specified by the user.
@@ -224,9 +224,9 @@ class ArchivePopulator(SoyuzScript):
             # command line for existing copy archives. The processor families
             # specified when the archive was created will be read from the
             # database instead.
-            if specified(proc_family_names):
+            if specified(arch_tags):
                 raise SoyuzScriptError(
-                    "error: cannot specify processor families for *existing* "
+                    "error: cannot specify architecture tags for *existing* "
                     "archive.")
             # Refuse to copy to a disabled copy archive.
             if not copy_archive.enabled:
@@ -313,7 +313,7 @@ class ArchivePopulator(SoyuzScript):
             opts.from_archive, opts.from_distribution, opts.from_suite,
             opts.from_user, opts.component, opts.to_distribution,
             opts.to_suite, opts.to_archive, opts.to_user, opts.reason,
-            opts.include_binaries, opts.proc_families, opts.merge_copy_flag,
+            opts.include_binaries, opts.arch_tags, opts.merge_copy_flag,
             opts.packageset_delta_flag)
 
     def add_my_options(self):
@@ -324,8 +324,8 @@ class ArchivePopulator(SoyuzScript):
         self.parser.remove_option('-a')
 
         self.parser.add_option(
-            "-a", "--architecture", dest="proc_families", action="append",
-            help="The processor families for which to create build "
+            "-a", "--architecture", dest="arch_tags", action="append",
+            help="The architecture tags for which to create build "
                  "records, repeat for each architecture required.")
         self.parser.add_option(
             "-b", "--include-binaries", dest="include_binaries",
