@@ -1454,10 +1454,10 @@ this way we can cache information refered to:
 
  * upload_changesfile.
 
-We select an arbitrary source publication from the Celso's PPA which
-as added by `SoyuzTestPublisher` and it will containg the
-same corresponding `PackageUpload.changesfile` in both, the real and
-the decorated objects.
+We select an arbitrary source publication from Celso's PPA added by
+`SoyuzTestPublisher`. It contains the same corresponding
+`PackageUpload.changesfile` in both, the real and the decorated
+objects.
 
     >>> pub_with_changes = cprov_published_sources[0]
     >>> the_source = pub_with_changes.sourcepackagerelease

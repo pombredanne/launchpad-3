@@ -125,7 +125,7 @@ class ISourcePackageRelease(Interface):
         "The archive for which this package was first uploaded in Launchpad")
 
     upload_changesfile = Attribute(
-        "The `LibraryFileAlias` object containing the changesfile which "
+        "The `LibraryFileAlias` object containing the changes file which "
         "was originally uploaded with this source package release. It's "
         "'None' if it is a source imported by Gina.")
 

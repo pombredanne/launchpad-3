@@ -171,8 +171,8 @@ class Build(SQLBase):
             PackageUpload.archive == self.archive,
             PackageUpload.distroseries == self.distroseries)
 
-        # Return the unique `PackageUpload` record that correspond to the
-        # upload of the result of this `Build`, let the `LibraryFileAlias`
+        # Return the unique `PackageUpload` record that corresponds to the
+        # upload of the result of this `Build`, load the `LibraryFileAlias`
         # and the `LibraryFileContent` in cache because it's most likely
         # they will be needed.
         return DecoratedResultSet(results, operator.itemgetter(0)).one()

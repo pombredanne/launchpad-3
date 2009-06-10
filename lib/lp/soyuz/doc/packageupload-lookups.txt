@@ -15,17 +15,16 @@ properties:
 Those fields are always not-null for sources and builds that were
 'uploaded' to the system.
 
-
-The only exception for that are packages 'imported' into the system
-from other repositories, they do not have any relevant upload
+The only exception for this rule are packages 'imported' into the system
+from other repositories. They do not have any relevant upload
 information to be stored.
 
 
 Auditing the sampledata
 =======================
 
-For the sake of consistency, we can implicity probe the lookups
-described above against all existing sources publications and builds
+For the sake of consistency, we can implicitly probe the lookups
+described above against all existing source publications and builds
 in the sampladata.
 
     # Audit the source publication and builds of a given archive
@@ -93,7 +92,7 @@ assumptions done in the lookups.
 Upload lookups in action
 ========================
 
-We will create a branch new source publication for the subsequent
+We will create a brand new source publication for the subsequent
 tests.
 
     # Create a testing source and its binaries in

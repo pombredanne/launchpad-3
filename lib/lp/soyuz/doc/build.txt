@@ -7,21 +7,6 @@ The build record may have many BinaryPackageRelease records pointing
 at it and it may reference a build log if the build was done on a
 launchpad build daemon.
 
-    >>> from datetime import datetime, timedelta
-    >>> import pytz
-    >>> UTC = pytz.timezone('UTC')
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> warty = ubuntu['warty']
-    >>> hoary = ubuntu['hoary']
-    >>> breezy = ubuntu['breezy-autotest']
-
-
-First up, can we get the builds out of the sample data?
-
     # Create a 'mozilla-firefox' build in ubuntutest/breezy-autotest/i386.
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> login('foo.bar@canonical.com')
@@ -34,35 +19,73 @@ First up, can we get the builds out of the sample data?
     >>> [firefox_build] = source.getBuilds()
     >>> login(ANONYMOUS)
 
-    >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
-    >>> pending_build = getUtility(IBuildSet).getByBuildID(11)
-
-Let's check the complex properties of a build object.
-
-    >>> print firefox_build.distroseries.name
-    breezy-autotest
+A build has a title which describes it context source version in in
+which series and architecture it is targeted for.
 
     >>> print firefox_build.title
     i386 build of mozilla-firefox 0.9 in ubuntutest breezy-autotest RELEASE
 
-    >>> firefox_build.was_built
-    True
+A build directly links to the archive, distribution, distroseries,
+distroarchseries, pocket in its context and also the source version
+that generated it.
 
-    >>> firefox_build.buildlog = 34
-    >>> print firefox_build.build_log_url
-    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/evolution-2.2-test.pot
+    >>> print firefox_build.archive.displayname
+    Primary Archive for Ubuntu Test
 
-    >>> firefox_build.upload_changesfile
-    <LibraryFileAlias ...>
+    >>> print firefox_build.distribution.displayname
+    ubuntutest
 
-    >>> firefox_build.calculated_buildstart
-    datetime.datetime(...)
+    >>> print firefox_build.distroseries.displayname
+    Breezy Badger Autotest
+
+    >>> print firefox_build.distroarchseries.displayname
+    ubuntutest Breezy Badger Autotest i386
+
+    >>> firefox_build.pocket
+    <DBItem PackagePublishingPocket.RELEASE, (0) Release>
+
+    >>> print firefox_build.arch_tag
+    i386
 
     >>> firefox_build.is_virtualized
     False
 
-    >>> print firefox_build.arch_tag
-    i386
+    >>> print firefox_build.sourcepackagerelease.title
+    mozilla-firefox - 0.9
+
+A build has an state that represents in which stage it is in a
+life-cycle that goes from PENDING to BUILDING until FULLYBUILT or one
+of the intermediate failed states (FAILEDTOBUILD, MANUALDEPWAIT,
+CHROOTWAIT, SUPERSEDED and FAILEDTOUPLOAD).
+
+    >>> firefox_build.buildstate
+    <DBItem BuildStatus.FULLYBUILT, (1) Successfully built>
+
+Builds which were already processed also offer additional information
+about its process as the time it was started and finished and its
+'buildlog' and 'upload_changesfile' as librarian files.
+
+    >>> firefox_build.was_built
+    True
+
+    >>> firefox_build.calculated_buildstart
+    datetime.datetime(...)
+
+    >>> firefox_build.datebuilt
+    datetime.datetime(...)
+
+    >>> firefox_build.buildduration
+    datetime.timedelta(...)
+
+    >>> print firefox_build.buildlog.filename
+    buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
+
+    >>> print firefox_build.build_log_url
+    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
+
+    >>> print firefox_build.upload_changesfile.filename
+    firefox_0.9_i386.changes
+
 
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
@@ -72,12 +95,18 @@ start time makes no sense. Hence an exception is raised.
     ...
     AssertionError: The start time is only estimated for pending builds.
 
-The 'pending_build' record is a build job in state `NEEDSBUILD`. We can
-hence ask for its estimated build start time. The latter will be
-undefined however because the corresponding build pool is empty.
+On a build job in state `NEEDSBUILD` we can ask for its estimated
+build start time, but the result will be undefined however because the
+corresponding build pool is empty.
 
-    >>> pending_build.getEstimatedBuildStartTime() is None
-    True
+    # Create a brand new pending build.
+    >>> login('foo.bar@canonical.com')
+    >>> source = test_publisher.getPubSource(sourcename='pending-source')
+    >>> [pending_build] = source.createMissingBuilds()
+    >>> login(ANONYMOUS)
+
+    >>> print pending_build.getEstimatedBuildStartTime()
+    None
 
 The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current
@@ -105,6 +134,7 @@ property:
 
 If the build does not have any uploads, None is returned:
 
+    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
     >>> at_build = getUtility(IBuildSet).getByBuildID(15)
     >>> print at_build.package_upload
     None
@@ -234,7 +264,10 @@ We will reactivate ubuntu/warty allowing the pmount build to be
 retried.
 
     >>> from canonical.launchpad.interfaces import DistroSeriesStatus
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> warty = ubuntu.getSeries('warty')
     >>> warty.status = DistroSeriesStatus.DEVELOPMENT
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
@@ -247,6 +280,9 @@ This will allow us to observe the fact that a build retry does not
 change the start time if it was set already.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
     >>> time_now = datetime.now(UTC)
     >>> unsecured_build = removeSecurityProxy(active_build)
     >>> unsecured_build.date_first_dispatched = time_now
@@ -323,6 +359,9 @@ given build record entry.
 
 Invoke createBinaryPackageRelease with all required arguments.
 
+    # Load a build from the samepledata for creating binaries.
+    >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
+
     >>> bin = pmount_build.createBinaryPackageRelease(
     ...     binarypackagename, version, summary, description,
     ...     binpackageformat, component, section, priority, shlibdeps,
@@ -331,11 +370,12 @@ Invoke createBinaryPackageRelease with all required arguments.
     ...     architecturespecific)
 
     >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IBinaryPackageRelease, bin)
     True
 
-
 Commit previous transaction, data we want to preserve:
+
 XXX: flush_database_updates() shouldn't be needed. This seems to be
 Bug 3989 -- StuarBishop 20060713
 
@@ -413,6 +453,7 @@ getBuildsByArchIds():
 
 It receives list of architectures IDs:
 
+    >>> hoary = ubuntu.getSeries('hoary')
     >>> arch_ids = [arch.id for arch in hoary.architectures]
     >>> bs.getBuildsByArchIds(arch_ids).count()
     5
@@ -459,6 +500,7 @@ Checking optional 'pocket' restriction:
 getBuildsByArchIds will also return builds for archives other than the
 primary archive.
 
+    >>> breezy = ubuntu.getSeries('breezy-autotest')
     >>> arch_ids = [arch.id for arch in breezy.architectures]
     >>> [(build.archive.purpose.name, build.title) for build in
     ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
@@ -1052,7 +1094,7 @@ Restore depwait_build previous state.
 
     >>> login('foo.bar@canonical.com')
     >>> pmount_pub.secure_record.component = main_component
-    >>> removeSecurityProxy(depwait_build).archive = hoary.main_archive
+    >>> removeSecurityProxy(depwait_build).archive = ubuntu.main_archive
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 

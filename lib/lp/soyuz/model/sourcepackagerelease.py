@@ -544,8 +544,8 @@ class SourcePackageRelease(SQLBase):
             PackageUpload.archive == self.upload_archive,
             PackageUpload.distroseries == self.upload_distroseries)
 
-        # Return the unique `PackageUpload` record that correspond to the
-        # upload of this `SourcePackageRelease`, let the `LibraryFileAlias`
+        # Return the unique `PackageUpload` record that corresponds to the
+        # upload of this `SourcePackageRelease`, load the `LibraryFileAlias`
         # and the `LibraryFileContent` in cache because it's most likely
         # they will be needed.
         return DecoratedResultSet(results, operator.itemgetter(0)).one()

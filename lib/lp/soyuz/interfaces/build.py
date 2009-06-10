@@ -264,7 +264,7 @@ class IBuild(Interface):
         "Whether or not this build requires a virtual build host or not.")
 
     upload_changesfile = Attribute(
-        "The `LibraryFileAlias` object containing the changesfile which "
+        "The `LibraryFileAlias` object containing the changes file which "
         "was originally uploaded with the results of this build. It's "
         "'None' if it is build imported by Gina.")
 
