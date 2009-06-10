@@ -392,6 +392,7 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
+                    getUpgradeFormat
                     isBranchMergeable
                     "/>
     <require

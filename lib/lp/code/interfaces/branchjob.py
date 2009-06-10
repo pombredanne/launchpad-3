@@ -11,6 +11,7 @@ __all__ = [
     'IBranchJob',
     'IBranchDiffJob',
     'IBranchDiffJobSource',
+    'IBranchUpgradeJob',
     'IRevisionMailJob',
     'IRevisionMailJobSource',
     'IRevisionsAddedJobSource',
@@ -65,6 +66,22 @@ class IBranchDiffJobSource(Interface):
         :param branch: The database branch to diff.
         :param from_revision_spec: The revision spec to diff from.
         :param to_revision_spec: The revision spec to diff to.
+        """
+
+
+class IBranchUpgradeJob(Interface):
+    """A job to upgrade branches with out-of-date formats."""
+
+    def run():
+        """Upgrade the branch to the format specified."""
+
+
+class IBranchUpgradeJobSource(Interface):
+
+    def create(branch):
+        """Upgrade a branch to a more current format.
+
+        :param branch: The database branch to upgrade.
         """
 
 
