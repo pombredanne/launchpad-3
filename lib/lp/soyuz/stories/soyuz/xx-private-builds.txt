@@ -87,7 +87,7 @@ Launchpad Administrators are allowed to see the build in the portlet:
     ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status Building i386 build of privacy-test ... [cprov]
+    Status Building i386 build of privacy-test ... [cprov/ppa]
     ...
 
 and also the main area:
@@ -126,7 +126,7 @@ cprov is also allowed to see his own build in the portlet:
     ...     find_tag_by_id(cprov_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status Building i386 build of privacy-test ... [cprov]
+    Status Building i386 build of privacy-test ... [cprov/ppa]
     ...
 
 and also the main area:
@@ -266,7 +266,7 @@ An authorised user will see the build however:
     ...     find_tag_by_id(cprov_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status Building i386 build of privacy-test ... [cprov]
+    Status Building i386 build of privacy-test ... [cprov/ppa]
     ...
 
 
@@ -282,7 +282,7 @@ An admin user can see builds even if they are private:
     >>> print extract_text(find_main_content(admin_browser.contents))
     Launchpad build machines
     ...
-    frog   AUTO    Building i386 build of privacy-test ... [cprov]
+    frog   AUTO    Building i386 build of privacy-test ... [cprov/ppa]
     ...
     bob    AUTO    Disabled
     Generated at ...
@@ -304,7 +304,7 @@ cprov can see his own private build:
     >>> print extract_text(find_main_content(cprov_browser.contents))
     Launchpad build machines
     ...
-    frog   AUTO    Building i386 build of privacy-test ... [cprov]
+    frog   AUTO    Building i386 build of privacy-test ... [cprov/ppa]
     ...
     bob    AUTO    Disabled
     Generated at ...
@@ -379,7 +379,7 @@ Now the anonymous user can see the build:
     >>> print extract_text(find_main_content(anon_browser.contents))
     Launchpad build machines
     ...
-    frog  AUTO    Building i386 build of privacy-test ... [cprov]
+    frog  AUTO    Building i386 build of privacy-test ... [cprov/ppa]
     ...
     bob   AUTO    Disabled
     Generated at ...
@@ -390,7 +390,7 @@ Any other logged-in user will also see the build:
     >>> print extract_text(find_main_content(browser.contents))
     Launchpad build machines
     ...
-    frog   AUTO   Building i386 build of privacy-test ... [cprov]
+    frog   AUTO   Building i386 build of privacy-test ... [cprov/ppa]
     ...
     bob    AUTO   Disabled
     Generated at ...

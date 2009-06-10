@@ -11,7 +11,7 @@ __metaclass__ = type
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.cveimport import CVEUpdater
+from lp.bugs.scripts.cveimport import CVEUpdater
 
 
 if __name__ == '__main__':

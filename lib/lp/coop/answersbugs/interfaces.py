@@ -12,7 +12,7 @@ __all__ = [
 from zope.schema import Object
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.buglink import IBugLink
+from lp.bugs.interfaces.buglink import IBugLink
 from lp.answers.interfaces.question import IQuestion
 
 class IQuestionBug(IBugLink):

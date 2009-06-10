@@ -11,7 +11,7 @@ builder state. In the sampledata, the builder 'bob' is building
     Bob The Builder
     Current status
     i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
-    Started on 2005-06-15
+    Started ... ago
     Dummy sampledata entry, not processing
     Last updated ...
 

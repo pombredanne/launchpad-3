@@ -26,7 +26,7 @@ from lp.code.model.branch import (
 from lp.code.model.branchjob import BranchDiffJob
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
-from canonical.launchpad.database.bugbranch import BugBranch
+from lp.bugs.model.bugbranch import BugBranch
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.registry.model.product import ProductSet
@@ -35,7 +35,7 @@ from lp.blueprints.model.specificationbranch import (
 from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
     ANONYMOUS, login, login_person, logout, syncUpdate)
-from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.code.interfaces.branch import (
@@ -353,8 +353,12 @@ class TestBranch(TestCaseWithFactory):
         # A branch has a needs_upgrading attribute that returns whether or not
         # a branch needs to be upgraded or not.  If a branch is up to date, it
         # doesn't need to be upgraded.
+        #
+        # XXX: JonathanLange 2009-06-06: This test needs to be changed every
+        # time Bazaar adds a new branch format. Surely we can think of a
+        # better way of testing this?
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_7)
+            branch_format=BranchFormat.BZR_BRANCH_8)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_branch_format_upgrade_needed(self):

@@ -103,9 +103,9 @@ And it has translations.
   >>> print browser.url
   http://translations.launchpad.dev/alsa-utils
 
-  >>> alsa_utils_template = browser.getLink('View Template & All Languages...')
-  >>> print alsa_utils_template.url
-  http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils
+  >>> alsa_utils_spanish = browser.getLink('Spanish')
+  >>> print alsa_utils_spanish.url
+  http://translations.../alsa-utils/trunk/+pots/alsa-utils/es/+translate
 
 The translations page has also a link to the product search page to see
 whether a product is registered in Launchpad.

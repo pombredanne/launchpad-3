@@ -54,7 +54,7 @@ line here as it has working links in the sample data:
     <Link text='cnews' url='http://launchpad.dev/ubuntu/+source/cnews'>
     >>> link.click()
     >>> browser.title
-    '...cnews... source package in Ubuntu'
+    '...cnews... package in Ubuntu'
 
 Same process for the second column should take us to a distribution series
 source package page:

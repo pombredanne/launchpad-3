@@ -586,25 +586,14 @@ And run the import script.
     >>> process.run()
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
-    INFO    Got an old version for Welsh (cy) ... in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Import requests completed.
 
-The import script also generates the emails similar to the ones we saw
-composed before, but also sends them.
+The import script also generates an email similar to the ones we saw
+composed before, but also sends it.
 
     >>> len(stub.test_emails)
-    2
-
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["Subject"]
-    'Import problem - Welsh (cy) - firefox in Mozilla Firefox trunk'
-
-    >>> print msg.get_payload(decode=True)
-    Hello Mark Shuttleworth,
-    <BLANKLINE>
-    ...
+    1
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)

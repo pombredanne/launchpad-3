@@ -15,9 +15,10 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.schema import Choice
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import (
