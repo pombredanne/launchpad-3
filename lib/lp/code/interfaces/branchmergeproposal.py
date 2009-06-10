@@ -28,7 +28,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
-from lp.code.enums import BranchMergeProposalStatus
+from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
@@ -422,7 +422,7 @@ class IBranchMergeProposal(Interface):
 
     @operation_parameters(
         subject=Text(), content=Text(),
-        vote=Choice(vocabulary='CodeReviewVote'), review_type=Text(),
+        vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface))
     @call_with(owner=REQUEST_USER)
     @export_write_operation()

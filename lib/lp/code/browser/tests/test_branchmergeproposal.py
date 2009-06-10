@@ -13,9 +13,7 @@ from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalChangeStatusView,
     BranchMergeProposalMergedView, BranchMergeProposalVoteView)
-from lp.code.enums import BranchMergeProposalStatus
-from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote)
+from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext

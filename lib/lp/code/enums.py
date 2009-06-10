@@ -20,6 +20,7 @@ __all__ = [
     'CodeImportResultStatus',
     'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
+    'CodeReviewVote',
     'RevisionControlSystems',
     'TeamBranchVisibilityRule',
     'UICreatableBranchType',
@@ -837,3 +838,53 @@ class CodeImportResultStatus(DBEnumeratedType):
         """)
 
 
+class CodeReviewVote(DBEnumeratedType):
+    """Code Review Votes
+
+    Responses from the reviews to the code author.
+    """
+    sort_order = ('APPROVE',
+                  'NEEDS_FIXING',
+                  'NEEDS_INFO',
+                  'ABSTAIN',
+                  'DISAPPROVE',
+                  'RESUBMIT',
+                  )
+
+    DISAPPROVE = DBItem(1, """
+        Disapprove
+
+        Reviewer does not want the proposed merge to happen.
+        """)
+
+    ABSTAIN = DBItem(2, """
+        Abstain
+
+        Reviewer cannot or does not want to decide whether the proposed merge
+        should happen.
+        """)
+
+    APPROVE = DBItem(3, """
+        Approve
+
+        Reviewer wants the proposed merge to happen.
+        """)
+
+    RESUBMIT = DBItem(4, """
+        Resubmit
+
+        Reviewer thinks that the idea might be sound but the implementation
+        needs significant rework.
+        """)
+
+    NEEDS_FIXING = DBItem(5, """
+        Needs Fixing
+
+        Reviewer thinks that some fixing is needed before they can approve it.
+        """)
+
+    NEEDS_INFO = DBItem(6, """
+        Needs Information
+
+        The reviewer needs more information before making a decision.
+        """)

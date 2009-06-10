@@ -2,9 +2,6 @@
 
 Branch merge proposals can be fetched through the API.
 
-    >>> from lp.code.interfaces.codereviewcomment import (
-    ...     CodeReviewVote)
-
     >>> login('admin@canonical.com')
     >>> fixit_proposal = factory.makeBranchMergeProposal()
     >>> fixit_proposal.source_branch.owner.name = 'source'
@@ -13,6 +10,7 @@ Branch merge proposals can be fetched through the API.
     >>> fixit_proposal.target_branch.owner.name = 'target'
     >>> fixit_proposal.target_branch.name = 'trunk'
     >>> fixit_proposal.target_branch.product.name = 'fooix'
+    >>> from lp.code.enums import CodeReviewVote
     >>> comment = factory.makeCodeReviewComment(
     ...     subject='Looks good', body='This is great work',
     ...     vote=CodeReviewVote.APPROVE, vote_tag='code',

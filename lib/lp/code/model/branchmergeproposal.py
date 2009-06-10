@@ -39,7 +39,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
-from lp.code.enums import BranchMergeProposalStatus
+from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
@@ -61,7 +61,6 @@ from lp.code.interfaces.branchmergeproposal import (
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, UserNotBranchReviewer, WrongBranchMergeProposal)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from lp.code.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPerson

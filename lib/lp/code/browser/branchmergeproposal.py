@@ -46,11 +46,11 @@ from lp.code.adapters.branch import BranchMergeProposalDelta
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from lp.code.enums import (
-    BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel)
+    BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
+    CodeReviewVote)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, WrongBranchMergeProposal)
-from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote, ICodeReviewComment)
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet

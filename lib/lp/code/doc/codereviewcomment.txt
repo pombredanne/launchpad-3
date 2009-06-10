@@ -36,7 +36,7 @@ conversation, and is available as BranchMergeProposal.root_comment.
 Subsequent comments are marked as replies to the root_comment, by
 default.
 
-    >>> from canonical.launchpad.interfaces import CodeReviewVote
+    >>> from lp.code.enums import CodeReviewVote
     >>> comment2 = merge_proposal.createComment(
     ...     sender, 'No!', 'You are ugly and stupid',
     ...     CodeReviewVote.DISAPPROVE)

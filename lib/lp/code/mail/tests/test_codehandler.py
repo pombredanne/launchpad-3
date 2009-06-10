@@ -22,11 +22,9 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel)
+    BranchType, CodeReviewNotificationLevel, CodeReviewVote)
 from lp.codehosting.vfs import get_lp_server
 from lp.services.job.runner import JobRunner
-from canonical.launchpad.interfaces import (
-    CodeReviewVote)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.database import MessageSet
 from lp.code.model.branchmergeproposal import (
