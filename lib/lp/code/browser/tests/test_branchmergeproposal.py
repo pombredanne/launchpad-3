@@ -1,4 +1,5 @@
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=F0401
 
 """Unit tests for BranchMergeProposals."""
 
@@ -11,8 +12,9 @@ from zope.component import getMultiAdapter
 
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
-    BranchMergeProposalChangeStatusView,
-    BranchMergeProposalMergedView, BranchMergeProposalVoteView)
+    BranchMergeProposalAddVoteView, BranchMergeProposalChangeStatusView,
+    BranchMergeProposalMergedView,
+    BranchMergeProposalVoteView)
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from lp.code.interfaces.codereviewcomment import (
@@ -63,6 +65,32 @@ class TestBranchMergeProposalMergedView(TestCaseWithFactory):
         self.assertEqual(
             {'merged_revno': self.bmp.target_branch.revision_count},
             view.initial_values)
+
+
+class TestBranchMergeProposalAddVoteView(TestCaseWithFactory):
+    """Test the AddVote view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.bmp = self.factory.makeBranchMergeProposal()
+
+    def _createView(self):
+        # Construct the view and initialize it.
+        view = BranchMergeProposalAddVoteView(
+            self.bmp, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def test_init_with_random_person(self):
+        """Any random person ought to be able to vote."""
+        login_person(self.factory.makePerson())
+        self._createView()
+
+    def test_init_with_anonymous(self):
+        """Anonymous people cannot vote."""
+        self.assertRaises(AssertionError, self._createView)
 
 
 class TestBranchMergeProposalVoteView(TestCaseWithFactory):
@@ -367,18 +395,21 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         # the proposal is currently approved.
         self.proposal.approveBranch(
             self.proposal.target_branch.owner, 'some-revision')
-        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
+        self.assertAllStatusesAvailable(
+            user=self.proposal.target_branch.owner)
 
     def test_createStatusVocabulary_rejected(self):
         # Only reviewers can change rejected proposals to approved.  All other
         # options for rejected proposals are the same regardless of user.
         self.proposal.rejectBranch(
             self.proposal.target_branch.owner, 'some-revision')
-        self.assertAllStatusesAvailable(user=self.proposal.source_branch.owner,
+        self.assertAllStatusesAvailable(
+            user=self.proposal.source_branch.owner,
             except_for=['CODE_APPROVED', 'QUEUED'])
         self.assertAllStatusesAvailable(user=self.proposal.registrant,
             except_for=['CODE_APPROVED', 'QUEUED'])
-        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
+        self.assertAllStatusesAvailable(
+            user=self.proposal.target_branch.owner)
 
     def test_createStatusVocabulary_queued(self):
         # Queued proposals can go to any status, but only reviewers can set
@@ -386,11 +417,12 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.proposal.enqueue(
             self.proposal.target_branch.owner, 'some-revision')
 
-        self.assertAllStatusesAvailable(user=self.proposal.source_branch.owner,
-                                        except_for=['REJECTED'])
+        self.assertAllStatusesAvailable(
+            user=self.proposal.source_branch.owner, except_for=['REJECTED'])
         self.assertAllStatusesAvailable(user=self.proposal.registrant,
                                         except_for=['REJECTED'])
-        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
+        self.assertAllStatusesAvailable(
+            user=self.proposal.target_branch.owner)
 
 
 def test_suite():
