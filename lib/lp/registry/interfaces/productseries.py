@@ -220,6 +220,13 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         description=_("Specify which files will be imported from the "
                       "source code branch."))
 
+    potemplate_count = Int(
+        title=_("The total number of POTemplates in this series."),
+        readonly=True, required=True)
+
+    productserieslanguages = Attribute(
+        "The set of ProductSeriesLanguages for this series.")
+
     def getRelease(version):
         """Get the release in this series that has the specified version.
         Return None is there is no such release.
