@@ -40,8 +40,8 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.database.bug import Bug, BugAffectsPerson, BugTag
-from canonical.launchpad.database.bugsubscription import BugSubscription
+from lp.bugs.model.bug import Bug, BugAffectsPerson, BugTag
+from lp.bugs.model.bugsubscription import BugSubscription
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.validators.name import valid_name
 from lp.registry.model.distribution import Distribution

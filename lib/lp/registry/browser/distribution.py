@@ -46,7 +46,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.soyuz.browser.archive import traverse_distro_archive
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
