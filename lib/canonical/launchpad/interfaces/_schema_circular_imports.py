@@ -23,6 +23,7 @@ from canonical.launchpad.components.apihelpers import (
 
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from canonical.launchpad.interfaces.bugtask import IBugTask
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -88,8 +89,15 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
+# IBug
+
 IBug['addBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBugBranch
+
+# IBugTask
+
+IBugTask['findSimilarBugs'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBug
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 

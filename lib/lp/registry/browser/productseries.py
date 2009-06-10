@@ -135,7 +135,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
-        return Link('+edit', text, icon='edit')
+        summary = 'Edit this series'
+        return Link('+edit', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -151,16 +152,20 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def link_branch(self):
-        text = 'Link to branch'
-        return Link('+linkbranch', text, icon='edit')
+        if self.context.branch is None:
+            text = 'Link to branch'
+        else:
+            text = "Change branch"
+        summary = 'The code branch that for this series.'
+        return Link('+linkbranch', text, summary, icon='add')
 
     def ubuntupkg(self):
         text = 'Link to Ubuntu package'
-        return Link('+ubuntupkg', text, icon='edit')
+        return Link('+ubuntupkg', text, icon='add')
 
     def add_package(self):
         text = 'Link to other package'
-        return Link('+addpackage', text, icon='edit')
+        return Link('+addpackage', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def create_milestone(self):
@@ -179,7 +184,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     def subscribe(self):
         text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
+        return Link('+subscribe', text, icon='add')
 
 class ProductSeriesBugsMenu(ApplicationMenu):
 
@@ -585,6 +590,14 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         branch = self.context.branch
         return (branch is not None and
                 check_permission('launchpad.View', branch))
+
+    @cachedproperty
+    def released_and_active_milestones(self):
+        """Milestones that are active or have releases."""
+        return [
+            milestone
+            for milestone in self.context.all_milestones
+            if milestone.active or milestone.product_release is not None]
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):

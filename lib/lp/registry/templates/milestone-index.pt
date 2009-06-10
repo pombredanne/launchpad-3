@@ -135,8 +135,14 @@
                   <span tal:replace="lfa/hits/fmt:intcomma">10</span>
                   <br />
                   <span style="font-size: 75%; color: grey;">
-                    <strong tal:content="lfa/last_downloaded/fmt:approximateduration" />
-                    since last download
+                    <tal:downloaded-today condition="not:lfa/last_downloaded/days">
+                      last downloaded <strong>today</strong>
+                    </tal:downloaded-today>
+                    <tal:not-downloaded-today condition="lfa/last_downloaded/days">
+                      <strong tal:content="lfa/last_downloaded/fmt:approximateduration" />
+                      since last download
+                    </tal:not-downloaded-today>
+                  </span>
                 </tal:downloaded>
                 <tal:not-downloaded condition="not:lfa/hits">
                   -
@@ -158,7 +164,7 @@
                 Total:
               </th>
               <td style="border: none; text-align: center;">
-                <span tal:replace="view/total_downloads" />
+                <span tal:replace="view/total_downloads/fmt:intcomma" />
               </td>
             </tr>
           </tfoot>
