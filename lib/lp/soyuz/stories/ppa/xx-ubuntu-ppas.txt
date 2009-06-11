@@ -626,7 +626,7 @@ its key to Ubuntu.
 And further down, next to the key id, we link to that same pop-up help:
 
     >>> print anon_browser.getLink(
-    ... 'Help on installing software from this PPA').url
+        ... 'Help on installing software from this PPA').url
     http://launchpad.dev/+help/soyuz/ppa-sources-list.html
 
 == PPA Builds ==
