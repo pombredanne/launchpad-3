@@ -141,10 +141,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
     def sendCancellationEmail(self, token):
         """Send an email to the person whose subscription was cancelled."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archivesubscriber import (
-            IArchiveSubscriberSet)
-
         send_to_person = token.person
         ppa_name = token.archive.displayname
         ppa_owner_url = canonical_url(token.archive.owner)
@@ -190,12 +186,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         :param ppa: The PPA to check tokens for.
         :return: a list of valid tokens.
         """
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archiveauthtoken import (
-            IArchiveAuthTokenSet)
-        from lp.soyuz.interfaces.archivesubscriber import (
-            IArchiveSubscriberSet)
-
         tokens = getUtility(IArchiveAuthTokenSet).getByArchive(ppa)
         valid_tokens = []
         for token in tokens:
@@ -219,10 +209,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         :param ppa: The PPA to expire subscriptons for.
         """
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archivesubscriber import (
-            ArchiveSubscriberStatus, IArchiveSubscriberSet)
-
         now = datetime.now(pytz.UTC)
         subscribers = getUtility(IArchiveSubscriberSet).getByArchive(ppa)
         for subscriber in subscribers:
@@ -234,9 +220,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
     def main(self):
         """Script entry point."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archive import IArchiveSet
-
         self.logger.info('Starting the PPA .htaccess generation')
         ppas = getUtility(IArchiveSet).getPrivatePPAs()
         for ppa in ppas:
