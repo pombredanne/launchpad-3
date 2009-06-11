@@ -237,7 +237,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
+      class="lp.registry.browser.person.RedirectToEditLanguagesView"
       name="+editmylanguages"
       />
 
@@ -308,7 +308,12 @@
   <!-- Common menus -->
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
-      classes="LaunchpadRootFacets MaloneContextMenu"
+      classes="LaunchpadRootFacets"
+      />
+
+  <browser:menus
+      module="lp.bugs.browser.malone"
+      classes="MaloneContextMenu"
       />
 
   <!-- This is a view on TALES CONTEXTS rather than all dicts. -->

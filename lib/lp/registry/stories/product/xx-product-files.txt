@@ -43,9 +43,10 @@ the delete options.
     >>> content = find_main_content(anon_browser.contents)
     >>> row = content.find('table').find('tr')
     >>> print extract_text(row)
-    Download
+    File
     Release
     Description
+    Downloads
 
 Again, for an authenticated user who is not the firefox product owner.
 
@@ -57,9 +58,10 @@ Again, for an authenticated user who is not the firefox product owner.
     >>> content = find_main_content(non_owner.contents)
     >>> row = content.find('table').find('tr')
     >>> print extract_text(row)
-    Download
+    File
     Release
     Description
+    Downloads
 
 Now, login as a firefox admin and see the delete fields.
 
@@ -71,10 +73,11 @@ Now, login as a firefox admin and see the delete fields.
     >>> content = find_main_content(firefox_owner.contents)
     >>> row = content.find('table').find('tr')
     >>> print extract_text(row)
-    Delete
-    Download
+    File
     Release
     Description
+    Downloads
+    Delete
 
 A project owner should not see the delete button when there are no files.
 
@@ -263,9 +266,9 @@ user to see.
     >>> content = find_main_content(anon_browser.contents)
     >>> for tr in  content.findAll('table')[1].findAll('tr'):
     ...     print extract_text(tr)
-    Download             Release   Description
-    bar.txt (md5)        1.0.0     Bar installer
-    foo.txt (md5, sig)   1.0.0     Foo installer
+    File                 Release   Description      Downloads
+    bar.txt (md5)        1.0.0     Bar installer    -
+    foo.txt (md5, sig)   1.0.0     Foo installer    -
 
 In addition to the product owner and product series owner,
 an admin can also delete a release file.

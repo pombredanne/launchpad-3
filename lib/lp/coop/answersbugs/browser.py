@@ -14,7 +14,7 @@ from zope.interface import providedBy
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.interfaces.bug import CreateBugParams,  IBug
+from lp.bugs.interfaces.bug import CreateBugParams,  IBug
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
 

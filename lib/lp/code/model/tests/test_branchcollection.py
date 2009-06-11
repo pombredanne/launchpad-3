@@ -11,20 +11,16 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    BranchType, CodeReviewNotificationLevel)
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import (
     GenericBranchCollection)
-from lp.registry.model.product import Product
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.interfaces.branch import (
-    BranchLifecycleStatus, BranchType)
 from lp.code.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.databasehelpers import (

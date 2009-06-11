@@ -314,9 +314,10 @@ Initially the subscription does not have an active token:
     >>> print view.active_token
     None
 
-Therefore, it will not return a sources_list entry either:
+Therefore, it will not return a sources_list_entry either:
 
-    >>> print view.private_ppa_sources_list
+    >>> print view.sources_list_entries
+    None
 
 But if 'activate' is posted, the view will generate a new token and
 redirect:
@@ -329,18 +330,14 @@ redirect:
     ...     print notification.message
     You have confirmed your subscription to...
 
-Now the view can then access the token and the source list entries:
+Now the view can then access the token and the source list entries sub-view:
 
     >>> view = create_initialized_view(spiv_subscription, name="+index")
     >>> print view.active_token.person.displayname
     Andrew Bennetts
 
-    >>> print view.private_ppa_sources_list
-    # Personal subscription of Andrew Bennetts to PPA for Celso
-        Providelo
-    deb http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb-src http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary
-        main
+    >>> print view.sources_list_entries.context.archive_url
+    http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
 
 The view can also be used to regenerate the source.list entries.
 

@@ -26,10 +26,11 @@ from bzrlib.upgrade import upgrade
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.code.enums import BranchType
 from lp.codehosting.vfs import get_lp_server
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
+from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.testing import ZopelessAppServerLayer
 
 
