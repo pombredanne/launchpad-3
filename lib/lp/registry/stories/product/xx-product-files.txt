@@ -35,8 +35,8 @@ release to add download files.
     ...     find_tag_by_id(anon_browser.contents, 'project-downloads'))
     &#8220;trunk&#8221; series
     The "trunk" series represents the primary line of development rather ...
-    Download   Release   Description
-    firefox-0.9.2.orig.tar.gz (md5)   0.9.2
+    File   Release   Description   Downloads
+    firefox-0.9.2.orig.tar.gz (md5)   0.9.2      -
     &#8220;1.0&#8221; series
 
 
