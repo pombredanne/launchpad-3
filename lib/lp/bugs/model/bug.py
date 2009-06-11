@@ -64,6 +64,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
+from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import (
@@ -1362,6 +1363,18 @@ class Bug(SQLBase):
                     return True
 
         return False
+
+    def linkHWSubmission(self, submission):
+        """See `IBug`."""
+        getUtility(IHWSubmissionBugSet).create(submission, self)
+
+    def unlinkHWSubmission(self, submission):
+        """See `IBug`."""
+        getUtility(IHWSubmissionBugSet).remove(submission, self)
+
+    def getHWSubmissions(self, user=None):
+        """See `IBug`."""
+        return getUtility(IHWSubmissionBugSet).submissionsForBug(self, user)
 
 
 class BugSet:

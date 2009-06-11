@@ -14,8 +14,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, IBranchSubscription)
+from lp.code.enums import BranchSubscriptionNotificationLevel
+from lp.code.interfaces.branchsubscription import IBranchSubscription
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext

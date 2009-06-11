@@ -23,8 +23,9 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
+from lp.code.enums import BranchType
 from lp.code.interfaces.branch import (
-    BranchType, BranchCreationException, UnknownBranchTypeError)
+    BranchCreationException, UnknownBranchTypeError)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)

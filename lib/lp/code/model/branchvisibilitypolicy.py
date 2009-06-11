@@ -20,13 +20,13 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.helpers import shortlist
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.branchvisibilitypolicy import (
-    BranchVisibilityRule, IBranchVisibilityTeamPolicy,
-    InvalidVisibilityPolicy)
+    IBranchVisibilityTeamPolicy, InvalidVisibilityPolicy)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.project import IProject
 
 
 class BranchVisibilityTeamPolicy(SQLBase):

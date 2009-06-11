@@ -25,7 +25,8 @@ from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import BranchType, IBranch
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
