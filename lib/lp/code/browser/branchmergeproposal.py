@@ -478,14 +478,17 @@ class BranchMergeProposalVoteView(LaunchpadView):
     def unsolicited_reviews(self):
         solicited_reviewers = set(review.reviewer for review in self.reviews)
         unsolicited_reviews = []
-        for comment in self.context.all_comments:
+        seen_reviewers = set()
+        for comment in sorted(self.context.all_comments,
+            key=lambda x: x.message.datecreated, reverse=True):
+            if comment.message.owner in seen_reviewers:
+                continue
             if comment.vote is None:
                 continue
             if comment.message.owner in solicited_reviewers:
                 continue
             unsolicited_reviews.append(comment)
-        unsolicited_reviews.sort(
-            key=lambda x: x.message.datecreated, reverse=True)
+            seen_reviewers.add(comment.message.owner)
         return unsolicited_reviews
 
     @cachedproperty

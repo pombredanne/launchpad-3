@@ -106,9 +106,9 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.bmp = self.factory.makeBranchMergeProposal()
         self.date_generator = time_counter(delta=timedelta(days=1))
 
-    def _createComment(self, reviewer, vote):
+    def _createComment(self, reviewer, vote=None):
         """Create a comment on the merge proposal."""
-        self.bmp.createComment(
+        return self.bmp.createComment(
             owner=reviewer,
             subject=self.factory.getUniqueString('subject'),
             vote=vote,
@@ -185,6 +185,22 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             [charles, bob, albert],
             [review.message.owner for review in view.unsolicited_reviews])
         self.assertEqual([], view.current_reviews)
+
+    def testUnsolicitedReviewDuplicates(self):
+        # When the same reviewer votes twice, the second vote is used.
+        albert = self.factory.makePerson(name='albert')
+        self._createComment(albert, CodeReviewVote.APPROVE)
+        review = self._createComment(albert, CodeReviewVote.APPROVE)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertEqual([review], view.unsolicited_reviews)
+
+    def testUnsolicitedReviewVoteAndComment(self):
+        # If a reviewer comments after a vote, the vote is still shown.
+        albert = self.factory.makePerson(name='albert')
+        review = self._createComment(albert, CodeReviewVote.APPROVE)
+        self._createComment(albert)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertEqual([review], view.unsolicited_reviews)
 
     def testChangeOfVoteBringsToTop(self):
         # Changing the vote changes the vote date, so it comes to the top.
