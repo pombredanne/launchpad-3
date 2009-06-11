@@ -70,23 +70,22 @@ class ArchiveAuthTokenSet:
 
     def getByToken(self, token):
         """See `IArchiveAuthTokenSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(token)
         return store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.token == token).one()
 
     def getByArchive(self, archive):
         """See `IArchiveAuthTokenSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(archive)
         return store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.archive == archive,
             ArchiveAuthToken.date_deactivated == None)
 
-    def getActiveTokenForArchiveAndPerson(self, archive, person, store=None):
+    def getActiveTokenForArchiveAndPerson(self, archive, person):
         """See `IArchiveAuthTokenSet`."""
-        if store is None:
-            store = Store.of(archive)
+        store = Store.of(archive)
         return store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.archive == archive,
