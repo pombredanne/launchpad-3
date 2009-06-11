@@ -317,11 +317,12 @@ Branches are also accessible for a project group.
     >>> branch.owner.name = 'mary'
     >>> logout()
 
-    >>> print_branches(webservice, '/~eric')
+    >>> print_branches(webservice, '/widgets')
     ~eric/fooix/trunk - Development
     ~eric/fooix/feature-branch - Experimental
+    ~mary/blob/bar - Development
 
 As with projects, these can be filtered by the branch status.
 
-    >>> print_branches(webservice, '/~eric', ('Experimental'))
+    >>> print_branches(webservice, '/widgets', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental

@@ -78,9 +78,8 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.enums import BranchMergeProposalStatus
-from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -211,7 +210,8 @@ def validate_person_visibility(person, attr, value):
 
 
 class Person(
-    SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin):
+    SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
+    HasBranchesMixin, HasMergeProposalsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -853,30 +853,9 @@ class Person(
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
 
-    def _branchCollection(self, visible_by_user):
-        """The branch collection for this product visible by the user."""
-        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        return collection.ownedBy(self)
-
-    def getBranches(self, status=None, visible_by_user=None):
-        """See `IPrerson`."""
-        if status is None:
-            status = DEFAULT_BRANCH_STATUS_IN_LISTING
-
-        collection = self._branchCollection(visible_by_user)
-        collection = collection.withLifecycleStatus(*status)
-        return collection.getBranches()
-
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IPerson`."""
-        if not status:
-            status = (
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW,
-                BranchMergeProposalStatus.WORK_IN_PROGRESS)
-
-        collection = self._branchCollection(visible_by_user)
-        return collection.getMergeProposals(status)
+    def getBranchCollection(self):
+        """The branch collection for this person."""
+        return getUtility(IAllBranches).ownedBy(self)
 
     @property
     def mailing_list(self):

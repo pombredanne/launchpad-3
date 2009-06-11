@@ -35,6 +35,7 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from lp.code.model.branch import BranchSet
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
@@ -163,7 +164,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin, OfficialBugTagTargetMixin):
+              HasMilestonesMixin, OfficialBugTagTargetMixin,
+              HasBranchesMixin, HasMergeProposalsMixin):
 
     """A Product."""
 
@@ -935,30 +937,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
 
-    def _branchCollection(self, visible_by_user):
-        """The branch collection for this product visible by the user."""
-        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        return collection.inProduct(self)
-
-    def getBranches(self, status=None, visible_by_user=None):
-        """See `IProduct`."""
-        if status is None:
-            status = DEFAULT_BRANCH_STATUS_IN_LISTING
-
-        collection = self._branchCollection(visible_by_user)
-        collection = collection.withLifecycleStatus(*status)
-        return collection.getBranches()
-
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IProduct`."""
-        if status is None:
-            status = (
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW,
-                BranchMergeProposalStatus.WORK_IN_PROGRESS)
-
-        collection = self._branchCollection(visible_by_user)
-        return collection.getMergeProposals(status)
+    def getBranchCollection(self):
+        """The branch collection for this person."""
+        return getUtility(IAllBranches).inProduct(self)
 
     def userCanEdit(self, user):
         """See `IProduct`."""
