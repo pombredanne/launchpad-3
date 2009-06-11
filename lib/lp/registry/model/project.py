@@ -41,6 +41,8 @@ from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 
+from lp.code.enums import BranchMergeProposalStatus
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.bugs.model.bug import (
@@ -423,6 +425,18 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return None
 
         return ProjectSeries(self, series_name)
+
+    def getMergeProposals(self, status=None, visible_by_user=None):
+        """See `IProject`."""
+        if status is None:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        collection = collection.inProject(self)
+        return collection.getMergeProposals(status)
 
 
 class ProjectSet:

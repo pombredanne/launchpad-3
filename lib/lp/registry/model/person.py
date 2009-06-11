@@ -79,7 +79,7 @@ from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.code.enums import BranchMergeProposalStatus
-from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -860,8 +860,9 @@ class Person(
                 BranchMergeProposalStatus.NEEDS_REVIEW,
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
-        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self, status, visible_by_user=None)
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        collection = collection.ownedBy(self)
+        return collection.getMergeProposals(status)
 
     @property
     def mailing_list(self):

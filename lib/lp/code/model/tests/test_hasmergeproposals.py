@@ -26,6 +26,11 @@ class TestIHasMergeProposals(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertProvides(person, IHasMergeProposals)
 
+    def test_project_implements_hasmergeproposals(self):
+        # Projects should implement IHasMergeProposals.
+        project = self.factory.makeProject()
+        self.assertProvides(project, IHasMergeProposals)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
