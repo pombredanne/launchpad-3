@@ -23,7 +23,7 @@ from lp.soyuz.model.publishing import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus, PackagePublishingPocket)
 from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError

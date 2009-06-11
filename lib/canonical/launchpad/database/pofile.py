@@ -570,10 +570,6 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def __iter__(self):
-        """See `IPOFile`."""
-        return iter(self.currentMessageSets())
-
     def _getLanguageVariantClause(self, table='TranslationMessage'):
         if self.variant is None:
             clause = '%(table)s.variant IS NULL' % dict(table=table)
@@ -582,7 +578,6 @@ class POFile(SQLBase, POFileMixIn):
                     table=table,
                     variant=quote(self.variant))
         return clause
-
 
     def _getClausesForPOFileMessages(self, current=True):
         """Get TranslationMessages for the POFile via TranslationTemplateItem.

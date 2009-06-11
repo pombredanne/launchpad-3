@@ -35,7 +35,7 @@ can see that from the translations page.
     >>> print extract_text(
     ...     find_tag_by_id(netapplet_owner_browser.contents,
     ...                    'translation-permissions'))
-    NetApplet is translated with Open permissions.
+    NetApplet (Unspecified) is translated with Open permissions.
     You can modify permissions on the Settings page.
 
 Now let's make sure we can see the page to let us change translation

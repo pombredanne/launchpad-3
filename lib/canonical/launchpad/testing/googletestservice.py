@@ -185,11 +185,10 @@ def start_as_process():
     Returns a subprocess.Popen object. (See the `subprocess` module in
     the Python Standard Library for details.)
     """
-    script = __file__
-    if not script.endswith('.py'):
-        # Make sure we run the .py file, not the .pyc.
-        head, _ = os.path.splitext(script)
-        script = head + '.py'
+    script = os.path.join(
+        os.path.dirname(__file__),
+        os.pardir, os.pardir, os.pardir, os.pardir, 'bin',
+        'googletestservice')
     # Make sure we aren't using the parent stdin and stdout to avoid spam
     # and have fewer things that can go wrong shutting down the process.
     proc = subprocess.Popen(
@@ -260,7 +259,3 @@ def main():
 
     log.info("Starting HTTP Google webservice server on port %s", port)
     server.serve_forever()
-
-
-if __name__ == '__main__':
-    main()

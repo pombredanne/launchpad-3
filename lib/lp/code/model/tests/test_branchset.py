@@ -8,7 +8,7 @@ from unittest import TestCase, TestLoader
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from lp.code.model.branch import BranchSet
-from lp.code.interfaces.branch import BranchLifecycleStatus
+from lp.code.enums import BranchLifecycleStatus
 from lp.registry.interfaces.product import IProductSet
 from canonical.testing import DatabaseFunctionalLayer
 

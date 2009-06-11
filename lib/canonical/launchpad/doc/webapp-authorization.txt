@@ -164,7 +164,7 @@ that bug task as well.
 
     >>> principal.scope = mozilla
     >>> setupInteraction(principal)
-    >>> from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> bug_task = firefox.searchTasks(
     ...     BugTaskSearchParams(user=personset.getByName('name16')))[0]
     >>> check_permission('launchpad.Edit', bug_task)

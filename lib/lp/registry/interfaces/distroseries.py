@@ -20,7 +20,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
+from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -207,9 +207,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    architectures = Attribute("All architectures in this series.")
-    virtualized_architectures = Attribute(
-        "All architectures in this series where PPA is supported.")
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
@@ -344,6 +341,15 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         IDistroSeriesSourcePackageRelease instances
         """
 
+    # DistroArchSeries lookup properties/methods.
+    architectures = Attribute("All architectures in this series.")
+
+    virtualized_architectures = Attribute(
+        "All architectures in this series where PPA is supported.")
+
+    enabled_architectures = Attribute(
+        "All architectures in this series with available chroot tarball.")
+
     def __getitem__(archtag):
         """Return the distroarchseries for this distroseries with the
         given architecturetag.
@@ -358,6 +364,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return the distroarchseries for this distroseries with the
         given architecturetag.
         """
+    # End of DistroArchSeries lookup methods.
 
     def updateStatistics(ztm):
         """Update all the Rosetta stats for this distro series."""
@@ -663,7 +670,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
           in the initialisation of a derivative.
         """
 
-    def copyMissingTranslationsFromParent(ztm):
+    def copyTranslationsFromParent(ztm):
         """Copy any translation done in parent that we lack.
 
         If there is another translation already added to this one, we ignore

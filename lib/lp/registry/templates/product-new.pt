@@ -7,7 +7,6 @@
   lang="en"
   dir="ltr"
   metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
 >
 <body>
   <div metal:fill-slot="main">
@@ -86,7 +85,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
                     /* Check for ctrl or alt held down. */
                     e.ctrlKey || e.altKey ||
                     /* Check for ASCII control character */
-                    code < 32)
+                    32 > code)
                 {
                     return true;
                 }
@@ -200,7 +199,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
              * ProjectAddStepTwo.search_results_count() for details.
              */
             var steps = marker.getAttribute('value');
-            if (steps.search(new RegExp('hidesearch')) < 0) {
+            if (0 > steps.search(new RegExp('hidesearch'))) {
                 marker.setAttribute('value', steps + "|hidesearch");
             }
         }

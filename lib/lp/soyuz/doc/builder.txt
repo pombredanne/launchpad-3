@@ -52,6 +52,13 @@ The archive owner and name are shown at the end of the status string.
     >>> print builder.status
     Building ... mozilla-firefox 0.9 in ubuntu ... [ubuntu-team/primary]
 
+Similarly, the status for a build in a PPA will show the owner and the
+archive name:
+
+    >>> builder_archive.purpose = ArchivePurpose.PPA
+    >>> print builder.status
+    Building ... mozilla-firefox 0.9 in ubuntu ... [ubuntu-team/primary]
+
 Restore the original archive purpose.
 
     >>> builder_archive.purpose = saved_purpose
