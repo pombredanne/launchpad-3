@@ -616,12 +616,18 @@ keyserver.
     ...     '1024D/12345678').url
     http://keyserver.ubuntu.com:11371/pks/lookup?search=0xABCDEF0123456789ABCDDCBA0000111112345678&op=index
 
-Another link in this section point users to the expanded instructions
-about how to use the signing_key.
+Using software from a PPA can be hard for novices. We offer two
+links to the same help pop-up that describes how to add a PPA and
+its key to Ubuntu.
 
     >>> print anon_browser.getLink('How do I do that?').url
     http://launchpad.dev/+help/soyuz/ppa-sources-list.html
 
+And further down, next to the key id, we link to that same pop-up help:
+
+    >>> print anon_browser.getLink(
+    ... 'Help on installing software from this PPA').url
+    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
 
 == PPA Builds ==
 
