@@ -220,7 +220,7 @@ class DtdErrorHandler(utils.ErrorCounter):
             filename=self.filename, message=msg)
 
 
-class FakeFile:
+class DummyDtdFile:
     """"File" returned when DTD SYSTEM entity tries to include a file."""
     done = False
 
@@ -245,7 +245,7 @@ class DtdInputSourceFactoryStub:
 
         This is called when the DTD parser hits a SYSTEM entity.
         """
-        return FakeFile()
+        return DummyDtdFile()
 
 
 class DtdFile:
