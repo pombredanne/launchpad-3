@@ -72,9 +72,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
-from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
-from lp.code.interfaces.branchcollection import IAllBranches
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
@@ -936,10 +934,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
-
-    def getBranchCollection(self):
-        """The branch collection for this person."""
-        return getUtility(IAllBranches).inProduct(self)
 
     def userCanEdit(self, user):
         """See `IProduct`."""

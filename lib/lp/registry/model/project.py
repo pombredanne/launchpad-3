@@ -40,8 +40,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
-
-from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
@@ -426,10 +424,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return None
 
         return ProjectSeries(self, series_name)
-
-    def getBranchCollection(self):
-        """The branch collection for this person."""
-        return getUtility(IAllBranches).inProject(self)
 
 
 class ProjectSet:

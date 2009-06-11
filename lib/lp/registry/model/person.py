@@ -78,7 +78,6 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
@@ -852,10 +851,6 @@ class Person(
     def isTeam(self):
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
-
-    def getBranchCollection(self):
-        """The branch collection for this person."""
-        return getUtility(IAllBranches).ownedBy(self)
 
     @property
     def mailing_list(self):

@@ -11,17 +11,10 @@ __all__ = [
 
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.interfaces.branchcollection import IBranchCollection
 
 
-class NeedsBranchCollection:
-    """Base class for the Has<bits>Mixin classes to get the collection."""
-
-    def getBranchCollection(self):
-        """Return the appropriate branch collection."""
-        raise NotImplementedError(NeedsBranchCollection.getBranchCollection)
-
-
-class HasBranchesMixin(NeedsBranchCollection):
+class HasBranchesMixin:
     """Implementation for getBranches as defined by IHasBranches."""
 
     def getBranches(self, status=None, visible_by_user=None):
@@ -29,12 +22,12 @@ class HasBranchesMixin(NeedsBranchCollection):
         if status is None:
             status = DEFAULT_BRANCH_STATUS_IN_LISTING
 
-        collection = self.getBranchCollection().visibleByUser(visible_by_user)
+        collection = IBranchCollection(self).visibleByUser(visible_by_user)
         collection = collection.withLifecycleStatus(*status)
         return collection.getBranches()
 
 
-class HasMergeProposalsMixin(NeedsBranchCollection):
+class HasMergeProposalsMixin:
     """Implementation for getMergeProposals as defined by IHasMergeProposals.
     """
 
@@ -46,5 +39,5 @@ class HasMergeProposalsMixin(NeedsBranchCollection):
                 BranchMergeProposalStatus.NEEDS_REVIEW,
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
-        collection = self.getBranchCollection().visibleByUser(visible_by_user)
+        collection = IBranchCollection(self).visibleByUser(visible_by_user)
         return collection.getMergeProposals(status)
