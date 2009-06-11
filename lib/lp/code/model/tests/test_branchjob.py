@@ -34,13 +34,12 @@ from lp.testing.mail_helpers import pop_notifications
 from lp.code.interfaces.branch import (BranchFormat,
     BRANCH_FORMAT_UPGRADE_PATH, RepositoryFormat,
     REPOSITORY_FORMAT_UPGRADE_PATH)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from lp.code.enums import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchJob, IBranchUpgradeJob,IRevisionMailJob,
     IRosettaUploadJob)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize,)
 from lp.code.model.branchjob import (
     BranchDiffJob, BranchJob, BranchJobType, BranchUpgradeJob,
     RevisionsAddedJob, RevisionMailJob, RosettaUploadJob)

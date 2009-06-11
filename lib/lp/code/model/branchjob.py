@@ -33,7 +33,7 @@ from lp.services.job.model.job import Job
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.database.translationbranchapprover import (
     TranslationBranchApprover)
-from lp.code.interfaces.branchsubscription import (
+from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,

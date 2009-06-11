@@ -14,7 +14,7 @@ from zope.interface import Interface
 from canonical.widgets.textwidgets import URIWidget
 
 from canonical.launchpad import _
-from canonical.launchpad.browser import get_comments_for_bugtask
+from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.browser.bugcomment import (
     should_display_remote_comments)
 from canonical.launchpad.fields import URIField

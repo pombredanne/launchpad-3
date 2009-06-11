@@ -11,15 +11,16 @@ import unittest
 import zope.component.event
 from zope.component import getUtility
 
+from lp.code.enums import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
 from lp.codehosting.scanner.email import (
     send_removed_revision_emails, queue_tip_changed_email_jobs)
 from lp.codehosting.scanner.fixture import make_zope_event_fixture
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
-from canonical.launchpad.interfaces import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel, IPersonSet)
 from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from canonical.testing import LaunchpadZopelessLayer

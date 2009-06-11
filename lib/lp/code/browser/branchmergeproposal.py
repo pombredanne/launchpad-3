@@ -45,13 +45,12 @@ from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import (
+    BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
+    CodeReviewVote)
 from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposal, WrongBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    CodeReviewNotificationLevel)
-from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote, ICodeReviewComment)
+    IBranchMergeProposal, WrongBranchMergeProposal)
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
@@ -350,10 +349,13 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     @property
     def review_diff(self):
         """Return a (hopefully) intelligently encoded review diff."""
+        if self.context.review_diff is None:
+            return None
         try:
             diff = self.context.review_diff.diff.text.decode('utf-8')
         except UnicodeDecodeError:
-            diff = self.context.review_diff.diff.text.decode('windows-1252')
+            diff = self.context.review_diff.diff.text.decode('windows-1252',
+                                                             'replace')
         return diff
 
     @property

@@ -46,8 +46,9 @@ from canonical.launchpad.validators.bugattachment import (
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_factory_operation, export_operation_as, export_write_operation,
-    exported, mutator_for, operation_parameters, operation_returns_entry,
+    export_factory_operation, export_operation_as, export_read_operation,
+    export_write_operation, exported, mutator_for, operation_parameters,
+    operation_returns_collection_of, operation_returns_entry,
     rename_parameters_as, webservice_error)
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
@@ -695,6 +696,33 @@ class IBug(ICanBeMentored):
     def userCanView(user):
         """Return True if `user` can see this IBug, false otherwise."""
 
+    @operation_parameters(
+        submission=Reference(
+            Interface, title=_('A HWDB submission'), required=True))
+    @export_write_operation()
+    def linkHWSubmission(submission):
+        """Link a `HWSubmission` to this bug."""
+
+    @operation_parameters(
+        submission=Reference(
+            Interface, title=_('A HWDB submission'), required=True))
+    @export_write_operation()
+    def unlinkHWSubmission(submission):
+        """Remove a link to a `HWSubmission`."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getHWSubmissions(user=None):
+        """Return HWDB submissions linked to this bug.
+
+        :return: A sequence of HWDB submissions linked to this bug.
+        :param user: The user making the request.
+
+        Only those submissions are returned which the user can access.
+        Public submissions are always included; private submisisons only
+        if the user is the owner or an admin.
+        """
 
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
