@@ -14,11 +14,13 @@ from storm.expr import And, Desc, LeftJoin, Select
 from storm.locals import DateTime, Int, Reference, Store, Storm, Unicode
 from storm.store import EmptyResultSet
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
-from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
+from lp.soyuz.model.archiveauthtoken import (
+    ArchiveAuthToken, IArchiveAuthTokenSet)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
 from lp.registry.model.teammembership import TeamParticipation
@@ -106,11 +108,9 @@ class ArchiveSubscriber(Storm):
             return non_active_subscribers
         else:
             # Subscriber is not a team.
-            if store.find(
-                ArchiveAuthToken,
-                ArchiveAuthToken.person_id == self.subscriber_id,
-                ArchiveAuthToken.archive_id == self.archive_id,
-                ArchiveAuthToken.date_deactivated == None).any():
+            token_set = getUtility(IArchiveAuthTokenSet)
+            if token_set.getActiveTokenForArchiveAndPerson(
+                self.archive, self.subscriber):
                 # There are active tokens, so return an empty result
                 # set.
                 return EmptyResultSet()
