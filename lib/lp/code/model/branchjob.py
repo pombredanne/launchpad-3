@@ -716,5 +716,9 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
             None, BranchJobType.RECLAIM_BRANCH_SPACE, metadata)
         return cls(branch_job)
 
+    @property
+    def branch_id(self):
+        return self.metadata['branch_id']
+
     def run(self):
         pass

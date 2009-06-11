@@ -166,6 +166,9 @@ class IReclaimBranchSpaceJob(Interface):
     """A job to delete a branch from disk after its been deleted from the db.
     """
 
+    branch_id = Int(
+        title=_('The id of the now-deleted branch.'))
+
     def run():
         """Delete the branch from the filesystem."""
 

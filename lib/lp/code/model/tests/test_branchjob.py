@@ -898,6 +898,13 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         job = ReclaimBranchSpaceJob.create(self.factory.getUniqueInteger())
         verifyObject(IReclaimBranchSpaceJob, job)
 
+    def test_stores_id(self):
+        # An instance of ReclaimBranchSpaceJob stores the ID of the branch
+        # that has been deleted.
+        branch_id = self.factory.getUniqueInteger()
+        job = ReclaimBranchSpaceJob.create(branch_id)
+        self.assertEqual(branch_id, job.branch_id)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
