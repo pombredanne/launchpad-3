@@ -54,13 +54,13 @@ The search results contain projects, project-groups, and distributions.
     ...     search_results = find_tag_by_id(
     ...         abrowser.contents, 'search-results')
     ...     for tr in search_results.tbody('tr'):
-    ...         print tr.td.a.img['src'], extract_text(tr.td.a)
+    ...         print tr.td.a['class'], extract_text(tr.td.a)
     >>> print_search_results(anon_browser)
-    /@@/distribution Ubuntu
-    /@@/distribution ubuntutest
-    /@@/product Evolution
-    /@@/product Tomcat
-    /@@/product Gnome Applets
+    sprite distribution Ubuntu
+    sprite distribution ubuntutest
+    sprite product Evolution
+    sprite product Tomcat
+    sprite product Gnome Applets
 
 The user can follow one of these links to go straight to the project,
 project-group, or distribution.
@@ -92,11 +92,11 @@ can enter the search string in the URL, saving them a page load.
 
     >>> anon_browser.open('http://launchpad.dev/projects?text=ubuntu')
     >>> print_search_results(anon_browser)
-    /@@/distribution Ubuntu
-    /@@/distribution ubuntutest
-    /@@/product Evolution
-    /@@/product Tomcat
-    /@@/product Gnome Applets
+    sprite distribution Ubuntu
+    sprite distribution ubuntutest
+    sprite product Evolution
+    sprite product Tomcat
+    sprite product Gnome Applets
 
 If the project has specified an icon, that is shown in the listing
 instead.
@@ -118,11 +118,11 @@ instead.
 
     >>> anon_browser.open('http://launchpad.dev/projects?text=ubuntu')
     >>> print_search_results(anon_browser)
-    http://.../ubuntu-icon.png Ubuntu
-    /@@/distribution ubuntutest
-    /@@/product Evolution
-    /@@/product Tomcat
-    /@@/product Gnome Applets
+    sprite distribution Ubuntu
+    sprite distribution ubuntutest
+    sprite product Evolution
+    sprite product Tomcat
+    sprite product Gnome Applets
 
 
 == Robustness ==
