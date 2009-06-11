@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+from datetime import timedelta
 from unittest import TestLoader
 
 from zope.component import getUtility
@@ -10,6 +11,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+from canonical.launchpad.interfaces.pofiletranslator import (
+    IPOFileTranslatorSet)
 from canonical.launchpad.scripts.message_sharing_migration import (
     find_potemplate_equivalence_classes_for, merge_potmsgsets,
     merge_translationmessages, template_precedence)
@@ -303,9 +306,11 @@ class TranslatableProductMixin:
         self.stable = self.factory.makeProductSeries(
             product=self.product, owner=self.product.owner, name='stable')
         self.trunk_template = self.factory.makePOTemplate(
-            productseries=self.trunk, name='trunk')
+            productseries=self.trunk, name='template',
+            owner=self.product.owner)
         self.stable_template = self.factory.makePOTemplate(
-            productseries=self.trunk, name='stable')
+            productseries=self.stable, name='template',
+            owner=self.product.owner)
 
         # Force trunk to be the "most representative" template.
         self.stable_template.iscurrent = False
@@ -397,14 +402,17 @@ class TranslatedProductMixin(TranslatableProductMixin):
         self.dutch = getUtility(ILanguageSet).getLanguageByCode('nl')
 
         self.trunk_pofile = self.factory.makePOFile(
-            'nl', potemplate=self.trunk_template)
+            'nl', potemplate=self.trunk_template,
+            owner=self.trunk_template.owner)
         self.stable_pofile = self.factory.makePOFile(
-            'nl', potemplate=self.stable_template)
+            'nl', potemplate=self.stable_template,
+            owner=self.trunk_template.owner)
 
     def _makeTranslationMessage(self, pofile, potmsgset, text, diverged):
         """Set a translation for given message in given translation."""
         message = self.factory.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset, translations=[text])
+            pofile=pofile, potmsgset=potmsgset, translations=[text],
+            translator=pofile.owner)
         if diverged:
             message.potemplate = pofile.potemplate
         else:
@@ -710,6 +718,56 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         # Redundant messages are deleted.
         tms = trunk_message.potmsgset.getAllTranslationMessages()
         self.assertEqual(list(tms), [trunk_message])
+
+    def test_clashingPOFileTranslatorEntries(self):
+        # POFileTranslator is maintained by a trigger on
+        # TranslationMessage.  Fiddling with TranslationTemplateItems
+        # directly bypasses it, so the script must make sure that
+        # POFileTranslator respects its unique constraints.
+
+        # In this scenario, "trunk" has a TranslationMessage with a
+        # matching POFileTranslator entry.  This message is happy where
+        # it is; it's not changing in any way during the test.
+        poftset = getUtility(IPOFileTranslatorSet)
+
+        translator = self.trunk_template.owner
+
+        contented_potmsgset = self.factory.makePOTMsgSet(
+            self.trunk_template, singular='snut', sequence=2)
+        contented_message = self._makeTranslationMessage(
+            self.trunk_pofile, contented_potmsgset, 'druf', False)
+        self.assertEqual(contented_message.submitter, translator)
+        poft = poftset.getForPersonPOFile(translator, self.trunk_pofile)
+        self.assertEqual(poft.latest_message, contented_message)
+
+        # Then there's the pair of POTMsgSets that are identical between
+        # trunk and stable.  This one is translated only in stable.
+        # Merging will transfer that TranslationMessage from
+        # stable to trunk (where it becomes the shared message) through
+        # direct manipulation of TranslationTemplateItem.
+        stable_message = self._makeTranslationMessage(
+                self.stable_pofile, self.stable_potmsgset, 'fulb', False)
+        self.assertEqual(
+            stable_message.submitter, contented_message.submitter)
+
+        stable_message = removeSecurityProxy(stable_message)
+
+        # As it happens, this message is more recent than the happy one.
+        # This doesn't matter except it makes our test more predictable.
+        stable_message.date_created += timedelta(0, 0, 1)
+        poft = poftset.getForPersonPOFile(translator, self.stable_pofile)
+        self.assertEqual(poft.latest_message, stable_message)
+        removeSecurityProxy(poft).date_last_touched = (
+            stable_message.date_created)
+
+        # Now the migration script runs.  This also carries the
+        # POFileTranslator record for stable_message into trunk_pofile.
+        # The one for contented_message disappears in the process.
+        merge_potmsgsets(self.templates)
+        merge_translationmessages(self.templates)
+
+        poft = poftset.getForPersonPOFile(translator, self.trunk_pofile)
+        self.assertEqual(poft.latest_message, stable_message)
 
 
 def test_suite():

@@ -564,9 +564,9 @@ def sqlvalues(*values, **kwvalues):
         raise TypeError(
             "Use either positional or keyword values with sqlvalue.")
     if values:
-        return tuple([quote(item) for item in values])
+        return tuple(quote(item) for item in values)
     elif kwvalues:
-        return dict([(key, quote(value)) for key, value in kwvalues.items()])
+        return dict((key, quote(value)) for key, value in kwvalues.items())
 
 
 def quote_identifier(identifier):

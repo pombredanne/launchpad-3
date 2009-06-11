@@ -29,7 +29,7 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.testing import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
 
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 
 
@@ -190,14 +190,9 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
 
     def getLastRevision(self, remote_url):
         """Get the last revision ID at the given URL."""
-        # XXX MichaelHudson, 2008-12-11: This is foul.  If revision-info took
-        # a -d argument, it would be much easier (and also work in the case of
-        # the null revision at the other end).  Bzr 1.11's revision-info has a
-        # -d option, so when we have that in rocketfuel we can rewrite this.
         output, error = self._run_bzr(
-            ['cat-revision', '-r', 'branch:' + remote_url])
-        dom = parseString(output)
-        return dom.documentElement.attributes['revision_id'].value
+            ['revision-info', '-d', remote_url])
+        return output.split()[1]
 
     def getTransportURL(self, relpath=None, username=None):
         """Return the base URL for the tests."""

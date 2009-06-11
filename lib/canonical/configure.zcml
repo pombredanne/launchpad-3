@@ -57,7 +57,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.LaunchpadRootIndexView"
+        class="lp.registry.browser.root.LaunchpadRootIndexView"
         name="index.html"
         template="launchpad/templates/root-index.pt"
         permission="zope.Public"
@@ -65,7 +65,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.FeaturedProjectsView"
+        class="lp.registry.browser.featuredproject.FeaturedProjectsView"
         name="+featuredprojects"
         template="launchpad/templates/root-featuredprojects.pt"
         permission="launchpad.Admin"

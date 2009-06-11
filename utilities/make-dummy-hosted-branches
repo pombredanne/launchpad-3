@@ -23,11 +23,11 @@ import tempfile
 import transaction
 from zope.component import getUtility
 
+from lp.code.enums import BranchType
+from lp.code.model.branch import Branch
 from lp.codehosting.tests.helpers import make_bazaar_branch_and_tree
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database import Branch
-from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 
