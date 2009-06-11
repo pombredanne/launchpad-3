@@ -266,7 +266,7 @@
           });
         </script>
         <div style="float: right">
-          <a href="+series">&#x00BB; Series history</a>
+          <a href="+series">&#x00BB; Series timeline</a>
           <a href="+milestones">&#x00BB; Milestone history</a>
         </div>
       </div>

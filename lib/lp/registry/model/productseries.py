@@ -1,5 +1,6 @@
 # Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
+"""Models for `IProductSeries`."""
 
 __metaclass__ = type
 
@@ -14,7 +15,6 @@ import operator
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from storm.expr import In, Sum
-from warnings import warn
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
@@ -180,12 +180,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     @property
     def title(self):
         return self.product.displayname + ' Series: ' + self.displayname
-
-    def shortdesc(self):
-        warn('ProductSeries.shortdesc should be ProductSeries.summary',
-             DeprecationWarning)
-        return self.summary
-    shortdesc = property(shortdesc)
 
     @property
     def bug_reporting_guidelines(self):

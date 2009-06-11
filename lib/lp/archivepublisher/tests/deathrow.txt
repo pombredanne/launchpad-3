@@ -241,16 +241,10 @@ Run DeathRow against the current 'removable' context.
     >>> death_row.reap()
     DEBUG 4 Sources
     DEBUG 3 Binaries
-    DEBUG Checking deleted_666.dsc (02129bb861061d1a052c592e2dc6b383)
+    ...
     DEBUG Checking superseded_666.dsc (02129bb861061d1a052c592e2dc6b383)
     DEBUG Checking obsolete_666.dsc (02129bb861061d1a052c592e2dc6b383)
-    DEBUG Checking stuck_666.dsc (7fc56270e7a70fa81a5935b72eacbe29)
-    DEBUG Checking shared.tar.gz (57cec4137b614c87cb4e24a3d003a3e0)
-    DEBUG Cannot remove.
-    DEBUG Batch ...
-    DEBUG Checking deleted-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
-    DEBUG Checking superseded-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
-    DEBUG Checking obsolete-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
+    ...
     DEBUG Batch ...
     INFO Removing 7 files marked for reaping
     DEBUG Removing superseded/superseded_666.dsc from main
