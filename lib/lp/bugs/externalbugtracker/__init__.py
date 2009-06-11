@@ -1,0 +1,61 @@
+# Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0401
+
+"""__init__ module for the externalbugtracker package."""
+
+__metaclass__ = type
+__all__ = [
+    'get_external_bugtracker',
+    'BugNotFound',
+    'BugTrackerConnectError',
+    'BugWatchUpdateError',
+    'BugWatchUpdateWarning',
+    'Bugzilla',
+    'DebBugs',
+    'DebBugsDatabaseNotFound',
+    'ExternalBugTracker',
+    'InvalidBugId',
+    'LookupTree',
+    'Mantis',
+    'MantisLoginHandler',
+    'PrivateRemoteBug',
+    'RequestTracker',
+    'Roundup',
+    'SourceForge',
+    'Trac',
+    'UnknownBugTrackerTypeError',
+    'UnknownRemoteStatusError',
+    'UnparseableBugData',
+    'UnparseableBugTrackerVersion',
+    'UnsupportedBugTrackerVersion',
+    ]
+
+from lp.bugs.externalbugtracker.base import *
+from lp.bugs.externalbugtracker.bugzilla import *
+from lp.bugs.externalbugtracker.debbugs import *
+from lp.bugs.externalbugtracker.mantis import *
+from lp.bugs.externalbugtracker.roundup import *
+from lp.bugs.externalbugtracker.sourceforge import *
+from lp.bugs.externalbugtracker.rt import *
+from lp.bugs.externalbugtracker.trac import *
+from lp.bugs.interfaces.bugtracker import BugTrackerType
+BUG_TRACKER_CLASSES = {
+    BugTrackerType.BUGZILLA: Bugzilla,
+    BugTrackerType.DEBBUGS: DebBugs,
+    BugTrackerType.MANTIS: Mantis,
+    BugTrackerType.TRAC: Trac,
+    BugTrackerType.ROUNDUP: Roundup,
+    BugTrackerType.RT: RequestTracker,
+    BugTrackerType.SOURCEFORGE: SourceForge
+    }
+
+
+def get_external_bugtracker(bugtracker):
+    """Return an `ExternalBugTracker` for bugtracker."""
+    bugtrackertype = bugtracker.bugtrackertype
+    bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)
+    if bugtracker_class is not None:
+        return bugtracker_class(bugtracker.baseurl)
+    else:
+        raise UnknownBugTrackerTypeError(bugtrackertype.name,
+            bugtracker.name)

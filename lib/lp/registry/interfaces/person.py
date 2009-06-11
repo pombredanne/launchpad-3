@@ -70,6 +70,7 @@ from canonical.launchpad.fields import (
     is_valid_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.code.enums import BranchMergeProposalStatus
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.services.worlddata.interfaces.language import ILanguage
@@ -926,7 +927,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     @operation_parameters(
         status=List(
             title=_("A list of merge proposal statuses to filter by."),
-            value_type=Choice(vocabulary='BranchMergeProposalStatus')))
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)))
     @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(Interface) # Really IBranchMergeProposal
     @export_read_operation()

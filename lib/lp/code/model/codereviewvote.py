@@ -15,6 +15,8 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+
+
 class CodeReviewVoteReference(SQLBase):
     """See `ICodeReviewVote`"""
 

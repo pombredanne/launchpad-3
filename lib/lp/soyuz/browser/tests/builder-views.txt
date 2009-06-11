@@ -184,7 +184,7 @@ is widely available:
 
     >>> print frog.status
     Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
-        RELEASE [cprov]
+        RELEASE [cprov/ppa]
 
 Accessing the view for $builder/+index as a Foo Bar, which has
 launchpad.View permission on the target archive of the 'currentjob',
@@ -211,7 +211,14 @@ all the 'private' information is exposed.
 
     >>> print admin_view.context.status
     Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
-        RELEASE [cprov]
+        RELEASE [cprov/ppa]
+
+    >>> import datetime
+    >>> import pytz
+    >>> private_job.buildstart = (
+    ...     datetime.datetime.now(pytz.UTC) - datetime.timedelta(10))
+    >>> print admin_view.current_build_duration
+    10 days...
 
 When accessing the same view as a unprivileged user, No-Priv, the
 sensitive information is hidden (the context class is 'cloaked', see
@@ -235,6 +242,9 @@ shows up as 'Building private build'.
 
     >>> print nopriv_view.context.status
     Building private build
+
+    >>> print nopriv_view.current_build_duration
+    None
 
 XXX cprov 20080214: this is clearly a counterintuitive way to identify
 builders building private jobs. We will certainly have to fine-tune it

@@ -161,7 +161,7 @@ class BuildView(LaunchpadView):
     @property
     def changesfile(self):
         """Return a `ProxiedLibraryFileAlias` for the Build changesfile."""
-        changesfile = self.context.changesfile
+        changesfile = self.context.upload_changesfile
         if changesfile is None:
             return None
 

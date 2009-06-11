@@ -9,9 +9,9 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.enums import CodeReviewNotificationLevel
 from canonical.launchpad.mail import get_msgid
-from canonical.launchpad.interfaces import (
-    CodeReviewNotificationLevel, IMergeProposalCreatedJobSource)
+from canonical.launchpad.interfaces import IMergeProposalCreatedJobSource
 from lp.registry.interfaces.person import IPerson
 from lp.code.mail.branch import BranchMailer, RecipientReason
 from canonical.launchpad.webapp import canonical_url
