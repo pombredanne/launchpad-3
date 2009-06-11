@@ -95,7 +95,7 @@ start time makes no sense. Hence an exception is raised.
     AssertionError: The start time is only estimated for pending builds.
 
 On a build job in state `NEEDSBUILD` we can ask for its estimated
-build start time. Here the result will be undefined however, because
+build start time. In this context the result will be undefined because
 the corresponding build pool is empty.
 
     # Create a brand new pending build.
