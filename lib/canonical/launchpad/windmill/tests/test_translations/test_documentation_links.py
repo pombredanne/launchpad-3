@@ -11,10 +11,11 @@ from windmill.authoring import WindmillTestClient
 from canonical.launchpad.windmill.testing import lpuser
 
 class DocumentationLinksTest:
-    """Test that the documentation links on translation pages work properly."""
+    """Test that the documentation links on translation pages work."""
 
-    def __init__(self, name=None, url='http://translations.launchpad.net:8085',
-                 suite='translations', user=lpuser.TRANSLATIONS_ADMIN):
+    def __init__(
+        self, name=None, url='http://translations.launchpad.net:8085',
+        suite='translations', user=lpuser.TRANSLATIONS_ADMIN):
         """Create a new DocumentationLinksTest.
 
         :param name: Name of the test.
