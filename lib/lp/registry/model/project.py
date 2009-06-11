@@ -41,11 +41,10 @@ from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 
-from lp.code.enums import BranchMergeProposalStatus
-from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import BugTargetBase
@@ -74,7 +73,8 @@ from lp.registry.interfaces.person import validate_public_person
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
-              StructuralSubscriptionTargetMixin):
+              StructuralSubscriptionTargetMixin,
+              HasBranchesMixin, HasMergeProposalsMixin):
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
@@ -427,30 +427,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         return ProjectSeries(self, series_name)
 
-    def _branchCollection(self, visible_by_user):
-        """The branch collection for this product visible by the user."""
-        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        return collection.inProject(self)
-
-    def getBranches(self, status=None, visible_by_user=None):
-        """See `IPrerson`."""
-        if status is None:
-            status = DEFAULT_BRANCH_STATUS_IN_LISTING
-
-        collection = self._branchCollection(visible_by_user)
-        collection = collection.withLifecycleStatus(*status)
-        return collection.getBranches()
-
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IProject`."""
-        if status is None:
-            status = (
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW,
-                BranchMergeProposalStatus.WORK_IN_PROGRESS)
-
-        collection = self._branchCollection(visible_by_user)
-        return collection.getMergeProposals(status)
+    def getBranchCollection(self):
+        """The branch collection for this person."""
+        return getUtility(IAllBranches).inProject(self)
 
 
 class ProjectSet:
