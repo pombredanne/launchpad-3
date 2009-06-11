@@ -83,6 +83,7 @@ from a store other than the correct Master.
     ...
     InternalError: transaction is read-only
 
+    >>> transaction.abort()
     >>> t = transaction.begin()
     >>> account = auth_slave.find(
     ...     Account, openid_identifier='sabdfl_oid').one()
