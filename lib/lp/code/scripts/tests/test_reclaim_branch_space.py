@@ -1,4 +1,4 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  All rights reserved.
 
 """Test the script that reclaims the disk space used by deleted branches."""
 
@@ -10,12 +10,13 @@ from lp.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.tests import run_script
 
 
-class TestDiffBMPs(TestCaseWithFactory):
+class TestReclaimBranchSpaceScript(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
 
-    def test_mpcreationjobs(self):
-        """Ensure mpcreationjobs runs and generates diffs."""
+    def test_reclaimbranchspace_script(self):
+        # When the reclaimbranchspace script is run, it removes from the file
+        # system any branches that have been deleted from the database.
         self.useTempBzrHome()
         branch, tree = self.createMirroredBranchAndTree()
         self.assertTrue(tree.branch._transport.has('.'))
@@ -27,7 +28,7 @@ class TestDiffBMPs(TestCaseWithFactory):
         self.assertEqual('', stdout)
         self.assertEqual(
             'INFO    creating lockfile\n'
-            'INFO    Deleted 1 branch.\n', stderr)
+            'INFO    Reclaimed space for 1 branches.\n', stderr)
         self.assertFalse(tree.branch._transport.has('.'))
 
 
