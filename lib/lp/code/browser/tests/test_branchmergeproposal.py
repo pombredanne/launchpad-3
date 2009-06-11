@@ -156,6 +156,9 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
         owner = self.bmp.source_branch.owner
 
+        self._nominateReviewer(albert, owner)
+        self._nominateReviewer(bob, owner)
+        self._nominateReviewer(charles, owner)
         self._createComment(albert, CodeReviewVote.APPROVE)
         self._createComment(bob, CodeReviewVote.ABSTAIN)
         self._createComment(charles, CodeReviewVote.DISAPPROVE)
@@ -174,6 +177,8 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
         owner = self.bmp.source_branch.owner
 
+        self._nominateReviewer(albert, owner)
+        self._nominateReviewer(bob, owner)
         self._createComment(albert, CodeReviewVote.ABSTAIN)
         self._createComment(bob, CodeReviewVote.APPROVE)
         self._createComment(albert, CodeReviewVote.APPROVE)

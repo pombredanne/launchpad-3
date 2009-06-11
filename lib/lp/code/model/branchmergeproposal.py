@@ -588,7 +588,7 @@ class BranchMergeProposal(SQLBase):
           * the existing vote reference for the user
           * a vote reference of the same type that has been requested of a
             team that the user is a member of
-          * a new vote reference for the user
+          * None
         """
         # Firstly look for a vote reference for the user.
         ref = self.getUsersVoteReference(user)
@@ -605,12 +605,7 @@ class BranchMergeProposal(SQLBase):
             team_ref = self._getTeamVoteReference(user, None)
             if team_ref is not None:
                 return team_ref
-        # Create a new reference.
-        return CodeReviewVoteReference(
-            branch_merge_proposal=self,
-            registrant=user,
-            reviewer=user,
-            review_type=review_type)
+        return None
 
     def createCommentFromMessage(self, message, vote, review_type,
                                  original_email=None, _notify_listeners=True):
@@ -630,9 +625,10 @@ class BranchMergeProposal(SQLBase):
             # Just set the reviewer and review type again on the off chance
             # that the user has edited the review_type or claimed a team
             # review.
-            vote_reference.reviewer = message.owner
-            vote_reference.review_type = review_type
-            vote_reference.comment = code_review_message
+            if vote_reference is not None:
+                vote_reference.reviewer = message.owner
+                vote_reference.review_type = review_type
+                vote_reference.comment = code_review_message
         if _notify_listeners:
             notify(NewCodeReviewCommentEvent(
                     code_review_message, original_email))

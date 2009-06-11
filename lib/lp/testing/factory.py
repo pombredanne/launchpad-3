@@ -1182,6 +1182,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             else:
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
+        if vote is not None:
+            merge_proposal.nominateReviewer(sender, sender,
+                review_type=vote_tag)
         return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
 

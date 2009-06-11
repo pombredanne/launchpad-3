@@ -29,10 +29,12 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self, user="foo.bar@canonical.com")
 
     def _createComment(self, proposal, reviewer=None, vote=None,
-                       comment=_default):
+                       comment=_default, nominated=True):
         """Create a comment on the merge proposal."""
         if reviewer is None:
             reviewer = self.factory.makePerson()
+        if nominated:
+            proposal.nominateReviewer(reviewer, proposal.registrant)
         if comment is _default:
             comment = self.factory.getUniqueString()
         proposal.createComment(
@@ -231,6 +233,7 @@ class TestProductActiveReviewGroups(TestCaseWithFactory):
         # ARE_DOING.
         reviewer = self.bmp.target_branch.owner
         login_person(reviewer)
+        self.bmp.nominateReviewer(reviewer, reviewer)
         self.bmp.createComment(
             reviewer, 'subject', vote=CodeReviewVote.APPROVE)
         self.assertReviewGroupForUser(
