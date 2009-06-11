@@ -4,7 +4,7 @@ The contents on the Bugs front page is driven by MaloneView. It
 doesn't use its context for anything, so we don't have to supply one
 when creating it.
 
-    >>> from canonical.launchpad.browser import MaloneView
+    >>> from lp.bugs.browser.bug import MaloneView
     >>> from canonical.launchpad.systemhomes import MaloneApplication
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> bugs_view = MaloneView(MaloneApplication(), LaunchpadTestRequest())
