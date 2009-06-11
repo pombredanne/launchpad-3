@@ -31,17 +31,17 @@ __all__ = [
 from operator import attrgetter
 import os
 
+from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+
 from zope.event import notify
 from zope.component import getUtility
 from zope.formlib import form
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.session.interfaces import ISession
 
-from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.lazr import ExportedFolder
-
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.widgets import CheckBoxMatrixWidget, LabeledMultiCheckBoxWidget
@@ -60,12 +60,11 @@ from canonical.launchpad.webapp import (
     canonical_url, Navigation, redirection, stepto, urlappend)
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.account import IAccountSet
-from canonical.launchpad.interfaces.validation import shipit_postcode_required
+from canonical.shipit.interfaces.validation import shipit_postcode_required
 from canonical.shipit.interfaces.shipit import IShipItApplication
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
-from canonical.launchpad.interfaces.openidconsumer import (
-    IOpenIDConsumerStoreFactory)
+from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
 from canonical.shipit.interfaces.shipit import (
     IShipitAccount, IShipItReportSet, IShipItSurveySet, IShippingRequestAdmin,
     IShippingRequestEdit, IShippingRequestSet, IShippingRequestUser,
@@ -152,8 +151,8 @@ class BaseLoginView(LaunchpadView):
 
     def _getConsumer(self):
         session = ISession(self.request)[self._openid_session_ns]
-        store = getUtility(IOpenIDConsumerStoreFactory)()
-        return Consumer(session, store)
+        openid_store = getUtility(IOpenIDConsumerStore)
+        return Consumer(session, openid_store)
 
     def _redirect(self):
         """Redirect the logged in user to the request page."""

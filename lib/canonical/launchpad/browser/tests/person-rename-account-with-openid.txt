@@ -9,8 +9,7 @@ into these third party sites using your old identity.
 
 Because of this, we warn users about to rename their account of the risks.
 
-    >>> from zope.app.pagetemplate.viewpagetemplatefile import (
-    ...     ViewPageTemplateFile)
+    >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from lp.registry.browser.person import PersonEditView
     >>> from canonical.launchpad.ftests import (
     ...     LaunchpadFormHarness, login_person)
@@ -42,7 +41,7 @@ wishes:
 
 Same thing if they logged in using OpenID only to known trust roots.
 
-    >>> from canonical.launchpad.interfaces.openidserver import (
+    >>> from canonical.signon.interfaces.openidserver import (
     ...     IOpenIDRPConfigSet, IOpenIDRPSummarySet)
     >>> trust_root = getUtility(IOpenIDRPConfigSet).new(
     ...     'https://shop.canonical.com/', 'The Shop', 'For our fans')

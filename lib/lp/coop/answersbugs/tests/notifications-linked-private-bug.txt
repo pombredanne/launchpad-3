@@ -10,7 +10,7 @@ they are indirect subscribers.
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import BugTaskStatus, IPersonSet
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> from lp.testing.mail_helpers import pop_notifications
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bugtask = get_bugtask_linked_to_question()

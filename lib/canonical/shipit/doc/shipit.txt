@@ -435,16 +435,13 @@ shipped, by running the shipit-exports cronscript.
     ...     ShippingRequestPriority.NORMAL, distroseries=feisty))
     [1, 2, 3, 4, 5, 7]
 
-    >>> import subprocess
-    >>> cmd = ('cronscripts/shipit-exports.py -q --priority=normal '
-    ...        '--distroseries=feisty')
-    >>> process = subprocess.Popen(
-    ...     cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
+    >>> from lp.testing import run_script
+    >>> cmd = ('lib/canonical/shipit/scripts/shipit-exports.py -q '
+    ...        '--priority=normal --distroseries=feisty')
+    >>> out, err, return_code = run_script(cmd)
     >>> out, err
     ('', '')
-    >>> process.returncode
+    >>> return_code
     0
 
     >>> transaction.commit()
@@ -1206,13 +1203,11 @@ This is the description of each column, in its context:
 All these reports are generated periodically and stored in the Librarian by
 the shipit-reports cronscript.
 
-    >>> process = subprocess.Popen(
-    ...     'cronscripts/shipit-reports.py -q', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
+    >>> out, err, return_code = run_script(
+    ...     'lib/canonical/shipit/scripts/shipit-reports.py -q')
     >>> out, err
     ('', '')
-    >>> process.returncode
+    >>> return_code
     0
 
 

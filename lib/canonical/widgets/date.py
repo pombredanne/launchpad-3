@@ -1,7 +1,11 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""These widgets use the proprietary PopCalXP JavaScript widget to allow for
+"""These widgets use the a YUI2 calendar widget to allow for
 date and datetime selection.
+
+To avoid adding the YUI2 page-weight to launchpad.js, the relevant files
+need to be included on the individual pages using the widget. See
+templates/archive-subscribers.pt for an example.
 
 We should investigate zc.datewidget available from the Z3 SVN repository.
 """
@@ -14,7 +18,6 @@ __all__ = [
     'DatetimeDisplayWidget',
     ]
 
-import os
 from datetime import datetime
 import pytz
 
@@ -23,19 +26,12 @@ from zope.app.form.browser.textwidgets import escape, TextWidget
 from zope.app.form.browser.widget import DisplayWidget
 from zope.app.form.interfaces import InputErrors, WidgetInputError
 from zope.app.form.interfaces import ConversionError
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.lazr import ExportedFolder
-
-
-class PopCalXPFolder(ExportedFolder):
-    """Export the PopCalXP Date picker resources."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../../contrib/popcalxp')
 
 
 class DateTimeWidget(TextWidget):
@@ -208,11 +204,15 @@ class DateTimeWidget(TextWidget):
 
     @property
     def disabled_flag(self):
-        """Return a string to make the form input disabled if necessary."""
+        """Return a string to make the form input disabled if necessary.
+
+        Returns ``None`` otherwise, to omit the ``disabled`` attribute
+        completely.
+        """
         if self.disabled:
             return "disabled"
         else:
-            return ""
+            return None
 
     #@property  XXX: do as a property when we have python2.5 for tests of
     #properties
@@ -234,13 +234,16 @@ class DateTimeWidget(TextWidget):
           >>> print widget.to_date
           None
 
-        The daterange is correctly expressed as JavaScript in all the
-        different permutations of to/from dates:
+        If there is no date range, we return None so it won't be included
+        on the template at all:
 
           >>> widget.from_date = None
           >>> widget.to_date = None
-          >>> widget.daterange
-          'null'
+          >>> print widget.daterange
+          None
+
+        The daterange is correctly expressed as JavaScript in all the
+        different permutations of to/from dates:
 
           >>> widget.from_date = from_date
           >>> widget.to_date = None
@@ -266,7 +269,7 @@ class DateTimeWidget(TextWidget):
         """
         self._align_date_constraints_with_time_zone()
         if not (self.from_date or self.to_date):
-            return 'null'
+            return None
         daterange = '['
         if self.from_date is None:
             daterange += 'null,'

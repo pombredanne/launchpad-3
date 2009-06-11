@@ -14,10 +14,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from lp.code.interfaces.branch import BranchType, BranchTypeError
-from lp.code.interfaces.branchpuller import IBranchPuller
-from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import BranchTypeError
+from lp.code.interfaces.branchpuller import IBranchPuller
+from lp.testing import TestCaseWithFactory
 
 
 class TestMirroringForHostedBranches(TestCaseWithFactory):

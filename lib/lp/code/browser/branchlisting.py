@@ -25,7 +25,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import weakref
 
 import simplejson
 from storm.expr import Asc, Desc
@@ -34,7 +33,6 @@ from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.formlib import form
 from zope.schema import Choice
-from zope.security.proxy import removeSecurityProxy
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 
@@ -46,29 +44,31 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
-from canonical.launchpad.interfaces.bugbranch import IBugBranchSet
-from canonical.launchpad.interfaces.specificationbranch import ISpecificationBranchSet
+from lp.bugs.interfaces.bugbranch import IBugBranchSet
+from lp.blueprints.interfaces.specificationbranch import (
+    ISpecificationBranchSet)
 from canonical.launchpad.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
     LaunchpadFormView, Link)
 from canonical.launchpad.webapp.authorization import (
-    check_permission, LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
+    check_permission, precache_permission_for_objects)
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
 
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchLifecycleStatusFilter,
+    BranchMergeProposalStatus, BranchType)
 from lp.code.interfaces.branch import (
-    bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    bazaar_identity,  DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchBatchNavigator)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespacePolicy)
+    IBranchMergeProposalGetter)
+from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
 
@@ -307,7 +307,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
                  canonical_url(branch, view_name='+spark'))
                 for count, branch
                 in enumerate(self._branches_for_current_batch)
-                ]);
+                ])
 
     @cachedproperty
     def _branches_for_current_batch(self):
@@ -316,15 +316,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         # Until there is an API to do this nicely, shove the launchpad.view
         # permission into the request cache directly.
         request = self.view.request
-        permission_cache = request.annotations.setdefault(
-            LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
-            weakref.WeakKeyDictionary())
-        for branch in branches:
-            naked_branch = removeSecurityProxy(branch)
-            branch_permission_cache = permission_cache.setdefault(
-                naked_branch, {})
-            branch_permission_cache['launchpad.View'] = True
-
+        precache_permission_for_objects(request, 'launchpad.View', branches)
         return branches
 
     @cachedproperty
@@ -601,7 +593,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         if widget.hasValidInput():
             return widget.getInputValue()
         else:
-            return None
+            # If a derived view has specified a default sort_by, use that.
+            return self.initial_values.get('sort_by')
 
     @staticmethod
     def _listingSortToOrderBy(sort_by):
@@ -610,8 +603,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         :param sort_by: an item from the BranchListingSort enumeration.
         """
         from lp.code.model.branch import Branch
-        from lp.registry.model.person import Owner
-        from lp.registry.model.product import Product
 
         DEFAULT_BRANCH_LISTING_SORT = [
             BranchListingSort.PRODUCT,
@@ -621,10 +612,10 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             ]
 
         LISTING_SORT_TO_COLUMN = {
-            BranchListingSort.PRODUCT: (Asc, Product.name),
+            BranchListingSort.PRODUCT: (Asc, Branch.target_suffix),
             BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
             BranchListingSort.NAME: (Asc, Branch.name),
-            BranchListingSort.REGISTRANT: (Asc, Owner.name),
+            BranchListingSort.REGISTRANT: (Asc, Branch.owner_name),
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
                 Desc, Branch.date_last_modified),
             BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
@@ -636,7 +627,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         order_by = map(
             LISTING_SORT_TO_COLUMN.get, DEFAULT_BRANCH_LISTING_SORT)
 
-        if sort_by is not None:
+        if sort_by is not None and sort_by != BranchListingSort.DEFAULT:
             direction, column = LISTING_SORT_TO_COLUMN[sort_by]
             order_by = (
                 [(direction, column)] +
@@ -689,8 +680,7 @@ class NoContextBranchListingView(BranchListingView):
         if lifecycle_status is not None:
             collection = collection.withLifecycleStatus(*lifecycle_status)
         collection = collection.visibleByUser(self.user)
-        return collection.getBranches(
-            join_owner=False, join_product=False).order_by(
+        return collection.getBranches().order_by(
             self._branch_order)
 
 
@@ -879,6 +869,12 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
 class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
     """Base class used for different person listing views."""
+
+    @property
+    def initial_values(self):
+        values = super(PersonBaseBranchListingView, self).initial_values
+        values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+        return values
 
     @property
     def user_in_context_team(self):
@@ -1366,17 +1362,43 @@ class SourcePackageBranchesView(BranchListingView):
         """The number of total branches the user can see."""
         return self._getCollection().visibleByUser(self.user).count()
 
+    def _numBranchesInPackage(self, package):
+        branches = IBranchTarget(package).collection
+        return branches.visibleByUser(self.user).count()
+
     @property
     def series_links(self):
         """Links to other series in the same distro as the package."""
         our_series = self.context.distroseries
         our_sourcepackagename = self.context.sourcepackagename
-        # We want oldest on the left, and 'serieses' normally yields the
-        # newest first.
-        for series in reversed(self.context.distribution.serieses):
+        distribution = self.context.distribution
+        for series in distribution.serieses:
+            if not series.active:
+                continue
+            if distribution.currentseries == series:
+                dev_focus_css = 'sourcepackage-dev-focus'
+            else:
+                dev_focus_css = 'sourcepackage-not-dev-focus'
+            package = SourcePackage(our_sourcepackagename, series)
+            # XXX: JonathanLange 2009-05-13 bug=376295: This approach is
+            # inefficient. We should instead do something like:
+            #
+            #   SELECT distroseries, COUNT(id)
+            #   FROM Branch
+            #   WHERE distroseries IS NOT NULL
+            #   AND sourcepackagename = ?
+            #   GROUP BY distroseries
+            #
+            # It's not too bad though, since the number of active series is
+            # generally less than 5.
+            num_branches = self._numBranchesInPackage(package)
+            num_branches_text = get_plural_text(
+                num_branches, "branch", "branches")
             yield dict(
-                series_name=series.name,
-                package=SourcePackage(our_sourcepackagename, series),
+                series_name=series.displayname,
+                package=package,
+                num_branches='%s %s' % (num_branches, num_branches_text),
+                dev_focus_css=dev_focus_css,
                 linked=(series != our_series))
 
 

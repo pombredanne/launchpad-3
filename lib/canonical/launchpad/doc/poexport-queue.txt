@@ -12,7 +12,7 @@ and the ones that failed with the error associated.
   >>> import transaction
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> from canonical.launchpad.mail.stub import test_emails
+  >>> from lp.services.mail.stub import test_emails
   >>> from canonical.launchpad.scripts.po_export_queue import ExportResult
 
   # Function to print mail content without headers.

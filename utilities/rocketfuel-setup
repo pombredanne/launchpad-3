@@ -45,25 +45,8 @@ fi
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
 
-# Establish Canonical username
-whoami=`whoami`
-printf "What is your username on Canonical servers? [$whoami] "
-read canusrname
-if [ ! -z ${canusrname} ]; then
-  whoami=${canusrname};
-fi
-
-# Test that we can access Canonical servers
-ssh ${whoami}@chinstrap.canonical.com pwd > /dev/null
-if [ $? -ne 0 ]; then
-  echo "
-ERROR: Unable to login to chinstrap, please check your Canonical account
-details.
-"
-  exit 1
-fi
-
 # Establish LP username
+whoami=`whoami`
 printf "What is your Launchpad username? [$whoami] "
 read lpusername
 if [ -z ${lpusername} ]; then
@@ -170,47 +153,6 @@ if [ "$ssh_config_mod" -ne "0" ]; then
   read
 fi
 
-grep -q "^Host .*chinstrap" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  echo "Please add the following directives to your ~/.ssh/config:
-------------------------------------------------------------
-Host chinstrap chinstrap.canonical.com chinstrap.ubuntu.com
-    ForwardAgent yes
-    Hostname chinstrap.canonical.com
-    ProxyCommand none
-    User ${whoami}
-------------------------------------------------------------
-"
-  read
-fi
-
-grep -q "^Host.*\*\.canonical.com" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  echo "Please add the following directives to your ~/.ssh/config:
-------------------------------------------------------------
-Host *.canonical.com *.ubuntu.com
-    ForwardAgent yes
-    ProxyCommand ssh chinstrap.canonical.com nc -q0 %h %p
-    User ${whoami}
-------------------------------------------------------------
-"
-  read
-fi
-
-grep -q "^Host .*devpad" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  echo "Please add the following directives to your ~/.ssh/config:
-------------------------------------------------------------
-Host devpad devpad.canonical.com
-    ForwardAgent yes
-    Hostname devpad.canonical.com
-    ProxyCommand ssh chinstrap.canonical.com nc -q0 %h %p
-    User ${whoami}
-------------------------------------------------------------
-"
-  read
-fi
-
 grep -q "^Host .*bazaar.launchpad.dev" ~/.ssh/config
 if [ $? -ne 0 ]; then
   echo "Please add the following directives to your ~/.ssh/config:
@@ -239,32 +181,6 @@ Host bazaar.launchpad.net
   read
 fi
 
-
-echo "Testing ssh to devpad..."
-ssh devpad.canonical.com pwd > /dev/null
-if [ $? -ne 0 ]; then
-  echo "
-ERROR: Unable to verify capability to ssh to devpad. Please check
-~/.ssh/config and check the User configuration item.  ['${whoami}']"
-  exit 1
-fi
-
-sudo apt-key list | grep -q "2048g/CA6E8A17"
-if [ $? -ne 0 ]; then
-  echo "Retrieving signing-key for LP package repository."
-  scp devpad.canonical.com:/code/lp-maintainers.pub /tmp/
-  if [ $? -ne 0 ]; then
-    echo "Unable to fetch key for LP package repository"
-    exit 1
-  fi
-  [ `sha1sum /tmp/lp-maintainers.pub | cut -d " " -f 1` = \
-     f1714a57bd8c481f45b2a64e2eb9131176c8922e ] \
-  && sudo apt-key add /tmp/lp-maintainers.pub
-  if [ $? -ne 0 ]; then
-    echo "Unable to add key for LP package repository"
-    exit 1
-  fi
-fi
 
 LPDEV_SOURCES="/etc/apt/sources.list.d/launchpad-dev.list"
 if [ ! -e $LPDEV_SOURCES ]; then
@@ -466,15 +382,9 @@ fi
 
 # Setup access to the local supermirror
 if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
-  cp $LP_TRUNK_PATH/lib/canonical/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
+  cp $LP_TRUNK_PATH/lib/lp/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
   chmod 600 ~/.ssh/launchpad_id_dsa
   echo "Setup ssh key for local supermirror ssh access."
-fi
-
-# Setup environment variables in a ~ dot file
-cd $HOME
-if [ ! -e $HOME/.rocketfuel-env.sh ]; then
-  ln -s $LP_TRUNK_PATH/utilities/rocketfuel-env.sh .rocketfuel-env.sh
 fi
 
 # Setup scripts in /usr/local/bin
@@ -550,13 +460,14 @@ You should use the following commands to manage your Rocketfuel:
     branches you are working on.
 
  rocketfuel-branch foo
-    Create a new branch of LP called "foo" in $LP_PROJECT_PATH/foo,
+    Create a new branch of LP called \"foo\" in
+    $LP_PROJECT_PATH/foo,
     with all the source dependencies properly linked in.
 
  rocketfuel-status
-    Check each of the branches in $LP_PROJECT_PATH and show which of them have
-    uncommitted changes, also check which ones have revisions that have not
-    yet landed on trunk.
+    Check each of the branches in $LP_PROJECT_PATH
+    and show which of them have uncommitted changes, also check which ones
+    have revisions that have not yet landed on trunk.
 
  rocketfuel-push
     Push all of your branches to Launchpad, so that you have a server-side

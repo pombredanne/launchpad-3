@@ -6,7 +6,7 @@ few imports that will be displayed in the listing.
 
     >>> import datetime
     >>> import pytz
-    >>> from canonical.codehosting.codeimport.tests.test_workermonitor import (
+    >>> from lp.codehosting.codeimport.tests.test_workermonitor import (
     ...     nuke_codeimport_sample_data)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from lp.code.model.tests.test_codeimport import (

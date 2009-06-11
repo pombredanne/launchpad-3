@@ -19,7 +19,7 @@ from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
@@ -29,9 +29,9 @@ from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.pillar import IPillar
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
-from canonical.launchpad.interfaces.sprint import IHasSprints
+from lp.blueprints.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator

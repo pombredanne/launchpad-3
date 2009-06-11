@@ -19,7 +19,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Title)
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -27,7 +27,7 @@ from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone)
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
@@ -40,8 +40,8 @@ from canonical.launchpad import _
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_factory_operation, exported,
-    rename_parameters_as)
+    export_as_webservice_entry, export_factory_operation, export_operation_as,
+    export_read_operation, exported, rename_parameters_as)
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -220,6 +220,13 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         description=_("Specify which files will be imported from the "
                       "source code branch."))
 
+    potemplate_count = Int(
+        title=_("The total number of POTemplates in this series."),
+        readonly=True, required=True)
+
+    productserieslanguages = Attribute(
+        "The set of ProductSeriesLanguages for this series.")
+
     def getRelease(version):
         """Get the release in this series that has the specified version.
         Return None is there is no such release.
@@ -258,6 +265,11 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
+
+    @export_read_operation()
+    @export_operation_as('get_timeline')
+    def getTimeline():
+        """Return basic timeline data useful for creating a diagram."""
 
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic):

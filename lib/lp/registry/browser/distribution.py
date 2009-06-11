@@ -35,6 +35,7 @@ __all__ = [
 
 import datetime
 import operator
+import urllib
 
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
@@ -44,17 +45,19 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.browser.archive import traverse_distro_archive
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.build import BuildRecordsView
+from lp.soyuz.browser.archive import traverse_distro_archive
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.soyuz.browser.build import BuildRecordsView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.interfaces.archive import (
+from lp.soyuz.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
@@ -62,7 +65,7 @@ from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.interfaces.publishedpackage import (
+from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -542,10 +545,142 @@ class DistributionTranslationsMenu(NavigationMenu):
 class DistributionPackageSearchView(PackageSearchViewBase):
     """Customised PackageSearchView for Distribution"""
 
+    def initialize(self):
+        """Save the search type if provided."""
+        super(DistributionPackageSearchView, self).initialize()
+
+        # If the distribution contains binary packages, then we'll
+        # default to searches on binary names, but allow the user to
+        # select.
+        if self.context.has_published_binaries:
+            self.search_type = self.request.get("search_type", 'binary')
+        else:
+            self.search_type = 'source'
+
     def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
-        return self.context.searchSourcePackages(self.text)
 
+        if self.search_by_binary_name:
+            non_exact_matches = self.context.searchBinaryPackages(self.text)
+
+            # XXX Michael Nelson 20090605 bug=217644
+            # We are only using a decorated resultset here to conveniently
+            # get around the storm bug whereby count returns the count
+            # of non-distinct results, even though this result set
+            # is configured for distinct results.
+            def dummy_func(result):
+                return result
+            non_exact_matches = DecoratedResultSet(
+                non_exact_matches, dummy_func)
+
+        else:
+            non_exact_matches = self.context.searchSourcePackageCaches(
+                self.text)
+
+            # The searchBinaryPackageCaches() method returns tuples, so we
+            # use the DecoratedResultSet here to just get the
+            # DistributionSourcePackag objects for the template.
+            def tuple_to_package_cache(cache_name_tuple):
+                return cache_name_tuple[0]
+
+            non_exact_matches = DecoratedResultSet(
+                non_exact_matches, tuple_to_package_cache)
+
+        return non_exact_matches.config(distinct=True)
+
+    @property
+    def search_by_binary_name(self):
+        """Return whether the search is on binary names.
+
+        By default, we search by binary names, as this produces much
+        better results. But the user may decide to search by sources, or
+        in the case of other distributions, it will be the only option.
+        """
+        return self.search_type == "binary"
+
+    @property
+    def source_search_url(self):
+        """Return the equivalent search on source packages.
+
+        By default, we search by binary names, but also provide a link
+        to the equivalent source package search in some circumstances.
+        """
+        new_query_form = self.request.form.copy()
+        new_query_form['search_type'] = 'source'
+        return "%s/+search?%s" % (
+            canonical_url(self.context),
+            urllib.urlencode(new_query_form),
+            )
+
+    @cachedproperty
+    def exact_matches(self):
+        return self.context.searchBinaryPackages(
+            self.text, exact_match=True).order_by('name')
+
+    @property
+    def has_exact_matches(self):
+        return self.exact_matches.count() > 0
+
+    @property
+    def has_matches(self):
+        return self.matches > 0
+
+    @cachedproperty
+    def matching_binary_names(self):
+        """Define the matching binary names for each result in the batch."""
+        names = {}
+
+        for package_cache in self.batchnav.currentBatch():
+            names[package_cache.name] = self._listFirstFiveMatchingNames(
+                self.text, package_cache.binpkgnames)
+
+        return names
+
+    def _listFirstFiveMatchingNames(self, match_text, space_separated_list):
+        """Returns a comma-separated list of the first five matching items"""
+        name_list = space_separated_list.split(' ')
+
+        matching_names = [
+            name for name in name_list if match_text in name]
+
+        if len(matching_names) > 5:
+            more_than_five = True
+            matching_names = matching_names[:5]
+            matching_names.append('...')
+
+        return ", ".join(matching_names)
+
+    @cachedproperty
+    def distroseries_names(self):
+        """Define the distroseries for each package name in exact matches."""
+        names = {}
+        for package_cache in self.exact_matches:
+            package = package_cache.distributionsourcepackage
+
+            # In the absense of Python3.0's set comprehension, we
+            # create a list, convert the list to a set and back again:
+            distroseries_list = [
+                pubrec.distroseries.name
+                    for pubrec in package.current_publishing_records
+                        if pubrec.distroseries.active]
+            distroseries_list = list(set(distroseries_list))
+
+            # Yay for alphabetical series names.
+            distroseries_list.sort()
+            names[package.name] = ", ".join(distroseries_list)
+
+        return names
+
+    @property
+    def display_exact_matches(self):
+        """Return whether exact match results should be displayed."""
+        if not self.search_by_binary_name:
+            return False
+
+        if self.batchnav.start > 0:
+            return False
+
+        return self.has_exact_matches
 
 class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
                        UsesLaunchpadMixin):

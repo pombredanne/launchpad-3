@@ -9,7 +9,8 @@ from zope.interface import implements
 from zope.exceptions.exceptionformatter import format_exception
 from zope.component import getUtility
 from zope.app.exception.interfaces import ISystemErrorView
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config

@@ -19,7 +19,8 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import ILaunchBag, UnexpectedFormData
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, UnexpectedFormData)
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from canonical.widgets import DateWidget
 
@@ -103,13 +104,13 @@ class TeamMembershipEditView:
             return 'checked'
         if self.isAdmin():
             return 'checked'
-        return ''
+        return None
 
     def adminIsNotSelected(self):
         """Whether the not-admin radiobutton should be selected."""
         if self.adminIsSelected() != 'checked':
             return 'checked'
-        return ''
+        return None
 
     def expiresIsSelected(self):
         """Whether the expiration date radiobutton should be selected."""
@@ -119,10 +120,10 @@ class TeamMembershipEditView:
         if self.isExpired():
             # Never checked when expired, because there's another
             # radiobutton in that situation.
-            return ''
+            return None
         if self.membershipExpires():
             return 'checked'
-        return ''
+        return None
 
     def neverExpiresIsSelected(self):
         """Whether the never-expires radiobutton should be selected."""
@@ -132,10 +133,10 @@ class TeamMembershipEditView:
         if self.isExpired():
             # Never checked when expired, because there's another
             # radiobutton in that situation.
-            return ''
+            return None
         if not self.membershipExpires():
             return 'checked'
-        return ''
+        return None
 
     def canChangeExpirationDate(self):
         """Return True if the logged in user can change the expiration date of
@@ -241,13 +242,6 @@ class TeamMembershipEditView:
         if self._setMembershipData(TeamMembershipStatus.APPROVED):
             self.request.response.redirect(
                 '%s/+members' % canonical_url(self.context.team))
-
-    @property
-    def date_picker_trigger(self):
-        """JavaScript function call to trigger the date picker."""
-        return """pickDate('membership.expirationdate', %s);
-         document.getElementById('membership.expirationdate').disabled=false;
-         """ % (self.expiration_widget.daterange)
 
     def _setMembershipData(self, status):
         """Set all data specified on the form, for this TeamMembership.

@@ -17,7 +17,7 @@ IProductSet.getProductsWithNoneRemoteProduct() is used for this.
     >>> list(getUtility(IProductSet).getProductsWithNoneRemoteProduct())
     []
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> product = factory.makeProduct(name=u'no-remote-product')
     >>> print product.remote_product
@@ -32,7 +32,7 @@ used depending on which bug tracker is used. Therefore the list of
 products can be filtered by bug tracker type.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> bugzilla_product = factory.makeProduct(name=u'bugzilla-product')
     >>> bugzilla = factory.makeBugTracker(
     ...     bugtrackertype=BugTrackerType.BUGZILLA)

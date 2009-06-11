@@ -46,8 +46,9 @@ class ProductRelease(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
-    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
-                            orderBy='-date_uploaded')
+    files = SQLMultipleJoin(
+        'ProductReleaseFile', joinColumn='productrelease',
+        orderBy='-date_uploaded', prejoins=['productrelease'])
 
     # properties
     @property
@@ -92,15 +93,13 @@ class ProductRelease(SQLBase):
 
     @property
     def displayname(self):
-        return self.productseries.product.displayname + ' ' + self.version
+        """See `IProductRelease`."""
+        return self.milestone.displayname
 
     @property
     def title(self):
         """See `IProductRelease`."""
-        thetitle = self.displayname
-        if self.codename:
-            thetitle += ' "' + self.codename + '"'
-        return thetitle
+        return self.milestone.title
 
     @staticmethod
     def normalizeFilename(filename):
@@ -246,4 +245,4 @@ class ProductReleaseSet(object):
             """ProductReleaseFile.productrelease IN %s""" % (
             sqlvalues([release.id for release in releases])),
             orderBy='-date_uploaded',
-            prejoins=['libraryfile'])
+            prejoins=['libraryfile', 'libraryfile.content', 'productrelease'])

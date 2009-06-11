@@ -42,14 +42,14 @@ it.
 
 Then create a result object.
 
-    >>> from canonical.launchpad.testing import time_counter
+    >>> from lp.testing import time_counter
     >>> from pytz import UTC
     >>> from datetime import datetime, timedelta
     >>> time_source = time_counter(
     ...     datetime(2008, 1, 1, tzinfo=UTC),
     ...     timedelta(days=1))
     >>> odin = factory.makeCodeImportMachine(hostname="odin")
-    >>> from lp.code.interfaces.codeimportresult import CodeImportResultStatus
+    >>> from lp.code.enums import CodeImportResultStatus
     >>> new_result = factory.makeCodeImportResult(
     ...     sample_import, result_status=CodeImportResultStatus.SUCCESS,
     ...     date_started=time_source.next(), log_excerpt=log_excerpt,

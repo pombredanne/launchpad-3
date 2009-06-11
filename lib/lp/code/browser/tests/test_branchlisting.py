@@ -13,7 +13,7 @@ from lp.code.browser.branchlisting import (
 from lp.code.model.branch import Branch
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
-from canonical.launchpad.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -96,12 +96,22 @@ class TestSourcePackageBranchesView(TestCaseWithFactory):
         request = LaunchpadTestRequest()
         view = SourcePackageBranchesView(packages["2.0"], request)
         self.assertEqual(
-            [dict(series_name=packages["1.0"].distroseries.name,
-                  package=packages["1.0"], linked=True),
+            [dict(series_name=packages["3.0"].distroseries.name,
+                  package=packages["3.0"], linked=True,
+                  num_branches='0 branches',
+                  dev_focus_css='sourcepackage-dev-focus',
+                  ),
              dict(series_name=packages["2.0"].distroseries.name,
-                  package=packages["2.0"], linked=False),
-             dict(series_name=packages["3.0"].distroseries.name,
-                  package=packages["3.0"], linked=True)],
+                  package=packages["2.0"], linked=False,
+                  num_branches='0 branches',
+                  dev_focus_css='sourcepackage-not-dev-focus',
+                  ),
+             dict(series_name=packages["1.0"].distroseries.name,
+                  package=packages["1.0"], linked=True,
+                  num_branches='0 branches',
+                  dev_focus_css='sourcepackage-not-dev-focus',
+                  ),
+             ],
             list(view.series_links))
 
 

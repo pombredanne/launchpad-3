@@ -54,7 +54,8 @@ def main():
     # Confirm we are connected to a Slony-I node.
     if not replication.helpers.slony_installed(source_connection):
         parser.error(
-            "Database at %s is not a Slony-I node." % source_connection_string)
+            "Database at %s is not a Slony-I node."
+            % source_connection_string)
 
     # Sanity check the given node_id.
     existing_nodes = replication.helpers.get_all_cluster_nodes(
@@ -160,13 +161,6 @@ def main():
 
     script += dedent("""\
         } on error { echo 'Failed.'; exit 1; }
-
-        echo 'Waiting for sync.';
-        echo 'This will hang if no slon daemon is running for the new slave';
-        sync (id = @master_node);
-        wait for event (
-            origin = ALL, confirmed = ALL,
-            wait on = @master_node, timeout = 0);
         """)
 
     for set_id in set_ids:

@@ -1,0 +1,10 @@
+<configure xmlns="http://namespaces.zope.org/meta">
+
+  <directive
+      namespace="http://namespaces.canonical.com/lp"
+      name="help-folder"
+      schema="lp.services.inlinehelp.zcml.IHelpFolderDirective"
+      handler="lp.services.inlinehelp.zcml.register_help_folder"
+      />
+
+</configure>

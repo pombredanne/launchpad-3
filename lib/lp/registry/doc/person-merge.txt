@@ -93,7 +93,7 @@ active member of that team.
 Marilize has used OpenID to Login. The OpenIDRPSummaries will be
 transferred to Sample Person.
 
-    >>> from canonical.launchpad.interfaces.openidserver import (
+    >>> from canonical.signon.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
     >>> openidrpsummaryset = getUtility(IOpenIDRPSummarySet)
     >>> summaries = openidrpsummaryset.getByIdentifier(

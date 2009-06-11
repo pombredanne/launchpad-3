@@ -1,5 +1,5 @@
 # Copyright 2004-2009 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212,W0141
+# pylint: disable-msg=E0611,W0212,W0141,F0401
 
 __metaclass__ = type
 __all__ = [
@@ -17,8 +17,10 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from storm.expr import And, Count, Desc, Max, NamedFunc, Or, Select
+from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
@@ -31,28 +33,34 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
-from canonical.launchpad.database.job import Job
+from lp.services.job.model.job import Job
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
+from lp.code.bzr import (
+    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchMergeControlStatus,
+    BranchMergeProposalStatus, BranchType)
+from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
-     BranchMergeProposal)
+     BranchMergeProposal, BranchMergeProposalGetter)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.revision import Revision
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchType, BranchTypeError, CannotDeleteBranch,
-    ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchNavigationMenu, IBranchSet, RepositoryFormat)
+    BranchTypeError, CannotDeleteBranch,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchNavigationMenu, IBranchSet)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
-     BranchMergeProposalStatus, InvalidBranchMergeProposal)
+     InvalidBranchMergeProposal)
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -71,8 +79,6 @@ class Branch(SQLBase):
     branch_type = EnumCol(enum=BranchType, notNull=True)
 
     name = StringCol(notNull=False)
-    title = StringCol(notNull=False)
-    summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
     branch_format = EnumCol(enum=BranchFormat)
     repository_format = EnumCol(enum=RepositoryFormat)
@@ -129,6 +135,12 @@ class Branch(SQLBase):
     revision_count = IntCol(default=DEFAULT, notNull=True)
     stacked_on = ForeignKey(
         dbName='stacked_on', foreignKey='Branch', default=None)
+
+    # The unique_name is maintined by a SQL trigger.
+    unique_name = StringCol()
+    # Denormalised colums used primarily for sorting.
+    owner_name = StringCol()
+    target_suffix = StringCol()
 
     def __repr__(self):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
@@ -209,33 +221,34 @@ class Branch(SQLBase):
             BranchMergeProposal.queue_status NOT IN %s
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
+    def isBranchMergeable(self, target_branch):
+        """See `IBranch`."""
+        # In some imaginary time we may actually check to see if this branch
+        # and the target branch have common ancestry.
+        return self.target.areBranchesMergeable(target_branch.target)
+
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
                          initial_comment=None, review_requests=None,
                          review_diff=None):
         """See `IBranch`."""
-        if self.product is None:
+        if not self.target.supports_merge_proposals:
             raise InvalidBranchMergeProposal(
-                'Junk branches cannot be used as source branches.')
-        if not IBranch.providedBy(target_branch):
-            raise InvalidBranchMergeProposal(
-                'Target branch must implement IBranch.')
+                '%s branches do not support merge proposals.'
+                % self.target.displayname)
         if self == target_branch:
             raise InvalidBranchMergeProposal(
                 'Source and target branches must be different.')
-        if self.product != target_branch.product:
+        if not target_branch.isBranchMergeable(self):
             raise InvalidBranchMergeProposal(
-                'The source branch and target branch must be branches of the '
-                'same project.')
+                '%s is not mergeable into %s' % (
+                    self.displayname, target_branch.displayname))
         if dependent_branch is not None:
-            if not IBranch.providedBy(dependent_branch):
+            if not self.isBranchMergeable(dependent_branch):
                 raise InvalidBranchMergeProposal(
-                    'Dependent branch must implement IBranch.')
-            if self.product != dependent_branch.product:
-                raise InvalidBranchMergeProposal(
-                    'The source branch and dependent branch must be branches '
-                    'of the same project.')
+                    '%s is not mergeable into %s' % (
+                        dependent_branch.displayname, self.displayname))
             if self == dependent_branch:
                 raise InvalidBranchMergeProposal(
                     'Source and dependent branches must be different.')
@@ -243,17 +256,13 @@ class Branch(SQLBase):
                 raise InvalidBranchMergeProposal(
                     'Target and dependent branches must be different.')
 
-        target = BranchMergeProposal.select("""
-            BranchMergeProposal.source_branch = %s AND
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status NOT IN %s
-            """ % sqlvalues(self, target_branch,
-                            BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        target = BranchMergeProposalGetter.activeProposalsForBranches(
+            self, target_branch)
         if target.count() > 0:
             raise BranchMergeProposalExists(
                 'There is already a branch merge proposal registered for '
                 'branch %s to land on %s that is still active.'
-                % (self.unique_name, target_branch.unique_name))
+                % (self.displayname, target_branch.displayname))
 
         if date_created is None:
             date_created = UTC_NOW
@@ -372,15 +381,9 @@ class Branch(SQLBase):
         return BzrBranch.open(self.warehouse_url)
 
     @property
-    def unique_name(self):
-        """See `IBranch`."""
-        return u'~%s/%s/%s' % (
-            self.owner.name, self.target.name, self.name)
-
-    @property
     def displayname(self):
         """See `IBranch`."""
-        return self.unique_name
+        return self.bzr_identity
 
     @property
     def code_reviewer(self):
@@ -819,6 +822,14 @@ class Branch(SQLBase):
             DateTrunc('day', Revision.revision_date))
         return sorted(results)
 
+    @property
+    def needs_upgrading(self):
+        """See `IBranch`."""
+        if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None)
+            or BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
+            return True
+        return False
+
 
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
@@ -914,8 +925,7 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches(
-            join_owner=False, join_product=False)
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -931,8 +941,7 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.IMPORTED).scanned().getBranches(
-            join_owner=False, join_product=False)
+            BranchType.IMPORTED).scanned().getBranches()
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -946,8 +955,7 @@ class BranchSet:
         """See `IBranchSet`."""
         all_branches = getUtility(IAllBranches)
         branches = all_branches.withLifecycleStatus(
-            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches(
-            join_owner=False, join_product=False)
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
         branches.order_by(
             Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:
@@ -965,19 +973,6 @@ class BranchSet:
             Desc(Branch.date_created), Desc(Branch.id))
         latest_branches.config(limit=quantity)
         return latest_branches
-
-    def getTargetBranchesForUsersMergeProposals(self, user, product):
-        """See `IBranchSet`."""
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: Why the hell is
-        # this using SQL? In any case, we want to change this to allow source
-        # packages.
-        return Branch.select("""
-            BranchMergeProposal.target_branch = Branch.id
-            AND BranchMergeProposal.registrant = %s
-            AND Branch.product = %s
-            """ % sqlvalues(user, product),
-            clauseTables=['BranchMergeProposal'],
-            orderBy=['owner', 'name'], distinct=True)
 
 
 class BranchCloud:
@@ -1009,3 +1004,23 @@ class BranchCloud:
         # isn't timezone-aware. Not sure why this is. Doesn't matter too much
         # for the purposes of cloud calculation though.
         return result
+
+
+def update_trigger_modified_fields(branch):
+    """Make the trigger updated fields reload when next accessed."""
+    # Not all the fields are exposed through the interface, and some are read
+    # only, so remove the security proxy.
+    naked_branch = removeSecurityProxy(branch)
+    naked_branch.unique_name = AutoReload
+    naked_branch.owner_name = AutoReload
+    naked_branch.target_suffix = AutoReload
+
+
+def branch_modified_subscriber(branch, event):
+    """This method is subscribed to IObjectModifiedEvents for branches.
+
+    We have a single subscriber registered and dispatch from here to ensure
+    that the database fields are updated first before other subscribers.
+    """
+    update_trigger_modified_fields(branch)
+    send_branch_modified_notifications(branch, event)

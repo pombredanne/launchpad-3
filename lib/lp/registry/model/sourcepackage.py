@@ -21,32 +21,32 @@ from storm.store import Store
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from lp.code.model.branch import Branch
-from canonical.launchpad.database.bug import get_bug_tags_open_count
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.distributionsourcepackagerelease import (
+from lp.bugs.model.bug import get_bug_tags_open_count
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
+from lp.soyuz.model.build import Build
+from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from canonical.launchpad.database.distroseriessourcepackagerelease import (
+from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.answers.model.question import (
     QuestionTargetMixin, QuestionTargetSearch)
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranch)
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.build import BuildStatus
-from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
@@ -55,6 +55,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
+from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -264,9 +265,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def displayname(self):
-        return "%s %s %s" % (
-            self.distribution.displayname,
-            self.distroseries.displayname, self.sourcepackagename.name)
+        return "%s in %s %s" % (
+            self.sourcepackagename.name, self.distribution.displayname,
+            self.distroseries.displayname)
 
     @property
     def bugtargetdisplayname(self):
@@ -517,7 +518,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
-        SourcePackageRelease.id
+            SourcePackageRelease.id AND
+        SourcePackagePublishingHistory.archive = Build.archive
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
                         self.distribution.all_distro_archive_ids)]
@@ -635,6 +637,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
              == self.sourcepackagename.id),
             SeriesSourcePackageBranch.branch == Branch.id).order_by(
                 SeriesSourcePackageBranch.pocket)
+
+    def getSuiteSourcePackage(self, pocket):
+        """See `ISourcePackage`."""
+        return SuiteSourcePackage(
+            self.distroseries, pocket, self.sourcepackagename)
 
     def getPocketPath(self, pocket):
         """See `ISourcePackage`."""

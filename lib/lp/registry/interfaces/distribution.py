@@ -30,10 +30,9 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from lp.registry.interfaces.announcement import IMakesAnnouncements
-from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.bugtarget import (
+from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
@@ -43,9 +42,9 @@ from canonical.launchpad.interfaces.message import IMessage
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from lp.registry.interfaces.pillar import IPillar
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
-from canonical.launchpad.interfaces.sprint import IHasSprints
+from lp.blueprints.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
@@ -239,13 +238,14 @@ class IDistributionPublic(
     main_archive = exported(
         Reference(
             title=_('Distribution Main Archive.'), readonly=True,
-            schema=IArchive))
+            schema=Interface)) # Really IArchive, circular import fix below.
 
     all_distro_archives = exported(
         CollectionField(
             title=_("A sequence of the distribution's non-PPA Archives."),
             readonly=True, required=False,
-            value_type=Reference(schema=IArchive)),
+            value_type=Reference(schema=Interface)),
+                # Really Iarchive, circular import fix below.
         exported_as='archives')
 
     all_distro_archive_ids = Attribute(
@@ -381,8 +381,18 @@ class IDistributionPublic(
     @export_read_operation()
     def searchSourcePackages(text):
         """Search for source packages that correspond to the given text.
-        Returns a list of DistributionSourcePackage objects, in order of
-        matching.
+ 
+        This method just decorates the result of searchSourcePackageCaches()
+        to return DistributionSourcePackages.
+        """
+
+    def searchSourcePackageCaches(text):
+        """Search for source packages that correspond to the given text.
+
+        :param text: The text that will be matched.
+        :return: A result set containing
+            (DistributionSourcePackageCache, SourcePackageName, rank) tuples
+            ordered by rank.
         """
 
     def searchBinaryPackages(package_name, exact_match=False):
@@ -555,23 +565,5 @@ class NoSuchDistribution(NameLookupFailed):
     _message_prefix = "No such distribution"
 
 
-# Monkey patching to fix circular imports.
-from canonical.launchpad.components.apihelpers import (
-    patch_entry_return_type, patch_collection_return_type,
-    patch_reference_property)
-
-from lp.registry.interfaces.distroseries import IDistroSeries
-IDistribution['serieses'].value_type.schema = IDistroSeries
-patch_reference_property(
-    IDistribution, 'currentseries', IDistroSeries)
-patch_entry_return_type(
-    IDistribution, 'getSeries', IDistroSeries)
-patch_collection_return_type(
-    IDistribution, 'getDevelopmentSerieses', IDistroSeries)
-
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-patch_entry_return_type(
-    IDistribution, 'getSourcePackage', IDistributionSourcePackage)
-patch_collection_return_type(
-    IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
+# Monkey patching to fix circular imports done in
+# _schema_circular_imports.py

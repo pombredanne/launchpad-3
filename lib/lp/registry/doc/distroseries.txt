@@ -18,8 +18,7 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import (
-    ...     flush_database_caches, flush_database_updates)
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistroSeries, IDistroSeriesSet, IDistributionSet,
@@ -451,7 +450,7 @@ netapplet are translatable in Hoary.
    >>> ISourcePackage.providedBy(pmount_source)
    True
 
-   >>> from canonical.launchpad.database.binarypackagename import (
+   >>> from lp.soyuz.model.binarypackagename import (
    ...                                       BinaryPackageName)
    >>> pmount_bin_name =  BinaryPackageName.byName('pmount')
    >>> pmount_drbp = hoary.getBinaryPackage(pmount_bin_name)
@@ -460,7 +459,7 @@ netapplet are translatable in Hoary.
    >>> len(pmount_drbp.current_publishings)
    3
 
-   >>> from canonical.launchpad.database.sourcepackagerelease import (
+   >>> from lp.soyuz.model.sourcepackagerelease import (
    ...                                           SourcePackageRelease)
    >>> pmount_rel = SourcePackageRelease.selectOneBy(
    ...     sourcepackagenameID=pmount_src_name.id, version='0.1-1')
@@ -546,53 +545,6 @@ Supersede previous netapplet publication:
    >>> from canonical.database.sqlbase import get_transaction_timestamp
    >>> superseded_netapplet.datesuperseded == get_transaction_timestamp()
    True
-
-
-== DistroSeries Translations migration ==
-
-We have several ways to copy translations between distro series.  We bring a
-transaction manager (in this case a fake one) to make these work.
-
-    >>> class FakeTransactionManager:
-    ...     """Mock transaction manager for test."""
-    ...     def begin(self):
-    ...         pass
-    ...     def commit(self):
-    ...         pass
-    >>> transaction_stub = FakeTransactionManager()
-
-
-=== Preconditions for migrating translations between distro series ===
-
-Before we are able to migrate translations, there are a set of preconditions
-that should be met:
-
-First one is that we should keep the new distroseries's translations hidden
-from the public, so the copying procedure is not confused by concurrent
-updates:
-
-    >>> humpy.hide_all_translations = False
-    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
-    Traceback (most recent call last):
-    ...
-    AssertionError: hide_all_translations not set!...
-
-    # Set the field to TRUE so we meet this precondition for following
-    # tests.
-    >>> humpy.hide_all_translations = True
-
-The other one is that, for the same reason, the import queue should not be
-accepting uploads for this distroseries.
-
-    >>> humpy.defer_translation_imports = False
-    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
-    Traceback (most recent call last):
-    ...
-    AssertionError: defer_translation_imports not set!...
-
-    # Set the field to TRUE so we meet this precondition for following
-    # tests.
-    >>> humpy.defer_translation_imports = True
 
 
 == SourcePackagePublishingHistory ==
@@ -1001,7 +953,6 @@ Each element is an IDistroSeriesSourcePackageRelease instance:
 
     >>> for upload in latest_uploads:
     ...     print upload.title
-    iceweasel 1.0 (source) in ubuntu warty
     mozilla-firefox 0.9 (source) in ubuntu warty
 
 Also, empty results (caused obviously by lack of sample data or very

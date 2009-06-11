@@ -29,17 +29,17 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.build import BuildRecordsView
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
-from canonical.launchpad.browser.queue import QueueItemsView
+from lp.soyuz.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
-from canonical.launchpad.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
@@ -62,7 +62,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
         """Retrieve the DistroSeriesLanguage or a dummy if one it is None."""
-        # We do not want users to see the 'en' potemplate because
+        # We do not want users to see the 'en' pofile because
         # we store the messages we want to translate as English.
         if langcode == 'en':
             raise NotFoundError(langcode)

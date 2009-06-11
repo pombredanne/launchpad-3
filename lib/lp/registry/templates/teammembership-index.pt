@@ -18,6 +18,27 @@
 >
 
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <metal:yui-dependencies
+      use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
+
+    <script type="text/javascript">
+      YUI().use('node', 'lp.calendar', function(Y) {
+          // Ensure that when the picker is used the radio button switches
+          // from 'Never' to 'On' and the expiry field is enabled.
+          Y.on("available", function(e) {
+              var choose_link = Y.get("#expiration-widget a.js-action");
+              var radio_on = Y.get("#date");
+              var expiration_date = Y.get(
+                  document.getElementById('membership.expirationdate'));
+              choose_link.on('click', function(e) {
+                expiration_date.set('disabled', false);
+                radio_on.set('checked', true);
+              });
+          }, "#expiration-widget a.js-action");
+      });
+    </script>
+  </metal:block>
 
 <metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/team/@@+portlet-details" />
@@ -38,12 +59,13 @@
   <metal:macro define-macro="comment">
     <tr>
       <th>Comment:</th>
-      <td><textarea cols="40" name="comment"
-                    tal:content="request/comment|context/last_change_comment|nothing">
-                </textarea>
-          <div class="formHelp">This comment will be sent together with the
-            notification of this change to all team administrators and this
-            member.</div>
+      <td>
+	<textarea cols="40" name="comment">
+	  <tal:comment tal:replace="request/comment|context/last_change_comment|default" />
+	</textarea>
+	<div class="formHelp">This comment will be sent together with the
+	notification of this change to all team administrators and this
+	member.</div>
       </td>
     </tr>
   </metal:macro>
@@ -57,17 +79,14 @@
     </label>
     <label for="date">
       <input tal:attributes="
-        checked view/expiresIsSelected;
-        onclick view/date_picker_trigger"
+        checked view/expiresIsSelected;"
+        onclick="document.getElementById('membership.expirationdate').disabled=false;"
         type="radio" id="date" value="date" name="expires" />
       On&nbsp;
     </label>
-    <script language="JavaScript" type="text/javascript">
-      function dateSelected(y,m,d,e) {
-        document.getElementById('date').click();
-      };
-    </script>
-    <span tal:replace="structure view/expiration_widget" />
+    <span id="expiration-widget">
+      <tal:expiration_widget replace="structure view/expiration_widget" />
+    </span>
   </metal:macro>
 </metal:macros>
 
