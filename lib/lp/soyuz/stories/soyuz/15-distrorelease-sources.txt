@@ -59,9 +59,6 @@ about Firefox's publishing history.
   0.9
   Published
   on 2006-02-13
-  Copied from
-  ubuntu hoary in
-  Primary...
   2004-09-27 11:57:13 UTC
   Pending
   Warty
@@ -69,7 +66,6 @@ about Firefox's publishing history.
   main
   editors
   0.9
-  ...
 
 Jump back to the DistributionSourcePackage page to continue the tests:
 
