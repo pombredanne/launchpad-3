@@ -241,7 +241,7 @@
         method="get"
         accept-charset="UTF-8"
         tal:attributes="action string:${rooturl}+search"
-        class="sprite search"
+        class="sprite search-icon"
       >
         <input type="search" id="search-text" name="field.text" />
       </form>

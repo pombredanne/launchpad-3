@@ -62,7 +62,7 @@ span.invisible {left:-9999em;display:block;}
 .info {background:url(icon-sprites) 0 -96px no-repeat;}
 .question {background:url(icon-sprites) 0 -128px no-repeat;}
 .download {background:url(icon-sprites) 0 -160px no-repeat;}
-.search {background:url(icon-sprites) 0 -187px no-repeat;}
+.search-icon {background:url(icon-sprites) 0 -187px no-repeat;}
 .no {background:url(icon-sprites) 0 -224px no-repeat;}
 .yes {background:url(icon-sprites) 0 -256px no-repeat;}
 .crowd {background:url(icon-sprites) 0 -288px no-repeat;}
@@ -1120,6 +1120,7 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
     border: solid #c1c9d6;
     border-width: 1px 0 0 0;
     margin: 0.5em 0;
+    padding: 0.5em 0;
 }
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 /* It has a top border if the page doesn't already have a rounded border. */
