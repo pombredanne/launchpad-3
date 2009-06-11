@@ -144,10 +144,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         from lp.soyuz.interfaces.archivesubscriber import (
             IArchiveSubscriberSet)
 
-        subscription = getUtility(IArchiveSubscriberSet).getByToken(token)
         send_to_person = token.person
-        cancelled_by_person = subscription.cancelled_by
         ppa_name = token.archive.displayname
+        ppa_owner_url = canonical_url(token.archive.owner)
         subject = "PPA subscription cancelled for %s" % ppa_name
         template = get_email_template("ppa-subscription-cancelled.txt")
 
@@ -163,12 +162,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
                 continue
 
             to_address = [person.preferredemail.email]
-            cancelled_by_name_url = canonical_url(cancelled_by_person)
             replacements = {
                 'recipient_name' : send_to_person.displayname,
-                'cancelled_by_name' : cancelled_by_person.displayname,
                 'ppa_name' : ppa_name,
-                'cancelled_by_name_url' : cancelled_by_name_url,
+                'ppa_owner_url' : ppa_owner_url,
                 }
             body = MailWrapper(72).format(
                 template % replacements, force_wrap=True)
