@@ -628,6 +628,12 @@ form.primary.search {
 .highlighted {padding: 0.5em;}
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
+.dimmed {
+  padding: 0 0.5em;
+  opacity: .5;
+  filter: alpha(opacity=50);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+}
 
 strong em {
   font-style: normal;

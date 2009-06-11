@@ -8,7 +8,7 @@
       </a>
       <tal:badges replace="structure context/image:badges" />
     </div>
-    <div class="lesser">
+    <div class="lesser" tal:condition="hide_extra_details|nothing">
       <tal:affected_pillars define="also_in context/other_affected_pillars"
                            condition="also_in">
         also in 

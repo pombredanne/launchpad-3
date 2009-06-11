@@ -237,8 +237,6 @@ class IBuildView(Interface):
         "Component where the source related to this build was last "
         "published.")
     title = exported(Text(title=_("Build Title"), required=False))
-    changesfile = Attribute("The Build Changesfile object, returns None if "
-                            "it is a gina-inserted record.")
     distroseries = Attribute("Direct parent needed by CanonicalURL")
     buildqueue_record = Attribute("Corespondent BuildQueue record")
     was_built = Attribute("Whether or not modified by the builddfarm.")
@@ -278,9 +276,15 @@ class IBuildView(Interface):
     is_virtualized = Attribute(
         "Whether or not this build requires a virtual build host or not.")
 
+    upload_changesfile = Attribute(
+        "The `LibraryFileAlias` object containing the changes file which "
+        "was originally uploaded with the results of this build. It's "
+        "'None' if it is build imported by Gina.")
+
     package_upload = Attribute(
-        "The PackageUpload for this build, or None if there is "
-        "no build.")
+        "The `PackageUpload` record corresponding to the original upload "
+        "of the binaries resulted from this build. It's 'None' if it is "
+        "a build imported by Gina.")
 
     def updateDependencies():
         """Update the build-dependencies line within the targeted context."""
