@@ -312,10 +312,10 @@ The person's proposals can also be filtered by status.
     http://.../~source/fooix/fix-it/+merge/1 - Rejected
 
 
-== Getting a Project's Merge Proposals ==
+== Getting a Project Group's Merge Proposals ==
 
-Getting the merge proposals for a project will get all the proposals for all
-the products that are part of the project.
+Getting the merge proposals for a project group will get all the proposals for all
+the projects that are part of the project group.
 
     >>> login('admin@canonical.com')
     >>> project = factory.makeProject(name='widgets')

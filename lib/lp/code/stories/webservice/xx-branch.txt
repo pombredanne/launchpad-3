@@ -304,3 +304,24 @@ As with projects, these can be filtered by the branch status.
 
     >>> print_branches(webservice, '/~eric', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
+
+== Project group branches ==
+
+Branches are also accessible for a project group.
+
+    >>> login('admin@canonical.com')
+    >>> project = factory.makeProject(name='widgets')
+    >>> fooix.project = project
+    >>> blob = factory.makeProduct(name='blob', project=project)
+    >>> branch = factory.makeProductBranch(product=blob, name='bar')
+    >>> branch.owner.name = 'mary'
+    >>> logout()
+
+    >>> print_branches(webservice, '/~eric')
+    ~eric/fooix/trunk - Development
+    ~eric/fooix/feature-branch - Experimental
+
+As with projects, these can be filtered by the branch status.
+
+    >>> print_branches(webservice, '/~eric', ('Experimental'))
+    ~eric/fooix/feature-branch - Experimental
