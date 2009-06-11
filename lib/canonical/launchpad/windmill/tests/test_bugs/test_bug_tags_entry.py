@@ -75,5 +75,5 @@ def test_bug_tags_entry():
     client.click(id=u'edit-tags-trigger')
     client.waits.forPageLoad(timeout=u'50000')
     client.asserts.assertJS(
-        js=u'window.location == "http://bugs.launchpad.dev:8085/firefox/+bug/5/+login"')
+        js=u'window.location == "http://bugs.launchpad.dev:8085/firefox/+bug/5/+edit/+login"')
 
