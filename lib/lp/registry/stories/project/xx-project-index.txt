@@ -121,8 +121,8 @@ The home page of a project contains a list of all products which are part of tha
     >>> products = find_tags_by_class(browser.contents, 'project')
     >>> for product in products:
     ...     print repr(product.find('a').find(text=True))
-    u'&nbsp;Mozilla Firefox'
-    u'&nbsp;Mozilla Thunderbird'
+    u'Mozilla Firefox'
+    u'Mozilla Thunderbird'
 
 Inactive products are not included in that list, though.
 
@@ -137,7 +137,7 @@ Inactive products are not included in that list, though.
     >>> products = find_tags_by_class(browser.contents, 'project')
     >>> for product in products:
     ...     print repr(product.find('a').find(text=True))
-    u'&nbsp;Mozilla Thunderbird'
+    u'Mozilla Thunderbird'
 
     >>> firefox.active = True
     >>> firefox.syncUpdate()

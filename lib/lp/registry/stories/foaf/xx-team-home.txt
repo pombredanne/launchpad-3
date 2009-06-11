@@ -40,7 +40,9 @@ The page contains a few interesting details about team membership.
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
     Log in for email information.
-    Languages: English
+    Languages:
+    English
+    Set preferred languages
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subteam-of'))
@@ -90,7 +92,10 @@ He can also see the contact email address and a link to contact the team.
     Contact details
     support@ubuntu.com
     Contact this team
-    Languages: English
+    Change contact address
+    Languages:
+    English
+    Set preferred languages
 
 Member can contact their team even if the team does not have a contact
 address:
@@ -101,9 +106,13 @@ address:
     ...     find_tag_by_id(sample_browser.contents, 'contact-details'))
     Contact details
     No contact email
-      Contact this team
-      (Launchpad notifications are sent to all team members)
-    Languages: English
+    Contact this team
+      (Launchpad notifications are sent to all
+      team members)
+    Change contact address
+    Languages:
+    English
+    Set preferred languages
 
 As teams do not have OpenID Logins, there is not link in the Contact
 details section for help.
@@ -164,7 +173,9 @@ will actually go to the team's owner.
     Contact details
     support@ubuntu.com
     Contact this team
-    Languages: English
+    Languages:
+    English
+    Set preferred languages
 
     >>> content.a
     <a href="+contactuser"
