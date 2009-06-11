@@ -42,7 +42,7 @@
         <a href="https://help.launchpad.net/Packaging/InstallingFromAPrivatePPA">installing
         software from a private archive</a> for more detailed instructions.
       </p>
-      <pre id="sources-list-entries" tal:content="view/private_ppa_sources_list" />
+      <tal:entries replace="structure view/sources_list_entries" />
       <div id="signing-key"
            tal:define="signing_key context/archive/signing_key"
            tal:condition="signing_key">

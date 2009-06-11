@@ -30,19 +30,18 @@ from lp.code.event.branchmergeproposal import (
     ReviewerNominatedEvent)
 from canonical.launchpad.ftests import (
     ANONYMOUS, import_secret_test_key, login, logout, syncUpdate)
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import (
+    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
+    BranchType, CodeReviewNotificationLevel, CodeReviewVote)
 from lp.code.interfaces.branchmergeproposal import (
-    BadStateTransition, BranchMergeProposalStatus,
+    BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, WrongBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.codereviewcomment import CodeReviewVote
 from lp.testing import (
     capture_events, login_person, TestCaseWithFactory, time_counter)
 from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory

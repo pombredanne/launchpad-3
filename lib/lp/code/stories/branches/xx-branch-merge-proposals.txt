@@ -8,9 +8,9 @@ In order to test notifications, we need a subscriber for the branch.
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchSubscriptionNotificationLevel,
-    ...     CodeReviewNotificationLevel, IPersonSet)
+    >>> from lp.code.enums import (
+    ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> subscriber = getUtility(IPersonSet).getByEmail(
     ...     'foo.bar@canonical.com')

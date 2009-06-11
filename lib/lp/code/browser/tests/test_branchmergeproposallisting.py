@@ -10,13 +10,13 @@ import transaction
 
 from lp.code.browser.branchmergeproposallisting import (
     BranchMergeProposalListingView, ProductActiveReviewsView)
-from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote)
+from lp.code.enums import CodeReviewVote
 from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
 _default = object()
+
 
 class TestProposalVoteSummary(TestCaseWithFactory):
     """The vote summary shows a summary of the current votes."""

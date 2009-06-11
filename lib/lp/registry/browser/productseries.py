@@ -41,7 +41,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
@@ -51,6 +51,9 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces.productserieslanguage import (
+    IProductSeriesLanguageSet)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimporter import (
@@ -61,7 +64,7 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, NavigationMenu, StandardLaunchpadFacets,
-    stepto)
+    stepthrough, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -96,6 +99,25 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(productseries=self.context)
+
+    @stepthrough('+lang')
+    def traverse_lang(self, langcode):
+        """Retrieve the ProductSeriesLanguage or a dummy if it is None."""
+        # We do not want users to see the 'en' pofile because
+        # we store the messages we want to translate as English.
+        if langcode == 'en':
+            raise NotFoundError(langcode)
+
+        langset = getUtility(ILanguageSet)
+        try:
+            lang = langset[langcode]
+        except IndexError:
+            # Unknown language code.
+            raise NotFoundError
+        psl_set = getUtility(IProductSeriesLanguageSet)
+        psl = psl_set.getProductSeriesLanguage(self.context, lang)
+
+        return psl
 
     def traverse(self, name):
         return self.context.getRelease(name)
@@ -590,6 +612,60 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         branch = self.context.branch
         return (branch is not None and
                 check_permission('launchpad.View', branch))
+
+    @property
+    def productserieslanguages(self):
+        """Get ProductSeriesLanguage objects to display.
+
+        Produces a list containing a ProductSeriesLanguage object for
+        each language this product has been translated into, and for each
+        of the user's preferred languages. Where the series has no
+        ProductSeriesLanguage for that language, we use a
+        DummyProductSeriesLanguage.
+        """
+
+        if self.context.potemplate_count == 0:
+            return None
+
+        # Find the existing PSLs.
+        productserieslangs = list(self.context.productserieslanguages)
+
+        # Make a set of the existing languages.
+        existing_languages = set(psl.language for psl in productserieslangs)
+
+        # Find all the preferred languages which are not in the set of
+        # existing languages, and add a dummy PSL for each of them.
+        if self.user is not None:
+            productserieslangset = getUtility(IProductSeriesLanguageSet)
+            for lang in self.user.languages:
+                if lang.code != 'en' and lang not in existing_languages:
+                    if self.single_potemplate:
+                        pot = self.context.getCurrentTranslationTemplates()[0]
+                        pofile = pot.getPOFileByLang(lang.code)
+                        if pofile is None:
+                            pofile = pot.getDummyPOFile(lang.code)
+                        productserieslang = productserieslangset.getDummy(
+                            self.context, lang, pofile=pofile)
+                    else:
+                        productserieslang = productserieslangset.getDummy(
+                            self.context, lang)
+                    productserieslangs.append(
+                        productserieslang)
+
+        return sorted(productserieslangs,
+                      key=lambda a: a.language.englishname)
+
+    @property
+    def has_translation_documentation(self):
+        """Are there translation instructions for this product."""
+        translation_group = self.context.product.translationgroup
+        return (translation_group is not None and
+                translation_group.translation_guide_url is not None)
+
+    @property
+    def single_potemplate(self):
+        """Does this ProductSeries have exactly one POTemplate."""
+        return self.context.potemplate_count == 1
 
     @cachedproperty
     def released_and_active_milestones(self):

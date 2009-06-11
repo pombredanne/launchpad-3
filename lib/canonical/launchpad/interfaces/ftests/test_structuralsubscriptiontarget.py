@@ -11,7 +11,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     CreateBugParams, IDistributionSet, ILaunchBag, IProductSet,
     ISourcePackageNameSet)
-from canonical.launchpad.interfaces.ftests.test_bugtarget import (
+from lp.bugs.tests.test_bugtarget import (
     bugtarget_filebug)
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)

@@ -33,9 +33,9 @@ import sys
 
 import bzrlib.repository
 
+from lp.code.enums import BranchType
 from lp.codehosting.puller.worker import (
     install_worker_ui_factory, PullerWorker, PullerWorkerProtocol)
-from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
