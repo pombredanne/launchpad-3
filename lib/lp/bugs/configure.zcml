@@ -627,7 +627,8 @@
                     readonly_duplicateof
                     users_affected
                     bug_messages
-                    isUserAffected"/>
+                    isUserAffected
+                    getHWSubmissions"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -655,7 +656,9 @@
                     markUserAffected
                     addTask
                     addChange
-                    markAsDuplicate"
+                    markAsDuplicate
+                    linkHWSubmission
+                    unlinkHWSubmission"
                 set_attributes="datecreated date_last_updated name title description                                                                                                                 ownerID owner duplicateof communityscore                                                                                                                 communitytimestamp hits hitstimestamp activityscore                                                                                                                 activitytimestamp activity initial_message                                                                                                                 security_related tags who_made_private date_made_private"/>
             <require
                 permission="launchpad.AnyPerson"

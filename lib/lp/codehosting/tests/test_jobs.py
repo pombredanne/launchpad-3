@@ -8,14 +8,12 @@ from unittest import TestLoader
 from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.config import config
-from lp.services.job.runner import JobRunner
-from lp.code.model.branchjob import RevisionMailJob
-from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel,
+from lp.code.enums import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
+from lp.code.model.branchjob import RevisionMailJob
 from canonical.launchpad.database.diff import StaticDiff
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize,)
+from lp.services.job.runner import JobRunner
 from lp.testing import TestCaseWithFactory
 
 

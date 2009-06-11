@@ -109,18 +109,18 @@ group_lines_by_file() {
 
 
 sample_dir="database/sampledata"
-current_sql="${sample_dir}/current.sql"
-current_dev_sql="${sample_dir}/current-dev.sql"
-lintdata_sql="${sample_dir}/lintdata.sql"
-lintdata_dev_sql="${sample_dir}/lintdata-dev.sql"
+current_sql="$sample_dir/current.sql"
+current_dev_sql="$sample_dir/current-dev.sql"
+lintdata_sql="$sample_dir/lintdata.sql"
+lintdata_dev_sql="$sample_dir/lintdata-dev.sql"
 
-if [ -n "${database_changes}" ]; then
+if [ -n "$database_changes" ]; then
     make -C database/schema lintdata > /dev/null
-    sql_diff=$(diff -q "${current_sql}" "${lintdata_sql}")
+    sql_diff=$(diff -q "$current_sql" "$lintdata_sql")
     if [ -z "$sql_diff" ]; then
         rm $lintdata_sql
     fi
-    sql_dev_diff=$(diff -q "${current_dev_sql}" "${lintdata_dev_sql}")
+    sql_dev_diff=$(diff -q "$current_dev_sql" "$lintdata_dev_sql")
     if [ -z "$sql_dev_diff" ]; then
         rm $lintdata_dev_sql
     fi
@@ -140,7 +140,7 @@ echo_sampledata_changes () {
     echo "    Otherwise update $1 and run:"
     echo "        make schema"
     echo "        make newsampledata"
-    echo "        cd ${sample_dir}"
+    echo "        cd $sample_dir"
     echo "        cp $4 $1"
     echo "    Run make schema again to update the test/dev database."
 }
@@ -270,8 +270,8 @@ if [ ! -z "$pyflakes_notices" ]; then
 fi
 
 extra_path="/usr/share/pyshared:/usr/share/pycentral/pylint/site-packages"
-export PYTHONPATH="$extra_path:lib:$PYTHONPATH"
-pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
+export PYTHONPATH="${os-paths}:$extra_path:$PYTHONPATH"
+pylint="${buildout:executable} -Wi::DeprecationWarning `which pylint`"
 
 # XXX sinzui 2007-10-18 bug=154140:
 # Pylint should really do a better job of not reporting false positives.

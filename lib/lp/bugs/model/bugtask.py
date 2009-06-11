@@ -1467,27 +1467,76 @@ class BugTaskSet:
             extra_clauses.append(upstream_clause)
 
         if params.tag:
-            if zope_isinstance(params.tag, all):
-                # If the user chose to search for
-                # the presence of all specified bugs,
-                # we must handle the search differently.
-                tags_clauses = []
-                for tag in params.tag.query_values:
-                    tags_clauses.append("""
-                    EXISTS(
-                      SELECT *
-                      FROM BugTag
-                      WHERE BugTag.bug = BugTask.bug
-                      AND BugTag.tag = %s)
-                      """ % sqlvalues(tag))
-                extra_clauses.append(' AND '.join(tags_clauses))
-            else:
-                # Otherwise, we just pass the value (which is either
-                # naked or wrapped in `any` for SQL construction).
-                tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
-                    search_value_to_where_condition(params.tag))
-                extra_clauses.append(tags_clause)
+            tags = set(params.tag.query_values)
+            tags_wildcards = [tag for tag in tags if tag in ('*', '-*')]
+            tags.difference_update(tags_wildcards)
+            tags_include = [tag for tag in tags if not tag.startswith('-')]
+            tags_exclude = [tag[1:] for tag in tags if tag.startswith('-')]
+            tags_clauses = []
+
+            # Search for the *presence* of any tag.
+            if '*' in tags_wildcards:
+                tags_clauses.append(
+                    "BugTag.bug = BugTask.bug")
                 clauseTables.append('BugTag')
+
+            # Search for the *absence* of any tag.
+            if '-*' in tags_wildcards:
+                tags_clauses.append(
+                    "BugTask.bug NOT IN ("
+                    "    SELECT BugTag.bug FROM BugTag)")
+
+            def tags_set_query(joiner, tags):
+                # Return an SQL snippet that identifies a set of bugs
+                # based on tags.
+                joiner = " %s " % joiner
+                return "(%s)" % joiner.join(
+                    "SELECT BugTag.bug FROM BugTag"
+                    " WHERE BugTag.tag = %s" % quote(tag)
+                    for tag in tags)
+
+            if zope_isinstance(params.tag, all):
+                tags_combinator = ' AND '
+                # The set of bugs that have *all* of the tags
+                # requested for *inclusion*.
+                tags_include_clause = tags_set_query(
+                    "INTERSECT", tags_include)
+                # The set of bugs that have *any* of the tags
+                # requested for *exclusion*.
+                tags_exclude_clause = tags_set_query(
+                    "UNION", tags_exclude)
+            else:
+                tags_combinator = ' OR '
+                # The set of bugs that have *any* of the tags
+                # requested for inclusion.
+                tags_include_clause = tags_set_query(
+                    "UNION", tags_include)
+                # The set of bugs that have *all* of the tags
+                # requested for exclusion.
+                tags_exclude_clause = tags_set_query(
+                    "INTERSECT", tags_exclude)
+
+            # Combine the include and exclude sets.
+            if len(tags_include) > 0 and len(tags_exclude) > 0:
+                tags_clauses.append(
+                    "BugTask.bug IN (%s EXCEPT %s)" % (
+                        tags_include_clause, tags_exclude_clause))
+            elif len(tags_include) > 0:
+                tags_clauses.append(
+                    "BugTask.bug IN %s" % tags_include_clause)
+            elif len(tags_exclude) > 0:
+                tags_clauses.append(
+                    "BugTask.bug NOT IN %s" % tags_exclude_clause)
+            else:
+                # This means that the query was only wildcards, or
+                # nothing at all (which is allowed, even if it's a
+                # bit weird).
+                pass
+
+            # Add any generated tag clauses to the main query.
+            if len(tags_clauses) > 0:
+                extra_clauses.append(
+                    '(%s)' % tags_combinator.join(tags_clauses))
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine
