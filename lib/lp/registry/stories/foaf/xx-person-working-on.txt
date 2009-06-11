@@ -9,17 +9,40 @@ won't be displayed.
     >>> print find_tag_by_id(anon_browser.contents, 'working-on')
     None
 
-Carlos is working on a blueprint, so the section does appear on his
-profile page.
+For a person who's working on some bugs/blueprints, though, they'd be
+displayed there.
 
-    >>> anon_browser.open('http://launchpad.dev/~carlos/')
-    >>> div = find_tag_by_id(anon_browser.contents, 'working-on')
-    >>> for tag in div.findAll('tr'):
-    ...     print tag.find('a').renderContents()
-    Support Native SVG Objects
+    # Go behind the scenes and create a bug and a blueprint, both assigned to
+    # a single person.
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.blueprints.interfaces.specification import (
+    ...     SpecificationImplementationStatus)
+    >>> spec = factory.makeSpecification()
+    >>> spec.assignee = spec.owner
+    >>> spec.implementation_status = SpecificationImplementationStatus.STARTED
+    >>> status = spec.updateLifecycleStatus(spec.owner)
+    >>> task = factory.makeBugTask(owner=spec.owner)
+    >>> task.transitionToAssignee(task.owner)
+    >>> task.transitionToStatus(BugTaskStatus.INPROGRESS, task.owner)
+    >>> new_person_url = canonical_url(task.owner)
+    >>> logout()
 
-There is a link to see all assigned blueprints that any user may see.
+    >>> anon_browser.open(new_person_url)
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'working-on'))
+    Working on
+    #... ...
+    Show all bugs in progress
+    ... for ...
+    ...
+    Show all assigned blueprints
 
-    >>> anon_browser.getLink('Show all assigned blueprints').click()
-    >>> anon_browser.title
-    'Blueprints involving Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+The links below the bugs/blueprints sections point to the other
+bugs/blueprints that the person is working on.
+
+    >>> anon_browser.getLink('Show all bugs in progress')
+    <Link...+assignedbugs?...status=In+Progress...
+    >>> anon_browser.getLink('Show all assigned blueprints')
+    <Link...+specs?role=assignee...
