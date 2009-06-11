@@ -17,7 +17,7 @@ from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
@@ -25,7 +25,7 @@ from canonical.launchpad.browser.poexportrequest import BaseExportView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from canonical.launchpad.browser.translations import TranslationsMixin
-from canonical.launchpad.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.packaging import IPackaging
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket

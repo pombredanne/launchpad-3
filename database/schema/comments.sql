@@ -681,9 +681,10 @@ COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last su
 COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
 COMMENT ON COLUMN ProductSeries.branch IS 'The branch for this product
 series.';
-COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'At what
-level the import of translations from a branch in codehosting will happen:
-None, POT files only, POT and PO files. See also the corresponding Enum.';
+COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'Level of
+translations imports from codehosting branch: None, templates only, templates
+and translations. See TranslationsBranchImportMode.';
+COMMENT ON COLUMN ProductSeries.translations_branch IS 'Branch to push translations updates to.';
 
 -- ProductSeriesCodeImport
 
@@ -782,6 +783,16 @@ COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
 COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the branch revision.';
 COMMENT ON COLUMN RevisionAuthor.email IS 'A valid email address extracted from the name.  This email address may or may not be associated with a Launchpad user at this stage.';
 COMMENT ON COLUMN RevisionAuthor.person IS 'The Launchpad person that has a verified email address that matches the email address of the revision author.';
+
+-- RevisionCache
+COMMENT ON TABLE RevisionCache IS 'A cache of revisions where the revision date is in the last 30 days.';
+COMMENT ON COLUMN RevisionCache.revision IS 'A reference to the actual revision.';
+COMMENT ON COLUMN RevisionCache.revision_author IS 'A refernce to the revision author for the revision.';
+COMMENT ON COLUMN RevisionCache.revision_date IS 'The date the revision was made.  Should be within 30 days of today (or the cleanup code is not cleaning up).';
+COMMENT ON COLUMN RevisionCache.product IS 'The product that the revision is found in (if it is indeed in a particular product).';
+COMMENT ON COLUMN RevisionCache.distroseries IS 'The distroseries for which a source package branch contains the revision.';
+COMMENT ON COLUMN RevisionCache.sourcepackagename IS 'The sourcepackagename for which a source package branch contains the revision.';
+COMMENT ON COLUMN RevisionCache.private IS 'True if the revision is only found in private branches, False if it can be found in a non-private branch.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -2086,6 +2097,12 @@ COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
 COMMENT ON COLUMN HWDriver.package_name IS 'The Debian package name a driver is a part of';
 COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
+
+COMMENT ON VIEW HWDriverNames IS 'A view returning the distinct driver names stored in HWDriver.';
+COMMENT ON COLUMN HWDriverNames.name IS 'The name of a driver.';
+
+COMMENT ON VIEW HWDriverPackageNames IS 'A view returning the distinct Debian package names stored in HWDriver.';
+COMMENT ON COLUMN HWDriverPackageNames.package_name IS 'The Debian package name a driver is a part of.';
 
 COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
 COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';

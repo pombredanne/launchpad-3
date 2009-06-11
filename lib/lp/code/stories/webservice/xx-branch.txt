@@ -9,9 +9,8 @@ the things on Launchpad.
     >>> from datetime import datetime
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import BranchType, IBranch
-    >>> from canonical.launchpad.ftests import (
-    ...     login, logout, ANONYMOUS)
+    >>> from lp.code.enums import BranchType
+    >>> from lp.code.interfaces.branch import IBranch
     >>> from lazr.restful.marshallers import DateTimeFieldMarshaller
 
 To make this document a little more readable, we'll have to define some
@@ -109,9 +108,11 @@ time goes on.
     date_created: ...
     date_last_modified: ...
     dependent_branches_collection_link: u'.../~eric/fooix/trunk/dependent_branches'
-    display_name: u'~eric/fooix/trunk'
+    display_name: u'lp://dev/~eric/fooix/trunk'
     landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
     landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
+    last_mirror_attempt: None
+    last_mirrored: None
     last_scanned: None
     last_scanned_id: None
     lifecycle_status: u'Development'
@@ -129,8 +130,6 @@ time goes on.
     spec_links_collection_link: u'.../~eric/fooix/trunk/spec_links'
     subscribers_collection_link: u'http://.../~eric/fooix/trunk/subscribers'
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
-    summary: None
-    title: u'The Fooix Trunk'
     unique_name: u'~eric/fooix/trunk'
     url: None
     whiteboard: None

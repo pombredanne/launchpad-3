@@ -5,11 +5,12 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from lp.soyuz.interfaces.archive import IArchiveSet
-from canonical.archivepublisher.interfaces.archivesigningkey import (
+
+
+from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 
 
@@ -33,6 +34,9 @@ class PPAKeyGenerator(LaunchpadCronScript):
 
     def main(self):
         """Generate signing keys for the selected PPAs."""
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archive import IArchiveSet
+
         owner_name = self.options.archive_owner_name
 
         if owner_name is not None:

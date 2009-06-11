@@ -12,7 +12,7 @@ the user is not able to change uploads outside of their remit.
 Before we can accept anything, the librarian needs to be loaded with
 fake changes files (so it doesn't OOPS when trying to send emails).
 
-    >>> from canonical.archiveuploader.tests import (
+    >>> from lp.archiveuploader.tests import (
     ...     insertFakeChangesFileForAllPackageUploads)
     >>> insertFakeChangesFileForAllPackageUploads()
 

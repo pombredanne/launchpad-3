@@ -18,7 +18,6 @@ __all__ = [
     'DatetimeDisplayWidget',
     ]
 
-import os
 from datetime import datetime
 import pytz
 
@@ -27,12 +26,12 @@ from zope.app.form.browser.textwidgets import escape, TextWidget
 from zope.app.form.browser.widget import DisplayWidget
 from zope.app.form.interfaces import InputErrors, WidgetInputError
 from zope.app.form.interfaces import ConversionError
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.lazr import ExportedFolder
 
 
 class DateTimeWidget(TextWidget):
@@ -205,11 +204,15 @@ class DateTimeWidget(TextWidget):
 
     @property
     def disabled_flag(self):
-        """Return a string to make the form input disabled if necessary."""
+        """Return a string to make the form input disabled if necessary.
+
+        Returns ``None`` otherwise, to omit the ``disabled`` attribute
+        completely.
+        """
         if self.disabled:
             return "disabled"
         else:
-            return ""
+            return None
 
     #@property  XXX: do as a property when we have python2.5 for tests of
     #properties

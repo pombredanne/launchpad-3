@@ -1,5 +1,4 @@
 # Copyright 2007-2009 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0706
 
 """Unit tests for the public codehosting API."""
 
@@ -11,15 +10,11 @@ import os
 import unittest
 import xmlrpclib
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login, logout
-from lp.code.interfaces.branch import BranchType
-from lp.code.interfaces.branchlookup import (
-    ISourcePackagePocketFactory)
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.code.enums import BranchType
+from lp.testing import TestCaseWithFactory
 from lazr.uri import URI
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
 from canonical.launchpad.xmlrpc import faults
@@ -187,12 +182,10 @@ class TestExpandURL(TestCaseWithFactory):
     def test_no_linked_branch_for_source_package(self):
         # Return a NoLinkedBranch fault if there's no linked branch for the
         # sourcepackage.
-        package = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.RELEASE
-        sourcepackagepocket = getUtility(ISourcePackagePocketFactory).new(
-            package, pocket)
+        suite_sourcepackage = self.factory.makeSuiteSourcePackage()
         self.assertFault(
-            package.path, faults.NoLinkedBranch(sourcepackagepocket))
+            suite_sourcepackage.path,
+            faults.NoLinkedBranch(suite_sourcepackage))
 
     def test_branch(self):
         # The unique name of a branch resolves to the unique name of the

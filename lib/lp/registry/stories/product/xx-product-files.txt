@@ -43,9 +43,10 @@ the delete options.
     >>> content = find_main_content(anon_browser.contents)
     >>> row = content.find('table').find('tr')
     >>> print extract_text(row)
-    Download
+    File
     Release
     Description
+    Downloads
 
 Again, for an authenticated user who is not the firefox product owner.
 
@@ -57,9 +58,10 @@ Again, for an authenticated user who is not the firefox product owner.
     >>> content = find_main_content(non_owner.contents)
     >>> row = content.find('table').find('tr')
     >>> print extract_text(row)
-    Download
+    File
     Release
     Description
+    Downloads
 
 Now, login as a firefox admin and see the delete fields.
 
@@ -71,10 +73,11 @@ Now, login as a firefox admin and see the delete fields.
     >>> content = find_main_content(firefox_owner.contents)
     >>> row = content.find('table').find('tr')
     >>> print extract_text(row)
-    Delete
-    Download
+    File
     Release
     Description
+    Downloads
+    Delete
 
 A project owner should not see the delete button when there are no files.
 
@@ -156,7 +159,7 @@ the list.
     >>> firefox_owner.getLink('3.0').click()
     >>> firefox_owner.getLink('Create milestone').click()
     >>> firefox_owner.getControl('Name').value = '3.14159'
-    >>> firefox_owner.getControl('Register milestone').click()
+    >>> firefox_owner.getControl('Register Milestone').click()
     >>> firefox_owner.getLink(url='+milestone/3.14159').click()
     >>> firefox_owner.getLink('Create release').click()
     >>> firefox_owner.getControl('Date released').value = '2000-01-01'
@@ -256,6 +259,17 @@ A file can be uploaded without a GPG signature.
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'bar.txt' has been uploaded."]
 
+The uploaded file is also displayed on the project's downloads page for any
+user to see.
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/+download')
+    >>> content = find_main_content(anon_browser.contents)
+    >>> for tr in  content.findAll('table')[1].findAll('tr'):
+    ...     print extract_text(tr)
+    File                 Release   Description      Downloads
+    bar.txt (md5)        1.0.0     Bar installer    -
+    foo.txt (md5, sig)   1.0.0     Foo installer    -
+
 In addition to the product owner and product series owner,
 an admin can also delete a release file.
 
@@ -266,9 +280,9 @@ an admin can also delete a release file.
     >>> table = find_tag_by_id(admin_browser.contents, 'downloads')
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
-    Download            Description      Delete
-    bar.txt (md5)       Bar installer
-    foo.txt (md5, sig)  Foo installer
+    File                Description    Downloads      Delete
+    bar.txt (md5)       Bar installer  -            
+    foo.txt (md5, sig)  Foo installer  -            
 
     >>> checkbox_tag = table.find(attrs={'name': 'checkbox_0'})
     >>> admin_browser.getControl("Delete Files").click()
@@ -277,8 +291,8 @@ an admin can also delete a release file.
     >>> table = find_tag_by_id(admin_browser.contents, 'downloads')
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
-    Download            Description      Delete
-    foo.txt (md5, sig)  Foo installer
+    File                Description    Downloads     Delete
+    foo.txt (md5, sig)  Foo installer  -           
 
 Let's go back to the page where the files are listed and ensure it
 shows up now.  Just to be sure, do it as the non-owner. We also see
@@ -452,8 +466,8 @@ Non-administrators do not have the delete option.
     >>> table = find_tag_by_id(non_owner.contents, 'downloads')
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
-    Download         Description
-    foo09.txt (md5)  Foo09 installer
+    File             Description     Downloads  
+    foo09.txt (md5)  Foo09 installer -          
 
 And no "Delete Files" button is shown.
 
@@ -470,8 +484,8 @@ so it is not shown.
     >>> table = find_tag_by_id(firefox_owner.contents, 'downloads')
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
-    Download         Description      Delete
-    foo09.txt (md5)  Foo09 installer
+    File             Description     Downloads  Delete
+    foo09.txt (md5)  Foo09 installer -          
 
 A "Delete Files" button is available.
 

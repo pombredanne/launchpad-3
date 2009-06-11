@@ -39,7 +39,7 @@ also have a Translations page.)
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: Bugs in ...alsa-utils... source package in Ubuntu
+    Main heading: Bugs in ...alsa-utils... package in Ubuntu
 
 
 == Distribution source package release ==
@@ -117,7 +117,7 @@ Ubuntu Hoary".)
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Answers (selected) - not linked
-    Main heading: Questions for Ubuntu Hoary alsa-utils
+    Main heading: Questions for alsa-utils in Ubuntu Hoary
 
 
 == Distribution series source package release ==

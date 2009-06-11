@@ -371,7 +371,8 @@ When an anonymous submitter later registers a Launchpad account, the field
     >>> user.validateAndEnsurePreferredEmail(email)
     >>> transaction.commit()
     >>> from canonical.launchpad.scripts.garbo import HWSubmissionEmailLinker
-    >>> HWSubmissionEmailLinker().run()
+    >>> from canonical.launchpad.ftests.logger import MockLogger
+    >>> HWSubmissionEmailLinker(log=MockLogger()).run()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
@@ -405,7 +406,7 @@ the field `owner` is updated.
     >>> login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)
     >>> transaction.commit()
-    >>> HWSubmissionEmailLinker().run()
+    >>> HWSubmissionEmailLinker(log=MockLogger()).run()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
@@ -532,7 +533,7 @@ Searching for other statuses is possible too.
 HWDB submissions can be linked to bugs. These links are created by
 IHWSubmissionBugSet.create().
 
-    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> submission_bug_set = getUtility(IHWSubmissionBugSet)
@@ -544,17 +545,65 @@ IHWSubmissionBugSet.create().
     >>> submission_bug.bug.id
     1
 
-Links between a bug and a submission must be unique.
+Links between a bug and a submission are unique. If we call
+IHWSubmissionBugSet.create() twice for the same bug and HWDB submission,
+the method returns the existing record.
 
-    >>> submission_bug_set.create(submission_no_owner, bug_one)
-    <HWSubmissionBug at ...>
-    >>> transaction.commit()
-    Traceback (most recent call last):
-    ...
-    IntegrityError: ... violates unique constraint
-    "hwsubmissionbug__submission__bug__key"
+    >>> second_link = submission_bug_set.create(submission_no_owner, bug_one)
+    >>> second_link.id == submission_bug.id
+    True
 
-    >>> transaction.abort()
+HWSubmissionBugSet.submissionsForBug() returns all submissions linked to
+a given bug.
+
+    >>> for submission in submission_bug_set.submissionsForBug(bug_one):
+    ...     print submission.submission_key
+    unique-id-5
+
+Private submissions are only returned if the current user is an admin
+or the owner of the private submission.
+
+    >>> submission = hw_submission_set.getBySubmissionKey(
+    ...     u'private-submission', sample_person)
+    >>> submission_bug_set.create(submission, bug_one)
+    <HWSubmissionBug at...
+    >>> for submission in submission_bug_set.submissionsForBug(
+    ...     bug_one, user=sample_person):
+    ...     print submission.submission_key
+    private-submission
+    unique-id-5
+
+    >>> for submission in submission_bug_set.submissionsForBug(
+    ...     bug_one, user=foobar):
+    ...     print submission.submission_key
+    private-submission
+    unique-id-5
+
+Other registered persons can see only public submissions...
+
+    >>> for submission in submission_bug_set.submissionsForBug(
+    ...     bug_one, user=no_priv):
+    ...     print submission.submission_key
+    unique-id-5
+
+...as well as anonymous users.
+
+    >>> for submission in submission_bug_set.submissionsForBug(
+    ...     bug_one):
+    ...     print submission.submission_key
+    unique-id-5
+
+Existing links can also be removed.
+
+    >>> submission_bug_set.remove(submission_no_owner, bug_one)
+    >>> submission_bug_set.submissionsForBug(bug_one).count()
+    0
+
+    >>> for submission in submission_bug_set.submissionsForBug(
+    ...     bug_one, user=foobar):
+    ...     print submission.submission_key
+    private-submission
+
 
 == General Search Method ==
 

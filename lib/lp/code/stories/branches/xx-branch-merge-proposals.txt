@@ -8,9 +8,9 @@ In order to test notifications, we need a subscriber for the branch.
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchSubscriptionNotificationLevel,
-    ...     CodeReviewNotificationLevel, IPersonSet)
+    >>> from lp.code.enums import (
+    ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> subscriber = getUtility(IPersonSet).getByEmail(
     ...     'foo.bar@canonical.com')
@@ -116,7 +116,7 @@ merge proposal is considered a "landing target" with an optional
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> nopriv_browser.getLink('Merge Proposals').click()
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
-    ~name12/gnome-terminal/main - view proposal details
+    lp://dev/~name12/gnome-terminal/main - view proposal details
     Merge proposed by No Privileges Person
     Needs review
 
@@ -138,7 +138,7 @@ shown.
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges')
     >>> printMergeProposals(sample_browser, 'landing-targets')
-    ~name12/gnome-terminal/main - view proposal details
+    lp://dev/~name12/gnome-terminal/main - view proposal details
     Needs review
 
 
@@ -152,9 +152,9 @@ shown first.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Merge Proposals').click()
     >>> printMergeProposals(browser, 'landing-candidates')
-    ~name12/gnome-terminal/scanned (Development) - view proposal details
+    lp://dev/~name12/gnome-terminal/scanned (Development) - view proposal details
       Needs review
-    ~name12/gnome-terminal/klingon (Experimental) - view proposal details
+    lp://dev/~name12/gnome-terminal/klingon (Experimental) - view proposal details
       Merge proposed by No Privileges Person
       Needs review
 
@@ -330,7 +330,7 @@ The source branch is still shown on the branch's merges page.
     >>> nopriv_browser.getLink('~name12/gnome-terminal/klingon').click()
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
-    ~name12/gnome-terminal/main - view proposal details
+    lp://dev/~name12/gnome-terminal/main - view proposal details
       Merge proposed by No Privileges Person
       Merged ... ago
 
@@ -339,7 +339,7 @@ Gone from the target branch.
     >>> nopriv_browser.getLink('~name12/gnome-terminal/main').click()
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-candidates')
-    ~name12/gnome-terminal/scanned (Development) - view proposal details
+    lp://dev/~name12/gnome-terminal/scanned (Development) - view proposal details
       Needs review
 
 If the user subsequently wants to set the merged revision number,
@@ -386,6 +386,7 @@ branches but with the state set to work-in-progress.
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges')
     >>> sample_browser.getLink('view proposal details').click()
+    >>> orig_url = sample_browser.url
     >>> sample_browser.getLink('Change status').click()
     >>> sample_browser.getControl(name='field.queue_status').displayValue = (
     ...     ['Resubmit'])
@@ -427,8 +428,63 @@ new proposal that supersedes it.
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'superseded-by'))
     This proposal has been superseded by a proposal from ...
-    >>> sample_browser.getLink(
-    ...     re.compile('proposal from .*')).click()
+    >>> link = sample_browser.getLink(re.compile('proposal from .*'))
+    >>> superseding_url = link.url
+
+The superseded proposal can't be made active because of the duplicate
+proposal.  It can only be set to another inactive state like "rejected" or
+"merged".
+
+    >>> sample_browser.getLink('Change status').click()
+    >>> def print_options(field):
+    ...     for option in field.options:
+    ...         print option
+    >>> print_options(sample_browser.getControl(name='field.queue_status'))
+    REJECTED
+    MERGED
+    SUPERSEDED
+
+If we make the superseding proposal inactive, we can set the original back to
+work-in-progress.
+
+    >>> sample_browser.open(superseding_url)
+    >>> sample_browser.getLink('Change status').click()
+    >>> sample_browser.getControl(name='field.queue_status').displayValue = (
+    ...     ['Merged'])
+    >>> sample_browser.getControl('Change Status').click()
+    >>> print_summary(sample_browser)
+    Status: Merged
+    ...
+    >>> sample_browser.open(orig_url)
+    >>> print_summary(sample_browser)
+    Status: Superseded
+    ...
+    >>> sample_browser.getLink('Change status').click()
+    >>> print_options(sample_browser.getControl(name='field.queue_status'))
+    WORK_IN_PROGRESS
+    NEEDS_REVIEW
+    CODE_APPROVED
+    REJECTED
+    MERGED
+    SUPERSEDED
+
+Merged proposals can be reset to other values, because they may have been
+marked merged by mistake, in the UI.
+
+    >>> sample_browser.getControl(name='field.queue_status').displayValue = (
+    ...     ['Merged'])
+    >>> sample_browser.getControl('Change Status').click()
+    >>> print_summary(sample_browser)
+    Status: Merged
+    ...
+    >>> sample_browser.getLink('Change status').click()
+    >>> print_options(sample_browser.getControl(name='field.queue_status'))
+    WORK_IN_PROGRESS
+    NEEDS_REVIEW
+    CODE_APPROVED
+    REJECTED
+    MERGED
+    SUPERSEDED
 
 
 == Default target branches ==

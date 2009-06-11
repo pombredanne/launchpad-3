@@ -16,8 +16,6 @@ __all__ = [
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
-    'MaloneApplicationNavigation',
-    'MaloneContextMenu',
     'MenuBox',
     'NavigationMenuTabs',
     'SoftTimeoutView',
@@ -44,7 +42,6 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
-import canonical.launchpad.layers
 from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
@@ -53,19 +50,19 @@ from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
-from lp.code.interfaces.branchlookup import (
-    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import InvalidNamespace
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, NoLinkedBranch)
+from lp.bugs.interfaces.bug import IBugSet
 from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
-from canonical.launchpad.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.hwdb import IHWDBApplication
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
     IRosettaApplication, IStructuralHeaderPresentation,
@@ -74,9 +71,9 @@ from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
-from canonical.launchpad.interfaces.malone import IMaloneApplication
+from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
+from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -92,9 +89,9 @@ from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link,
-    LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
-    canonical_url, custom_widget)
+    LaunchpadFormView, LaunchpadView, Link, Navigation,
+    StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
+    stepto)
 from canonical.launchpad.webapp.interfaces import (
     IBreadcrumbBuilder, ILaunchBag, ILaunchpadRoot, INavigationMenu,
     NotFoundError, POSTToNonCanonicalURL)
@@ -114,47 +111,6 @@ from canonical.widgets.project import ProjectScopeWidget
 from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
-
-
-class MaloneApplicationNavigation(Navigation):
-
-    usedfor = IMaloneApplication
-
-    newlayer = canonical.launchpad.layers.BugsLayer
-
-    @stepto('bugs')
-    def bugs(self):
-        return getUtility(IBugSet)
-
-    @stepto('bugtrackers')
-    def bugtrackers(self):
-        return getUtility(IBugTrackerSet)
-
-    @stepto('cve')
-    def cve(self):
-        return getUtility(ICveSet)
-
-    @stepto('distros')
-    def distros(self):
-        return getUtility(IDistributionSet)
-
-    @stepto('projects')
-    def projects(self):
-        return getUtility(IProductSet)
-
-    @stepto('products')
-    def products(self):
-        return self.redirectSubTree(
-            canonical_url(getUtility(IProductSet)), status=301)
-
-    def traverse(self, name):
-        # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
-        # /malone/$bug.id Just Work
-        bug = getUtility(IBugSet).getByNameOrID(name)
-        if not check_permission("launchpad.View", bug):
-            raise Unauthorized("Bug %s is private" % name)
-        return bug
-
 
 
 class MenuBox(LaunchpadView):
@@ -477,16 +433,6 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
 
-class MaloneContextMenu(ContextMenu):
-    # XXX mpt 2006-03-27: No longer visible on Bugs front page.
-    usedfor = IMaloneApplication
-    links = ['cvetracker']
-
-    def cvetracker(self):
-        text = 'CVE tracker'
-        return Link('cve/', text, icon='cve')
-
-
 class LoginStatus:
 
     def __init__(self, context, request):
@@ -637,6 +583,7 @@ class LaunchpadRootNavigation(Navigation):
         '+languages': ILanguageSet,
         '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
+        'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
         'projects': IProductSet,

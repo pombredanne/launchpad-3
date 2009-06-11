@@ -29,7 +29,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
-from canonical.archivepublisher.utils import get_ppa_reference
+from lp.archivepublisher.utils import get_ppa_reference
 from lp.soyuz.adapters.archivedependencies import (
     get_components_for_building)
 from canonical.launchpad.components.decoratedresultset import (
@@ -47,7 +47,7 @@ from canonical.launchpad.helpers import (
      get_contact_email_addresses, filenameToContentType, get_email_template)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
-    BuildStatus, BuildSetStatus, IBuild, IBuildSet)
+    BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
 from lp.soyuz.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
@@ -117,31 +117,43 @@ class Build(SQLBase):
             return None
         return self._getProxiedFileURL(self.buildlog)
 
-    @property
-    def current_component(self):
-        """See `IBuild`."""
-        pub = self.current_source_publication
-        if pub is not None:
-            return pub.component
-        return self.sourcepackagerelease.component
-
-    @property
-    def current_source_publication(self):
-        """See `IBuild`."""
+    def _getLatestPublication(self):
         store = Store.of(self)
         results = store.find(
             SourcePackagePublishingHistory,
             SourcePackagePublishingHistory.archive == self.archive,
             SourcePackagePublishingHistory.distroseries == self.distroseries,
             SourcePackagePublishingHistory.sourcepackagerelease ==
-                self.sourcepackagerelease,
-            SourcePackagePublishingHistory.status.is_in(
-                active_publishing_status))
-
-        current_publication = results.order_by(
+                self.sourcepackagerelease)
+        return results.order_by(
             Desc(SourcePackagePublishingHistory.id)).first()
 
-        return current_publication
+    @property
+    def current_component(self):
+        """See `IBuild`."""
+        latest_publication = self._getLatestPublication()
+
+        # XXX cprov 2009-06-06 bug=384220:
+        # This assertion works fine in production, since all build records
+        # are legitimate and have a corresponding source publishing record
+        # (which triggered their creation, in first place). However our
+        # sampledata is severely broken in this area and depends heavily
+        # on the fallback to the source package original component.
+        #assert latest_publication is not None, (
+        #    'Build %d lacks a corresponding source publication.' % self.id)
+        if latest_publication is None:
+            return self.sourcepackagerelease.component
+
+        return latest_publication.component
+
+    @property
+    def current_source_publication(self):
+        """See `IBuild`."""
+        latest_publication = self._getLatestPublication()
+        if (latest_publication is not None and
+            latest_publication.status in active_publishing_status):
+            return latest_publication
+        return None
 
     @property
     def changesfile(self):
@@ -274,6 +286,13 @@ class Build(SQLBase):
         self.upload_log = None
         self.dependencies = None
         self.createBuildQueueEntry()
+
+    def rescore(self, score):
+        """See `IBuild`."""
+        if not self.can_be_rescored:
+            raise CannotBeRescored("Build cannot be rescored.")
+
+        self.buildqueue_record.manualScore(score)
 
     def getEstimatedBuildStartTime(self):
         """See `IBuild`.
@@ -601,8 +620,15 @@ class Build(SQLBase):
             self.archive == self.sourcepackagerelease.upload_archive)
 
         if package_was_not_copied and config.builddmaster.notify_owner:
-            recipients = recipients.union(
-                get_contact_email_addresses(creator))
+            if (self.archive.is_ppa and creator.inTeam(self.archive.owner)
+                or
+                not self.archive.is_ppa):
+                # If this is a PPA, the package creator should only be
+                # notified if they are the PPA owner or in the PPA team.
+                # (see bug 375757)
+                # Non-PPA notifications inform the creator regardless.
+                recipients = recipients.union(
+                    get_contact_email_addresses(creator))
             dsc_key = self.sourcepackagerelease.dscsigningkey
             if dsc_key:
                 recipients = recipients.union(

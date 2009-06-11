@@ -1111,6 +1111,8 @@ products_index = 'Projects registered in Launchpad'
 
 products_review_licenses = 'Review licenses of projects'
 
+productserieslanguage_index = ContextTitle('%s')
+
 productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_linkbranch = ContextTitle('Link an existing branch to %s')
@@ -1123,6 +1125,8 @@ productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 
 productseries_review = ContextTitle('Review %s')
+
+productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
@@ -1303,7 +1307,7 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
-sourcepackage_branches = ContextDisplayName('Branches in %s')
+sourcepackage_branches = ContextDisplayName('Branches of %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 

@@ -266,7 +266,7 @@ and the select control that lets you update them:
     <div id="series-widget-div">
     ...
         <select id="field.series" name="field.series" size="1" onchange="updateSeries(this);">
-            <option value="breezy-autotest">Breezy Badger Autotest</option>
+            <option selected="selected" value="breezy-autotest">Breezy Badger Autotest</option>
             <option value="warty">The Warty Warthog Release</option>
         </select>
     ...
@@ -606,8 +606,8 @@ help wiki are presented in the PPA index page.
     ...     anon_browser.contents, 'signing-key')
 
     >>> print extract_text(signing_key_section)
-    This repository is signed with 1024D/12345678 OpenPGP key.
-    Follow these instructions for installing packages from this PPA.
+    This repository is signed with the OpenPGP key 1024D/12345678
+    Help on installing software from this PPA.
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
@@ -619,8 +619,8 @@ keyserver.
 Another link in this section point users to the expanded instructions
 about how to use the signing_key.
 
-    >>> print anon_browser.getLink('these instructions').url
-    https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories
+    >>> print anon_browser.getLink('How do I do that?').url
+    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
 
 
 == PPA Builds ==
@@ -772,7 +772,7 @@ for each published source:
 
  * Completely built: green 'yes' icon only;
 
- * Build in progress: 'build-building' icon, followed by the
+ * Build in progress: 'processing' icon, followed by the
    architecture tags being built linking to the corresponding build
    page
 

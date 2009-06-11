@@ -6,7 +6,7 @@ __metaclass__ = type
 
 
 from lp.code.adapters.branch import BranchDelta
-from lp.code.interfaces.branchsubscription import (
+from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.mail import format_address
@@ -249,10 +249,7 @@ class BranchMailer(BaseMailer):
         """
         if subject is not None:
             return subject
-        branch_title = db_branch.title
-        if branch_title is None:
-            branch_title = ''
-        return '[Branch %s] %s' % (db_branch.unique_name, branch_title)
+        return '[Branch %s]' % (db_branch.unique_name)
 
     def _diffText(self, max_diff):
         """Determine the text to use for the diff.
@@ -291,10 +288,7 @@ class BranchMailer(BaseMailer):
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
         reason, rationale = self._recipients.getReason(email)
-        branch_title = reason.branch.title
-        if branch_title is None:
-            branch_title = ''
-        params['branch_title'] = branch_title
+        params['branch_identity'] = reason.branch.bzr_identity
         params['branch_url'] = canonical_url(reason.branch)
         if reason.recipient in reason.branch.subscribers:
             # Give subscribers a link to unsubscribe.

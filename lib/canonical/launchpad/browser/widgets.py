@@ -2,12 +2,17 @@
 
 """Customized widgets used in Launchpad."""
 
+# XXX sinzui 2009-05-15 bug=377095: This module should be broken up and
+# moved into canonical.widgets.
+
+
 __metaclass__ = type
 
 __all__ = [
     'AlreadyRegisteredError',
     'BranchPopupWidget',
     'DescriptionWidget',
+    'NoneableDescriptionWidget',
     'NoProductError',
     'SummaryWidget',
     'TitleWidget',
@@ -20,7 +25,8 @@ from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import BranchType, IBranch
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
@@ -55,6 +61,18 @@ class DescriptionWidget(TextAreaWidget):
     """A widget to capture a description."""
     width = 44
     height = 5
+
+
+class NoneableDescriptionWidget(DescriptionWidget):
+    """A widget that is None if it's value is empty or whitespace.."""
+
+    def _toFieldValue(self, input):
+        value = super(
+            NoneableDescriptionWidget, self)._toFieldValue(input.strip())
+        if value == '':
+            return None
+        else:
+            return value
 
 
 class WhiteboardWidget(TextAreaWidget):

@@ -11,7 +11,7 @@ from zope.component import getUtility
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken, IEmailAddressSet, InvalidEmailAddress)
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -23,7 +23,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import (
     AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import create_initialized_view
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import (

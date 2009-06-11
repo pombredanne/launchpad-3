@@ -483,17 +483,17 @@
             interface="lp.registry.interfaces.jabber.IJabberIDSet"/>
     </securedutility>
     <class
-        class="canonical.launchpad.utilities.SalesforceVoucherProxy">
+        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy">
         <allow
             interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
     </class>
     <class
-        class="canonical.launchpad.utilities.Voucher">
+        class="lp.registry.utilities.salesforce.Voucher">
         <allow
             interface="lp.registry.interfaces.salesforce.ISalesforceVoucher"/>
     </class>
     <securedutility
-        class="canonical.launchpad.utilities.SalesforceVoucherProxy"
+        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy"
         provides="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy">
         <allow
             interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
@@ -896,7 +896,7 @@
                 createProductRelease
                 destroySelf"/>
         <allow
-            interface="canonical.launchpad.interfaces.bugtarget.IHasBugs"/>
+            interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
         <allow
             interface="canonical.launchpad.webapp.interfaces.IAuthorization"/>
         <require
@@ -1587,6 +1587,13 @@
         <allow
             interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
     </securedutility>
+
+    <!-- SuiteSourcePackage -->
+    <class
+       class="lp.registry.model.suitesourcepackage.SuiteSourcePackage">
+      <allow
+         interface="lp.registry.interfaces.suitesourcepackage.ISuiteSourcePackage"/>
+    </class>
 
     <lp:help-folder 
         folder="help" type="canonical.launchpad.layers.LaunchpadLayer" />

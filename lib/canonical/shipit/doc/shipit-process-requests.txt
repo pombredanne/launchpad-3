@@ -86,8 +86,8 @@ requests with duplicated address, as we expect it to.
 
     >>> from subprocess import Popen, PIPE
     >>> process = Popen(
-    ...     'scripts/shipit-process-requests.py -q --status=dupe',
-    ...     shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    ...     'lib/canonical/shipit/scripts/shipit-process-requests.py -q '
+    ...     '--status=dupe', shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err
     ('', '')

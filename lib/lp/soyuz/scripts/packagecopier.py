@@ -17,18 +17,19 @@ import tempfile
 
 from zope.component import getUtility
 
-from lp.soyuz.adapters.packagelocation import (
-    build_package_location)
-from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
-from lp.soyuz.interfaces.build import incomplete_building_status
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.utils import copy_and_close
+from lp.soyuz.adapters.packagelocation import (
+    build_package_location)
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose, CannotCopy)
+from lp.soyuz.interfaces.build import incomplete_building_status
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingStatus, active_publishing_status)
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
-from canonical.librarian.utils import copy_and_close
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_sourcepublication)
 
@@ -47,43 +48,6 @@ def is_completely_built(source):
             return False
 
     return True
-
-
-def has_unpublished_binaries(source):
-    """Whether or not a source publication has unpublished binaries.
-
-    Check if there are binaries built from the source in the same
-    publication context. If there are none, return False since there is
-    nothing to be published.
-
-    If there are built binaries, check if they match the ones published
-    for the source in its context.
-
-    :param source: context `ISourcePackagePublishingHistory`.
-
-    :return: True if there are unpublished binaries, False otherwise.
-    """
-    # Binaries built from this source in the publishing context.
-    built_binaries = set()
-    for build in source.getBuilds():
-        if source.pocket != build.pocket:
-            continue
-        for binarypackagerelease in build.binarypackages:
-            built_binaries.add(binarypackagerelease)
-
-    # No binaries built, thus none unpublished.
-    if len(built_binaries) == 0:
-        return False
-
-    # Binaries have been published in the same publishing context,
-    # but are some not yet published?
-    candidate_binaries = set(
-        pub_binary.binarypackagerelease
-        for pub_binary in source.getBuiltBinaries())
-    if candidate_binaries != built_binaries:
-        return True
-
-    return False
 
 
 def compare_sources(source, ancestry):
@@ -151,7 +115,6 @@ def check_archive_conflicts(source, archive, series, include_binaries):
     destination_archive_conflicts = archive.getPublishedSources(
         name=source.sourcepackagerelease.name,
         version=source.sourcepackagerelease.version,
-        status=active_publishing_status,
         exact_match=True)
 
     if destination_archive_conflicts.count() == 0:
@@ -185,7 +148,8 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # not going to change in terms of new builds and the resulting
         # binaries will match. See more details in
         # `ISourcePackageRelease.getBuildsByArch`.
-        if candidate.distroseries.id == series.id:
+        if (candidate.distroseries.id == series.id and
+            archive.id == source.archive.id):
             continue
 
         # Conflicting candidates building in a different series are a
@@ -201,7 +165,9 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # next publishing cycle to happen before copying the package.
         # The copy is only allowed when all built binaries are published,
         # this way there is no chance of a conflict.
-        if has_unpublished_binaries(candidate):
+        unpublished_builds = candidate.getUnpublishedBuilds()
+        if (unpublished_builds.count() > 0 and
+            candidate.status in active_publishing_status):
             raise CannotCopy(
                 "same version has unpublished binaries in the destination "
                 "archive for %s, please wait for them to be published "
@@ -210,7 +176,7 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # Update published binaries inventory for the conflicting candidates.
         archive_binaries = set(
             pub_binary.binarypackagerelease.id
-            for pub_binary in candidate.getPublishedBinaries())
+            for pub_binary in candidate.getBuiltBinaries())
         published_binaries.update(archive_binaries)
 
     if not include_binaries:
@@ -334,11 +300,12 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
             source_copy = source.copyTo(destination_series, pocket, archive)
             close_bugs_for_sourcepublication(source_copy)
             copies.append(source_copy)
-            if not include_binaries:
-                source_copy.createMissingBuilds()
-                continue
         else:
             source_copy = source_in_destination[0]
+
+        if not include_binaries:
+            source_copy.createMissingBuilds()
+            continue
 
         # Copy missing suitable binaries.
         for binary in source.getBuiltBinaries():

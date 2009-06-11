@@ -35,13 +35,13 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from lp.code.model.branch import BranchSet
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
-from canonical.launchpad.database.bug import (
+from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import (
+from lp.bugs.model.bugtarget import (
     BugTargetBase, OfficialBugTagTargetMixin)
-from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.bugtracker import BugTracker
-from canonical.launchpad.database.bugwatch import BugWatch
+from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtracker import BugTracker
+from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -71,11 +71,10 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
-from lp.code.interfaces.branch import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.code.enums import BranchMergeProposalStatus
+from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
@@ -966,6 +965,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(BugTask.product == self.id,
                 BugTask.bugwatch == BugWatch.id,
                 BugWatch.bugtracker == self.getExternalBugTracker()))
+
+    def getTimeline(self, include_inactive=False):
+        """See `IProduct`."""
+        return [series.getTimeline(include_inactive=include_inactive)
+                for series in self.serieses]
 
 
 class ProductSet:

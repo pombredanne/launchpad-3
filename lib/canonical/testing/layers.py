@@ -300,7 +300,7 @@ class BaseLayer:
             # threads around, apparently because of bzr. disable_thread_check
             # is a mechanism to turn off the BaseLayer behavior of causing a
             # test to fail if it leaves a thread behind. This comment is found
-            # in both canonical.codehosting.tests.test_acceptance and
+            # in both lp.codehosting.tests.test_acceptance and
             # canonical.testing.layers
             if BaseLayer.disable_thread_check:
                 print ("ERROR DISABLED: "
@@ -1457,7 +1457,7 @@ class LayerProcessController:
         LaunchpadTestSetup().setUp()
         _config = cls.appserver_config
         cmd = [
-            os.path.join(_config.root, 'runlaunchpad.py'),
+            os.path.join(_config.root, 'bin', 'run'),
             '-C', 'configs/%s/launchpad.conf' % _config.instance_name]
         environ = dict(os.environ)
         environ['LPCONFIG'] = _config.instance_name

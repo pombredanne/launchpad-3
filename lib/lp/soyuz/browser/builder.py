@@ -141,8 +141,8 @@ class CommonBuilderView:
 
     def now(self):
         """Offers the timestamp for page rendering."""
-        UTC = pytz.timezone('UTC')
-        return DateTimeFormatterAPI(datetime.datetime.now(UTC)).datetime()
+        return DateTimeFormatterAPI(
+            datetime.datetime.now(pytz.UTC)).datetime()
 
     def overrideHiddenBuilder(self, builder):
         """Override the builder to HiddenBuilder as necessary.
@@ -303,6 +303,17 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
     def show_builder_info(self):
         """Hide Builder info, see BuildRecordsView for further details"""
         return False
+
+    @property
+    def current_build_duration(self):
+        """Return the delta representing the duration of the current job."""
+        if (self.context.currentjob is None or 
+            self.context.currentjob.buildstart is None):
+            return None
+        else:
+            UTC = pytz.timezone('UTC')
+            return (
+                datetime.datetime.now(UTC) - self.context.currentjob.buildstart)
 
 
 class BuilderSetAddView(LaunchpadFormView):

@@ -18,13 +18,14 @@ from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from canonical.launchpad.interfaces.structuralsubscription import IStructuralSubscriptionTarget
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.product import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from lp.soyuz.model.publishing import (
@@ -81,7 +82,7 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def title(self):
         """See `IDistributionSourcePackage`."""
-        return smartquote('"%s" source package in %s') % (
+        return smartquote('"%s" package in %s') % (
             self.sourcepackagename.name, self.distribution.displayname)
 
     @property

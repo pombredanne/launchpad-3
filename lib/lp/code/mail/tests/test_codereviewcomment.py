@@ -10,15 +10,14 @@ from zope.component import getUtility
 
 from canonical.testing import LaunchpadFunctionalLayer
 
-from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    CodeReviewVote)
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mail import format_address
-from lp.code.mail.codereviewcomment import (
-    CodeReviewCommentMailer)
-from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
+from lp.code.enums import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
+    CodeReviewVote)
+from lp.code.mail.codereviewcomment import  CodeReviewCommentMailer
+from lp.testing import TestCaseWithFactory
 
 
 class TestCodeReviewComment(TestCaseWithFactory):

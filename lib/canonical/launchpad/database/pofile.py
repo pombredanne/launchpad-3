@@ -375,6 +375,14 @@ class POFileMixIn(RosettaStats):
         return POTMsgSet.select("POTMsgSet.id IN " + all_potmsgsets_query,
                                 orderBy='sequence')
 
+    def getFullLanguageCode(self):
+        """See `IPOFile`."""
+        return self.language.getFullCode(self.variant)
+
+    def getFullLanguageName(self):
+        """See `IPOFile`."""
+        return self.language.getFullEnglishName(self.variant)
+
 
 class POFile(SQLBase, POFileMixIn):
     implements(IPOFile)
@@ -562,10 +570,6 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def __iter__(self):
-        """See `IPOFile`."""
-        return iter(self.currentMessageSets())
-
     def _getLanguageVariantClause(self, table='TranslationMessage'):
         if self.variant is None:
             clause = '%(table)s.variant IS NULL' % dict(table=table)
@@ -574,7 +578,6 @@ class POFile(SQLBase, POFileMixIn):
                     table=table,
                     variant=quote(self.variant))
         return clause
-
 
     def _getClausesForPOFileMessages(self, current=True):
         """Get TranslationMessages for the POFile via TranslationTemplateItem.
@@ -897,8 +900,8 @@ class POFile(SQLBase, POFileMixIn):
                       current.language=%(language)s AND
                       %(variant_clause)s AND
                       TranslationMessage.potmsgset=current.potmsgset AND
-                      TranslationMessage.msgstr0 IS NOT NULL  AND
-                      TranslationMessage.is_current IS TRUE )))""" % dict(
+                      current.msgstr0 IS NOT NULL AND
+                      current.is_current IS TRUE )))""" % dict(
             template=quote(self.potemplate),
             language=quote(self.language),
             variant_clause=variant_clause),
@@ -912,8 +915,14 @@ class POFile(SQLBase, POFileMixIn):
         # from imports.
         updates = self.getPOTMsgSetChangedInLaunchpad().count()
 
+        # Get total number of messages in a POTemplate.
+        if self.potemplate.messageCount() > 0:
+            total = self.potemplate.messageCount()
+        else:
+            total = self.potemplate.getPOTMsgSets().count()
+            self.potemplate.messagecount = total
+
         # Get number of translations done only in Launchpad.
-        total = self.potemplate.messageCount()
         untranslated = self.getPOTMsgSetUntranslated().count()
         translated = total - untranslated
         rosetta = translated - current
@@ -1268,7 +1277,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return 0
 
-    def nonUpdatesCount(self, language=None):
+    def newCount(self, language=None):
         """See `IRosettaStats`."""
         return 0
 
@@ -1292,7 +1301,7 @@ class DummyPOFile(POFileMixIn):
         """See `IRosettaStats`."""
         return 0.0
 
-    def nonUpdatesPercentage(self, language=None):
+    def newPercentage(self, language=None):
         """See `IRosettaStats`."""
         return 0.0
 

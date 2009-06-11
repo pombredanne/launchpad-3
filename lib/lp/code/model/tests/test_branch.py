@@ -21,11 +21,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from lp.code.model.branch import (
     ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
-    DeleteCodeImport, DeletionCallable, DeletionOperation)
+    DeleteCodeImport, DeletionCallable, DeletionOperation,
+    update_trigger_modified_fields)
 from lp.code.model.branchjob import BranchDiffJob
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
-from canonical.launchpad.database.bugbranch import BugBranch
+from lp.bugs.model.bugbranch import BugBranch
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.registry.model.product import ProductSet
@@ -34,21 +35,22 @@ from lp.blueprints.model.specificationbranch import (
 from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
     ANONYMOUS, login, login_person, logout, syncUpdate)
-from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
+from lp.code.bzr import BranchFormat, RepositoryFormat
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
+    BranchVisibilityRule, CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import (
-    BranchCannotBePrivate, BranchCannotBePublic, BranchType,
+    BranchCannotBePrivate, BranchCannotBePublic,
     CannotDeleteBranch)
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.branch import (
-    BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -59,7 +61,6 @@ from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
 
 
 class TestCodeImport(TestCase):
@@ -197,6 +198,45 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.REMOTE)
         self.assertRaises(AssertionError, branch.getPullURL)
 
+    def test_owner_name(self):
+        # The owner_name attribute is set to be the name of the branch owner
+        # through a db trigger.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            branch.owner.name, removeSecurityProxy(branch).owner_name)
+
+    def test_owner_name_updated(self):
+        # When the owner of a branch is changed, the denormalised owner_name
+        # attribute is updated too.
+        branch = self.factory.makeAnyBranch()
+        new_owner = self.factory.makePerson()
+        login('admin@canonical.com')
+        branch.owner = new_owner
+        # Call the function that is normally called through the event system
+        # to auto reload the fields updated by the db triggers.
+        update_trigger_modified_fields(branch)
+        self.assertEqual(
+            new_owner.name, removeSecurityProxy(branch).owner_name)
+
+    def test_target_suffix_product(self):
+        # The target_suffix for a product branch is the name of the product.
+        branch = self.factory.makeProductBranch()
+        self.assertEqual(
+            branch.product.name, removeSecurityProxy(branch).target_suffix)
+
+    def test_target_suffix_junk(self):
+        # The target_suffix for a junk branch is None.
+        branch = self.factory.makePersonalBranch()
+        self.assertIs(None, removeSecurityProxy(branch).target_suffix)
+
+    def test_target_suffix_package(self):
+        # A package branch has the target_suffix set to the name of the source
+        # package.
+        branch = self.factory.makePackageBranch()
+        self.assertEqual(
+            branch.sourcepackagename.name,
+            removeSecurityProxy(branch).target_suffix)
+
     def test_unique_name_product(self):
         branch = self.factory.makeProductBranch()
         self.assertEqual(
@@ -298,6 +338,58 @@ class TestBranch(TestCaseWithFactory):
         self.assertEqual(
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
+
+    def test_needsUpgrading_branch_format_unrecognized(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If the format is unrecognized,
+        # we don't try to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.UNRECOGNIZED)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_branch_format_upgrade_not_needed(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If a branch is up to date, it
+        # doesn't need to be upgraded.
+        #
+        # XXX: JonathanLange 2009-06-06: This test needs to be changed every
+        # time Bazaar adds a new branch format. Surely we can think of a
+        # better way of testing this?
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_branch_format_upgrade_needed(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If a branch doesn't support
+        # stacking, it needs to be upgraded.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        self.assertTrue(branch.needs_upgrading)
+
+    def test_needsUpgrading_repository_format_unrecognized(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  In the repo format is
+        # unrecognized, we don't try to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.UNRECOGNIZED)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_repository_format_upgrade_not_needed(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.  If the repo format is up to
+        # date, there's no need to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.BZR_KNITPACK_6)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_repository_format_upgrade_needed(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.  If the format doesn't support
+        # stacking, it needs to be upgraded.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertTrue(branch.needs_upgrading)
 
 
 class TestBzrIdentity(TestCaseWithFactory):
@@ -956,23 +1048,11 @@ class BranchAddLandingTarget(TestCaseWithFactory):
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
 
-    def test_targetIsABranch(self):
-        """The target of must be a branch."""
-        self.assertRaises(
-            InvalidBranchMergeProposal, self.source.addLandingTarget,
-            self.user, self.product)
-
     def test_targetMustNotBeTheSource(self):
         """The target and source branch cannot be the same."""
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.source)
-
-    def test_dependentIsABranch(self):
-        """The dependent branch, if it is there, must be a branch."""
-        self.assertRaises(
-            InvalidBranchMergeProposal, self.source.addLandingTarget,
-            self.user, self.target, dependent_branch=self.product)
 
     def test_dependentBranchSameProduct(self):
         """The dependent branch, if it is there, must be for the same product.

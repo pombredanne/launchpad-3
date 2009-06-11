@@ -10,7 +10,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Navigation, stepthrough)
 

@@ -24,11 +24,11 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import (
     IBranchSubscription)
-from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.interfaces.bugattachment import IBugAttachment
-from canonical.launchpad.interfaces.bugbranch import IBugBranch
-from canonical.launchpad.interfaces.bugnomination import IBugNomination
-from canonical.launchpad.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugattachment import IBugAttachment
+from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.soyuz.interfaces.build import IBuild
 from lp.soyuz.interfaces.builder import IBuilder, IBuilderSet
 from lp.code.interfaces.codeimport import ICodeImport
@@ -49,7 +49,7 @@ from canonical.launchpad.interfaces.distroserieslanguage import (
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
-from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IBazaarApplication, IHasBug, IHasDrivers, IHasOwner,
@@ -873,25 +873,7 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     usedfor = IHasBug
 
     def checkAuthenticated(self, user):
-        # Check whether the bug is public first, since that's the common
-        # case, and it's cheap to check.
-        if not self.obj.bug.private:
-            # This is a public bug.
-            return True
-
-        admins = getUtility(ILaunchpadCelebrities).admin
-
-        if user.inTeam(admins):
-            # Admins can always edit bugs, whether they're public or
-            # private.
-            return True
-
-        # This is a private bug.
-        for subscription in self.obj.bug.subscriptions:
-            if user.inTeam(subscription.person):
-                return True
-
-        return False
+        return self.obj.bug.userCanView(user)
 
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
@@ -935,20 +917,7 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
         """Allow any user to see non-private bugs, but only explicit
         subscribers to see private bugs.
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if not self.obj.private:
-            # This is a public bug.
-            return True
-        elif user.inTeam(admins):
-            # Admins can view all bugs.
-            return True
-        else:
-            # This is a private bug. Only explicit subscribers may view it.
-            for subscription in self.obj.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
-
-        return False
+        return self.obj.userCanView(user)
 
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""

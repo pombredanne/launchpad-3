@@ -30,7 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
-from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
+from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -42,12 +42,11 @@ from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
-from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus
-from canonical.launchpad.interfaces.bugtracker import (
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
-from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
-from canonical.launchpad.interfaces.country import ICountrySet
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
@@ -58,9 +57,6 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from canonical.shipit.interfaces.shipit import (
-    IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
-    ShippingRequestStatus)
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.translationgroup import (
@@ -69,24 +65,23 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
-from lp.code.interfaces.branch import BranchType, UnknownBranchTypeError
-from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
+from lp.code.enums import (
+    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
+    BranchType, CodeImportMachineState, CodeImportReviewStatus,
+    CodeImportResultStatus, CodeReviewNotificationLevel,
+    RevisionControlSystems)
+from lp.code.interfaces.branch import UnknownBranchTypeError
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.interfaces.codeimportmachine import (
-    CodeImportMachineState, ICodeImportMachineSet)
-from lp.code.interfaces.codeimportresult import (
-    CodeImportResultStatus, ICodeImportResultSet)
-from lp.code.interfaces.codeimport import (
-    CodeImportReviewStatus, RevisionControlSystems)
+from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
+from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
 from lp.registry.model.milestone import Milestone
+from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
@@ -197,8 +192,8 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None):
         """Create and return a new arbitrary location for copy packages."""
-        copy_archive = self._makeArchive(distribution, owner, name,
-                                         ArchivePurpose.COPY)
+        copy_archive = self.makeArchive(distribution, owner, name,
+                                        ArchivePurpose.COPY)
 
         distribution = copy_archive.distribution
         distroseries = distribution.currentseries
@@ -457,12 +452,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, url, owner)
 
-    def makeMilestone(self, product=None, distribution=None, name=None):
-        if product is None and distribution is None:
+    def makeMilestone(
+        self, product=None, distribution=None, productseries=None, name=None):
+        if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
+        if productseries is not None:
+            product = productseries.product
         if name is None:
             name = self.getUniqueString()
         return Milestone(product=product, distribution=distribution,
+                         productseries=productseries,
                          name=name)
 
     def makeProductRelease(self, milestone=None):
@@ -470,6 +469,20 @@ class LaunchpadObjectFactory(ObjectFactory):
             milestone = self.makeMilestone()
         return milestone.createProductRelease(
             milestone.product.owner, datetime.now(pytz.UTC))
+
+    def makeProductReleaseFile(self, signed=True):
+        signature_filename = None
+        signature_content = None
+        if signed:
+            signature_filename = 'test.txt.asc'
+            signature_content = '123'
+        release = self.makeProductRelease()
+        return release.addReleaseFile(
+            'test.txt', 'test', 'text/plain',
+            uploader=release.milestone.product.owner,
+            signature_filename=signature_filename,
+            signature_content=signature_content,
+            description="test file")
 
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an implicit transaction commit.
@@ -678,7 +691,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param branch: The branch that should be the default stacked-on
             branch.
         """
-        from canonical.launchpad.testing import run_with_login
+        from lp.testing import run_with_login
         # 'branch' might be private, so we remove the security proxy to get at
         # the methods.
         naked_branch = removeSecurityProxy(branch)
@@ -1221,28 +1234,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         syncUpdate(series)
         return series
 
-    def makeShipItRequest(self, flavour=ShipItFlavour.UBUNTU):
-        """Create a `ShipItRequest` associated with a newly created person.
-
-        The request's status will be approved and it will contain an arbitrary
-        number of CDs of the given flavour.
-        """
-        brazil = getUtility(ICountrySet)['BR']
-        city = 'Sao Carlos'
-        addressline = 'Antonio Rodrigues Cajado 1506'
-        name = 'Guilherme Salgado'
-        phone = '+551635015218'
-        person = self.makePerson()
-        request = getUtility(IShippingRequestSet).new(
-            person, name, brazil, city, addressline, phone)
-        # We don't want to login() as the person used to create the request,
-        # so we remove the security proxy for changing the status.
-        removeSecurityProxy(request).status = ShippingRequestStatus.APPROVED
-        template = getUtility(IStandardShipItRequestSet).getByFlavour(
-            flavour)[0]
-        request.setQuantities({flavour: template.quantities})
-        return request
-
     def makeLibraryFileAlias(self, log_data=None):
         """Make a library file, and return the alias."""
         if log_data is None:
@@ -1309,12 +1300,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             architecturetag, processorfamily, official, owner,
             supports_virtualized)
 
-    def _makeArchive(self, distribution=None, owner=None, name=None,
+    def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
-
-        Note: this shouldn't generally be used except by other factory
-        methods such as makeCopyArchiveLocation.
+        
+        :param distribution: Supply IDistribution, defaults to a new one
+            made with makeDistribution().
+        :param owner: Supper IPerson, defaults to a new one made with
+            makePerson().
+        :param name: Name of the archive, defaults to a random string.
+        :param purpose: Supply ArchivePurpose, defaults to PPA.
         """
         if distribution is None:
             distribution = self.makeDistribution()
@@ -1358,6 +1353,18 @@ class LaunchpadObjectFactory(ObjectFactory):
             path = 'messages.pot'
 
         return subset.new(name, translation_domain, path, owner)
+
+    def makePOTemplateAndPOFiles(self, language_codes, **kwargs):
+        """Create a POTemplate and associated POFiles.
+
+        Create a POTemplate for the given distroseries/sourcepackagename or
+        productseries and create a POFile for each language. Returns the
+        template.
+        """
+        template = self.makePOTemplate(**kwargs)
+        for language_code in language_codes:
+            self.makePOFile(language_code, template, template.owner)
+        return template
 
     def makePOFile(self, language_code, potemplate=None, owner=None,
                    variant=None):
@@ -1492,6 +1499,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString()
         return getUtility(ISourcePackageNameSet).new(name)
 
+    def getOrMakeSourcePackageName(self, name=None):
+        """Get an existing`ISourcePackageName` or make a new one.
+
+        This method encapsulates getOrCreateByName so that tests can be kept
+        free of the getUtility(ISourcePackageNameSet) noise.
+        """
+        if name is None:
+            return self.makeSourcePackageName()
+        return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
+
     def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
         """Make an `ISourcePackage`."""
         if sourcepackagename is None:
@@ -1499,6 +1516,19 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
+
+    def getAnyPocket(self):
+        return PackagePublishingPocket.RELEASE
+
+    def makeSuiteSourcePackage(self, distroseries=None,
+                               sourcepackagename=None, pocket=None):
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        if pocket is None:
+            pocket = self.getAnyPocket()
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        return SuiteSourcePackage(distroseries, pocket, sourcepackagename)
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
                                       distribution=None):

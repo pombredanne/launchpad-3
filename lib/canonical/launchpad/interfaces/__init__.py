@@ -7,7 +7,7 @@ __metaclass__ = type
 # importing from this module.
 
 from canonical.launchpad.interfaces.launchpad import *
-from canonical.launchpad.interfaces.malone import *
+from lp.bugs.interfaces.malone import *
 from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes
@@ -34,21 +34,21 @@ from lp.code.interfaces.branchref import *
 from lp.code.interfaces.branchrevision import *
 from lp.code.interfaces.branchsubscription import *
 from lp.code.interfaces.branchvisibilitypolicy import *
-from canonical.launchpad.interfaces.bugactivity import *
-from canonical.launchpad.interfaces.bugattachment import *
-from canonical.launchpad.interfaces.bug import *
-from canonical.launchpad.interfaces.bugbranch import *
-from canonical.launchpad.interfaces.bugcve import *
-from canonical.launchpad.interfaces.buglink import *
-from canonical.launchpad.interfaces.bugmessage import *
-from canonical.launchpad.interfaces.bugnomination import *
-from canonical.launchpad.interfaces.bugnotification import *
-from canonical.launchpad.interfaces.bugsubscription import *
-from canonical.launchpad.interfaces.bugsupervisor import *
-from canonical.launchpad.interfaces.bugtask import *
-from canonical.launchpad.interfaces.bugtarget import *
-from canonical.launchpad.interfaces.bugtracker import *
-from canonical.launchpad.interfaces.bugwatch import *
+from lp.bugs.interfaces.bugactivity import *
+from lp.bugs.interfaces.bugattachment import *
+from lp.bugs.interfaces.bug import *
+from lp.bugs.interfaces.bugbranch import *
+from lp.bugs.interfaces.bugcve import *
+from lp.bugs.interfaces.buglink import *
+from lp.bugs.interfaces.bugmessage import *
+from lp.bugs.interfaces.bugnomination import *
+from lp.bugs.interfaces.bugnotification import *
+from lp.bugs.interfaces.bugsubscription import *
+from lp.bugs.interfaces.bugsupervisor import *
+from lp.bugs.interfaces.bugtask import *
+from lp.bugs.interfaces.bugtarget import *
+from lp.bugs.interfaces.bugtracker import *
+from lp.bugs.interfaces.bugwatch import *
 from lp.soyuz.interfaces.build import *
 from lp.soyuz.interfaces.builder import *
 from lp.soyuz.interfaces.buildrecords import *
@@ -63,10 +63,10 @@ from lp.code.interfaces.codereviewcomment import *
 from lp.code.interfaces.codereviewvote import *
 from lp.registry.interfaces.commercialsubscription import *
 from lp.soyuz.interfaces.component import *
-from canonical.launchpad.interfaces.country import *
+from lp.services.worlddata.interfaces.country import *
 from canonical.launchpad.interfaces.customlanguagecode import *
-from canonical.launchpad.interfaces.cve import *
-from canonical.launchpad.interfaces.cvereference import *
+from lp.bugs.interfaces.cve import *
+from lp.bugs.interfaces.cvereference import *
 from lp.registry.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
 from lp.registry.interfaces.distributionmirror import *
@@ -84,7 +84,7 @@ from lp.soyuz.interfaces.distroseriespackagecache import *
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import *
 from canonical.launchpad.interfaces.emailaddress import *
 from lp.registry.interfaces.entitlement import *
-from canonical.launchpad.interfaces.externalbugtracker import *
+from lp.bugs.interfaces.externalbugtracker import *
 from lp.registry.interfaces.featuredproject import *
 from lp.soyuz.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
@@ -94,7 +94,7 @@ from canonical.launchpad.interfaces.hwdb import *
 from lp.registry.interfaces.irc import *
 from lp.registry.interfaces.jabber import *
 from lp.registry.interfaces.karma import *
-from canonical.launchpad.interfaces.language import *
+from lp.services.worlddata.interfaces.language import *
 from canonical.launchpad.interfaces.languagepack import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.launchpadstatistic import *
@@ -111,8 +111,6 @@ from canonical.launchpad.interfaces.message import *
 from lp.registry.interfaces.milestone import *
 from canonical.launchpad.interfaces.oauth import *
 from canonical.launchpad.interfaces.openidconsumer import *
-from canonical.launchpad.interfaces.openidserver import *
-from lp.soyuz.interfaces.package import *
 from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
@@ -130,6 +128,7 @@ from lp.registry.interfaces.productlicense import *
 from lp.registry.interfaces.productrelease import *
 from lp.registry.interfaces.productseries import *
 from lp.registry.interfaces.project import *
+from canonical.launchpad.interfaces.productserieslanguage import *
 from canonical.launchpad.interfaces.projectbounty import *
 from lp.soyuz.interfaces.publishedpackage import *
 from lp.soyuz.interfaces.publishing import *
@@ -138,7 +137,7 @@ from lp.code.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
 from lp.registry.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
-from canonical.launchpad.interfaces.scriptactivity import *
+from lp.services.scripts.interfaces.scriptactivity import *
 from lp.soyuz.interfaces.section import *
 from canonical.launchpad.interfaces.searchservice import *
 from lp.registry.interfaces.sourcepackage import *
@@ -150,7 +149,7 @@ from lp.blueprints.interfaces.specificationbug import *
 from lp.blueprints.interfaces.specificationdependency import *
 from lp.blueprints.interfaces.specificationfeedback import *
 from lp.blueprints.interfaces.specificationsubscription import *
-from canonical.launchpad.interfaces.spokenin import *
+from lp.services.worlddata.interfaces.spokenin import *
 from lp.blueprints.interfaces.sprint import *
 from lp.blueprints.interfaces.sprintattendance import *
 from lp.blueprints.interfaces.sprintspecification import *

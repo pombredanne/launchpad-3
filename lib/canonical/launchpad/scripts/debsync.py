@@ -17,11 +17,10 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.encoding import guess as ensure_unicode
-from canonical.launchpad.scripts import debbugs
-from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
-from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
-from canonical.launchpad.interfaces.cve import ICveSet
+from lp.bugs.scripts import debbugs
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.cve import ICveSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import (
     IMessageSet, InvalidEmailMessage, UnknownSender)

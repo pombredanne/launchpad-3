@@ -23,8 +23,9 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
+from lp.code.enums import BranchType
 from lp.code.interfaces.branch import (
-    BranchType, BranchCreationException, UnknownBranchTypeError)
+    BranchCreationException, UnknownBranchTypeError)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
@@ -34,7 +35,7 @@ from lp.code.interfaces.codehosting import (
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
-from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
