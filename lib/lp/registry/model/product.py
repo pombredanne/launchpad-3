@@ -935,6 +935,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
 
+    def _branchCollection(self, visible_by_user):
+        """The branch collection for this product visible by the user."""
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        return collection.inProduct(self)
+
+    def getBranches(self, status=None, visible_by_user=None):
+        """See `IProduct`."""
+        if status is None:
+            status = DEFAULT_BRANCH_STATUS_IN_LISTING
+
+        collection = self._branchCollection(visible_by_user)
+        collection = collection.withLifecycleStatus(*status)
+        return collection.getBranches()
+
     def getMergeProposals(self, status=None, visible_by_user=None):
         """See `IProduct`."""
         if status is None:
@@ -943,8 +957,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 BranchMergeProposalStatus.NEEDS_REVIEW,
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
-        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        collection = collection.inProduct(self)
+        collection = self._branchCollection(visible_by_user)
         return collection.getMergeProposals(status)
 
     def userCanEdit(self, user):

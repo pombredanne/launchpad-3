@@ -35,7 +35,7 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from canonical.launchpad.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -77,6 +77,9 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
+IHasBranches['getBranches'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
+        IBranch
 IHasMergeProposals['getMergeProposals'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
         IBranchMergeProposal

@@ -37,10 +37,9 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
-from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.registry.interfaces.karma import IKarmaContext
@@ -258,7 +257,7 @@ class IProductCommercialRestricted(Interface):
 
 
 class IProductPublic(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
@@ -510,13 +509,6 @@ class IProductPublic(
             title=_("An iterator over the ProductReleases for this product."),
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
-
-    branches = exported(
-        CollectionField(
-            title=_("An iterator over the Bazaar branches that are "
-                    "related to this product."),
-            readonly=True,
-            value_type=Reference(schema=IBranch)))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 

@@ -9,7 +9,7 @@ the things on Launchpad.
     >>> from datetime import datetime
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.code.enums import BranchType
+    >>> from lp.code.enums import BranchLifecycleStatus, BranchType
     >>> from lp.code.interfaces.branch import IBranch
     >>> from lazr.restful.marshallers import DateTimeFieldMarshaller
 
@@ -70,7 +70,7 @@ Not everything about a branch is exposed.  Hopefully most of what users
 really care about is exposed, and we will undoubtedly expand this as
 time goes on.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> eric = factory.makePerson(name='eric')
     >>> marley = factory.makePerson(name='marley')
     >>> fooix = factory.makeProduct(name='fooix')
@@ -78,7 +78,8 @@ time goes on.
     ...     branch_type=BranchType.HOSTED, owner=eric, product=fooix,
     ...     name='trunk', title='The Fooix Trunk')
     >>> feature_branch = factory.makeAnyBranch(
-    ...     owner=eric, product=fooix, name='feature-branch')
+    ...     owner=eric, product=fooix, name='feature-branch',
+    ...     lifecycle_status=BranchLifecycleStatus.EXPERIMENTAL)
     >>> feature_branch_bug = factory.makeBug(product=fooix,
     ...     title='Stuff needs features')
     >>> feature_branch_spec = factory.makeSpecification(product=fooix,
@@ -273,10 +274,20 @@ A user can subscribe to a branch through the API.
 
 The branches of a project are also available.
 
-    >>> project = webservice.get('/fooix').jsonBody()
-    >>> branches = webservice.get(
-    ...     project['branches_collection_link']).jsonBody()
-    >>> for branch in branches['entries']:
-    ...     print branch['unique_name']
-    ~eric/fooix/trunk
-    ~eric/fooix/feature-branch
+    >>> def print_branch(branch):
+    ...     print branch['unique_name'] + ' - ' + branch['lifecycle_status']
+    >>> def print_branches(webservice, url, status=None):
+    ...     branches = webservice.named_get(
+    ...         url, 'getBranches',
+    ...         status=status).jsonBody()
+    ...     for branch in branches['entries']:
+    ...         print_branch(branch)
+
+    >>> print_branches(webservice, '/fooix')
+    ~eric/fooix/trunk - Development
+    ~eric/fooix/feature-branch - Experimental
+
+A list of lifecycle statuses can be provided for filtering.
+
+    >>> print_branches(webservice, '/fooix', ('Experimental'))
+    ~eric/fooix/feature-branch - Experimental
