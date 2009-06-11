@@ -79,6 +79,7 @@ from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.code.enums import BranchMergeProposalStatus
+from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
@@ -852,6 +853,20 @@ class Person(
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
 
+    def _branchCollection(self, visible_by_user):
+        """The branch collection for this product visible by the user."""
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        return collection.ownedBy(self)
+
+    def getBranches(self, status=None, visible_by_user=None):
+        """See `IPrerson`."""
+        if status is None:
+            status = DEFAULT_BRANCH_STATUS_IN_LISTING
+
+        collection = self._branchCollection(visible_by_user)
+        collection = collection.withLifecycleStatus(*status)
+        return collection.getBranches()
+
     def getMergeProposals(self, status=None, visible_by_user=None):
         """See `IPerson`."""
         if not status:
@@ -860,8 +875,7 @@ class Person(
                 BranchMergeProposalStatus.NEEDS_REVIEW,
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
-        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        collection = collection.ownedBy(self)
+        collection = self._branchCollection(visible_by_user)
         return collection.getMergeProposals(status)
 
     @property

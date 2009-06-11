@@ -69,7 +69,7 @@ from canonical.launchpad.fields import (
     is_valid_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.services.worlddata.interfaces.language import ILanguage
@@ -470,7 +470,7 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
+class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IObjectWithLocation):
     """Public attributes for a Person."""

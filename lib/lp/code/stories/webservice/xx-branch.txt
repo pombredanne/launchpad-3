@@ -291,3 +291,16 @@ A list of lifecycle statuses can be provided for filtering.
 
     >>> print_branches(webservice, '/fooix', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
+
+== Branches for people ==
+
+The branches owned by a person are available from the person object.
+
+    >>> print_branches(webservice, '/~eric')
+    ~eric/fooix/trunk - Development
+    ~eric/fooix/feature-branch - Experimental
+
+As with projects, these can be filtered by the branch status.
+
+    >>> print_branches(webservice, '/~eric', ('Experimental'))
+    ~eric/fooix/feature-branch - Experimental
