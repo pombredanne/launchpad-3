@@ -15,7 +15,7 @@ from lp.code.interfaces.branchcollection import IBranchCollection
 
 
 class HasBranchesMixin:
-    """Implementation for getBranches as defined by IHasBranches."""
+    """A mixin implementation for `IHasBranches`."""
 
     def getBranches(self, status=None, visible_by_user=None):
         """See `IHasBranches`."""
@@ -28,8 +28,7 @@ class HasBranchesMixin:
 
 
 class HasMergeProposalsMixin:
-    """Implementation for getMergeProposals as defined by IHasMergeProposals.
-    """
+    """A mixin implementation class for `IHasMergeProposals`."""
 
     def getMergeProposals(self, status=None, visible_by_user=None):
         """See `IHasMergeProposals`."""
