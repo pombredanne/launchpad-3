@@ -34,7 +34,7 @@ class IHasMergeProposals(Interface):
             title=_("A list of merge proposal statuses to filter by."),
             value_type=Choice(vocabulary=BranchMergeProposalStatus)))
     @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(Interface) #IBranchMergeProposal
+    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
     @export_read_operation()
     def getMergeProposals(status=None, visible_by_user=None):
         """Returns all merge proposals of a given status.

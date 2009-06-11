@@ -11,8 +11,8 @@ from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.testing import TestCaseWithFactory
 
 
-class TestProductMergeProposals(TestCaseWithFactory):
-    """Test that the merge proposals are accessable from Products."""
+class TestIHasMergeProposals(TestCaseWithFactory):
+    """Test that the correct objects implement the interface."""
 
     layer = DatabaseFunctionalLayer
 
@@ -20,6 +20,11 @@ class TestProductMergeProposals(TestCaseWithFactory):
         # Products should implement IHasMergeProposals.
         product = self.factory.makeProduct()
         self.assertProvides(product, IHasMergeProposals)
+
+    def test_person_implements_hasmergeproposals(self):
+        # People should implement IHasMergeProposals.
+        person = self.factory.makePerson()
+        self.assertProvides(person, IHasMergeProposals)
 
 
 def test_suite():

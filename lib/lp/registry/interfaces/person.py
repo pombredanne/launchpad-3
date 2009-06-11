@@ -42,8 +42,7 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import (Bool, Choice, Datetime, Int, List, Object, Text,
-    TextLine)
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -70,7 +69,7 @@ from canonical.launchpad.fields import (
     is_valid_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from lp.code.enums import BranchMergeProposalStatus
+from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.services.worlddata.interfaces.language import ILanguage
@@ -471,8 +470,9 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
-                    IHasMugshot, IHasIcon, IHasLocation, IObjectWithLocation):
+class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
+                    IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
+                    IHasLocation, IObjectWithLocation):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -922,21 +922,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
         """Deprecated.  Use IPerson.is_team instead.
 
         True if this Person is actually a Team, otherwise False.
-        """
-
-    @operation_parameters(
-        status=List(
-            title=_("A list of merge proposal statuses to filter by."),
-            value_type=Choice(vocabulary=BranchMergeProposalStatus)))
-    @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal
-    @export_read_operation()
-    def getMergeProposals(status=None, visible_by_user=None):
-        """Returns all merge proposals of a given status.
-
-        :param status: A list of statuses to filter with.
-        :param visible_by_user: Normally the user who is asking.
-        :returns: A list of `IBranchMergeProposal`.
         """
 
     # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a

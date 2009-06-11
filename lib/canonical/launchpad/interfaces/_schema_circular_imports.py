@@ -99,9 +99,6 @@ patch_collection_return_type(
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
-IPersonPublic['getMergeProposals'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
-        IBranchMergeProposal
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
