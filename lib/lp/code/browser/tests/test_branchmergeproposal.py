@@ -8,22 +8,22 @@ __metaclass__ = type
 from datetime import timedelta
 import unittest
 
+import transaction
 from zope.component import getMultiAdapter
 
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalAddVoteView, BranchMergeProposalChangeStatusView,
-    BranchMergeProposalMergedView,
+    BranchMergeProposalMergedView, BranchMergeProposalView,
     BranchMergeProposalVoteView)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
-from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote)
+from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
+from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestBranchMergeProposalPrimaryContext(TestCaseWithFactory):
@@ -321,6 +321,46 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertOneComment(proposal, "This is the first comment.")
+
+
+class TestBranchMergeProposalView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        self.bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
+        login_person(self.user)
+
+    def _createView(self):
+        # Construct the view and initialize it.
+        view = BranchMergeProposalView(
+            self.bmp, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def test_review_diff_with_no_diff(self):
+        """review_diff should be None when there is no context.review_diff."""
+        view = self._createView()
+        self.assertIs(None, view.review_diff)
+
+    def test_review_diff_utf8(self):
+        """A review_diff in utf-8 should be converted to utf-8."""
+        text = ''.join(unichr(x) for x in range(255))
+        diff = StaticDiff.acquireFromText('x', 'y', text.encode('utf-8'))
+        transaction.commit()
+        self.bmp.review_diff = diff
+        self.assertEqual(text, self._createView().review_diff)
+
+    def test_review_diff_all_chars(self):
+        """review_diff should work on diffs containing all possible bytes."""
+        text = ''.join(chr(x) for x in range(255))
+        diff = StaticDiff.acquireFromText('x', 'y', text)
+        transaction.commit()
+        self.bmp.review_diff = diff
+        self.assertEqual(text.decode('windows-1252', 'replace'),
+                         self._createView().review_diff)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):

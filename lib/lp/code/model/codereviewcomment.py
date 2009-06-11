@@ -13,8 +13,9 @@ from sqlobject import ForeignKey, StringCol
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from lp.code.enums import CodeReviewVote
 from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote, ICodeReviewComment, ICodeReviewCommentDeletion)
+    ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 

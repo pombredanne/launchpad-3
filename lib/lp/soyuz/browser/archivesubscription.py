@@ -1,4 +1,5 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=F0401
 
 """Browser views related to archive subscriptions."""
 
@@ -21,6 +22,8 @@ from zope.formlib import form
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
+from lp.soyuz.browser.sourceslist import (
+    SourcesListEntries, SourcesListEntriesView)
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
@@ -289,32 +292,28 @@ class PersonArchiveSubscriptionView(LaunchpadView):
             self.request.response.redirect(self.request.getURL())
 
     @cachedproperty
+    def sources_list_entries(self):
+        """Setup and return the sources list entries widget."""
+        if self.active_token is None:
+            return None
+
+        comment = "Personal subscription of %s to %s" % (
+            self.context.subscriber.displayname,
+            self.context.archive.displayname)
+
+        entries = SourcesListEntries(
+            self.context.archive.distribution,
+            self.active_token.archive_url,
+            self.context.archive.series_with_sources)
+
+        return SourcesListEntriesView(entries, self.request, comment=comment)
+
+    @cachedproperty
     def active_token(self):
         """Returns the corresponding current token for this subscription."""
         token_set = getUtility(IArchiveAuthTokenSet)
         return token_set.getActiveTokenForArchiveAndPerson(
             self.context.archive, self.context.subscriber)
-
-
-    @property
-    def private_ppa_sources_list(self):
-        """Return the private ppa sources.list entries as a string."""
-
-        if self.active_token is None:
-            return ""
-
-        token = self.active_token
-        archive = self.context.archive
-        series_name = archive.distribution.currentseries.name
-        title = "Personal subscription of %s to %s" % (
-            self.context.subscriber.displayname, archive.displayname)
-        return (
-            "# %(title)s\n"
-            "deb %(archive_url)s %(series_name)s main\n"
-            "deb-src %(archive_url)s %(series_name)s main" % {
-                'title': title,
-                'archive_url': token.archive_url,
-                'series_name': series_name})
 
 
 
