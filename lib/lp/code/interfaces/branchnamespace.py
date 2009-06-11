@@ -17,7 +17,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 
-from lp.code.interfaces.branch import BranchLifecycleStatus
+from lp.code.enums import BranchLifecycleStatus
 
 
 class IBranchNamespace(Interface):

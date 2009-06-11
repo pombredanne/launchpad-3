@@ -2060,6 +2060,10 @@
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"/>
         <browser:page
+            name="+status"
+            facet="overview"
+            template="../templates/productseries-status.pt"/>
+        <browser:page
             name="+code-summary"
             template="../templates/productseries-codesummary.pt"/>
     </browser:pages>
@@ -2877,4 +2881,9 @@
     <browser:menus
         module="lp.registry.browser.distributionmirror"
         classes="DistributionMirrorOverviewMenu" />
+    <browser:page
+        name="+macros"
+        for="lp.registry.interfaces.productrelease.IProductReleaseFile"
+        permission="zope.Public"
+        template="../templates/productreleasefile-macros.pt" />
 </configure>

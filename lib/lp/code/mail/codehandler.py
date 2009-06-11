@@ -35,7 +35,7 @@ from canonical.launchpad.mailnotification import (
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType, CodeReviewVote
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalExists, IBranchMergeProposalGetter,
@@ -43,7 +43,6 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace, split_unique_name)
 from lp.code.interfaces.branchtarget import check_default_stacked_on
-from lp.code.interfaces.codereviewcomment import CodeReviewVote
 
 
 class BadBranchMergeProposalAddress(Exception):

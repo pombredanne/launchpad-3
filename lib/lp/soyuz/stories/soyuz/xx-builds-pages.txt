@@ -462,17 +462,31 @@ A (distro) source package release page shows any builds for that source and
 the status of the build.  If the build has been uploaded, then an upload
 status is shown in parentheses after the build status.
 
+    # Create testing source publications.
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> warty = ubuntu.getSeries('warty')
+    >>> unused = test_publisher.setUpDefaultDistroSeries(warty)
+    >>> test_publisher.addFakeChroots(warty)
+    >>> source = test_publisher.getPubSource(
+    ...     sourcename='testing', version='1.0',
+    ...     architecturehintlist='any')
+    >>> binaries = test_publisher.getPubBinaries(pub_source=source)
+    >>> transaction.commit()
+    >>> logout()
+
 Such feature is visible when anonymous user access the
 `DistributionSourcePackageRelease` page in the 'Builds' portlet.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9")
+    ...     "http://launchpad.dev/ubuntu/+source/testing/1.0")
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents,"portlet-builds"))
     Builds
-    warty           hppa     Successfully built
-    hoary           i386     Currently building
-    breezy-autotest i386     Successfully built (NEW)
-    warty           i386     Successfully built
-
+    warty    i386  Successfully built  (DONE)
+    warty    hppa  Successfully built  (DONE)

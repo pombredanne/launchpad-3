@@ -65,20 +65,18 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
-from lp.code.interfaces.branch import BranchType, UnknownBranchTypeError
-from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
+from lp.code.enums import (
+    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
+    BranchType, CodeImportMachineState, CodeImportReviewStatus,
+    CodeImportResultStatus, CodeReviewNotificationLevel,
+    RevisionControlSystems)
+from lp.code.interfaces.branch import UnknownBranchTypeError
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.interfaces.codeimportmachine import (
-    CodeImportMachineState, ICodeImportMachineSet)
-from lp.code.interfaces.codeimportresult import (
-    CodeImportResultStatus, ICodeImportResultSet)
-from lp.code.interfaces.codeimport import (
-    CodeImportReviewStatus, RevisionControlSystems)
+from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
+from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -471,6 +469,20 @@ class LaunchpadObjectFactory(ObjectFactory):
             milestone = self.makeMilestone()
         return milestone.createProductRelease(
             milestone.product.owner, datetime.now(pytz.UTC))
+
+    def makeProductReleaseFile(self, signed=True):
+        signature_filename = None
+        signature_content = None
+        if signed:
+            signature_filename = 'test.txt.asc'
+            signature_content = '123'
+        release = self.makeProductRelease()
+        return release.addReleaseFile(
+            'test.txt', 'test', 'text/plain',
+            uploader=release.milestone.product.owner,
+            signature_filename=signature_filename,
+            signature_content=signature_content,
+            description="test file")
 
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an implicit transaction commit.

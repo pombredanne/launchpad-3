@@ -106,7 +106,7 @@ class SoyuzTestPublisher:
         for arch in distroseries.architectures:
             arch.addOrUpdateChroot(fake_chroot)
 
-    def regetBreezyAutotest(self): 
+    def regetBreezyAutotest(self):
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
         self.person = getUtility(IPersonSet).getByName('name16')
@@ -318,7 +318,21 @@ class SoyuzTestPublisher:
             restricted=build.archive.private)
         binarypackagerelease.addFile(alias)
 
+        # Adjust the build record in way it looks complete.
         build.buildstate = BuildStatus.FULLYBUILT
+        build.datebuilt = datetime.datetime(
+            2008, 1, 1, 0, 5, 0, tzinfo=pytz.timezone("UTC"))
+        build.buildduration = datetime.timedelta(minutes=5)
+        buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
+            build.distribution.name,
+            build.distroseries.name,
+            build.distroarchseries.architecturetag,
+            build.sourcepackagerelease.name,
+            build.sourcepackagerelease.version,
+            build.buildstate.name)
+        build.buildlog = self.addMockFile(
+            buildlog_filename, filecontent='Built!',
+            restricted=build.archive.private)
 
         return binarypackagerelease
 

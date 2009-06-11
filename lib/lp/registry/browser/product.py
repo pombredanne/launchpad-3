@@ -38,7 +38,6 @@ __all__ = [
     ]
 
 
-import urllib
 from operator import attrgetter
 
 from zope.component import getUtility
@@ -71,7 +70,7 @@ from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFile, IProductReleaseSet)
+    IProductRelease, IProductReleaseSet)
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
@@ -92,13 +91,12 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
     canonical_url, custom_widget, enabled_with_permission,
-    sorted_version_numbers, stepthrough, stepto, structured, urlappend)
+    sorted_version_numbers, stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.popup import PersonPickerWidget, VocabularyPickerWidget
-from lazr.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
@@ -708,6 +706,24 @@ class SeriesWithReleases:
                 return True
         return False
 
+    @property
+    def css_class(self):
+        """The highlighted, unhighlighted, or dimmed CSS class."""
+        if self.is_development_focus:
+            return 'highlighted'
+        elif self.status == DistroSeriesStatus.OBSOLETE:
+            return 'dimmed'
+        else:
+            return 'unhighlighted'
+
+    @cachedproperty
+    def total_downloads(self):
+        """Total downloads of files associated with this series."""
+        total = 0
+        for release in self.releases:
+            total += sum(file.libraryfile.hits for file in release.files)
+        return total
+
 
 class ReleaseWithFiles:
     """A decorated release that includes product release files.
@@ -730,19 +746,6 @@ class ReleaseWithFiles:
         self.files.append(file)
 
 
-class DownloadFile:
-    """A decorated `IProductReleaseFile` with URLs."""
-
-    delegates(IProductReleaseFile, 'file')
-
-    def __init__(self, file_, url, md5_url, signature_url=None):
-        """Decorate the file with urls."""
-        self.file = file_
-        self.url = url
-        self.md5_url = md5_url
-        self.signature_url = signature_url
-
-
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
 
@@ -756,15 +759,15 @@ class ProductDownloadFileMixin:
         # Create the decorated product and set the list of series.
         original_product = self.context
 
-        product = ProductWithSeries(original_product)
+        product_with_series = ProductWithSeries(original_product)
         serieses = []
         for series in original_product.serieses:
             series_with_releases = SeriesWithReleases(series)
             serieses.append(series_with_releases)
             if original_product.development_focus == series:
-                product.development_focus = series_with_releases
+                product_with_series.development_focus = series_with_releases
 
-        product.setSeries(serieses)
+        product_with_series.setSeries(serieses)
 
         # Get all of the releases for all of the serieses in a single
         # query.  The query sorts the releases properly so we know the
@@ -772,9 +775,9 @@ class ProductDownloadFileMixin:
         release_set = getUtility(IProductReleaseSet)
         release_by_id = {}
         releases = release_set.getReleasesForSerieses(
-            product.serieses)
+            product_with_series.serieses)
         for release in releases:
-            series = product.getSeriesById(
+            series = product_with_series.getSeriesById(
                 release.productseries.id)
             decorated_release = ReleaseWithFiles(release)
             series.addRelease(decorated_release)
@@ -785,19 +788,9 @@ class ProductDownloadFileMixin:
         files = release_set.getFilesForReleases(releases)
         for file in files:
             release = release_by_id[file.productrelease.id]
-            release.addFile(self.getDownloadFile(file, release))
+            release.addFile(file)
 
-        return product
-
-    def getDownloadFile(self, file_, release):
-        """Return a DownloadFile for the file."""
-        url = self.fileURL(file_.libraryfile, release)
-        md5_url = self.md5URL(file_.libraryfile, release)
-        if file_.signature:
-            signature_url = self.fileURL(file_.signature, release)
-        else:
-            signature_url = None
-        return DownloadFile(file_, url, md5_url, signature_url)
+        return product_with_series
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -817,21 +810,6 @@ class ProductDownloadFileMixin:
     def getReleases(self):
         """Find the releases with download files for view."""
         raise NotImplementedError
-
-    def fileURL(self, file_, release=None):
-        """Create a download URL for the `LibraryFileAlias`."""
-        if release is None:
-            release = self.context
-        url = urlappend(canonical_url(release), '+download')
-        # Quote the filename to eliminate non-ascii characters which
-        # are invalid in the url.
-        url = urlappend(url, urllib.quote(file_.filename.encode('utf-8')))
-        return str(URI(url).replace(scheme='http'))
-
-    def md5URL(self, file_, release=None):
-        """Create a URL for the MD5 digest."""
-        baseurl = self.fileURL(file_, release)
-        return urlappend(baseurl, '+md5')
 
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""
