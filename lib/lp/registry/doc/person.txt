@@ -977,7 +977,7 @@ question to any PPA.
     (u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
     (u'netapplet', u'Ubuntu Hoary', u'1.0-1')
     (u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
-    (u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
+    (u'mozilla-firefox', u'Ubuntu Warty', u'0.9')
     (u'evolution', u'Ubuntu Hoary', u'1.0')
 
     >>> for sprelease in sabdfl.getLatestUploadedButNotMaintainedPackages():
