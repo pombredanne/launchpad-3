@@ -7,7 +7,6 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
 
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -35,7 +34,7 @@ bzr-nightly-ppa
 
 class PPABinaryExpirer(LaunchpadCronScript):
     """Helper class for expiring old PPA binaries.
-    
+
     Any PPA binary older than 30 days that is superseded or deleted
     will be marked for immediate expiry.
     """
@@ -50,6 +49,8 @@ class PPABinaryExpirer(LaunchpadCronScript):
 
     def determineExpirables(self):
         """Return expirable libraryfilealias IDs."""
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archive import ArchivePurpose
 
         stay_of_execution = '30 days'
 
@@ -90,7 +91,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
                     p.name IN %s
                     OR a.private IS TRUE
                     OR a.purpose != %s
-                    OR dateremoved > 
+                    OR dateremoved >
                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
                     OR dateremoved IS NULL);
             """ % sqlvalues(

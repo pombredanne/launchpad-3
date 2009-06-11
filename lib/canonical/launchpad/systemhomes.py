@@ -22,7 +22,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.bug import (
+from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet, InvalidBugTargetType)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.distribution import IDistribution
@@ -314,6 +314,13 @@ class HWDBApplication:
         return getUtility(IHWSubmissionSet).deviceDriverOwnersAffectedByBugs(
             bus, vendor_id, product_id, driver_name, package_name, bug_ids,
             bug_tags, affected_by_bug, subscribed_to_bug, user)
+
+    def hwInfoByBugRelatedUsers(
+        self, bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionSet).hwInfoByBugRelatedUsers(
+            bug_ids, bug_tags, affected_by_bug, subscribed_to_bug, user)
 
 
 class WebServiceApplication(ServiceRootResource):

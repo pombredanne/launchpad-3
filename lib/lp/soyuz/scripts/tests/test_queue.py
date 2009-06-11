@@ -22,14 +22,14 @@ from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import (
     LibraryFileAlias, PackageUploadBuild)
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import IPackageUploadSet

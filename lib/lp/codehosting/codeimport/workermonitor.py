@@ -30,7 +30,7 @@ from canonical.twistedsupport.loggingsupport import (
     log_oops_from_failure)
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
-from lp.code.interfaces.codeimportresult import CodeImportResultStatus
+from lp.code.enums import CodeImportResultStatus
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):

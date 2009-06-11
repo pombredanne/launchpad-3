@@ -18,10 +18,10 @@ from zope.schema import TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from lp.code.enums import (
+    CodeImportMachineOfflineReason, CodeImportMachineState)
 from lp.code.interfaces.codeimportevent import ICodeImportEvent
-from lp.code.interfaces.codeimportmachine import (
-    CodeImportMachineOfflineReason, CodeImportMachineState,
-    ICodeImportMachineSet)
+from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from canonical.launchpad.webapp import (
     action, canonical_url, Navigation, LaunchpadFormView,
     LaunchpadView)

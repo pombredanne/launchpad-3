@@ -43,10 +43,10 @@ from lp.registry.interfaces.pillar import IPillarNameSet
 
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
-from canonical.launchpad.database.bug import (
+from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
 from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.karma import KarmaContextMixin
 from lp.services.worlddata.model.language import Language

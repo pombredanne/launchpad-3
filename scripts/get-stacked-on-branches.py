@@ -26,7 +26,6 @@ import _pythonpath
 from storm.locals import Not
 from zope.component import getUtility
 
-from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -34,6 +33,8 @@ from canonical.launchpad.webapp.interfaces import (
 
 def get_stacked_branches():
     """Iterate over all branches that, according to the db, are stacked."""
+    # Avoiding circular import.
+    from lp.code.model.branch import Branch
     store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
     return store.find(Branch, Not(Branch.stacked_on == None))
 

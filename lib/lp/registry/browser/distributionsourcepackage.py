@@ -26,7 +26,7 @@ from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from canonical.launchpad.interfaces.packaging import IPackagingUtil
 from lp.soyuz.interfaces.publishing import pocketsuffix
 from lp.registry.interfaces.product import IDistributionSourcePackage
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.answers.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
@@ -80,7 +80,11 @@ class DistributionSourcePackageBugsMenu(
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['subscribe']
+    links = ['filebug', 'subscribe']
+
+    def filebug(self):
+        text = 'Report a bug'
+        return Link('+filebug', text, icon='bug')
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,
