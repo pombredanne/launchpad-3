@@ -10,7 +10,7 @@ from bzrlib.branch import BranchFormat as BzrBranchFormat
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.repository import format_registry as repo_format_registry
 
-from lp.code.interfaces.branch import (
+from lp.code.bzr import (
     BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
     REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.testing import TestCase

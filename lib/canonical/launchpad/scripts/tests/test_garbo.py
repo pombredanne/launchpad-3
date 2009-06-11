@@ -20,7 +20,7 @@ from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from lp.code.interfaces.codeimportresult import CodeImportResultStatus
+from lp.code.enums import CodeImportResultStatus
 from lp.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts.garbo import (
     DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector,

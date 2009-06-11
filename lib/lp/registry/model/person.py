@@ -57,7 +57,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.bugtarget import HasBugsBase
+from lp.bugs.model.bugtarget import HasBugsBase
 from lp.registry.model.karma import KarmaCategory
 from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.oauth import (
@@ -78,11 +78,11 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.bugtask import (
+from lp.code.enums import BranchMergeProposalStatus
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
+from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConductSet)
 from lp.registry.interfaces.distribution import IDistribution
@@ -126,7 +126,7 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bugtask import BugTask
 from canonical.launchpad.database.emailaddress import (
     EmailAddress, HasOwnerMixin)
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache

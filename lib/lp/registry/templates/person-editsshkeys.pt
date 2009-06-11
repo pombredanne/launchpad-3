@@ -13,9 +13,13 @@
   <div metal:fill-slot="main">
     <h1>Change your SSH keys</h1>
 
-    <p>You need to register an SSH key with Launchpad to be able to publish
-    your Bazaar code branches in the Bazaar supermirror. For more
-    information, read about <a href="/+code/">The Bazaar</a>.
+    <p>
+      You need to register an SSH key with Launchpad to be able to publish
+      your Bazaar code branches in Launchpad. For more information, read about
+      <a href="https://help.launchpad.net/Code/UploadingABranch"
+        >Uploading a branch</a> and
+      <a href="https://help.launchpad.net/YourAccount/CreatingAnSSHKeyPair"
+        >Importing your SSH key</a>.
     </p>
 
     <p tal:condition="view/error_message" tal:content="structure view/error_message/escapedtext"

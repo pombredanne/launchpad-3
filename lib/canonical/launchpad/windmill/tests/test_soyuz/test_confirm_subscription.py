@@ -53,6 +53,6 @@ def test_confirm_subscription():
 
     # Now the subscription has been confirmed.
     client.asserts.assertNode(xpath=u"//div[@id='container']/div[3]/h1")
-    client.asserts.assertText(xpath=u"//div[@id='container']/div[3]/h1",
-        validator=u"Sample Person's subscription to PPA for Celso Providelo")
+    client.asserts.assertElemJS(xpath=u"//div[@id='container']/div[3]/h1",
+        js=u'element.innerHTML.indexOf("Sample Person\'s subscription to") == 0')
 

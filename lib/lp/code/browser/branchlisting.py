@@ -25,7 +25,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import weakref
 
 import simplejson
 from storm.expr import Asc, Desc
@@ -34,7 +33,6 @@ from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.formlib import form
 from zope.schema import Choice
-from zope.security.proxy import removeSecurityProxy
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 
@@ -46,7 +44,7 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
-from canonical.launchpad.interfaces.bugbranch import IBugBranchSet
+from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet)
 from canonical.launchpad.interfaces.personproduct import (
@@ -55,19 +53,21 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
     LaunchpadFormView, Link)
 from canonical.launchpad.webapp.authorization import (
-    check_permission, LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
+    check_permission, precache_permission_for_objects)
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
 
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchLifecycleStatusFilter,
+    BranchMergeProposalStatus, BranchType)
 from lp.code.interfaces.branch import (
-    bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    bazaar_identity,  DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchBatchNavigator)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
+    IBranchMergeProposalGetter)
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
@@ -316,15 +316,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         # Until there is an API to do this nicely, shove the launchpad.view
         # permission into the request cache directly.
         request = self.view.request
-        permission_cache = request.annotations.setdefault(
-            LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
-            weakref.WeakKeyDictionary())
-        for branch in branches:
-            naked_branch = removeSecurityProxy(branch)
-            branch_permission_cache = permission_cache.setdefault(
-                naked_branch, {})
-            branch_permission_cache['launchpad.View'] = True
-
+        precache_permission_for_objects(request, 'launchpad.View', branches)
         return branches
 
     @cachedproperty
@@ -601,7 +593,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         if widget.hasValidInput():
             return widget.getInputValue()
         else:
-            return None
+            # If a derived view has specified a default sort_by, use that.
+            return self.initial_values.get('sort_by')
 
     @staticmethod
     def _listingSortToOrderBy(sort_by):
@@ -634,7 +627,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         order_by = map(
             LISTING_SORT_TO_COLUMN.get, DEFAULT_BRANCH_LISTING_SORT)
 
-        if sort_by is not None:
+        if sort_by is not None and sort_by != BranchListingSort.DEFAULT:
             direction, column = LISTING_SORT_TO_COLUMN[sort_by]
             order_by = (
                 [(direction, column)] +
@@ -876,6 +869,12 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
 class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
     """Base class used for different person listing views."""
+
+    @property
+    def initial_values(self):
+        values = super(PersonBaseBranchListingView, self).initial_values
+        values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+        return values
 
     @property
     def user_in_context_team(self):

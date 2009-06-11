@@ -19,8 +19,7 @@ from twisted.python import log
 
 twistd_script = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
-    os.pardir, os.pardir, os.pardir, os.pardir,
-    'sourcecode', 'twisted', 'bin', 'twistd'))
+    os.pardir, os.pardir, os.pardir, os.pardir, 'bin', 'twistd'))
 
 LOG_MAGIC = 'daemon ready!'
 

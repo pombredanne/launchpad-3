@@ -12,7 +12,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import login
-from canonical.launchpad.ftests.externalbugtracker import new_bugtracker
+from lp.bugs.tests.externalbugtracker import new_bugtracker
 from canonical.launchpad.interfaces import (BugTaskStatus, BugTrackerType,
     IBugSet, IBugTaskSet, ILaunchpadCelebrities, IPersonSet,
     IProductSet, IQuestionSet)
