@@ -6,4 +6,4 @@
     class string:menu-link-${context/name} sprite ${context/icon};
     href context/url;
     title context/summary;"
-></a></tal:link-enabled>
+><span class="invisible-link" tal:content="context/text"></span></a></tal:link-enabled>
