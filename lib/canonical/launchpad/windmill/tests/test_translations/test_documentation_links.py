@@ -74,6 +74,9 @@ class DocumentationLinksTest:
         client.waits.forElement(link=u'Spanish', timeout=u'8000')
         client.click(link=u'Spanish')
         client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forElement(link=u'evolution-2.2', timeout=u'8000')
+        client.click(link=u'evolution-2.2')
+        client.waits.forPageLoad(timeout=u'20000')
 
         # Make sure notification box is shown.
         client.waits.forElement(classname=u'important-notice-container',
