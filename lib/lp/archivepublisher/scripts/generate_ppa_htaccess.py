@@ -10,6 +10,7 @@ from operator import attrgetter
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 
@@ -138,7 +139,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         return False
 
-    def sendCancellationEmail(token):
+    def sendCancellationEmail(self, token):
         """Send an email to the person whose subscription was cancelled."""
         # Avoid circular imports.
         from lp.soyuz.interfaces.archivesubscriber import (
@@ -171,7 +172,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
                 template % replacements, force_wrap=True)
 
             from_address = format_address(
-                cancelled_by_person.displayname,
+                ppa_name,
                 config.canonical.noreply_from_address)
 
             headers = {
