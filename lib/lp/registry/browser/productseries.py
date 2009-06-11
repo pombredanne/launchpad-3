@@ -50,6 +50,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImportSet)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -61,6 +62,7 @@ from canonical.launchpad.interfaces.translationimporter import (
     ITranslationImporter)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
@@ -75,7 +77,7 @@ from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
-from lp.registry.browser import RegistryDeleteViewMixin
+from lp.registry.browser import get_status_counts, RegistryDeleteViewMixin
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -712,6 +714,37 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
             milestone
             for milestone in self.context.all_milestones
             if milestone.active or milestone.product_release is not None]
+
+    @cachedproperty
+    def bugtask_status_counts(self):
+        """A list StatusCounts summarising the targeted bugtasks."""
+        bugtaskset = getUtility(IBugTaskSet)
+        # Nominated to be fixes in this series.
+        params = BugTaskSearchParams(self.user)
+        params.setProductSeries(self.context)
+        all_bugtasks = set(
+            list(bugtaskset.search(params)))
+        # Targeted to be fixed in this series.
+        milestones = [
+            milestone.id for milestone in self.released_and_active_milestones]
+        if len(milestones) > 0:
+            params = BugTaskSearchParams(
+                self.user, milestone=any(*milestones))
+            all_bugtasks = all_bugtasks.union(
+                list(bugtaskset.search(params)))
+        return get_status_counts(all_bugtasks, 'status')
+
+    @cachedproperty
+    def specification_status_counts(self):
+        """A list StatusCounts summarising the targeted specification."""
+        # Series goals.
+        all_specifications = set(
+            list(self.context.all_specifications))
+        # Targeted to be fixed in this series.
+        for milestone in self.released_and_active_milestones:
+            all_specifications = all_specifications.union(
+                list(milestone.specifications))
+        return get_status_counts(all_specifications, 'implementation_status')
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):

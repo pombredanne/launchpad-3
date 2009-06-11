@@ -436,6 +436,14 @@ will return a list with the single subscriber as expected:
     ...     print person.displayname
     Harry Smith
 
+If Harry activates a token for his new subscription then
+getNonActiveSubscribers will return an empty result set as he is now
+"active".
+
+    >>> harry_token = sabdfl.archive.newAuthToken(harrysmith)
+    >>> print subscription.getNonActiveSubscribers().count()
+    0
+
 If the subscription is for a group which itself contains a group, all
 indirect members that are not themselves groups are included:
 

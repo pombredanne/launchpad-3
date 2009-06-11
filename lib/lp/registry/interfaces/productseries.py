@@ -13,11 +13,11 @@ __all__ = [
     'NoSuchProductSeries',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
-    ContentNameField, PublicPersonChoice, Title)
+    ContentNameField, NoneableDescription, PublicPersonChoice, Title)
 from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -145,10 +145,11 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         exported_as='display_name')
 
     summary = exported(
-        Text(title=_("Summary"),
-             description=_('A single paragraph introduction or overview '
-                           'of this series. For example: "The 2.0 series '
-                           'of Apache represents the current stable series, '
+        NoneableDescription(title=_("Summary"),
+             description=_('A single paragraph that explains the goals of '
+                           'of this series and the intended users. '
+                           'For example: "The 2.0 series of Apache '
+                           'represents the current stable series, '
                            'and is recommended for all new deployments".'),
              required=True))
 
