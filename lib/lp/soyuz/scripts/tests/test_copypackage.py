@@ -1149,7 +1149,9 @@ class TestCopyPackage(TestCase):
             # Check the binary changesfile and the buildlog.
             if IBinaryPackagePublishingHistory.providedBy(published):
                 build = published.binarypackagerelease.build
+                # Check build's upload changesfile
                 self.assertFalse(build.upload_changesfile.restricted)
+                # Check build's buildlog.
                 self.assertFalse(build.buildlog.restricted)
             # Check that the pocket is -security as specified in the
             # script parameters.
