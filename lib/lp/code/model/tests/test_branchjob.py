@@ -29,12 +29,13 @@ from lp.testing.mail_helpers import pop_notifications
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IRevisionMailJob, IRosettaUploadJob)
+    IBranchDiffJob, IBranchJob, IReclaimBranchSpaceJob, IRevisionMailJob,
+    IRosettaUploadJob)
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
-    RevisionMailJob, RosettaUploadJob)
+    BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob,
+    RevisionsAddedJob, RevisionMailJob, RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
 
@@ -778,6 +779,16 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         job.context.sync()
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([job], ready_jobs)
+
+
+class TestReclaimBranchSpaceJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        # ReclaimBranchSpaceJob implements IReclaimBranchSpaceJob.
+        job = ReclaimBranchSpaceJob.create(self.factory.getUniqueInteger())
+        verifyObject(IReclaimBranchSpaceJob, job)
 
 
 def test_suite():

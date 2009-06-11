@@ -144,3 +144,23 @@ class IRosettaUploadJobSource(Interface):
     def iterReady():
         """Iterate through ready IRosettaUploadJobs."""
 
+
+class IReclaimBranchSpaceJob(Interface):
+    """A job to delete a branch from disk after its been deleted from the db.
+    """
+
+    def run():
+        """Delete the branch from the filesystem."""
+
+
+class IReclaimBranchSpaceJobSource(Interface):
+
+    def create(branch_id):
+        """Construct a new object that implements IReclaimBranchSpaceJob.
+
+        :param branch_id: The id of the branch to remove from disk.
+        """
+
+    def iterReady():
+        """Iterate through ready IReclaimBranchSpaceJobs."""
+

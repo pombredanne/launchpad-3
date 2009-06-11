@@ -32,8 +32,9 @@ from canonical.launchpad.database.translationbranchapprover import (
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IRevisionMailJob,
-    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
+    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IReclaimBranchSpaceJob,
+    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRevisionMailJobSource,
+    IRosettaUploadJob, IRosettaUploadJobSource)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -74,6 +75,12 @@ class BranchJobType(DBEnumeratedType):
         This job runs against a branch to upload translation files to rosetta.
         """)
 
+    RECLAIM_BRANCH_SPACE = DBItem(5, """
+        Reclaim Branch Space
+
+        XXX.
+        """)
+
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
@@ -84,7 +91,7 @@ class BranchJob(SQLBase):
 
     job = ForeignKey(foreignKey='Job', notNull=True)
 
-    branch = ForeignKey(foreignKey='Branch', notNull=True)
+    branch = ForeignKey(foreignKey='Branch')
 
     job_type = EnumCol(enum=BranchJobType, notNull=True)
 
@@ -646,3 +653,21 @@ class RosettaUploadJob(BranchJobDerived):
                 Job.id.is_in(Job.ready_jobs)))
         return (RosettaUploadJob(job) for job in jobs)
 
+
+class ReclaimBranchSpaceJob(BranchJobDerived):
+    """XXX."""
+
+    implements(IReclaimBranchSpaceJob)
+
+    classProvides(IReclaimBranchSpaceJobSource)
+
+    @classmethod
+    def create(cls, branch_id):
+        """See `IBranchDiffJobSource`."""
+        metadata = {'branch_id': branch_id}
+        branch_job = BranchJob(
+            None, BranchJobType.RECLAIM_BRANCH_SPACE, metadata)
+        return cls(branch_job)
+
+    def run(self):
+        pass
