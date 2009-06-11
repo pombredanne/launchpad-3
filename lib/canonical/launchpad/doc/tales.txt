@@ -456,7 +456,7 @@ not included.
     >>> login('test@canonical.com')
     >>> specification = factory.makeSpecification()
     >>> test_tales("specification/fmt:link", specification=specification)
-    u'<a...<span ... class="sprite blueprint-undefined" />...</a>'
+    u'<a...class="sprite blueprint-undefined">...</a>'
 
 
 === Blueprint branches ===
@@ -466,7 +466,7 @@ not included.
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
     ...     specification_branch=specification_branch)
-    u'<a...<span ... class="sprite blueprint-undefined" />...</a>'
+    u'<a...class="sprite blueprint-undefined">...</a>'
 
 
 === Projects ===
@@ -481,7 +481,7 @@ not included.
     >>> from canonical.launchpad.interfaces import IQuestionSet
     >>> question = getUtility(IQuestionSet).get(1)
     >>> test_tales("question/fmt:link", question=question)
-    u'<a...<img ... src="/@@/question" />1:...</a>'
+    u'<a... class="sprite question">1:...</a>'
 
 
 == The fmt: namespace for specially formatted object info ===

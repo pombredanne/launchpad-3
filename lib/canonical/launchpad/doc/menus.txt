@@ -351,8 +351,7 @@ Next, we return the link as HTML.
 
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
-    <a style="...
-       class="menu-link-None sprite icon" title="">text--&gt;</a>
+    <a class="menu-link-None sprite icon" title="summary">text--&gt;</a>
 
     # Clean up our special login.
 

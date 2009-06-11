@@ -736,8 +736,8 @@ class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
 class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IQuestion to a formatted string. Used for image:icon."""
 
-    def icon(self):
-        return '<img alt="" height="14" width="14" src="/@@/question" />'
+    def sprite_css(self):
+        return "sprite question"
 
 
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
@@ -751,25 +751,13 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     icon_template = (
         '<span alt="%s" title="%s" class="%s" />')
 
-    def icon(self):
-        # The icon displayed is dependent on the IBugTask.importance.
+    def sprite_css(self):
+        """Return the CSS class for the sprite"""
         if self._context.priority:
             priority = self._context.priority.title.lower()
-            alt = "(%s)" % priority
-            title = priority.capitalize()
-            if priority != 'not':
-                # The other status names do not make a lot of sense on
-                # their own, so tack on a noun here.
-                title += " priority"
-            else:
-                title += " a priority"
-            css = "sprite blueprint-%s" % priority
+            return "sprite blueprint-%s" % priority
         else:
-            alt = ""
-            title = ""
-            css = "sprite blueprint"
-
-        return self.icon_template % (alt, title, css)
+            return "sprite blueprint"
 
     def badges(self):
 
@@ -1039,9 +1027,6 @@ class CustomizableFormatter(ObjectFormatterAPI):
 
     For greater control over the summary, overrride
     _make_link_summary.
-
-    If image:icon does not provide a suitable icon, override
-    _get_icon.
 
     If a different permission is required, override _link_permission.
     """
