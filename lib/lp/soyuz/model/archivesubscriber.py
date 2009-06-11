@@ -110,7 +110,7 @@ class ArchiveSubscriber(Storm):
             # Subscriber is not a team.
             token_set = getUtility(IArchiveAuthTokenSet)
             if token_set.getActiveTokenForArchiveAndPerson(
-                self.archive, self.subscriber):
+                self.archive, self.subscriber) is not None:
                 # There are active tokens, so return an empty result
                 # set.
                 return EmptyResultSet()
