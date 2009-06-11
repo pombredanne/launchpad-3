@@ -118,14 +118,17 @@
           </thead>
           <tbody>
             <tr tal:repeat="file view/download_files">
-              <tal:release-file 
-                metal:use-macro="file/@@+macros/detailed_display" />
+              <tal:define-vars
+                define="checkbox_index string:${repeat/file/index}">
+                <tal:release-file
+                  metal:use-macro="file/@@+macros/detailed_display" />
+              </tal:define-vars>
             </tr>
           </tbody>
           <tfoot tal:condition="view/total_downloads">
             <tr>
               <th colspan="2" style="padding-top: 1em; text-align: right;">
-                Total:
+                Total downloads:
               </th>
               <td style="border: none; text-align: center;">
                 <span tal:replace="view/total_downloads/fmt:intcomma" />

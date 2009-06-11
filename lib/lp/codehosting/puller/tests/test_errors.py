@@ -18,7 +18,7 @@ from lp.codehosting.puller.worker import (
     BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchMirrorer,
     BranchReferenceForbidden, BranchLoopError, PullerWorker,
     PullerWorkerProtocol, StackedOnBranchNotFound)
-from canonical.launchpad.interfaces import BranchType
+from lp.code.enums import BranchType
 from lazr.uri import InvalidURIError
 
 
