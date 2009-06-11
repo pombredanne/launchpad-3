@@ -481,8 +481,7 @@ Branches that are either Merged or Abandoned are not considered active.
 By marking all of Thunderbird's branches as Abandoned, thunderbird will
 no longer appear in the result set.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchLifecycleStatus)
+    >>> from lp.code.enums import BranchLifecycleStatus
     >>> from lp.code.interfaces.branchcollection import (
     ...     IAllBranches)
     >>> thunderbird_branches = getUtility(IAllBranches).inProduct(

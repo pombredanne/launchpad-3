@@ -6,19 +6,17 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchVisibilityRule',
     'IHasBranchVisibilityPolicy',
     'IBranchVisibilityTeamPolicy',
     'InvalidVisibilityPolicy',
-    'TeamBranchVisibilityRule',
     ]
 
 from zope.interface import Interface
 from zope.schema import Choice
-from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, use_template
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ParticipatingPersonChoice
+from lp.code.enums import TeamBranchVisibilityRule
 
 
 class InvalidVisibilityPolicy(Exception):
@@ -27,39 +25,6 @@ class InvalidVisibilityPolicy(Exception):
     If an attempt is made to set it to something other than one of these two
     values, this exception is raised.
     """
-
-
-class BranchVisibilityRule(DBEnumeratedType):
-    """Branch Visibility Rules for defining branch visibility policy."""
-
-    PUBLIC = DBItem(1, """
-        Public
-
-        Branches are public by default.
-        """)
-
-    PRIVATE = DBItem(2, """
-        Private
-
-        Branches are private by default.
-        """)
-
-    PRIVATE_ONLY = DBItem(3, """
-        Private only
-
-        Branches are private by default. Branch owners are not able
-        to change the visibility of the branches to public.
-        """)
-
-    FORBIDDEN = DBItem(4, """
-        Forbidden
-
-        Users are not able to create branches in the context.
-        """)
-
-class TeamBranchVisibilityRule(EnumeratedType):
-    """The valid policy rules for teams."""
-    use_template(BranchVisibilityRule, exclude='FORBIDDEN')
 
 
 class IHasBranchVisibilityPolicy(Interface):

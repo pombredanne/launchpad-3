@@ -30,7 +30,7 @@ from lp.codehosting.puller.worker import (
     install_worker_ui_factory, WORKER_ACTIVITY_NETWORK)
 from lp.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
 from lazr.uri import URI

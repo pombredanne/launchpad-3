@@ -13,7 +13,7 @@ import xmlrpclib
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login, logout
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.testing import TestCaseWithFactory
 from lazr.uri import URI
 from lp.code.xmlrpc.branch import PublicCodehostingAPI

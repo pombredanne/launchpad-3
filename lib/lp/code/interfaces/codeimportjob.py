@@ -8,7 +8,6 @@ CodeImportJobs represent pending and running updates of a code import.
 
 __metaclass__ = type
 __all__ = [
-    'CodeImportJobState',
     'ICodeImportJob',
     'ICodeImportJobSet',
     'ICodeImportJobSetPublic',
@@ -17,36 +16,13 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Object, Text
-from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
+from lp.code.enums import CodeImportJobState
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportmachine import (
     ICodeImportMachine)
 from lp.registry.interfaces.person import IPerson
-
-
-class CodeImportJobState(DBEnumeratedType):
-    """Values that ICodeImportJob.state can take."""
-
-    PENDING = DBItem(10, """
-        Pending
-
-        The job has a time when it is due to run, and will wait until
-        that time or an explicit update request is made.
-        """)
-
-    SCHEDULED = DBItem(20, """
-        Scheduled
-
-        The job is due to be run.
-        """)
-
-    RUNNING = DBItem(30, """
-        Running
-
-        The job is running.
-        """)
 
 
 class ICodeImportJob(Interface):

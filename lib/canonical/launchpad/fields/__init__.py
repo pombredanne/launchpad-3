@@ -26,8 +26,6 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
-    'is_private_membership',
-    'is_valid_public_person',
     'KEEP_SAME_IMAGE',
     'LocationField',
     'LogoImageUpload',
@@ -40,6 +38,7 @@ __all__ = [
     'ProductBugTracker',
     'ProductNameField',
     'PublicPersonChoice',
+    'SearchTag',
     'StrippedTextLine',
     'Summary',
     'Tag',
@@ -48,6 +47,8 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
+    'is_private_membership',
+    'is_valid_public_person',
     ]
 
 
@@ -276,7 +277,7 @@ class DuplicateBug(BugField):
         bug isn't a duplicate of itself, otherwise
         return False.
         """
-        from canonical.launchpad.interfaces.bug import IBugSet
+        from lp.bugs.interfaces.bug import IBugSet
         bugset = getUtility(IBugSet)
         current_bug = self.context
         dup_target = value
@@ -311,6 +312,22 @@ class Tag(TextLine):
         """Make sure that the value is a valid name."""
         super_constraint = TextLine.constraint(self, value)
         return super_constraint and valid_name(value)
+
+
+class SearchTag(Tag):
+    def constraint(self, value):
+        """Make sure the value is a valid search tag.
+
+        A valid search tag is a valid name or a valid name prepended
+        with a minus, denoting "not this tag". A simple wildcard - an
+        asterisk - is also valid, with or without a leading minus.
+        """
+        if value in ('*', '-*'):
+            return True
+        elif value.startswith('-'):
+            return super(SearchTag, self).constraint(value[1:])
+        else:
+            return super(SearchTag, self).constraint(value)
 
 
 class PasswordField(Password):
@@ -483,7 +500,7 @@ class ProductBugTracker(Choice):
     @property
     def schema(self):
         # The IBugTracker needs to be imported here to avoid an import loop.
-        from canonical.launchpad.interfaces.bugtracker import IBugTracker
+        from lp.bugs.interfaces.bugtracker import IBugTracker
         return IBugTracker
 
     def get(self, ob):

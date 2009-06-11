@@ -7,7 +7,7 @@ from unittest import TestLoader, TestCase
 from canonical.testing import LaunchpadFunctionalLayer
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
-from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
+from lp.code.enums import BranchMergeProposalStatus
 from canonical.launchpad.ftests import login
 from lp.testing.factory import LaunchpadObjectFactory
 

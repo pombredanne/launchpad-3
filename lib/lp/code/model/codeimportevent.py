@@ -20,12 +20,11 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from lp.code.enums import (
+    CodeImportEventDataType, CodeImportEventType,
+    CodeImportMachineOfflineReason, RevisionControlSystems)
 from lp.code.interfaces.codeimportevent import (
-    CodeImportEventDataType, CodeImportEventType, ICodeImportEvent,
-    ICodeImportEventSet, ICodeImportEventToken)
-from lp.code.interfaces.codeimportmachine import (
-    CodeImportMachineOfflineReason)
-from lp.code.interfaces.codeimport import RevisionControlSystems
+    ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken)
 from lp.registry.interfaces.person import validate_public_person
 
 

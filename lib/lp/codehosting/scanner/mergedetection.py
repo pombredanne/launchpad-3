@@ -14,7 +14,7 @@ from zope.component import adapter, getUtility
 
 from lp.codehosting.scanner import events
 
-from lp.code.interfaces.branch import BranchLifecycleStatus
+from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)

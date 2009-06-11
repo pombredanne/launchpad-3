@@ -17,7 +17,7 @@ from lp.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchcollection import IAllBranches
 
 
