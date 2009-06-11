@@ -149,8 +149,6 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
         self.hoary = self.ubuntu['hoary']
         self.warty = self.ubuntu['warty']
         self.package = self.factory.makeSourcePackageName()
-        self.subset = getUtility(IPOTemplateSet).getSharingSubset(
-            distribution=self.ubuntu, sourcepackagename=self.package)
 
     def test_PackageTemplateEquivalence(self):
         # Two identically-named templates in the same source package in
@@ -163,7 +161,9 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             distroseries=self.warty, sourcepackagename=self.package,
             name='foo')
 
-        classes = self.subset.groupEquivalentPOTemplates()
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=self.ubuntu, sourcepackagename=self.package)
+        classes = subset.groupEquivalentPOTemplates()
 
         expected = {
             ('foo', self.package.name): [hoary_template, warty_template],
@@ -180,7 +180,9 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             distroseries=self.warty, sourcepackagename=self.package,
             name='bar')
 
-        classes = self.subset.groupEquivalentPOTemplates()
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=self.ubuntu, sourcepackagename=self.package)
+        classes = subset.groupEquivalentPOTemplates()
 
         expected = {
             ('foo', self.package.name): [hoary_template],
@@ -200,7 +202,9 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             distroseries=self.warty, sourcepackagename=other_package,
             name='foo')
 
-        classes = self.subset.groupEquivalentPOTemplates()
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=self.ubuntu)
+        classes = subset.groupEquivalentPOTemplates()
 
         self.assertTrue(('foo', self.package.name) in classes)
         self.assertEqual(classes[('foo', self.package.name)], [our_template])
@@ -217,7 +221,9 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             distroseries=self.hoary, sourcepackagename=self.package,
             name=unique_name)
 
-        classes = self.subset.groupEquivalentPOTemplates(
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=self.ubuntu)
+        classes = subset.groupEquivalentPOTemplates(
             name_pattern='krungthepmahanakorn.*-etc')
 
         expected = {
