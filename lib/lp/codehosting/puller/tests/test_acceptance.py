@@ -141,7 +141,11 @@ class TestBranchPuller(PullerBranchTestCase):
         http_server.setUp()
         # Join cleanup added before the tearDown so the tearDown is executed
         # first as this tells the thread to die.  We then join explicitly as
-        # the HttpServer.tearDown does not join.
+        # the HttpServer.tearDown does not join.  There is a check in the
+        # BaseLayer to make sure that threads are not left behind by the
+        # tests, and the default behaviour of the HttpServer is to use daemon
+        # threads and let the garbage collector get them, however this causes
+        # issues with the test runner.
         self.addCleanup(http_server._http_thread.join)
         self.addCleanup(http_server.tearDown)
         return http_server.get_url().rstrip('/')
