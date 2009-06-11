@@ -202,8 +202,7 @@ changelog:
     >>> changelog = find_tag_by_id(
     ...     user_browser.contents, 'commercialpackage_1.0-1')
     >>> changelog.find('a')
-    <a href="http://launchpad.dev/~name16"><img
-    ...src="/@@/person" />&nbsp;foo.bar@canonical.com</a>
+    <a href="http://launchpad.dev/~name16" class="sprite person">&nbsp;foo.bar@canonical.com</a>
 
 
 == Packages that are not published ==
