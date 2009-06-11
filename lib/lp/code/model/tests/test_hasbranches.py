@@ -16,18 +16,18 @@ class TestIHasBranches(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_product_implements_hasmergeproposals(self):
-        # Products should implement IHasMergeProposals.
+    def test_product_implements_hasbranches(self):
+        # Products should implement IHasBranches.
         product = self.factory.makeProduct()
         self.assertProvides(product, IHasBranches)
 
-    def test_person_implements_hasmergeproposals(self):
-        # People should implement IHasMergeProposals.
+    def test_person_implements_hasbranches(self):
+        # People should implement IHasBranches.
         person = self.factory.makePerson()
         self.assertProvides(person, IHasBranches)
 
-    def test_project_implements_hasmergeproposals(self):
-        # Projects should implement IHasMergeProposals.
+    def test_project_implements_hasbranches(self):
+        # Projects should implement IHasBranches.
         project = self.factory.makeProject()
         self.assertProvides(project, IHasBranches)
 
