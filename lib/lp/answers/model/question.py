@@ -52,7 +52,7 @@ from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
 from lp.answers.model.answercontact import AnswerContact
-from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
+from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from lp.coop.answersbugs.model import QuestionBug

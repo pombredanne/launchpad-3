@@ -1251,21 +1251,21 @@
             facet="bugs"
             class="lp.registry.browser.person.PersonRelatedBugTaskSearchListingView"
             permission="zope.Public"
-            template="../../../canonical/launchpad/templates/buglisting-embedded-advanced-search.pt"/>
+            template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
             name="+assignedbugs"
             for="lp.registry.interfaces.person.IPerson"
             facet="bugs"
             class="lp.registry.browser.person.PersonAssignedBugTaskSearchListingView"
             permission="zope.Public"
-            template="../../../canonical/launchpad/templates/buglisting-embedded-advanced-search.pt"/>
+            template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
             name="+commentedbugs"
             for="lp.registry.interfaces.person.IPerson"
             facet="bugs"
             class="lp.registry.browser.person.PersonCommentedBugTaskSearchListingView"
             permission="zope.Public"
-            template="../../../canonical/launchpad/templates/buglisting-embedded-advanced-search.pt"/>
+            template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
             name="+packagebugs-search"
             for="lp.registry.interfaces.person.IPerson"
@@ -1286,14 +1286,14 @@
             facet="bugs"
             class="lp.registry.browser.person.PersonReportedBugTaskSearchListingView"
             permission="zope.Public"
-            template="../../../canonical/launchpad/templates/buglisting-embedded-advanced-search.pt"/>
+            template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
             name="+subscribedbugs"
             for="lp.registry.interfaces.person.IPerson"
             facet="bugs"
             class="lp.registry.browser.person.PersonSubscribedBugTaskSearchListingView"
             permission="zope.Public"
-            template="../../../canonical/launchpad/templates/buglisting-embedded-advanced-search.pt"/>
+            template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
             name="+activate-ppa"
             for="lp.registry.interfaces.person.IPerson"
@@ -1609,6 +1609,9 @@
         <browser:page
             name="+index"
             template="../templates/milestone-index.pt"/>
+        <browser:page
+            name="+productseries-table-row"
+            template="../templates/productseries-milestone-table-row.pt"/>
         <browser:page
             name="+portlet-details"
             template="../templates/milestone-portlet-details.pt"/>
@@ -2021,9 +2024,6 @@
             name="+macros"
             template="../templates/productseries-macros.pt"/>
         <browser:page
-            name="+table-releases"
-            template="../templates/productseries-table-releases.pt"/>
-        <browser:page
             name="+portlet-details"
             template="../templates/productseries-portlet-details.pt"/>
         <browser:page
@@ -2041,6 +2041,15 @@
         <browser:page
             name="+milestones"
             template="../templates/object-milestones.pt"/>
+    </browser:pages>
+    <browser:pages
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesView"
+        facet="overview"
+        permission="zope.Public">
+        <browser:page
+            name="+table-releases"
+            template="../templates/productseries-table-releases.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -2063,15 +2072,17 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.TranslationsLayer">
+        layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/object-translations.pt"/>
+            template="../templates/productseries-translations.pt"
+            />
         <browser:page
-            name="+potlist"
+            name="+languages"
             facet="translations"
-            template="../templates/object-pots.pt"/>
+            template="../templates/productseries-translations-languages.pt"
+            />
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"

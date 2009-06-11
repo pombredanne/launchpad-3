@@ -305,3 +305,59 @@ avoid conflicts.
     >>> print productseries.name
     field-rabbit-20090501-193424
 
+
+Linking packages
+----------------
+
+Distrobution sourcepackages can be linked to product series using the
++addpackage named view.
+
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> sourcepackagename = factory.makeSourcePackageName('hot')
+    >>> sourcepackage = factory.makeSourcePackage(
+    ...     sourcepackagename=sourcepackagename, distroseries=hoary)
+    >>> product = factory.makeProduct(name="hot", displayname='Hot')
+    >>> productseries = factory.makeProductSeries(
+    ...     product=product, name='hotter')
+    >>> productseries.sourcepackages
+    []
+
+The view has a label and requires a distro series, source package name,
+and a packaging contents.
+
+    >>> view = create_view(productseries, '+addpackage')
+    >>> print view.label
+    Add distribution packaging record
+
+    >>> print view.field_names
+    ['distroseries', 'sourcepackagename', 'packaging']
+
+    >>> form = {
+    ...     'field.distroseries': 'ubuntu/hoary',
+    ...     'field.sourcepackagename': 'hot',
+    ...     'field.packaging': 'Primary Product',
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     productseries, '+addpackage', form=form)
+    >>> view.errors
+    []
+    >>> for package in productseries.sourcepackages:
+    ...     print package.name
+    hot
+
+It is an error to link a series to the same package twice.
+
+    >>> form = {
+    ...     'field.distroseries': 'ubuntu/hoary',
+    ...     'field.sourcepackagename': 'hot',
+    ...     'field.packaging': 'Primary Product',
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     productseries, '+addpackage', form=form)
+    >>> for error in view.errors:
+    ...     print error
+    This series is already packaged in Hoary
+

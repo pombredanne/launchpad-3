@@ -9,6 +9,11 @@ import os.path
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
+from bzrlib.branch import (Branch, BzrBranchFormat5, BzrBranchFormat7,
+    BzrBranchFormat8)
+from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
@@ -26,16 +31,20 @@ from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
 
+from lp.code.interfaces.branch import (BranchFormat,
+    BRANCH_FORMAT_UPGRADE_PATH, RepositoryFormat,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IReclaimBranchSpaceJob, IRevisionMailJob,
-    IRosettaUploadJob)
+    IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
+    IRevisionMailJob, IRosettaUploadJob)
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob,
-    RevisionsAddedJob, RevisionMailJob, RosettaUploadJob)
+    BranchDiffJob, BranchJob, BranchJobType, BranchUpgradeJob,
+    ReclaimBranchSpaceJob, RevisionMailJob, RevisionsAddedJob,
+    RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
 
@@ -148,6 +157,105 @@ class TestBranchDiffJob(TestCaseWithFactory):
         """
         diff = self.create_rev1_diff()
         self.assertIsInstance(diff.diff.text, str)
+
+
+class TestBranchUpgradeJob(TestCaseWithFactory):
+    """Tests for `BranchUpgradeJob`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""
+        branch = self.factory.makeAnyBranch()
+        job = BranchUpgradeJob.create(branch)
+        verifyObject(IBranchUpgradeJob, job)
+
+    def test_upgrades_branch(self):
+        """Ensure that a branch with an outdated format is upgraded."""
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree(format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        self.assertEqual(
+            tree.branch.repository._format.get_format_string(),
+            'Bazaar-NG Knit Repository Format 1')
+
+        job = BranchUpgradeJob.create(db_branch)
+        job.run()
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n')
+
+    def test_upgrade_format_all_formats(self):
+        # getUpgradeFormat should return a BzrDirMetaFormat1 object with the
+        # most up to date branch and repository formats.
+        self.useBzrBranches()
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        job = BranchUpgradeJob.create(branch)
+
+        format = job.upgrade_format
+        self.assertIs(
+            type(format.get_branch_format()),
+            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_5))
+        self.assertIs(
+            type(format._repository_format),
+            REPOSITORY_FORMAT_UPGRADE_PATH.get(
+                RepositoryFormat.BZR_REPOSITORY_4))
+
+    def make_format(self, branch_format=None, repo_format=None):
+        # Return a Bzr MetaDir format with the provided branch and repository
+        # formats.
+        if branch_format is None:
+            branch_format = BzrBranchFormat7
+        if repo_format is None:
+            repo_format = RepositoryFormatKnitPack6
+        format = BzrDirMetaFormat1()
+        format.set_branch_format(branch_format())
+        format._set_repository_format(repo_format())
+        return format
+
+    def test_upgrade_format_no_branch_upgrade_needed(self):
+        # getUpgradeFormat should not downgrade the branch format when it is
+        # more up to date than the default formats provided.
+        self.useBzrBranches()
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_7,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
+        _format = self.make_format(repo_format=RepositoryFormatKnit1)
+        branch, _unused = self.create_branch_and_tree(db_branch=branch,
+            format=_format)
+        job = BranchUpgradeJob.create(branch)
+
+        format = job.upgrade_format
+        self.assertIs(
+            type(format.get_branch_format()),
+            BzrBranchFormat8)
+        self.assertIs(
+            type(format._repository_format),
+            REPOSITORY_FORMAT_UPGRADE_PATH.get(RepositoryFormat.BZR_KNIT_1))
+
+    def test_upgrade_format_no_repository_upgrade_needed(self):
+        # getUpgradeFormat should not downgrade the branch format when it is
+        # more up to date than the default formats provided.
+        self.useBzrBranches()
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_4,
+            repository_format=RepositoryFormat.BZR_KNITPACK_6)
+        _format = self.make_format(branch_format=BzrBranchFormat5)
+        branch, _unused = self.create_branch_and_tree(db_branch=branch,
+            format=_format)
+        job = BranchUpgradeJob.create(branch)
+
+        format = job.upgrade_format
+        self.assertIs(
+            type(format.get_branch_format()),
+            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_4))
+        self.assertIs(
+            type(format._repository_format),
+            RepositoryFormatKnitPack6)
 
 
 class TestRevisionMailJob(TestCaseWithFactory):

@@ -1030,7 +1030,7 @@ COMMENT ON COLUMN PackageUpload.distroseries IS 'This integer field refers to th
 
 COMMENT ON COLUMN PackageUpload.pocket IS 'This is the pocket the upload is targeted at.';
 
-COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload.';
+COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload. It is null for records refering to a delayed-copy.';
 
 COMMENT ON COLUMN PackageUpload.archive IS 'The archive to which this upload is targetted.';
 
@@ -1473,6 +1473,7 @@ COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
+COMMENT ON COLUMN LibraryFileContent.sha256 IS 'The SHA256 sum of the file''s contents';
 
 -- LibraryFileAlias
 
