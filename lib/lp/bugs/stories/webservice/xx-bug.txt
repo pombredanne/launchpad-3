@@ -104,8 +104,8 @@ Distribution or a DistributionSourcePackage.
 Activity is recorded and notifications are sent for newly created
 bugs.
 
-    >>> from canonical.launchpad.database import BugNotification
-    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from lp.bugs.model.bugnotification import BugNotification
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from zope.component import getUtility
 
@@ -606,7 +606,7 @@ he or she belongs.
 For this example, we need a member of the ubuntu-team group,
 any member will do.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu_team_member = getUtility(IPersonSet).getByName(
@@ -1087,7 +1087,8 @@ setting the tags_combinator parameter to 'All'.
 It is possible to search for bugs targeted to a milestone within a
 project group.
 
-    >>> from canonical.launchpad.interfaces import IMilestoneSet, IProductSet
+    >>> from lp.registry.interfaces.milestone import IMilestoneSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> login('foo.bar@canonical.com')
     >>> product_set = getUtility(IProductSet)
     >>> milestone_set = getUtility(IMilestoneSet)
