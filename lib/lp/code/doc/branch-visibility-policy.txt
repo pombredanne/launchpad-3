@@ -14,7 +14,7 @@ non-specifying of a team means *everyone*.
 
 The Policy is defined by the enumerated type BranchVisibilityRule.
 
-    >>> from canonical.launchpad.interfaces import BranchVisibilityRule
+    >>> from lp.code.enums import BranchVisibilityRule
 
 There are currently four visibility policies:
  * Public - branches are public by default for the specified team.

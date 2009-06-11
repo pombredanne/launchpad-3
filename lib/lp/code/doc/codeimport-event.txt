@@ -85,10 +85,11 @@ Creating a CodeImport is complicated, and we will create two of them, so
 we define a helper function. Since CodeImportSet.new should record the
 CodeImportEvent, we need to use the CodeImport constructor directly.
 
+    >>> from lp.code.enums import BranchType, CodeImportEventDataType
     >>> from canonical.launchpad.interfaces import (
-    ...     CodeImportEventDataType, BranchType, ILaunchpadCelebrities,
+    ...     ILaunchpadCelebrities,
     ...     IPersonSet, IProductSet)
-    >>> from canonical.launchpad.database import CodeImport
+    >>> from lp.code.model.codeimport import CodeImport
     >>> from lp.code.interfaces.branchnamespace import (
     ...     get_branch_namespace)
 
@@ -106,7 +107,7 @@ CodeImportEvent, we need to use the CodeImport constructor directly.
 
 First we create a Subversion import.
 
-    >>> from canonical.launchpad.interfaces import RevisionControlSystems
+    >>> from lp.code.enums import RevisionControlSystems
     >>> svn_url = 'svn://svn.example.com/trunk'
     >>> svn_import = new_code_import('svn-trunk',
     ...     rcs_type=RevisionControlSystems.SVN, svn_branch_url=svn_url)
@@ -202,7 +203,7 @@ state of the code import.
 
 Then changes can be applied.
 
-    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
+    >>> from lp.code.enums import CodeImportReviewStatus
     >>> svn_import.review_status = CodeImportReviewStatus.REVIEWED
 
 After applying changes, the newModify method can create an event that
@@ -369,8 +370,7 @@ CodeImportMachine is called to mark it as no longer running. This method
 logs the change by creating an OFFLINE event using the
 ICodeImportSet.newOffline method.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CodeImportMachineOfflineReason)
+    >>> from lp.code.enums import CodeImportMachineOfflineReason
     >>> QUIESCED = CodeImportMachineOfflineReason.QUIESCED
 
     >>> fail_if_argument_is_none(event_set.newOffline, None, QUIESCED)
