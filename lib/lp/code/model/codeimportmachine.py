@@ -20,10 +20,13 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from lp.code.enums import (
+    CodeImportMachineOfflineReason, CodeImportMachineState)
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import (
-    CodeImportMachineOfflineReason, CodeImportMachineState,
     ICodeImportMachine, ICodeImportMachineSet)
+
+
 class CodeImportMachine(SQLBase):
     """See `ICodeImportMachine`."""
 

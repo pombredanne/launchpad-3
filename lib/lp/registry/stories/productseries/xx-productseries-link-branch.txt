@@ -6,7 +6,10 @@ bazaar branch.
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open('http://launchpad.dev/firefox/trunk')
-    >>> sample_browser.getLink('Link to branch').click()
+    >>> link = sample_browser.getLink('Link to branch')
+    >>> link
+    <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
+    >>> link.click()
 
 This link is only shown to those that have edit permissions on the
 product series.
@@ -31,10 +34,19 @@ Updating the branch takes the user back to the product series page.
     >>> branch = find_tag_by_id(sample_browser.contents, 'branch-details')
     >>> print extract_text(branch)
     lp://dev/firefox - Sample Person
-    text
 
 A helpful informational message is also shown to the user.
 
     >>> for message in get_feedback_messages(sample_browser.contents):
     ...     print extract_text(message)
     Series code location updated.
+
+Once a branch is linked, the branch link becomes "Change branch".
+
+    >>> sample_browser.getLink('Link to branch')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> sample_browser.getLink('Change branch')
+    <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>

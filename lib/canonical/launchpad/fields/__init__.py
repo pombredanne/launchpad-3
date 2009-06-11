@@ -1,5 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,W0401
+# pylint: disable-msg=E0211,E0213,W0401
 
 __metaclass__ = type
 __all__ = [
@@ -16,16 +16,8 @@ __all__ = [
     'IBugField',
     'IDescription',
     'ILocationField',
+    'INoneableTextLine',
     'IPasswordField',
-    'IShipItAddressline1',
-    'IShipItAddressline2',
-    'IShipItCity',
-    'IShipItOrganization',
-    'IShipItPhone',
-    'IShipItProvince',
-    'IShipItQuantity',
-    'IShipItReason',
-    'IShipItRecipientDisplayname',
     'IStrippedTextLine',
     'ISummary',
     'ITag',
@@ -34,12 +26,11 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
-    'is_private_membership',
-    'is_valid_public_person',
     'KEEP_SAME_IMAGE',
+    'LocationField',
     'LogoImageUpload',
     'MugshotImageUpload',
-    'LocationField',
+    'NoneableTextLine',
     'ParticipatingPersonChoice',
     'PasswordField',
     'PillarAliases',
@@ -47,15 +38,7 @@ __all__ = [
     'ProductBugTracker',
     'ProductNameField',
     'PublicPersonChoice',
-    'ShipItAddressline1',
-    'ShipItAddressline2',
-    'ShipItCity',
-    'ShipItOrganization',
-    'ShipItPhone',
-    'ShipItProvince',
-    'ShipItQuantity',
-    'ShipItReason',
-    'ShipItRecipientDisplayname',
+    'SearchTag',
     'StrippedTextLine',
     'Summary',
     'Tag',
@@ -64,6 +47,8 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
+    'is_private_membership',
+    'is_valid_public_person',
     ]
 
 
@@ -76,7 +61,7 @@ from zope.schema import (
     Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
     TextLine, Tuple)
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IDatetime, IField, IInt, IObject,
+    ConstraintNotSatisfied, IBytes, IDatetime, IField, IObject,
     IPassword, IText, ITextLine, Interface)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
@@ -100,23 +85,38 @@ KEEP_SAME_IMAGE = object()
 class IStrippedTextLine(ITextLine):
     """A field with leading and trailing whitespaces stripped."""
 
+
 class ITitle(IStrippedTextLine):
     """A Field that implements a launchpad Title"""
+
+
+class INoneableTextLine(IStrippedTextLine):
+    """A field that is None if it's value is empty or whitespace."""
+
 
 class ISummary(IText):
     """A Field that implements a Summary"""
 
+
 class IDescription(IText):
     """A Field that implements a Description"""
+
+
+class INoneableDescription(IDescription):
+    """A field that is None if it's value is empty or whitespace."""
+
 
 class IWhiteboard(IText):
     """A Field that implements a Whiteboard"""
 
+
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
 
+
 class IBugField(IObject):
     """A field that allows entry of a Bug number or nickname"""
+
 
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
@@ -139,66 +139,6 @@ class ILocationField(IField):
     latitude = Float(title=_('Latitude'))
     longitude = Float(title=_('Longitude'))
     time_zone = Choice(title=_('Time zone'), vocabulary='TimezoneName')
-
-
-class IShipItRecipientDisplayname(ITextLine):
-    """A field used for the recipientdisplayname attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItOrganization(ITextLine):
-    """A field used for the organization attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItCity(ITextLine):
-    """A field used for the city attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItProvince(ITextLine):
-    """A field used for the province attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItAddressline1(ITextLine):
-    """A field used for the addressline1 attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItAddressline2(ITextLine):
-    """A field used for the addressline2 attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItPhone(ITextLine):
-    """A field used for the phone attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItReason(ITextLine):
-    """A field used for the reason attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItQuantity(IInt):
-    """A field used for the quantity of CDs on shipit forms."""
 
 
 class ITag(ITextLine):
@@ -260,6 +200,10 @@ class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
 
+class NoneableTextLine(StrippedTextLine):
+    implements(INoneableTextLine)
+
+
 # Title
 # A field to capture a launchpad object title
 class Title(StrippedTextLine):
@@ -276,6 +220,10 @@ class Summary(Text):
 # A field capture a Launchpad object description
 class Description(Text):
     implements(IDescription)
+
+
+class NoneableDescription(Description):
+    implements(INoneableDescription)
 
 
 # Whiteboard
@@ -329,7 +277,7 @@ class DuplicateBug(BugField):
         bug isn't a duplicate of itself, otherwise
         return False.
         """
-        from canonical.launchpad.interfaces.bug import IBugSet
+        from lp.bugs.interfaces.bug import IBugSet
         bugset = getUtility(IBugSet)
         current_bug = self.context
         dup_target = value
@@ -364,6 +312,22 @@ class Tag(TextLine):
         """Make sure that the value is a valid name."""
         super_constraint = TextLine.constraint(self, value)
         return super_constraint and valid_name(value)
+
+
+class SearchTag(Tag):
+    def constraint(self, value):
+        """Make sure the value is a valid search tag.
+
+        A valid search tag is a valid name or a valid name prepended
+        with a minus, denoting "not this tag". A simple wildcard - an
+        asterisk - is also valid, with or without a leading minus.
+        """
+        if value in ('*', '-*'):
+            return True
+        elif value.startswith('-'):
+            return super(SearchTag, self).constraint(value[1:])
+        else:
+            return super(SearchTag, self).constraint(value)
 
 
 class PasswordField(Password):
@@ -522,42 +486,6 @@ class PillarAliases(TextLine):
         return " ".join(object.aliases)
 
 
-class ShipItRecipientDisplayname(TextLine):
-    implements(IShipItRecipientDisplayname)
-
-
-class ShipItOrganization(TextLine):
-    implements(IShipItOrganization)
-
-
-class ShipItCity(TextLine):
-    implements(IShipItCity)
-
-
-class ShipItProvince(TextLine):
-    implements(IShipItProvince)
-
-
-class ShipItAddressline1(TextLine):
-    implements(IShipItAddressline1)
-
-
-class ShipItAddressline2(TextLine):
-    implements(IShipItAddressline2)
-
-
-class ShipItPhone(TextLine):
-    implements(IShipItPhone)
-
-
-class ShipItReason(Text):
-    implements(IShipItReason)
-
-
-class ShipItQuantity(Int):
-    implements(IShipItQuantity)
-
-
 class ProductBugTracker(Choice):
     """A bug tracker used by a Product.
 
@@ -572,7 +500,7 @@ class ProductBugTracker(Choice):
     @property
     def schema(self):
         # The IBugTracker needs to be imported here to avoid an import loop.
-        from canonical.launchpad.interfaces.bugtracker import IBugTracker
+        from lp.bugs.interfaces.bugtracker import IBugTracker
         return IBugTracker
 
     def get(self, ob):

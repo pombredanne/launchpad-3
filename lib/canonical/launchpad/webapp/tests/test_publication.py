@@ -13,7 +13,7 @@ from zope.component import getUtility
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest, WebServicePublication)

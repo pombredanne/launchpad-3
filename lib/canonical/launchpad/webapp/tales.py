@@ -12,6 +12,7 @@ import math
 import os.path
 import re
 import rfc822
+import urllib
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
@@ -23,17 +24,18 @@ from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.traversing.interfaces import ITraversable, IPathAdapter
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
 import pytz
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBug, IBugSet, IDistribution, IFAQSet,
+    IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -42,7 +44,7 @@ from canonical.launchpad.webapp.interfaces import (
     IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlappend
 from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
@@ -51,6 +53,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
+from lp.soyuz.interfaces.build import BuildStatus
 
 
 def escape(text, quote=True):
@@ -464,7 +467,9 @@ class ObjectFormatterAPI:
         :param view_name: If not None, the link will point to the page with
             that name on this object.
         """
-        raise NotImplementedError(self.link)
+        raise NotImplementedError(
+            "No link implementation for %r, IPathAdapter implementation "
+            "for %r." % (self, self._context))
 
 
 class ObjectImageDisplayAPI:
@@ -845,28 +850,38 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
-    icon_template = """
-        <img width="14" height="14" alt="%s" title="%s" src="%s" />
-        """
+    icon_template = (
+        '<img width="%(width)s" height="14" alt="%(alt)s" '
+        'title="%(title)s" src="%(src)s" />')
+
 
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
         icon_map = {
-            BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            BuildStatus.FULLYBUILT: "/@@/build-success",
-            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
-            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            BuildStatus.SUPERSEDED: "/@@/build-superseded",
-            BuildStatus.BUILDING: "/@@/build-building",
-            BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
+            BuildStatus.NEEDSBUILD: {'src': "/@@/build-needed"},
+            BuildStatus.FULLYBUILT: {'src': "/@@/build-success"},
+            BuildStatus.FAILEDTOBUILD: {
+                'src': "/@@/build-failed",
+                'width': '16'
+                },
+            BuildStatus.MANUALDEPWAIT: {'src': "/@@/build-depwait"},
+            BuildStatus.CHROOTWAIT: {'src': "/@@/build-chrootwait"},
+            BuildStatus.SUPERSEDED: {'src': "/@@/build-superseded"},
+            BuildStatus.BUILDING: {'src': "/@@/processing"},
+            BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
             }
 
         alt = '[%s]' % self._context.buildstate.name
         title = self._context.buildstate.title
-        source = icon_map[self._context.buildstate]
+        source = icon_map[self._context.buildstate].get('src')
+        width = icon_map[self._context.buildstate].get('width', '14')
 
-        return self.icon_template % (alt, title, source)
+        return self.icon_template % {
+            'alt': alt,
+            'title': title,
+            'src': source,
+            'width': width,
+            }
 
 
 class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
@@ -958,9 +973,8 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
         image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
-        return (u'<a href="%s" style="padding-left: 18px; '
-                'background: url(%s) '
-                'center left no-repeat;">%s</a>') % (
+        return (u'<a href="%s" class="bg-image" '
+                 'style="background-image: url(%s)">%s</a>') % (
             url, image_url, cgi.escape(person.browsername))
 
     def displayname(self, view_name, rootsite=None):
@@ -1140,6 +1154,68 @@ class PillarFormatterAPI(CustomizableFormatter):
         return html
 
 
+class SourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapter for ISourcePackage objects to a formatted string."""
+
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+
+class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IProductReleaseFile` objects to a formatted string."""
+
+    traversable_names = {'link': 'link'}
+
+    def link(self, view_name):
+        """A hyperlinked ProductReleaseFile.
+
+        This consists of a download icon, the link to the ProductReleaseFile
+        itself (with a tooltip stating its size) and links to that file's
+        signature and MD5 hash.
+        """
+        file_ = self._context
+        file_size = NumberFormatterAPI(
+            file_.libraryfile.content.filesize).bytes()
+        if file_.description is not None:
+            description = file_.description
+        else:
+            description = file_.libraryfile.filename
+        link_title = "%s (%s)" % (description, file_size)
+        download_url = self._getDownloadURL(file_.libraryfile)
+        md5_url = urlappend(download_url, '+md5')
+        replacements = dict(
+            url=download_url, filename=file_.libraryfile.filename,
+            md5_url=md5_url, link_title=link_title)
+        html = (
+            '<img alt="download icon" src="/@@/download" />'
+            '<strong>'
+            '  <a title="%(link_title)s" href="%(url)s">%(filename)s</a> '
+            '</strong>'
+            '(<a href="%(md5_url)s">md5</a>')
+        if file_.signature is not None:
+            html += ', <a href="%(signature_url)s">sig</a>)'
+            replacements['signature_url'] = self._getDownloadURL(
+                file_.signature)
+        else:
+            html += ')'
+        return html % replacements
+
+    @property
+    def _release(self):
+        return self._context.productrelease
+
+    def _getDownloadURL(self, lfa):
+        """Return the download URL for the given `LibraryFileAlias`."""
+        url = urlappend(canonical_url(self._release), '+download')
+        # Quote the filename to eliminate non-ascii characters which
+        # are invalid in the url.
+        url = urlappend(url, urllib.quote(lfa.filename.encode('utf-8')))
+        return str(URI(url).replace(scheme='http'))
+
+
 class BranchFormatterAPI(ObjectFormatterAPI):
     """Adapter for IBranch objects to a formatted string."""
 
@@ -1150,32 +1226,25 @@ class BranchFormatterAPI(ObjectFormatterAPI):
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
-        if branch.title is not None:
-            title = branch.title
-        else:
-            title = "(no title)"
         return {
             'bzr_identity': branch.bzr_identity,
             'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
-            'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
             'url': self.url(view_name),
             }
 
     def link(self, view_name):
-        """A hyperlinked branch icon with the unique name."""
+        """A hyperlinked branch icon with the displayname."""
         return (
-            '<a href="%(url)s" title="%(display_name)s">'
+            '<a href="%(url)s">'
             '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(unique_name)s</a>' % self._args(view_name))
+            '&nbsp;%(display_name)s</a>' % self._args(view_name))
 
     def bzrLink(self, view_name):
         """A hyperlinked branch icon with the bazaar identity."""
-        return (
-            '<a href="%(url)s" title="%(display_name)s">'
-            '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(bzr_identity)s</a>' % self._args(view_name))
+        # Defer to link.
+        return self.link(view_name)
 
     def projectLink(self, view_name):
         """A hyperlinked branch icon with the name and title."""
@@ -1319,11 +1388,8 @@ class CodeImportFormatterAPI(CustomizableFormatter):
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        branch_title = self._context.branch.title
-        if branch_title is None:
-            branch_title = _('(no title)')
         return {'product': self._context.product.displayname,
-                'branch': branch_title,
+                'branch': self._context.branch.bzr_identity,
                }
 
     def url(self, view_name=None):
@@ -1565,8 +1631,24 @@ class NumberFormatterAPI:
             return self.float(float(format))
         elif name == 'bytes':
             return self.bytes()
+        elif name == 'intcomma':
+            return self.intcomma()
         else:
             raise TraversalError(name)
+
+    def intcomma(self):
+        """Return this number with its thousands separated by comma.
+
+        This can only be used for integers.
+        """
+        if not isinstance(self._number, int):
+            raise AssertionError("This can't be used with non-integers")
+        L = []
+        for index, char in enumerate(reversed(str(self._number))):
+            if index != 0 and (index % 3) == 0:
+                L.insert(0, ',')
+            L.insert(0, char)
+        return ''.join(L)
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
@@ -1681,6 +1763,23 @@ class DateTimeFormatterAPI:
 
     def isodate(self):
         return self._datetime.isoformat()
+
+
+class SeriesSourcePackageBranchFormatter(ObjectFormatterAPI):
+    """Formatter for a SourcePackage, Pocket -> Branch link.
+
+    Since the link object is never really interesting in and of itself, we
+    always link to the source package instead.
+    """
+
+    def url(self, view_name=None, rootsite=None):
+        return queryAdapter(
+            self._context.sourcepackage, IPathAdapter, 'fmt').url(
+                view_name, rootsite)
+
+    def link(self, view_name):
+        return queryAdapter(
+            self._context.sourcepackage, IPathAdapter, 'fmt').link(view_name)
 
 
 class DurationFormatterAPI:
@@ -2148,26 +2247,31 @@ class FormattersAPI:
         return url, trailers
 
     @staticmethod
+    def _linkify_bug_number(text, bugnum, trailers=''):
+        # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
+        # we still have a link for bugs that don't exist.
+        url = '/bugs/%s' % bugnum
+
+        bugset = getUtility(IBugSet)
+        try:
+            bug = bugset.get(bugnum)
+        except NotFoundError:
+            title = "No such bug"
+        else:
+            try:
+                title = bug.title
+            except Unauthorized:
+                title = "private bug"
+        title = cgi.escape(title, quote=True)
+        # The text will have already been cgi escaped.
+        return '<a href="%s" title="%s">%s</a>%s' % (
+            url, title, text, trailers)
+
+    @staticmethod
     def _linkify_substitution(match):
         if match.group('bug') is not None:
-            bugnum = match.group('bugnum')
-            # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
-            # we still have a link for bugs that don't exist.
-            url = '/bugs/%s' % bugnum
-            # The text will have already been cgi escaped.
-            text = match.group('bug')
-            bugset = getUtility(IBugSet)
-            try:
-                bug = bugset.get(bugnum)
-            except NotFoundError:
-                title = "No such bug"
-            else:
-                try:
-                    title = bug.title
-                except Unauthorized:
-                    title = "private bug"
-            title = cgi.escape(title, quote=True)
-            return '<a href="%s" title="%s">%s</a>' % (url, title, text)
+            return FormattersAPI._linkify_bug_number(
+                match.group('bug'), match.group('bugnum'))
         elif match.group('url') is not None:
             # The text will already have been cgi escaped.  We temporarily
             # unescape it so that we can strip common trailing characters
@@ -2202,10 +2306,13 @@ class FormattersAPI:
             return '<a href="%s">%s</a>' % (url, text)
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
-            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
             path = match.group('branch')
+            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
+            path, trailers = FormattersAPI._split_url_and_trailers(path)
+            if path.isdigit():
+                return FormattersAPI._linkify_bug_number(
+                    lp_url, path, trailers)
             url = '/+branch/%s' % path
-            url, trailers = FormattersAPI._split_url_and_trailers(url)
             return '<a href="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 cgi.escape(lp_url),

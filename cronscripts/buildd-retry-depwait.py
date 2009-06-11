@@ -22,7 +22,7 @@ __metaclass__ = type
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.buildd import RetryDepwait
+from lp.soyuz.scripts.buildd import RetryDepwait
 
 if __name__ == '__main__':
     script = RetryDepwait(

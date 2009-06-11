@@ -18,16 +18,10 @@ from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import DatabaseFunctionalLayer
 
+from lp.services.testing import build_test_suite
+
 
 here = os.path.dirname(os.path.realpath(__file__))
-
-
-# Doc files that needs special fixtures.
-interface_tests = [
-    'questiontarget.txt',
-    'faqcollection.txt',
-    'faqtarget.txt',
-    ]
 
 def productSetUp(test):
     """Test environment for product."""
@@ -93,56 +87,30 @@ def create_interface_test_suite(test_file, targets):
     return suite
 
 
+special = {
+    'questiontarget.txt': create_interface_test_suite(
+        'questiontarget.txt',
+        [('product', productSetUp),
+         ('distribution', distributionSetUp),
+         ('sourcepackage', sourcepackageSetUp),
+         ('distributionsourcepackage', distributionsourcepackageSetUp),
+         ]),
+
+    'faqtarget.txt': create_interface_test_suite(
+        'faqtarget.txt',
+        [('product', productSetUp),
+         ('distribution', distributionSetUp),
+         ]),
+
+    'faqcollection.txt': create_interface_test_suite(
+        'faqcollection.txt',
+        [('product', productSetUp),
+         ('distribution', distributionSetUp),
+         ('project', projectSetUp),
+         ])
+    }
+
+
 def test_suite():
-    suite = unittest.TestSuite()
+    return build_test_suite(here, special)
 
-    suite.addTest(
-        create_interface_test_suite(
-            'questiontarget.txt',
-            [('product', productSetUp),
-             ('distribution', distributionSetUp),
-             ('sourcepackage', sourcepackageSetUp),
-             ('distributionsourcepackage', distributionsourcepackageSetUp),
-             ]))
-
-    suite.addTest(
-        create_interface_test_suite(
-            'faqtarget.txt',
-            [('product', productSetUp),
-             ('distribution', distributionSetUp),
-             ]))
-
-
-    suite.addTest(
-        create_interface_test_suite(
-            'faqcollection.txt',
-            [('product', productSetUp),
-             ('distribution', distributionSetUp),
-             ('project', projectSetUp),
-             ]))
-
-    pagetests_dir = os.path.join(os.path.pardir, 'stories')
-    suite.addTest(PageTestSuite(pagetests_dir))
-
-    testsdir = os.path.abspath(
-            os.path.normpath(os.path.join(here, os.path.pardir, 'doc'))
-            )
-
-    # Add tests using default setup/teardown
-    filenames = [filename
-                 for filename in os.listdir(testsdir)
-                 if (filename.endswith('.txt') and
-                     filename not in interface_tests)
-                 ]
-    # Sort the list to give a predictable order.
-    filenames.sort()
-    for filename in filenames:
-        path = os.path.join('../doc/', filename)
-        one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown,
-            layer=DatabaseFunctionalLayer,
-            stdout_logging_level=logging.WARNING
-            )
-        suite.addTest(one_test)
-
-    return suite

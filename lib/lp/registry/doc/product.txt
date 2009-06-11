@@ -431,6 +431,26 @@ To get all milestones of a given product we have the .all_milestones property.
     >>> [milestone.name for milestone in firefox.all_milestones]
     [u'1.0.0', u'0.9.2', u'0.9.1', u'0.9', u'1.0', u'1.0-rc1']
 
+
+== Release ==
+
+All the releases for a Product can be retrieved through the releases property.
+
+    >>> for release in firefox.releases:
+    ...     print release.version
+    0.9
+    0.9.1
+    0.9.2
+    1.0.0
+
+A single release can be retrieved via the getRelease() method by passing the
+version argument.
+
+    >>> release = firefox.getRelease('0.9.1')
+    >>> print release.version
+    0.9.1
+
+
 == Products With Branches ==
 
 Products can now specify whether they officially support Launchpad as a
@@ -461,8 +481,7 @@ Branches that are either Merged or Abandoned are not considered active.
 By marking all of Thunderbird's branches as Abandoned, thunderbird will
 no longer appear in the result set.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchLifecycleStatus)
+    >>> from lp.code.enums import BranchLifecycleStatus
     >>> from lp.code.interfaces.branchcollection import (
     ...     IAllBranches)
     >>> thunderbird_branches = getUtility(IAllBranches).inProduct(

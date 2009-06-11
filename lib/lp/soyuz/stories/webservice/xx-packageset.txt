@@ -1,0 +1,378 @@
+= Package sets =
+
+Package sets facilitate the grouping of packages for purposes like the
+control of upload permissions, the calculation of build and runtime package
+dependencies etc.
+
+Initially, package sets will be used to enforce upload permissions to source
+packages. Later they may be put to other uses as well.
+
+Please note: the purpose of the tests that follow is merely to test the
+correctness of exposing package sets on the web services API.
+
+The actual package set *functionality* is tested in much greater detail
+here:
+    
+    lib/lp/soyuz/doc/packageset.txt
+
+Please refer to the tests contained in the file above if you are really
+interested in package sets and the complete functionality they offer.
+
+We start off by creating an 'umbrella' package set that will include all
+source packages.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+
+    >>> name12 = webservice.get("/~name12").jsonBody()
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'umbrella', description=u'Contains all source packages',
+    ...     owner=name12['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+Let's make sure the newly created package set is present.
+
+    >>> login('foo.bar@canonical.com')
+    >>> import operator
+    >>> def sort_by_id(iterable):
+    ...     return sorted(iterable, key=operator.attrgetter('id'))
+    >>> def print_data(iterable):
+    ...     for datum in sort_by_id(iterable):
+    ...          print('%3d -> %s' % (datum.id, datum.name))
+
+    >>> from lp.soyuz.interfaces.packageset import (
+    ...     IPackagesetSet)
+    >>> ps_factory = getUtility(IPackagesetSet)
+    >>> print_data((ps_factory[u'umbrella'], ))
+    1 -> umbrella
+
+Can we access it via the webservice API as well?
+
+    >>> logout()
+    >>> umbrella = webservice.get("/package-sets/umbrella").jsonBody()
+    >>> print umbrella['self_link']
+    http://api.launchpad.dev/beta/package-sets/umbrella
+
+Populate the 'umbrella' package set with source packages.
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    >>> all_spns = store.find(SourcePackageName)
+    >>> response = webservice.named_post(
+    ...     '/package-sets/umbrella', 'addSources', {},
+    ...     names=[spn.name for spn in all_spns])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+Let's see what we got.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/umbrella', 'getSourcesIncluded', {})
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    ["a52dec",
+     "alsa-utils",
+     "at",
+     "cdrkit",
+     "cnews",
+     "commercialpackage",
+     "evolution",
+     "foobar",
+     "iceweasel",
+     "language-pack-de",
+     "libstdc++",
+     "linux-source-2.6.15",
+     "mozilla",
+     "mozilla-firefox",
+     "netapplet",
+     "pmount",
+     "thunderbird"]
+
+Source package associations can be severed as well. In the example below
+the 'foobar' and 'iceweasel' source package associations will be removed
+from the 'umbrella' package set.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/umbrella', 'removeSources', {},
+    ...     names=["foobar", "iceweasel"])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+Please note that the 'foobar' and 'iceweasel' source packages are absent
+from the list below.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/umbrella', 'getSourcesIncluded', {})
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    ["a52dec",
+     "alsa-utils",
+     "at",
+     "cdrkit",
+     "cnews",
+     "commercialpackage",
+     "evolution",
+     "language-pack-de",
+     "libstdc++",
+     "linux-source-2.6.15",
+     "mozilla",
+     "mozilla-firefox",
+     "netapplet",
+     "pmount",
+     "thunderbird"]
+
+Accessing the top-level package set URL will return the first 50 package sets
+sorted by name.
+
+    >>> def print_payload(response):
+    ...     body = response.jsonBody()
+    ...     for entry in body['entries']:
+    ...         print entry['self_link']
+
+    >>> response = webservice.get("/package-sets/")
+    >>> print_payload(response)
+    http://api.launchpad.dev/beta/package-sets/umbrella
+
+Package sets may include other package sets (as subsets). At this point,
+however, we only have the 'umbrella' package set. It hence has no subsets.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/umbrella', 'setsIncluded', {})
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    {"total_size": 0, "start": null, "entries": []}
+
+Let's create a few more package sets and set up a package set hierarchy.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'gnome', description=u'Contains all gnome packages',
+    ...     owner=name12['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'mozilla', description=u'Contains all mozilla packages',
+    ...     owner=name12['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'firefox', description=u'Contains all firefox packages',
+    ...     owner=name12['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'thunderbird',
+    ...     description=u'Contains all thunderbird packages',
+    ...     owner=name12['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'languagepack',
+    ...     description=u'Contains all languagepack packages',
+    ...     owner=name12['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+In order to test whether methods relating to package set hierarchies were
+exposed on the Launchpad API correctly we will define the following package
+set hierarchy:
+
+    * umbrella
+      * gnome
+        * languagepack
+      * mozilla
+        * firefox
+        * thunderbird
+          * languagepack
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/umbrella', 'addSubsets', {},
+    ...     names=[u'gnome', u'mozilla'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/gnome', 'addSubsets', {}, names=[u'languagepack'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/thunderbird', 'addSubsets', {},
+    ...     names=[u'languagepack'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/mozilla', 'addSubsets', {},
+    ...     names=[u'firefox', u'thunderbird'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+The 'umbrella' package set should have plenty of subsets now.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/umbrella', 'setsIncluded', {})
+    >>> print_payload(response)
+    http://api.launchpad.dev/beta/package-sets/firefox
+    http://api.launchpad.dev/beta/package-sets/gnome
+    http://api.launchpad.dev/beta/package-sets/languagepack
+    http://api.launchpad.dev/beta/package-sets/mozilla
+    http://api.launchpad.dev/beta/package-sets/thunderbird
+
+However only two of the above are direct subsets.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/umbrella', 'setsIncluded', {},
+    ...     direct_inclusion=True)
+    >>> print_payload(response)
+    http://api.launchpad.dev/beta/package-sets/gnome
+    http://api.launchpad.dev/beta/package-sets/mozilla
+
+Let's ask the question the other way around what package sets are including
+a particular subset?
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/languagepack', 'setsIncludedBy', {})
+    >>> print_payload(response)
+    http://api.launchpad.dev/beta/package-sets/gnome
+    http://api.launchpad.dev/beta/package-sets/mozilla
+    http://api.launchpad.dev/beta/package-sets/thunderbird
+    http://api.launchpad.dev/beta/package-sets/umbrella
+
+The list of package sets that *directly* include 'languagepack' will be
+shorter because the transitive closure is ignored.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/languagepack', 'setsIncludedBy', {},
+    ...     direct_inclusion=True)
+    >>> print_payload(response)
+    http://api.launchpad.dev/beta/package-sets/gnome
+    http://api.launchpad.dev/beta/package-sets/thunderbird
+
+We can remove subsets as well. In the example below 'thunderbird' will
+stop including 'languagepack'.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/thunderbird', 'removeSubsets', {},
+    ...     names=[u'languagepack'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+And, here we go, now 'languagepack' has only one direct predecessor: 'gnome'.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/languagepack', 'setsIncludedBy', {},
+    ...     direct_inclusion=True)
+    >>> print_payload(response)
+    http://api.launchpad.dev/beta/package-sets/gnome
+
+Let's add a few source packages to the 'firefox' and the 'thunderbird'
+package sets.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/firefox', 'addSources', {},
+    ...     names=['at', 'mozilla-firefox', 'language-pack-de'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/firefox', 'getSourcesIncluded', {})
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    ["at", "language-pack-de", "mozilla-firefox"]
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/thunderbird', 'addSources', {},
+    ...     names=['at', 'cnews', 'thunderbird', 'language-pack-de'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/thunderbird', 'getSourcesIncluded', {})
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    ["at", "cnews", "language-pack-de", "thunderbird"]
+
+Which package sets include 'mozilla-firefox'?
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/', 'setsIncludingSource', {},
+    ...     sourcepackagename=u'mozilla-firefox')
+    >>> print_payload(response)
+    http://api.launchpad.dev/beta/package-sets/firefox
+    http://api.launchpad.dev/beta/package-sets/mozilla
+    http://api.launchpad.dev/beta/package-sets/umbrella
+
+Which package sets include the 'mozilla-firefox' source package *directly*?
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/', 'setsIncludingSource', {},
+    ...     sourcepackagename=u'mozilla-firefox',
+    ...     direct_inclusion=True)
+    >>> print_payload(response)
+    http://api.launchpad.dev/beta/package-sets/firefox
+    http://api.launchpad.dev/beta/package-sets/umbrella
+
+What source packages are shared by the 'firefox' and the 'thunderbird'
+package sets?
+
+    >>> thunderbird = webservice.get("/package-sets/thunderbird").jsonBody()
+    >>> response = webservice.named_get(
+    ...     '/package-sets/firefox', 'getSourcesSharedBy', {},
+    ...     other_package_set=thunderbird['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    ["at", "language-pack-de"]
+
+How about the complement set i.e. the packages not shared?
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/firefox', 'getSourcesNotSharedBy', {},
+    ...     other_package_set=thunderbird['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    ["mozilla-firefox"]
+
+    >>> firefox = webservice.get("/package-sets/firefox").jsonBody()
+    >>> response = webservice.named_get(
+    ...     '/package-sets/thunderbird', 'getSourcesNotSharedBy', {},
+    ...     other_package_set=firefox['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    ["cnews", "thunderbird"]
+

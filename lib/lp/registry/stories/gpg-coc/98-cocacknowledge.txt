@@ -34,7 +34,7 @@ Ensure the CoC was acknowledge by searching in the CoC Admin Console:
 Test if the advertisement email was sent:
 
   >>> import email
-  >>> from canonical.launchpad.mail import stub
+  >>> from lp.services.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> msg = email.message_from_string(raw_msg)
   >>> print msg.get_payload(decode=True)

@@ -12,12 +12,14 @@ from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
-from lp.code.interfaces.branchsubscription import (
+from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel, IBranchSubscription)
+    CodeReviewNotificationLevel)
+from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership)
 
 
 class BranchSubscription(SQLBase):
@@ -29,7 +31,7 @@ class BranchSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership, notNull=True)
     branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
     notification_level = EnumCol(enum=BranchSubscriptionNotificationLevel,
                                  notNull=True, default=DEFAULT)

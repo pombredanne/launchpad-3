@@ -19,6 +19,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
+    'ProductSeriesTemplatesView',
     'ProductSeriesTranslationsBzrImportView',
     'ProductSeriesTranslationsExportView',
     'ProductSeriesTranslationsMenu',
@@ -30,24 +31,29 @@ import cgi
 import os.path
 
 from bzrlib.revision import NULL_REVISION
+
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from lp.code.interfaces.codeimport import (
     ICodeImportSet)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from canonical.launchpad.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces.productserieslanguage import (
+    IProductSeriesLanguageSet)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimporter import (
@@ -58,7 +64,7 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, NavigationMenu, StandardLaunchpadFacets,
-    stepto)
+    stepthrough, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -93,6 +99,25 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(productseries=self.context)
+
+    @stepthrough('+lang')
+    def traverse_lang(self, langcode):
+        """Retrieve the ProductSeriesLanguage or a dummy if it is None."""
+        # We do not want users to see the 'en' pofile because
+        # we store the messages we want to translate as English.
+        if langcode == 'en':
+            raise NotFoundError(langcode)
+
+        langset = getUtility(ILanguageSet)
+        try:
+            lang = langset[langcode]
+        except IndexError:
+            # Unknown language code.
+            raise NotFoundError
+        psl_set = getUtility(IProductSeriesLanguageSet)
+        psl = psl_set.getProductSeriesLanguage(self.context, lang)
+
+        return psl
 
     def traverse(self, name):
         return self.context.getRelease(name)
@@ -132,7 +157,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
-        return Link('+edit', text, icon='edit')
+        summary = 'Edit this series'
+        return Link('+edit', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -148,16 +174,20 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def link_branch(self):
-        text = 'Link to branch'
-        return Link('+linkbranch', text, icon='edit')
+        if self.context.branch is None:
+            text = 'Link to branch'
+        else:
+            text = "Change branch"
+        summary = 'The code branch that for this series.'
+        return Link('+linkbranch', text, summary, icon='add')
 
     def ubuntupkg(self):
         text = 'Link to Ubuntu package'
-        return Link('+ubuntupkg', text, icon='edit')
+        return Link('+ubuntupkg', text, icon='add')
 
     def add_package(self):
         text = 'Link to other package'
-        return Link('+addpackage', text, icon='edit')
+        return Link('+addpackage', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def create_milestone(self):
@@ -176,7 +206,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     def subscribe(self):
         text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
+        return Link('+subscribe', text, icon='add')
 
 class ProductSeriesBugsMenu(ApplicationMenu):
 
@@ -248,31 +278,29 @@ class ProductSeriesTranslationsMenuMixIn:
     """Translation menu for ProductSeries.
     """
     def overview(self):
-        text = 'Overview'
-        return Link('', text)
+        return Link('', 'Overview')
+
+    @enabled_with_permission('launchpad.Edit')
+    def templates(self):
+        return Link('+templates', 'Templates')
 
     @enabled_with_permission('launchpad.Edit')
     def settings(self):
-        text = 'Settings'
-        return Link('+translations-settings', text, icon='edit')
+        return Link('+translations-settings', 'Settings')
 
     @enabled_with_permission('launchpad.Edit')
     def requestbzrimport(self):
-        text = 'Request Bazaar import'
-        return Link('+request-bzr-import', text)
+        return Link('+request-bzr-import', 'Request Bazaar import')
 
     @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
-        text = 'Upload'
-        return Link('+translations-upload', text, icon='add')
+        return Link('+translations-upload', 'Upload')
 
     def translationdownload(self):
-        text = 'Download'
-        return Link('+export', text, icon='download')
+        return Link('+export', 'Download')
 
     def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', 'Import queue')
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):
@@ -289,9 +317,8 @@ class ProductSeriesTranslationsMenu(NavigationMenu,
     """Translations navigation menus for `IProductSeries` objects."""
     usedfor = IProductSeries
     facet = 'translations'
-    links = ('overview', 'settings', 'requestbzrimport',
-             'translationupload', 'translationdownload',
-             'imports')
+    links = ('overview', 'templates', 'settings', 'requestbzrimport',
+             'translationupload', 'translationdownload', 'imports')
 
 
 class ProductSeriesTranslationsExportView(BaseExportView):
@@ -585,6 +612,68 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         branch = self.context.branch
         return (branch is not None and
                 check_permission('launchpad.View', branch))
+
+    @property
+    def productserieslanguages(self):
+        """Get ProductSeriesLanguage objects to display.
+
+        Produces a list containing a ProductSeriesLanguage object for
+        each language this product has been translated into, and for each
+        of the user's preferred languages. Where the series has no
+        ProductSeriesLanguage for that language, we use a
+        DummyProductSeriesLanguage.
+        """
+
+        if self.context.potemplate_count == 0:
+            return None
+
+        # Find the existing PSLs.
+        productserieslangs = list(self.context.productserieslanguages)
+
+        # Make a set of the existing languages.
+        existing_languages = set(psl.language for psl in productserieslangs)
+
+        # Find all the preferred languages which are not in the set of
+        # existing languages, and add a dummy PSL for each of them.
+        if self.user is not None:
+            productserieslangset = getUtility(IProductSeriesLanguageSet)
+            for lang in self.user.languages:
+                if lang.code != 'en' and lang not in existing_languages:
+                    if self.single_potemplate:
+                        pot = self.context.getCurrentTranslationTemplates()[0]
+                        pofile = pot.getPOFileByLang(lang.code)
+                        if pofile is None:
+                            pofile = pot.getDummyPOFile(lang.code)
+                        productserieslang = productserieslangset.getDummy(
+                            self.context, lang, pofile=pofile)
+                    else:
+                        productserieslang = productserieslangset.getDummy(
+                            self.context, lang)
+                    productserieslangs.append(
+                        productserieslang)
+
+        return sorted(productserieslangs,
+                      key=lambda a: a.language.englishname)
+
+    @property
+    def has_translation_documentation(self):
+        """Are there translation instructions for this product."""
+        translation_group = self.context.product.translationgroup
+        return (translation_group is not None and
+                translation_group.translation_guide_url is not None)
+
+    @property
+    def single_potemplate(self):
+        """Does this ProductSeries have exactly one POTemplate."""
+        return self.context.potemplate_count == 1
+
+    @cachedproperty
+    def released_and_active_milestones(self):
+        """Milestones that are active or have releases."""
+        return [
+            milestone
+            for milestone in self.context.all_milestones
+            if milestone.active or milestone.product_release is not None]
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -880,3 +969,15 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
             self.request.response.addInfoNotification(
                 _("The import has been requested."))
 
+
+class ProductSeriesTemplatesView(LaunchpadView):
+    """Show a list of all templates for the ProductSeries."""
+
+    is_distroseries = False
+
+    def iter_templates(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(productseries=self.context)
+
+    def can_administer(self, template):
+        return check_permission('launchpad.Admin', template)

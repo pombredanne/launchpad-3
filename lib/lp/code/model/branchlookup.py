@@ -8,8 +8,8 @@ __metaclass__ = type
 __all__ = []
 
 from zope.component import (
-    adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
-from zope.interface import classProvides, implementer, implements
+    adapts, getSiteManager, getUtility, queryMultiAdapter)
+from zope.interface import implements
 
 from storm.expr import Join
 from sqlobject import SQLObjectNotFound
@@ -23,19 +23,17 @@ from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import (
-    CannotHaveLinkedBranch, IBranchLookup, ICanHasLinkedBranch,
-    ILinkedBranchTraversable, ILinkedBranchTraverser, ISourcePackagePocket,
-    ISourcePackagePocketFactory, NoLinkedBranch)
+    IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
+from lp.code.interfaces.linkedbranch import get_linked_branch, NoLinkedBranch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
-from lp.registry.interfaces.productseries import (
-    IProductSeries, NoSuchProductSeries)
+from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.validators.name import valid_name
@@ -152,39 +150,13 @@ class DistroSeriesTraversable:
         sourcepackage = self.distroseries.getSourcePackage(name)
         if sourcepackage is None:
             raise NoSuchSourcePackageName(name)
-        return getUtility(ISourcePackagePocketFactory).new(
-            sourcepackage, self.pocket)
-
-
-class HasLinkedBranch:
-    """A thing that has a linked branch."""
-
-    implements(ICanHasLinkedBranch)
-
-    def __init__(self, branch):
-        self.branch = branch
-
-
-@adapter(IProductSeries)
-@implementer(ICanHasLinkedBranch)
-def product_series_linked_branch(product_series):
-    """The series branch of a product series is its linked branch."""
-    return HasLinkedBranch(product_series.branch)
-
-
-@adapter(IProduct)
-@implementer(ICanHasLinkedBranch)
-def product_linked_branch(product):
-    """The series branch of a product's development focus is its branch."""
-    return HasLinkedBranch(product.development_focus.branch)
+        return sourcepackage.getSuiteSourcePackage(self.pocket)
 
 
 sm = getSiteManager()
 sm.registerAdapter(ProductTraversable)
 sm.registerAdapter(DistributionTraversable)
 sm.registerAdapter(DistroSeriesTraversable)
-sm.registerAdapter(product_series_linked_branch)
-sm.registerAdapter(product_linked_branch)
 
 
 class LinkedBranchTraverser:
@@ -203,53 +175,6 @@ class LinkedBranchTraverser:
             if traversable is None:
                 break
         return context
-
-
-class SourcePackagePocket:
-    """A source package and a pocket.
-
-    This exists to provide a consistent interface for the error condition of
-    users looking up official branches for the pocket of a source package
-    where no such linked branch exists. All of the other "no linked branch"
-    cases have a single object for which there is no linked branch -- this is
-    the equivalent for source packages.
-    """
-
-    implements(ISourcePackagePocket)
-    classProvides(ISourcePackagePocketFactory)
-
-    def __init__(self, sourcepackage, pocket):
-        self.sourcepackage = sourcepackage
-        self.pocket = pocket
-
-    @classmethod
-    def new(cls, package, pocket):
-        """See `ISourcePackagePocketFactory`."""
-        return cls(package, pocket)
-
-    def __eq__(self, other):
-        """See `ISourcePackagePocket`."""
-        try:
-            other = ISourcePackagePocket(other)
-        except TypeError:
-            return NotImplemented
-        return (
-            self.sourcepackage == other.sourcepackage
-            and self.pocket == other.pocket)
-
-    def __ne__(self, other):
-        """See `ISourcePackagePocket`."""
-        return not (self == other)
-
-    @property
-    def displayname(self):
-        """See `ISourcePackagePocket`."""
-        return self.sourcepackage.getPocketPath(self.pocket)
-
-    @property
-    def branch(self):
-        """See `ISourcePackagePocket`."""
-        return self.sourcepackage.getBranch(self.pocket)
 
 
 class BranchLookup:
@@ -423,12 +348,7 @@ class BranchLookup:
             doesn't.
         :return: The linked branch, an `IBranch`.
         """
-        has_linked_branch = adapt(provided, ICanHasLinkedBranch)
-        if has_linked_branch is None:
-            raise CannotHaveLinkedBranch(provided)
-        branch = has_linked_branch.branch
-        if branch is None:
-            raise NoLinkedBranch(provided)
+        branch = get_linked_branch(provided)
         if not check_permission('launchpad.View', branch):
             raise NoLinkedBranch(provided)
         return branch

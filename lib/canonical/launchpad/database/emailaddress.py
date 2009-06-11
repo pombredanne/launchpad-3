@@ -61,12 +61,15 @@ class EmailAddress(SQLBase, HasOwnerMixin):
         if self.status == EmailAddressStatus.PREFERRED:
             raise UndeletableEmailAddress(
                 "This is a person's preferred email, so it can't be deleted.")
-        mailing_list = self.person.mailing_list
+        mailing_list = self.person and self.person.mailing_list
         if mailing_list is not None and mailing_list.address == self.email:
             raise UndeletableEmailAddress(
                 "This is the email address of a team's mailing list, so it "
                 "can't be deleted.")
 
+        # XXX 2009-05-04 jamesh bug=371567: This function should not
+        # be responsible for removing subscriptions, since the SSO
+        # server can't write to that table.
         for subscription in MailingListSubscription.selectBy(
             email_address=self):
             subscription.destroySelf()

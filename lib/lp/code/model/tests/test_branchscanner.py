@@ -9,9 +9,9 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchscanner import IBranchScanner
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches)
 from canonical.testing.layers import DatabaseFunctionalLayer

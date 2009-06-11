@@ -1,0 +1,32 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad" >
+
+  <body>
+  <tal:tag condition="view/update"/>
+
+  <div metal:fill-slot="main">
+
+    <h1>Change
+      <tal:distro replace="context/title">Ubuntu Linux</tal:distro>'s
+      translation settings</h1>
+
+    <div metal:use-macro="context/@@launchpad_editform/editform">
+
+      <p metal:fill-slot="extra_info">
+        Select the translation group that will be responsible for translations
+        in <tal:distro replace="context/title">Ubuntu Linux</tal:distro>,
+        and the translation permissions used by the distribution.
+      </p>
+    </div>
+  </div>
+
+</body>
+</html>

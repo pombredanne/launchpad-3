@@ -34,19 +34,23 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
-from storm.expr import And, Not, Or, Select
+from storm.expr import Alias, And, Count, In, Not, Or, Select
+from storm.store import Store
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from lp.bugs.model.bug import Bug, BugAffectsPerson, BugTag
+from lp.bugs.model.bugsubscription import BugSubscription
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.validators.name import valid_name
 from lp.registry.model.distribution import Distribution
-from canonical.launchpad.database.distroarchseries import DistroArchSeries
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
     HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
@@ -59,6 +63,8 @@ from canonical.launchpad.interfaces.hwdb import (
     IllegalQuery, ParameterError)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import License
 from lp.registry.interfaces.person import validate_public_person
@@ -178,32 +184,13 @@ class HWSubmissionSet:
         else:
             return ""
 
-    def _userHasAccessStormClause(self, user):
-        """Limit results of HWSubmission queries to rows the user can access.
-        """
-        submission_is_public = Not(HWSubmission.private)
-        admins = getUtility(ILaunchpadCelebrities).admin
-        janitor = getUtility(ILaunchpadCelebrities).janitor
-        if user is None:
-            return submission_is_public
-        elif user.inTeam(admins) or user == janitor:
-            return True
-        else:
-            public = Not(HWSubmission.private)
-            subselect = Select(
-                TeamParticipation.teamID,
-                And(HWSubmission.ownerID == TeamParticipation.teamID,
-                    TeamParticipation.personID == user.id))
-            has_access = HWSubmission.ownerID.is_in(subselect)
-            return Or(public, has_access)
-
     def getBySubmissionKey(self, submission_key, user=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             HWSubmission,
             And(HWSubmission.submission_key == submission_key,
-                self._userHasAccessStormClause(user))).one()
+                _userCanAccessSubmissionStormClause(user))).one()
 
     def getByFingerprintName(self, name, user=None):
         """See `IHWSubmissionSet`."""
@@ -243,23 +230,12 @@ class HWSubmissionSet:
         rows = HWSubmission.selectBy(submission_key=submission_key)
         return rows.count() > 0
 
-    def setOwnership(self, email):
-        """See `IHWSubmissionSet`."""
-        assert email.status in (EmailAddressStatus.VALIDATED,
-                                EmailAddressStatus.PREFERRED), (
-            'Invalid email status for setting ownership of an HWDB '
-            'submission: %s' % email.status.title)
-        submissions =  HWSubmission.selectBy(
-            raw_emailaddress=email.email, owner=None)
-        for submission in submissions:
-            submission.ownerID = email.personID
-
     def getByStatus(self, status, user=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(HWSubmission,
                                 HWSubmission.status == status,
-                                self._userHasAccessStormClause(user))
+                                _userCanAccessSubmissionStormClause(user))
         # Provide a stable order. Sorting by id, to get the oldest
         # submissions first. When date_submitted has an index, we could
         # sort by that first.
@@ -306,7 +282,7 @@ class HWSubmissionSet:
 
         result_set = store.find(
             HWSubmission,
-            self._userHasAccessStormClause(user),
+            _userCanAccessSubmissionStormClause(user),
             *args)
         # Many devices are associated with more than one driver, even
         # for one submission, hence we may have more than one
@@ -323,6 +299,192 @@ class HWSubmissionSet:
         # We don't actually need to transform the results, which is why
         # the second argument is a no-op.
         return DecoratedResultSet(result_set, lambda result: result)
+
+    def _submissionsSubmitterSelects(
+        self, target_column, bus, vendor_id, product_id, driver_name,
+        package_name, distro_target):
+        """Return Select objects for statistical queries.
+
+        :return: A tuple
+            (select_device_related_records, select_all_records)
+            where select_device_related_records is a Select instance
+            returning target_column matching all other method
+            parameters, and where select_all_records is a Select
+            instance returning target_column and matching distro_target,
+        :param target_column: The records returned by the Select instance.
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: The name of the driver used for the device
+            (optional).
+        :param package_name: The name of the package the driver is a part of.
+            (optional).
+        :param distro_target: Limit the result to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
+        """
+        tables, clauses = make_distro_target_clause(distro_target)
+        if HWSubmission not in tables:
+            tables.append(HWSubmission)
+        clauses.append(
+            HWSubmission.status == HWSubmissionProcessingStatus.PROCESSED)
+
+        all_submissions = Select(
+            columns=[target_column], tables=tables, where=And(*clauses),
+            distinct=True)
+
+        device_tables, device_clauses = (
+            make_submission_device_statistics_clause(
+                bus, vendor_id, product_id, driver_name, package_name, True))
+        submission_ids = Select(
+            columns=[HWSubmissionDevice.submissionID],
+            tables=device_tables, where=And(*device_clauses))
+
+        clauses.append(In(HWSubmission.id, submission_ids))
+        submissions_with_device = Select(
+            columns=[target_column], tables=tables, where=And(*clauses),
+            distinct=True)
+
+        return (submissions_with_device, all_submissions)
+
+    def numSubmissionsWithDevice(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distro_target=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        submissions_with_device_select, all_submissions_select = (
+            self._submissionsSubmitterSelects(
+                Count(), bus, vendor_id, product_id, driver_name,
+                package_name, distro_target))
+        submissions_with_device = store.execute(
+            submissions_with_device_select)
+        all_submissions = store.execute(all_submissions_select)
+        return (submissions_with_device.get_one()[0],
+                all_submissions.get_one()[0])
+
+    def numOwnersOfDevice(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distro_target=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        submitters_with_device_select, all_submitters_select = (
+            self._submissionsSubmitterSelects(
+                HWSubmission.raw_emailaddress, bus, vendor_id, product_id,
+                driver_name, package_name, distro_target))
+
+        submitters_with_device = store.execute(
+            Select(
+                columns=[Count()],
+                tables=[Alias(submitters_with_device_select, 'addresses')]))
+        all_submitters = store.execute(
+            Select(
+                columns=[Count()],
+                tables=[Alias(all_submitters_select, 'addresses')]))
+
+        return (submitters_with_device.get_one()[0],
+                all_submitters.get_one()[0])
+
+    def deviceDriverOwnersAffectedByBugs(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        tables, clauses = make_submission_device_statistics_clause(
+                bus, vendor_id, product_id, driver_name, package_name, False)
+        clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
+        clauses.append(HWSubmission.owner == Person.id)
+        clauses.append(_userCanAccessSubmissionStormClause(user))
+
+        if ((bug_ids is None or len(bug_ids) == 0) and
+            (bug_tags is None or len(bug_tags) == 0)):
+            raise ParameterError('bug_ids or bug_tags must be supplied.')
+
+        if bug_ids is not None and bug_ids is not []:
+            clauses.append(In(Bug.id, bug_ids))
+
+        if bug_tags is not None and bug_tags is not []:
+            clauses.extend([
+                Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
+
+        person_clauses = [
+            Bug.ownerID == HWSubmission.ownerID
+            ]
+        if subscribed_to_bug:
+            person_clauses.append(
+                And(BugSubscription.personID == HWSubmission.ownerID,
+                    BugSubscription.bug == Bug.id))
+        if affected_by_bug:
+            person_clauses.append(
+                And(BugAffectsPerson.personID == HWSubmission.ownerID,
+                    BugAffectsPerson.bug == Bug.id,
+                    BugAffectsPerson.affected))
+
+        clauses.append(Or(person_clauses))
+        result = store.find(
+            Person, And(*clauses))
+        result.order_by(Person.displayname)
+        result.config(distinct=True)
+        return result
+
+    def hwInfoByBugRelatedUsers(
+        self, bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        if ((bug_ids is None or len(bug_ids) == 0) and
+            (bug_tags is None or len(bug_tags) == 0)):
+            raise ParameterError('bug_ids or bug_tags must be supplied.')
+
+        tables = [
+            Person, HWSubmission, HWSubmissionDevice, HWDeviceDriverLink,
+            HWDevice, HWVendorID, Bug, BugTag,
+            ]
+
+        clauses = [
+            Person.id == HWSubmission.ownerID,
+            HWSubmissionDevice.submission == HWSubmission.id,
+            HWSubmissionDevice.device_driver_link == HWDeviceDriverLink.id,
+            HWDeviceDriverLink.device == HWDevice.id,
+            HWDevice.bus_vendor == HWVendorID.id
+            ]
+
+        if bug_ids is not None and bug_ids is not []:
+            clauses.append(In(Bug.id, bug_ids))
+
+        if bug_tags is not None and bug_tags is not []:
+            clauses.extend([Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
+
+        clauses.append(_userCanAccessSubmissionStormClause(user))
+
+        person_clauses = [Bug.ownerID == HWSubmission.ownerID]
+        if subscribed_to_bug:
+            person_clauses.append(
+                And(BugSubscription.personID == HWSubmission.ownerID,
+                    BugSubscription.bug == Bug.id))
+            tables.append(BugSubscription)
+        if affected_by_bug:
+            person_clauses.append(
+                And(BugAffectsPerson.personID == HWSubmission.ownerID,
+                    BugAffectsPerson.bug == Bug.id,
+                    BugAffectsPerson.affected))
+            tables.append(BugAffectsPerson)
+        clauses.append(Or(person_clauses))
+
+        query = Select(
+            columns=[
+                Person.name, HWVendorID.bus,
+                HWVendorID.vendor_id_for_bus, HWDevice.bus_product_id
+                ],
+            tables=tables, where=And(*clauses), distinct=True,
+            order_by=[HWVendorID.bus, HWVendorID.vendor_id_for_bus,
+                      HWDevice.bus_product_id, Person.name])
+
+        return [
+            (person_name, HWBus.items[bus_id], vendor_id, product_id)
+             for person_name, bus_id, vendor_id, product_id
+             in store.execute(query)]
 
 
 class HWSystemFingerprint(SQLBase):
@@ -706,20 +868,37 @@ class HWDriverSet:
 
     def create(self, package_name, name, license):
         """See `IHWDriverSet`."""
+        if package_name is None:
+            package_name = ''
         return HWDriver(package_name=package_name, name=name, license=license)
 
     def getByPackageAndName(self, package_name, name):
         """See `IHWDriverSet`."""
-        return HWDriver.selectOneBy(package_name=package_name,
-                                    name=name)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        if package_name in (None, ''):
+            return store.find(
+                HWDriver,
+                Or(HWDriver.package_name == None,
+                   HWDriver.package_name == ''),
+                HWDriver.name == name).one()
+        else:
+            return store.find(
+                HWDriver, HWDriver.package_name == package_name,
+                HWDriver.name == name).one()
 
     def getOrCreate(self, package_name, name, license=None):
         """See `IHWDriverSet`."""
-        link = HWDriver.selectOneBy(package_name=package_name,
-                                    name=name)
-        if link is None:
+        # Bugs 306265, 369769: If the method parameter package_name is
+        # None, and if no matching record exists, we create new records
+        # with package_name = '', but we must also search for old records
+        # where package_name == None in order to avoid the creation of
+        # two records where on rcord has package_name=None and the other
+        # package_name=''.
+        driver = self.getByPackageAndName(package_name, name)
+
+        if driver is None:
             return self.create(package_name, name, license)
-        return link
+        return driver
 
     def search(self, package_name=None, name=None):
         """See `IHWDriverSet`."""
@@ -886,6 +1065,28 @@ class HWSubmissionDeviceSet:
         return store.find(
             HWSubmissionDevice, HWSubmissionDevice.id == id).one()
 
+    def numDevicesInSubmissions(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distro_target=None):
+        """See `IHWSubmissionDeviceSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        tables, where_clauses = make_submission_device_statistics_clause(
+            bus, vendor_id, product_id, driver_name, package_name, True)
+
+        distro_tables, distro_clauses = make_distro_target_clause(
+            distro_target)
+        if distro_clauses:
+            tables.extend(distro_tables)
+            where_clauses.extend(distro_clauses)
+            where_clauses.append(
+                HWSubmissionDevice.submission == HWSubmission.id)
+
+        result = store.execute(
+            Select(
+                columns=[Count()], tables=tables, where=And(*where_clauses)))
+        return result.get_one()[0]
+
 
 class HWSubmissionBug(SQLBase):
     """See `IHWSubmissionBug`."""
@@ -897,6 +1098,7 @@ class HWSubmissionBug(SQLBase):
                               notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
 
+
 class HWSubmissionBugSet:
     """See `IHWSubmissionBugSet`."""
 
@@ -904,4 +1106,137 @@ class HWSubmissionBugSet:
 
     def create(self, submission, bug):
         """See `IHWSubmissionBugSet`."""
+        store = Store.of(bug)
+        existing_link = store.find(
+            HWSubmissionBug,
+            And(HWSubmissionBug.submission == submission,
+                HWSubmissionBug.bug == bug)).one()
+        if existing_link is not None:
+            return existing_link
         return HWSubmissionBug(submission=submission, bug=bug)
+
+    def remove(self, submission, bug):
+        """See `IHWSubmissionBugSet`."""
+        store = Store.of(bug)
+        link = store.find(
+            HWSubmissionBug,
+            And(HWSubmissionBug.bug == bug,
+                HWSubmissionBug.submission == submission.id)).one()
+        if link is not None:
+            store.remove(link)
+
+    def submissionsForBug(self, bug, user=None):
+        """See `IHWSubmissionBugSet`."""
+        store = Store.of(bug)
+        result = store.find(
+            HWSubmission, And(HWSubmissionBug.bug == bug,
+                              HWSubmissionBug.submission == HWSubmission.id,
+                              _userCanAccessSubmissionStormClause(user)))
+        result.order_by(HWSubmission.submission_key)
+        return result
+
+
+def make_submission_device_statistics_clause(
+    bus, vendor_id, product_id, driver_name, package_name,
+    device_ids_required):
+    """Create a where expression and a table list for selecting devices.
+    """
+    tables = [HWSubmissionDevice, HWDeviceDriverLink, HWVendorID, HWDevice]
+    where_clauses = [
+        HWSubmissionDevice.device_driver_link == HWDeviceDriverLink.id,
+        ]
+
+    if device_ids_required:
+        if bus is None or vendor_id is None or product_id is None:
+            raise ParameterError("Device IDs are required.")
+    else:
+        device_specified = [
+            param
+            for param in (bus, vendor_id, product_id)
+            if param is not None]
+
+        if len(device_specified) not in (0, 3):
+            raise ParameterError(
+                'Either specify bus, vendor_id and product_id or none of '
+                'them.')
+        if bus is None and driver_name is None:
+            raise ParameterError(
+                'Specify (bus, vendor_id, product_id) or driver_name.')
+    if bus is not None:
+        where_clauses.extend([
+            HWVendorID.bus == bus,
+            HWVendorID.vendor_id_for_bus == vendor_id,
+            HWDevice.bus_vendor == HWVendorID.id,
+            HWDeviceDriverLink.device == HWDevice.id,
+            HWDevice.bus_product_id == product_id
+            ])
+
+    if driver_name is None and package_name is None:
+        where_clauses.append(HWDeviceDriverLink.driver == None)
+    else:
+        tables.append(HWDriver)
+        where_clauses.append(HWDeviceDriverLink.driver == HWDriver.id)
+        if driver_name is not None:
+            where_clauses.append(HWDriver.name == driver_name)
+        if package_name is not None:
+            if package_name == '':
+                # XXX Abel Deuring, 2009-05-07, bug=306265. package_name
+                # should be declared notNull=True. For now, we must query
+                # for the empty string as well as for None.
+                where_clauses.append(
+                    Or(HWDriver.package_name == package_name,
+                       HWDriver.package_name == None))
+            else:
+                where_clauses.append(HWDriver.package_name == package_name)
+
+    return tables, where_clauses
+
+def make_distro_target_clause(distro_target):
+    """Create a where expression and a table list to limit results to a
+    distro target.
+    """
+    if distro_target is not None:
+        if IDistroArchSeries.providedBy(distro_target):
+            return (
+                [HWSubmission],
+                [HWSubmission.distroarchseries == distro_target.id])
+        elif IDistroSeries.providedBy(distro_target):
+            return (
+                [DistroArchSeries, HWSubmission],
+                [
+                    HWSubmission.distroarchseries == DistroArchSeries.id,
+                    DistroArchSeries.distroseries == distro_target.id,
+                    ])
+        elif IDistribution.providedBy(distro_target):
+            return (
+                [DistroArchSeries, DistroSeries, HWSubmission],
+                [
+                    HWSubmission.distroarchseries == DistroArchSeries.id,
+                    DistroArchSeries.distroseries == DistroSeries.id,
+                    DistroSeries.distribution == distro_target.id,
+                    ])
+        else:
+            raise ValueError(
+                'Parameter distro_target must be an IDistribution, '
+                'IDistroSeries or IDistroArchSeries')
+    return ([], [])
+
+def _userCanAccessSubmissionStormClause(user):
+    """Limit results of HWSubmission queries to rows the user can access.
+    """
+    submission_is_public = Not(HWSubmission.private)
+    admins = getUtility(ILaunchpadCelebrities).admin
+    janitor = getUtility(ILaunchpadCelebrities).janitor
+    if user is None:
+        return submission_is_public
+    elif user.inTeam(admins) or user == janitor:
+        return True
+    else:
+        public = Not(HWSubmission.private)
+        subselect = Select(
+            TeamParticipation.teamID,
+            And(HWSubmission.ownerID == TeamParticipation.teamID,
+                TeamParticipation.personID == user.id))
+        has_access = HWSubmission.ownerID.is_in(subselect)
+        return Or(public, has_access)
+

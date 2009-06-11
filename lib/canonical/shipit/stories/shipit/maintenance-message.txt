@@ -1,0 +1,17 @@
+= Shipit maintenance message =
+
+When Shipit is about to go down for maintenance, we display a warning at the
+top of every page, just like in launchpad.
+
+    >>> import os
+    >>> os.system(
+    ... 'date --iso-8601=minutes -u -d +10mins30secs > +maintenancetime.txt')
+    0
+
+    >>> browser.open('http://shipit.ubuntu.dev')
+    >>> print extract_text(first_tag_by_class(browser.contents, 'highlighted'))
+    Shipit will be going offline for maintenance in ...
+
+Remove +maintenancetime.txt to clean up.
+
+    >>> os.remove('+maintenancetime.txt')

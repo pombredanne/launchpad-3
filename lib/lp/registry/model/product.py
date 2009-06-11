@@ -35,13 +35,13 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from lp.code.model.branch import BranchSet
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
-from canonical.launchpad.database.bug import (
+from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import (
+from lp.bugs.model.bugtarget import (
     BugTargetBase, OfficialBugTagTargetMixin)
-from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.bugtracker import BugTracker
-from canonical.launchpad.database.bugwatch import BugWatch
+from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtracker import BugTracker
+from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -62,20 +62,19 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
-from canonical.launchpad.database.specification import (
+from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import HasSprintsMixin
+from lp.blueprints.model.sprint import HasSprintsMixin
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
-from lp.code.interfaces.branch import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.code.enums import BranchMergeProposalStatus
+from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
@@ -87,7 +86,7 @@ from lp.registry.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.translationgroup import (
@@ -892,12 +891,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                              summary=summary, branch=branch)
 
     def getRelease(self, version):
-        return ProductRelease.selectOne("""
-            ProductRelease.productseries = ProductSeries.id AND
-            ProductSeries.product = %s AND
-            ProductRelease.version = %s
-            """ % sqlvalues(self.id, version),
-            clauseTables=['ProductSeries'])
+        """See `IProduct`."""
+        store = Store.of(self)
+        origin = [
+            ProductRelease,
+            Join(Milestone, ProductRelease.milestone == Milestone.id),
+            ]
+        result = store.using(*origin)
+        return result.find(
+            ProductRelease,
+            And(Milestone.product == self,
+                Milestone.name == version)).one()
 
     def packagedInDistros(self):
         distros = Distribution.select(
@@ -961,6 +965,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(BugTask.product == self.id,
                 BugTask.bugwatch == BugWatch.id,
                 BugWatch.bugtracker == self.getExternalBugTracker()))
+
+    def getTimeline(self, include_inactive=False):
+        """See `IProduct`."""
+        return [series.getTimeline(include_inactive=include_inactive)
+                for series in self.serieses]
 
 
 class ProductSet:

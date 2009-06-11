@@ -12,10 +12,10 @@ from storm.store import Store
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.bug import CreateBugParams
-from canonical.launchpad.interfaces.bugtask import (
+from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, IBugTaskSet)
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus, SpecificationPriority)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet

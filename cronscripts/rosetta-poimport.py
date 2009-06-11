@@ -7,7 +7,7 @@ import _pythonpath
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.scripts.po_import import ImportProcess
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 # Time goal for this run.  It is not exact.  The script will run for longer
 # than this time, but will know to stop taking on new batches of imports.

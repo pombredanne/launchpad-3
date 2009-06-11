@@ -1213,17 +1213,28 @@ example a Ghostscript driver of a printer or a Sane scanner backend.
 
 The submitted data does not need to contain package information for all
 drivers, hence the field package_name may be None or the empty string
-(see below).
+(see below). In both cases, a HWDriver record is created where
+package_name is the empty string.
 
     >>> driver2 = driver_set.create(package_name=None,
     ...                             name='whatever',
     ...                             license=License.GNU_GPL_V2)
     >>> print driver2.name
     whatever
-    >>> print driver2.package_name
-    None
+    >>> print repr(driver2.package_name)
+    u''
     >>> print driver2.license.title
     GNU GPL v2
+
+    >>> driver_blank_package_name = driver_set.create(package_name='',
+    ...                                               name='bar',
+    ...                             license=License.GNU_GPL_V3)
+    >>> print driver_blank_package_name.name
+    bar
+    >>> print repr(driver_blank_package_name.package_name)
+    u''
+    >>> print driver_blank_package_name.license.title
+    GNU GPL v3
 
 Since we also do not always know the license of a driver, the license
 may too be None.
@@ -1259,7 +1270,7 @@ The tuple (driver name, package name) must be unique.
     Traceback (most recent call last):
     ...
     IntegrityError: duplicate key... violates unique
-    constraint "hwdriver__name__key"
+    constraint "hwdriver__package_name__name__key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -1272,11 +1283,18 @@ IHWDriverSet.getByPackageAndName().
     >>> print driver.name
     usb
 
-    >>> driver = driver_set.getByPackageAndName(None, 'whatever')
-    >>> print driver.package_name
-    None
+If we want to search for a driver without a known package, we can
+pass None as well as the empty string.
+
+    >>> driver = driver_set.getByPackageAndName('', 'whatever')
+    >>> print repr(driver.package_name)
+    u''
     >>> print driver.name
     whatever
+
+    >>> driver2 = driver_set.getByPackageAndName(None, 'whatever')
+    >>> driver2.id == driver.id
+    True
 
 If no existing record matches the parameters of the
 IHWDriverSet.getByPackageAndName() call, None is returned.
@@ -1302,6 +1320,35 @@ the given parameters or creates a new one, if no existing record matches.
     foo
     >>> print driver.package_name
     linux-image-generic
+
+If we pass None as the value for package_name, we get records where
+package_name is None or the empty string.
+
+    >>> driver = driver_set.getOrCreate(None, 'whatever')
+    >>> print repr(driver.package_name)
+    u''
+    >>> print driver.name
+    whatever
+
+Older HWDriver records may store None as the package name. We can
+retrieve these records by passing None for package_name...
+
+    >>> from canonical.launchpad.database.hwdb import HWDriver
+    >>> old_driver = HWDriver(package_name=None, name=u'foo', license=None)
+    >>> print old_driver.name
+    foo
+    >>> print old_driver.package_name
+    None
+
+    >>> driver = driver_set.getOrCreate(None, 'foo')
+    >>> driver.id == old_driver.id
+    True
+
+...as well as the empty string.
+
+    >>> driver = driver_set.getOrCreate('', 'foo')
+    >>> driver.id == old_driver.id
+    True
 
 IHWDriverSet.search() returns a sequence of driver records matching the
 given parameters.
@@ -1332,15 +1379,22 @@ HWDriver.package_name=null).
     >>> drivers = driver_set.search(package_name='')
     >>> for driver in drivers:
     ...    print repr(driver.package_name), driver.name
-    None whatever
+    u'' whatever
+    u'' bar
     u'' something_else
+    None foo
 
     >>> drivers = driver_set.search(package_name='', name='whatever')
     >>> for driver in drivers:
-    ...    print driver.package_name, driver.name
-    None whatever
+    ...    print repr(driver.package_name), driver.name
+    u'' whatever
 
-If no parameters are specific, IHWDriverSet.search() returns all driver
+    >>> drivers = driver_set.search(package_name='', name='foo')
+    >>> for driver in drivers:
+    ...    print repr(driver.package_name), driver.name
+    None foo
+
+If no parameters are specified, IHWDriverSet.search() returns all driver
 records.
 
     >>> drivers = driver_set.search()
@@ -1354,9 +1408,11 @@ records.
     u'linux-image-2.6.24-19-generic' ahci
     u'linux-image-2.6.24-19-generic' sr
     u'linux-image-generic' usb
-    None whatever
+    u'' whatever
+    u'' bar
     u'' something_else
     u'linux-image-generic' foo
+    None foo
 
 HWDriverSet.getByID() returns a HWDriver record with the given database ID.
 
@@ -1431,7 +1487,6 @@ HWDriverSet.packages_names is a distinct list of known package names.
     <BLANKLINE>
     linux-image-2.6.24-19-generic
     linux-image-generic
-    None
 
 
 == HWDeviceDriverLink ==
@@ -1765,3 +1820,841 @@ This method returns None if a nonexistent ID is passed.
 
     >>> print submission_device_set.get(1000000)
     None
+
+
+== Statistical functions ==
+
+HWSubmissionDeviceSet.numDevicesInSubmissions() returns how often a
+device appears in HWDB submissions.
+
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    1
+
+If a device appears more than once in a submission, it is counted as often
+as it appears in the submission. We have currently only unique devices
+in the existing data, so let's add another IDE disk to submission 2.
+
+    >>> ide_disk = device_set.getByDeviceID(
+    ...     HWBus.IDE, 'SEAGATE', 'ST3250820NS     ')
+    >>> # We'll use the same parent as that of the existing IDE disk.
+    >>> parent = getUtility(IHWSubmissionDeviceSet).get(17)
+    >>> submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
+    ...     'sample-submission')
+    >>> # The value of hal_device_id is arbitrary: It is intended for
+    >>> # for consistency checks and debugging.
+    >>> factory.makeHWSubmissionDevice(submission, ide_disk, None, parent, 1)
+    <HWSubmissionDevice at...
+
+The number returned for the query "count the number of Seagate
+ST3250820NS" disks increased.
+
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    2
+
+Note that we did _not_ add a HWSubmissionDevice entry for the device
+driven by the kernel's sd driver. So, when we query the number of
+disks driven by the sd driver, we'll get 1 as without the recently
+added device.
+
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd')
+    1
+
+Let's now create a nother HWDB submission, and let's add
+HWSubmissionDevice entries for the disk and the new submission, both
+for the "plain" disk and for the disk driven by the sd driver.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> # Set the emailaddress and hence the owner to a non-default
+    >>> # value so that we have submissions with different owners.
+    >>> submission = factory.makeHWSubmission(
+    ...     emailaddress='foo.bar@canonical.com')
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    >>> first_device = factory.makeHWSubmissionDevice(
+    ...     submission, ide_disk, None, None, 1)
+    >>> driver = getUtility(IHWDriverSet).getOrCreate(
+    ...     'linux-image-generic', 'sd')
+    >>> factory.makeHWSubmissionDevice(
+    ...     submission, ide_disk, driver, first_device, 2)
+    <HWSubmissionDevice at...
+    >>> from canonical.launchpad.interfaces.hwdb import (
+    ...    HWSubmissionProcessingStatus)
+    >>> # We consider only submissions in the status PROCESSED for
+    >>> # statistics.
+    >>> submission.status = HWSubmissionProcessingStatus.PROCESSED
+    >>> LaunchpadZopelessLayer.txn.commit()
+
+The number of all ST3250820NS disks and of those disks driven by
+the sd driver has now increased by 1.
+
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    3
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd')
+    2
+
+We can optionally specify a driver's package name too.
+
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='linux-image-2.6.24-19-generic')
+    1
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='nonsense')
+    0
+
+And we can query for devices having any driver from a given package too.
+
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='linux-image-2.6.24-19-generic')
+    1
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='nonsense')
+    0
+
+We can additionally query for devices in submissions made for a given
+distribution. The device from the new submission we just created is
+not counted here, because we created the new submission for a new
+distribution.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu)
+    2
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=debian)
+    0
+
+Similary, we can limit the count to devices mentioned in submissions
+made for a given distroseries.
+
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary'])
+    2
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['warty'])
+    0
+
+And we can also search for devices mentioned in submissions made on a
+given processor architecture.
+
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    2
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['hppa'])
+    0
+
+We can also query the number of devices controlled by a given driver
+for a distrotarget.
+
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', distro_target=ubuntu['hoary']['i386'])
+    1
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nonsense', distro_target=ubuntu['hoary']['i386'])
+    0
+
+And we can additionally specify a package name.
+
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    1
+    >>> print submission_device_set.numDevicesInSubmissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='nonsense',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    0
+
+HWSubmissionSet.numSubmissionsWithDevice() returns all submissions
+mentioning a given device and all processed submissions.
+
+We have currently two processed submissions, both containing the
+Seagate ST3250820NS disk. Let's add another submission for hoary/i386
+and mark it as "processed" so that we have one processed submission
+that does not contain this disk.
+
+    >>> submission = factory.makeHWSubmission(
+    ...     distroarchseries=ubuntu['hoary']['i386'])
+    >>> submission.status = HWSubmissionProcessingStatus.PROCESSED
+
+    >>> submission_set = getUtility(IHWSubmissionSet)
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    (2L, 3L)
+
+We can limit the results to a given driver...
+
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd')
+    (2L, 3L)
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='usb')
+    (0L, 3L)
+
+...to a distibution...
+
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu)
+    (1L, 2L)
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=debian)
+    (0L, 0L)
+
+...to a distroseries...
+
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary'])
+    (1L, 2L)
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['warty'])
+    (0L, 0L)
+
+...or to a distroarchseries.
+
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['hppa'])
+    (0L, 0L)
+
+We can specify a distro target as well as a driver or package name.
+
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nosense', distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='nonsense', distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nonsense',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+HWSubmission.numDeviceOwners() returns the number of device owners.
+Note that we identify owners by the email address as queried by the
+HWDB client, not by HWSubmission.owner.
+
+We have currently three submissions from two submitters, and submissions
+from both submitters metion the Seagate ST3250820NS disk. Let's add
+another, empty, submission for hoary/i386 from another submitter.
+
+    >>> submission = factory.makeHWSubmission(
+    ...     emailaddress='charles@babbage.com',
+    ...     distroarchseries=ubuntu['hoary']['i386'])
+    >>> submission.status = HWSubmissionProcessingStatus.PROCESSED
+
+Now we have three submitters, two of them own our Seagate disk.
+
+    >>> submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    (2L, 3L)
+
+We can limit the results to a given driver...
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd')
+    (2L, 3L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='usb')
+    (0L, 3L)
+
+...to a distibution...
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu)
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=debian)
+    (0L, 0L)
+
+...to a distroseries...
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['warty'])
+    (0L, 0L)
+
+...or to a distroarchseries.
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['hppa'])
+    (0L, 0L)
+
+We can specify a distro target as well as a driver or package name.
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nosense', distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='nonsense', distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nonsense',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+
+== Relations between bugs and HWDB submissions ==
+
+We can query which owners of a device, or which people owning a device
+controlled by a given driver, are related to a set of bugs. We must
+specify a device's bus, vendor ID and product ID and one or more bugs.
+
+By default, only bug reporters are looked up. Sample Person has made
+a hardware report containing the IDE disk Seagate ST3250820NS, and
+he has filed bug 1.
+
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> bug_set = getUtility(IBugSet)
+    >>> bug_one = bug_set.get(1)
+    >>> print bug_one.owner.displayname
+    Sample Person
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1]):
+    ...     print person.displayname
+    Sample Person
+
+If Foo Bar says that he is affected by this bug, he will be listed
+too, since he too owns the Seagate disk.
+
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> bug_one = bug_set.get(1)
+    >>> bug_one.markUserAffected(foo_bar)
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], affected_by_bug=True):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+When he says that he is not affected by the bug, he will no longer
+be listed.
+
+    >>> bug_one.markUserAffected(foo_bar, False)
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], affected_by_bug=True):
+    ...     print person.displayname
+    Sample Person
+
+By setting the parameter subscribed_to_bug to True, we can also look
+for bug subscribers who own a given device.
+
+    >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
+    <BugSubscription at ...
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+    >>> bug_one.unsubscribe(foo_bar, unsubscribed_by=foo_bar)
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True):
+    ...     print person.displayname
+    Sample Person
+
+We can specify more than one bug ID. If we specify bugs 1 and 3,
+deviceDriverOwnersAffectedByBugs() returns again Sample Person and
+Foo Bar.
+
+    >>> bug_three = bug_set.get(3)
+    >>> print bug_three.owner.displayname
+    Foo Bar
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1, 3]):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+Instead of passing a seqence of bug IDs, we can also specify one or
+more bug tags.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, IBugTaskSet)
+    >>> from canonical.launchpad.searchbuilder import any
+
+    >>> bugtask_set = getUtility(IBugTaskSet)
+    >>> bugtasks = bugtask_set.search(
+    ...     BugTaskSearchParams(user=foo_bar, tag=any('pebcak')))
+    >>> owners = set(bugtask.bug.owner for bugtask in bugtasks)
+    >>> for owner in owners:
+    ...     print owner.displayname
+    Sample Person
+    >>> bugtasks = bugtask_set.search(
+    ...     BugTaskSearchParams(user=foo_bar, tag=any('crash')))
+    >>> owners = set(bugtask.bug.owner for bugtask in bugtasks)
+    >>> for owner in owners:
+    ...     print owner.displayname
+    Foo Bar
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_tags=['pebcak']):
+    ...     print person.displayname
+    Sample Person
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_tags=['pebcak', 'crash']):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+    >>> submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_tags=['lunch-money']).count()
+    0
+
+We can limit the result to owners who use a device with a given driver
+by providing a driver_name parameter...
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', bug_tags=['pebcak', 'crash']):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+    >>> print submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nonsense', bug_tags=['pebcak', 'crash']).count()
+    0
+
+...or a given package name by providing a package_name parameter.
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     bug_tags=['pebcak', 'crash']):
+    ...     print person.displayname
+    Sample Person
+
+    >>> print submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='nonsense', bug_tags=['pebcak', 'crash']).count()
+    0
+
+Owners of private submissions are only included if the optional parameter
+`user` is the owner or an admin.
+
+    >>> private_submission = factory.makeHWSubmission(
+    ...     emailaddress='no-priv@canonical.com', private=True)
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    >>> first_device = factory.makeHWSubmissionDevice(
+    ...     private_submission, ide_disk, None, None, 1)
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
+    <BugSubscription at ...
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True, user=no_priv):
+    ...     print person.displayname
+    No Privileges Person
+    Sample Person
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True, user=foo_bar):
+    ...     print person.displayname
+    No Privileges Person
+    Sample Person
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True, user=sample_person):
+    ...     print person.displayname
+    Sample Person
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True):
+    ...     print person.displayname
+    Sample Person
+
+
+=== Searching for drivers instead of devices ===
+
+We can also look for people using a given driver and being affected by a
+bug.
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[1]):
+    ...     print person.displayname
+    Sample Person
+
+If Foo Bar says that he is affected by this bug, he will be listed
+too, since his machine too uses the sd driver.
+
+    >>> bug_one.markUserAffected(foo_bar)
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[1], affected_by_bug=True):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+He is also listed, if he subscribes to bug 1.
+
+    >>> bug_one.markUserAffected(foo_bar, False)
+    >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
+    <BugSubscription at ...
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[1], subscribed_to_bug=True):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+We can specify more than one bug ID. If we specify bugs 1 and 3,
+deviceDriverOwnersAffectedByBugs() returns again Sample Person and
+Foo Bar.
+
+    >>> bug_one.unsubscribe(foo_bar, unsubscribed_by=foo_bar)
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[1, 3]):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+Instead of passing a sequence of bug IDs, we can also specify one or
+more bug tags.
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_tags=['pebcak']):
+    ...     print person.displayname
+    Sample Person
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_tags=['pebcak', 'crash']):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+    >>> submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_tags=['lunch-money']).count()
+    0
+
+We can also query for both bug ids and bug tags together.
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[2], bug_tags=['pebcak']):
+    ...     print person.displayname
+    Sample Person
+
+Also, confirm that nothing is returned where there is no matching
+tag on a given bug id.
+
+    >>> print len(list(submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[3], bug_tags=['pebcak'])))
+    0
+
+If neither a device nor a driver name is specified,
+deviceDriverOwnersAffectedByBugs() raises an error.
+
+    >>> submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bug_tags=['lunch-money'])
+    Traceback (most recent call last):
+    ...
+    ParameterError: Specify (bus, vendor_id, product_id) or driver_name.
+
+If one of the parameters bus, vendor_id, product_id is supplied, the
+others must be supplied too.
+
+    >>> submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, bug_ids=[1], subscribed_to_bug=True)
+    Traceback (most recent call last):
+    ...
+    ParameterError: Either specify bus, vendor_id and product_id or none
+    of them.
+
+For a given bug, we can get a list of devices by device owner.
+The result is a tuple of (owner_id, bus_number, vender_id, product_id).
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_ids=[1]):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+This method can also take a list of bugs.
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_ids=[1, 3]):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'name16', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+We can also query for bug tags instead of bug numbers.
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_tags=['pebcak']):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_tags=['pebcak', 'crash']):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'name16', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+We can also query for both bug ids and bug tags together.
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_ids=[2], bug_tags=['pebcak']):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+Also, confirm that nothing is returned where there is no matching
+tag on a given bug id.
+
+    >>> print len(submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_ids=[3], bug_tags=['pebcak']))
+    0
+
+This method can also be used to list devices where the
+device owner is affected by the bug.
+
+    >>> bug_one.markUserAffected(foo_bar)
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_ids=[1], affected_by_bug=True):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'name16', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+    >>> bug_one.markUserAffected(foo_bar, False)
+
+We can also check for when the user is subscribed to the bug.
+
+    >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
+    <BugSubscription ...
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_ids=[1], subscribed_to_bug=True):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'name16', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+    >>> bug_one.unsubscribe(foo_bar, unsubscribed_by=foo_bar)
+
+Data from private submissions is not included by default.
+The owner of a private submission can see his or her submission.
+
+    >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
+    <BugSubscription ...
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_ids=[1], subscribed_to_bug=True, user=no_priv):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'no-priv', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+An admin can also see no_priv's private entry.
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_ids=[1], subscribed_to_bug=True, user=foo_bar):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'no-priv', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+But sample_person cannot see the private entry because she
+is not the owner or an admin.
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
+    ...     bug_ids=[1], subscribed_to_bug=True, user=sample_person):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+    >>> bug_one.unsubscribe(no_priv, unsubscribed_by=no_priv)

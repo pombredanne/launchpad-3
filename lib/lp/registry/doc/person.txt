@@ -450,7 +450,7 @@ entries into teams.
     # notifications are sent when we add the owner as a member of
     # the team.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> stub.test_emails = []
 
     >>> not_a_person.convertToTeam(team_owner=ddaa)
@@ -693,7 +693,7 @@ reject it for the BugSubscription.person and
 BugSubscription.subscribed_by attributes.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet, PersonVisibility)
     >>> from canonical.launchpad.database import BugSubscription

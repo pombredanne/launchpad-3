@@ -10,7 +10,7 @@ import queue.
 The import queue is linked from the translations page for distribution.
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu')
-    >>> user_browser.getLink('See import queue').click()
+    >>> user_browser.getLink('Import queue').click()
 
 There is no content for Ubuntu.
 
@@ -30,7 +30,7 @@ There is no content for Ubuntu.
 The import queue is linked from the translations page for distribution series.
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> user_browser.getLink('See import queue').click()
+    >>> user_browser.getLink('Import queue').click()
 
 And obviously, given that the ubuntu distribution had no content, Hoary, an
 Ubuntu distro series has also no content.

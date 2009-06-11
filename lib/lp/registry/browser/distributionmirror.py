@@ -15,11 +15,11 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.archivepublisher.debversion import Version
+from lp.archivepublisher.debversion import Version
 from canonical.launchpad import _
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.launchpad.browser.sourceslist import (
+from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.cachedproperty import cachedproperty
 from lp.registry.interfaces.distribution import (

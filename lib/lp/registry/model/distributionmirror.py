@@ -20,26 +20,26 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 
-from canonical.archivepublisher.diskpool import poolify
+from lp.archivepublisher.diskpool import poolify
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.database.country import Country
-from canonical.launchpad.database.files import (
+from lp.services.worlddata.model.country import Country
+from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (
     get_email_template, get_contact_email_addresses, shortlist)
-from canonical.launchpad.interfaces.binarypackagerelease import (
+from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFileType)
-from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror, IDistributionMirrorSet, IMirrorCDImageDistroSeries,

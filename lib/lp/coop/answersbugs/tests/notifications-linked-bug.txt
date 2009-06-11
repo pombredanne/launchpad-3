@@ -18,7 +18,7 @@ of changes to the bug status:
     ...     bugtask, original_bugtask, ['status', 'statusexplanation'],
     ...     user=no_priv))
 
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> from lp.testing.mail_helpers import pop_notifications
     >>> notifications = pop_notifications()
     >>> len(notifications)
     2

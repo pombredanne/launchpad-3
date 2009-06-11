@@ -330,7 +330,7 @@ up on the public mirror listings.
     >>> transaction.commit()
 
     >>> import email
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> len(stub.test_emails)
     2
     >>> stub.test_emails.sort(lambda a, b: cmp(a[1], b[1])) # sort by to_addr

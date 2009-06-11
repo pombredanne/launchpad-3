@@ -36,7 +36,7 @@ All merge proposals have to be registered by a Person.
     >>> person_set = getUtility(IPersonSet)
     >>> login('test@canonical.com')
     >>> sample_person = person_set.getByEmail('test@canonical.com')
-    >>> from canonical.launchpad.testing import time_counter
+    >>> from lp.testing import time_counter
     >>> now = time_counter()
 
 In order to register a merge proposal there has to be a source branch
@@ -85,8 +85,7 @@ recent branch merge proposals first.
     ...     target_branch=target_branch, dependent_branch=scanned_branch)
     >>> proposal = proposal.resubmit(proposal.registrant)
     >>> proposal.rejectBranch(sample_person, 'some-revision')
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchMergeProposalStatus)
+    >>> from lp.code.enums import BranchMergeProposalStatus
     >>> proposal = factory.makeBranchMergeProposal(
     ...     target_branch=target_branch, dependent_branch=scanned_branch,
     ...     set_state=BranchMergeProposalStatus.MERGED)
@@ -136,7 +135,6 @@ recent branch merge proposals first.
 
 A branch merge proposal can be in one of several states:
 
-    >>> from canonical.launchpad.interfaces import BranchMergeProposalStatus
     >>> for state in BranchMergeProposalStatus:
     ...     print state.title
     Work in progress
@@ -248,14 +246,6 @@ branches also record the revision that was rejected.
     Rejected
     >>> proposal.reviewed_revision_id == tip.revision_id
     True
-
-Rejected proposals cannot be approved again.  They must be resubmitted
-(see below).
-
-    >>> proposal.approveBranch(sample_person, tip.revision_id)
-    Traceback (most recent call last):
-    BadStateTransition: Invalid state transition for merge proposal:
-      Rejected -> Approved
 
 Proposals that are `Approved` can be moved back into the
 `Needs review` state.
@@ -382,10 +372,9 @@ In order to make it easier to propose branches to merge on similar
 branches, there is a method on the branch set that returns the branches that a
 user has previously targeted for merging.
 
-    >>> gnome_terminal = branch.product
-    >>> branch_set = getUtility(IBranchSet)
-    >>> branches = branch_set.getTargetBranchesForUsersMergeProposals(
-    ...     sample_person, gnome_terminal)
+    >>> collection = branch.target.collection.targetedBy(sample_person)
+    >>> collection = collection.visibleByUser(sample_person)
+    >>> branches = collection.getBranches().config(distinct=True)
     >>> for branch in branches:
     ...     print branch.unique_name
     ~name12/gnome-terminal/main

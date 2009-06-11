@@ -33,8 +33,6 @@ function update_branch_url()
 
 function update_branch_unique_name()
 {
-  // XXX: JonathanLange 2008-12-08 spec=package-branches: This will need to
-  // change.
   var unique_name = document.getElementById("branch-unique-name")
   var owner = document.getElementById("field.owner")
   var name = document.getElementById("field.name").value

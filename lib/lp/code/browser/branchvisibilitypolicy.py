@@ -18,9 +18,9 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
+from lp.code.enums import BranchVisibilityRule, TeamBranchVisibilityRule
 from lp.code.interfaces.branchvisibilitypolicy import (
-    BranchVisibilityRule, IBranchVisibilityTeamPolicy,
-    TeamBranchVisibilityRule)
+    IBranchVisibilityTeamPolicy)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.widgets.itemswidgets import (

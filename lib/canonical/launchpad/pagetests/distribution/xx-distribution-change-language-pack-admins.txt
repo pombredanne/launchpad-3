@@ -7,7 +7,7 @@ owner, on the +select-language-pack-admin page.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://translations.launchpad.dev/ubuntu/')
-    >>> browser.getLink('Change language pack admins')
+    >>> browser.getLink('Language pack admin')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -22,7 +22,7 @@ Mark is one of the distribution owners, so he's able to reach that page.
 
     >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://translations.launchpad.dev/ubuntu/')
-    >>> browser.getLink('Change language pack admins').click()
+    >>> browser.getLink('Language pack admin').click()
 
 Current value is empty.
 
