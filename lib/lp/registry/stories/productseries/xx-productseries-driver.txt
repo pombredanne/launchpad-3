@@ -7,10 +7,15 @@ by appointing someone else as the driver.
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/1.0')
   >>> print extract_text(find_tag_by_id(browser.contents, 'series-details'))
-  Project: Mozilla Firefox ...
-  Series: 1.0
-  Status: Active Development
-  Drivers: Sample Person
+  Project:
+  Mozilla Firefox ...
+  Series:
+  1.0
+  Status:
+  Active Development
+  Drivers:
+  Sample Person
+  Appoint driver
 
   >>> browser.getLink('Appoint driver').click()
 
@@ -37,8 +42,14 @@ message explains that the driver changed.
 Sample Person and Guilherme Salgado are listed as the drivers of Firefox 1.0.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'series-details'))
-    Project: Mozilla Firefox ...
-    Series: 1.0
-    Status: Active Development
-    Drivers: Guilherme Salgado, Sample Person
+    Project:
+    Mozilla Firefox ...
+    Series:
+    1.0
+    Status:
+    Active Development
+    Drivers:
+    Guilherme Salgado,
+    Sample Person
+    Appoint driver
 
