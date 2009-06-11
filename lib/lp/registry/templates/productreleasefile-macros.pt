@@ -10,6 +10,8 @@
       - 'file': The ProductReleaseFile
       - 'has_edit': A boolean saying whether the user has edit rights on this
                     ProductReleaseFile.
+      - checkbox_index: A unique integer to be appended to the name of the
+                        checkbox included in this macro.
   </tal:comment>
 
   <tal:define-lfa define="lfa file/libraryfile">
@@ -34,6 +36,7 @@
             <strong tal:content="lfa/last_downloaded/fmt:approximateduration" />
             since last download
           </tal:not-downloaded-today>
+        </span>
       </tal:downloaded>
       <tal:not-downloaded condition="not:lfa/hits">
         -
@@ -42,8 +45,7 @@
     <td tal:condition="has_edit"
         align="center">
       <input type="checkbox"
-             tal:define="cbnum string:${repeat/file/index}"
-             tal:attributes="value lfa/id; name string:checkbox_${cbnum}" />
+        tal:attributes="value lfa/id; name string:checkbox_${checkbox_index}" />
     </td>
   </tal:define-lfa>
 

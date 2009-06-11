@@ -78,8 +78,8 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from lp.code.enums import BranchMergeProposalStatus
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IBugTarget
