@@ -125,6 +125,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
         self.assertEqual([], view.current_reviews)
         self.assertEqual([], view.requested_reviews)
+        self.assertEqual([], view.unsolicited_reviews)
 
     def testRequestedOrdering(self):
         # No votes should return empty lists
@@ -168,6 +169,22 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.assertEqual(
             [charles, bob, albert],
             [review.reviewer for review in view.current_reviews])
+
+    def testUnsolicitedReviewOrdering(self):
+        # Most recent first.
+        albert = self.factory.makePerson(name='albert')
+        bob = self.factory.makePerson(name='bob')
+        charles = self.factory.makePerson(name='charles')
+        self._createComment(albert, CodeReviewVote.APPROVE)
+        self._createComment(bob, CodeReviewVote.ABSTAIN)
+        self._createComment(charles, CodeReviewVote.DISAPPROVE)
+
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+
+        self.assertEqual(
+            [charles, bob, albert],
+            [review.message.owner for review in view.unsolicited_reviews])
+        self.assertEqual([], view.current_reviews)
 
     def testChangeOfVoteBringsToTop(self):
         # Changing the vote changes the vote date, so it comes to the top.

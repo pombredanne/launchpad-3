@@ -473,6 +473,20 @@ class BranchMergeProposalVoteView(LaunchpadView):
                       reverse=True)
 
     @cachedproperty
+    def unsolicited_reviews(self):
+        solicited_reviewers = set(review.reviewer for review in self.reviews)
+        unsolicited_reviews = []
+        for comment in self.context.all_comments:
+            if comment.vote is None:
+                continue
+            if comment.message.owner in solicited_reviewers:
+                continue
+            unsolicited_reviews.append(comment)
+        unsolicited_reviews.sort(
+            key=lambda x: x.message.datecreated, reverse=True)
+        return unsolicited_reviews
+
+    @cachedproperty
     def show_user_review_link(self):
         """Show self in the review table if can review and not asked."""
         if self.user is None or not self.context.isMergable():
