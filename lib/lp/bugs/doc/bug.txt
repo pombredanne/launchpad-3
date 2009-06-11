@@ -9,7 +9,7 @@ Architecture.
 Bugs are created and retrieved via IBugSet.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet, IBug
+    >>> from lp.bugs.interfaces.bug import IBugSet, IBug
     >>> bugset = getUtility(IBugSet)
 
 To retrieve a specific Bug, use IBugSet.get:
@@ -55,7 +55,7 @@ we will register a handler to observe the event.
 
 The event can be seen when we file a bug.
 
-    >>> from canonical.launchpad.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
 
     >>> steve_harris = factory.makePerson(name='steve-harris')
     >>> params = CreateBugParams(
@@ -140,7 +140,7 @@ security proxied, which doesn't make sense to test here.)
 To search for bugs matching specific criteria, use IBugSet.searchAsUser:
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> def current_user():
     ...     return getUtility(ILaunchBag).user
@@ -268,7 +268,7 @@ firefox_crashes bug, we can still access properties of this bug:
 Note that a search will return all public bugs, omitting bug 14 which is
 private:
 
-    >>> from canonical.launchpad.database.bug import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> from canonical.launchpad.interfaces.lpstorm import IStore
     >>> all_bugs = set(IStore(Bug).find(Bug).values(Bug.id))
 
@@ -319,7 +319,7 @@ And again, let's fake setting the bug private:
 Then let's permit the Ubuntu Team to access this bug by adding them to
 the Cc list:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
 
     >>> ubuntu_team = personset.get(17)
@@ -385,7 +385,7 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> productset = getUtility(IProductSet)
     >>> bugset = getUtility(IBugSet)
 
@@ -453,8 +453,9 @@ This works similarly for distributions; in this case the
 "maintainer" is considered the person who maintains the applicable
 sourcepackage. E.g.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ISourcePackageNameSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> distributionset = getUtility(IDistributionSet)
     >>> spnset = getUtility(ISourcePackageNameSet)
     >>> ubuntu = distributionset.get(1)
@@ -520,7 +521,7 @@ Adding a comment.
 
 Changing the bug summary.
 
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
 
     >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
@@ -554,7 +555,7 @@ Changing the description.
 
 Modifying a bugtask will update IBug.date_last_updated.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance, BugTaskStatus, IUpstreamBugTask)
 
     >>> firefox_task = firefox_bug.bugtasks[0]
@@ -588,7 +589,7 @@ Modifying a bugtask will update IBug.date_last_updated.
 
 Adding a new task.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> thunderbird = productset.getByName("thunderbird")
 
@@ -622,7 +623,7 @@ createTask(), above.
 
 You can also add bugs for a specific distro.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_task = firefox_bug.addTask(
     ...     owner=foobar, target=ubuntu)
@@ -653,7 +654,7 @@ Also for a specific distribution source package.
 
 And for a distro series source package.
 
-    >>> from canonical.launchpad.database import SourcePackage
+    >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> firefox_package = ubuntu.getSourcePackage('mozilla-firefox')
     >>> warty_fox_package = SourcePackage(
     ...     distroseries=warty,
@@ -736,8 +737,10 @@ Marking as duplicate.
 Adding an attachment.
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugAttachmentSet, ILibraryFileAliasSet, IMessageSet)
+    >>> from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
 
     >>> firefox_bug.attachments.count()
     0
@@ -770,7 +773,7 @@ Adding an attachment.
 
 Editing an attachment.
 
-    >>> from canonical.launchpad.interfaces import IBugAttachment
+    >>> from lp.bugs.interfaces.bugattachment import IBugAttachment
 
     >>> attachment_before_modification = Snapshot(
     ...     attachment, providing=IBugAttachment)
@@ -806,7 +809,7 @@ Adding a branch.
 
 Editing a branch.
 
-    >>> from canonical.launchpad.interfaces import BugBranchStatus, IBugBranch
+    >>> from lp.bugs.interfaces.bugbranch import BugBranchStatus, IBugBranch
 
     >>> branch_before_modification = Snapshot(
     ...     bug_branch, providing=IBugBranch)
@@ -828,7 +831,7 @@ Editing a branch.
 
 Linking to a CVE.
 
-    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> from lp.bugs.interfaces.cve import ICveSet
 
     >>> firefox_bug.cve_links.count()
     0
@@ -848,8 +851,8 @@ Linking to a CVE.
 
 Linking to an external bug tracker.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugWatchSet, IBugTrackerSet)
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> firefox_bug.watches.count()
     0
@@ -871,7 +874,7 @@ Linking to an external bug tracker.
 
 Editing the external bug watch.
 
-    >>> from canonical.launchpad.interfaces import IBugWatch
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatch
 
     >>> bugwatch_before_modification = Snapshot(
     ...     bugwatch, providing=IBugWatch)
