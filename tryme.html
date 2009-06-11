@@ -1,0 +1,1162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en" dir="ltr">
+  <head>
+    <title>Change project details</title>
+    
+
+    <!-- Launchpad style sheet -->
+    
+    <style type="text/css" media="screen, print">@import url(https://launchpad.dev/+icing/rev8089/style.css);</style>
+    
+    
+    <!--[if lte IE 7]>
+      <style type="text/css">#lp-apps span {margin: 0 0.125%;}</style>
+    <![endif]-->
+    
+    <style type="text/css">
+      fieldset.collapsed div, fieldset div.collapsed {display: none;}
+    </style>
+    <noscript>
+      <style type="text/css">
+        fieldset.collapsible div, fieldset div.collapsed {display: block;}
+      </style>
+    </noscript>
+
+    <link rel="stylesheet" type="text/css"
+          href="https://launchpad.dev/+icing/rev8089/lazr/build/lazr/assets/skins/sam/lazr.css" />
+    <link rel="stylesheet" type="text/css"
+          href="https://launchpad.dev/+icing/rev8089/lazr/build/inlineedit/assets/skins/sam/editor.css" />
+    <link rel="stylesheet" type="text/css"
+          href="https://launchpad.dev/+icing/rev8089/lazr/build/autocomplete/assets/skins/sam/autocomplete.css" />
+    <link rel="stylesheet" type="text/css"
+          href="https://launchpad.dev/+icing/rev8089/lazr/build/overlay/assets/skins/sam/pretty-overlay.css" />
+    <link rel="stylesheet" type="text/css"
+          href="https://launchpad.dev/+icing/rev8089/lazr/build/formoverlay/assets/formoverlay.css" />
+    <link rel="stylesheet" type="text/css"
+          href="https://launchpad.dev/+icing/rev8089/lazr/build/picker/assets/skins/sam/picker.css" />
+    <link rel="stylesheet" type="text/css"
+          href="https://launchpad.dev/+icing/rev8089/lazr/build/activator/assets/skins/sam/activator.css" />
+
+    
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/yui/yui.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/oop/oop.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/event/event.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/dom/dom.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/node/node.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/dump/dump.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/io/io.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/json/json.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/attribute/attribute.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/base/base.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/substitute/substitute.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/anim/anim.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/classnamemanager/classnamemanager.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/plugin/plugin.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/widget/widget.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/widget/widget-position-ext.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/cookie/cookie.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/widget/widget-position.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/widget/widget-position-ext.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/widget/widget-stack.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/widget/widget-stdmod.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/overlay/overlay.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/yui/3.0.0pr2/build/node-menunav/node-menunav.js"></script>
+
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/MochiKit.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/lazr/build/lazr/lazr.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/lazr/build/anim/anim.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/lazr/build/inlineedit/editor.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/lazr/build/autocomplete/autocomplete.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/lazr/build/overlay/overlay.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/lazr/build/activator/activator.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/lazr/build/picker/picker.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/lazr/build/formoverlay/formoverlay.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/lazr/build/effects/effects.js"></script>
+
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/build/lp/lp.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/build/lp/picker.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/build/sorttable/sorttable.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/build/inlinehelp/inlinehelp.js"></script>
+      <script type="text/javascript"
+              src="https://launchpad.dev/+icing/rev8089/build/client/client.js"></script>
+    
+    
+
+    <script type="text/javascript">var cookie_scope = '; Path=/; Secure; Domain=.launchpad.dev';</script>
+    <script type="text/javascript">
+      function onLoadFunction() {
+        sortables_init();
+        initInlineHelp();
+      }
+      registerLaunchpadFunction(onLoadFunction);
+    </script>
+
+    
+    
+    <script type="text/javascript"
+            src="https://launchpad.dev/+icing/rev8089/build/lp/mapping.js"></script>
+    <link rel="shortcut icon" href="/@@/launchpad.png" />
+    
+  </head>
+  <body id="document"
+        class="tab-overview onecolumn yui-skin-sam">
+    <div id="locationbar">
+      
+
+
+<div id="logincontrol">
+  <form action="+logout" method="post">
+    <input type="hidden" name="loggingout" value="1" />
+    <a href="https://launchpad.dev/~name16" class="bg-image" style="background-image: url(https://launchpad.dev/@@/person)">Foo Bar</a> &bull;
+    <input type="submit" name="logout" value="Log Out" />
+  </form>
+</div>
+
+
+      <form id="globalsearch"
+            action="https://launchpad.dev/+search"
+            xml:lang="en" lang="en" dir="ltr" method="get"
+            accept-charset="UTF-8">
+        <img src="/@@/search.png" style="margin-bottom: -4px" alt="Search launchpad:" />
+        <input type="search" id="search-text" name="field.text" />
+      </form>
+      <div id="lp-hierarchy"><span class="first-rounded"></span><span class="before-last item"><a href="/" class="breadcrumb container" id="homebreadcrumb"><img alt="Launchpad" src="/@@/launchpad-logo-and-name-hierarchy.png"/></a>&nbsp;</span><small> &gt; </small><span class="item last"><a href="https://launchpad.dev/firefox"><img alt="" width="14" height="14" src="/@@/product" /> Mozilla Firefox</a></span></div><span class="last-rounded">&nbsp;</span><div class="apps-separator"><!-- --></div>
+
+    <div id="lp-apps" class="clearfix">
+      
+      <!-- :-) -->
+        <span class="overview active"
+              title="General information about Mozilla Firefox"><a
+    href="https://launchpad.dev/firefox">Overview</a></span><small> / </small>
+        <span class="branches"
+              title="Branches for Mozilla Firefox"><a
+    href="https://code.launchpad.dev/firefox">Code</a></span><small> / </small>
+        <span class="bugs"
+              title="Bugs reported about Mozilla Firefox"><a
+    href="https://bugs.launchpad.dev/firefox">Bugs</a></span><small> / </small>
+        <span class="specifications"
+              title="Feature specifications for Mozilla Firefox"><a
+    href="https://blueprints.launchpad.dev/firefox">Blueprints</a></span><small> / </small>
+        <span class="translations"
+              title="Translations of Mozilla Firefox in Launchpad"><a
+    href="https://translations.launchpad.dev/firefox">Translations</a></span><small> / </small>
+        <span class="answers"
+              title="Questions for Mozilla Firefox"><a
+    href="https://answers.launchpad.dev/firefox">Answers</a></span>
+    </div>
+
+    </div><!--id="locationbar"-->
+
+      
+      
+      <div id="mainarea">
+        <div id="container">
+          <!--[if IE 7]>&nbsp;<![endif]-->
+          
+
+                        
+                          
+                        
+                        
+                        <div id="navigation-tabs">
+                          <div id="context-navigation-tabs">
+                            
+  
+  <div class="navigation menu">
+
+  
+  <!-- :-) --><a href="https://launchpad.dev/firefox"
+                 class="menu-link-details"><span>Details</span></a><small> /
+    </small><a href="https://launchpad.dev/firefox/+announcements"
+               class="menu-link-announcements"><span>Announcements</span></a><small> /
+    </small><a href="https://launchpad.dev/firefox/+branchvisibility"
+               class="menu-link-branchvisibility"><span>Branch Visibility Policy</span></a><small> /
+    </small><a href="https://launchpad.dev/firefox/+download"
+               class="menu-link-downloads"><span>Downloads</span></a>
+  </div>
+
+
+                          </div>
+                          <div id="view-navigation-tabs">
+                            
+  <h2>Change project details:</h2>
+  <div class="navigation menu">
+
+  
+  <!-- :-) --><strong class="menu-link-details"><span>Details</span></strong><small> /
+    </small><a href="https://launchpad.dev/firefox/+branding"
+               class="menu-link-branding"><span>Branding</span></a><small> /
+    </small><a href="https://launchpad.dev/firefox/+edit-people"
+               class="menu-link-people"
+               title="Someone with permission to set goals for all series"><span>People</span></a>
+  </div>
+
+
+                          </div>
+                        </div>
+                        
+                          <div>
+
+  <div>
+
+    <form action="https://launchpad.dev/firefox/+edit"
+          name="launchpadform" method="post"
+          enctype="multipart/form-data"
+          accept-charset="UTF-8">
+
+      
+
+      <div>
+
+        <p>
+      Your changes to the Mozilla Firefox details below will take effect immediately.  
+    </p>
+
+        
+
+
+        
+
+        
+          
+    <table class="form" id="launchpad-form-widgets">
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.displayname">Display Name:</label><br />
+          
+        </th>
+        <td>
+          <div>
+            <input class="textType" id="field.displayname" name="field.displayname" size="20" type="text" value="Mozilla Firefox"  />
+          </div>
+          
+          <p class="formHelp">The name of the project as it would appear in a
+                paragraph.</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.title">Title:</label><br />
+          
+        </th>
+        <td>
+          <div>
+            <input class="textType" id="field.title" name="field.title" size="44" type="text" value="Mozilla Firefox"  />
+          </div>
+          
+          <p class="formHelp">The project title. Should be just a few words.</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      
+      
+        <tr>
+          <td colspan="2" style="text-align: left">
+            
+
+            <label for="field.summary">Summary:</label>
+            
+            
+            
+            
+            <div><textarea cols="44" id="field.summary" name="field.summary" rows="3" >The Mozilla Firefox web browser</textarea></div>
+            <p class="formHelp">The summary should be a single short paragraph.</p>
+          </td>
+        </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      
+      
+        <tr>
+          <td colspan="2" style="text-align: left">
+            
+
+            <label for="field.description">Description:</label>
+            <span class="fieldRequired">(Optional)</span>
+            
+            
+            
+            <div><textarea cols="44" id="field.description" name="field.description" rows="5" >The Mozilla Firefox web browser</textarea></div>
+            <p class="formHelp">Include information on how to get involved with
+                development. Don't repeat anything from the Summary.</p>
+          </td>
+        </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      
+      
+        <tr>
+          <td colspan="2" style="text-align: left">
+            
+
+            <label for="field.bug_reporting_guidelines">If I’m reporting a bug, I should include, if possible:</label>
+            <span class="fieldRequired">(Optional)</span>
+            
+            
+            
+            <div><textarea cols="60" id="field.bug_reporting_guidelines" name="field.bug_reporting_guidelines" rows="15" ></textarea></div>
+            <p class="formHelp">These guidelines will be shown to anyone reporting a bug.</p>
+          </td>
+        </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.project">Part of:</label><br />
+          <span class="fieldRequired">(Optional)</span>
+        </th>
+        <td>
+          <div>
+            <input type="text" value="mozilla" id="field.project"
+                         name="field.project" size="20"
+                         maxlength=""
+                         onKeyPress="" style=""
+                         class="" />
+
+
+  
+
+
+(<a href="javascript:popup_window('@@popup-window?vocabulary=Project&field=field.project&search='+escape(document.getElementById('field.project').value),'field.project','300','420')" class="js-action">Choose&hellip;</a>)
+
+            <iframe style="display: none"
+                    id="popup_iframe_field.project"
+                    src="javascript:void(0);"
+                    name="popup_iframe_field.project"></iframe>
+        
+
+
+          </div>
+          
+          <p class="formHelp">Super-project. In Launchpad, we can setup a special "project group" that is an overarching initiative that includes several related projects. For example, the Mozilla Project produces Firefox, Thunderbird and Gecko. This information is used to group those projects in a coherent way. If you make this project part of a group, the group preferences and decisions around bug tracking, translation and security policy will apply to this project.</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      
+      
+      <tr>
+        <th></th>
+        <td width="100%">
+          <input class="hiddenType" id="field.official_codehosting.used" name="field.official_codehosting.used" type="hidden" value="" /> <input class="checkboxType" id="field.official_codehosting" name="field.official_codehosting" type="checkbox" value="on"  />
+          <label for="field.official_codehosting">Code for this project is published in Bazaar branches on Launchpad</label>
+          
+          
+        </td>
+      </tr>
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.bugtracker">Bugs are tracked:</label><br />
+          
+        </th>
+        <td>
+          <div>
+            <input class="radioType" checked="checked" id="field.bugtracker.0" name="field.bugtracker" type="radio" value="malone" />&nbsp;<label for="field.bugtracker.0" style="font-weight: normal">In Launchpad</label><br /><input class="radioType" id="field.bugtracker.2" name="field.bugtracker" type="radio" value="external" />&nbsp;<label for="field.bugtracker.2" style="font-weight: normal">In a registered bug tracker:</label> <select id="field.bugtracker.bugtracker" name="field.bugtracker.bugtracker" size="1"  onchange="selectWidget('field.bugtracker.2', event);">
+<option value="3">Debian Bug tracker</option>
+<option value="7">GNU Savannah Bug Tracker</option>
+<option value="2">GnomeGBug GTracker</option>
+<option value="5">SourceForge.net Tracker</option>
+<option value="8">T'other Gnome GBugGTracker</option>
+<option value="1">The Mozilla.org Bug Tracker</option>
+<option value="4">The Ubuntu.com bugzilla</option>
+</select>
+<input name="field.bugtracker.bugtracker-empty-marker" type="hidden" value="1" /><br /><input class="radioType" id="field.bugtracker.3" name="field.bugtracker" type="radio" value="external-email" />&nbsp;<label for="field.bugtracker.3" style="font-weight: normal">By emailing an upstream bug contact:</label> <input class="textType" id="field.bugtracker.upstream_email_address" name="field.bugtracker.upstream_email_address" size="20" type="text" value=""  onkeypress="selectWidget('field.bugtracker.3', event);" /><br /><input class="radioType" id="field.bugtracker.1" name="field.bugtracker" type="radio" value="project" />&nbsp;<label for="field.bugtracker.1" style="font-weight: normal">Somewhere else</label>
+<input name="field.bugtracker-empty-marker" type="hidden" value="1" />
+          </div>
+          
+          
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      
+      
+      <tr>
+        <th></th>
+        <td width="100%">
+          <input class="hiddenType" id="field.enable_bug_expiration.used" name="field.enable_bug_expiration.used" type="hidden" value="" /> <input class="checkboxType" id="field.enable_bug_expiration" name="field.enable_bug_expiration" type="checkbox" value="on"  />
+          <label for="field.enable_bug_expiration">Expire Incomplete bug reports when they become inactive</label>
+          
+          
+        </td>
+      </tr>
+    
+    
+  
+
+      
+      
+
+  
+    
+      
+      
+      <tr>
+        <th></th>
+        <td width="100%">
+          <input class="hiddenType" id="field.official_blueprints.used" name="field.official_blueprints.used" type="hidden" value="" /> <input class="checkboxType" id="field.official_blueprints" name="field.official_blueprints" type="checkbox" value="on"  />
+          <label for="field.official_blueprints">This project uses blueprints</label>
+          
+          
+        </td>
+      </tr>
+    
+    
+  
+
+      
+      
+
+  
+    
+      
+      
+      <tr>
+        <th></th>
+        <td width="100%">
+          <input class="hiddenType" id="field.official_rosetta.used" name="field.official_rosetta.used" type="hidden" value="" /> <input class="checkboxType" id="field.official_rosetta" name="field.official_rosetta" type="checkbox" value="on"  />
+          <label for="field.official_rosetta">Translations for this project are done in Launchpad</label>
+          
+          
+        </td>
+      </tr>
+    
+    
+  
+
+      
+      
+
+  
+    
+      
+      
+      <tr>
+        <th></th>
+        <td width="100%">
+          <input class="hiddenType" id="field.official_answers.used" name="field.official_answers.used" type="hidden" value="" /> <input class="checkboxType" checked="checked" id="field.official_answers" name="field.official_answers" type="checkbox" value="on"  />
+          <label for="field.official_answers">People can ask questions in Launchpad Answers</label>
+          
+          
+        </td>
+      </tr>
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.remote_product">Remote project:</label><br />
+          <span class="fieldRequired">(Optional)</span>
+        </th>
+        <td>
+          <div>
+            <input class="textType" id="field.remote_product" name="field.remote_product" size="20" type="text" value=""  />
+          </div>
+          
+          <p class="formHelp">The ID of this project on its remote bug tracker.</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.homepageurl">Homepage URL:</label><br />
+          <span class="fieldRequired">(Optional)</span>
+        </th>
+        <td>
+          <div>
+            <input class="urlTextType textType" id="field.homepageurl" name="field.homepageurl" size="44" type="text" value=""  />
+          </div>
+          
+          <p class="formHelp">The project home page. Please include
+                the http://</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.sourceforgeproject">Sourceforge Project:</label><br />
+          <span class="fieldRequired">(Optional)</span>
+        </th>
+        <td>
+          <div>
+            <input class="textType" id="field.sourceforgeproject" name="field.sourceforgeproject" size="20" type="text" value=""  />
+          </div>
+          
+          <p class="formHelp">The SourceForge project name for
+                this project, if it is in sourceforge.</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.freshmeatproject">Freshmeat Project:</label><br />
+          <span class="fieldRequired">(Optional)</span>
+        </th>
+        <td>
+          <div>
+            <input class="textType" id="field.freshmeatproject" name="field.freshmeatproject" size="20" type="text" value=""  />
+          </div>
+          
+          <p class="formHelp">The Freshmeat project name for
+                this project, if it is in freshmeat.</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.wikiurl">Wiki URL:</label><br />
+          <span class="fieldRequired">(Optional)</span>
+        </th>
+        <td>
+          <div>
+            <input class="urlTextType textType" id="field.wikiurl" name="field.wikiurl" size="44" type="text" value=""  />
+          </div>
+          
+          <p class="formHelp">The full URL of this project's wiki, if it has
+                one. Please include the http://</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.screenshotsurl">Screenshots URL:</label><br />
+          <span class="fieldRequired">(Optional)</span>
+        </th>
+        <td>
+          <div>
+            <input class="urlTextType textType" id="field.screenshotsurl" name="field.screenshotsurl" size="44" type="text" value=""  />
+          </div>
+          
+          <p class="formHelp">The full URL for screenshots of this project,
+                if available. Please include the http://</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.downloadurl">Download URL:</label><br />
+          <span class="fieldRequired">(Optional)</span>
+        </th>
+        <td>
+          <div>
+            <input class="urlTextType textType" id="field.downloadurl" name="field.downloadurl" size="44" type="text" value=""  />
+          </div>
+          
+          <p class="formHelp">The full URL where downloads for this project
+                are located, if available. Please include the http://</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.programminglang">Programming Languages:</label><br />
+          <span class="fieldRequired">(Optional)</span>
+        </th>
+        <td>
+          <div>
+            <input class="textType" id="field.programminglang" name="field.programminglang" size="20" type="text" value=""  />
+          </div>
+          
+          <p class="formHelp">A comma delimited list of programming
+                languages used for this project.</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.development_focus">Development focus:</label><br />
+          
+        </th>
+        <td>
+          <div>
+            <div>
+<div class="value">
+<select id="field.development_focus" name="field.development_focus" size="1" >
+<option value="2">firefox 1.0</option>
+<option selected="selected" value="1">firefox trunk</option>
+</select>
+</div>
+<input name="field.development_focus-empty-marker" type="hidden" value="1" />
+</div>
+          </div>
+          
+          <p class="formHelp">The "trunk" series where development is focused</p>
+        </td>
+      </tr>
+      
+      
+    
+    
+  
+
+      
+      
+
+  
+    
+      <tr>
+        <th>
+          <label for="field.licenses">Licenses:</label><br />
+          
+        </th>
+        <td>
+          <div>
+            
+<script type="text/javascript">
+//<![CDATA[
+  function unsetLicenses() {
+    var checkboxes = document.getElementsByName('field.licenses');
+    for (var i = 0; i < checkboxes.length; i++) {
+      checkboxes[i].checked = false;
+    }
+  }
+
+  function setLicensePendingStatus(pending) {
+    document.getElementById('license_pending').checked = pending;
+    document.getElementById('license_complete').checked = !pending;
+  }
+//]]>
+</script>
+<script type="text/javascript">
+YUI().use('node', 'lazr.effects', function(Y) {
+    Y.on('domready', function() {
+        var recommended = Y.get('#recommended');
+        var recommended_expander = Y.get('#expander-recommended');
+        recommended_expander.on('click', function(e) {
+            e.preventDefault();
+
+            var arrow = Y.get('#expander-recommended-arrow');
+            if (arrow.getAttribute('src') ==
+                'http://launchpad.dev/@@/treeExpanded')
+            {
+                Y.log('collapsing');
+                arrow.setAttribute('src',
+                                   'http://launchpad.dev/@@/treeCollapsed');
+                Y.lazr.effects.slide_in(recommended).run();
+            }
+            else {
+                Y.log('expanding');
+                arrow.setAttribute('src',
+                                   'http://launchpad.dev/@@/treeExpanded');
+                Y.lazr.effects.slide_out(recommended).run();
+            }
+        });
+
+        var more = Y.get('#more');
+        var more_expander = Y.get('#expander-more');
+        more_expander.on('click', function(e) {
+            e.preventDefault();
+
+            var arrow = Y.get('#expander-more-arrow');
+            if (arrow.getAttribute('src') ==
+                'http://launchpad.dev/@@/treeExpanded')
+            {
+                arrow.setAttribute('src',
+                                   'http://launchpad.dev/@@/treeCollapsed');
+                Y.lazr.effects.slide_in(more).run();
+            }
+            else {
+                arrow.setAttribute('src',
+                                   'http://launchpad.dev/@@/treeExpanded');
+                Y.lazr.effects.slide_out(more).run();
+            }
+        });
+
+        var deprecated = Y.get('#deprecated');
+        var deprecated_expander = Y.get('#expander-deprecated');
+        deprecated_expander.on('click', function(e) {
+            e.preventDefault();
+
+            var arrow = Y.get('#expander-deprecated-arrow');
+            if (arrow.getAttribute('src') ==
+                'http://launchpad.dev/@@/treeExpanded')
+            {
+                arrow.setAttribute('src',
+                                   'http://launchpad.dev/@@/treeCollapsed');
+                Y.lazr.effects.slide_in(deprecated).run();
+            }
+            else {
+                arrow.setAttribute('src',
+                                   'http://launchpad.dev/@@/treeExpanded');
+                Y.lazr.effects.slide_out(deprecated).run();
+            }
+        });
+
+        var other = Y.get('#other');
+        var other_expander = Y.get('#expander-other');
+        other_expander.on('click', function(e) {
+            e.preventDefault();
+
+            var arrow = Y.get('#expander-other-arrow');
+            if (arrow.getAttribute('src') ==
+                'http://launchpad.dev/@@/treeExpanded')
+            {
+                arrow.setAttribute('src',
+                                   'http://launchpad.dev/@@/treeCollapsed');
+                Y.lazr.effects.slide_in(other).run();
+            }
+            else {
+                arrow.setAttribute('src',
+                                   'http://launchpad.dev/@@/treeExpanded');
+                Y.lazr.effects.slide_out(other).run();
+            }
+        });
+
+        var other_com = Y.get(Y.DOM.byId('field.licenses.25'));
+        var other_os = Y.get(Y.DOM.byId('field.licenses.26'));
+        var details = Y.get('#license-details');
+
+        function reveal_details(e) {
+            if (other_com.get('checked') || other_os.get('checked')) {
+                if (!details.hasClass('lazr-opened')) {      
+                    Y.log('sliding out');
+                    Y.lazr.effects.slide_out(details).run();
+                }
+            }
+            else {
+                if (!details.hasClass('lazr-closed')) {
+                    Y.log('sliding in');
+                    Y.lazr.effects.slide_in(details).run();
+                }
+            }
+        }
+        other_com.on('click', reveal_details);
+        other_os.on('click', reveal_details);
+
+    });
+});
+</script>
+
+<div style="color: black">
+
+  Select the license(s) under which you release your project.
+  <div>
+    <input id="license_pending" name="license_status"
+           type="radio" onclick="unsetLicenses()"
+           checked="checked" />
+    <label for="license_pending">I haven't specified the license yet</label>
+    <br />
+
+    <input id="license_complete" name="license_status"
+           type="radio" />
+    <label for="license_complete">
+      This project consists of code licensed under:
+    </label>
+  </div>
+
+  
+    <div onclick="setLicensePendingStatus(false)"
+         style="padding-left: 20px">
+      <div>
+<div class="value">
+        <a href="" id="expander-recommended" class="js-action">
+          <img id="expander-recommended-arrow"
+               src="http://launchpad.dev/@@/treeExpanded"
+               title="Recommended open source licenses"
+               alt="Recommended open source licenses"/>
+          Recommended open source licenses
+        </a>
+<table id="recommended">
+<tr>
+<td><label for="field.licenses.1" style="font-weight: normal"><input class="checkboxType" id="field.licenses.1" name="field.licenses" type="checkbox" value="APACHE" />&nbsp;<a href="http://www.opensource.org/licenses/apache2.0.php">Apache License</a></label> </td>
+<td><label for="field.licenses.11" style="font-weight: normal"><input class="checkboxType" id="field.licenses.11" name="field.licenses" type="checkbox" value="AFFERO" />&nbsp;<a href="http://www.opensource.org/licenses/agpl-v3.html">GNU Affero GPL v3</a></label> </td>
+<td><label for="field.licenses.14" style="font-weight: normal"><input class="checkboxType" id="field.licenses.14" name="field.licenses" type="checkbox" value="GNU_LGPL_V2_1" />&nbsp;<a href="http://www.opensource.org/licenses/lgpl-2.1.php">GNU LGPL v2.1</a></label> </td>
+</tr>
+<tr>
+<td><label for="field.licenses.4" style="font-weight: normal"><input class="checkboxType" id="field.licenses.4" name="field.licenses" type="checkbox" value="BSD" />&nbsp;<a href="http://www.opensource.org/licenses/bsd-license.php">Simplified BSD License</a></label> </td>
+<td><label for="field.licenses.12" style="font-weight: normal"><input class="checkboxType" id="field.licenses.12" name="field.licenses" type="checkbox" value="GNU_GPL_V2" />&nbsp;<a href="http://www.opensource.org/licenses/gpl-2.0.php">GNU GPL v2</a></label> </td>
+<td><label for="field.licenses.15" style="font-weight: normal"><input class="checkboxType" id="field.licenses.15" name="field.licenses" type="checkbox" value="GNU_LGPL_V3" />&nbsp;<a href="http://www.opensource.org/licenses/lgpl-3.0.html">GNU LGPL v3</a></label> </td>
+</tr>
+<tr>
+<td><label for="field.licenses.8" style="font-weight: normal"><input class="checkboxType" id="field.licenses.8" name="field.licenses" type="checkbox" value="CC_0" />&nbsp;<a href="http://creativecommons.org/about/cc0">Creative Commons - No Rights Reserved</a></label> </td>
+<td><label for="field.licenses.13" style="font-weight: normal"><input class="checkboxType" id="field.licenses.13" name="field.licenses" type="checkbox" value="GNU_GPL_V3" />&nbsp;<a href="http://www.opensource.org/licenses/gpl-3.0.html">GNU GPL v3</a></label> </td>
+<td><label for="field.licenses.16" style="font-weight: normal"><input class="checkboxType" id="field.licenses.16" name="field.licenses" type="checkbox" value="MIT" />&nbsp;<a href="http://www.opensource.org/licenses/mit-license.php">MIT / X / Expat License</a></label> </td>
+</tr>
+</table>
+
+        <a href="" id="expander-more" class="js-action">
+          <img id="expander-more-arrow"
+               src="http://launchpad.dev/@@/treeCollapsed"
+               title="More open source licenses"
+               alt="More open source licenses"/>
+          More open source licenses
+        </a>
+<table id="more" class="unseen">
+<tr>
+<td><label for="field.licenses.0" style="font-weight: normal"><input class="checkboxType" id="field.licenses.0" name="field.licenses" type="checkbox" value="ACADEMIC" />&nbsp;<a href="http://www.opensource.org/licenses/afl-3.0.php">Academic Free License</a></label> </td>
+<td><label for="field.licenses.7" style="font-weight: normal"><input class="checkboxType" id="field.licenses.7" name="field.licenses" type="checkbox" value="CC_BY_SA" />&nbsp;<a href="http://creativecommons.org/about/licenses">Creative Commons - Attribution Share Alike</a></label> </td>
+<td><label for="field.licenses.20" style="font-weight: normal"><input class="checkboxType" id="field.licenses.20" name="field.licenses" type="checkbox" value="PHP" />&nbsp;<a href="http://www.opensource.org/licenses/php.php">PHP License</a></label> </td>
+</tr>
+<tr>
+<td><label for="field.licenses.2" style="font-weight: normal"><input class="checkboxType" id="field.licenses.2" name="field.licenses" type="checkbox" value="ARTISTIC" />&nbsp;<a href="http://opensource.org/licenses/artistic-license-1.0.php">Artistic License 1.0</a></label> </td>
+<td><label for="field.licenses.9" style="font-weight: normal"><input class="checkboxType" id="field.licenses.9" name="field.licenses" type="checkbox" value="ECLIPSE" />&nbsp;<a href="http://www.opensource.org/licenses/eclipse-1.0.php">Eclipse Public License</a></label> </td>
+<td><label for="field.licenses.21" style="font-weight: normal"><input class="checkboxType" id="field.licenses.21" name="field.licenses" type="checkbox" value="PUBLIC_DOMAIN" />&nbsp;<a href="https://answers.launchpad.net/launchpad/+faq/564">Public Domain</a></label> </td>
+</tr>
+<tr>
+<td><label for="field.licenses.3" style="font-weight: normal"><input class="checkboxType" id="field.licenses.3" name="field.licenses" type="checkbox" value="ARTISTIC_2_0" />&nbsp;<a href="http://www.opensource.org/licenses/artistic-license-2.0.php">Artistic License 2.0</a></label> </td>
+<td><label for="field.licenses.10" style="font-weight: normal"><input class="checkboxType" id="field.licenses.10" name="field.licenses" type="checkbox" value="EDUCATIONAL_COMMUNITY" />&nbsp;<a href="http://www.opensource.org/licenses/ecl2.php">Educational Community License</a></label> </td>
+<td><label for="field.licenses.22" style="font-weight: normal"><input class="checkboxType" id="field.licenses.22" name="field.licenses" type="checkbox" value="PYTHON" />&nbsp;<a href="http://www.opensource.org/licenses/PythonSoftFoundation.php">Python License</a></label> </td>
+</tr>
+<tr>
+<td><label for="field.licenses.5" style="font-weight: normal"><input class="checkboxType" id="field.licenses.5" name="field.licenses" type="checkbox" value="COMMON_PUBLIC" />&nbsp;<a href="http://www.opensource.org/licenses/cpl1.0.php">Common Public License</a></label> </td>
+<td><label for="field.licenses.17" style="font-weight: normal"><input class="checkboxType" id="field.licenses.17" name="field.licenses" type="checkbox" value="MPL" />&nbsp;<a href="http://www.opensource.org/licenses/mozilla1.1.php">Mozilla Public License</a></label> </td>
+<td><label for="field.licenses.23" style="font-weight: normal"><input class="checkboxType" id="field.licenses.23" name="field.licenses" type="checkbox" value="ZPL" />&nbsp;<a href="http://www.opensource.org/licenses/zpl.php">Zope Public License</a></label> </td>
+</tr>
+<tr>
+<td><label for="field.licenses.6" style="font-weight: normal"><input class="checkboxType" id="field.licenses.6" name="field.licenses" type="checkbox" value="CC_BY" />&nbsp;<a href="http://creativecommons.org/about/licenses">Creative Commons - Attribution</a></label> </td>
+<td><label for="field.licenses.18" style="font-weight: normal"><input class="checkboxType" id="field.licenses.18" name="field.licenses" type="checkbox" value="OPEN_SOFTWARE" />&nbsp;<a href="http://www.opensource.org/licenses/osl-3.0.php">Open Software License v 3.0</a></label> </td>
+</tr>
+</table>
+
+<div id="deprecated-licenses">
+        <a href="" id="expander-deprecated" class="js-action">
+          <img id="expander-deprecated-arrow"
+               src="http://launchpad.dev/@@/treeCollapsed"
+               title="Deprecated"
+               alt="Deprecated"/>
+          Deprecated
+        </a>
+<table id="deprecated" class="unseen">
+<tr>
+<td><label for="field.licenses.19" style="font-weight: normal"><input class="checkboxType" id="field.licenses.19" name="field.licenses" type="checkbox" value="PERL" />&nbsp;Perl License</label> </td>
+</tr>
+</table>
+</div>
+
+        <a href="" id="expander-other" class="js-action">
+          <img id="expander-other-arrow"
+               src="http://launchpad.dev/@@/treeExpanded"
+               title="Other options"
+               alt="Other options"/>
+          Other options
+        </a>
+<table id="other"
+<td><label for="field.licenses.24" style="font-weight: normal"><input class="checkboxType" id="field.licenses.24" name="field.licenses" type="checkbox" value="DONT_KNOW" />&nbsp;I don't know yet</label> </td>
+</tr>
+<tr>
+<td><label for="field.licenses.26" style="font-weight: normal"><input class="checkboxType" id="field.licenses.26" name="field.licenses" type="checkbox" value="OTHER_OPEN_SOURCE" />&nbsp;Other/Open Source</label> </td>
+</tr>
+<tr>
+<td><label for="field.licenses.25" style="font-weight: normal"><input class="checkboxType" id="field.licenses.25" name="field.licenses" type="checkbox" value="OTHER_PROPRIETARY" />&nbsp;Other/Proprietary or Commercial</label> </td>
+</tr>
+</table>
+</div>
+<input name="field.licenses-empty-marker" type="hidden" value="1" />
+</div>
+    </div>
+  
+  <p>
+    Launchpad.net is free to use for software projects that share
+    their source code and comply with these
+    <a href="https://help.launchpad.net/Legal/ProjectLicensing">
+      licensing policies.
+    </a>
+    <br />
+    <a href="mailto:feedback@launchpad.net">Contact us</a>
+    if your project uses a proprietary or commercial license.
+  </p>
+</div>
+
+<div id="license-details" class="unseen">
+<label for="field.license_info">License details:</label>
+            
+<div><textarea cols="44" id="field.license_info" name="field.license_info" rows="5" ></textarea></div>
+<p class="formHelp">Additional license details are required.  Please include the URL to the license, its text, or other detailed information.</p>
+</div>
+
+          </div>
+          
+        </td>
+      </tr>
+        <tr>
+          <td colspan="2" style="text-align: left">
+            
+          </td>
+        </tr>
+      
+      
+    
+    
+  
+
+      
+    </table>
+  
+        
+
+        <script type="text/javascript"><!--
+setFocusByName('field.displayname');
+// --></script>
+
+        
+
+      </div>
+      <div class="actions" id="launchpad-form-actions">
+        <input type="submit" id="field.actions.change" name="field.actions.change" value="Change" class="button" />
+        
+          or
+          <a href="https://launchpad.dev/firefox">Cancel</a>
+        
+      </div>
+
+      
+
+    </form>
+  </div>
+
+</div>
+                        
+                        
+                        
+                        <div class="clear"></div>
+
+         </div><!--id="container"-->
+      </div><!--id="mainarea"-->
+      
+     <div id="globalfooter" class="clearfix" xml:lang="en" lang="en" dir="ltr">
+        <div id="colophon">
+          
+          <a href="/feedback">Contact us</a> | <a href="https://help.launchpad.net/">Get help with Launchpad</a>
+        </div>
+        <div id="lp-arcana">
+            &copy;&nbsp;2004-2009&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+          |
+          <a href="/legal">Terms of use</a>
+          <span id="lp-version">
+            |
+            <a href="https://help.launchpad.net/LaunchpadReleases">Launchpad 2.2.5 (r8089)</a>
+            devmode
+            
+            
+          </span>
+        </div>
+        
+      </div><!--id="globalfooter"-->
+
+    <div id="help-pane" class="invisible">
+      <div id="help-body">
+        
+        <iframe id="help-pane-content" class="invisible" src="javascript:void(0);"></iframe>
+      </div>
+      <div id="help-footer">
+        <span id="help-close"></span>
+      </div>
+    </div>
+
+    
+      <script>LP.client.links['me'] =
+                        '/~name16';</script>
+    
+
+    <script>LP.client.cache['context'] =
+       {"license_reviewed": false, "license_info": null, "remote_product": null, "development_focus_link": "https://launchpad.dev/api/beta/firefox/trunk", "official_bug_tags": [], "active_milestones_collection_link": "https://launchpad.dev/api/beta/firefox/active_milestones", "commercial_subscription_is_due": true, "licenses": [], "all_milestones_collection_link": "https://launchpad.dev/api/beta/firefox/all_milestones", "display_name": "Mozilla Firefox", "wiki_url": null, "title": "Mozilla Firefox", "branches_collection_link": "https://launchpad.dev/api/beta/firefox/branches", "owner_link": "https://launchpad.dev/api/beta/~name12", "download_url": null, "is_permitted": false, "reviewer_whiteboard": null, "self_link": "https://launchpad.dev/api/beta/firefox", "resource_type_link": "https://launchpad.dev/api/beta/#project", "programming_language": null, "description": "The Mozilla Firefox web browser", "brand_link": "https://launchpad.dev/api/beta/firefox/brand", "sourceforge_project": null, "http_etag": "\"04cf08b854bb0f209a1a263e1a9a154024940881\"", "project_group_link": "https://launchpad.dev/api/beta/mozilla", "bug_reporting_guidelines": null, "active": true, "bug_tracker_link": null, "name": "firefox", "license_approved": false, "driver_link": null, "freshmeat_project": null, "screenshots_url": null, "registrant_link": "https://launchpad.dev/api/beta/~name12", "summary": "The Mozilla Firefox web browser", "logo_link": "https://launchpad.dev/api/beta/firefox/logo", "homepage_url": null, "qualifies_for_free_hosting": false, "releases_collection_link": "https://launchpad.dev/api/beta/firefox/releases", "date_created": "2004-09-24T20:58:02.185708+00:00", "series_collection_link": "https://launchpad.dev/api/beta/firefox/series", "commercial_subscription_link": null, "icon_link": "https://launchpad.dev/api/beta/firefox/icon"};</script>
+
+  </body>
+</html>
+<!-- at least 40 queries issued in 1.43 seconds -->
+<!-- Launchpad 2.2.5 (r8089) -->
+
