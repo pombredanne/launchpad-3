@@ -19,7 +19,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Title)
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -219,6 +219,13 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         required=True,
         description=_("Specify which files will be imported from the "
                       "source code branch."))
+
+    potemplate_count = Int(
+        title=_("The total number of POTemplates in this series."),
+        readonly=True, required=True)
+
+    productserieslanguages = Attribute(
+        "The set of ProductSeriesLanguages for this series.")
 
     def getRelease(version):
         """Get the release in this series that has the specified version.

@@ -1,7 +1,6 @@
 <tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
 <tal:comment condition="nothing">
@@ -12,9 +11,9 @@
 <tal:content define="potemplates context/getCurrentTranslationTemplates">
 
   <tal:block condition="not: potemplates">
-    <h2 i18n:translate="">No translatable templates available</h2>
+    <h2>No translatable templates available</h2>
 
-    <p i18n:translate="">
+    <p>
       Either this project has not been set up to use Launchpad for
       translation, or <tal:displayname tal:replace="context/displayname" />
       does not have any strings to be translated through Launchpad.  If

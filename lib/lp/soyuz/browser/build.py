@@ -195,7 +195,7 @@ class BuildRescoringView(LaunchpadFormView):
     def action_rescore(self, action, data):
         """Set the given score value."""
         score = data.get('priority')
-        self.context.buildqueue_record.manualScore(score)
+        self.context.rescore(score)
         self.request.response.addNotification(
             "Build rescored to %s." % score)
 
@@ -334,9 +334,9 @@ class BuildRecordsView(LaunchpadView):
                 name = 'All states'
 
             if state == self.state:
-                selected = True
+                selected = 'selected'
             else:
-                selected = False
+                selected = None
 
             self.available_states.append(
                 dict(name=name, value=tag, selected=selected)

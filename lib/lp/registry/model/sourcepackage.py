@@ -21,9 +21,9 @@ from storm.store import Store
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from lp.code.model.branch import Branch
-from canonical.launchpad.database.bug import get_bug_tags_open_count
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bug import get_bug_tags_open_count
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)

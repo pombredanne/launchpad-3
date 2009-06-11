@@ -19,6 +19,7 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.security.interfaces import Unauthorized
 
+from lp.code.enums import BranchType
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lazr.restful.fields import Reference
@@ -36,8 +37,6 @@ def check_default_stacked_on(branch):
     If the given branch is not suitable, return None. For convenience, also
     returns None if passed None. Otherwise, return the branch.
     """
-    # Import here to avoid circular imports.
-    from lp.code.interfaces.branch import BranchType
     if branch is None:
         return None
     try:

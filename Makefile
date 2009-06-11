@@ -83,11 +83,11 @@ check_mailman: build
 	# tests. test_on_merge.py takes care of setting up the database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) --layer=MailmanLayer
 
-lint:
-	@bash ./utilities/lint.sh
+lint: ${PY}
+	@bash ./bin/lint.sh
 
-lint-verbose:
-	@bash ./utilities/lint.sh -v
+lint-verbose: ${PY}
+	@bash ./bin/lint.sh -v
 
 xxxreport: $(PY)
 	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./

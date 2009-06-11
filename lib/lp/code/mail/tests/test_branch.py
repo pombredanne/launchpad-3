@@ -8,7 +8,7 @@ from canonical.testing import DatabaseFunctionalLayer
 
 from canonical.launchpad.database import Branch
 from canonical.launchpad.ftests import login_person
-from canonical.launchpad.interfaces import (
+from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.mail.branch import RecipientReason
 from lp.testing import TestCaseWithFactory
