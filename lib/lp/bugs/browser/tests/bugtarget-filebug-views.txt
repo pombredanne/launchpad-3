@@ -6,7 +6,7 @@ it only adds some more functionality, like adding fields, searching for
 similar bug reports, etc.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.browser import FileBugViewBase
+    >>> from lp.bugs.browser.bugtarget import FileBugViewBase
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')
@@ -651,7 +651,7 @@ Bugs can be filed with settings for all these extra fields.
 
 When filing a bug, supplying an empty comment causes a validation error:
 
-    >>> from canonical.launchpad.browser import FileBugGuidedView
+    >>> from lp.bugs.browser.bugtarget import FileBugGuidedView
     >>> request = LaunchpadTestRequest(
     ...     form={'field.actions.submit_bug': 'Submit Bug Request'})
     >>> filebug_view = FileBugGuidedView(ubuntu, request)

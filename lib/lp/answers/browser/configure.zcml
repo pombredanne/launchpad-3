@@ -420,7 +420,7 @@
     />
   <browser:page
     for="lp.registry.interfaces.person.IPerson"
-    class="canonical.launchpad.browser.SearchSubscribedQuestionsView"
+    class="lp.registry.browser.person.SearchSubscribedQuestionsView"
     name="+subscribedquestions"
     permission="zope.Public"
     />
@@ -438,7 +438,7 @@
     template="../templates/person-answer-contact-for.pt"
     />
   <browser:menus
-    module="canonical.launchpad.browser"
+    module="lp.registry.browser.person"
     classes="PersonAnswersMenu"
     />
   <browser:page

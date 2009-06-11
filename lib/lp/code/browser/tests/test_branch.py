@@ -24,7 +24,7 @@ from lp.code.browser.branch import (
     BranchSparkView, BranchView)
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
 from canonical.launchpad.helpers import truncate_text
-from lp.code.interfaces.branch import BranchLifecycleStatus, BranchType
+from lp.code.enums import BranchLifecycleStatus, BranchType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branchlookup import IBranchLookup

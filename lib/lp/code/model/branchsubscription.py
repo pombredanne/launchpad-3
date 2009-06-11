@@ -12,9 +12,10 @@ from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
-from lp.code.interfaces.branchsubscription import (
+from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel, IBranchSubscription)
+    CodeReviewNotificationLevel)
+from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import (

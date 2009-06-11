@@ -1226,3 +1226,55 @@ altered by setting its limit parameter, which defaults to 10.
     >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
     ...     print bug.title
     New bug 0
+
+
+== Links to HWDB submissions ==
+
+We can link a HWDB submission to a bug, indicating that the
+submission contains information that could help developers
+fix the bug.
+
+    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+    >>> submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
+    ...     'sample-submission')
+    >>> test_bug.linkHWSubmission(submission)
+
+Bug.getHWSubmissions() returns the HWDB submissions linked to a bug.
+
+    >>> for submission in test_bug.getHWSubmissions():
+    ...     print submission.submission_key
+    sample-submission
+
+Private submissions are only included if the current user is an admin
+or the owner of a private submission.
+
+    >>> private_submission = factory.makeHWSubmission(
+    ...     emailaddress='test@canonical.com', private=True,
+    ...     submission_key='private-submission')
+    >>> test_bug.linkHWSubmission(private_submission)
+    >>> for submission in test_bug.getHWSubmissions(user=sample_person):
+    ...     print submission.submission_key
+    private-submission
+    sample-submission
+
+    >>> for submission in test_bug.getHWSubmissions(user=foobar):
+    ...     print submission.submission_key
+    private-submission
+    sample-submission
+
+Other persons do not see Sample Person's private submission.
+
+    >>> no_priv = personset.getByEmail('no-priv@canonical.com')
+    >>> for submission in test_bug.getHWSubmissions(user=no_priv):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> for submission in test_bug.getHWSubmissions():
+    ...     print submission.submission_key
+    sample-submission
+
+We can also delete links between a HWDB submission and a bug.
+
+    >>> test_bug.unlinkHWSubmission(submission)
+    >>> print test_bug.getHWSubmissions().count()
+    0

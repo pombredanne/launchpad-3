@@ -180,9 +180,10 @@ We can search for bugs with some specific tag.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BugTaskSearchParams, IDistributionSet)
+    >>> from canonical.launchpad.searchbuilder import all
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> svg_tasks = ubuntu.searchTasks(
-    ...     BugTaskSearchParams(tag=u'svg', user=None))
+    ...     BugTaskSearchParams(tag=all(u'svg'), user=None))
     >>> for bugtask in svg_tasks:
     ...     print bugtask.bug.id, bugtask.bug.tags
     1 [u'sco', u'svg']
@@ -246,7 +247,7 @@ are shown, no matter if they are used in open bugs or closed ones.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login('test@canonical.com')
     >>> for bugtask in firefox.searchTasks(BugTaskSearchParams(
-    ...     tag=u'layout-test', user=None)):
+    ...     tag=all(u'layout-test'), user=None)):
     ...     bugtask.transitionToStatus(
     ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> from canonical.database.sqlbase import flush_database_updates
