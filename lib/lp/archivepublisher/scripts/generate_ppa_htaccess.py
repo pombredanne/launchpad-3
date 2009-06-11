@@ -177,13 +177,16 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
             simple_sendmail(from_address, to_address, subject, body, headers)
 
-    def deactivateTokens(self, ppa):
+    def deactivateTokens(self, ppa, send_email=False):
         """Deactivate tokens as necessary.
 
         If a subscriber no longer has an active token for the PPA, we
         deactivate it.
 
         :param ppa: The PPA to check tokens for.
+        :param send_email: Whether to send a cancellation email to the owner
+            of the token.  This defaults to False to speed up the test
+            suite.
         :return: a list of valid tokens.
         """
         tokens = getUtility(IArchiveAuthTokenSet).getByArchive(ppa)
@@ -195,7 +198,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             if result.count() == 0:
                 # The subscriber's token is no longer active,
                 # deactivate it.
-                self.sendCancellationEmail(token)
+                if send_email:
+                    self.sendCancellationEmail(token)
                 token.deactivate()
             else:
                 valid_tokens.append(token)
@@ -224,7 +228,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         ppas = getUtility(IArchiveSet).getPrivatePPAs()
         for ppa in ppas:
             self.expireSubscriptions(ppa)
-            valid_tokens = self.deactivateTokens(ppa)
+            valid_tokens = self.deactivateTokens(ppa, send_email=True)
 
             # If this PPA is blacklisted, do not touch it's htaccess/pwd
             # files.

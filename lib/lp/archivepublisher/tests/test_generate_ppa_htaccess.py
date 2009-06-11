@@ -298,23 +298,39 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         team1_person.leave(team1)
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
-        script.deactivateTokens(self.ppa)
+        # Clear out emails generated when leaving a team.
+        pop_notifications()
+
+        script.deactivateTokens(self.ppa, send_email=True)
         self.assertDeactivated(tokens[team1_person])
         del tokens[team1_person]
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
 
+        # Ensure that a cancellation email was sent.
+        num_emails = len(stub.test_emails)
+        self.assertEqual(
+            num_emails, 1, "Expected 1 email, got %s" % num_emails)
+
         # Promiscuous_person now leaves team1, but does not lose his
         # token because he's also in team2. No other tokens are
         # affected.
+        self.layer.txn.commit()
         self.layer.switchDbUser("launchpad")
         promiscuous_person.leave(team1)
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
-        script.deactivateTokens(self.ppa)
+        # Clear out emails generated when leaving a team.
+        pop_notifications()
+        script.deactivateTokens(self.ppa, send_email=True)
         self.assertNotDeactivated(tokens[promiscuous_person])
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
+
+        # Ensure that a cancellation email was not sent.
+        num_emails = len(stub.test_emails)
+        self.assertEqual(
+            num_emails, 0, "Expected no emails, got %s" % num_emails)
 
         # Team 2 now leaves parent_team, and all its members lose their
         # tokens.
