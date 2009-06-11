@@ -249,7 +249,7 @@
         </div>
         <iframe id="timeline-iframe"
                 style="display: none"
-                tal:attributes="src string:+timeline"
+                tal:attributes="src string:+timeline-graph"
                 width="100%" height="170px"></iframe>
         <script>
           YUI().use('node', function(Y) {
