@@ -42,6 +42,7 @@ from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
+from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.registry.interfaces.karma import IKarmaContext
@@ -261,10 +262,10 @@ class IProductCommercialRestricted(Interface):
 class IProductPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
-    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
-    IPillar, ISpecificationTarget):
+    IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
+    IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
+    IHasTranslationGroup, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
@@ -619,21 +620,6 @@ class IProductPublic(
 
         Products may override language code definitions for translation
         import purposes.
-        """
-
-    @operation_parameters(
-        status=List(
-            title=_("A list of merge proposal statuses to filter by."),
-            value_type=Choice(vocabulary=BranchMergeProposalStatus)))
-    @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(IBranchMergeProposal)
-    @export_read_operation()
-    def getMergeProposals(status=None, visible_by_user=None):
-        """Returns all merge proposals of a given status.
-
-        :param status: A list of statuses to filter with.
-        :param visible_by_user: Normally the user who is asking.
-        :returns: A list of `IBranchMergeProposal`.
         """
 
     def userCanEdit(user):
