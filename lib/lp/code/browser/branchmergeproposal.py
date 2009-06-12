@@ -481,9 +481,9 @@ class BranchMergeProposalVoteView(LaunchpadView):
         seen_reviewers = set()
         for comment in sorted(self.context.all_comments,
             key=lambda x: x.message.datecreated, reverse=True):
-            if comment.message.owner in seen_reviewers:
-                continue
             if comment.vote is None:
+                continue
+            if comment.message.owner in seen_reviewers:
                 continue
             if comment.message.owner in solicited_reviewers:
                 continue
