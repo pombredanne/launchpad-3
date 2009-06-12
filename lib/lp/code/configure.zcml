@@ -4,6 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:lp="http://namespaces.canonical.com/lp"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
   <include package=".browser"/>
 
@@ -764,4 +765,11 @@
 
   <lp:help-folder
       folder="help" type="canonical.launchpad.layers.CodeLayer" />
+
+  <webservice:register module="lp.code.interfaces.branch" />
+  <webservice:register module="lp.code.interfaces.branchmergeproposal" />
+  <webservice:register module="lp.code.interfaces.branchsubscription" />
+  <webservice:register module="lp.code.interfaces.codereviewcomment" />
+  <webservice:register module="lp.code.interfaces.codereviewvote" />
+
 </configure>
