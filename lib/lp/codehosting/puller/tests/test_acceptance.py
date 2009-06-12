@@ -140,6 +140,14 @@ class TestBranchPuller(PullerBranchTestCase):
         http_server = HttpServer()
         http_server.port = port
         http_server.setUp()
+        # Join cleanup added before the tearDown so the tearDown is executed
+        # first as this tells the thread to die.  We then join explicitly as
+        # the HttpServer.tearDown does not join.  There is a check in the
+        # BaseLayer to make sure that threads are not left behind by the
+        # tests, and the default behaviour of the HttpServer is to use daemon
+        # threads and let the garbage collector get them, however this causes
+        # issues with the test runner.
+        self.addCleanup(http_server._http_thread.join)
         self.addCleanup(http_server.tearDown)
         return http_server.get_url().rstrip('/')
 
@@ -443,8 +451,6 @@ class TestBranchPuller(PullerBranchTestCase):
     # - expected output on non-quiet runs
 
 
-# XXX: JonathanLange 2009-03-27 bug=349316: Disable these tests because they
-# are leaking threads, causing intermittent test failures.
 def test_suite():
-#    return unittest.TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)
     return unittest.TestSuite()
