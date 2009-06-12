@@ -49,4 +49,5 @@ dist
 ./eggs
 ./download-cache
 ./_pythonpath.py
-
+./configs/*
+./production-configs/*

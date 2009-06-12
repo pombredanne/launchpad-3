@@ -125,6 +125,7 @@ compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
+	${SHHH} bin/link-configs production-configs configs
 	${SHHH} sourcecode/lazr-js/tools/build.py \
 		-n launchpad -s lib/canonical/launchpad/javascript \
 		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
