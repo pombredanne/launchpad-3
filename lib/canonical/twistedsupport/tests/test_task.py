@@ -288,10 +288,10 @@ class TestParallelLimitedTaskConsumer(TestCase):
         source = LoggingSource(log)
         consumer.consume(source)
         del log[:]
-        consumer.taskStarted(lambda: None)
+        consumer.taskStarted(lambda: Deferred())
         self.assertEqual([], log)
         for i in range(worker_limit - 1):
-            consumer.taskStarted(lambda: None)
+            consumer.taskStarted(lambda: Deferred())
         self.assertEqual(['stop'], log)
 
     def test_passing_working_limit_stops_source(self):
@@ -304,12 +304,12 @@ class TestParallelLimitedTaskConsumer(TestCase):
         source = LoggingSource(log)
         consumer.consume(source)
         del log[:]
-        consumer.taskStarted(lambda: None)
+        consumer.taskStarted(lambda: Deferred())
         # Reached the limit.
         self.assertEqual(['stop'], log)
         del log[:]
         # Passed the limit.
-        consumer.taskStarted(lambda: None)
+        consumer.taskStarted(lambda: Deferred())
         self.assertEqual(['stop'], log)
 
     def test_run_task_even_though_passed_limit(self):
@@ -317,10 +317,13 @@ class TestParallelLimitedTaskConsumer(TestCase):
         # concurrency limit, we'll do the work anyway. We cannot rely on the
         # source sending us the work again.
         log = []
+        def log_append(item):
+            log.append(item)
+            return Deferred()
         consumer = self.makeConsumer(worker_limit=1)
         consumer.consume(LoggingSource([]))
-        consumer.taskStarted(lambda: log.append('task1'))
-        consumer.taskStarted(lambda: log.append('task2'))
+        consumer.taskStarted(lambda: log_append('task1'))
+        consumer.taskStarted(lambda: log_append('task2'))
         self.assertEqual(['task1', 'task2'], log)
 
 

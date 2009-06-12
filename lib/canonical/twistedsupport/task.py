@@ -172,14 +172,14 @@ class ParallelLimitedTaskConsumer:
         self._worker_count += 1
         if self._worker_count >= self._worker_limit:
             self._task_source.stop()
-        task()
-        self._taskEnded()
+        d = defer.maybeDeferred(task)
+        d.addBoth(self._taskEnded)
 
     def taskProductionFailed(self, reason):
         """See `ITaskSource`."""
         raise NotRunningError(self)
 
-    def _taskEnded(self):
+    def _taskEnded(self, ignored):
         self._worker_count -= 1
         if self._worker_count == 0:
             self._terminationDeferred.callback(None)
