@@ -79,10 +79,8 @@ class TestCodeImportDispatcherUnit(TestCase):
         executable.
         """
         script = open(script_path, 'w')
-        script.write("#!%s/bin/py\n" % config.root)
         for script_line in script_body:
             script.write(script_line + '\n')
-        os.chmod(script_path, 0700)
 
     def filterOutLoggingOptions(self, arglist):
         """Remove the standard logging options from a list of arguments."""
