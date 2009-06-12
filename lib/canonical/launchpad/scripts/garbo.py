@@ -431,6 +431,8 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     raise
                 self.logger.exception("Unhandled exception")
                 failure_count += 1
+                transaction.abort()
+            transaction.abort()
         if failure_count:
             raise SilentLaunchpadScriptFailure(failure_count)
 
