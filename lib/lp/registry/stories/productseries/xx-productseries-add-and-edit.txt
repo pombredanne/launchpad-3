@@ -97,14 +97,16 @@ The new values are then shown in the series' page.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'series-details'))
     Project:
-    Mozilla Firefox ...
+    Mozilla Firefox...
     Series:
     unstable
     Status:
     Experimental
-    Drivers:
+    Project drivers:
     Sample Person
-    Appoint driver
+    Release manager:
+    None
+    Appoint release manager
 
     >>> content = find_main_content(browser.contents)
     >>> print content.find('ul', 'branch').find('a')
