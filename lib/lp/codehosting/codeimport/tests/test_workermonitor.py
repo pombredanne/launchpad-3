@@ -35,7 +35,8 @@ from lp.codehosting.codeimport.tests.servers import (
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from canonical.config import config
-from canonical.launchpad.database import CodeImport, CodeImportJob
+from lp.code.model.codeimport import CodeImport
+from lp.code.model.codeimportjob import CodeImportJob
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     ICodeImportJobSet, ICodeImportJobWorkflow,

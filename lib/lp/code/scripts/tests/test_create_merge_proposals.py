@@ -16,8 +16,7 @@ from canonical.launchpad.ftests import import_secret_test_key
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
 from canonical.launchpad.scripts.tests import run_script
-from lp.code.model.branchmergeproposal import (
-    CreateMergeProposalJob)
+from lp.code.model.branchmergeproposaljob import CreateMergeProposalJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
 

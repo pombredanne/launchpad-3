@@ -3,19 +3,16 @@
 Run the doctests and pagetests.
 """
 
-import logging
 import os
-import unittest
 
 from zope.security.management import setSecurityPolicy
 
-from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs, setUp, tearDown)
+    LayeredDocFileSuite, setGlobs, tearDown)
+from canonical.launchpad.ftests.test_system_documentation import (
+    branchscannerSetUp)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
+from canonical.testing import LaunchpadZopelessLayer
 
 from lp.services.testing import build_test_suite
 
@@ -52,6 +49,11 @@ special = {
         setUp=zopelessLaunchpadSecuritySetUp,
         tearDown=zopelessLaunchpadSecurityTearDown,
         layer=LaunchpadZopelessLayer,
+        ),
+    'revision.txt': LayeredDocFileSuite(
+        '../doc/revision.txt',
+        setUp=branchscannerSetUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
         ),
     }
 
