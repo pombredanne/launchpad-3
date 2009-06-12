@@ -426,6 +426,8 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                 tunable_loop.maximum_chunk_size = self._maximum_chunk_size
             try:
                 tunable_loop.run()
+            except (KeyboardInterrupt, SystemExit):
+                raise
             except:
                 if not self.continue_on_failure:
                     raise
