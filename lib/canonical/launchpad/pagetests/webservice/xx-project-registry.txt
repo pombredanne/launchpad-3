@@ -130,7 +130,6 @@ Projects are available at their canonical URL on the API virtual host.
     active: True
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
-    branches_collection_link: u'http://.../firefox/branches'
     brand_link: u'http://.../firefox/brand'
     bug_reporting_guidelines: None
     bug_tracker_link: None
@@ -179,7 +178,6 @@ several that are not available to non-privileged users marked as
     active: True
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
-    branches_collection_link: u'http://.../firefox/branches'
     brand_link: u'http://.../firefox/brand'
     bug_reporting_guidelines: None
     bug_tracker_link: None
@@ -218,17 +216,6 @@ several that are not available to non-privileged users marked as
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
     wiki_url: None
-
-Branches can be accessed through the branches_collection_link.
-
-    >>> response = webservice.get(firefox['branches_collection_link'])
-    >>> branches = response.jsonBody()
-    >>> print_self_link_of_entries(branches)
-    http://.../~name12/firefox/main
-    http://.../~sabdfl/firefox/release--0.9.1
-    http://.../~sabdfl/firefox/release-0.8
-    http://.../~sabdfl/firefox/release-0.9
-    http://.../~sabdfl/firefox/release-0.9.2
 
 The milestones can be accessed through the
 active_milestones_collection_link and the
