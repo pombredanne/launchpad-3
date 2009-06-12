@@ -5,7 +5,9 @@
 __metaclass__ = type
 
 import os.path
-
+import shutil
+import tempfile
+from textwrap import dedent
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
@@ -20,6 +22,7 @@ from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.interfaces.translations import (
@@ -38,7 +41,7 @@ from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
-    IRevisionMailJob, IRosettaUploadJob)
+    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
 from lp.code.model.branchjob import (
@@ -47,6 +50,7 @@ from lp.code.model.branchjob import (
     RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
+from lp.services.job.runner import JobRunner
 
 
 class TestBranchJob(TestCaseWithFactory):
@@ -893,17 +897,47 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def cleanHostedAndMirroredAreas(self):
+        """XXX."""
+        hosted = config.codehosting.hosted_branches_root
+        shutil.rmtree(hosted, ignore_errors=True)
+        os.mkdir(hosted)
+        self.addCleanup(shutil.rmtree, hosted)
+        mirrored = config.codehosting.mirrored_branches_root
+        shutil.rmtree(mirrored, ignore_errors=True)
+        os.mkdir(mirrored)
+        self.addCleanup(shutil.rmtree, mirrored)
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.cleanHostedAndMirroredAreas()
+
     def test_providesInterface(self):
         # ReclaimBranchSpaceJob implements IReclaimBranchSpaceJob.
-        job = ReclaimBranchSpaceJob.create(self.factory.getUniqueInteger())
+        job = getUtility(IReclaimBranchSpaceJobSource).create(
+            self.factory.getUniqueInteger())
         verifyObject(IReclaimBranchSpaceJob, job)
 
     def test_stores_id(self):
         # An instance of ReclaimBranchSpaceJob stores the ID of the branch
         # that has been deleted.
         branch_id = self.factory.getUniqueInteger()
-        job = ReclaimBranchSpaceJob.create(branch_id)
+        job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
         self.assertEqual(branch_id, job.branch_id)
+
+    def runReadyJobs(self):
+        self.layer.txn.commit()
+        self.layer.switchDbUser(config.reclaimbranchspace.dbuser)
+        for job in ReclaimBranchSpaceJob.iterReady():
+            job.run()
+
+    def test_run_no_branch_present(self):
+        # Running a job to reclaim space for a branch that was never pushed to
+        # does nothing quietly.
+        branch_id = self.factory.getUniqueInteger()
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        # Just "assertNotRaises"
+        self.runReadyJobs()
 
 
 def test_suite():

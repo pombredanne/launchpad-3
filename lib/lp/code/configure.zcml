@@ -589,6 +589,10 @@
     <allow interface="lp.code.interfaces.branchjob.IRosettaUploadJob"/>
     <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
   </class>
+  <class class="lp.code.model.branchjob.ReclaimBranchSpaceJob">
+    <allow interface="lp.code.interfaces.branchjob.IReclaimBranchSpaceJob"/>
+    <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
+  </class>
   <securedutility
       component="lp.code.model.branchjob.BranchDiffJob"
       provides="lp.code.interfaces.branchjob.IBranchDiffJobSource">
@@ -608,6 +612,11 @@
       component="lp.code.model.branchjob.RosettaUploadJob"
       provides="lp.code.interfaces.branchjob.IRosettaUploadJobSource">
     <allow interface="lp.code.interfaces.branchjob.IRosettaUploadJobSource"/>
+  </securedutility>
+  <securedutility
+      component="lp.code.model.branchjob.ReclaimBranchSpaceJob"
+      provides="lp.code.interfaces.branchjob.IReclaimBranchSpaceJobSource">
+    <allow interface="lp.code.interfaces.branchjob.IReclaimBranchSpaceJobSource"/>
   </securedutility>
 
   <!-- CodeImport -->

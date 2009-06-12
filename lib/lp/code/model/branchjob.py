@@ -708,12 +708,13 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
 
     classProvides(IReclaimBranchSpaceJobSource)
 
+    class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
+
     @classmethod
     def create(cls, branch_id):
         """See `IBranchDiffJobSource`."""
         metadata = {'branch_id': branch_id}
-        branch_job = BranchJob(
-            None, BranchJobType.RECLAIM_BRANCH_SPACE, metadata)
+        branch_job = BranchJob(None, cls.class_job_type, metadata)
         return cls(branch_job)
 
     @property

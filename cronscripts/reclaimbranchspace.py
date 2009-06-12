@@ -17,7 +17,7 @@ from lp.services.job.runner import JobRunner
 from lp.services.scripts.base import LaunchpadCronScript
 
 
-class RunMergeProposalCreatedJobs(LaunchpadCronScript):
+class RunReclaimBranchSpaceJobs(LaunchpadCronScript):
     """Run merge proposal creation jobs."""
 
     def main(self):
@@ -30,6 +30,6 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = RunMergeProposalCreatedJobs(
+    script = RunReclaimBranchSpaceJobs(
         'reclaimbranchspace', config.reclaimbranchspace.dbuser)
     script.lock_and_run()
