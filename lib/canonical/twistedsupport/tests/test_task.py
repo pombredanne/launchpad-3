@@ -354,6 +354,45 @@ class TestParallelLimitedTaskConsumer(TestCase):
         d.callback(None)
         self.assertEqual([('start', consumer)], log)
 
+    def test_production_failed_stops_source(self):
+        # If `taskProductionFailed` is called after we've started consuming
+        # then we stop the producer.
+        log = []
+        source = LoggingSource(log)
+        consumer = self.makeConsumer()
+        consumer.consume(source)
+        del log[:]
+        consumer.taskProductionFailed(None)
+        self.assertEqual(['stop'], log)
+
+    def test_failure_before_any_tasks_stops_consumer(self):
+        # If `taskProductionFailed` is called after we've started consuming
+        # but before any jobs are running then we stop the producer and fire
+        # the termination deferred.
+        consumer = self.makeConsumer()
+        log = []
+        d = consumer.consume(LoggingSource([]))
+        d.addCallback(log.append)
+        consumer.taskProductionFailed(None)
+        self.assertEqual([None], log)
+
+    def test_one_failure_doesnt_stop_consumer(self):
+        # Even after the source has failed in producing a task, we will ask it
+        # for more tasks when a worker becomes available.
+        consumer = self.makeConsumer()
+        task_log = []
+        source_log = []
+        terminator = consumer.consume(LoggingSource(source_log))
+        terminator.addCallback(task_log.append)
+        d = Deferred()
+        consumer.taskStarted(lambda: d)
+        consumer.taskStarted(lambda: Deferred())
+        consumer.taskProductionFailed(None)
+        del source_log[:]
+        d.callback(None)
+        self.assertEqual([], task_log)
+        self.assertEqual([('start', consumer)], source_log)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
