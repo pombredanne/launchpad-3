@@ -64,10 +64,6 @@ class IMessage(Interface):
         Reference(title=_('Parent'), schema=Interface,
                   required=False, readonly=True))
 
-    distribution = Reference(
-        title=_('Distribution'),
-        schema=Interface, # Redefined in distribution.py
-        required=False, readonly=True)
     rfc822msgid = TextLine(
         title=_('RFC822 Msg ID'), required=True, readonly=True)
     raw = Reference(title=_('Original unmodified email'),
