@@ -11,10 +11,13 @@ from windmill.authoring import WindmillTestClient
 from canonical.launchpad.windmill.testing import lpuser
 
 class DocumentationLinksTest:
-    """Test that the documentation links on translation pages work properly."""
+    """Test that the documentation links on translation pages work."""
 
-    def __init__(self, name=None, url='http://translations.launchpad.net:8085',
-                 suite='translations', user=lpuser.TRANSLATIONS_ADMIN):
+    def __init__(self,
+                 name=None,
+                 url='http://translations.launchpad.net:8085',
+                 suite='translations',
+                 user=lpuser.TRANSLATIONS_ADMIN):
         """Create a new DocumentationLinksTest.
 
         :param name: Name of the test.
@@ -73,6 +76,9 @@ class DocumentationLinksTest:
         client.waits.forPageLoad(timeout=u'20000')
         client.waits.forElement(link=u'Spanish', timeout=u'8000')
         client.click(link=u'Spanish')
+        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forElement(link=u'evolution-2.2', timeout=u'8000')
+        client.click(link=u'evolution-2.2')
         client.waits.forPageLoad(timeout=u'20000')
 
         # Make sure notification box is shown.

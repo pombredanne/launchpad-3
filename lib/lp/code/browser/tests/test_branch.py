@@ -370,5 +370,75 @@ class TestBranchSparkView(TestCaseWithFactory):
         self.assertEqual(commits, json['commits'])
 
 
+class TestBranchProposalsVisible(TestCaseWithFactory):
+    """Test that the BranchView filters out proposals the user cannot see."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+
+    def test_public_target(self):
+        # If the user can see the target, then there are merges, and the
+        # landing_target is available for the template rendering.
+        bmp = self.factory.makeBranchMergeProposal()
+        branch = bmp.source_branch
+        view = BranchView(branch, LaunchpadTestRequest())
+        self.assertFalse(view.no_merges)
+        [target] = view.landing_targets
+        # Check the ids as the target is a DecoratedMergeProposal.
+        self.assertEqual(bmp.id, target.id)
+
+    def test_private_target(self):
+        # If the target is private, the landing targets should not include it.
+        bmp = self.factory.makeBranchMergeProposal()
+        branch = bmp.source_branch
+        removeSecurityProxy(bmp.target_branch).private = True
+        view = BranchView(branch, LaunchpadTestRequest())
+        self.assertTrue(view.no_merges)
+        self.assertEqual([], view.landing_targets)
+
+    def test_public_source(self):
+        # If the user can see the source, then there are merges, and the
+        # landing_candidate is available for the template rendering.
+        bmp = self.factory.makeBranchMergeProposal()
+        branch = bmp.target_branch
+        view = BranchView(branch, LaunchpadTestRequest())
+        self.assertFalse(view.no_merges)
+        [candidate] = view.landing_candidates
+        # Check the ids as the target is a DecoratedMergeProposal.
+        self.assertEqual(bmp.id, candidate.id)
+
+    def test_private_source(self):
+        # If the source is private, the landing candidates should not include
+        # it.
+        bmp = self.factory.makeBranchMergeProposal()
+        branch = bmp.target_branch
+        removeSecurityProxy(bmp.source_branch).private = True
+        view = BranchView(branch, LaunchpadTestRequest())
+        self.assertTrue(view.no_merges)
+        self.assertEqual([], view.landing_candidates)
+
+    def test_dependent_public(self):
+        # If the branch is a dependent branch for a public proposals, then
+        # there are merges.
+        branch = self.factory.makeProductBranch()
+        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        view = BranchView(branch, LaunchpadTestRequest())
+        self.assertFalse(view.no_merges)
+        [proposal] = view.dependent_branches
+        self.assertEqual(bmp, proposal)
+
+    def test_dependent_private(self):
+        # If the branch is a dependent branch where either the source or the
+        # target is private, then the dependent_branches are not shown.
+        branch = self.factory.makeProductBranch()
+        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        removeSecurityProxy(bmp.source_branch).private = True
+        view = BranchView(branch, LaunchpadTestRequest())
+        self.assertTrue(view.no_merges)
+        self.assertEqual([], view.dependent_branches)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

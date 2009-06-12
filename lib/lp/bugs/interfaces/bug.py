@@ -60,7 +60,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, datecreated=None, security_related=False,
                  private=False, subscribers=(), binarypackagename=None,
-                 tags=None, subscribe_reporter=True):
+                 tags=None, subscribe_owner=True, filed_by=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -76,7 +76,8 @@ class CreateBugParams:
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
         self.tags = tags
-        self.subscribe_reporter = subscribe_reporter
+        self.subscribe_owner = subscribe_owner
+        self.filed_by = filed_by
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -907,6 +908,17 @@ class IBugSet(Interface):
 
           * binarypackagename, if not None, will be added to the bug's
             description
+        """
+
+    def createBugWithoutTarget(bug_params):
+        """Create a bug without a bug target and return it.
+
+        This is a variant of `createBug()` that does not create the
+        first bugtask for the bug. The bug creation event is not sent,
+        and a `(bug, event)` tuple is returned instead. The caller is
+        therefore responsible for sending the event at a later point.
+
+        See `createBug()` for more information.
         """
 
     def getDistinctBugsForBugTasks(bug_tasks, user, limit=10):
