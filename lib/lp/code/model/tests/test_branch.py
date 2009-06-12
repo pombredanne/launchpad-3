@@ -45,7 +45,6 @@ from lp.code.enums import (
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     CannotDeleteBranch)
-from lp.code.interfaces.branch import BranchFormat, RepositoryFormat
 from lp.code.interfaces.branchjob import IReclaimBranchSpaceJobSource
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.seriessourcepackagebranch import (
@@ -343,8 +342,8 @@ class TestBranch(TestCaseWithFactory):
 
     def test_needsUpgrading_branch_format_unrecognized(self):
         # A branch has a needs_upgrading attribute that returns whether or not
-        # a branch needs to be upgraded or not.  If the format is unrecognized,
-        # we don't try to upgrade it.
+        # a branch needs to be upgraded or not.  If the format is
+        # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
             branch_format=BranchFormat.UNRECOGNIZED)
         self.assertFalse(branch.needs_upgrading)

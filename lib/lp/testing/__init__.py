@@ -453,7 +453,6 @@ class TestCaseWithFactory(TestCase):
         :return: a `Branch` and a workingtree.
         """
         from bzrlib.bzrdir import BzrDir
-        from bzrlib.transport import get_transport
         db_branch = self.factory.makeAnyBranch()
         transport = get_transport(self.getMirroredPath(db_branch))
         # Ensure the parent directories exist so that we can stick a branch
@@ -489,7 +488,6 @@ class TestCaseWithFactory(TestCase):
         """
         from lp.codehosting.scanner.tests.test_bzrsync import (
             FakeTransportServer)
-        from bzrlib.transport import get_transport
         self.useTempBzrHome()
         self.real_bzr_server = real_server
         if real_server:
