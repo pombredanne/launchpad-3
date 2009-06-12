@@ -17,7 +17,7 @@ from zope.interface import classProvides, implements
 from canonical.uuid import generate_uuid
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.interfaces.diff import (
+from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 

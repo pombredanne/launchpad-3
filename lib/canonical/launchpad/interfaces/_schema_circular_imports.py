@@ -35,7 +35,8 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from canonical.launchpad.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -76,6 +77,13 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
+IHasBranches['getBranches'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
+        IBranch
+IHasMergeProposals['getMergeProposals'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
+        IBranchMergeProposal
+
 # IBug
 
 IBug['addBranch'].queryTaggedValue(
@@ -94,9 +102,6 @@ patch_collection_return_type(
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
-IPersonPublic['getMergeProposals'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
-        IBranchMergeProposal
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)

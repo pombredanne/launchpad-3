@@ -25,7 +25,7 @@ BugWatch, Message and BugMessage instances with which to work.
     >>> bug = firefox.createBug(
     ...     CreateBugParams(sample_person, "A test bug",
     ...         "With a test description.",
-    ...         subscribe_reporter=False))
+    ...         subscribe_owner=False))
 
     >>> message = getUtility(IMessageSet).fromText(
     ...     "An example comment", "Pushing, for the purpose of.",

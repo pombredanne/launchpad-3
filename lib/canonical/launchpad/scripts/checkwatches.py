@@ -762,8 +762,8 @@ class BugWatchUpdater(object):
             external_bugtracker.getBugSummaryAndDescription(remote_bug))
         bug = bug_target.createBug(
             CreateBugParams(
-                reporter, summary, description, subscribe_reporter=False))
-
+                reporter, summary, description, subscribe_owner=False,
+                filed_by=getUtility(ILaunchpadCelebrities).bug_watch_updater))
         [added_task] = bug.bugtasks
         bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug=bug,

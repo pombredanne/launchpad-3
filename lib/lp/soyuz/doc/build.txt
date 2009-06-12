@@ -19,7 +19,7 @@ launchpad build daemon.
     >>> [firefox_build] = source.getBuilds()
     >>> login(ANONYMOUS)
 
-A build has a title which describes it context source version in in
+A build has a title which describes the context source version and in
 which series and architecture it is targeted for.
 
     >>> print firefox_build.title
@@ -62,7 +62,7 @@ CHROOTWAIT, SUPERSEDED and FAILEDTOUPLOAD).
     <DBItem BuildStatus.FULLYBUILT, (1) Successfully built>
 
 Builds which were already processed also offer additional information
-about its process as the time it was started and finished and its
+about its process such as the time it was started and finished and its
 'buildlog' and 'upload_changesfile' as librarian files.
 
     >>> firefox_build.was_built
@@ -86,7 +86,6 @@ about its process as the time it was started and finished and its
     >>> print firefox_build.upload_changesfile.filename
     firefox_0.9_i386.changes
 
-
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
 
@@ -96,8 +95,8 @@ start time makes no sense. Hence an exception is raised.
     AssertionError: The start time is only estimated for pending builds.
 
 On a build job in state `NEEDSBUILD` we can ask for its estimated
-build start time, but the result will be undefined however because the
-corresponding build pool is empty.
+build start time. In this context the result will be undefined because
+the corresponding build pool is empty.
 
     # Create a brand new pending build.
     >>> login('foo.bar@canonical.com')
