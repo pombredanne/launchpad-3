@@ -415,7 +415,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.diff.IPreviewDiff"
+        for="lp.code.interfaces.diff.IPreviewDiff"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
         name="fmt"

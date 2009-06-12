@@ -15,7 +15,8 @@ The product series overview page summarises the series.
     Project: Mozilla Firefox ...
     Series: trunk
     Status: Active Development
-    Drivers: Sample Person
+    Project drivers: Sample Person
+    Release manager: None
 
     >>> print extract_text(find_tag_by_id(content, 'description'))
     Summary
@@ -34,7 +35,7 @@ and thus a member of the series drivers.
     >>> driver_browser.getLink('Change details', index=0)
     <Link ... url='http://launchpad.dev/firefox/trunk/+edit'>
 
-    >>> driver_browser.getLink('Appoint driver')
+    >>> driver_browser.getLink('Appoint release manager')
     <Link ... url='http://launchpad.dev/firefox/trunk/+driver'>
 
 Any user can subscribe to bug mail via the link on the page.

@@ -220,12 +220,11 @@ class RestrictedExecOnlySession(ExecOnlySession):
 
 
 def launch_smart_server(avatar):
-    import sys
     from twisted.internet import reactor
 
     command = (
-        "%(python)s %(bzr)s lp-serve --inet "
-        % {'python': sys.executable, 'bzr': get_bzr_path()})
+        "%(root)s/bin/py %(bzr)s lp-serve --inet "
+        % {'root': config.root, 'bzr': get_bzr_path()})
 
     environment = dict(os.environ)
 
