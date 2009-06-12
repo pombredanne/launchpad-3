@@ -15,7 +15,7 @@ properties:
 Those fields are always not-null for sources and builds that were
 'uploaded' to the system.
 
-The only exception for this rule are packages 'imported' into the system
+The only exception to this rule are packages 'imported' into the system
 from other repositories. They do not have any relevant upload
 information to be stored.
 

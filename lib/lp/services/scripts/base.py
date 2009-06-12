@@ -5,6 +5,7 @@ __all__ = [
     'LaunchpadCronScript',
     'LaunchpadScript',
     'LaunchpadScriptFailure',
+    'SilentLaunchpadScriptFailure'
     ]
 
 from cProfile import Profile
@@ -44,6 +45,14 @@ class LaunchpadScriptFailure(Exception):
     LaunchpadScriptFailure.exit_status. If you want a different value
     subclass LaunchpadScriptFailure and redefine it.
     """
+    exit_status = 1
+
+
+class SilentLaunchpadScriptFailure(Exception):
+    """A LaunchpadScriptFailure that doesn't log an error."""
+    def __init__(self, exit_status=1):
+        Exception.__init__(self, exit_status)
+        self.exit_status = exit_status
     exit_status = 1
 
 
@@ -233,6 +242,8 @@ class LaunchpadScript:
                 self.main()
         except LaunchpadScriptFailure, e:
             self.logger.error(str(e))
+            sys.exit(e.exit_status)
+        except SilentLaunchpadScriptFailure, e:
             sys.exit(e.exit_status)
         else:
             date_completed = datetime.datetime.now(UTC)
