@@ -186,8 +186,12 @@ class ParallelLimitedTaskConsumer:
         self._worker_count -= 1
         if self._worker_count == 0:
             self._terminationDeferred.callback(None)
-        if self._worker_count < self._worker_limit:
+            self._task_source.stop()
+        elif self._worker_count < self._worker_limit:
             self._task_source.start(self)
+        else:
+            # We're over the worker limit, nothing we can do.
+            pass
 
 
 class OldParallelLimitedTaskSink:

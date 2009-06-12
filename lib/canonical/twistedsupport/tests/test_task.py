@@ -256,6 +256,16 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.taskStarted(lambda: None)
         self.assertEqual([None], task_log)
 
+    def test_source_stopped_when_tasks_done(self):
+        # When no more tasks are running, we stop the task source.
+        consumer = self.makeConsumer()
+        log = []
+        consumer.consume(LoggingSource(log))
+        del log[:]
+        # Finishes immediately, all tasks are done.
+        consumer.taskStarted(lambda: None)
+        self.assertEqual(['stop'], log)
+
     def test_taskStarted_before_consume_raises_error(self):
         # taskStarted can only be called after we have started consuming. This
         # is because taskStarted might need to stop task production to avoid a
