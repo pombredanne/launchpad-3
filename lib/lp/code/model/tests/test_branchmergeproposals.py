@@ -24,7 +24,7 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposal, BranchMergeProposalGetter, BranchMergeProposalJob,
     BranchMergeProposalJobType, CreateMergeProposalJob, is_valid_transition,
     MergeProposalCreatedJob)
-from canonical.launchpad.database.diff import StaticDiff
+from lp.code.model.diff import StaticDiff
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
