@@ -1,4 +1,5 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+"""View classes for `IProductSeries`."""
 
 __metaclass__ = type
 
@@ -83,15 +84,17 @@ from lp.registry.interfaces.sourcepackagename import (
 
 
 def quote(text):
+    """Escape and quite text."""
     return cgi.escape(text, quote=True)
 
 
 class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
-
+    """A class to navigate `IProductSeries` URLs."""
     usedfor = IProductSeries
 
     @stepto('.bzr')
     def dotbzr(self):
+        """Return the series branch."""
         if self.context.branch:
             return BranchRef(self.context.branch)
         else:
@@ -99,6 +102,7 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     @stepto('+pots')
     def pots(self):
+        """Return the series templates."""
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(productseries=self.context)
 
@@ -122,6 +126,7 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
         return psl
 
     def traverse(self, name):
+        """See `INavigation`."""
         return self.context.getRelease(name)
 
 
@@ -129,16 +134,18 @@ class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IProductSeries`."""
     @property
     def text(self):
+        """See `IBreadcrumbBuilder`."""
         return 'Series ' + self.context.name
 
 
 class ProductSeriesFacets(StandardLaunchpadFacets):
-
+    """A class that provides the series facets."""
     usedfor = IProductSeries
     enable_only = [
         'overview', 'branches', 'bugs', 'specifications', 'translations']
 
     def branches(self):
+        """Return a link to view the branches related to this series."""
         # Override to go to the branches for the product.
         text = 'Code'
         summary = 'View related branches of code'
@@ -147,7 +154,7 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
 
 
 class ProductSeriesOverviewMenu(ApplicationMenu):
-
+    """The overview menu."""
     usedfor = IProductSeries
     facet = 'overview'
     links = [
@@ -158,24 +165,28 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
+        """Return a link to edit this series."""
         text = 'Change details'
         summary = 'Edit this series'
         return Link('+edit', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
+        """Return a link to delete this series."""
         text = 'Delete series'
         summary = "Delete this series and all it's dependent items."
         return Link('+delete', text, summary, icon='trash-icon')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        """Return a link to set the release manager."""
+        text = 'Appoint release manager'
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def link_branch(self):
+        """Return a link to set the bazaar branch for this series."""
         if self.context.branch is None:
             text = 'Link to branch'
         else:
@@ -184,34 +195,41 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         return Link('+linkbranch', text, summary, icon='add')
 
     def ubuntupkg(self):
+        """Return a link to link this series to an ubuntu sourcepackage."""
         text = 'Link to Ubuntu package'
         return Link('+ubuntupkg', text, icon='add')
 
     def add_package(self):
+        """Return a link to link this series to a sourcepackage."""
         text = 'Link to other package'
         return Link('+addpackage', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def create_milestone(self):
+        """Return a link to create a milestone."""
         text = 'Create milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def create_release(self):
+        """Return a link to create a release."""
         text = 'Create release'
         return Link('+addrelease', text, icon='add')
 
     def rdf(self):
+        """Return a link to download the series RDF data."""
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
     def subscribe(self):
+        """Return a link to subscribe to bug mail."""
         text = 'Subscribe to bug mail'
         return Link('+subscribe', text, icon='add')
 
-class ProductSeriesBugsMenu(ApplicationMenu):
 
+class ProductSeriesBugsMenu(ApplicationMenu):
+    """The bugs menu."""
     usedfor = IProductSeries
     facet = 'bugs'
     links = (
@@ -221,12 +239,15 @@ class ProductSeriesBugsMenu(ApplicationMenu):
         )
 
     def new(self):
+        """Return a link to report a bug in this series."""
         return Link('+filebug', 'Report a bug', icon='add')
 
     def nominations(self):
+        """Return a link to review bugs nominated for this series."""
         return Link('+nominations', 'Review nominations', icon='bug')
 
     def subscribe(self):
+        """Return a link to subscribe to bug mail."""
         return Link('+subscribe', 'Subscribe to bug mail')
 
 
@@ -244,64 +265,77 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
     links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
+        """Return a link to show all blueprints."""
         text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
 
     def listaccepted(self):
+        """Return a link to show the approved goals."""
         text = 'List approved blueprints'
         return Link('+specs?acceptance=accepted', text, icon='info')
 
     def listproposed(self):
+        """Return a link to show the proposed goals."""
         text = 'List proposed blueprints'
         return Link('+specs?acceptance=proposed', text, icon='info')
 
     def listdeclined(self):
+        """Return a link to show the declined goals."""
         text = 'List declined blueprints'
         summary = 'Show the goals which have been declined'
         return Link('+specs?acceptance=declined', text, summary, icon='info')
 
     def setgoals(self):
+        """Return a link to set the series goals."""
         text = 'Set series goals'
         summary = 'Approve or decline feature goals that have been proposed'
         return Link('+setgoals', text, summary, icon='edit')
 
     def table(self):
+        """Return a link to show the people assigned to the blueprint."""
         text = 'Assignments'
         summary = 'Show the assignee, drafter and approver of these specs'
         return Link('+assignments', text, summary, icon='info')
 
     def new(self):
+        """Return a link to register a blueprint."""
         text = 'Register a blueprint'
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
 
 
 class ProductSeriesTranslationsMenuMixIn:
-    """Translation menu for ProductSeries.
-    """
+    """Translation menu for `IProductSeries`."""
     def overview(self):
+        """Return a link to the overview page."""
         return Link('', 'Overview')
 
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
+        """Return a link to series PO templates."""
         return Link('+templates', 'Templates')
 
     @enabled_with_permission('launchpad.Edit')
     def settings(self):
+        """Return a link to configure the translations settings."""
         return Link('+translations-settings', 'Settings')
 
     @enabled_with_permission('launchpad.Edit')
     def requestbzrimport(self):
+        """Return a link to request a bazaar import."""
         return Link('+request-bzr-import', 'Request Bazaar import')
 
     @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
+        """Return a link to upload translations."""
         return Link('+translations-upload', 'Upload')
 
     def translationdownload(self):
+        """Return a link to download the translations."""
         return Link('+export', 'Download')
 
     def imports(self):
+        """Return a link to the import queue."""
         return Link('+imports', 'Import queue')
 
 
@@ -339,6 +373,7 @@ class ProductSeriesTranslationsExportView(BaseExportView):
         return (translation_templates, pofiles)
 
     def getDefaultFormat(self):
+        """Return the default template format."""
         templates = self.context.getCurrentTranslationTemplates()
         if len(templates) == 0:
             return None
@@ -368,8 +403,9 @@ def get_series_branch_error(product, branch):
 # Currently, the pages just return 'System Error' as they trigger database
 # constraints.
 class ProductSeriesView(LaunchpadView, TranslationsMixin):
-
+    """A view to show a series with translations."""
     def initialize(self):
+        """See `LaunchpadFormView`."""
         self.form = self.request.form
         self.has_errors = False
 
@@ -458,9 +494,11 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         self.setUpPackaging()
 
     def requestCountry(self):
+        """The country associated with the IP of the request."""
         return ICountry(self.request, None)
 
     def browserLanguages(self):
+        """The languages the user's browser requested."""
         return browserLanguages(self.request)
 
     def translationsUpload(self):
@@ -710,7 +748,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
-
+    """A View to edit the attributes of a series."""
     schema = IProductSeries
     field_names = [
         'name', 'summary', 'status', 'branch', 'releasefileglob']
@@ -718,6 +756,7 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     def validate(self, data):
+        """See `LaunchpadFormView`."""
         branch = data.get('branch')
         if branch is not None:
             message = get_series_branch_error(self.context.product, branch)
@@ -726,10 +765,12 @@ class ProductSeriesEditView(LaunchpadEditFormView):
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
+        """Update the series."""
         self.updateContextFromData(data)
 
     @property
     def next_url(self):
+        """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
 
@@ -811,10 +852,12 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
 
     @property
     def next_url(self):
+        """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
+        """Update the branch attribute."""
         if data['branch'] != self.context.branch:
             self.updateContextFromData(data)
             # Request an initial upload of translation files.
@@ -840,7 +883,7 @@ class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
 
 
 class ProductSeriesReviewView(LaunchpadEditFormView):
-
+    """A view to review and change the series `IProduct` and name."""
     schema = IProductSeries
     field_names = ['product', 'name']
     label = 'Review product series details'
@@ -848,6 +891,7 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
+        """Update the series."""
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             _('This Series has been changed'))
@@ -889,6 +933,7 @@ class ProductSeriesSourceListView(LaunchpadView):
     """
 
     def initialize(self):
+        """See `LaunchpadFormView`."""
         self.text = self.request.get('text')
         results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
 
@@ -899,6 +944,7 @@ class ProductSeriesFileBugRedirect(LaunchpadView):
     """Redirect to the product's +filebug page."""
 
     def initialize(self):
+        """See `LaunchpadFormView`."""
         filebug_url = "%s/+filebug" % canonical_url(self.context.product)
         self.request.response.redirect(filebug_url)
 
@@ -908,30 +954,36 @@ class ProductSeriesTranslationsMixin(object):
 
     @property
     def series_title(self):
+        """The series title."""
         return self.context.title.replace(' ', '&nbsp;')
 
     @property
     def has_imports_enabled(self):
+        """Is imports enabled for the series?"""
         return (self.context.translations_autoimport_mode !=
                 TranslationsBranchImportMode.NO_IMPORT)
 
     @property
     def request_bzr_import_url(self):
+        """URL to request a bazaar import."""
         return canonical_url(self.context,
                              view_name="+request-bzr-import")
 
     @property
     def link_branch_url(self):
+        """URL to link the series to a branch."""
         return canonical_url(self.context, rootsite="mainsite",
                              view_name="+linkbranch")
 
     @property
     def translations_settings_url(self):
+        """URL to change the translations for the series."""
         return canonical_url(self.context,
                              view_name="+translations-settings")
 
     @property
     def product_edit_url(self):
+        """URL to edit the `IProduct`."""
         return canonical_url(self.context.product, rootsite="mainsite",
                              view_name="+edit")
 
@@ -960,6 +1012,7 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
 
     @action(u"Save settings", name="save_settings")
     def change_settings_action(self, action, data):
+        """Change the translation settings."""
         if (self.context.translations_autoimport_mode !=
             data['translations_autoimport_mode']
             ):
@@ -986,6 +1039,7 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
         self.cancel_url = canonical_url(self.context)
 
     def validate(self, action):
+        """See `LaunchpadFormView`."""
         if self.context.branch is None:
             self.addError(
                 "Please set the official Bazaar branch first.")
@@ -1009,8 +1063,10 @@ class ProductSeriesTemplatesView(LaunchpadView):
     is_distroseries = False
 
     def iter_templates(self):
+        """Return an iterator of all `IPOTemplates` for the series."""
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(productseries=self.context)
 
     def can_administer(self, template):
+        """Can the user administer the template?"""
         return check_permission('launchpad.Admin', template)

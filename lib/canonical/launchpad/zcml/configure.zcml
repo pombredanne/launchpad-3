@@ -13,7 +13,6 @@
     <include file="bounty.zcml" />
     <include file="crowd.zcml" />
     <include file="customlanguagecode.zcml" />
-    <include file="diff.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
     <include file="distroserieslanguage.zcml" />

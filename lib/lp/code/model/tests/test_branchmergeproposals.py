@@ -20,11 +20,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob, BranchMergeProposalJobType,
+    CreateMergeProposalJob, MergeProposalCreatedJob)
 from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal, BranchMergeProposalGetter, BranchMergeProposalJob,
-    BranchMergeProposalJobType, CreateMergeProposalJob, is_valid_transition,
-    MergeProposalCreatedJob)
-from canonical.launchpad.database.diff import StaticDiff
+    BranchMergeProposal, BranchMergeProposalGetter, is_valid_transition)
+from lp.code.model.diff import StaticDiff
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)

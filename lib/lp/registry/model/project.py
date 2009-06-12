@@ -40,9 +40,9 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
-
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import BugTargetBase
@@ -71,7 +71,8 @@ from lp.registry.interfaces.person import validate_public_person
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
-              StructuralSubscriptionTargetMixin):
+              StructuralSubscriptionTargetMixin,
+              HasBranchesMixin, HasMergeProposalsMixin):
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
