@@ -5,13 +5,13 @@
 __metaclass__ = type
 
 
+from canonical.launchpad.mail import format_address
+from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.mail import format_address
 from lp.services.mail.basemailer import BaseMailer
-from canonical.launchpad.webapp import canonical_url
 
 
 def send_branch_modified_notifications(branch, event):

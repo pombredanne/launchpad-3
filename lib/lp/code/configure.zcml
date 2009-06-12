@@ -461,7 +461,7 @@
   <!-- BranchVisibilityPolicy -->
 
   <class class="canonical.launchpad.database.BranchVisibilityTeamPolicy">
-    <allow interface="canonical.launchpad.interfaces.IBranchVisibilityTeamPolicy"/>
+    <allow interface="lp.code.interfaces.branchvisibilitypolicy.IBranchVisibilityTeamPolicy"/>
   </class>
 
   <!-- BranchDelta -->
@@ -731,30 +731,30 @@
   </class>
 
   <class class="canonical.launchpad.database.Revision">
-    <allow interface="canonical.launchpad.interfaces.IRevision"/>
+    <allow interface="lp.code.interfaces.revision.IRevision"/>
   </class>
 
   <class class="canonical.launchpad.database.RevisionAuthor">
-    <allow interface="canonical.launchpad.interfaces.IRevisionAuthor"/>
+    <allow interface="lp.code.interfaces.revision.IRevisionAuthor"/>
   </class>
 
   <class class="canonical.launchpad.database.RevisionParent">
-    <allow interface="canonical.launchpad.interfaces.IRevisionParent" />
+    <allow interface="lp.code.interfaces.revision.IRevisionParent" />
   </class>
 
   <class class="canonical.launchpad.database.RevisionProperty">
-    <allow interface="canonical.launchpad.interfaces.IRevisionProperty" />
+    <allow interface="lp.code.interfaces.revision.IRevisionProperty" />
   </class>
 
   <!-- RevisionSet -->
   <class class="canonical.launchpad.database.RevisionSet">
-    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
+    <allow interface="lp.code.interfaces.revision.IRevisionSet" />
   </class>
 
   <securedutility
       class="canonical.launchpad.database.RevisionSet"
-      provides="canonical.launchpad.interfaces.IRevisionSet" >
-    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
+      provides="lp.code.interfaces.revision.IRevisionSet" >
+    <allow interface="lp.code.interfaces.revision.IRevisionSet" />
   </securedutility>
 
   <!-- Linked branches -->
