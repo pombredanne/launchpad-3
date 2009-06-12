@@ -223,11 +223,6 @@ special = {
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer
             ),
-    'revision.txt': LayeredDocFileSuite(
-            '../doc/revision.txt',
-            setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
     'translationimportqueue.txt': LayeredDocFileSuite(
             '../doc/translationimportqueue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer

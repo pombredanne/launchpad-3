@@ -938,6 +938,16 @@ the previous search will include myteam in the results.
     Warty Gnome Team (warty-gnome): []
     Warty Security Team (name20): []
 
+Searching for users with non-ASCII characters in their name works.
+
+    >>> print_people(personset.find(u'P\xf6ll\xe4'))
+    Matti Pöllä (mpo): [u'mpo@iki.fi']
+
+    >>> bjorns_team = factory.makeTeam(salgado, name='bjorn-team',
+    ...     displayname=u'Team Bj\xf6rn')
+    >>> print_people(personset.findTeam(u'Bj\xf6rn'))
+    Team Bj... (bjorn-team): []
+
 You can get the top overall contributors, that is, the people with the
 most karma.
 

@@ -42,9 +42,7 @@ class TestLaunchpadLib(unittest.TestCase):
 
     def test_branch(self):
         """Test branch attributes."""
-        # launchpadlib can only slice and not subscript
-        # so project.branches[0] doesn't work.
-        branch = self.project.branches[:1][0]
+        branch = self.project.getBranches()[0]
         self.verifyAttributes(branch)
 
     def test_milestone(self):

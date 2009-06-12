@@ -2060,6 +2060,10 @@
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"/>
         <browser:page
+            name="+status"
+            facet="overview"
+            template="../templates/productseries-status.pt"/>
+        <browser:page
             name="+code-summary"
             template="../templates/productseries-codesummary.pt"/>
     </browser:pages>

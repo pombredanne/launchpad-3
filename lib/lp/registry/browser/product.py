@@ -706,6 +706,16 @@ class SeriesWithReleases:
                 return True
         return False
 
+    @property
+    def css_class(self):
+        """The highlighted, unhighlighted, or dimmed CSS class."""
+        if self.is_development_focus:
+            return 'highlighted'
+        elif self.status == DistroSeriesStatus.OBSOLETE:
+            return 'dimmed'
+        else:
+            return 'unhighlighted'
+
     @cachedproperty
     def total_downloads(self):
         """Total downloads of files associated with this series."""

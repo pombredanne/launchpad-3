@@ -9,8 +9,8 @@ import transaction
 from canonical.testing import ZopelessAppServerLayer
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.tests import run_script
-from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal, MergeProposalCreatedJob)
+from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.branchmergeproposaljob import MergeProposalCreatedJob
 
 
 class TestDiffBMPs(TestCaseWithFactory):
