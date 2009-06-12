@@ -2759,6 +2759,31 @@ class FormattersAPI:
         result.append('</table>')
         return ''.join(result)
 
+    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-]+')
+
+    def css_id(self, prefix=None):
+        """Return a CSS compliant id.
+
+        The id may contain letters, numbers, and hyphens. The first
+        character must be a letter. Unsupported characters are converted
+        to hyphens. Multiple characters are replaced by a single hyphen. The
+        letter 'j' will start the id if the string's first character is not a
+        letter.
+
+        :param prefix: an optional string to prefix to the id. It can be
+            used to ensure that the start of the id is predicable.
+        """
+        if prefix is not None:
+            raw_text = prefix + self._stringtoformat
+        else:
+            raw_text = self._stringtoformat
+        id_ = self._css_id_strip_pattern.sub('-', raw_text)
+        if id_[0] in '-0123456789':
+            # 'j' is least common starting character in technical usage;
+            # engineers love 'z', 'q', and 'y'.
+            return 'j' + id_
+        else:
+            return id_
 
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
@@ -2787,6 +2812,11 @@ class FormattersAPI:
             return self.shorten(maxlength)
         elif name == 'diff':
             return self.format_diff()
+        elif name == 'css-id':
+            if len(furtherPath) > 0:
+                return self.css_id(furtherPath.pop())
+            else:
+                return self.css_id()
         else:
             raise TraversalError(name)
 
