@@ -19,6 +19,7 @@ from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
@@ -52,11 +53,12 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasBugs, ICanGetMilestonesDirectly, IHasAppointedDriver,
-               IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
-               IHasSpecifications, IHasSprints, IHasTranslationGroup,
-               IMakesAnnouncements, IKarmaContext, IPillar):
+class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
+               IHasBugs, IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon,
+               IHasLogo, IHasMentoringOffers, IHasMergeProposals,
+               IHasMilestones, IHasMugshot, IHasOwner, IHasSpecifications,
+               IHasSprints, IHasTranslationGroup, IMakesAnnouncements,
+               IKarmaContext, IPillar):
     """A Project."""
     export_as_webservice_entry('project_group')
 
