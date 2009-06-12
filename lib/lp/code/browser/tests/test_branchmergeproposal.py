@@ -13,8 +13,9 @@ from zope.component import getMultiAdapter
 
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
-    BranchMergeProposalView, BranchMergeProposalChangeStatusView,
-    BranchMergeProposalMergedView, BranchMergeProposalVoteView)
+    BranchMergeProposalAddVoteView, BranchMergeProposalChangeStatusView,
+    BranchMergeProposalMergedView, BranchMergeProposalView,
+    BranchMergeProposalVoteView)
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
@@ -64,6 +65,32 @@ class TestBranchMergeProposalMergedView(TestCaseWithFactory):
         self.assertEqual(
             {'merged_revno': self.bmp.target_branch.revision_count},
             view.initial_values)
+
+
+class TestBranchMergeProposalAddVoteView(TestCaseWithFactory):
+    """Test the AddVote view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.bmp = self.factory.makeBranchMergeProposal()
+
+    def _createView(self):
+        # Construct the view and initialize it.
+        view = BranchMergeProposalAddVoteView(
+            self.bmp, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def test_init_with_random_person(self):
+        """Any random person ought to be able to vote."""
+        login_person(self.factory.makePerson())
+        self._createView()
+
+    def test_init_with_anonymous(self):
+        """Anonymous people cannot vote."""
+        self.assertRaises(AssertionError, self._createView)
 
 
 class TestBranchMergeProposalVoteView(TestCaseWithFactory):
