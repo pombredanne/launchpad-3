@@ -1458,8 +1458,6 @@ ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.build-success, li.build-success   {list-style-image: url(/@@/build-success);}
 ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
 ul.cve, li.cve                       {list-style-image: url(/@@/cve);}
-ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
-ul.distroseries, li.distroseries     {list-style-image: url(/@@/distribution);}
 ul.faq, li.faq                       {list-style-image: url(/@@/faq);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
