@@ -301,6 +301,14 @@ class HWSubmissionEmailLinker(TunableLoop):
     that have not yet been linked to a `Person`.  If the
     `EmailAddress` is linked to a person, then the `HWSubmission` is
     linked to the same.
+
+    TODO: Instead of iterating over all submissions, we should extract
+    the unmatched but matchable submissions into a temporary table and
+    iterate over that:
+        CREATE TEMPORARY TABLE NewlyMatchedSubmissions AS
+        SELECT HWSubmission.id FROM HWSubmission, EmailAddress
+        WHERE lower(HWSubmission.raw_emailaddress) = lower(EmailAddress.email)
+            AND HWSubmission.owner IS NULL;
     """
 
     maximum_chunk_size = 1000
