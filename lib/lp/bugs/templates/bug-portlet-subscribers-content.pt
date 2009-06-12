@@ -26,7 +26,7 @@
                  title subscription/display_subscribed_by;
                "
             >
-              <tal:block replace="structure subscription/person/image:icon" />
+              <tal:block replace="structure subscription/person/fmt:icon" />
               <tal:block replace="subscription/person/fmt:displayname/fmt:shorten/20" />
             </a>
             <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
