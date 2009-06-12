@@ -781,6 +781,7 @@ class Branch(SQLBase):
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
         from lp.code.model.branchjob import BranchJob
+        from lp.code.interfaces.branchjob import IReclaimBranchSpaceJobSource
         if break_references:
             self._breakReferences()
         if not self.canBeDeleted():
@@ -803,7 +804,10 @@ class Branch(SQLBase):
                                     BranchJob.branch == self))))
         jobs.remove()
         # Now destroy the branch.
+        branch_id = self.id
         SQLBase.destroySelf(self)
+        # And now create a job to remove the branch from disk when it's done.
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
 
     def commitsForDays(self, since):
         """See `IBranch`."""

@@ -41,8 +41,8 @@ from lp.blueprints.interfaces.specification import (
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic, BranchType,
     CannotDeleteBranch)
-from lp.code.interfaces.branch import (BranchFormat, RepositoryFormat,
-    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.code.interfaces.branch import BranchFormat, RepositoryFormat
+from lp.code.interfaces.branchjob import IReclaimBranchSpaceJobSource
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -493,9 +493,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         # unsubscribe the branch owner here.
         self.branch.unsubscribe(self.branch.owner)
 
-    def tearDown(self):
-        logout()
-
     def test_deletable(self):
         """A newly created branch can be deleted without any problems."""
         self.assertEqual(self.branch.canBeDeleted(), True,
@@ -615,6 +612,15 @@ class TestBranchDeletion(TestCaseWithFactory):
         branch.destroySelf()
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
+
+    def test_createsJobToReclaimSpace(self):
+        # When a branch is deleted from the database, a job to remove the
+        # branch from disk as well.
+        branch = self.factory.makeAnyBranch()
+        branch_id = branch.id
+        branch.destroySelf()
+        jobs = getUtility(IReclaimBranchSpaceJobSource).iterReady()
+        self.assertEqual([branch.id], [job.branch_id for job in jobs])
 
 
 class TestBranchDeletionConsequences(TestCase):
