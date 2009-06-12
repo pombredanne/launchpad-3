@@ -19,8 +19,7 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codereviewcomment import CodeReviewComment
-from lp.code.model.codereviewvote import (
-    CodeReviewVoteReference)
+from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Owner

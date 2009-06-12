@@ -6,7 +6,7 @@
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
     version string:Launchpad 2.2.5 (r${revno});
   "
-><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
 <metal:block define-slot="top_slot" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
@@ -27,32 +27,26 @@
       is_demo modules/canonical.config/config/launchpad/is_demo;
       is_edge modules/canonical.config/config/launchpad/is_edge;
       is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
+      CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
 >
   <head tal:define="yui string:${icingroot}/yui/3.0.0pr2/build;
                 lazr_js string:${icingroot}/lazr/build;
                 lp_js string:${icingroot}/build"
   >
-    <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+    <title tal:content="CONTEXTS/fmt:pagetitle" i18n:translate="">Launchpad</title>
     <tal:atomfeeds condition="view/feed_links | nothing">
       <tal:loop repeat="link view/feed_links">
-        <link rel="alternate" type="application/atom+xml"
+        <link rel="alternate" type="application/atom+xml" href="" title=""
               tal:attributes="title link/title;
                               href link/href"/>
       </tal:loop>
     </tal:atomfeeds>
 
     <!-- Launchpad style sheet -->
-    <style
-      type="text/css"
-      media="screen, print"
-      tal:condition="not: devmode"
-      tal:content="string:@import url(${icingroot}/+style-slimmer.css);"/>
-    <style
-      type="text/css"
-      media="screen, print"
-      tal:condition="devmode"
-      tal:content="string:@import url(${icingroot}/style.css);"/>
+    <metal:launchpad-stylesheet
+      use-macro="context/@@+main-template-macros/launchpad-stylesheet" />
+
     <style tal:condition="is_demo" type="text/css"
     >html, body {background-image: url(/@@/demo) !important;}</style>
     <tal:comment condition="nothing">
@@ -78,128 +72,24 @@
       </style>
     </noscript>
 
-    <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/lazr/assets/skins/sam/lazr.css"
-        />
-    <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
-        />
-    <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/autocomplete/assets/skins/sam/autocomplete.css"
-        />
-    <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay.css"
-        />
-    <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
-        />
-    <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/picker/assets/skins/sam/picker.css"
-        />
-    <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
-        />
 
-    <tal:devmode condition="devmode">
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/yui/yui.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/oop/oop.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/event/event.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/dom/dom.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/node/node.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/dump/dump.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/io/io.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/json/json.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/attribute/attribute.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/base/base.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/substitute/substitute.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/anim/anim.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/classnamemanager/classnamemanager.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/plugin/plugin.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/widget/widget.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/cookie/cookie.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/widget/widget-position.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/widget/widget-stack.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/widget/widget-stdmod.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/overlay/overlay.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
+    <metal:load-javascript
+      use-macro="context/@@+main-template-macros/load-javascript" />
 
-      <script type="text/javascript"
-              tal:attributes="src string:${icingroot}/MochiKit.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/lazr/lazr.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/inlineedit/editor.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/autocomplete/autocomplete.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/overlay/overlay.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/activator/activator.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/picker/picker.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/formoverlay/formoverlay.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lazr_js}/effects/effects.js"></script>
-
-      <script type="text/javascript"
-              tal:attributes="src string:${lp_js}/lp/lp.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lp_js}/lp/picker.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lp_js}/inlinehelp/inlinehelp.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lp_js}/client/client.js"></script>
-    </tal:devmode>
-    <tal:production condition="not:devmode">
-      <script type="text/javascript"
-              tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
-    </tal:production>
-
-    <script type="text/javascript"
-        tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
-      function onLoadFunction() {
-        sortables_init();
-        initInlineHelp();
-      }
-      registerLaunchpadFunction(onLoadFunction);
+      YUI().use('node', function(Y) {
+          Y.on('load', function(e) {
+              sortables_init();
+              initInlineHelp();
+              activateCollapsibles();
+              activateFoldables();
+              activateConstrainBugExpiration();
+          }, window);
+
+          // Hook up the function that dismisses the help window if we click
+          // anywhere outside of it.
+          Y.on('click', handleClickOnPage, window);
+      });
     </script>
 
     <tal:needs_json tal:condition="request/needs_json">
@@ -440,24 +330,8 @@
       </div>
     </div>
 
-    <tal:cache condition="view/user|nothing"
-               define="cache request/webservicerequest:cache;
-                       links cache/links;
-                       objects cache/objects;">
-      <script tal:repeat="key links"
-        tal:content="structure string:LP.client.links['${key}'] =
-                        '${links/?key/fmt:api_url}';">
-      </script>
-      <script tal:repeat="key objects"
-        tal:content="structure string:LP.client.cache['${key}'] =
-         ${objects/?key/webservice:json};">
-      </script>
-    </tal:cache>
-
-    <script tal:condition="context/webservice:is_entry"
-     tal:content="structure string:LP.client.cache['context'] =
-       ${context/webservice:json};">
-    </script>
+    <metal:lp-client-cache
+      use-macro="context/@@+main-template-macros/lp-client-cache" />
 
   </body>
 </html>

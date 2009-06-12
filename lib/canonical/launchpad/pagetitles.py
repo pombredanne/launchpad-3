@@ -829,7 +829,9 @@ oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 object_branding = ContextDisplayName('Change the images used to represent '
     '%s in Launchpad')
 
-object_driver = ContextTitle('Appoint the driver for %s')
+def object_driver(context, view):
+    """Return the page title to change the driver."""
+    return view.page_title
 
 object_milestones = ContextTitle(smartquote("%s's milestones"))
 
@@ -1111,6 +1113,8 @@ products_index = 'Projects registered in Launchpad'
 
 products_review_licenses = 'Review licenses of projects'
 
+productserieslanguage_index = ContextTitle('%s')
+
 productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_linkbranch = ContextTitle('Link an existing branch to %s')
@@ -1123,6 +1127,8 @@ productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 
 productseries_review = ContextTitle('Review %s')
+
+productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 

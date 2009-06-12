@@ -42,7 +42,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
@@ -564,9 +564,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pas_verify = None
 
         if architectures_available is None:
-            architectures_available = [
-                arch for arch in self.distroseries.architectures
-                if arch.getPocketChroot() is not None]
+            architectures_available = list(
+                self.distroseries.enabled_architectures)
 
         build_architectures = determineArchitecturesToBuild(
             self, architectures_available, self.distroseries, pas_verify)
@@ -1274,6 +1273,8 @@ class PublishingSet:
             PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.distroseriesID ==
                 SourcePackageRelease.upload_distroseriesID,
+            PackageUpload.archiveID ==
+                SourcePackageRelease.upload_archiveID,
             PackageUploadSource.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
             SourcePackageRelease.id ==

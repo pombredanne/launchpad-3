@@ -156,12 +156,7 @@ class DistroSeriesSourcePackageRelease:
     @property
     def changesfile(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        queue_record = self.sourcepackagerelease.getQueueRecord(
-            distroseries=self.distroseries)
-        if not queue_record:
-            return None
-
-        return queue_record.changesfile
+        return self.sourcepackagerelease.upload_changesfile
 
     @property
     def published_binaries(self):

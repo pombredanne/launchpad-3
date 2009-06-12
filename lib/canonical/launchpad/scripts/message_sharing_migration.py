@@ -2,19 +2,17 @@
 
 __metaclass__ = type
 __all__ = [
-    'find_potemplate_equivalence_classes_for',
     'MessageSharingMerge',
     'merge_potmsgsets',
     'merge_translationmessages',
-    'template_precedence',
     ]
 
-
-import re
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.pofiletranslator import (
+    IPOFileTranslatorSet)
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.interfaces.product import IProductSet
@@ -33,48 +31,37 @@ def get_potmsgset_key(potmsgset):
         potmsgset.msgid_singular, potmsgset.msgid_plural, potmsgset.context)
 
 
-def template_precedence(left, right):
-    """Sort comparison: order sharing templates by precedence.
-
-    Sort using this function to order sharing templates from most
-    representative to least representative, as per the message-sharing
-    migration spec.
+def merge_pofiletranslators(from_potmsgset, to_template):
+    """Merge POFileTranslator entries from one template into another.
     """
-    if left == right:
-        return 0
+    pofiletranslatorset = getUtility(IPOFileTranslatorSet)
+    affected_rows = pofiletranslatorset.getForPOTMsgSet(from_potmsgset)
+    for pofiletranslator in affected_rows:
+        person = pofiletranslator.person
+        from_pofile = pofiletranslator.pofile
+        to_pofile = to_template.getPOFileByLang(
+            from_pofile.language.code, variant=from_pofile.variant)
 
-    # Current templates always have precedence over non-current ones.
-    if left.iscurrent != right.iscurrent:
-        if left.iscurrent:
-            return -1
+        pofiletranslator = removeSecurityProxy(pofiletranslator)
+        if to_pofile is None:
+            # There's no POFile to move this to.  We could create one,
+            # but it's probably not worth the trouble.
+            pofiletranslator.destroySelf()
         else:
-            return 1
-
-    if left.productseries:
-        left_series = left.productseries
-        right_series = right.productseries
-        assert left_series.product == right_series.product
-        focus = left_series.product.primary_translatable
-    else:
-        left_series = left.distroseries
-        right_series = right.distroseries
-        assert left_series.distribution == right_series.distribution
-        focus = left_series.distribution.translation_focus
-
-    # Translation focus has precedence.  In case of a tie, newest
-    # template wins.
-    if left_series == focus:
-        return -1
-    elif right_series == focus:
-        return 1
-    elif left.id > right.id:
-        return -1
-    else:
-        assert left.id < right.id, "Got unordered ids."
-        return 1
+            existing_row = pofiletranslatorset.getForPersonPOFile(
+                person, to_pofile)
+            date_last_touched = pofiletranslator.date_last_touched
+            if existing_row is None:
+                # Move POFileTranslator over to representative POFile.
+                pofiletranslator.pofile = to_pofile
+            elif existing_row.date_last_touched < date_last_touched:
+                removeSecurityProxy(existing_row).destroySelf()
+            else:
+                pofiletranslator.destroySelf()
 
 
-def merge_translationtemplateitems(subordinate, representative):
+def merge_translationtemplateitems(subordinate, representative,
+                                   representative_template):
     """Merge subordinate POTMsgSet into its representative POTMsgSet.
 
     This adds all of the subordinate's TranslationTemplateItems to the
@@ -97,6 +84,8 @@ def merge_translationtemplateitems(subordinate, representative):
             item.potmsgset = representative
             templates.add(item.potemplate)
 
+        merge_pofiletranslators(item.potmsgset, representative_template)
+
 
 def merge_potmsgsets(potemplates):
     """Merge POTMsgSets for given sequence of sharing templates."""
@@ -109,17 +98,23 @@ def merge_potmsgsets(potemplates):
     # POTMsgSets it represents.
     subordinates = {}
 
+    # Map each representative POTMsgSet to its representative
+    # POTemplate.
+    representative_templates = {}
+
     # Figure out representative potmsgsets and their subordinates.  Go
     # through the templates, starting at the most representative and
     # moving towards the least representative.  For any unique potmsgset
     # key we find, the first POTMsgSet is the representative one.
-    order_check = OrderingCheck(cmp=template_precedence)
+    order_check = OrderingCheck(
+        cmp=getUtility(IPOTemplateSet).compareSharingPrecedence)
     for template in potemplates:
         order_check.check(template)
         for potmsgset in template.getPOTMsgSets(False):
             key = get_potmsgset_key(potmsgset)
             if key not in representatives:
                 representatives[key] = potmsgset
+                representative_templates[potmsgset] = template
             representative = representatives[key]
             if representative in subordinates:
                 subordinates[representative].append(potmsgset)
@@ -171,102 +166,22 @@ def merge_potmsgsets(potemplates):
 
                 message.potmsgset = representative
 
-            merge_translationtemplateitems(subordinate, representative)
+            merge_translationtemplateitems(
+                subordinate, representative,
+                representative_templates[representative])
+
             removeSecurityProxy(subordinate).destroySelf()
 
 
 def merge_translationmessages(potemplates):
     """Share `TranslationMessage`s between `potemplates` where possible."""
-    order_check = OrderingCheck(cmp=template_precedence)
+    order_check = OrderingCheck(
+        cmp=getUtility(IPOTemplateSet).compareSharingPrecedence)
     for template in potemplates:
         order_check.check(template)
         for potmsgset in template.getPOTMsgSets(False):
             for message in potmsgset.getAllTranslationMessages():
                 removeSecurityProxy(message).shareIfPossible()
-
-
-def get_equivalence_class(template):
-    """Return whatever we group `POTemplate`s by for sharing purposes."""
-    if template.sourcepackagename is None:
-        package = None
-    else:
-        package = template.sourcepackagename.name
-    return (template.name, package)
-
-
-def iterate_templates(product=None, distribution=None, name_pattern=None,
-                      sourcepackagename=None):
-    """Yield all templates matching the provided arguments.
-
-    This is much like a `IPOTemplateSubset`, except it operates on
-    `Product`s and `Distribution`s rather than `ProductSeries` and
-    `DistroSeries`.
-    """
-    templateset = getUtility(IPOTemplateSet)
-    if product:
-        subsets = [
-            templateset.getSubset(productseries=series)
-            for series in product.serieses
-            ]
-    else:
-        subsets = [
-            templateset.getSubset(
-                distroseries=series, sourcepackagename=sourcepackagename)
-            for series in distribution.serieses
-            ]
-    for subset in subsets:
-        for template in subset:
-            if name_pattern is None or re.match(name_pattern, template.name):
-                yield template
-
-
-def find_potemplate_equivalence_classes_for(product=None, distribution=None,
-                                            name_pattern=None,
-                                            sourcepackagename=None):
-    """Within given `Product` or `Distribution`, find equivalent templates.
-
-    Partitions all templates in the given context into equivalence
-    classes.
-
-    :param product: an optional `Product` to operate on.  The
-        alternative is to pass `distribution`.
-    :param distribution: an optional `Distribution` to operate on.  The
-        alternative is to pass `product`.  If you're going to operate on
-        a distribution, you may want to pass a `name_pattern` as well to
-        avoid doing too much in one go.
-    :param name_pattern: an optional regex pattern indicating which
-        template names are to be merged.
-    :param sourcepackagename: an optional source package name to operate
-        on.  Leaving this out means "all packages in the distribution."
-        This option only makes sense when combined with `distribution`.
-    :return: a dict mapping each equivalence class to a list of
-        `POTemplate`s in that class, each sorted from most to least
-        representative.
-    """
-    assert product or distribution, "Pick a product or distribution!"
-    assert not (product and distribution), (
-        "Pick a product or distribution, not both!")
-    assert distribution or not sourcepackagename, (
-        "Picking a source package only makes sense with a distribution.")
-
-    equivalents = {}
-
-    templates = iterate_templates(
-        product=product, distribution=distribution, name_pattern=name_pattern,
-        sourcepackagename=sourcepackagename)
-
-    for template in templates:
-        key = get_equivalence_class(template)
-        if key not in equivalents:
-            equivalents[key] = []
-        equivalents[key].append(template)
-
-    for equivalence_list in equivalents.itervalues():
-        # Sort potemplates from "most representative" to "least
-        # representative."
-        equivalence_list.sort(cmp=template_precedence)
-
-    return equivalents
 
 
 class MessageSharingMerge(LaunchpadScript):
@@ -339,10 +254,11 @@ class MessageSharingMerge(LaunchpadScript):
                     "Unknown source package name: '%s'" %
                         self.options.sourcepackage)
 
-        equivalence_classes = find_potemplate_equivalence_classes_for(
-            product=product, distribution=distribution,
-            name_pattern=self.options.template_names,
-            sourcepackagename=sourcepackagename)
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+                product=product, distribution=distribution,
+                sourcepackagename=sourcepackagename)
+        equivalence_classes = subset.groupEquivalentPOTemplates(
+                                                self.options.template_names)
 
         class_count = len(equivalence_classes)
         self.logger.info(

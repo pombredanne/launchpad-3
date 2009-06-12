@@ -23,14 +23,14 @@ from storm.locals import And, Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
-from canonical.launchpad.database.bugtarget import HasBugsBase
+from lp.bugs.model.bugtarget import HasBugsBase
 from lp.blueprints.model.specification import Specification
 from lp.registry.model.productrelease import ProductRelease
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
-from canonical.launchpad.interfaces.bugtask import (
+from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
-from canonical.launchpad.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
 from canonical.launchpad.interfaces.structuralsubscription import (
