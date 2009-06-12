@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from lp.code.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branchjob import (
     IReclaimBranchSpaceJobSource)
 from lp.services.job.runner import JobRunner
 from lp.services.scripts.base import LaunchpadCronScript

@@ -430,7 +430,7 @@ class TestCaseWithFactory(TestCase):
         This always uses the configured mirrored area, ignoring whatever
         server might be providing lp-mirrored: urls.
         """
-        base = config.codehosting.internal_branch_by_id_root
+        base = config.codehosting.mirrored_branches_root
         # XXX gary 2009-5-28 bug 381325
         # This is a work-around for some failures on PQM, arguably caused by
         # relying on test set-up that is happening in the Makefile rather than
