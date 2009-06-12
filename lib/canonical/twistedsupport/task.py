@@ -196,34 +196,3 @@ class ParallelLimitedTaskConsumer:
         else:
             # We're over the worker limit, nothing we can do.
             pass
-
-
-class OldParallelLimitedTaskSink:
-    """ """
-
-    def __init__(self, worker_limit, task_source):
-        self.worker_limit = worker_limit
-        self.worker_count = 0
-        self.task_source = task_source
-
-    def start(self):
-        self._terminationDeferred = defer.Deferred()
-        self.task_source.start(self.acceptTask)
-        return self._terminationDeferred
-
-    def acceptTask(self, task):
-        self.worker_count += 1
-        if self.worker_count >= self.worker_limit:
-            self.task_source.stop()
-        d = task.run()
-        # We don't expect these tasks to have interesting return values or
-        # failure modes.
-        d.addErrback(log.err)
-        d.addCallback(self.taskEnded)
-
-    def taskEnded(self, ignored):
-        self.worker_count -= 1
-        if self.worker_count == 0:
-            self._terminationDeferred.callback(None)
-        if self.worker_count < self.worker_limit:
-            self.start()
