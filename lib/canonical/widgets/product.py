@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 import cgi
+import math
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import renderElement
@@ -230,6 +231,38 @@ class LicenseWidget(CheckBoxMatrixWidget):
     template = ViewPageTemplateFile('templates/license.pt')
     allow_pending_license = False
 
+    CATEGORIES = {
+        'AFFERO'        : 'recommended',
+        'APACHE'        : 'recommended',
+        'BSD'           : 'recommended',
+        'GNU_GPL_V2'    : 'recommended',
+        'GNU_GPL_V3'    : 'recommended',
+        'GNU_LGPL_V2_1' : 'recommended',
+        'GNU_LGPL_V3'   : 'recommended',
+        'MIT'           : 'recommended',
+        'CC_0'          : 'recommended',
+        'ACADEMIC'      : 'more',
+        'ARTISTIC'      : 'more',
+        'ARTISTIC_2_0'  : 'more',
+        'COMMON_PUBLIC' : 'more',
+        'ECLIPSE'       : 'more',
+        'EDUCATIONAL_COMMUNITY': 'more',
+        'MPL'           : 'more',
+        'OPEN_SOFTWARE' : 'more',
+        'PHP'           : 'more',
+        'PUBLIC_DOMAIN' : 'more',
+        'PYTHON'        : 'more',
+        'ZPL'           : 'more',
+        'CC_BY'         : 'more',
+        'CC_BY_SA'      : 'more',
+        'PERL'          : 'deprecated',
+        'OTHER_PROPRIETARY' : 'special',
+        'OTHER_OPEN_SOURCE' : 'special',
+        'DONT_KNOW'     : 'special',
+        }
+
+    categories = None
+
     def textForValue(self, term):
         """See `ItemsWidgetBase`."""
         # This will return just the DBItem's text.  We want to wrap that text
@@ -237,14 +270,57 @@ class LicenseWidget(CheckBoxMatrixWidget):
         # description.
         value = super(LicenseWidget, self).textForValue(term)
         if term.value.url is None:
-            # There's no link.
             return value
         else:
             return '<a href="%s">%s</a>' % (term.value.url, value)
 
+    def renderItem(self, index, text, value, name, cssClass):
+        """See `ItemsEditWidgetBase`."""
+        rendered = super(LicenseWidget, self).renderItem(
+            index, text, value, name, cssClass)
+        self._categorize(value, rendered)
+        return rendered
+
+    def renderSelectedItem(self, index, text, value, name, cssClass):
+        """See `ItemsEditWidgetBase`."""
+        rendered = super(LicenseWidget, self).renderSelectedItem(
+            index, text, value, name, cssClass)
+        self._categorize(value, rendered)
+        return rendered
+
+    def _categorize(self, value, rendered):
+        # Place the value in the proper category.
+        if self.categories is None:
+            self.categories = {}
+        category = self.CATEGORIES.get(value)
+        assert category is not None, 'Uncategorized value: %s' % value
+        self.categories.setdefault(category, []).append(rendered)
+
     def __call__(self):
-        self.checkbox_matrix = super(LicenseWidget, self).__call__()
+        # Trigger textForValue() which does the categorization of the
+        # individual checkbox items.  We don't actually care about the return
+        # value though since we'll be building up our checkbox tables
+        # manually.
+        super(LicenseWidget, self).__call__()
+        self.recommended = self._renderTable('recommended', 3)
+        self.more = self._renderTable('more', 3)
+        self.deprecated = self._renderTable('deprecated')
+        self.special = self._renderTable('special')
         return self.template()
+
+    def _renderTable(self, category, column_count=1):
+        rendered_items = self.categories[category]
+        html = ['<table id="%s"' % category]
+        row_count = int(math.ceil(len(rendered_items) / float(column_count)))
+        for i in range(0, row_count):
+            html.append('<tr>')
+            for j in range(0, self.column_count):
+                index = i + (j * row_count)
+                if index >= len(rendered_items):
+                    break
+                html.append('<td>%s</td>' % rendered_items[index])
+            html.append('</tr>')
+        return '\n'.join(html)
 
 
 class ProductNameWidget(LowerCaseTextWidget):

@@ -40,7 +40,10 @@
   <tal:allow-pending condition="view/allow_pending_license">
     <div tal:attributes="style string:padding-left: 20px"
          onclick="setLicensePendingStatus(false)">
-      <input tal:replace="structure view/checkbox_matrix" />
+      <input tal:replace="structure view/recommended" />
+      <input tal:replace="structure view/more" />
+      <input tal:replace="structure view/deprecated" />
+      <input tal:replace="structure view/special" />
     </div>
   </tal:allow-pending>
   <tal:do-not-allow-pending condition="not:view/allow_pending_license">
