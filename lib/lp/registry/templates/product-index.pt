@@ -231,7 +231,7 @@
         <h2>Series and milestones</h2>
         <p>A "release series" is major release that would typically have a number
       of "point releases" associated with it.</p>
-        <div class="project series"
+        <div class="series"
              tal:repeat="series view/sorted_active_series_list">
 
           <div tal:define="is_focus series/is_development_focus"

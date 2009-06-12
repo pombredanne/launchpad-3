@@ -1581,7 +1581,7 @@ body.tab-overview #description fieldset {
 beside the mugshot. */
 #contact-details {clear: none;}
 
-.product.series, .project {margin-bottom: 1em;}
+.product.series, .series {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
 /* --- Home --- */
