@@ -250,11 +250,11 @@ class TestParallelLimitedTaskConsumer(TestCase):
         # `consume` returns a Deferred that fires when no more tasks are
         # running.
         consumer = self.makeConsumer()
-        log = []
+        task_log = []
         d = consumer.consume(LoggingSource([]))
-        d.addCallback(log.append)
+        d.addCallback(task_log.append)
         consumer.taskStarted(lambda: None)
-        self.assertEqual([None], log)
+        self.assertEqual([None], task_log)
 
     def test_taskStarted_before_consume_raises_error(self):
         # taskStarted can only be called after we have started consuming. This
@@ -325,6 +325,24 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.taskStarted(lambda: log_append('task1'))
         consumer.taskStarted(lambda: log_append('task2'))
         self.assertEqual(['task1', 'task2'], log)
+
+    def test_restart_source_when_worker_available(self):
+        # When we reach the worker limit, we tell the source to stop. Once we
+        # drop back down below the limit, however, we tell it to start up
+        # again.
+        worker_limit = 2
+        consumer = self.makeConsumer(worker_limit=worker_limit)
+        log = []
+        source = LoggingSource(log)
+        consumer.consume(source)
+        consumer.taskStarted(lambda: Deferred())
+        d = Deferred()
+        consumer.taskStarted(lambda: d)
+        # Reached the limit.
+        del log[:]
+        # One of the tasks is finished
+        d.callback(None)
+        self.assertEqual([('start', consumer)], log)
 
 
 def test_suite():
