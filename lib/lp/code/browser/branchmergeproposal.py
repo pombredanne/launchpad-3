@@ -493,11 +493,19 @@ class BranchMergeProposalVoteView(LaunchpadView):
 
     @cachedproperty
     def categorized_reviews(self):
+        reviewers = []
+        community = []
+        review_team = self.context.target_branch.reviewer
+        for review in self.unsolicited_reviews:
+            if review.message.owner.inTeam(review_team):
+                reviewers.append(review)
+            else:
+                community.append(review)
         categories = []
-        if len(self.unsolicited_reviews) > 0:
-            categories.append(
-                {'title': 'Community',
-                 'votes': self.unsolicited_reviews,})
+        if len(reviewers) > 0:
+            categories.append({'title': 'Reviewers', 'votes': reviewers,})
+        if len(community) > 0:
+            categories.append({'title': 'Community', 'votes': community,})
         return categories
 
     @cachedproperty

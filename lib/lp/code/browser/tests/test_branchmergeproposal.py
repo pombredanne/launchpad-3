@@ -237,6 +237,30 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # We just test that rendering does not raise.
         view.render()
 
+    def test_categorized_reviews_no_reviews(self):
+        # We show only those categories that have reviews
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertEqual([], view.categorized_reviews)
+
+    def test_categorized_reviews_community_review(self):
+        # By default, unsolicited reviews are 'Community'
+        albert = self.factory.makePerson(name='albert')
+        self._createComment(albert, CodeReviewVote.APPROVE)
+        review = self._createComment(albert, CodeReviewVote.APPROVE)
+        expected = [{'title': 'Community', 'votes': [review]}]
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertEqual(expected, view.categorized_reviews)
+
+    def test_categorized_reviews_reviewer_review(self):
+        # Reviews from people in the review team are 'Reviewers'
+        bob = self.factory.makePerson(name='bob')
+        review = self._createComment(bob, CodeReviewVote.APPROVE)
+        self.bmp.target_branch.reviewer = self.factory.makeTeam()
+        bob.join(self.bmp.target_branch.reviewer)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        expected = [{'title': 'Reviewers', 'votes': [review]}]
+        self.assertEqual(expected, view.categorized_reviews)
+
 
 class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
     """Test the merge proposal registration view."""
