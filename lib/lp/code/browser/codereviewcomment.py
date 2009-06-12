@@ -14,9 +14,12 @@ from zope.interface import Interface, implements
 from zope.schema import Text
 
 from canonical.cachedproperty import cachedproperty
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
     LaunchpadView, Link)
@@ -135,7 +138,11 @@ class CodeReviewCommentSummary(CodeReviewCommentView):
 class IEditCodeReviewComment(Interface):
     """Interface for use as a schema for CodeReviewComment forms."""
 
-    comment = Text(title=_('Comment'), required=True)
+    vote = copy_field(ICodeReviewComment['vote'], required=False)
+
+    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+
+    comment = Text(title=_('Comment'), required=False)
 
 
 class CodeReviewCommentAddView(LaunchpadFormView):
@@ -185,7 +192,8 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         """Create the comment..."""
         comment = self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
-            parent=self.reply_to)
+            parent=self.reply_to, vote=data['vote'],
+            review_type=data['review_type'])
 
     @property
     def next_url(self):
