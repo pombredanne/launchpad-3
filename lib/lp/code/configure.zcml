@@ -214,7 +214,7 @@
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
       provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
       factory="lp.code.browser.branchmergeproposal.BranchMergeProposalPrimaryContext"/>
-  <class class="lp.code.model.branchmergeproposaljobs.MergeProposalCreatedJob">
+  <class class="lp.code.model.branchmergeproposaljob.MergeProposalCreatedJob">
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalCreatedJob"/>
   </class>

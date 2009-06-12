@@ -35,7 +35,7 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
     MASTER_FLAVOR)
 from lp.code.enums import BranchType
-from lp.code.interfaces.branchmergeproposals import (
+from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob, ICreateMergeProposalJob,
     ICreateMergeProposalJobSource, IMergeProposalCreatedJob)
 from lp.code.mail.branchmergeproposal import BMPMailer
