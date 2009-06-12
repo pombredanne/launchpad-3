@@ -9,6 +9,9 @@ __all__ = [
     'ProductSeriesSet',
     ]
 
+import datetime
+import operator
+
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from storm.expr import In, Sum
@@ -59,6 +62,17 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+
+def landmark_key(landmark):
+    """Sorts landmarks by date and name."""
+    if landmark['date'] is None:
+        # Null dates are assumed to be in the future.
+        date = '9999-99-99'
+    else:
+        date = landmark['date']
+    return date + landmark['name']
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -518,16 +532,33 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 if not include_inactive and not milestone.active:
                     continue
                 node_type = 'milestone'
+                date = milestone.dateexpected
+                uri = canonical_url(milestone, path_only_if_possible=True)
             else:
                 node_type = 'release'
+                date = milestone.product_release.datereleased
+                uri = canonical_url(
+                    milestone.product_release, path_only_if_possible=True)
+
+            if isinstance(date, datetime.datetime):
+                date = date.date().isoformat()
+            elif isinstance(date, datetime.date):
+                date = date.isoformat()
+
             entry = dict(
                 name=milestone.name,
                 code_name=milestone.code_name,
-                type=node_type)
+                type=node_type,
+                date=date,
+                uri=uri)
             landmarks.append(entry)
+
+        landmarks = sorted_dotted_numbers(landmarks, key=landmark_key)
+        landmarks.reverse()
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
+            uri=canonical_url(self, path_only_if_possible=True),
             landmarks=landmarks)
 
 

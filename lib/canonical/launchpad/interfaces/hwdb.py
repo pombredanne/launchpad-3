@@ -317,7 +317,7 @@ class IHWSubmissionSet(Interface):
         """
 
     def deviceDriverOwnersAffectedByBugs(
-        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
         package_name=None, bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
         """Return persons affected by given bugs and owning a given device.
