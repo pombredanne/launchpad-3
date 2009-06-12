@@ -308,6 +308,8 @@ class HWSubmissionEmailLinker(TunableLoop):
     def __init__(self, log):
         super(HWSubmissionEmailLinker, self).__init__(log)
         self.submission_store = IMasterStore(HWSubmission)
+        self.submission_store.execute(
+            "DROP TABLE IF EXISTS NewlyMatchedSubmission")
         self.submission_store.execute("""
             CREATE TEMPORARY TABLE NewlyMatchedSubmission AS
             SELECT
