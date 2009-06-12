@@ -158,6 +158,10 @@
             class="lp.bugs.browser.bugcomment.BugCommentBoxExpandedReplyView"
             permission="launchpad.View"/>
     </facet>
+    <adapter
+         factory="lp.bugs.browser.bugcomment.BugCommentXHTMLRepresentation"
+         name="lazr.restful.EntryResource"
+        />
     <browser:url
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         path_expression="string:bugs"
