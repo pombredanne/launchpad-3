@@ -147,35 +147,32 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         subject = "PPA subscription cancelled for %s" % ppa_name
         template = get_email_template("ppa-subscription-cancelled.txt")
 
-        if send_to_person.isTeam():
-            recipients = list(send_to_person)
-        else:
-            recipients = [send_to_person]
+        assert not send_to_person.isTeam(), (
+            "Token.person is a team, it should always be individuals.")
 
-        for person in recipients:
-            if person.preferredemail is None:
-                # The person has no preferred email set, so we don't
-                # email them.
-                continue
+        if send_to_person.preferredemail is None:
+            # The person has no preferred email set, so we don't
+            # email them.
+            return
 
-            to_address = [person.preferredemail.email]
-            replacements = {
-                'recipient_name' : send_to_person.displayname,
-                'ppa_name' : ppa_name,
-                'ppa_owner_url' : ppa_owner_url,
-                }
-            body = MailWrapper(72).format(
-                template % replacements, force_wrap=True)
+        to_address = [send_to_person.preferredemail.email]
+        replacements = {
+            'recipient_name' : send_to_person.displayname,
+            'ppa_name' : ppa_name,
+            'ppa_owner_url' : ppa_owner_url,
+            }
+        body = MailWrapper(72).format(
+            template % replacements, force_wrap=True)
 
-            from_address = format_address(
-                ppa_name,
-                config.canonical.noreply_from_address)
+        from_address = format_address(
+            ppa_name,
+            config.canonical.noreply_from_address)
 
-            headers = {
-                'Sender' : config.canonical.bounce_address,
-                }
+        headers = {
+            'Sender' : config.canonical.bounce_address,
+            }
 
-            simple_sendmail(from_address, to_address, subject, body, headers)
+        simple_sendmail(from_address, to_address, subject, body, headers)
 
     def deactivateTokens(self, ppa, send_email=False):
         """Deactivate tokens as necessary.
