@@ -90,6 +90,7 @@ from lp.blueprints.interfaces.specification import (
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
+from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
 
@@ -956,8 +957,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getTimeline(self, include_inactive=False):
         """See `IProduct`."""
+        series_list = sorted_version_numbers(self.serieses,
+                                             key=operator.attrgetter('name'))
+        if self.development_focus in series_list:
+            series_list.remove(self.development_focus)
+        series_list.insert(0, self.development_focus)
+        series_list.reverse()
         return [series.getTimeline(include_inactive=include_inactive)
-                for series in self.serieses]
+                for series in series_list]
 
 
 class ProductSet:
