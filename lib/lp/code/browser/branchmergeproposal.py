@@ -481,15 +481,32 @@ class BranchMergeProposalVoteView(LaunchpadView):
         seen_reviewers = set()
         for comment in sorted(self.context.all_comments,
             key=lambda x: x.message.datecreated, reverse=True):
-            if comment.message.owner in seen_reviewers:
-                continue
             if comment.vote is None:
+                continue
+            if comment.message.owner in seen_reviewers:
                 continue
             if comment.message.owner in solicited_reviewers:
                 continue
             unsolicited_reviews.append(comment)
             seen_reviewers.add(comment.message.owner)
         return unsolicited_reviews
+
+    @cachedproperty
+    def categorized_reviews(self):
+        reviewers = []
+        community = []
+        review_team = self.context.target_branch.reviewer
+        for review in self.unsolicited_reviews:
+            if review.message.owner.inTeam(review_team):
+                reviewers.append(review)
+            else:
+                community.append(review)
+        categories = []
+        if len(reviewers) > 0:
+            categories.append({'title': 'Reviewers', 'votes': reviewers,})
+        if len(community) > 0:
+            categories.append({'title': 'Community', 'votes': community,})
+        return categories
 
     @cachedproperty
     def show_user_review_link(self):

@@ -39,6 +39,25 @@
         </a>
       </td>
     </tr>
+    <tal:categorized tal:repeat="category view/categorized_reviews">
+    <tr><th tal:content="category/title">Category</th></tr>
+    <tr tal:repeat="vote category/votes">
+      <td>
+        <tal:reviewer
+         replace="structure vote/message/owner/fmt:link:mainsite">
+        Eric the Reviewer</tal:reviewer>
+      </td>
+      <td tal:content="vote/vote_tag" />
+      <td></td>
+      <td>
+        <span tal:attributes="class string:vote${vote/vote/name}"
+              tal:content="vote/vote/title">
+          Approved
+        </span>
+        <tal:date replace="vote/message/datecreated/fmt:displaydate" />
+      </td>
+    </tr>
+    </tal:categorized>
     <!-- Pending reviews -->
     <tr tal:repeat="review view/requested_reviews">
       <td tal:content="structure review/reviewer/fmt:link:mainsite" />
