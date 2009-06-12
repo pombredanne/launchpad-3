@@ -15,7 +15,7 @@ Set up required objects
 
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> eric_browser.open(merge_proposal_url)
-    >>> eric_browser.getLink('Add a comment').click()
+    >>> eric_browser.getLink('Add a review or comment').click()
     >>> eric_browser.getControl(name='field.comment').value = ('This is a '
     ... 'very long comment about what things should be done to the source '
     ... 'branch to land it.  When this comment is replied to, it '
@@ -92,11 +92,10 @@ Email addresses in code review comments are hidden for users not logged in.
 
 == Reviewing ==
 
-If the user
-wants to review the branch, they click on the [Review] link shown in the
-vote summary table.
+If the user wants to review the branch, they click on the 'Add a review or
+comment' link.
 
-    >>> eric_browser.getLink('Add a comment').click()
+    >>> eric_browser.getLink('Add a review or comment').click()
     >>> eric_browser.getControl('Reviewer says').displayValue = ['Abstain']
     >>> eric_browser.getControl('Review type').value = 'timeless'
     >>> eric_browser.getControl(name='field.actions.add').click()
