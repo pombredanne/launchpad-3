@@ -492,6 +492,15 @@ class BranchMergeProposalVoteView(LaunchpadView):
         return unsolicited_reviews
 
     @cachedproperty
+    def categorized_reviews(self):
+        categories = []
+        if len(self.unsolicited_reviews) > 0:
+            categories.append(
+                {'title': 'Community',
+                 'votes': self.unsolicited_reviews,})
+        return categories
+
+    @cachedproperty
     def show_user_review_link(self):
         """Show self in the review table if can review and not asked."""
         if self.user is None or not self.context.isMergable():
