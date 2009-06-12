@@ -48,8 +48,12 @@
       <div
         tal:define="link context_menu/subscription"
         tal:condition="link/enabled"
-        tal:content="structure link/render"
-        />
+        >
+        <img tal:attributes="alt link/text;title link/text" src="/@@/add" />
+        <a id="selfsubscription"
+           tal:attributes="href link/url"
+           tal:content="link/text" />
+      </div>
       <div
         tal:define="link context_menu/add_subscriber"
         tal:condition="link/enabled"
