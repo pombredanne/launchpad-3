@@ -6,6 +6,8 @@ __all__ = [
     'RosettaUploadJob',
 ]
 
+import os
+import shutil
 from StringIO import StringIO
 
 from bzrlib.bzrdir import BzrDirMetaFormat1
@@ -14,8 +16,6 @@ from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
 from bzrlib.upgrade import upgrade
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
 import simplejson
@@ -25,10 +25,14 @@ import transaction
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.config import config
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.diff import StaticDiff
 from lp.code.interfaces.branch import (BRANCH_FORMAT_UPGRADE_PATH,
     REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
-from canonical.launchpad.database.diff import StaticDiff
+from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.database.translationbranchapprover import (
@@ -722,4 +726,14 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
         return self.metadata['branch_id']
 
     def run(self):
-        pass
+        mirrored_path = os.path.join(
+            config.codehosting.mirrored_branches_root,
+            branch_id_to_path(self.branch_id))
+        hosted_path = os.path.join(
+            config.codehosting.hosted_branches_root,
+            branch_id_to_path(self.branch_id))
+        if os.path.exists(mirrored_path):
+            shutil.rmtree(mirrored_path)
+        if os.path.exists(hosted_path):
+            shutil.rmtree(hosted_path)
+
