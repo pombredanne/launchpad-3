@@ -13,13 +13,13 @@ __all__ = [
     'NoSuchProductSeries',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
-    ContentNameField, PublicPersonChoice, Title)
+    ContentNameField, NoneableDescription, PublicPersonChoice, Title)
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -45,14 +45,16 @@ from lazr.restful.declarations import (
 
 
 class ProductSeriesNameField(ContentNameField):
-
+    """A class to ensure `IProductSeries` has unique names."""
     errormessage = _("%s is already in use by another series.")
 
     @property
     def _content_iface(self):
+        """See `IField`."""
         return IProductSeries
 
     def _getByName(self, name):
+        """See `IField`."""
         if self._content_iface.providedBy(self.context):
             return self.context.product.getSeries(name)
         else:
@@ -60,6 +62,7 @@ class ProductSeriesNameField(ContentNameField):
 
 
 def validate_release_glob(value):
+    """Validate that the URL is supported."""
     if validate_url(value, ["http", "https", "ftp"]):
         return True
     else:
@@ -118,12 +121,13 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     driver = exported(
         PublicPersonChoice(
-            title=_("Driver"),
+            title=_("Release manager"),
             description=_(
                 "The person or team responsible for decisions about features "
                 "and bugs that will be targeted to this series. If you don't "
                 "nominate someone here, then the owner of this series will "
-                "automatically have those permissions."),
+                "automatically have those permissions, as will the project "
+                "and project group drivers."),
             required=False, vocabulary='ValidPersonOrTeam'))
 
     title = exported(
@@ -141,10 +145,11 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         exported_as='display_name')
 
     summary = exported(
-        Text(title=_("Summary"),
-             description=_('A single paragraph introduction or overview '
-                           'of this series. For example: "The 2.0 series '
-                           'of Apache represents the current stable series, '
+        NoneableDescription(title=_("Summary"),
+             description=_('A single paragraph that explains the goals of '
+                           'of this series and the intended users. '
+                           'For example: "The 2.0 series of Apache '
+                           'represents the current stable series, '
                            'and is recommended for all new deployments".'),
              required=True))
 
@@ -219,6 +224,13 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         required=True,
         description=_("Specify which files will be imported from the "
                       "source code branch."))
+
+    potemplate_count = Int(
+        title=_("The total number of POTemplates in this series."),
+        readonly=True, required=True)
+
+    productserieslanguages = Attribute(
+        "The set of ProductSeriesLanguages for this series.")
 
     def getRelease(version):
         """Get the release in this series that has the specified version.

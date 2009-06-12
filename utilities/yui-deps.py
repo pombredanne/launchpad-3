@@ -3,8 +3,8 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 """Print the YUI modules we are using.
 
-It looks into the main-template.pt file for the yui modules included. It
-prints the path to the minified version of these modules.
+It looks into the main-template-macros.pt file for the yui modules included.
+It prints the path to the minified version of these modules.
 
 The output of this script is meant to be given to the lazr-js build.py script
 so that they are included in the launchpad.js file.
@@ -21,7 +21,8 @@ TOP = os.path.normpath(
     os.path.join(os.path.dirname(__file__), '..'))
 ICING_ROOT = os.path.join(TOP, 'lib', 'canonical', 'launchpad', 'icing')
 MAIN_TEMPLATE = os.path.join(
-    TOP, 'lib', 'canonical', 'launchpad', 'templates', 'main-template.pt')
+    TOP, 'lib', 'canonical', 'launchpad', 'templates',
+    'main-template-macros.pt')
 
 YUI_ROOT_RE = re.compile('yui string:\${icingroot}/(.*);')
 YUI_MOD_RE = re.compile('\${yui}/(.*?)\.js')

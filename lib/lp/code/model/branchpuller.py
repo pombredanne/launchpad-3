@@ -13,11 +13,12 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
+from lp.code.enums import BranchType
 from lp.code.model.branch import Branch
+from lp.code.interfaces.branch import BranchTypeError
+from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
-from lp.code.interfaces.branch import BranchType, BranchTypeError
-from lp.code.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 

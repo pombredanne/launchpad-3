@@ -61,9 +61,9 @@ will be warned that the milestone has been deactivated.
 
 The newly created release will be accessible via a link on the series page.
 
-    >>> browser.getLink('1.0', index=1).click()
+    >>> browser.getLink('Mozilla Firefox 1.0').click()
     >>> browser.url
-    'http://launchpad.dev/firefox/trunk/1.0'
+    'http://launchpad.dev/firefox/+milestone/1.0'
     >>> print extract_text(find_tag_by_id(browser.contents, 'release_notes'))
     Released 1.0
     >>> print extract_text(find_tag_by_id(browser.contents, 'changelog'))

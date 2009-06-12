@@ -2187,7 +2187,7 @@ By default, only bug reporters are looked up. Sample Person has made
 a hardware report containing the IDE disk Seagate ST3250820NS, and
 he has filed bug 1.
 
-    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_set = getUtility(IBugSet)
     >>> bug_one = bug_set.get(1)
     >>> print bug_one.owner.displayname
@@ -2259,15 +2259,17 @@ more bug tags.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BugTaskSearchParams, IBugTaskSet)
+    >>> from canonical.launchpad.searchbuilder import any
+
     >>> bugtask_set = getUtility(IBugTaskSet)
     >>> bugtasks = bugtask_set.search(
-    ...     BugTaskSearchParams(user=foo_bar, tag='pebcak'))
+    ...     BugTaskSearchParams(user=foo_bar, tag=any('pebcak')))
     >>> owners = set(bugtask.bug.owner for bugtask in bugtasks)
     >>> for owner in owners:
     ...     print owner.displayname
     Sample Person
     >>> bugtasks = bugtask_set.search(
-    ...     BugTaskSearchParams(user=foo_bar, tag='crash'))
+    ...     BugTaskSearchParams(user=foo_bar, tag=any('crash')))
     >>> owners = set(bugtask.bug.owner for bugtask in bugtasks)
     >>> for owner in owners:
     ...     print owner.displayname

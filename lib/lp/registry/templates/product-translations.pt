@@ -34,20 +34,10 @@
           </a>
         </li>
       </ul>
-      <p>
-        <strong tal:content="structure context/license_status/description">
-          This project's license is open source.
-        </strong>
-      </p>
       <tal:uses-translations condition="uses_translations">
         <tal:translatable define="target context/primary_translatable">
-          <p>
-            For <tal:product replace="context/displayname" />,
-            Launchpad currently recommends translating
-            &#8220;<span tal:replace="target/displayname">main</span>&#8221;.
-          </p>
           <p id="translation-permissions">
-            <tal:product replace="context/displayname">This
+            <tal:product replace="structure context/fmt:link">This
             project</tal:product> is translated
             <tal:hasgroup condition="context/translationgroup">by
               <a tal:attributes="href context/translationgroup/fmt:url"
@@ -64,7 +54,11 @@
               >Settings</a> page.
             </tal:permissions>
           </p>
-          <div tal:replace="structure target/@@+potlist" />
+          <h2>Translation for
+            <span tal:replace="target/displayname">main</span></h2>
+          <div tal:replace="structure target/@@+languages" />
+          <div style="height:1em;"></div>
+          <div tal:replace="structure context/@@+rosetta-status-legend" />
           <div tal:replace="structure context/@@+portlet-translatables" />
         </tal:translatable>
       </tal:uses-translations>

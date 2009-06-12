@@ -1454,45 +1454,24 @@ this way we can cache information refered to:
 
  * upload_changesfile.
 
-We select an arbitrary source publication from the Celso's PPA
-sampledata which has no corresponding 'changesfile'. Both, the real
-SourcePackageRelease object and the decorated one, reflect this
-condition.
+We select an arbitrary source publication from Celso's PPA added by
+`SoyuzTestPublisher`. It contains the same corresponding
+`PackageUpload.changesfile` in both, the real and the decorated
+objects.
 
-    >>> pub_with_changes = cprov_published_sources[-1]
+    >>> pub_with_changes = cprov_published_sources[0]
     >>> the_source = pub_with_changes.sourcepackagerelease
-    >>> print the_source.upload_changesfile
-    None
+    >>> changesfile = the_source.upload_changesfile
+    >>> print '%s (%s)' % (changesfile.filename, changesfile.content.md5)
+    foo_999_source.changes (6168e17ba012fc3db6dc77e255243bd1)
 
-    >>> decorated_pub_with_changes = list(decorated_set)[-1]
+    >>> decorated_pub_with_changes = list(decorated_set)[0]
     >>> decorated_source = decorated_pub_with_changes.sourcepackagerelease
-    >>> print decorated_source.upload_changesfile
-    None
+    >>> changesfile = decorated_source.upload_changesfile
+    >>> print '%s (%s)' % (changesfile.filename, changesfile.content.md5)
+    foo_999_source.changes (6168e17ba012fc3db6dc77e255243bd1)
 
-We can create a processed upload record for that publication, together
-with a corresponding changesfiles.
-
-    >>> upload_record = the_source.upload_distroseries.createQueueEntry(
-    ...     PackagePublishingPocket.RELEASE, 'foo.changes', 'boing',
-    ...     pub_with_changes.archive)
-    >>> uploaded_source = upload_record.addSource(the_source)
-    >>> upload_record.setDone()
-    >>> print upload_record.changesfile.filename
-    foo.changes
-
-That done, the real and the decorated SourcePackageRelease objects
-agree regarding the changesfile existence.
-
-    >>> the_source = pub_with_changes.sourcepackagerelease
-    >>> print the_source.upload_changesfile.filename
-    foo.changes
-
-    >>> decorated_pub_with_changes = list(decorated_set)[-1]
-    >>> decorated_source = decorated_pub_with_changes.sourcepackagerelease
-    >>> print decorated_source.upload_changesfile.filename
-    foo.changes
-
-`ArchiveSourcePublication` also has a decorated version of the 
+`ArchiveSourcePublication` also has a decorated version of the
 getStatusSummaryForBuilds() method.
 
     >>> print_build_status_summary(
