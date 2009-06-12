@@ -1166,7 +1166,8 @@ The link can be rendered as an anchored icon.
 
     >>> print test_tales('menu_link/fmt:icon', menu_link=menu_link)
     <a href="http://launchpad.dev/+place" 
-       class="menu-link-test_link sprite icon" title="summary"></a>
+       class="menu-link-test_link sprite icon" title="summary"><span
+       class="invisible-link">text</span></a>
 
 The link can be rendered as text with an icon to the right.
 

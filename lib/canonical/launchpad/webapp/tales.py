@@ -1453,6 +1453,9 @@ class SpecificationBranchFormatterAPI(CustomizableFormatter):
         formatter = SpecificationFormatterAPI(self._context.specification)
         return formatter._get_icon()
 
+    def sprite_css(self):
+        return queryAdapter(self._context.specification, IPathAdapter, 'image').sprite_css()
+
 
 class BugTrackerFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IBugTracker` objects to a formatted string."""
