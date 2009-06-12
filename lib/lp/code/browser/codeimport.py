@@ -28,15 +28,15 @@ from zope.schema import Choice, TextLine
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.interfaces.branch import branch_name_validator
-from lp.code.interfaces.branchsubscription import (
+from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    CodeImportReviewStatus, CodeReviewNotificationLevel,
+    RevisionControlSystems)
+from lp.code.interfaces.branch import branch_name_validator
 from lp.code.interfaces.codeimport import (
-    CodeImportReviewStatus, ICodeImport, ICodeImportSet)
+    ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.branch import BranchExists, IBranch
-from lp.code.interfaces.codeimport import RevisionControlSystems
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)

@@ -50,8 +50,8 @@ from lazr.enum import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BugField, ParticipatingPersonChoice, ProductNameField, StrippedTextLine,
-    Summary, Tag)
+    BugField, ParticipatingPersonChoice, ProductNameField, SearchTag,
+    StrippedTextLine, Summary)
 from lp.bugs.interfaces.bugwatch import (
     IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.soyuz.interfaces.component import IComponent
@@ -745,7 +745,7 @@ class IBugTaskSearchBase(Interface):
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
-    tag = List(title=_("Tag"), value_type=Tag(), required=False)
+    tag = List(title=_("Tag"), value_type=SearchTag(), required=False)
     status_upstream = List(
         title=_('Status Upstream'),
         value_type=Choice(vocabulary=UPSTREAM_STATUS_VOCABULARY),
@@ -774,7 +774,7 @@ class IBugTaskSearch(IBugTaskSearchBase):
     """
     tag = List(
         title=_("Tags"), description=_("Separated by whitespace."),
-        value_type=Tag(), required=False)
+        value_type=SearchTag(), required=False)
     tags_combinator = Choice(
         title=_("Tags combination"),
         description=_("Search for any or all of the tags specified."),

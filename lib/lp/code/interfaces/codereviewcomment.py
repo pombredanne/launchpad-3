@@ -5,74 +5,21 @@
 
 __metaclass__ = type
 __all__ = [
-    'CodeReviewVote',
     'ICodeReviewComment',
     'ICodeReviewCommentDeletion',
     ]
 
 from zope.interface import Interface
 from zope.schema import Choice, Object, Int, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
+from lp.code.enums import CodeReviewVote
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.message import IMessage
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-
-
-class CodeReviewVote(DBEnumeratedType):
-    """Code Review Votes
-
-    Responses from the reviews to the code author.
-    """
-    sort_order = ('APPROVE',
-                  'NEEDS_FIXING',
-                  'NEEDS_INFO',
-                  'ABSTAIN',
-                  'DISAPPROVE',
-                  'RESUBMIT',
-                  )
-
-    DISAPPROVE = DBItem(1, """
-        Disapprove
-
-        Reviewer does not want the proposed merge to happen.
-        """)
-
-    ABSTAIN = DBItem(2, """
-        Abstain
-
-        Reviewer cannot or does not want to decide whether the proposed merge
-        should happen.
-        """)
-
-    APPROVE = DBItem(3, """
-        Approve
-
-        Reviewer wants the proposed merge to happen.
-        """)
-
-    RESUBMIT = DBItem(4, """
-        Resubmit
-
-        Reviewer thinks that the idea might be sound but the implementation
-        needs significant rework.
-        """)
-
-    NEEDS_FIXING = DBItem(5, """
-        Needs Fixing
-
-        Reviewer thinks that some fixing is needed before they can approve it.
-        """)
-
-    NEEDS_INFO = DBItem(6, """
-        Needs Information
-
-        The reviewer needs more information before making a decision.
-        """)
 
 
 class ICodeReviewComment(Interface):

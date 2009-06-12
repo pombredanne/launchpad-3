@@ -39,6 +39,12 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
+from lp.code.bzr import (
+    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchMergeControlStatus,
+    BranchMergeProposalStatus, BranchType)
 from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal, BranchMergeProposalGetter)
@@ -48,15 +54,13 @@ from lp.code.model.revision import Revision
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, BranchLifecycleStatus,
-    BranchMergeControlStatus, BranchType, BranchTypeError, CannotDeleteBranch,
-    ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchNavigationMenu, IBranchSet, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+    BranchTypeError, CannotDeleteBranch,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchNavigationMenu, IBranchSet)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
-     BranchMergeProposalStatus, InvalidBranchMergeProposal)
+     InvalidBranchMergeProposal)
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget

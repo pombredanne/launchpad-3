@@ -28,16 +28,16 @@ from zope.interface import classProvides, implements
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.database.diff import StaticDiff
-from lp.code.interfaces.branch import (BRANCH_FORMAT_UPGRADE_PATH,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.code.bzr import (
+    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
+from canonical.launchpad.database.diff import StaticDiff
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.database.translationbranchapprover import (
     TranslationBranchApprover)
-from lp.code.interfaces.branchsubscription import (
+from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,

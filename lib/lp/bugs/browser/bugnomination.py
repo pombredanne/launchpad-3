@@ -18,7 +18,7 @@ from zope.component import getUtility
 from zope.publisher.interfaces import implements, NotFound
 
 from canonical.launchpad import _
-from canonical.launchpad.browser import BugContextMenu
+from lp.bugs.browser.bug import BugContextMenu
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugnomination import IBugNomination, IBugNominationForm
 from lp.bugs.interfaces.bugtask import INullBugTask

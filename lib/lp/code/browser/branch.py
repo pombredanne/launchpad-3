@@ -67,9 +67,9 @@ from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
 from lp.code.browser.branchref import BranchRef
+from lp.code.enums import BranchType, UICreatableBranchType
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, BranchType, IBranch,
-    IBranchNavigationMenu, UICreatableBranchType)
+    BranchCreationForbidden, BranchExists, IBranch, IBranchNavigationMenu)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -78,8 +78,7 @@ from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespacePolicy)
+from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet

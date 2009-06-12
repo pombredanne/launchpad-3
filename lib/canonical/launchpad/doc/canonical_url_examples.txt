@@ -276,7 +276,7 @@ An IBugWatchSet.
 
 An IBugComment.
 
-    >>> from canonical.launchpad.browser import BugComment
+    >>> from lp.bugs.browser.bugcomment import BugComment
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugtask_one = bug_one.bugtasks[0]
     >>> bug_comment = BugComment(
