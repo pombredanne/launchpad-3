@@ -564,9 +564,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pas_verify = None
 
         if architectures_available is None:
-            architectures_available = [
-                arch for arch in self.distroseries.architectures
-                if arch.getPocketChroot() is not None]
+            architectures_available = list(
+                self.distroseries.enabled_architectures)
 
         build_architectures = determineArchitecturesToBuild(
             self, architectures_available, self.distroseries, pas_verify)

@@ -344,7 +344,8 @@ class BuilddManager(service.Service):
             builder.setSlaveForTesting(slave)
 
             builder.dispatchBuildCandidate(candidate)
-            recording_slaves.append(slave)
+            if builder.currentjob is not None:
+                recording_slaves.append(slave)
             transaction.commit()
 
         return recording_slaves

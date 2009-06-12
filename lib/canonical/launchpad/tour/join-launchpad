@@ -43,7 +43,7 @@
             <p class="intro-text">
                 <strong><a href="https://launchpad.net/projects/+new">Register your project</a> to collaborate with a community of thousands.</strong> Join <a href="https://launchpad.net/mysql">MySQL</a>, <a href="https://launchpad.net/zope">Zope</a> and <a href="https://launchpad.net/ubuntu">Ubuntu</a> in choosing Launchpad for your project.
 <br /><br />
-Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/ProjectLicensing">open source</a> software projects and available at a low annual subscription for all other projects. Read on for details of our <a href="#commercial">commercial plans</a>.</p>
+Launchpad is free to use for <a href="https://help.launchpad.net/Legal/ProjectLicensing">open source</a> software projects and available at a low annual subscription for all other projects. Read on for details of our <a href="#commercial">commercial plans</a>.</p>
             <div id="link-holder"><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
@@ -60,7 +60,7 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3><a name="commercial"></a>Commercial subscriptions for private projects</h3>
+                        <h3><a name="commercial"></a>Subscriptions for commercial projects</h3>
                         <h4>Host your closed-source project and join our beta of additional privacy features by buying a commercial subscription.</h4>
                         <p class="screen-holder">
                             <img src="images/join/1.png" alt="Commercial subscriptions" />                        </p>
@@ -84,7 +84,7 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
                         <p class="screen-holder">
                             <img src="images/join/2.png" alt="Publishing your software"  />                       </p>
                         <p>
-                           Pick and choose from Launchpad's applications:</p><br />
+                           Your project can use any or all of Launchpad's applications:</p><br />
                    			<ul>
 				                  <li><strong><a href="bugs">Bug tracking</a>:</strong> across project and tool boundaries</li>
 				                  <li><strong><a href="branch-hosting-tracking">Code hosting and review</a>:</strong> open up to drive-by contributions with Bazaar branch hosting/mirroring and imports from git, Subversion and CVS.</li>
