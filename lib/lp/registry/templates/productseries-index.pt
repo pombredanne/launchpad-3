@@ -36,13 +36,22 @@
         </td>
       </tr>
       <tr>
-        <th>Drivers:</th>
+        <th>Project drivers:</th>
         <td>
         <tal:per_driver repeat="driver context/drivers">
           <a tal:replace="structure driver/fmt:link">driver</a><tal:comma
             condition="not: repeat/driver/end">,</tal:comma>
         </tal:per_driver>
-        <a tal:replace="structure overview_menu/driver/fmt:icon" />
+         </td>
+       </tr>
+       <tr>
+         <th>Release manager:</th>
+         <td>
+           <tal:no-driver condition="not: context/driver">None</tal:no-driver>
+           <a
+             tal:condition="context/driver"
+             tal:replace="structure context/driver/fmt:link">series driver</a>
+           <a tal:replace="structure overview_menu/driver/fmt:icon" />
         </td>
       </tr>
     </table>
