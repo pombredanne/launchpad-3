@@ -79,8 +79,7 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.enums import BranchMergeProposalStatus
-from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -211,7 +210,8 @@ def validate_person_visibility(person, attr, value):
 
 
 class Person(
-    SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin):
+    SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
+    HasBranchesMixin, HasMergeProposalsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -852,17 +852,6 @@ class Person(
     def isTeam(self):
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
-
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IPerson`."""
-        if not status:
-            status = (
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW,
-                BranchMergeProposalStatus.WORK_IN_PROGRESS)
-
-        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self, status, visible_by_user=None)
 
     @property
     def mailing_list(self):

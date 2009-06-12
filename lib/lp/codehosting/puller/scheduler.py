@@ -329,15 +329,16 @@ class PullerMaster:
         """Spawn a worker process to mirror a branch."""
         deferred = defer.Deferred()
         protocol = self.protocol_class(deferred, self)
+        interpreter = '%s/bin/py' % config.root
         command = [
-            sys.executable, self.path_to_script, self.source_url,
+            interpreter, self.path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), str(self.unique_name),
             self.branch_type.name, self.oops_prefix,
             self.default_stacked_on_url]
         self.logger.debug("executing %s", command)
         env = os.environ.copy()
         env['BZR_EMAIL'] = get_lock_id_for_branch_id(self.branch_id)
-        reactor.spawnProcess(protocol, sys.executable, command, env=env)
+        reactor.spawnProcess(protocol, interpreter, command, env=env)
         return deferred
 
     def run(self):

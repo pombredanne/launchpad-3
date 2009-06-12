@@ -35,6 +35,7 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from lp.code.model.branch import BranchSet
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
@@ -71,9 +72,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
-from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
-from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
@@ -163,7 +162,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin, OfficialBugTagTargetMixin):
+              HasMilestonesMixin, OfficialBugTagTargetMixin,
+              HasBranchesMixin, HasMergeProposalsMixin):
 
     """A Product."""
 
@@ -934,18 +934,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
-
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IProduct`."""
-        if status is None:
-            status = (
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW,
-                BranchMergeProposalStatus.WORK_IN_PROGRESS)
-
-        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self, status, visible_by_user=visible_by_user)
-
 
     def userCanEdit(self, user):
         """See `IProduct`."""
