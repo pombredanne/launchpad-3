@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.codehosting.bzrutils import is_branch_stackable
 from lp.codehosting.vfs import get_lp_server
-from canonical.launchpad.interfaces.diff import IStaticDiffSource
+from lp.code.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
     IMailHandler, EmailProcessingError)
 from canonical.launchpad.interfaces.message import IMessageSet

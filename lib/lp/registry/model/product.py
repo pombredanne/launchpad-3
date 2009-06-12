@@ -32,7 +32,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from lp.code.model.branch import BranchSet
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
@@ -72,7 +71,8 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
-from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.interfaces.branch import (
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
@@ -607,7 +607,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def getLatestBranches(self, quantity=5, visible_by_user=None):
         """See `IProduct`."""
         return shortlist(
-            BranchSet().getLatestBranchesForProduct(
+            getUtility(IBranchSet).getLatestBranchesForProduct(
                 self, quantity, visible_by_user))
 
     def getPackage(self, distroseries):

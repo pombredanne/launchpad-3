@@ -11,8 +11,8 @@ from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 import transaction
 
-from canonical.launchpad.database.diff import Diff, StaticDiff
-from canonical.launchpad.interfaces.diff import (
+from lp.code.model.diff import Diff, StaticDiff
+from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from lp.testing import login, login_person, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
