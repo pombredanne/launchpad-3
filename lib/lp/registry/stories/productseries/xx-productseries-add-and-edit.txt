@@ -99,7 +99,8 @@ The new values are then shown in the series' page.
     Project: Mozilla Firefox ...
     Series: unstable
     Status: Experimental
-    Drivers: Sample Person
+    Project drivers: Sample Person
+    Release manager: None
 
     >>> content = find_main_content(browser.contents)
     >>> print content.find('ul', 'branch').find('a')
