@@ -417,7 +417,7 @@ bugtracker and a couple of bugwatches.
     >>> bug = firefox.createBug(
     ...     CreateBugParams(sample_person, "Yet another test bug",
     ...         "Yet another test description.",
-    ...         subscribe_reporter=False))
+    ...         subscribe_owner=False))
 
     >>> bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
     >>> bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
