@@ -80,7 +80,7 @@ span.invisible {left:-9999em;display:block;}
 .package-source {background:url(icon-sprites) 0 -608px no-repeat;}
 .milestone {background:url(icon-sprites) 0 -640px no-repeat;}
 .language {background:url(icon-sprites) 0 -672px no-repeat;}
-.link {background:url(icon-sprites) 0 -704px no-repeat;}
+.external-link {background:url(icon-sprites) 0 -704px no-repeat;}
 .mail {background:url(icon-sprites) 0 -736px no-repeat;}
 .cve {background:url(icon-sprites) 0 -768px no-repeat;}
 .bug {background:url(icon-sprites) 0 -800px no-repeat;}
