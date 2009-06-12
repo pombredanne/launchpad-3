@@ -364,6 +364,12 @@
         facet="branches"
         permission="zope.Public"
         template="../templates/branch-portlet-subscribers.pt"/>
+    <browser:page
+        name="+branch-portlet-subscriber-content"
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.branchsubscription.BranchPortletSubscribersContent"
+        template="../templates/branch-portlet-subscribers-content.pt"
+        permission="zope.Public" />
     <browser:pages
         for="lp.code.interfaces.branch.IBranch"
         facet="overview"

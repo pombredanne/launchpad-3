@@ -57,21 +57,44 @@
         />
       </div>
       <h2>Subscribers</h2>
-      <dl tal:condition="view/subscriptions" id="subscriptions">
-        <tal:subscribers tal:repeat="subscription view/subscriptions">
-          <dt class="subscriber">
-            <img src="/@@/yes" />
-            <tal:subscriber tal:replace="structure subscription/person/fmt:link" />
-              <a tal:attributes="href subscription/fmt:url"
-                tal:condition="subscription/editable">
-                <img src="/@@/edit" alt="Edit subscription"/>
-              </a>
-          </dt>
-        </tal:subscribers>
-      </dl>
-      <p tal:condition="not:view/subscriptions">
-        No subscribers.
-      </p>
+      <p id="subscriber-list"></p>
+      <div id="subscribers-portlet-spinner"
+          style="text-align: center; display: none;">
+        <img src="/@@/spinner" />
+      </div>
     </div>
   </div>
+  <js tal:replace="structure string:<script type='text/javascript'>
+
+YUI().use('io-base', 'node', function(Y) {
+
+Y.on('domready', function() {
+    update_subscriber_list();
+});
+
+/*
+ * Update the subscriber list via Ajax.
+ */
+function update_subscriber_list() {
+
+    Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
+    Y.io('+branch-portlet-subscriber-content', {
+        on: {
+            complete: function(id, response) {
+                Y.get('#subscribers-portlet-spinner').setStyle(
+                    'display', 'none');
+                Y.get('#subscriber-list').set(
+                    'innerHTML', response.responseText);
+
+                var ele = Y.get('.menu-link-subscription');
+                if (ele.get('innerHTML') == 'Edit your subscription') {
+                    ele.setStyle('display', 'none');
+                }
+                }}});
+}
+
+});
+  </script>" />
+
+
 </div>
