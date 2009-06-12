@@ -213,6 +213,15 @@ Loosening to substring matches gives another result:
     >>> print [result.binpkgnames for result in results]
     [u'mozilla-firefox mozilla-firefox-data']
 
+The results of searchBinaryPackages() are simply ordered alphabetically
+for the moment until we have a better FTI rank to order with.
+
+    >>> results = ubuntu.searchBinaryPackages("m")
+    >>> for result in results:
+    ...     print result.name
+    mozilla-firefox
+    pmount
+
 We can do an FTI search:
 
     >>> fti_results = ubuntu.searchBinaryPackagesFTI("rubbish")
