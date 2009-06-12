@@ -301,8 +301,8 @@ h3, h4, h5, h6 {font-size: 1em;}
 h2, h3, h4, h5, h6 { margin-top: 1em; }
 /* Browsers indent lists inconsistently, so we override them completely: */
 ul {
-  margin-left: 0; 
-  padding-left: 22px;
+  margin-left: 0;
+  padding-left: 0;
   list-style-type: none;
 }
 
