@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.codehosting.bzrutils import is_branch_stackable
 from lp.codehosting.vfs import get_lp_server
-from canonical.launchpad.interfaces.diff import IStaticDiffSource
+from lp.code.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
     IMailHandler, EmailProcessingError)
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -35,7 +35,7 @@ from canonical.launchpad.mailnotification import (
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType, CodeReviewVote
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalExists, IBranchMergeProposalGetter,
@@ -43,7 +43,6 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace, split_unique_name)
 from lp.code.interfaces.branchtarget import check_default_stacked_on
-from lp.code.interfaces.codereviewcomment import CodeReviewVote
 
 
 class BadBranchMergeProposalAddress(Exception):

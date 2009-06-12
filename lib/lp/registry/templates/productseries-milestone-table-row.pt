@@ -1,0 +1,83 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  define="milestone_menu view/milestone/menu:context;
+          milestone view/milestone">
+  <tr>
+    <td>
+      <img src="/@@/milestone" alt="" />
+      <a tal:content="milestone/title"
+         tal:attributes="href milestone/fmt:url">version</a>
+    </td>
+    <td>
+      <span
+        tal:attributes="title milestone/dateexpected/fmt:datetime"
+        tal:content="milestone/dateexpected/fmt:approximatedate">
+        2005-12-13
+      </span>
+      <tal:empty-date condition="not: milestone/dateexpected">
+        <tal:cannot-edit condition="not: context/required:launchpad.Edit">
+          None
+        </tal:cannot-edit>
+        <tal:can-edit condition="context/required:launchpad.Edit">
+          <a title="Set the expected date the milestone will be complete"
+            tal:attributes="href milestone_menu/edit/fmt:url">Set</a>
+          <a tal:replace="structure milestone_menu/edit/fmt:icon" />
+        </tal:can-edit>
+      </tal:empty-date>
+    </td>
+    <td>
+      <span
+        tal:define="release milestone/product_release"
+        tal:condition="release"
+        tal:attributes="title release/datereleased/fmt:datetime"
+        tal:content="release/datereleased/fmt:approximatedate">
+        2005-12-13
+      </span>
+      <tal:no-release condition="not: milestone/product_release">
+        <em tal:condition="not: milestone/active">
+          <img src="/@@/info"/> This is an inactive milestone
+        </em>
+        <tal:not-yet condition="milestone/active">
+        <tal:cannot-edit condition="not: context/required:launchpad.Edit">
+          not yet released
+        </tal:cannot-edit>
+        <tal:can-edit condition="milestone_menu/create_release/enabled">
+          <a tal:replace="structure milestone_menu/create_release/fmt:icon" />
+          <a
+            tal:attributes="href milestone_menu/create_release/fmt:url;
+                            title  milestone_menu/create_release/summary"
+            >Release now</a>
+        </tal:can-edit>
+        </tal:not-yet>
+      </tal:no-release>
+    </td>
+    <td>
+      <tal:summary
+        content="structure milestone/summary/fmt:shorten/80" />
+      <tal:bugtasks condition="view/bugtasks">
+        <br tal:omit-tag="not: view/milestone/summary" />
+        Bugs targeted:
+        <tal:statuses repeat="count_status view/bugtask_status_counts">
+          <span tal:attributes="class string:status${count_status/status/name}">
+            <strong tal:content="count_status/count">2</strong>
+            <tal:status replace="count_status/status/title" /><tal:comma
+              condition="not: repeat/count_status/end">,</tal:comma>
+          </span>
+        </tal:statuses>
+      </tal:bugtasks>
+      <tal:blueprints condition="view/specifications">
+        <br tal:omit-tag="not: view/bugtasks" />
+        Blueprints targeted:
+        <tal:statuses repeat="count_status view/specification_status_counts">
+          <span tal:attributes="class string:specdelivery${count_status/status/name}">
+            <strong tal:content="count_status/count">2</strong>
+            <tal:status replace="count_status/status/title" /><tal:comma
+              condition="not: repeat/count_status/end">,</tal:comma>
+          </span>
+        </tal:statuses>
+      </tal:blueprints>
+    </td>
+  </tr>
+</tal:root>

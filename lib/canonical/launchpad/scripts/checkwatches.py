@@ -16,13 +16,13 @@ from zope.event import notify
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.components import externalbugtracker
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs import externalbugtracker
+from lp.bugs.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
-from canonical.launchpad.components.externalbugtracker.bugzilla import (
+from lp.bugs.externalbugtracker.bugzilla import (
     BugzillaLPPlugin)
 from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
@@ -31,8 +31,8 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.externalbugtracker import (
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -762,8 +762,8 @@ class BugWatchUpdater(object):
             external_bugtracker.getBugSummaryAndDescription(remote_bug))
         bug = bug_target.createBug(
             CreateBugParams(
-                reporter, summary, description, subscribe_reporter=False))
-
+                reporter, summary, description, subscribe_owner=False,
+                filed_by=getUtility(ILaunchpadCelebrities).bug_watch_updater))
         [added_task] = bug.bugtasks
         bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug=bug,

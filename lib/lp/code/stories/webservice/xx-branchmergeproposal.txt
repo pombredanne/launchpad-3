@@ -2,17 +2,15 @@
 
 Branch merge proposals can be fetched through the API.
 
-    >>> from lp.code.interfaces.codereviewcomment import (
-    ...     CodeReviewVote)
-
     >>> login('admin@canonical.com')
     >>> fixit_proposal = factory.makeBranchMergeProposal()
     >>> fixit_proposal.source_branch.owner.name = 'source'
     >>> fixit_proposal.source_branch.name = 'fix-it'
-    >>> fixit_proposal.source_branch.product.name = 'fooix'
     >>> fixit_proposal.target_branch.owner.name = 'target'
     >>> fixit_proposal.target_branch.name = 'trunk'
-    >>> fixit_proposal.target_branch.product.name = 'fooix'
+    >>> fooix = fixit_proposal.source_branch.product
+    >>> fooix.name = 'fooix'
+    >>> from lp.code.enums import CodeReviewVote
     >>> comment = factory.makeCodeReviewComment(
     ...     subject='Looks good', body='This is great work',
     ...     vote=CodeReviewVote.APPROVE, vote_tag='code',
@@ -250,8 +248,7 @@ proposals by their status.
 Or I can look for anything that is approved.
 
     >>> login('admin@canonical.com')
-    >>> from lp.code.interfaces.branchmergeproposal import (
-    ...     BranchMergeProposalStatus)
+    >>> from lp.code.enums import BranchMergeProposalStatus
     >>> fixit_proposal.approveBranch(fixit_proposal.target_branch.owner, '1')
     >>> logout()
 
@@ -289,7 +286,7 @@ the proposal if they have allowed the API to access private bits.
     ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title])
     http://.../~source/fooix/fix-it/+merge/1 - Approved
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> removeSecurityProxy(fixit_proposal.source_branch).private = False
     >>> logout()
 
@@ -306,7 +303,7 @@ proposals by their status.
 
 The person's proposals can also be filtered by status.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> fixit_proposal.rejectBranch(fixit_proposal.target_branch.owner, '1')
     >>> logout()
 
@@ -314,3 +311,30 @@ The person's proposals can also be filtered by status.
     ...     status=[BranchMergeProposalStatus.REJECTED.title])
     http://.../~source/fooix/fix-it/+merge/1 - Rejected
 
+
+== Getting a Project Group's Merge Proposals ==
+
+Getting the merge proposals for a project group will get all the proposals for all
+the projects that are part of the project group.
+
+    >>> login('admin@canonical.com')
+    >>> project = factory.makeProject(name='widgets')
+    >>> fooix.project = project
+    >>> blob = factory.makeProduct(name='blob', project=project)
+    >>> proposal = factory.makeBranchMergeProposal(
+    ...     product=blob, set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+    >>> proposal.source_branch.owner.name = 'mary'
+    >>> proposal.source_branch.name = 'bar'
+    >>> logout()
+
+By default only work in progress, needs review and approved proposals are
+returned.
+
+    >>> print_proposals(webservice, url='/widgets')
+    http://.../~mary/blob/bar/+merge/2 - Needs review
+
+The proposals can also be filtered by status.
+
+    >>> print_proposals(webservice, url='/widgets',
+    ...     status=[BranchMergeProposalStatus.REJECTED.title])
+    http://.../~source/fooix/fix-it/+merge/1 - Rejected
