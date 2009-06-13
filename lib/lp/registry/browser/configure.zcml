@@ -1762,6 +1762,10 @@
             facet="overview"
             template="../templates/product-index.pt"/>
         <browser:page
+            name="+timeline-graph"
+            facet="overview"
+            template="../templates/product-timeline-graph.pt"/>
+        <browser:page
             name="+packages"
             facet="overview"
             template="../templates/product-packages.pt"/>
