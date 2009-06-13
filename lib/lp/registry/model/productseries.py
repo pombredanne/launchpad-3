@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import datetime
-import operator
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
