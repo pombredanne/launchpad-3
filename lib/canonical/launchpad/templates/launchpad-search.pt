@@ -87,7 +87,7 @@
                 <div>
                   <a tal:replace="structure view/pillar/fmt:link">
                     The GNOME project
-                  </a>                
+                  </a>
                 </div>
                 <div class="summary">
                   <div
@@ -113,12 +113,8 @@
 
               <li tal:condition="view/person_or_team">
                 <div>
-                  <a tal:replace="structure view/person_or_team/fmt:link">
-                    Sample Person
-                  </a>
-                  <a
-                    tal:attributes="href view/person_or_team/fmt:url"
-                    tal:content="string:(${view/person_or_team/name})">(name12)</a>
+                  <a tal:attributes="href view/person_or_team/fmt:url"
+                     tal:content="view/person_or_team/fmt:unique_displayname" />
                 </div>
                 <div class="summary">
                   <tal:team
@@ -199,7 +195,7 @@
         </p>
 
       </tal:wants-results>
- 
+
       <div id="no-search" tal:condition="not:view/text">
         <p>
         Enter a term or many terms to find matching pages. All words are

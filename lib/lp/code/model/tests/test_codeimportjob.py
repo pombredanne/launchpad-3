@@ -20,9 +20,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import (
-    CodeImportMachine, CodeImportResult)
-from canonical.launchpad.database import CodeImportJob
+from lp.code.model.codeimportjob import CodeImportJob
+from lp.code.model.codeimportmachine import CodeImportMachine
+from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.code.enums import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,

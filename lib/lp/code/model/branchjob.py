@@ -28,7 +28,7 @@ from zope.interface import classProvides, implements
 from lp.code.bzr import (
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
-from canonical.launchpad.database.diff import StaticDiff
+from lp.code.model.diff import StaticDiff
 from lp.services.job.model.job import Job
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.database.translationbranchapprover import (

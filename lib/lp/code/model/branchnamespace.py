@@ -20,7 +20,6 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import Branch
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
@@ -34,6 +33,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.model.branch import Branch
 from lp.registry.interfaces.distribution import (
     IDistributionSet, NoSuchDistribution)
 from lp.registry.interfaces.distroseries import (
