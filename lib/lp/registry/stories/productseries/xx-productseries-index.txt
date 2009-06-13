@@ -108,11 +108,25 @@ an explanation where he can push the branch.
 Distribution packaging is listed too. There is a link to the source package
 in each Ubuntu series.
 
+   >>> print extract_text(find_tag_by_id(
+   ...     content, 'distribution-packaging-explanation'))
+   This series is packaged in the following distribution series:
+
     >>> print extract_text(find_tag_by_id(content, 'distribution-packaging'))
     Ubuntu Warty mozilla-firefox
 
     >>> anon_browser.getLink('mozilla-firefox')
     <Link ... url='http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox'>
+
+If there are no sourcepackages, any user can see there are none:
+
+    >>> anon_2_browser = setupBrowser()
+    >>> anon_2_browser.open('http://launchpad.dev/thunderbird/trunk')
+    >>> thunderbird_content = find_main_content(anon_2_browser.contents)
+   >>> print extract_text(find_tag_by_id(
+   ...     thunderbird_content, 'distribution-packaging-explanation'))
+   This series is not packaged in the following distribution series.
+
 
 The driver sees two packaging links near the distribution packaging.
 

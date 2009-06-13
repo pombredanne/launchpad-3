@@ -12,7 +12,8 @@
 
 <body>
   <div metal:fill-slot="main"
-    tal:define="overview_menu context/menu:overview">
+    tal:define="overview_menu context/menu:overview;
+                sourcepackages context/sourcepackages">
 
     <h1>
       <tal:title content="context/title">Release series details</tal:title>
@@ -94,12 +95,18 @@
 
     <h2 style="margin-top: 2em;">Distribution packaging</h2>
 
-    <p>
-      This series is packaged in the following places:
+    <p id="distribution-packaging-explanation">
+      <tal:distro condition="sourcepackages">
+      This series is packaged in the following distribution series:
+      </tal:distro>
+      <tal:no-distro condition="not: sourcepackages">
+      This series is not packaged in the following distribution series.
+      </tal:no-distro>
     </p>
 
-    <ul id="distribution-packaging">
-      <li tal:repeat="package context/sourcepackages">
+    <ul id="distribution-packaging"
+      tal:condition="sourcepackages">
+      <li tal:repeat="package sourcepackages">
          <tal:distro tal:content="package/distroseries/distribution/displayname">
            Ubuntu
          </tal:distro>
