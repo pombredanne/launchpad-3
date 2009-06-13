@@ -124,3 +124,62 @@ The subscribers portlet displays the new subscribed team.
     Landscape Developers (Subscribed by No Privileges Person)
     Sample Person (Subscribed by Launchpad Janitor)
     Steve Alexander (Subscribed by Launchpad Janitor)
+
+
+Subscription of private teams
+-----------------------------
+
+Private teams can be subscribed to bugs. The logged in user can see
+the private team in the subscribers list if she is a member of the
+private team.
+
+    >>> # Create a private team with Foo Bar as the owner.
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet, PersonVisibility
+    >>> login('foo.bar@canonical.com')
+    >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> priv_team = factory.makeTeam(name='private-team',
+    ...     displayname='Private Team',
+    ...     owner=foobar,
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> logout()
+    >>> foobar_browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> foobar_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+    >>> foobar_browser.getLink('Subscribe someone else').click()
+    >>> foobar_browser.getControl("Person").value = 'private-team'
+    >>> foobar_browser.getControl("Add").click()
+    >>> foobar_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
+    >>> foobar_browser.open(
+    ...     'http://bugs.launchpad.dev/bugs/1/'
+    ...     '+bug-portlet-subscribers-content')
+    >>> print_direct_subscribers(foobar_browser.contents)
+    Private Team (Subscribed by Foo Bar) (Unsubscribe Private Team)
+    David Allouche (Subscribed by No Privileges Person)
+    Landscape Developers (Subscribed by No Privileges Person)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)
+
+Someone not in the team will not see the private team in the
+subscribers list.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/bugs/1/'
+    ...     '+bug-portlet-subscribers-content')
+    >>> print_direct_subscribers(user_browser.contents)
+    David Allouche (Subscribed by No Privileges Person)
+    Landscape Developers (Subscribed by No Privileges Person)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)
+
+An anonymous user will not be shown the private team in the subscribers
+list.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/bugs/1/'
+    ...     '+bug-portlet-subscribers-content')
+    >>> print_direct_subscribers(anon_browser.contents)
+    David Allouche (Subscribed by No Privileges Person)
+    Landscape Developers (Subscribed by No Privileges Person)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)

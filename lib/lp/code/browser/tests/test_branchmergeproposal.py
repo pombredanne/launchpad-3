@@ -19,7 +19,7 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
-from canonical.launchpad.database.diff import StaticDiff
+from lp.code.model.diff import StaticDiff
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (

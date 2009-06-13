@@ -12,7 +12,7 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.model.branchjob import RevisionMailJob
-from canonical.launchpad.database.diff import StaticDiff
+from lp.code.model.diff import StaticDiff
 from lp.services.job.runner import JobRunner
 from lp.testing import TestCaseWithFactory
 
