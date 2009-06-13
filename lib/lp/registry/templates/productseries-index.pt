@@ -84,7 +84,12 @@
     <div tal:replace="structure context/@@+code-summary" />
 
     <div>
-      <a tal:replace="structure overview_menu/link_branch/fmt:icon-link" />
+      <a
+        tal:condition="not: context/branch"
+        tal:replace="structure overview_menu/link_branch/fmt:icon-link" />
+      <a
+        tal:condition="context/branch"
+        tal:replace="structure overview_menu/link_branch/fmt:link-icon" />
     </div>
 
     <h2 style="margin-top: 2em;">Distribution packaging</h2>
