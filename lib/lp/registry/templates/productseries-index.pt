@@ -67,7 +67,7 @@
     </div>
 
     <div>
-      <a tal:replace="structure overview_menu/subscribe/fmt:icon-link" />
+      <a tal:replace="structure overview_menu/subscribe/fmt:link-icon" />
     </div>
 
     <h2 style="margin-top: 2em;">Milestones and releases</h2>
