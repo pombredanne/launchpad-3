@@ -179,7 +179,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     @property
     def title(self):
-        return self.product.displayname + ' Series: ' + self.displayname
+        return '%s %s series' % (self.product.displayname, self.displayname)
 
     @property
     def bug_reporting_guidelines(self):

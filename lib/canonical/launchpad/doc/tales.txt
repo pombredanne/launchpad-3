@@ -476,7 +476,7 @@ not included.
 
     >>> product_series = factory.makeSeries()
     >>> test_tales("product_series/fmt:link", product_series=product_series)
-    u'... Series: ...'
+    u'... series...'
 
 
 === Blueprints ===

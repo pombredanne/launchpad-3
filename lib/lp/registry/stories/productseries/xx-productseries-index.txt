@@ -5,11 +5,11 @@ The product series overview page summarises the series.
 
     >>> anon_browser.open('http://launchpad.dev/firefox/trunk')
     >>> print extract_text(anon_browser.title)
-    Overview of Mozilla Firefox Series: trunk
+    Overview of Mozilla Firefox trunk series
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(content.h1)
-    Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
 
     >>> print extract_text(find_tag_by_id(content, 'series-details'))
     Project: Mozilla Firefox ...
@@ -93,7 +93,7 @@ is set. Otherwise, there is a message explaining that the information has
 not been set.
 
     >>> print extract_text(find_tag_by_id(content, 'branch-details'))
-    No revision control details recorded for Mozilla Firefox Series: trunk.
+    No revision control details recorded for Mozilla Firefox trunk series.
 
 The driver sees that he can link a branch to this series, and there is
 an explanation where he can push the branch.
