@@ -128,4 +128,5 @@ There is a section that lists related links to this series
     <Link ... url='http://launchpad.dev/firefox/+series'>
     >>> anon_browser.getLink('All milestones for the Mozilla Firefox project')
     <Link ... url='http://launchpad.dev/firefox/+milestones'>
-
+    >>> anon_browser.getLink('All downloads for the Mozilla Firefox project')
+    <Link ... url='http://launchpad.dev/firefox/+download'>

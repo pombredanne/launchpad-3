@@ -111,7 +111,7 @@
       <a tal:replace="structure overview_menu/add_package/fmt:icon-link" />
     </div>
 
-    <h2 style="margin-top: 2em;">Related series</h2>
+    <h2 style="margin-top: 2em;">Related series, milestones, and releases</h2>
 
     <ul id="related-series">
       <li>
@@ -122,6 +122,11 @@
       <li>
         <a tal:attributes="href context/product/fmt:url/+milestones">All
           milestones for the
+          <tal:project replace="context/product/displayname" /> project</a>
+      </li>
+      <li>
+        <a tal:attributes="href context/product/fmt:url/+download">All
+          downloads for the
           <tal:project replace="context/product/displayname" /> project</a>
       </li>
     </ul>
