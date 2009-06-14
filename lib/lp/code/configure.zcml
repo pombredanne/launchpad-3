@@ -795,11 +795,6 @@
       interface="lp.code.interfaces.diff.IStaticDiffSource" />
   </securedutility>
 
-  <webservice:register module="lp.code.interfaces.branch" />
-  <webservice:register module="lp.code.interfaces.branchmergeproposal" />
-  <webservice:register module="lp.code.interfaces.branchsubscription" />
-  <webservice:register module="lp.code.interfaces.codereviewcomment" />
-  <webservice:register module="lp.code.interfaces.codereviewvote" />
-  <webservice:register module="lp.code.interfaces.diff" />
+  <webservice:register module="lp.code.interfaces.webservice" />
 
 </configure>
