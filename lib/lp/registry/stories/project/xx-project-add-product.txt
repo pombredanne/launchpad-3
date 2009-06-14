@@ -51,4 +51,4 @@ product:
 
     >>> anon_browser.open('http://launchpad.dev/eog/trunk')
     >>> print anon_browser.title
-    Overview of Eye of GNOME Series: trunk
+    Eye of GNOME Series: trunk
