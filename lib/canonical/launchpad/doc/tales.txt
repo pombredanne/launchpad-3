@@ -113,6 +113,34 @@ And finally Copy archives.
     >>> print test_tales("archive/image:icon", archive=copy)
     <img ... src="/@@/distribution" />
 
+We also have icons for builds which may have different dimensions.
+
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> login('foo.bar@canonical.com')
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> source = stp.getPubSource()
+    >>> build = source.createMissingBuilds()[0]
+    >>> login(ANONYMOUS)
+
+The 'Needs building' build is 14x14:
+
+    >>> print test_tales("build/image:icon", build=build)
+    <img width="14" height="14"...src="/@@/build-needed" />
+
+The 'building' build is 14x14:
+
+    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> build.buildstate = BuildStatus.BUILDING
+    >>> print test_tales("build/image:icon", build=build)
+    <img width="14" height="14"...src="/@@/processing" />
+
+But the 'failed to build' build is 16x14:
+
+    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> print test_tales("build/image:icon", build=build)
+    <img width="16" height="14"...src="/@@/build-failed" />
+
 
 == The fmt: namespace to get strings ==
 
@@ -159,6 +187,17 @@ Add manual word breaks to long words in a string:
     ...     foo='<http://launchpad.net/products/launchpad>')
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
 
+To get a int with its thousands separated by a comma, use fmt:intcomma.
+
+    >>> test_tales('foo/fmt:intcomma', foo=1234567890)
+    '1,234,567,890'
+    >>> test_tales('foo/fmt:intcomma', foo=123)
+    '123'
+    >>> test_tales('foo/fmt:intcomma', foo=1239.45)
+    Traceback (most recent call last):
+    ...
+    AssertionError:...
+
 
 == The fmt: namespace to get URLs ==
 
@@ -199,6 +238,7 @@ to a content object.  There are currently links defined for:
   * branch merge proposals
   * bug-branch links
   * code imports
+  * product release files
   * product series
   * blueprints
   * blueprint-branch links
@@ -397,6 +437,39 @@ to support the branch deletion code.
     >>> code_import = factory.makeCodeImport(branch_name="trunk")
     >>> test_tales("code_import/fmt:link", code_import=code_import)
     u'<a href=".../trunk">Import of...</a>'
+
+
+=== Product release files ===
+
+The fmt:link for a product release file will render a link for the
+ProductReleaseFile itself (with a title containing its description and size),
+plus extra links for the MD5 hash and signature of that PRF.
+
+    # First we define a helper function for printing the links together with
+    # their titles.
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> def print_hrefs_with_titles(html):
+    ...     soup = BeautifulSoup(html)
+    ...     for link in soup.findAll('a'):
+    ...         attrs = dict(link.attrs)
+    ...         print "%s: %s" % (attrs.get('href'), attrs.get('title', ''))
+
+    >>> release_file = factory.makeProductReleaseFile()
+    >>> html = test_tales("release_file/fmt:link", release_file=release_file)
+    >>> print_hrefs_with_titles(html)
+    http://.../+download/test.txt: test file (4 bytes)
+    http://.../+download/test.txt/+md5:
+    http://.../+download/test.txt.asc:
+
+When the ProductReleaseFile is not signed, the link for the signature is
+not included.
+
+    >>> release_file = factory.makeProductReleaseFile(signed=False)
+    >>> html = test_tales("release_file/fmt:link", release_file=release_file)
+    >>> soup = BeautifulSoup(html)
+    >>> print_hrefs_with_titles(html)
+    http://.../+download/test.txt: test file (4 bytes)
+    http://.../+download/test.txt/+md5:
 
 
 === Product series ===
@@ -719,6 +792,29 @@ To escape a string you should use fmt:escape.
     'some value'
     >>> test_tales('foo/fmt:escape', foo='some <br /> value')
     'some &lt;br /&gt; value'
+
+
+== CSS ids ==
+
+Strings can be converted to valid CSS ids. The id will start with 'j'
+if the start of the string is not a letter.
+
+    >>> test_tales('foo/fmt:css-id', foo='beta2-milestone')
+    'beta2-milestone'
+    >>> test_tales('foo/fmt:css-id', foo='user name')
+    'user-name'
+    >>> test_tales('foo/fmt:css-id', foo='1.0.1_series')
+    'j1-0-1-series'
+
+An optional prefix for the if can be added to the path. It too will
+be escaped.
+
+    >>> test_tales('foo/fmt:css-id/series-', foo='1.0.1_series')
+    'series-1-0-1-series'
+    >>> test_tales('foo/fmt:css-id/series_', foo='1.0.1_series')
+    'series-1-0-1-series'
+    >>> test_tales('foo/fmt:css-id/0series-', foo='1.0.1_series')
+    'j0series-1-0-1-series'
 
 
 == The fmt: namespace to get strings (obfuscation) ==

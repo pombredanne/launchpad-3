@@ -27,12 +27,12 @@ from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
 # that it needs a bit of redesigning here around the publication stuff.
-from canonical.archivepublisher.config import getPubConfig
-from canonical.archivepublisher.customupload import CustomUploadError
-from canonical.archivepublisher.utils import get_ppa_reference
-from canonical.archiveuploader.tagfiles import parse_tagfile_lines
-from canonical.archiveuploader.utils import safe_fix_maintainer
-from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
+from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.customupload import CustomUploadError
+from lp.archivepublisher.utils import get_ppa_reference
+from lp.archiveuploader.tagfiles import parse_tagfile_lines
+from lp.archiveuploader.utils import safe_fix_maintainer
+from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -49,7 +49,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.package import (
+from lp.soyuz.interfaces.queue import (
     PackageUploadStatus, PackageUploadCustomFormat)
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.publishing import (
@@ -146,9 +146,8 @@ class PackageUpload(SQLBase):
     pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
                      schema=PackagePublishingPocket)
 
-    # XXX: kiko 2007-02-10: This is NULLable. Fix sampledata?
-    changesfile = ForeignKey(dbName='changesfile',
-                             foreignKey="LibraryFileAlias")
+    changesfile = ForeignKey(
+        dbName='changesfile', foreignKey="LibraryFileAlias", notNull=False)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
@@ -156,8 +155,8 @@ class PackageUpload(SQLBase):
                              notNull=False)
 
     # XXX julian 2007-05-06:
-    # Sources and builds should not be SQLMultipleJoin, there is only
-    # ever one of each at most.
+    # Sources should not be SQLMultipleJoin, there is only ever one
+    # of each at most.
 
     # Join this table to the PackageUploadBuild and the
     # PackageUploadSource objects which are related.
@@ -1552,7 +1551,7 @@ class PackageUploadCustom(SQLBase):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
-        from canonical.archivepublisher.debian_installer import (
+        from lp.archivepublisher.debian_installer import (
             process_debian_installer)
 
         self._publishCustom(process_debian_installer)
@@ -1561,7 +1560,7 @@ class PackageUploadCustom(SQLBase):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
-        from canonical.archivepublisher.dist_upgrader import (
+        from lp.archivepublisher.dist_upgrader import (
             process_dist_upgrader)
 
         self._publishCustom(process_dist_upgrader)
@@ -1570,7 +1569,7 @@ class PackageUploadCustom(SQLBase):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
-        from canonical.archivepublisher.ddtp_tarball import (
+        from lp.archivepublisher.ddtp_tarball import (
             process_ddtp_tarball)
 
         self._publishCustom(process_ddtp_tarball)

@@ -14,7 +14,6 @@ __all__ = [
     'is_branch_stackable',
     ]
 
-from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib import config
 from bzrlib.errors import (
     NoSuchFile, NotStacked, UnstackableBranchFormat,
@@ -104,7 +103,17 @@ def ensure_base(transport):
     try:
         transport.ensure_base()
     except NoSuchFile:
-        create_prefix(transport)
+        # transport.create_prefix was added in Bazaar 1.15, and _create_prefix
+        # was removed. Check to see if transport has a create_prefix method
+        # and use the old _create_prefix if it's not there.
+        #
+        # This can be removed once Bazaar 1.15 has landed on Launchpad.
+        create_prefix = getattr(transport, 'create_prefix', None)
+        if create_prefix is not None:
+            create_prefix()
+        else:
+            from bzrlib.builtins import _create_prefix
+            _create_prefix(transport)
 
 
 class HttpAsLocalTransport(LocalTransport):

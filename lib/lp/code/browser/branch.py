@@ -22,6 +22,7 @@ __all__ = [
     'BranchView',
     'BranchSubscriptionsView',
     'RegisterBranchMergeProposalView',
+    'TryImportAgainView',
     ]
 
 import cgi
@@ -50,8 +51,8 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
@@ -66,18 +67,18 @@ from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
 from lp.code.browser.branchref import BranchRef
+from lp.code.enums import BranchType, UICreatableBranchType
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, BranchType, IBranch,
-    IBranchNavigationMenu, UICreatableBranchType)
+    BranchCreationForbidden, BranchExists, IBranch, IBranchNavigationMenu)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespacePolicy)
+from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -1188,10 +1189,10 @@ class BranchRequestImportView(LaunchpadFormView):
         if self.context.code_import.import_job is None:
             self.request.response.addNotification(
                 "This import is no longer being updated automatically.")
-        elif self.context.code_import.import_job.state != \
-                 CodeImportJobState.PENDING:
-            assert self.context.code_import.import_job.state == \
-                   CodeImportJobState.RUNNING
+        elif (self.context.code_import.import_job.state !=
+              CodeImportJobState.PENDING):
+            assert (self.context.code_import.import_job.state ==
+                    CodeImportJobState.RUNNING)
             self.request.response.addNotification(
                 "The import is already running.")
         elif self.context.code_import.import_job.requesting_user is not None:
@@ -1213,6 +1214,37 @@ class BranchRequestImportView(LaunchpadFormView):
     @property
     def action_url(self):
         return "%s/@@+request-import" % canonical_url(self.context)
+
+
+class TryImportAgainView(LaunchpadFormView):
+    """The view to provide an 'Try again' button on the branch index page.
+
+    This only appears on the page of a branch with an associated code import
+    that is marked as failing.
+    """
+
+    schema = IBranch
+    field_names = []
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Try Again', name='tryagain')
+    def request_try_again(self, action, data):
+        if (self.context.code_import.review_status !=
+            CodeImportReviewStatus.FAILING):
+            self.request.response.addNotification(
+                "The import is now %s."
+                % self.context.code_import.review_status.name)
+        else:
+            self.context.code_import.tryFailingImportAgain(self.user)
+            self.request.response.addNotification(
+                "Import will be tried again as soon as possible.")
+
+    @property
+    def prefix(self):
+        return "tryagain"
 
 
 class BranchSparkView(LaunchpadView):

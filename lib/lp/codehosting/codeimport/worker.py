@@ -32,7 +32,7 @@ from lp.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from lp.codehosting.codeimport.uifactory import LoggingUIFactory
 from canonical.config import config
-from lp.code.interfaces.codeimport import RevisionControlSystems
+from lp.code.enums import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs

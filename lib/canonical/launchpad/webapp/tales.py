@@ -12,6 +12,7 @@ import math
 import os.path
 import re
 import rfc822
+import urllib
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
@@ -23,11 +24,11 @@ from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.traversing.interfaces import ITraversable, IPathAdapter
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
 import pytz
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.launchpad import _
@@ -43,7 +44,7 @@ from canonical.launchpad.webapp.interfaces import (
     IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlappend
 from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
@@ -849,28 +850,38 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
-    icon_template = """
-        <img width="14" height="14" alt="%s" title="%s" src="%s" />
-        """
+    icon_template = (
+        '<img width="%(width)s" height="14" alt="%(alt)s" '
+        'title="%(title)s" src="%(src)s" />')
+
 
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
         icon_map = {
-            BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            BuildStatus.FULLYBUILT: "/@@/build-success",
-            BuildStatus.FAILEDTOBUILD: "/@@/build-failed",
-            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            BuildStatus.SUPERSEDED: "/@@/build-superseded",
-            BuildStatus.BUILDING: "/@@/build-building",
-            BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
+            BuildStatus.NEEDSBUILD: {'src': "/@@/build-needed"},
+            BuildStatus.FULLYBUILT: {'src': "/@@/build-success"},
+            BuildStatus.FAILEDTOBUILD: {
+                'src': "/@@/build-failed",
+                'width': '16'
+                },
+            BuildStatus.MANUALDEPWAIT: {'src': "/@@/build-depwait"},
+            BuildStatus.CHROOTWAIT: {'src': "/@@/build-chrootwait"},
+            BuildStatus.SUPERSEDED: {'src': "/@@/build-superseded"},
+            BuildStatus.BUILDING: {'src': "/@@/processing"},
+            BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
             }
 
         alt = '[%s]' % self._context.buildstate.name
         title = self._context.buildstate.title
-        source = icon_map[self._context.buildstate]
+        source = icon_map[self._context.buildstate].get('src')
+        width = icon_map[self._context.buildstate].get('width', '14')
 
-        return self.icon_template % (alt, title, source)
+        return self.icon_template % {
+            'alt': alt,
+            'title': title,
+            'src': source,
+            'width': width,
+            }
 
 
 class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
@@ -1151,6 +1162,58 @@ class SourcePackageFormatterAPI(CustomizableFormatter):
     def _link_summary_values(self):
         displayname = self._context.displayname
         return {'displayname': displayname}
+
+
+class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IProductReleaseFile` objects to a formatted string."""
+
+    traversable_names = {'link': 'link'}
+
+    def link(self, view_name):
+        """A hyperlinked ProductReleaseFile.
+
+        This consists of a download icon, the link to the ProductReleaseFile
+        itself (with a tooltip stating its size) and links to that file's
+        signature and MD5 hash.
+        """
+        file_ = self._context
+        file_size = NumberFormatterAPI(
+            file_.libraryfile.content.filesize).bytes()
+        if file_.description is not None:
+            description = file_.description
+        else:
+            description = file_.libraryfile.filename
+        link_title = "%s (%s)" % (description, file_size)
+        download_url = self._getDownloadURL(file_.libraryfile)
+        md5_url = urlappend(download_url, '+md5')
+        replacements = dict(
+            url=download_url, filename=file_.libraryfile.filename,
+            md5_url=md5_url, link_title=link_title)
+        html = (
+            '<img alt="download icon" src="/@@/download" />'
+            '<strong>'
+            '  <a title="%(link_title)s" href="%(url)s">%(filename)s</a> '
+            '</strong>'
+            '(<a href="%(md5_url)s">md5</a>')
+        if file_.signature is not None:
+            html += ', <a href="%(signature_url)s">sig</a>)'
+            replacements['signature_url'] = self._getDownloadURL(
+                file_.signature)
+        else:
+            html += ')'
+        return html % replacements
+
+    @property
+    def _release(self):
+        return self._context.productrelease
+
+    def _getDownloadURL(self, lfa):
+        """Return the download URL for the given `LibraryFileAlias`."""
+        url = urlappend(canonical_url(self._release), '+download')
+        # Quote the filename to eliminate non-ascii characters which
+        # are invalid in the url.
+        url = urlappend(url, urllib.quote(lfa.filename.encode('utf-8')))
+        return str(URI(url).replace(scheme='http'))
 
 
 class BranchFormatterAPI(ObjectFormatterAPI):
@@ -1568,8 +1631,24 @@ class NumberFormatterAPI:
             return self.float(float(format))
         elif name == 'bytes':
             return self.bytes()
+        elif name == 'intcomma':
+            return self.intcomma()
         else:
             raise TraversalError(name)
+
+    def intcomma(self):
+        """Return this number with its thousands separated by comma.
+
+        This can only be used for integers.
+        """
+        if not isinstance(self._number, int):
+            raise AssertionError("This can't be used with non-integers")
+        L = []
+        for index, char in enumerate(reversed(str(self._number))):
+            if index != 0 and (index % 3) == 0:
+                L.insert(0, ',')
+            L.insert(0, char)
+        return ''.join(L)
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
@@ -2680,6 +2759,31 @@ class FormattersAPI:
         result.append('</table>')
         return ''.join(result)
 
+    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-]+')
+
+    def css_id(self, prefix=None):
+        """Return a CSS compliant id.
+
+        The id may contain letters, numbers, and hyphens. The first
+        character must be a letter. Unsupported characters are converted
+        to hyphens. Multiple characters are replaced by a single hyphen. The
+        letter 'j' will start the id if the string's first character is not a
+        letter.
+
+        :param prefix: an optional string to prefix to the id. It can be
+            used to ensure that the start of the id is predicable.
+        """
+        if prefix is not None:
+            raw_text = prefix + self._stringtoformat
+        else:
+            raw_text = self._stringtoformat
+        id_ = self._css_id_strip_pattern.sub('-', raw_text)
+        if id_[0] in '-0123456789':
+            # 'j' is least common starting character in technical usage;
+            # engineers love 'z', 'q', and 'y'.
+            return 'j' + id_
+        else:
+            return id_
 
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
@@ -2708,6 +2812,11 @@ class FormattersAPI:
             return self.shorten(maxlength)
         elif name == 'diff':
             return self.format_diff()
+        elif name == 'css-id':
+            if len(furtherPath) > 0:
+                return self.css_id(furtherPath.pop())
+            else:
+                return self.css_id()
         else:
             raise TraversalError(name)
 

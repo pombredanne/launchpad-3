@@ -7,52 +7,52 @@ __all__ = [
     '_filter_ubuntu_translation_file',
     ]
 
+
 import datetime
 import operator
 import pytz
 from StringIO import StringIO
 import re
 
+from storm.store import Store
+from storm.expr import Join
+from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
-
 from canonical.cachedproperty import cachedproperty
-
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
-
-from canonical.librarian.interfaces import ILibrarianClient
-
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
+from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.build import BuildStatus
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.packagediff import (
-    PackageDiffAlreadyRequested)
-from lp.soyuz.interfaces.package import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingStatus)
-from lp.registry.interfaces.sourcepackage import (
-    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
+from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.launchpad.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.registry.interfaces.person import validate_public_person
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
-from lp.soyuz.model.queue import PackageUpload
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.queue import (
+    PackageUpload, PackageUploadSource)
 from lp.soyuz.scripts.queue import QueueActionError
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.sourcepackage import (
+    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
 
 
 def _filter_ubuntu_translation_file(filename):
@@ -517,30 +517,38 @@ class SourcePackageRelease(SQLBase):
     @property
     def upload_changesfile(self):
         """See `ISourcePackageRelease`."""
-        queue_record = self.getQueueRecord()
-        if not queue_record:
+        package_upload = self.package_upload
+        # Cope with `SourcePackageRelease`s imported by gina, they do not
+        # have a corresponding `PackageUpload` record.
+        if package_upload is None:
             return None
+        return package_upload.changesfile
 
-        return queue_record.changesfile
-
-    def getQueueRecord(self, distroseries=None):
+    @property
+    def package_upload(self):
         """See `ISourcepackageRelease`."""
-        if distroseries is None:
-            distroseries = self.upload_distroseries
-
-        clauseTables = [
-            'PackageUpload',
-            'PackageUploadSource',
+        store = Store.of(self)
+        origin = [
+            PackageUploadSource,
+            Join(PackageUpload,
+                 PackageUploadSource.packageuploadID == PackageUpload.id),
+            Join(LibraryFileAlias,
+                 LibraryFileAlias.id == PackageUpload.changesfileID),
+            Join(LibraryFileContent,
+                 LibraryFileContent.id == LibraryFileAlias.contentID),
             ]
-        preJoins = ['changesfile']
-        query = """
-        PackageUpload.id = PackageUploadSource.packageupload AND
-        PackageUpload.distroseries = %s AND
-        PackageUploadSource.sourcepackagerelease = %s AND
-        PackageUpload.status = %s
-        """ % sqlvalues(distroseries, self, PackageUploadStatus.DONE)
-        return PackageUpload.selectOne(
-            query, clauseTables=clauseTables, prejoins=preJoins)
+        results = store.using(*origin).find(
+            (PackageUpload, LibraryFileAlias, LibraryFileContent),
+            PackageUploadSource.sourcepackagerelease == self,
+            PackageUpload.status == PackageUploadStatus.DONE,
+            PackageUpload.archive == self.upload_archive,
+            PackageUpload.distroseries == self.upload_distroseries)
+
+        # Return the unique `PackageUpload` record that corresponds to the
+        # upload of this `SourcePackageRelease`, load the `LibraryFileAlias`
+        # and the `LibraryFileContent` in cache because it's most likely
+        # they will be needed.
+        return DecoratedResultSet(results, operator.itemgetter(0)).one()
 
     @property
     def change_summary(self):

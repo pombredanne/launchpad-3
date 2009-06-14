@@ -46,9 +46,7 @@ about Firefox's publishing history.
   Date                    Status    Target  Pocket  Component Section Version
   2006-02-13 12:19:00 UTC Published Warty   release main      web     0.9
   Published on 2006-02-13
-  ...
   2004-09-27 11:57:13 UTC Pending   Warty   release main      editors 0.9
-  ...
 
 Jump back to the DistributionSourcePackage page to continue the tests:
 
@@ -256,7 +254,7 @@ And also download the files contained in this source, like '.orig',
   <div id="files">
     <ul class="download">
       <li>
-        <a href="/ubuntu/hoary/+source/mozilla-firefox/0.9/+files/firefox-0.9.2.orig.tar.gz">firefox-0.9.2.orig.tar.gz</a>
+        <a href="/ubuntu/warty/+source/mozilla-firefox/0.9/+files/firefox-0.9.2.orig.tar.gz">firefox-0.9.2.orig.tar.gz</a>
         (9.5 MiB)
       </li>
     </ul>

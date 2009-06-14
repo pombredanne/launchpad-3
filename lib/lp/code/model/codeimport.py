@@ -33,16 +33,16 @@ from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.code.interfaces.branch import BranchType
-from lp.code.interfaces.codeimport import (
-    CodeImportReviewStatus, ICodeImport, ICodeImportSet)
+from lp.code.enums import (
+    BranchType, CodeImportResultStatus, CodeImportReviewStatus,
+    RevisionControlSystems)
+from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.interfaces.codeimportjob import CodeImportJobState
+from lp.code.interfaces.codeimportjob import (
+    CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
-from lp.code.interfaces.codeimport import RevisionControlSystems
-from lp.code.model.codeimportresult import (
-    CodeImportResult, CodeImportResultStatus)
+from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.mail.codeimport import code_import_updated
 from lp.registry.interfaces.person import validate_public_person
 
@@ -146,18 +146,6 @@ class CodeImport(SQLBase):
         'CodeImportResult', joinColumn='code_import',
         orderBy=['-date_job_started'])
 
-    def changeDetails(self, data, user):
-        """See `ICodeImport`."""
-        if 'review_status' in data:
-            raise AssertionError(
-                'changeDetails cannot be used to change review_status.')
-        modify_event = self.updateFromData(data, user)
-        if modify_event is not None:
-            code_import_updated(modify_event)
-            return True
-        else:
-            return False
-
     @property
     def consecutive_failure_count(self):
         """See `ICodeImport`."""
@@ -205,6 +193,15 @@ class CodeImport(SQLBase):
 
     def __repr__(self):
         return "<CodeImport for %s>" % self.branch.unique_name
+
+    def tryFailingImportAgain(self, user):
+        """See `ICodeImport`."""
+        if self.review_status != CodeImportReviewStatus.FAILING:
+            raise AssertionError(
+                "review_status is %s not FAILING" % self.review_status.name)
+        self.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED}, user)
+        getUtility(ICodeImportJobWorkflow).requestJob(self.import_job, user)
 
 
 class CodeImportSet:

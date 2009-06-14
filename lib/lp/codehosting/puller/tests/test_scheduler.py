@@ -26,7 +26,7 @@ from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing.factory import ObjectFactory
 from canonical.launchpad.webapp import errorlog
@@ -975,7 +975,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         lower_timeout_script = """
         from bzrlib import lockdir
         lockdir._DEFAULT_TIMEOUT_SECONDS = 2.0
-        from canonical.launchpad.interfaces import BranchType
+        from lp.code.enums import BranchType
         from lp.codehosting.puller.worker import (
             PullerWorker, install_worker_ui_factory)
         branch_type = BranchType.items[branch_type_name]
@@ -990,16 +990,19 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
                 script_text=lower_timeout_script)
             deferred = puller_master.mirror()
             def check_mirror_failed(ignored):
-                self.assertEqual(len(self.client.calls), 3)
+                # In Bazaar 1.15, set_stacked_on_url locks the branch. With
+                # 1.14, there's an extra 'setStackedOn' call to the XML-RPC
+                # server, which is wrong. With 1.15, that call no longer takes
+                # place.
+                #
+                # Assert that the call length is 2 (not 3) when we upgrade to
+                # Bazaar 1.15.
+                self.assertIn(len(self.client.calls), [2, 3])
                 start_mirroring_call = self.client.calls[0]
-                set_stacked_on_call = self.client.calls[1]
-                mirror_failed_call = self.client.calls[2]
+                mirror_failed_call = self.client.calls[-1]
                 self.assertEqual(
                     start_mirroring_call,
                     ('startMirroring', self.db_branch.id))
-                self.assertEqual(
-                    set_stacked_on_call,
-                    ('setStackedOn', self.db_branch.id, ''))
                 self.assertEqual(
                     mirror_failed_call[:2],
                     ('mirrorFailed', self.db_branch.id))

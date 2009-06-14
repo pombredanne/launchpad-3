@@ -108,6 +108,8 @@ class CanonicalConfig:
         """
         self._instance_name = instance_name
         os.environ[LPCONFIG] = instance_name
+        # Need to reload the config.
+        self._config = None
 
     @property
     def process_name(self):
@@ -127,6 +129,8 @@ class CanonicalConfig:
         it will load launchpad-lazr.conf.
         """
         self._process_name = process_name
+        # Need to reload the config.
+        self._config = None
 
     def _getConfig(self):
         """Get the schema and config for this environment.

@@ -472,6 +472,12 @@ form.primary.search {
 .highlighted {padding: 0.5em;}
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
+.dimmed {
+  padding: 0 0.5em;
+  opacity: .5;
+  filter: alpha(opacity=50);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+}
 
 strong em {
   font-style: normal;
@@ -1679,6 +1685,12 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .mergestatusQUEUED            {color: black;}
 .mergestatusSUPERSEDED        {color: grey;}
 
+.codeimportNEW       {color: #930;}
+.codeimportINVALID   {color: red;}
+.codeimportREVIEWED  {color: green;}
+.codeimportSUSPENDED {color: red;}
+.codeimportFAILING   {color: red;}
+
 .stale-diff { color: #f60; }
 .conflicts-diff { color: red; }
 
@@ -2083,6 +2095,16 @@ li {
 }
 */
 
+#project-cloud-preview a {
+  padding-left: 0.5em;
+  padding-right: 0.5em,
+}
+
+#project-tags a {
+  padding-left: 0.5em;
+  padding-right: 0.5em,
+}
+
 /* Clouds of links. */
 .cloud-size-smallest {
   font-size: 0.8em;
@@ -2164,6 +2186,14 @@ div.popupTitle {
 #search-results div.lower-batch-nav {
   margin-top: 1.5em;
   border-top: 1px solid #d2d2d2;
+}
+
+#search-results .search-result-link {
+  font-weight: bold;
+}
+
+#search-results div.summary p {
+  margin-top: 0;
 }
 
 #no-results {

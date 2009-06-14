@@ -5,10 +5,14 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 from pprint import pformat
+import copy
 import os
 import shutil
+import subprocess
 import tempfile
 import unittest
+
+from bzrlib.transport import get_transport
 
 import pytz
 from storm.store import Store
@@ -20,6 +24,7 @@ from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
+from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
 # Import the login and logout functions here as it is a much better
@@ -382,7 +387,8 @@ class TestCaseWithFactory(TestCase):
         return browser
 
     def create_branch_and_tree(self, tree_location='.', product=None,
-                               hosted=False, db_branch=None, format=None):
+                               hosted=False, db_branch=None, format=None,
+                               **kwargs):
         """Create a database branch, bzr branch and bzr checkout.
 
         :param tree_location: The path on disk to create the tree at.
@@ -394,14 +400,13 @@ class TestCaseWithFactory(TestCase):
         :return: a `Branch` and a workingtree.
         """
         from bzrlib.bzrdir import BzrDir, format_registry
-        from bzrlib.transport import get_transport
         if format is not None and isinstance(format, basestring):
             format = format_registry.get(format)()
         if db_branch is None:
             if product is None:
-                db_branch = self.factory.makeAnyBranch()
+                db_branch = self.factory.makeAnyBranch(**kwargs)
             else:
-                db_branch = self.factory.makeProductBranch(product)
+                db_branch = self.factory.makeProductBranch(product, **kwargs)
         if hosted:
             branch_url = db_branch.getPullURL()
         else:
@@ -426,6 +431,11 @@ class TestCaseWithFactory(TestCase):
         server might be providing lp-mirrored: urls.
         """
         base = config.codehosting.internal_branch_by_id_root
+        # XXX gary 2009-5-28 bug 381325
+        # This is a work-around for some failures on PQM, arguably caused by
+        # relying on test set-up that is happening in the Makefile rather than
+        # the actual test set-up.
+        ensure_base(get_transport(base))
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def createMirroredBranchAndTree(self):
@@ -586,3 +596,22 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
     while True:
         yield now
         now += delta
+
+
+def run_script(cmd_line):
+    """Run the given command line as a subprocess.
+
+    Return a 3-tuple containing stdout, stderr and the process' return code.
+
+    The environment given to the subprocess is the same as the one in the
+    parent process except for the PYTHONPATH, which is removed so that the
+    script, passed as the `cmd_line` parameter, will fail if it doesn't set it
+    up properly.
+    """
+    env = copy.copy(os.environ)
+    env.pop('PYTHONPATH', None)
+    process = subprocess.Popen(
+        cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, env=env)
+    (out, err) = process.communicate()
+    return out, err, process.returncode

@@ -56,7 +56,7 @@
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:pages
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.BugTargetBugListingView"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
         facet="bugs"
         permission="zope.Public">
         <browser:page
@@ -66,14 +66,14 @@
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+nominations"
-        class="canonical.launchpad.browser.BugNominationsView"
+        class="lp.bugs.browser.bugtask.BugNominationsView"
         permission="zope.Public"
         facet="bugs"
         template="../templates/series-bug-nominations.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+bugs-index"
-        class="canonical.launchpad.browser.BugTargetBugsView"
+        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
         permission="zope.Public"
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"/>
@@ -138,7 +138,7 @@
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.CVEReportView"
+        class="lp.bugs.browser.cvereport.CVEReportView"
         permission="zope.Public"
         name="+cve"
         facet="bugs"
@@ -164,7 +164,7 @@
     <browser:page
         name="+translations"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.TranslationsRedirectView"
+        class="canonical.launchpad.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -194,7 +194,7 @@
         name="+help-translate-button"
         facet="translations"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.HelpTranslateButtonView"
+        class="canonical.launchpad.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -573,13 +573,13 @@
     <browser:page
         name="+filebug"
         for="lp.registry.interfaces.project.IProject"
-        class="canonical.launchpad.browser.ProjectFileBugGuidedView"
+        class="lp.bugs.browser.bugtarget.ProjectFileBugGuidedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
         name="+filebug-advanced"
         for="lp.registry.interfaces.project.IProject"
-        class="canonical.launchpad.browser.ProjectFileBugAdvancedView"
+        class="lp.bugs.browser.bugtarget.ProjectFileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:defaultView
@@ -1251,21 +1251,21 @@
             facet="bugs"
             class="lp.registry.browser.person.PersonRelatedBugTaskSearchListingView"
             permission="zope.Public"
-            template="../../../canonical/launchpad/templates/buglisting-embedded-advanced-search.pt"/>
+            template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
             name="+assignedbugs"
             for="lp.registry.interfaces.person.IPerson"
             facet="bugs"
             class="lp.registry.browser.person.PersonAssignedBugTaskSearchListingView"
             permission="zope.Public"
-            template="../../../canonical/launchpad/templates/buglisting-embedded-advanced-search.pt"/>
+            template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
             name="+commentedbugs"
             for="lp.registry.interfaces.person.IPerson"
             facet="bugs"
             class="lp.registry.browser.person.PersonCommentedBugTaskSearchListingView"
             permission="zope.Public"
-            template="../../../canonical/launchpad/templates/buglisting-embedded-advanced-search.pt"/>
+            template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
             name="+packagebugs-search"
             for="lp.registry.interfaces.person.IPerson"
@@ -1286,14 +1286,14 @@
             facet="bugs"
             class="lp.registry.browser.person.PersonReportedBugTaskSearchListingView"
             permission="zope.Public"
-            template="../../../canonical/launchpad/templates/buglisting-embedded-advanced-search.pt"/>
+            template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
             name="+subscribedbugs"
             for="lp.registry.interfaces.person.IPerson"
             facet="bugs"
             class="lp.registry.browser.person.PersonSubscribedBugTaskSearchListingView"
             permission="zope.Public"
-            template="../../../canonical/launchpad/templates/buglisting-embedded-advanced-search.pt"/>
+            template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
             name="+activate-ppa"
             for="lp.registry.interfaces.person.IPerson"
@@ -1610,6 +1610,9 @@
             name="+index"
             template="../templates/milestone-index.pt"/>
         <browser:page
+            name="+productseries-table-row"
+            template="../templates/productseries-milestone-table-row.pt"/>
+        <browser:page
             name="+portlet-details"
             template="../templates/milestone-portlet-details.pt"/>
     </browser:pages>
@@ -1630,7 +1633,7 @@
     <browser:page
         name="+addrelease"
         for="lp.registry.interfaces.milestone.IMilestone"
-        class="canonical.launchpad.browser.ProductReleaseAddView"
+        class="lp.registry.browser.productrelease.ProductReleaseAddView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productrelease-add.pt"/>
@@ -1693,13 +1696,13 @@
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+bugs-index"
-        class="canonical.launchpad.browser.BugTargetBugsView"
+        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
         permission="zope.Public"
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
-        class="canonical.launchpad.browser.BugTargetBugListingView"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
         facet="bugs"
         permission="zope.Public">
         <browser:page
@@ -1830,7 +1833,7 @@
         attribute="__call__"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="canonical.launchpad.browser.CVEReportView"
+        class="lp.bugs.browser.cvereport.CVEReportView"
         permission="zope.Public"
         name="+cve"
         facet="bugs"
@@ -2021,9 +2024,6 @@
             name="+macros"
             template="../templates/productseries-macros.pt"/>
         <browser:page
-            name="+table-releases"
-            template="../templates/productseries-table-releases.pt"/>
-        <browser:page
             name="+portlet-details"
             template="../templates/productseries-portlet-details.pt"/>
         <browser:page
@@ -2045,11 +2045,24 @@
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
+        facet="overview"
+        permission="zope.Public">
+        <browser:page
+            name="+table-releases"
+            template="../templates/productseries-table-releases.pt"/>
+    </browser:pages>
+    <browser:pages
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesView"
         permission="zope.Public">
         <browser:page
             name="+ubuntupkg"
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"/>
+        <browser:page
+            name="+status"
+            facet="overview"
+            template="../templates/productseries-status.pt"/>
         <browser:page
             name="+code-summary"
             template="../templates/productseries-codesummary.pt"/>
@@ -2063,15 +2076,17 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.TranslationsLayer">
+        layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/object-translations.pt"/>
+            template="../templates/productseries-translations.pt"
+            />
         <browser:page
-            name="+potlist"
+            name="+languages"
             facet="translations"
-            template="../templates/object-pots.pt"/>
+            template="../templates/productseries-translations-languages.pt"
+            />
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -2097,7 +2112,7 @@
     <browser:page
         name="+addrelease"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="canonical.launchpad.browser.ProductReleaseFromSeriesAddView"
+        class="lp.registry.browser.productrelease.ProductReleaseFromSeriesAddView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productrelease-add-from-series.pt"/>
@@ -2187,13 +2202,13 @@
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+bugs-index"
-        class="canonical.launchpad.browser.BugTargetBugsView"
+        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
         permission="zope.Public"
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="canonical.launchpad.browser.BugTargetBugListingView"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
         facet="bugs"
         permission="zope.Public">
         <browser:page
@@ -2203,7 +2218,7 @@
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+nominations"
-        class="canonical.launchpad.browser.BugNominationsView"
+        class="lp.bugs.browser.bugtask.BugNominationsView"
         permission="zope.Public"
         facet="bugs"
         template="../templates/series-bug-nominations.pt"/>
@@ -2258,7 +2273,7 @@
             DistributionNavigation"/>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
-        class="canonical.launchpad.browser.BugTargetBugListingView"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
         facet="bugs"
         permission="zope.Public">
         <browser:page
@@ -2377,14 +2392,14 @@
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         name="+upstreamreport"
-        class="canonical.launchpad.browser.DistributionUpstreamBugReport"
+        class="lp.bugs.browser.distribution_upstream_bug_report.DistributionUpstreamBugReport"
         permission="zope.Public"
         facet="bugs"
         template="../templates/distribution-upstream-bug-report.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         name="+bugs-index"
-        class="canonical.launchpad.browser.BugTargetBugsView"
+        class="lp.bugs.browser.bugtarget.BugTargetBugsView"
         permission="zope.Public"
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"/>
@@ -2397,7 +2412,7 @@
         template="../templates/distribution-allpackages.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        class="canonical.launchpad.browser.CVEReportView"
+        class="lp.bugs.browser.cvereport.CVEReportView"
         permission="zope.Public"
         name="+cve"
         facet="bugs"
@@ -2454,7 +2469,7 @@
         label="Register a new series"
         fields="name displayname title summary description version parent_series"
         content_factory="canonical.launchpad.database.DistroSeries"
-        class="canonical.launchpad.browser.DistroSeriesAddView"
+        class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Admin"
         template="../../../canonical/launchpad/templates/launchpad-addform.pt">
@@ -2866,4 +2881,9 @@
     <browser:menus
         module="lp.registry.browser.distributionmirror"
         classes="DistributionMirrorOverviewMenu" />
+    <browser:page
+        name="+macros"
+        for="lp.registry.interfaces.productrelease.IProductReleaseFile"
+        permission="zope.Public"
+        template="../templates/productreleasefile-macros.pt" />
 </configure>
