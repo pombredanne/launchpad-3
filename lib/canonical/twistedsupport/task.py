@@ -112,7 +112,6 @@ class PollingTaskSource:
 
     def start(self, task_consumer):
         """See `ITaskSource`."""
-        # XXX: maybe interval should be passed here
         self.stop()
         self._looping_call = LoopingCall(self._poll, task_consumer)
         self._looping_call.clock = self._clock
