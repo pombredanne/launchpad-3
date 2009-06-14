@@ -764,4 +764,11 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         layer="canonical.launchpad.layers.CodeLayer"
         name="+branches"/>
+
+    <browser:url
+        for="lp.code.interfaces.diff.IPreviewDiff"
+        path_expression="string:+preview-diff"
+        attribute_to_parent="branch_merge_proposal"
+        rootsite="code" />
+
 </configure>

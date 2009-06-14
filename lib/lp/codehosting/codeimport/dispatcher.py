@@ -56,8 +56,10 @@ class CodeImportDispatcher:
             config.codeimportdispatcher.worker_log_dir,
             'code-import-worker-%d.log' % (job_id,))
         # Return the Popen object to make testing easier.
+        interpreter = "%s/bin/py" % config.root
         return subprocess.Popen(
-            [self.worker_script, str(job_id), '-vv', '--log-file', log_file])
+            [interpreter, self.worker_script, str(job_id), '-vv',
+             '--log-file', log_file])
 
 
     def findAndDispatchJob(self, scheduler_client):

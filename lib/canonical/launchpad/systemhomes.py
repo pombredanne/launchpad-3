@@ -251,9 +251,14 @@ class HWDBApplication:
         return getUtility(IHWVendorIDSet).idsForBus(bus)
 
     @property
+    def driver_names(self):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWDriverSet).all_driver_names()
+
+    @property
     def package_names(self):
         """See `IHWDBApplication`."""
-        return getUtility(IHWDriverSet).package_names
+        return getUtility(IHWDriverSet).all_package_names()
 
     def getDistroTarget(self, distribution, distroseries, distroarchseries):
         distro_targets = [

@@ -35,7 +35,8 @@ from lp.codehosting.codeimport.tests.servers import (
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from canonical.config import config
-from canonical.launchpad.database import CodeImport, CodeImportJob
+from lp.code.model.codeimport import CodeImport
+from lp.code.model.codeimportjob import CodeImportJob
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     ICodeImportJobSet, ICodeImportJobWorkflow,
@@ -608,9 +609,10 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
         # The "childFDs={0:0, 1:1, 2:2}" means that any output from the script
         # goes to the test runner's console rather than to pipes that noone is
         # listening too.
+        interpreter = '%s/bin/py' % config.root
         reactor.spawnProcess(
-            DeferredOnExit(process_end_deferred), sys.executable,
-            [sys.executable, script_path, str(job_id), '-q'],
+            DeferredOnExit(process_end_deferred), interpreter,
+            [interpreter, script_path, str(job_id), '-q'],
             childFDs={0:0, 1:1, 2:2}, env=os.environ)
         return process_end_deferred
 
