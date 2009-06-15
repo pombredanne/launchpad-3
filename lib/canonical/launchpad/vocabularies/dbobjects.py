@@ -51,8 +51,9 @@ from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
+from lp.code.model.branch import Branch
 from canonical.launchpad.database import (
-    Archive, Bounty, Branch, Bug, BugTracker, BugWatch, Component, Country,
+    Archive, Bounty, Bug, BugTracker, BugWatch, Component, Country,
     Distribution, DistroArchSeries, DistroSeries, Language, LanguagePack,
     Person, POTemplate, Processor, ProcessorFamily, ProductSeries,
     SourcePackageRelease, Specification, Sprint, TranslationGroup,
@@ -60,8 +61,8 @@ from canonical.launchpad.database import (
 from canonical.database.sqlbase import quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.bugtask import IBugTask
-from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.services.worlddata.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
 from lp.blueprints.interfaces.specification import SpecificationFilter

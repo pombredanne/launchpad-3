@@ -9,11 +9,14 @@
        tal:condition="view/has_assigned_bugs_or_specs_in_progress">
     <div class="section">
       <div class="portlet">
-        <h2>Working on&#8230;</h2>
+        <h2>Working on</h2>
         <tal:has-bugtasks condition="bugtasks">
           <table>
-            <tr tal:repeat="bugtask bugtasks"
-                tal:replace="structure bugtask/@@+listing-detailed" />
+            <tr tal:repeat="bugtask bugtasks">
+              <tal:define-vars define="hide_extra_details string:true">
+                <tal:task tal:replace="structure bugtask/@@+listing-detailed" />
+              </tal:define-vars>
+            </tr>
           </table>
           <div>
             <a tal:attributes="href view/getURLToAssignedBugsInProgress">

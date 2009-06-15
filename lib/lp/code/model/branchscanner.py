@@ -12,8 +12,8 @@ from storm.expr import Or
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.code.enums import BranchType
 from lp.code.model.branch import Branch
-from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchscanner import IBranchScanner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)

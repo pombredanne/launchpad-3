@@ -22,7 +22,7 @@ from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from lp.code.interfaces.branchcollection import IAllBranches
-from canonical.launchpad.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.person import IPersonSet
@@ -394,7 +394,8 @@ class LaunchpadSearchView(LaunchpadFormView):
         """Return the matching active person or team."""
         person_or_team = getUtility(IPersonSet).getByName(name)
         if (person_or_team is not None
-            and person_or_team.is_valid_person_or_team):
+            and person_or_team.is_valid_person_or_team
+            and check_permission('launchpad.View', person_or_team)):
             return person_or_team
         return None
 
@@ -535,4 +536,3 @@ class GoogleBatchNavigator(BatchNavigator):
             results, start=self.start, size=self.default_size)
         self.setHeadings(
             self.default_singular_heading, self.default_plural_heading)
-

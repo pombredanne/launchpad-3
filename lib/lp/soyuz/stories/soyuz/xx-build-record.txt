@@ -26,7 +26,7 @@ See further information about this issue in bug #69988.
     Started: 2005-10-01
     Builder: Bob The Builder
     Build log: netapplet-1.0.0.tar.gz
-    Finished: 2005-10-02 (took three minutes)
+    Finished: 2005-10-02 (took 3 minutes, 20.0 seconds)
 
 'Upload log' is only mentioned when it contains a reference to a
 library file and it only happens for FAILEDTOUPLOAD builds.
@@ -46,7 +46,7 @@ library file and it only happens for FAILEDTOUPLOAD builds.
     Builder: Bob The Builder
     Build log: netapplet-1.0.0.tar.gz
     Upload log: upload_22_log.txt
-    Finished: 2007-04-20 (took a minute)
+    Finished: 2007-04-20 (took 1 minute, 20.0 seconds)
 
     >>> print anon_browser.getLink("upload_22_log.txt").url
     http://.../upload_22_log.txt
@@ -66,7 +66,7 @@ Let's also check a successfully built record.
     Started: 2007-08-10
     Builder: Bob The Builder
     Build log: netapplet-1.0.0.tar.gz
-    Finished: 2007-08-10 (took 15 seconds)
+    Finished: 2007-08-10 (took 13.0 seconds)
 
 Build records contain a portlet listing the resulting binaries. If the
 binaries have not yet been accepted then there will be an additional

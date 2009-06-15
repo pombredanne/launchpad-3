@@ -81,7 +81,7 @@ Bugs are associated to our pillars through their bug tasks, so a bug is
 said to be within any of its bugtasks' targets.
 
     >>> from operator import attrgetter
-    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_1 = getUtility(IBugSet).get(1)
     >>> bugtasks = bug_1.bugtasks
     >>> targets = [task.target for task in bug_1.bugtasks]

@@ -6,8 +6,9 @@ Imports used later in the document:
     >>> from datetime import datetime
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, BranchFormat, RepositoryFormat, IPersonSet)
+    >>> from lp.code.enums import BranchType
+    >>> from lp.code.bzr import BranchFormat, RepositoryFormat
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
 
 Modifying/creating test data for this test case.
@@ -60,14 +61,6 @@ We display the recent revisions of a branch if it has been scanned.
     None
 
 
-=== Heading ===
-
-There's a "Recent revisions" heading:
-
-    >>> print revisions.h2.renderContents()
-    Recent revisions
-
-
 === Revision information ===
 
 Underneath that heading we see the ten most-recent revisions of the branch in
@@ -100,29 +93,6 @@ branches).
     ...         user_browser.contents, 'revision-details', only_first=True)
     >>> print revision.a
     <a href="http://bazaar.launchpad.dev/~name12/+junk/junk.dev/revision/11">11</a>
-
-
-=== Email addresses ===
-
-Commit messages often (always?) have email addresses associated with them.
-'Revision information' shows that the addresses are shown to logged in users.
-However, emails should *not* be shown to anonymous users.
-
-In particular, we don't want search engine and spam bots harvesting email
-addresses.
-
-    >>> anon_browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
-    >>> print_revisions(anon_browser)
-    11. By author1 on 2007-01-05
-    10. By author1 on 2007-01-04
-    9. By author1 on 2007-01-03
-    8. By author1 on 2007-01-02
-    7. By author1 on 2007-01-01
-    6. By foo &lt;email address hidden&gt; on 2005-10-31
-    5. By foo &lt;email address hidden&gt; on 2005-10-31
-    4. By &lt;email address hidden&gt; on 2005-10-31
-    3. By Sample Person on 2005-10-31
-    2. By Sample Person on 2005-10-31
 
 
 === Commit messages ===

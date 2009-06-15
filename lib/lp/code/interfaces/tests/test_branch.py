@@ -10,7 +10,7 @@ from bzrlib.branch import BranchFormat as BzrBranchFormat
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.repository import format_registry as repo_format_registry
 
-from lp.code.interfaces.branch import (
+from lp.code.bzr import (
     BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
     REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.testing import TestCase
@@ -76,7 +76,9 @@ class TestRepositoryFormatUpgradePath(TestCase):
         # Each element of the BranchFormat enum should have a corresponding key
         # in the BRANCH_FORMAT_UPGRADE_PATH dict.
         for format in RepositoryFormat.items:
-            self.assertTrue(REPOSITORY_FORMAT_UPGRADE_PATH.has_key(format))
+            self.assertTrue(
+                REPOSITORY_FORMAT_UPGRADE_PATH.has_key(format),
+                "%r does not have a defined upgrade path." % format)
 
     def test_repository_format_upgrades_dont_cross_streams(self):
         # Repository formats should not try to upgrade a format that doesn't

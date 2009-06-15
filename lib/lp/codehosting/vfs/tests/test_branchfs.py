@@ -29,7 +29,7 @@ from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.codehosting.sftp import FatLocalTransport
 from lp.codehosting.vfs.transport import AsyncVirtualTransport
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from lp.testing import TestCase

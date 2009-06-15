@@ -26,10 +26,11 @@ from bzrlib.upgrade import upgrade
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.code.enums import BranchType
 from lp.codehosting.vfs import get_lp_server
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
+from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.testing import ZopelessAppServerLayer
 
 
@@ -130,7 +131,8 @@ class TestBranchPuller(PullerBranchTestCase):
             output and error are strings contain the output of the process to
             stdout and stderr respectively.
         """
-        command = [sys.executable, self._puller_script, '-q', branch_type]
+        command = [
+            '%s/bin/py' % config.root, self._puller_script, '-q', branch_type]
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 
@@ -139,6 +141,14 @@ class TestBranchPuller(PullerBranchTestCase):
         http_server = HttpServer()
         http_server.port = port
         http_server.setUp()
+        # Join cleanup added before the tearDown so the tearDown is executed
+        # first as this tells the thread to die.  We then join explicitly as
+        # the HttpServer.tearDown does not join.  There is a check in the
+        # BaseLayer to make sure that threads are not left behind by the
+        # tests, and the default behaviour of the HttpServer is to use daemon
+        # threads and let the garbage collector get them, however this causes
+        # issues with the test runner.
+        self.addCleanup(http_server._http_thread.join)
         self.addCleanup(http_server.tearDown)
         return http_server.get_url().rstrip('/')
 
@@ -442,8 +452,6 @@ class TestBranchPuller(PullerBranchTestCase):
     # - expected output on non-quiet runs
 
 
-# XXX: JonathanLange 2009-03-27 bug=349316: Disable these tests because they
-# are leaking threads, causing intermittent test failures.
 def test_suite():
-#    return unittest.TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)
     return unittest.TestSuite()

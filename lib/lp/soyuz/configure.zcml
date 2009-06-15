@@ -390,7 +390,7 @@
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
         provides="canonical.launchpad.interfaces.IPerson"
-        factory="canonical.launchpad.browser.archive_to_person"/>
+        factory="lp.registry.browser.person.archive_to_person"/>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
         provides="canonical.launchpad.webapp.badge.IHasBadges"

@@ -11,7 +11,7 @@ from zope.component import getUtility
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken, IEmailAddressSet, InvalidEmailAddress)
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -198,8 +198,8 @@ class TestPerson(TestCaseWithFactory):
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
-                ' bug, a bugaffectsperson, a bugsubscription, a bugtask'
-                ' and a message.')
+                ' bug, a bugaffectsperson, a bugnotificationrecipient, a'
+                ' bugsubscription, a bugtask and a message.')
 
     def test_visibility_validator_product_subscription(self):
         self.bzr.addSubscription(self.otherteam, self.guadamen)

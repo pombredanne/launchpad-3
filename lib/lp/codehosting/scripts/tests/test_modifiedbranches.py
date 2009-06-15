@@ -17,7 +17,7 @@ from canonical.config import config
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.testing import TestCase, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import BranchType
 
 
 class TestModifiedBranchesLocations(TestCaseWithFactory):

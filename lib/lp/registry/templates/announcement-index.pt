@@ -24,6 +24,12 @@
     <a tal:attributes="href context/url">Read more...</a>
   </p>
 
+  <p>
+    <a tal:attributes="
+      href context/target/fmt:url/+announcements">&raquo;
+      More announcements</a>
+  </p>
+
 </div>
 </body>
 </html>

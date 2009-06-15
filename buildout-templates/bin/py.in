@@ -1,2 +1,2 @@
 #!/bin/sh
-PYTHONPATH=${os-paths} ${buildout:executable} "$@"
+PYTHONPATH=${os-paths} exec ${buildout:executable} "$@"
