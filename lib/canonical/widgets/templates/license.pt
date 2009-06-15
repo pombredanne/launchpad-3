@@ -24,13 +24,16 @@
 YUI().use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         function make_slider(cfg) {
-            var target_name = '#' + cfg.which + '-expand';
             var table_name = '#' + cfg.which;
-            var arrow_name = '#' + cfg.which + '-expand-arrow';
+            var target_name = table_name + '-expand';
+            var arrow_name = target_name + '-arrow';
 
+            // Initialize the slider state.
             var table = Y.get(table_name);
             if (Y.Lang.isValue(table)) {
-                // Workaround for a lazr-js bug.
+                // 2009-06-15 BarryWarsaw: For some reason nobody can explain,
+                // this is required for animations to work properly.  Without
+                // this, nothing happens!
                 table.setStyle('display', 'block');
 
                 // The table starts either collapsed or expanded.  The
@@ -45,6 +48,9 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 target.slide.stop();
                 target.slide.run();
                 
+                // This event handler toggles the arrow state once the
+                // animation is complete.  drawer_closed is an undocumented
+                // attribute used by lazr-js, and recommended by mars.
                 target.slide.on('end', function() {
                     var src;
                     if (this.drawer_closed) {
