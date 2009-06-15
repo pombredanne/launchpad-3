@@ -95,7 +95,7 @@ previous one.  The size limit is one of the following:
   * Send the entire diff
 
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.code.interfaces.branch import IBranchSet
+    >>> from lp.code.interfaces.branch import IBranch, IBranchSet
     >>> personset = getUtility(IPersonSet)
 
     >>> branch.subscribe(
