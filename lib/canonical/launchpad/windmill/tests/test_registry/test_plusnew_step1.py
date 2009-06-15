@@ -11,7 +11,7 @@ def test_projects_plusnew_text_fields():
     On step 1 of the wizard, the URL field gets autofilled from the Name
     field.  Also, the URL field will not accept invalid characters.
     """
-    client = WindmillTestClient('projects/+new step two dynamism')
+    client = WindmillTestClient('projects/+new step one dynamism')
     lpuser.SAMPLE_PERSON.ensure_login(client)
 
     # Perform step 1 of the project registration, using information that will
