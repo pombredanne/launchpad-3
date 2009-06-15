@@ -33,31 +33,25 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 // Workaround for a lazr-js bug.
                 table.setStyle('display', 'block');
 
-                // The table starts either collapsed or expanded.
+                // The table starts either collapsed or expanded.  The
+                // animation lives on the link target.
+                var target = Y.get(target_name);
                 if (cfg.in) {
-                    table.slide = Y.lazr.effects.slide_in(table_name);
+                    target.slide = Y.lazr.effects.slide_in(table_name);
                 }
                 else {
-                    table.slide = Y.lazr.effects.slide_out(table_name);
+                    target.slide = Y.lazr.effects.slide_out(table_name);
                 }
-                table.slide.stop();
-                table.slide.run();
+                target.slide.stop();
+                target.slide.run();
             }
 
             Y.on('click', function(e) {
                 e.preventDefault();
                 var open = false;
                 var slide = e.target.slide;
-                if (!slide) {
-                    Y.log('new slide: ' + table_name);
-                    slide = Y.lazr.effects.slide_in(table_name);
-                    e.target.slide = slide;
-                }
-                else {
-                    Y.log(table_name + ' (' + slide.get('reverse') + ')');
-                    open = !slide.get('reverse');
-                    slide.set('reverse', open);
-                }
+                open = !slide.get('reverse');
+                slide.set('reverse', open);
                 slide.stop();
                 slide.run();
                 var src;
