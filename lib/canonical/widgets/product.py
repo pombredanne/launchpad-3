@@ -318,8 +318,14 @@ class LicenseWidget(CheckBoxMatrixWidget):
         return self.template()
 
     def _renderTable(self, category, column_count=1):
+        table_attributes = dict(id=category)
+        # Everything except recommended starts out closed.
+        if category == 'recommended':
+            style = ''
+        else:
+            style = 'overflow: hidden; display: block; height: 0px'
+        html = ['<table id="%s" style="%s">' % (category, style)]
         rendered_items = self.categories[category]
-        html = ['<table id="%s"' % category]
         row_count = int(math.ceil(len(rendered_items) / float(column_count)))
         for i in range(0, row_count):
             html.append('<tr>')
