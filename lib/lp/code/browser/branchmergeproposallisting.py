@@ -336,7 +336,7 @@ class PersonActiveReviewsView(ActiveReviewsView):
 
     def _getProposals(self):
         """See `ActiveReviewsView`."""
-        return list(self.getter.getProposalsForContext(
+        return list(self.getter.getProposalsForParticipant(
             self.context, [BranchMergeProposalStatus.NEEDS_REVIEW],
             self.user))
 
