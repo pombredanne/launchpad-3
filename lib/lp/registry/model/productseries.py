@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import datetime
-import operator
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
@@ -47,6 +46,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from lp.blueprints.interfaces.specification import (
@@ -467,6 +467,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `IProductSeries`."""
         store = Store.of(self)
 
+        english = getUtility(ILaunchpadCelebrities).english
+
         results = []
         if self.potemplate_count == 1:
             # If there is only one POTemplate in a ProductSeries, fetch
@@ -484,13 +486,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True)
 
             for language, pofile in query.order_by(['Language.englishname']):
-                psl = ProductSeriesLanguage(self, language, pofile=pofile)
-                psl.setCounts(pofile.potemplate.messageCount(),
-                              pofile.currentCount(),
-                              pofile.updatesCount(),
-                              pofile.rosettaCount(),
-                              pofile.unreviewedCount())
-                results.append(psl)
+                if language != english:
+                    psl = ProductSeriesLanguage(self, language, pofile=pofile)
+                    psl.setCounts(pofile.potemplate.messageCount(),
+                                  pofile.currentCount(),
+                                  pofile.updatesCount(),
+                                  pofile.rosettaCount(),
+                                  pofile.unreviewedCount())
+                    results.append(psl)
         else:
             # If there is more than one template, do a single
             # query to count total messages in all templates.
@@ -517,9 +520,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
             for (language, imported, changed, new, unreviewed) in (
                 query.order_by(['Language.englishname'])):
-                psl = ProductSeriesLanguage(self, language)
-                psl.setCounts(total, imported, changed, new, unreviewed)
-                results.append(psl)
+                if language != english:
+                    psl = ProductSeriesLanguage(self, language)
+                    psl.setCounts(total, imported, changed, new, unreviewed)
+                    results.append(psl)
 
         return results
 
