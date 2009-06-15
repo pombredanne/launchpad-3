@@ -20,7 +20,8 @@ from canonical.database.constants import UTC_NOW
 from lp.code.model.branchnamespace import BranchNamespaceSet
 from lp.code.model.branchtarget import (
     PackageBranchTarget, ProductBranchTarget)
-from lp.code.interfaces.branch import BranchType, IBranch
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,

@@ -12,6 +12,7 @@ import math
 import os.path
 import re
 import rfc822
+import urllib
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
@@ -43,7 +44,7 @@ from canonical.launchpad.webapp.interfaces import (
     IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlappend
 from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
@@ -1163,6 +1164,58 @@ class SourcePackageFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
 
+class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IProductReleaseFile` objects to a formatted string."""
+
+    traversable_names = {'link': 'link'}
+
+    def link(self, view_name):
+        """A hyperlinked ProductReleaseFile.
+
+        This consists of a download icon, the link to the ProductReleaseFile
+        itself (with a tooltip stating its size) and links to that file's
+        signature and MD5 hash.
+        """
+        file_ = self._context
+        file_size = NumberFormatterAPI(
+            file_.libraryfile.content.filesize).bytes()
+        if file_.description is not None:
+            description = file_.description
+        else:
+            description = file_.libraryfile.filename
+        link_title = "%s (%s)" % (description, file_size)
+        download_url = self._getDownloadURL(file_.libraryfile)
+        md5_url = urlappend(download_url, '+md5')
+        replacements = dict(
+            url=download_url, filename=file_.libraryfile.filename,
+            md5_url=md5_url, link_title=link_title)
+        html = (
+            '<img alt="download icon" src="/@@/download" />'
+            '<strong>'
+            '  <a title="%(link_title)s" href="%(url)s">%(filename)s</a> '
+            '</strong>'
+            '(<a href="%(md5_url)s">md5</a>')
+        if file_.signature is not None:
+            html += ', <a href="%(signature_url)s">sig</a>)'
+            replacements['signature_url'] = self._getDownloadURL(
+                file_.signature)
+        else:
+            html += ')'
+        return html % replacements
+
+    @property
+    def _release(self):
+        return self._context.productrelease
+
+    def _getDownloadURL(self, lfa):
+        """Return the download URL for the given `LibraryFileAlias`."""
+        url = urlappend(canonical_url(self._release), '+download')
+        # Quote the filename to eliminate non-ascii characters which
+        # are invalid in the url.
+        url = urlappend(url, urllib.quote(lfa.filename.encode('utf-8')))
+        return str(URI(url).replace(scheme='http'))
+
+
 class BranchFormatterAPI(ObjectFormatterAPI):
     """Adapter for IBranch objects to a formatted string."""
 
@@ -1590,7 +1643,6 @@ class NumberFormatterAPI:
         """
         if not isinstance(self._number, int):
             raise AssertionError("This can't be used with non-integers")
-            format = "%d"
         L = []
         for index, char in enumerate(reversed(str(self._number))):
             if index != 0 and (index % 3) == 0:
@@ -2707,6 +2759,31 @@ class FormattersAPI:
         result.append('</table>')
         return ''.join(result)
 
+    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-]+')
+
+    def css_id(self, prefix=None):
+        """Return a CSS compliant id.
+
+        The id may contain letters, numbers, and hyphens. The first
+        character must be a letter. Unsupported characters are converted
+        to hyphens. Multiple characters are replaced by a single hyphen. The
+        letter 'j' will start the id if the string's first character is not a
+        letter.
+
+        :param prefix: an optional string to prefix to the id. It can be
+            used to ensure that the start of the id is predicable.
+        """
+        if prefix is not None:
+            raw_text = prefix + self._stringtoformat
+        else:
+            raw_text = self._stringtoformat
+        id_ = self._css_id_strip_pattern.sub('-', raw_text)
+        if id_[0] in '-0123456789':
+            # 'j' is least common starting character in technical usage;
+            # engineers love 'z', 'q', and 'y'.
+            return 'j' + id_
+        else:
+            return id_
 
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
@@ -2735,6 +2812,11 @@ class FormattersAPI:
             return self.shorten(maxlength)
         elif name == 'diff':
             return self.format_diff()
+        elif name == 'css-id':
+            if len(furtherPath) > 0:
+                return self.css_id(furtherPath.pop())
+            else:
+                return self.css_id()
         else:
             raise TraversalError(name)
 

@@ -9,12 +9,12 @@ notifications.
 When subscribers subscribe to branches, they can specify what level of
 notification they would like to receive.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchmergeproposal import (
     ...     IMergeProposalCreatedJobSource)
-    >>> from canonical.launchpad.interfaces.diff import IStaticDiffSource
+    >>> from lp.code.interfaces.diff import IStaticDiffSource
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')

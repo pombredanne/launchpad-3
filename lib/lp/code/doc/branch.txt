@@ -26,10 +26,11 @@ ancestry of revisions, at least in Branch5 and older branches.
 == Interfaces ==
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, IBranch, IBranchSet, IBranchSubscription)
-    >>> from canonical.launchpad.database import (
-    ...     Branch, BranchSet, BranchSubscription,)
+    >>> from lp.code.enums import BranchType
+    >>> from lp.code.interfaces.branch import IBranch, IBranchSet
+    >>> from lp.code.interfaces.branchsubscription import IBranchSubscription
+    >>> from lp.code.model.branch import Branch, BranchSet
+    >>> from lp.code.model.branchsubscription import BranchSubscription
     >>> verifyObject(IBranchSet, BranchSet())
     True
     >>> verifyObject(IBranch, Branch.get(1))
@@ -296,9 +297,11 @@ Both of these attributes are contolled through the UI through the use
 of the enumerated types: BranchSubscriptionDiffSize, and
 BranchSubscriptionNotificationLevel.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    ...     CodeReviewNotificationLevel, IBranchSubscription)
+    ...     CodeReviewNotificationLevel)
+    >>> from lp.code.interfaces.branchsubscription import (
+    ...     IBranchSubscription)
     >>> subscriber = factory.makePerson(name='subscriber')
     >>> branch = factory.makeProductBranch(
     ...     owner=user, product=product, name='subscribed')

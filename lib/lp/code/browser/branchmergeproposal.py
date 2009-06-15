@@ -45,13 +45,12 @@ from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import (
+    BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
+    CodeReviewVote)
 from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposal, WrongBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    CodeReviewNotificationLevel)
-from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote, ICodeReviewComment)
+    IBranchMergeProposal, WrongBranchMergeProposal)
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
@@ -350,10 +349,13 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     @property
     def review_diff(self):
         """Return a (hopefully) intelligently encoded review diff."""
+        if self.context.review_diff is None:
+            return None
         try:
             diff = self.context.review_diff.diff.text.decode('utf-8')
         except UnicodeDecodeError:
-            diff = self.context.review_diff.diff.text.decode('windows-1252')
+            diff = self.context.review_diff.diff.text.decode('windows-1252',
+                                                             'replace')
         return diff
 
     @property
@@ -475,11 +477,11 @@ class BranchMergeProposalVoteView(LaunchpadView):
     @cachedproperty
     def show_user_review_link(self):
         """Show self in the review table if can review and not asked."""
+        if self.user is None or not self.context.isMergable():
+            return False
         reviewers = [review.reviewer for review in self.reviews]
         # The owner of the source branch should not get a review link.
-        return (self.context.isPersonValidReviewer(self.user) and
-                self.user not in reviewers and
-                self.context.isMergable())
+        return self.user not in reviewers
 
 
 class IReviewRequest(Interface):
@@ -1045,27 +1047,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
 
         if self.user is None:
             # Anonymous users are not valid voters.
-            valid_voter = False
-        elif self.context.isPersonValidReviewer(self.user):
-            # A user who is a valid reviewer for the proposal is a valid
-            # voter.
-            valid_voter = True
-        elif self.users_vote_ref is not None:
-            # The user has already voted, so can change their vote.
-            valid_voter = True
-        else:
-            valid_voter = False
-            # Look through the requested reviewers.
-            for vote_reference in self.context.votes:
-                # If the user is in the team of a pending team review request,
-                # then they are valid voters.
-                if (vote_reference.comment is None and
-                    self.user.inTeam(vote_reference.reviewer)):
-                    valid_voter = True
-
-        if not valid_voter:
             raise AssertionError('Invalid voter')
-
         LaunchpadFormView.initialize(self)
 
     def setUpFields(self):

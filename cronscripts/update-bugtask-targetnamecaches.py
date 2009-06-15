@@ -7,7 +7,7 @@
 import _pythonpath
 
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.bugtasktargetnamecaches import (
+from lp.bugs.scripts.bugtasktargetnamecaches import (
     BugTaskTargetNameCacheUpdater)
 from canonical.config import config
 

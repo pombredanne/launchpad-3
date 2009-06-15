@@ -115,7 +115,7 @@ Links to files accessible via +files/ proxy in the Build page.
     ...     ]
 
     >>> build_links = [
-    ...     ('test-bin_1.0_i386.changes', build.changesfile),
+    ...     ('test-bin_1.0_i386.changes', build.upload_changesfile),
     ...     (buildlog_name, build.buildlog),
     ...     (upload_log_name, build.upload_log),
     ...     ]
