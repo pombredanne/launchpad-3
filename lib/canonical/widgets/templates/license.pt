@@ -44,24 +44,25 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 }
                 target.slide.stop();
                 target.slide.run();
+                
+                target.slide.on('end', function() {
+                    var src;
+                    if (this.drawer_closed) {
+                        src = '/@@/treeCollapsed';
+                    }
+                    else {
+                        src = '/@@/treeExpanded';
+                    }
+                    Y.get(arrow_name).setAttribute('src', src);
+                });
             }
 
             Y.on('click', function(e) {
                 e.preventDefault();
-                var open = false;
                 var slide = e.target.slide;
-                open = !slide.get('reverse');
-                slide.set('reverse', open);
+                slide.set('reverse', !slide.get('reverse'));
                 slide.stop();
                 slide.run();
-                var src;
-                if (open) {
-                    src = '/@@/treeExpanded';
-                }
-                else {
-                    src = '/@@/treeCollapsed';
-                }
-                Y.get(arrow_name).setAttribute('src', src);
             }, target_name);
         }
         make_slider({which: 'recommended'});
