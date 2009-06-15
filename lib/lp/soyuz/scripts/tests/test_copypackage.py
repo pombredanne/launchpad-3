@@ -35,8 +35,8 @@ from lp.soyuz.model.publishing import (
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
-    PackageCopier, UnembargoSecurityPackage, overrideFromAncestry,
-    reUploadFile, updateFilesPrivacy)
+    PackageCopier, UnembargoSecurityPackage, override_from_ancestry,
+    re_upload_file, update_files_privacy)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase, TestCaseWithFactory
 
@@ -80,7 +80,7 @@ class TestReUploadFile(TestCaseWithFactory):
         old = self.factory.makeLibraryFileAlias()
         transaction.commit()
 
-        new = reUploadFile(old)
+        new = re_upload_file(old)
         transaction.commit()
 
         self.assertIsNot(old, new)
@@ -93,7 +93,7 @@ class TestReUploadFile(TestCaseWithFactory):
         private_file = self.factory.makeLibraryFileAlias(restricted=True)
         transaction.commit()
 
-        public_file = reUploadFile(private_file)
+        public_file = re_upload_file(private_file)
         transaction.commit()
 
         self.assertIsNot(private_file, public_file)
@@ -106,7 +106,7 @@ class TestReUploadFile(TestCaseWithFactory):
         public_file = self.factory.makeLibraryFileAlias()
         transaction.commit()
 
-        private_file = reUploadFile(public_file, restricted=True)
+        private_file = re_upload_file(public_file, restricted=True)
         transaction.commit()
 
         self.assertIsNot(public_file, private_file)
@@ -135,16 +135,16 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
 
     def testUpdateFilesPrivacyOnlyAcceptsPublishingRecords(self):
-        # updateFilesPrivacy only accepts `ISourcePackagePublishingHistory`
+        # update_files_privacy only accepts `ISourcePackagePublishingHistory`
         # or `IBinaryPackagePublishingHistory` objects.
         self.assertRaisesWithContent(
             AssertionError,
             'pub_record is not one of SourcePackagePublishingHistory '
             'or BinaryPackagePublishingHistory.',
-            updateFilesPrivacy, None)
+            update_files_privacy, None)
 
     def assertNewFiles(self, new_files, result):
-        """Check new files created during updateFilesPrivacy."""
+        """Check new files created during update_files_privacy."""
         self.assertEquals(
             sorted([new_file.filename for new_file in new_files]),
             result)
@@ -214,9 +214,9 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
         # All 3 files related with the original source are private.
         self.assertSourceFilesArePrivate(private_source, 3)
 
-        # In this scenario updateFilesPrivacy does nothing. The 3 testing
+        # In this scenario update_files_privacy does nothing. The 3 testing
         # source files are still private.
-        new_files = updateFilesPrivacy(private_source)
+        new_files = update_files_privacy(private_source)
         self.layer.commit()
         self.assertNewFiles(new_files, [])
         self.assertSourceFilesArePrivate(private_source, 3)
@@ -231,9 +231,9 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
             public_archive)
         self.assertSourceFilesArePrivate(public_source, 3)
 
-        # updateFilesPrivacy on the copied source moves all files from
+        # update_files_privacy on the copied source moves all files from
         # the restricted librarian to the public one.
-        new_files = updateFilesPrivacy(public_source)
+        new_files = update_files_privacy(public_source)
         self.layer.commit()
         self.assertNewFiles(new_files, [
             'foo.diff.gz',
@@ -284,9 +284,9 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
         # All 3 files related with the original source are private.
         self.assertBinaryFilesArePrivate(private_binary, 3)
 
-        # In this scenario updateFilesPrivacy does nothing. The 3 testing
+        # In this scenario update_files_privacy does nothing. The 3 testing
         # binary files are still private.
-        new_files = updateFilesPrivacy(private_binary)
+        new_files = update_files_privacy(private_binary)
         self.layer.commit()
         self.assertNewFiles(new_files, [])
         self.assertBinaryFilesArePrivate(private_binary, 3)
@@ -301,9 +301,9 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
             public_archive)[0]
         self.assertBinaryFilesArePrivate(public_binary, 3)
 
-        # updateFilesPrivacy on the copied binary moves all files from
+        # update_files_privacy on the copied binary moves all files from
         # the restricted librarian to the public one.
-        new_files = updateFilesPrivacy(public_binary)
+        new_files = update_files_privacy(public_binary)
         self.layer.commit()
         self.assertNewFiles(
             new_files, [
@@ -319,7 +319,7 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
         self.assertBinaryFilesArePublic(private_binary, 3)
 
     def testUpdateFilesPrivacyDoesNotPrivatizePublicFiles(self):
-        # updateFilesPrivacy is adjusted to *never* turn public files
+        # update_files_privacy is adjusted to *never* turn public files
         # private, because it doesn't fit the way private archive are
         # set. If a public file is copied to a private archive it
         # remains public.
@@ -344,12 +344,12 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
             private_archive)[0]
 
         # Both, source and binary, files are still public and will remain
-        # public after calling updateFilesPrivacy.
+        # public after calling update_files_privacy.
         self.assertSourceFilesArePublic(copied_source, 3)
         self.assertBinaryFilesArePublic(copied_binary, 3)
 
-        new_source_files = updateFilesPrivacy(copied_source)
-        new_binary_files = updateFilesPrivacy(copied_binary)
+        new_source_files = update_files_privacy(copied_source)
+        new_binary_files = update_files_privacy(copied_binary)
         self.layer.commit()
         self.assertNewFiles(new_source_files, [])
         self.assertSourceFilesArePublic(copied_source, 3)
@@ -358,7 +358,7 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
 
 
 class TestOverrideFromAncestry(TestCaseWithFactory):
-    """Test publication `overrideFromAncestry` helper.
+    """Test publication `override_from_ancestry` helper.
 
     When called for a `SourcePackagePublishingHistory` or a
     `BinaryPackagePublishingHistory` it sets the object target component
@@ -373,16 +373,16 @@ class TestOverrideFromAncestry(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
 
     def testOverrideFromAncestryOnlyWorksForPublishing(self):
-        # overrideFromAncestry only accepts `ISourcePackagePublishingHistory`
+        # override_from_ancestry only accepts `ISourcePackagePublishingHistory`
         # or `IBinaryPackagePublishingHistory` objects.
         self.assertRaisesWithContent(
             AssertionError,
             'pub_record is not one of SourcePackagePublishingHistory or '
             'BinaryPackagePublishingHistory.',
-            overrideFromAncestry, None)
+            override_from_ancestry, None)
 
     def testOverrideFromAncestryOnlyWorksForPendingRecords(self):
-        # overrideFromAncestry only accepts PENDING publishing records.
+        # override_from_ancestry only accepts PENDING publishing records.
         source = self.test_publisher.getPubSource()
 
         forbidden_status = [
@@ -396,7 +396,7 @@ class TestOverrideFromAncestry(TestCaseWithFactory):
             self.assertRaisesWithContent(
                 AssertionError,
                 'Cannot override published records.',
-                overrideFromAncestry, source)
+                override_from_ancestry, source)
 
     def makeSource(self):
         """Return a 'source' publication.
@@ -412,10 +412,10 @@ class TestOverrideFromAncestry(TestCaseWithFactory):
         return source
 
     def copyAndCheck(self, pub_record, series, component_name):
-        """Copy and check if overrideFromAncestry is working as expected.
+        """Copy and check if override_from_ancestry is working as expected.
 
         The copied publishing record is targeted to the same component
-        as its source, but overrideFromAncestry changes it to follow
+        as its source, but override_from_ancestry changes it to follow
         the ancestry or fallback to the SPR/BPR original component.
         """
         copied = pub_record.copyTo(
@@ -429,12 +429,12 @@ class TestOverrideFromAncestry(TestCaseWithFactory):
 
         for copy in copies:
             self.assertEquals(copy.component, pub_record.component)
-            overrideFromAncestry(copy)
+            override_from_ancestry(copy)
             self.layer.commit()
             self.assertEquals(copy.component.name, 'universe')
 
     def testFallBackToSourceComponent(self):
-        # overrideFromAncestry on the lack of ancestry, falls back to the
+        # override_from_ancestry on the lack of ancestry, falls back to the
         # component the source was originally uploaded to.
         source = self.makeSource()
 
@@ -445,7 +445,7 @@ class TestOverrideFromAncestry(TestCaseWithFactory):
         self.copyAndCheck(source, source.distroseries, 'universe')
 
     def testFallBackToBinaryComponent(self):
-        # overrideFromAncestry on the lack of ancestry, falls back to the
+        # override_from_ancestry on the lack of ancestry, falls back to the
         # component the binary was originally uploaded to.
         binary = self.makeSource().getPublishedBinaries()[0]
 
@@ -458,7 +458,7 @@ class TestOverrideFromAncestry(TestCaseWithFactory):
             binary, binary.distroarchseries.distroseries, 'universe')
 
     def testFollowAncestrySourceComponent(self):
-        # overrideFromAncestry finds and uses the component of the most
+        # override_from_ancestry finds and uses the component of the most
         # recent PUBLISHED publication of the same name in the same
         #location.
         source = self.makeSource()
@@ -479,7 +479,7 @@ class TestOverrideFromAncestry(TestCaseWithFactory):
         self.copyAndCheck(source, source.distroseries, 'universe')
 
     def testFollowAncestryBinaryComponent(self):
-        # overrideFromAncestry finds and uses the component of the most
+        # override_from_ancestry finds and uses the component of the most
         # recent published publication of the same name in the same
         # location.
         binary = self.makeSource().getPublishedBinaries()[0]

@@ -8,9 +8,9 @@ __all__ = [
     'UnembargoSecurityPackage',
     'check_copy',
     'do_copy',
-    'overrideFromAncestry',
-    'reUploadFile',
-    'updateFilesPrivacy',
+    'override_from_ancestry',
+    're_upload_file',
+    'update_files_privacy',
     ]
 
 import apt_pkg
@@ -37,7 +37,7 @@ from lp.soyuz.scripts.processaccepted import (
 
 # XXX cprov 2009-06-12: This function could be incorporated in ILFA,
 # I just don't see a clear benefit in doing that right now.
-def reUploadFile(libraryfile, restricted=False):
+def re_upload_file(libraryfile, restricted=False):
     """Re-upload a librarian file to the public server.
 
     :param libraryfile: a `LibraryFileAlias`.
@@ -70,7 +70,7 @@ def reUploadFile(libraryfile, restricted=False):
 
 # XXX cprov 2009-06-12: These two functions could be incorporated in
 # ISPPH and BPPH. I just don't see a clear benefit in doing that right now.
-def updateFilesPrivacy(pub_record):
+def update_files_privacy(pub_record):
     """Update file privacy according the publishing detination
 
     :param pub_record: One of a SourcePackagePublishingHistory or
@@ -119,7 +119,7 @@ def updateFilesPrivacy(pub_record):
             old_lfa.restricted == pub_record.archive.private or
             old_lfa.restricted == False):
             continue
-        new_lfa = reUploadFile(
+        new_lfa = re_upload_file(
             old_lfa, restricted=pub_record.archive.private)
         setattr(obj, attr_name, new_lfa)
         re_uploaded_files.append(new_lfa)
@@ -127,7 +127,7 @@ def updateFilesPrivacy(pub_record):
     return re_uploaded_files
 
 
-def overrideFromAncestry(pub_record):
+def override_from_ancestry(pub_record):
     """Set the right published component from publishing ancestry.
 
     Start with the publishing records and fall back to the original
@@ -720,8 +720,8 @@ class UnembargoSecurityPackage(PackageCopier):
         # Fix copies by overriding them according the current ancestry
         # and re-upload files with privacy mismatch.
         for pub_record in copies:
-            overrideFromAncestry(pub_record)
-            for new_file in updateFilesPrivacy(pub_record):
+            override_from_ancestry(pub_record)
+            for new_file in update_files_privacy(pub_record):
                 self.logger.info(
                     "Re-uploaded %s to librarian" % new_file.filename)
 
