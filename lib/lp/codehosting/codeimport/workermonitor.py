@@ -30,7 +30,7 @@ from canonical.twistedsupport.loggingsupport import (
     log_oops_from_failure)
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
-from lp.code.interfaces.codeimportresult import CodeImportResultStatus
+from lp.code.enums import CodeImportResultStatus
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
@@ -276,12 +276,13 @@ class CodeImportWorkerMonitor:
         """Launch the code-import-worker.py child process."""
         deferred = defer.Deferred()
         protocol = self._makeProcessProtocol(deferred)
-        command = [sys.executable, self.path_to_script]
+        interpreter = '%s/bin/py' % config.root
+        command = [interpreter, self.path_to_script]
         command.extend(source_details.asArguments())
         self._logger.info(
             "Launching worker child process %s.", command)
         reactor.spawnProcess(
-            protocol, sys.executable, command, env=os.environ, usePTY=True)
+            protocol, interpreter, command, env=os.environ, usePTY=True)
         return deferred
 
     def run(self):

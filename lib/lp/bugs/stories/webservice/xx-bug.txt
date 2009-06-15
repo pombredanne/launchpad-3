@@ -63,7 +63,7 @@ Bugs have relationships to other bugs, like "duplicate_of".
   >>> bug_six['duplicate_of_link']
   u'http://.../bugs/5'
 
-To create a new bug we use the createBug operation.  That operation
+To create a new bug we use the createBug operation. This operation
 takes a target parameter which must be a either a Product, a
 Distribution or a DistributionSourcePackage.
 
@@ -88,14 +88,43 @@ Distribution or a DistributionSourcePackage.
     Location: http://.../bugs/...
     ...
 
-    >>> print webservice.named_post(
+    >>> response = webservice.named_post(
     ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
     ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/evolution'))
+    >>> print response
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
     ...
+
+    >>> new_bug = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+
+Activity is recorded and notifications are sent for newly created
+bugs.
+
+    >>> from lp.bugs.model.bugnotification import BugNotification
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from zope.component import getUtility
+
+    >>> login(ANONYMOUS)
+    >>> bug = getUtility(IBugSet).get(new_bug['id'])
+
+    >>> for activity in bug.activity:
+    ...     print '%s, %s, %s' % (
+    ...         activity.whatchanged, activity.message,
+    ...         activity.person.name)
+    bug, added bug, salgado
+
+    >>> for notification in BugNotification.selectBy(bug=bug, orderBy='id'):
+    ...     print '%s, %s, %s' % (
+    ...         notification.message.owner.name, notification.is_comment,
+    ...         notification.message.text_contents)
+    salgado, True, Test bug
+
+    >>> logout()
 
 A ProductSeries can't be the target of a new bug.
 
@@ -577,9 +606,7 @@ he or she belongs.
 For this example, we need a member of the ubuntu-team group,
 any member will do.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu_team_member = getUtility(IPersonSet).getByName(
@@ -1060,7 +1087,8 @@ setting the tags_combinator parameter to 'All'.
 It is possible to search for bugs targeted to a milestone within a
 project group.
 
-    >>> from canonical.launchpad.interfaces import IMilestoneSet, IProductSet
+    >>> from lp.registry.interfaces.milestone import IMilestoneSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> login('foo.bar@canonical.com')
     >>> product_set = getUtility(IProductSet)
     >>> milestone_set = getUtility(IMilestoneSet)
@@ -1244,3 +1272,91 @@ Add a new task to the bug.
     start: 0
     total_size: 4
     ...
+
+
+== HWDB submissions ==
+
+We can create a link between a HWDB submission and a bug by calling
+bug.linkHWSubmission().
+
+    >>> sample_submission = webservice.get(
+    ...     '/+hwdb/+submission/sample-submission').jsonBody()
+    >>> print webservice.named_post(
+    ...     bug_one['self_link'], 'linkHWSubmission',
+    ...     submission=sample_submission['self_link'])
+    HTTP/1.1 200 Ok
+    ...
+
+Existing links are returned by bug.getHWSubmissions().
+
+    >>> linked_submissions = webservice.named_get(
+    ...     bug_one['self_link'], 'getHWSubmissions').jsonBody()
+    >>> for submission in linked_submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+Private submissions are returned only for their owners and for admins.
+
+    >>> login(ANONYMOUS)
+    >>> private_submission = factory.makeHWSubmission(
+    ...     emailaddress='no-priv@canonical.com', private=True,
+    ...     submission_key='private-submission')
+    >>> logout()
+
+    >>> private_submission = webservice.get(
+    ...     '/+hwdb/+submission/private-submission').jsonBody()
+    >>> print webservice.named_post(
+    ...     bug_one['self_link'], 'linkHWSubmission',
+    ...     submission=private_submission['self_link'])
+    HTTP/1.1 200 Ok
+    ...
+
+Note that our default webservice client runs for Guilherme Salgado, who
+is an admin, so this client returns the private submission.
+
+    >>> linked_submissions = webservice.named_get(
+    ...     bug_one['self_link'], 'getHWSubmissions').jsonBody()
+    >>> for submission in linked_submissions['entries']:
+    ...     print submission['submission_key']
+    private-submission
+    sample-submission
+
+    >>> login(ANONYMOUS)
+    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    >>> logout()
+    >>> no_priv_webservice = webservice_for_person(
+    ...     no_priv, permission=OAuthPermission.READ_PRIVATE)
+    >>> linked_submissions = no_priv_webservice.named_get(
+    ...     bug_one['self_link'], 'getHWSubmissions').jsonBody()
+    >>> for submission in linked_submissions['entries']:
+    ...     print submission['submission_key']
+    private-submission
+    sample-submission
+
+Other people do not see links to private submissions.
+
+    >>> login(ANONYMOUS)
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> sample_person_webservice = webservice_for_person(
+    ...     sample_person, permission=OAuthPermission.READ_PRIVATE)
+    >>> linked_submissions = sample_person_webservice.named_get(
+    ...     bug_one['self_link'], 'getHWSubmissions').jsonBody()
+    >>> for submission in linked_submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+We can delete links between a HWDB submission and a bug by calling
+bug.unlinkHWSubmission().
+
+    >>> print webservice.named_post(
+    ...     bug_one['self_link'], 'unlinkHWSubmission',
+    ...     submission=sample_submission['self_link'])
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> linked_submissions = webservice.named_get(
+    ...     bug_one['self_link'], 'getHWSubmissions').jsonBody()
+    >>> for submission in linked_submissions['entries']:
+    ...     print submission['submission_key']
+    private-submission

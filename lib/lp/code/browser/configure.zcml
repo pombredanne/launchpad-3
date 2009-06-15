@@ -447,7 +447,7 @@
     <browser:page
         name="+linkbug"
         for="lp.code.interfaces.branch.IBranch"
-        class="canonical.launchpad.browser.BranchLinkToBugView"
+        class="lp.bugs.browser.bugbranch.BranchLinkToBugView"
         facet="branches"
         permission="launchpad.AnyPerson"
         template="../templates/branch-link-to-bug.pt"/>
@@ -764,4 +764,11 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         layer="canonical.launchpad.layers.CodeLayer"
         name="+branches"/>
+
+    <browser:url
+        for="lp.code.interfaces.diff.IPreviewDiff"
+        path_expression="string:+preview-diff"
+        attribute_to_parent="branch_merge_proposal"
+        rootsite="code" />
+
 </configure>

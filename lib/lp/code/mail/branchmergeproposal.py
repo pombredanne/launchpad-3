@@ -9,9 +9,9 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.enums import CodeReviewNotificationLevel
 from canonical.launchpad.mail import get_msgid
-from canonical.launchpad.interfaces import (
-    CodeReviewNotificationLevel, IMergeProposalCreatedJobSource)
+from canonical.launchpad.interfaces import IMergeProposalCreatedJobSource
 from lp.registry.interfaces.person import IPerson
 from lp.code.mail.branch import BranchMailer, RecipientReason
 from canonical.launchpad.webapp import canonical_url
@@ -60,8 +60,9 @@ class BMPMailer(BranchMailer):
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None, message_id=None,
                  requested_reviews=None, comment=None, review_diff=None):
-        BranchMailer.__init__(self, subject, template_name, recipients,
-            from_address, delta, message_id=message_id)
+        BranchMailer.__init__(
+            self, subject, template_name, recipients, from_address, delta,
+            message_id=message_id, notification_type='code-review')
         self.merge_proposal = merge_proposal
         if requested_reviews is None:
             requested_reviews = []

@@ -244,8 +244,31 @@
            class="actions"
            tal:content="structure overview_menu/series_add/render"
         />
-        <a href="+series">Series history</a><br/>
-        <a href="+milestones">Milestone history</a>
+        <div id="timeline-loading" style="display: none">
+          <img src="/@@/spinner" /> Loading graph...
+        </div>
+        <iframe id="timeline-iframe"
+                style="display: none"
+                tal:attributes="src string:+timeline-graph"
+                width="100%" height="170px"></iframe>
+        <script>
+          YUI().use('node', function(Y) {
+              if (Y.UA.ie) {
+                  return;
+              }
+              var loading_el = Y.get('#timeline-loading');
+              loading_el.setStyle('display', 'block');
+              var iframe = Y.get('#timeline-iframe');
+              Y.on('load', function(e) {
+                  loading_el.setStyle('display', 'none');
+                  iframe.setStyle('display', 'block');
+              }, iframe);
+          });
+        </script>
+        <div style="float: right">
+          <a href="+series">&#x00BB; Series timeline</a>
+          <a href="+milestones">&#x00BB; Milestone history</a>
+        </div>
       </div>
 
       <tal:contrib replace="structure context/@@+portlet-top-contributors" />

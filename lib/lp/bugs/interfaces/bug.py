@@ -46,8 +46,9 @@ from canonical.launchpad.validators.bugattachment import (
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_factory_operation, export_operation_as, export_write_operation,
-    exported, mutator_for, operation_parameters, operation_returns_entry,
+    export_factory_operation, export_operation_as, export_read_operation,
+    export_write_operation, exported, mutator_for, operation_parameters,
+    operation_returns_collection_of, operation_returns_entry,
     rename_parameters_as, webservice_error)
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
@@ -59,7 +60,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, datecreated=None, security_related=False,
                  private=False, subscribers=(), binarypackagename=None,
-                 tags=None, subscribe_reporter=True):
+                 tags=None, subscribe_owner=True, filed_by=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -75,7 +76,8 @@ class CreateBugParams:
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
         self.tags = tags
-        self.subscribe_reporter = subscribe_reporter
+        self.subscribe_owner = subscribe_owner
+        self.filed_by = filed_by
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -695,6 +697,33 @@ class IBug(ICanBeMentored):
     def userCanView(user):
         """Return True if `user` can see this IBug, false otherwise."""
 
+    @operation_parameters(
+        submission=Reference(
+            Interface, title=_('A HWDB submission'), required=True))
+    @export_write_operation()
+    def linkHWSubmission(submission):
+        """Link a `HWSubmission` to this bug."""
+
+    @operation_parameters(
+        submission=Reference(
+            Interface, title=_('A HWDB submission'), required=True))
+    @export_write_operation()
+    def unlinkHWSubmission(submission):
+        """Remove a link to a `HWSubmission`."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getHWSubmissions(user=None):
+        """Return HWDB submissions linked to this bug.
+
+        :return: A sequence of HWDB submissions linked to this bug.
+        :param user: The user making the request.
+
+        Only those submissions are returned which the user can access.
+        Public submissions are always included; private submisisons only
+        if the user is the owner or an admin.
+        """
 
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
@@ -879,6 +908,17 @@ class IBugSet(Interface):
 
           * binarypackagename, if not None, will be added to the bug's
             description
+        """
+
+    def createBugWithoutTarget(bug_params):
+        """Create a bug without a bug target and return it.
+
+        This is a variant of `createBug()` that does not create the
+        first bugtask for the bug. The bug creation event is not sent,
+        and a `(bug, event)` tuple is returned instead. The caller is
+        therefore responsible for sending the event at a later point.
+
+        See `createBug()` for more information.
         """
 
     def getDistinctBugsForBugTasks(bug_tasks, user, limit=10):

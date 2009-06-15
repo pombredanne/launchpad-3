@@ -212,7 +212,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.browser.BugTaskListingItem"
+        for="lp.bugs.browser.bugtask.BugTaskListingItem"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskListingItemImageDisplayAPI"
         name="image"
@@ -415,7 +415,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.diff.IPreviewDiff"
+        for="lp.code.interfaces.diff.IPreviewDiff"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
         name="fmt"
@@ -445,6 +445,12 @@
         for="canonical.launchpad.interfaces.IProductRelease"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ProductReleaseFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.registry.interfaces.productrelease.IProductReleaseFile"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ProductReleaseFileFormatterAPI"
         name="fmt"
         />
     <adapter

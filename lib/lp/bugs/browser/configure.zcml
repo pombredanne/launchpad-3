@@ -8,25 +8,25 @@
         facet="bugs">
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="canonical.launchpad.browser.BugTargetView"
+            class="lp.bugs.browser.bugtask.BugTargetView"
             name="+portlet-latestbugs"
             permission="zope.Public"
             template="../templates/bugtarget-portlet-latestbugs.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="canonical.launchpad.browser.BugTargetView"
+            class="lp.bugs.browser.bugtask.BugTargetView"
             name="+portlet-recently-touched-bugs"
             permission="zope.Public"
             template="../templates/bugtarget-portlet-recently-touched-bugs.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="canonical.launchpad.browser.BugListingPortletView"
+            class="lp.bugs.browser.bugtask.BugListingPortletView"
             permission="zope.Public"
             name="+portlet-bugfilters"
             template="../templates/bugtarget-portlet-bugfilters.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="canonical.launchpad.browser.BugListingPortletView"
+            class="lp.bugs.browser.bugtask.BugListingPortletView"
             permission="zope.Public"
             name="+bugtarget-portlet-bugfilters-content"
             template="../templates/bugtarget-portlet-bugfilters-content.pt"/>
@@ -44,19 +44,19 @@
             permission="zope.Public"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="canonical.launchpad.browser.TextualBugTaskSearchListingView"
+            class="lp.bugs.browser.bugtask.TextualBugTaskSearchListingView"
             permission="zope.Public"
             name="+bugs-text"
             attribute="__call__"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="canonical.launchpad.browser.BugTaskSearchListingView"
+            class="lp.bugs.browser.bugtask.BugTaskSearchListingView"
             permission="zope.Public"
             name="+bugs"
             template="../templates/buglisting-default.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IBugTarget"
-            class="canonical.launchpad.browser.BugTaskExpirableListingView"
+            class="lp.bugs.browser.bugtask.BugTaskExpirableListingView"
             permission="zope.Public"
             name="+expirable-bugs"
             template="../templates/bug-listing-expirable.pt"/>
@@ -158,6 +158,10 @@
             class="lp.bugs.browser.bugcomment.BugCommentBoxExpandedReplyView"
             permission="launchpad.View"/>
     </facet>
+    <adapter
+         factory="lp.bugs.browser.bugcomment.BugCommentXHTMLRepresentation"
+         name="lazr.restful.EntryResource"
+        />
     <browser:url
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         path_expression="string:bugs"
@@ -190,14 +194,14 @@
             MaloneApplicationNavigation"/>
     <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="canonical.launchpad.browser.MaloneView"
+        class="lp.bugs.browser.bug.MaloneView"
         facet="bugs"
         permission="zope.Public"
         name="+index"
         template="../templates/malone-index.pt"/>
     <browser:pages
         for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="canonical.launchpad.browser.MaloneView"
+        class="lp.bugs.browser.bug.MaloneView"
         facet="bugs"
         permission="zope.Public">
         <browser:page
@@ -210,18 +214,18 @@
     <browser:page
         name="+filebug"
         for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="canonical.launchpad.browser.FrontPageFileBugGuidedView"
+        class="lp.bugs.browser.bugtarget.FrontPageFileBugGuidedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
         name="+filebug-advanced"
         for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="canonical.launchpad.browser.FrontPageFileBugAdvancedView"
+        class="lp.bugs.browser.bugtarget.FrontPageFileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="canonical.launchpad.browser.BugsBugTaskSearchListingView"
+        class="lp.bugs.browser.bugtask.BugsBugTaskSearchListingView"
         permission="zope.Public"
         name="+bugs"
         facet="bugs"
@@ -234,7 +238,7 @@
     <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         name="assigned"
-        class="canonical.launchpad.browser.DeprecatedAssignedBugsView"
+        class="lp.bugs.browser.bug.DeprecatedAssignedBugsView"
         attribute="redirect_to_assignedbugs"
         permission="launchpad.AnyPerson"/>
     <facet
@@ -282,7 +286,7 @@
         </browser:pages>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugView"
+            class="lp.bugs.browser.bug.BugView"
             permission="launchpad.View"
             name="+activity"
             template="../templates/bug-activity.pt"/>
@@ -312,7 +316,7 @@
         <browser:page
             name="+duplicate"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugMarkAsDuplicateView"
+            class="lp.bugs.browser.bug.BugMarkAsDuplicateView"
             permission="launchpad.AnyPerson"
             template="../templates/bug-mark-as-duplicate.pt"/>
         <browser:page
@@ -324,7 +328,7 @@
         <browser:page
             name="+affectsmetoo"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugMarkAsAffectingUserView"
+            class="lp.bugs.browser.bug.BugMarkAsAffectingUserView"
             permission="launchpad.AnyPerson"
             template="../templates/bug-mark-as-affecting-user.pt"/>
         <browser:defaultView
@@ -340,25 +344,25 @@
         <browser:page
             name="+addcomment"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugView"
+            class="lp.bugs.browser.bug.BugView"
             permission="launchpad.Edit"
             template="../templates/bug-comment-add.pt"/>
         <browser:page
             name="+addcomment-form"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugMessageAddFormView"
+            class="lp.bugs.browser.bugmessage.BugMessageAddFormView"
             permission="launchpad.Edit"
             template="../templates/bug-comment-add-form.pt"/>
         <browser:page
             name="+nominate"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugNominationView"
+            class="lp.bugs.browser.bugnomination.BugNominationView"
             permission="launchpad.Edit"
             template="../templates/bug-nominate-for-series.pt"/>
         <browser:page
             name="+addbranch"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugBranchAddView"
+            class="lp.bugs.browser.bugbranch.BugBranchAddView"
             permission="launchpad.AnyPerson"
             template="../templates/bug-branch-add.pt"/>
         <browser:page
@@ -373,18 +377,18 @@
         <browser:page
             name="+choose-affected-product"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugAlsoAffectsProductMetaView"
+            class="lp.bugs.browser.bugalsoaffects.BugAlsoAffectsProductMetaView"
             permission="launchpad.AnyPerson"/>
         <browser:page
             name="+affects-new-product"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugAlsoAffectsProductWithProductCreationView"
+            class="lp.bugs.browser.bugalsoaffects.BugAlsoAffectsProductWithProductCreationView"
             permission="launchpad.AnyPerson"
             template="../templates/bugtask-affects-new-product.pt"/>
         <browser:page
             name="+distrotask"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugAlsoAffectsDistroMetaView"
+            class="lp.bugs.browser.bugalsoaffects.BugAlsoAffectsDistroMetaView"
             permission="launchpad.AnyPerson"/>
         <browser:page
             name="+editstatus-page"
@@ -481,21 +485,21 @@
         <browser:page
             name="+linkcve"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.CveLinkView"
+            class="lp.bugs.browser.cve.CveLinkView"
             permission="launchpad.AnyPerson"
             template="../templates/bug-cve.pt">
                 </browser:page>
         <browser:page
             name="+unlinkcve"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.CveUnlinkView"
+            class="lp.bugs.browser.cve.CveUnlinkView"
             permission="launchpad.AnyPerson"
             template="../templates/bug-removecve.pt">
                 </browser:page>
         <browser:page
             name="+addsubscriber"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="canonical.launchpad.browser.BugSubscriptionAddView"
+            class="lp.bugs.browser.bugsubscription.BugSubscriptionAddView"
             permission="launchpad.AnyPerson"
             template="../templates/bug-addsubscriber.pt"/>
     </facet>
@@ -662,19 +666,19 @@
         <browser:page
             name="+index"
             for="lp.bugs.interfaces.cve.ICve"
-            class="canonical.launchpad.browser.BugLinksListingView"
+            class="lp.bugs.browser.buglinktarget.BugLinksListingView"
             template="../templates/cve-index.pt"
             permission="zope.Public"/>
         <browser:page
             name="+linkbug"
             for="lp.bugs.interfaces.cve.ICve"
-            class="canonical.launchpad.browser.BugLinkView"
+            class="lp.bugs.browser.buglinktarget.BugLinkView"
             permission="launchpad.AnyPerson"
             template="../templates/cve-linkbug.pt"/>
         <browser:page
             name="+unlinkbug"
             for="lp.bugs.interfaces.cve.ICve"
-            class="canonical.launchpad.browser.BugsUnlinkView"
+            class="lp.bugs.browser.buglinktarget.BugsUnlinkView"
             permission="launchpad.AnyPerson"
             template="../templates/cve-unlinkbugs.pt"/>
         <browser:defaultView
@@ -709,7 +713,7 @@
         <browser:page
             name="+portlet-bugs"
             for="lp.bugs.interfaces.cve.ICve"
-            class="canonical.launchpad.browser.BugLinksListingView"
+            class="lp.bugs.browser.buglinktarget.BugLinksListingView"
             permission="zope.Public"
             template="../templates/cve-portlet-bugs2.pt"/>
     </facet>
@@ -722,7 +726,7 @@
         facet="overview">
         <browser:pages
             for="canonical.launchpad.interfaces.IHasMentoringOffers"
-            class="canonical.launchpad.browser.HasMentoringOffersView"
+            class="lp.registry.browser.mentoringoffer.HasMentoringOffersView"
             permission="zope.Public">
             <browser:page
                 name="+mentoring"
@@ -731,13 +735,13 @@
         <browser:page
             name="+retractmentoring"
             for="canonical.launchpad.interfaces.ICanBeMentored"
-            class="canonical.launchpad.browser.MentoringOfferRetractView"
+            class="lp.registry.browser.mentoringoffer.MentoringOfferRetractView"
             permission="launchpad.AnyPerson"
             template="../templates/canbementored-retractmentoring.pt"/>
         <browser:page
             name="+mentor"
             for="canonical.launchpad.interfaces.ICanBeMentored"
-            class="canonical.launchpad.browser.MentoringOfferAddView"
+            class="lp.registry.browser.mentoringoffer.MentoringOfferAddView"
             permission="launchpad.AnyPerson"
             template="../templates/canbementored-mentoringoffer.pt">
         </browser:page>
@@ -755,7 +759,7 @@
             name="+mentoring"/>
         <browser:pages
             for="canonical.launchpad.interfaces.IMentoringOfferSet"
-            class="canonical.launchpad.browser.MentoringOfferSetView"
+            class="lp.registry.browser.mentoringoffer.MentoringOfferSetView"
             permission="launchpad.Admin">
             
             <!-- this is repeated here from IHasMentoringOffers because it has a
@@ -798,7 +802,7 @@
             attribute="redirectToNewBugPage"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
-            class="canonical.launchpad.browser.BugTasksAndNominationsView"
+            class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
             permission="launchpad.View"
             name="+bugtasks-and-nominations-table"
             template="../templates/bugtasks-and-nominations-table.pt"/>
