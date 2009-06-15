@@ -4,11 +4,13 @@
 __metaclass__ = type
 
 __all__ = [
-    'CannotCopy',
     'PackageCopier',
     'UnembargoSecurityPackage',
     'check_copy',
     'do_copy',
+    'overrideFromAncestry',
+    'reUploadFile',
+    'updateFilesPrivacy',
     ]
 
 import apt_pkg
@@ -33,15 +35,18 @@ from lp.soyuz.scripts.ftpmasterbase import (
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_sourcepublication)
 
+# XXX cprov 2009-06-12: This function could be incorporated in ILFA,
+# I just don't see a clear benefit in doing that right now.
+def reUploadFile(libraryfile, restricted=False):
+    """Re-upload a librarian file to the public server.
 
-def reUploadFile(libfile, to_restricted, logger):
-    """Re-upload a librarian file between librarians.
+    :param libraryfile: a `LibraryFileAlias`.
+    :param restricted: whether or not the file is restricted.
 
-    :param libfile: A LibraryFileAlias for the file.
-    :param to_restricted: True if copying to the restricted librarian.
     :return: A new LibraryFileAlias that is not restricted.
     """
-    libfile.open()
+    # Open the the libraryfile for reading.
+    libraryfile.open()
 
     # Make a temporary file to hold the download.  It's annoying
     # having to download to a temp file but there are no guarantees
@@ -50,127 +55,121 @@ def reUploadFile(libfile, to_restricted, logger):
     temp_file = open(filepath, "w")
 
     # Read the old library file into the temp file.
-    copy_and_close(libfile, temp_file)
+    copy_and_close(libraryfile, temp_file)
 
     # Upload the file to the unrestricted librarian and make
     # sure the publishing record points to it.
-    librarian = getUtility(ILibraryFileAliasSet)
-    new_lfa = librarian.create(
-        libfile.filename, libfile.content.filesize,
-        open(filepath, "rb"), libfile.mimetype,
-        restricted=to_restricted)
-
-    logger.info(
-        "Re-uploaded %s to the unrestricted librarian with ID %d" % (
-            libfile.filename, new_lfa.id))
+    new_lfa = getUtility(ILibraryFileAliasSet).create(
+        libraryfile.filename, libraryfile.content.filesize,
+        open(filepath, "rb"), libraryfile.mimetype, restricted=restricted)
 
     # Junk the temporary file.
     os.remove(filepath)
 
     return new_lfa
 
-
-def copyPublishedFiles(pub_record, to_restricted, logger):
-    """Move files for a publishing record between librarians.
+# XXX cprov 2009-06-12: These two functions could be incorporated in
+# ISPPH and BPPH. I just don't see a clear benefit in doing that right now.
+def updateFilesPrivacy(pub_record):
+    """Update file privacy according the publishing detination
 
     :param pub_record: One of a SourcePackagePublishingHistory or
         BinaryPackagePublishingHistory record.
-    :param to_restricted: True or False depending on whether the target
-        librarian to be used is the restricted one or not.
-    """
-    if ISourcePackagePublishingHistory.providedBy(pub_record):
-        files = pub_record.sourcepackagerelease.files
-        sourcepackagerelease = pub_record.sourcepackagerelease
 
+    :return: a list of re-uploaded `LibraryFileAlias` objects.
+    """
+    package_files = []
+    if ISourcePackagePublishingHistory.providedBy(pub_record):
+        # Re-upload the package files files if necessary.
+        sourcepackagerelease = pub_record.sourcepackagerelease
+        package_files.extend(
+            [(source_file, 'libraryfile')
+             for source_file in sourcepackagerelease.files])
+        # Re-upload the package diff files if necessary.
+        package_files.extend(
+            [(diff, 'diff_content')
+             for diff in sourcepackagerelease.package_diffs])
         # Re-upload the source upload changesfile if necessary.
         package_upload = sourcepackagerelease.package_upload
-        changesfile = package_upload.changesfile
-        if changesfile is not None and changesfile.restricted:
-            new_lfa = reUploadFile(changesfile, False, logger)
-            package_upload.changesfile = new_lfa
-
-        # Re-upload the package diff files if necessary.
-        diffs = sourcepackagerelease.package_diffs
-        for diff in diffs:
-            if diff.diff_content.restricted:
-                new_lfa = reUploadFile(
-                    diff.diff_content, False, logger)
-                diff.diff_content = new_lfa
+        package_files.append((package_upload, 'changesfile'))
     elif IBinaryPackagePublishingHistory.providedBy(pub_record):
-        files = pub_record.binarypackagerelease.files
-        build = pub_record.binarypackagerelease.build
-
-        # Re-upload the buildlog file as necessary.
+        # Re-upload the binary files if necessary.
+        binarypackagerelease = pub_record.binarypackagerelease
+        package_files.extend(
+            [(binary_file, 'libraryfile')
+             for binary_file in binarypackagerelease.files])
+        # Re-upload the upload changesfile file as necessary.
+        build = binarypackagerelease.build
         package_upload = build.package_upload
-        changesfile = build.package_upload.changesfile
-        if changesfile is not None and changesfile.restricted:
-            new_lfa = reUploadFile(changesfile, False, logger)
-            package_upload.changesfile = new_lfa
-
+        package_files.append((package_upload, 'changesfile'))
         # Re-upload the buildlog file as necessary.
-        buildlog = build.buildlog
-        if buildlog is not None and buildlog.restricted:
-            new_lfa = reUploadFile(buildlog, False, logger)
-            build.buildlog = new_lfa
+        package_files.append((build, 'buildlog'))
     else:
         raise AssertionError(
             "pub_record is not one of SourcePackagePublishingHistory "
-            "or BinaryPackagePublishingHistory")
+            "or BinaryPackagePublishingHistory.")
 
-    for package_file in files:
-        libfile = package_file.libraryfile
-        # Check if the files are already in the right librarian
-        # instance.
-        if libfile.restricted == to_restricted:
+    re_uploaded_files = []
+    for obj, attr_name in package_files:
+        old_lfa = getattr(obj, attr_name, None)
+        # Only reupload restricted files published in public archives,
+        # not the opposite. We don't have a use-case for privatizing
+        # files yet.
+        if (old_lfa is None or
+            old_lfa.restricted == pub_record.archive.private or
+            old_lfa.restricted == False):
             continue
-        # Move the file to the appropriate librarian instance.
-        new_lfa = reUploadFile(libfile, to_restricted, logger)
-        package_file.libraryfile = new_lfa
+        new_lfa = reUploadFile(
+            old_lfa, restricted=pub_record.archive.private)
+        setattr(obj, attr_name, new_lfa)
+        re_uploaded_files.append(new_lfa)
+
+    return re_uploaded_files
 
 
-def overrideFromAncestry(pub_records):
+def overrideFromAncestry(pub_record):
     """Set the right published component from publishing ancestry.
 
     Start with the publishing records and fall back to the original
     uploaded package if necessary.
     """
-    for pub_record in pub_records:
-        archive = pub_record.archive
-        if ISourcePackagePublishingHistory.providedBy(pub_record):
-            is_source = True
-            source_package = pub_record.sourcepackagerelease
-            prev_published = archive.getPublishedSources(
-                name=source_package.sourcepackagename.name,
-                status=PackagePublishingStatus.PUBLISHED,
-                distroseries=pub_record.distroseries,
-                exact_match=True)
-        elif IBinaryPackagePublishingHistory.providedBy(pub_record):
-            is_source = False
-            binary_package = pub_record.binarypackagerelease
-            prev_published = archive.getAllPublishedBinaries(
-                name=binary_package.binarypackagename.name,
-                status=PackagePublishingStatus.PUBLISHED,
-                distroarchseries=pub_record.distroarchseries,
-                exact_match=True)
-        else:
-            raise AssertionError(
-                "pub_records contains something that's not one of "
-                "SourcePackagePublishingHistory or "
-                "BinaryPackagePublishingHistory")
+    if ISourcePackagePublishingHistory.providedBy(pub_record):
+        is_source = True
+        source_package = pub_record.sourcepackagerelease
+        prev_published = pub_record.archive.getPublishedSources(
+            name=source_package.sourcepackagename.name,
+            status=PackagePublishingStatus.PUBLISHED,
+            distroseries=pub_record.distroseries,
+            exact_match=True)
+    elif IBinaryPackagePublishingHistory.providedBy(pub_record):
+        is_source = False
+        binary_package = pub_record.binarypackagerelease
+        prev_published = pub_record.archive.getAllPublishedBinaries(
+            name=binary_package.binarypackagename.name,
+            status=PackagePublishingStatus.PUBLISHED,
+            distroarchseries=pub_record.distroarchseries,
+            exact_match=True)
+    else:
+        raise AssertionError(
+            "pub_record is not one of SourcePackagePublishingHistory or "
+            "BinaryPackagePublishingHistory.")
 
-        if prev_published.count() > 0:
-            # Use the first record (the most recently published).
-            component = prev_published[0].component
+    if prev_published.count() > 0:
+        # Use the first record (the most recently published).
+        component = prev_published[0].component
+    else:
+        # It's not been published yet, check the original package.
+        if is_source:
+            component = pub_record.sourcepackagerelease.component
         else:
-            # It's not been published yet, check the original package.
-            if is_source:
-                component = pub_record.sourcepackagerelease.component
-            else:
-                component = pub_record.binarypackagerelease.component
+            component = pub_record.binarypackagerelease.component
 
-        # We don't want to use changeOverride here because it
-        # creates a new publishing record.
-        pub_record.secure_record.component = component
+    # We don't want to use changeOverride here because it creates a
+    # new publishing record. This code can be only executed for pending
+    # publishing records.
+    assert pub_record.status == PackagePublishingStatus.PENDING, (
+        "Cannot override published records.")
+    pub_record.secure_record.component = component
 
 
 def is_completely_built(source):
@@ -718,12 +717,13 @@ class UnembargoSecurityPackage(PackageCopier):
         # Invoke the package copy operation.
         copies = PackageCopier.mainTask(self)
 
-        # Do an ancestry check to override the component.
-        overrideFromAncestry(copies)
-
-        # Now re-upload the files associated with the package.
+        # Fix copies by overriding them according the current ancestry
+        # and re-upload files with privacy mismatch.
         for pub_record in copies:
-            copyPublishedFiles(pub_record, False, self.logger)
+            overrideFromAncestry(pub_record)
+            for new_file in updateFilesPrivacy(pub_record):
+                self.logger.info(
+                    "Re-uploaded %s to librarian" % new_file.filename)
 
         # Return this for the benefit of the test suite.
         return copies
