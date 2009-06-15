@@ -653,24 +653,24 @@ def flush_database_caches():
 
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
-    def wrapped(*args, **kwargs):
+    def block_implicit_flushes_decorator(*args, **kwargs):
         store = _get_sqlobject_store()
         store.block_implicit_flushes()
         try:
             return func(*args, **kwargs)
         finally:
             store.unblock_implicit_flushes()
-    return mergeFunctionMetadata(func, wrapped)
+    return mergeFunctionMetadata(func, block_implicit_flushes_decorator)
 
 
 def reset_store(func):
     """Function decorator that resets the main store."""
-    def wrapped(*args, **kwargs):
+    def reset_store_decorator(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         finally:
             _get_sqlobject_store().reset()
-    return mergeFunctionMetadata(func, wrapped)
+    return mergeFunctionMetadata(func, reset_store_decorator)
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
