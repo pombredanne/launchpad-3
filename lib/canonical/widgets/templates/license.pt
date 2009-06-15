@@ -27,17 +27,13 @@ YUI().use('node', 'lazr.effects', function(Y) {
             var arrow = Y.get('#' + cfg.which + '-expand-arrow');
             var table = Y.get('#' + cfg.which);
             if (arrow.getAttribute('src') == '/@@/treeCollapsed/') {
-                Y.log('expand: ' + cfg.which);
                 // Expand the table.
                 arrow.setAttribute('src', '/@@/treeExpanded/');
                 Y.lazr.effects.slide_out(table).run();
             }
             else {
-                Y.log('collapse: ' + cfg.which);
                 // Collapse the table.
                 arrow.setAttribute('src', '/@@/treeCollapsed/');
-                //var reset_height = table.getComputedStyle('height');
-                //table.setStyle('height', reset_height);
                 Y.lazr.effects.slide_in(table).run();
             }
         };
@@ -58,6 +54,8 @@ YUI().use('node', 'lazr.effects', function(Y) {
                     Y.log('sucking it up: ' + cfg.which);
                     toggle(cfg);
                 }
+                // Work around a bug in lazr.effects.slide_in()
+                Y.get('#' + cfg.which).setStyle('display', 'block');
             }
         };
         set_toggle({which: 'recommended'});
