@@ -18,6 +18,7 @@ from lp.testing import TestCase
 
 
 class NoopTaskConsumer:
+    """Task consumer that does nothing."""
 
     implements(ITaskConsumer)
 
@@ -29,6 +30,7 @@ class NoopTaskConsumer:
 
 
 class AppendingTaskConsumer:
+    """Task consumer that logs calls to `taskStarted`."""
 
     implements(ITaskConsumer)
 
@@ -36,7 +38,7 @@ class AppendingTaskConsumer:
         self.data_sink = data_sink
 
     def taskStarted(self, task):
-        """Do nothing."""
+        """Log that 'task' has started."""
         self.data_sink.append(task)
 
     def taskProductionFailed(self, reason):
@@ -44,6 +46,7 @@ class AppendingTaskConsumer:
 
 
 class LoggingSource:
+    """Task source that logs calls to `start` and `stop'`"""
 
     implements(ITaskSource)
 
@@ -66,10 +69,25 @@ class TestPollingTaskSource(TestCase):
         self._default_task_consumer = NoopTaskConsumer()
 
     def _default_task_producer(self):
+        """Producer that records the number of times it has been called.
+
+        :return: None, indicating that there are no tasks to do right now.
+        """
         self._num_task_producer_calls += 1
         return None
 
     def makeTaskSource(self, task_producer=None, interval=None, clock=None):
+        """Make a task source for testing.
+
+        :param task_producer: The producer of tasks. Defaults to a producer
+            that returns None and increments a count of the number of times
+            it has been called.
+        :param interval: The interval between polls. Defaults to an arbitrary
+            integer.
+        :param clock: The clock to use for measuring the interval. Defaults to
+            an instance of `Clock`.
+        :return: A `PollingTaskSource`.
+        """
         if task_producer is None:
             task_producer = self._default_task_producer
         if clock is None:
@@ -213,6 +231,13 @@ class TestParallelLimitedTaskConsumer(TestCase):
     """Tests for `ParallelLimitedTaskConsumer`."""
 
     def makeConsumer(self, worker_limit=None):
+        """Make a consumer for testing.
+
+        :param worker_limit: The maximum number of concurrent workers. If
+            None, then default to an unreasonably large number so that it
+            won't interfere with tests.
+        :return: A `ParallelLimitedTaskConsumer`.
+        """
         if worker_limit is None:
             # Unreasonably large number.
             worker_limit = 9999999

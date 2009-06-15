@@ -7,6 +7,7 @@ __all__ = [
     'AlreadyRunningError',
     'ITaskConsumer',
     'ITaskSource',
+    'NotRunningError',
     'ParallelLimitedTaskConsumer',
     'PollingTaskSource',
     ]
@@ -39,7 +40,9 @@ class ITaskSource(Interface):
 
 
 class ITaskConsumer(Interface):
-    """A consumer of tasks. Pass to an `ITaskSource` provider.
+    """A consumer of tasks.
+
+    Pass this to the 'start' method of an `ITaskSource` provider.
 
     Note that implementations of `ITaskConsumer` need to provide their own way
     of getting references to ITaskSources.
@@ -62,28 +65,11 @@ class ITaskConsumer(Interface):
         """
 
 
-class AlreadyRunningError(Exception):
-    """Raised when we try to start a consumer that's already running."""
-
-    def __init__(self, consumer, source):
-        Exception.__init__(
-            self, "%r is already consuming tasks from %r."
-            % (consumer, source))
-
-
-class NotRunningError(Exception):
-    """Raised when we try to run tasks on a consumer before it has started."""
-
-    def __init__(self, consumer):
-        Exception.__init__(
-            self, "%r has not started, cannot run tasks." % (consumer,))
-
-
 class PollingTaskSource:
     """A task source that polls to generate tasks.
 
-    Useful for systems where we need to poll a central server in order to find
-    new work to do.
+    This is useful for systems where we need to poll a central server in order
+    to find new work to do.
     """
 
     implements(ITaskSource)
@@ -91,10 +77,11 @@ class PollingTaskSource:
     def __init__(self, interval, task_producer, clock=None):
         """Construct a `PollingTaskSource`.
 
-        Polls 'task_producer' every 'interval' seconds. 'task_producer' returns
-        either None if there's no work to do right now, or some representation
-        of the task which is passed to the 'task_consumer' callable given to
-        `start`.
+        Polls 'task_producer' every 'interval' seconds. 'task_producer'
+        returns either None if there's no work to do right now, or some
+        representation of the task which is passed to the 'task_consumer'
+        callable given to `start`. 'task_producer' can also return a
+        `Deferred`.
 
         :param interval: The length of time between polls in seconds.
         :param task_producer: The polling mechanism. This is a nullary
@@ -135,6 +122,23 @@ class PollingTaskSource:
             self._looping_call = None
 
 
+class AlreadyRunningError(Exception):
+    """Raised when we try to start a consumer that's already running."""
+
+    def __init__(self, consumer, source):
+        Exception.__init__(
+            self, "%r is already consuming tasks from %r."
+            % (consumer, source))
+
+
+class NotRunningError(Exception):
+    """Raised when we try to run tasks on a consumer before it has started."""
+
+    def __init__(self, consumer):
+        Exception.__init__(
+            self, "%r has not started, cannot run tasks." % (consumer,))
+
+
 class ParallelLimitedTaskConsumer:
     """A consumer that runs tasks with limited parallelism.
 
@@ -142,7 +146,7 @@ class ParallelLimitedTaskConsumer:
     that might return `Deferred`s.
     """
 
-    implements(ITaskSource)
+    implements(ITaskConsumer)
 
     def __init__(self, worker_limit):
         self._task_source = None
@@ -151,9 +155,11 @@ class ParallelLimitedTaskConsumer:
         self._terminationDeferred = None
 
     def consume(self, task_source):
-        """Start consuing tasks from 'task_source'.
+        """Start consuming tasks from 'task_source'.
 
         :param task_source: An `ITaskSource` provider.
+        :raise AlreadyRunningError: If 'consume' has already been called on
+            this consumer.
         :return: A `Deferred` that fires when the task source is exhausted
             and we are not running any tasks.
         """
@@ -165,7 +171,13 @@ class ParallelLimitedTaskConsumer:
         return self._terminationDeferred
 
     def taskStarted(self, task):
-        """See `ITaskSource`."""
+        """See `ITaskConsumer`.
+
+        Stops the task source when we reach the maximum number of concurrent
+        tasks.
+
+        :raise NotRunningError: if 'consume' has not yet been called.
+        """
         if self._task_source is None:
             raise NotRunningError(self)
         self._worker_count += 1
@@ -178,7 +190,19 @@ class ParallelLimitedTaskConsumer:
         d.addCallback(self._taskEnded)
 
     def taskProductionFailed(self, reason):
-        """See `ITaskSource`."""
+        """See `ITaskConsumer`.
+
+        Called by the task source when a failure occurs while producing a
+        task. When this happens, we stop the task source. Any currently
+        running tasks will finish, and each time this happens, we'll ask the
+        task source to start again.
+
+        If the source keeps failing, we'll eventually have no tasks running,
+        at which point we stop the source and fire the termination deferred,
+        signalling the end of this run.
+
+        :raise NotRunningError: if 'consume' has not yet been called.
+        """
         if self._task_source is None:
             raise NotRunningError(self)
         self._task_source.stop()
@@ -186,6 +210,15 @@ class ParallelLimitedTaskConsumer:
             self._terminationDeferred.callback(None)
 
     def _taskEnded(self, ignored):
+        """Handle a task reaching completion.
+
+        Reduces the number of concurrent workers. If there are no running
+        workers then we fire the termination deferred, signalling the end of
+        the run.
+
+        If there are available workers, we ask the task source to start
+        producing jobs.
+        """
         self._worker_count -= 1
         if self._worker_count == 0:
             self._task_source.stop()
