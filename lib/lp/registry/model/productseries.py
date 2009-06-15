@@ -483,17 +483,17 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 Language.visible==True,
                 POFile.potemplate==POTemplate.id,
                 POTemplate.productseries==self,
-                POTemplate.iscurrent==True)
+                POTemplate.iscurrent==True,
+                Language.id!=english.id)
 
             for language, pofile in query.order_by(['Language.englishname']):
-                if language != english:
-                    psl = ProductSeriesLanguage(self, language, pofile=pofile)
-                    psl.setCounts(pofile.potemplate.messageCount(),
-                                  pofile.currentCount(),
-                                  pofile.updatesCount(),
-                                  pofile.rosettaCount(),
-                                  pofile.unreviewedCount())
-                    results.append(psl)
+                psl = ProductSeriesLanguage(self, language, pofile=pofile)
+                psl.setCounts(pofile.potemplate.messageCount(),
+                              pofile.currentCount(),
+                              pofile.updatesCount(),
+                              pofile.rosettaCount(),
+                              pofile.unreviewedCount())
+                results.append(psl)
         else:
             # If there is more than one template, do a single
             # query to count total messages in all templates.
@@ -516,14 +516,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 Language.visible==True,
                 POFile.potemplate==POTemplate.id,
                 POTemplate.productseries==self,
-                POTemplate.iscurrent==True).group_by(Language)
+                POTemplate.iscurrent==True,
+                Language.id!=english.id).group_by(Language)
 
             for (language, imported, changed, new, unreviewed) in (
                 query.order_by(['Language.englishname'])):
-                if language != english:
-                    psl = ProductSeriesLanguage(self, language)
-                    psl.setCounts(total, imported, changed, new, unreviewed)
-                    results.append(psl)
+                psl = ProductSeriesLanguage(self, language)
+                psl.setCounts(total, imported, changed, new, unreviewed)
+                results.append(psl)
 
         return results
 
