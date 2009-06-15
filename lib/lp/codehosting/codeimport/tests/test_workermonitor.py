@@ -23,7 +23,17 @@ from twisted.trial.unittest import TestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
+from canonical.testing.layers import (
+    TwistedLayer, TwistedLaunchpadZopelessLayer)
+from canonical.twistedsupport.tests.test_processmonitor import (
+    makeFailure, ProcessTestsMixin)
 from lp.code.enums import CodeImportResultStatus, CodeImportReviewStatus
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.codeimportjob import (
+    ICodeImportJobSet, ICodeImportJobWorkflow)
+from lp.code.model.codeimport import CodeImport
+from lp.code.model.codeimportjob import CodeImportJob
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     CodeImportSourceDetails, get_default_bazaar_branch_store)
@@ -34,18 +44,8 @@ from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, SubversionServer, _make_silent_logger)
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
-from canonical.config import config
-from lp.code.model.codeimport import CodeImport
-from lp.code.model.codeimportjob import CodeImportJob
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.interfaces import (
-    ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportSet)
+from lp.testing import login, logout
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing.layers import (
-    TwistedLayer, TwistedLaunchpadZopelessLayer)
-from canonical.twistedsupport.tests.test_processmonitor import (
-    makeFailure, ProcessTestsMixin)
 
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
