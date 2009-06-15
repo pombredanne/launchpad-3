@@ -4,11 +4,12 @@
 
 import os
 import unittest
+
 import transaction
 
+from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import ZopelessAppServerLayer
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.scripts.tests import run_script
 
 
 class TestReclaimBranchSpaceScript(TestCaseWithFactory):
@@ -25,11 +26,11 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/reclaimbranchspace.py', [])
-        self.assertEqual(0, retcode)
         self.assertEqual('', stdout)
         self.assertEqual(
             'INFO    creating lockfile\n'
             'INFO    Reclaimed space for 1 branches.\n', stderr)
+        self.assertEqual(0, retcode)
         self.assertFalse(
             os.path.exists(mirrored_path))
 

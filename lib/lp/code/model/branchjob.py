@@ -93,7 +93,8 @@ class BranchJobType(DBEnumeratedType):
     RECLAIM_BRANCH_SPACE = DBItem(5, """
         Reclaim Branch Space
 
-        XXX.
+        This job removes a branch that have been deleted from the database
+        from disk.
         """)
 
 class BranchJob(SQLBase):
@@ -706,7 +707,7 @@ class RosettaUploadJob(BranchJobDerived):
 
 
 class ReclaimBranchSpaceJob(BranchJobDerived):
-    """XXX."""
+    """Reclaim the disk space used by a branch that's deleted from the DB."""
 
     implements(IReclaimBranchSpaceJob)
 
@@ -718,6 +719,8 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
     def create(cls, branch_id):
         """See `IBranchDiffJobSource`."""
         metadata = {'branch_id': branch_id}
+        # The branch_job has a branch of None, as there is no branch left in
+        # the database to refer to.
         branch_job = BranchJob(None, cls.class_job_type, metadata)
         return cls(branch_job)
 

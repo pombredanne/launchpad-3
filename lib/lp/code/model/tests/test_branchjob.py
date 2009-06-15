@@ -894,7 +894,8 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def cleanHostedAndMirroredAreas(self):
-        """XXX."""
+        """Ensure that hosted and mirrored branch areas are present and empty.
+        """
         hosted = config.codehosting.hosted_branches_root
         shutil.rmtree(hosted, ignore_errors=True)
         os.mkdir(hosted)
@@ -912,7 +913,7 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         # ReclaimBranchSpaceJob implements IReclaimBranchSpaceJob.
         job = getUtility(IReclaimBranchSpaceJobSource).create(
             self.factory.getUniqueInteger())
-        verifyObject(IReclaimBranchSpaceJob, job)
+        self.assertCorrectlyProvides(job, IReclaimBranchSpaceJob)
 
     def test_stores_id(self):
         # An instance of ReclaimBranchSpaceJob stores the ID of the branch
@@ -922,6 +923,10 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         self.assertEqual(branch_id, job.branch_id)
 
     def runReadyJobs(self):
+        """Run all ready `ReclaimBranchSpaceJob`s with the appropriate dbuser.
+        """
+        # switchDbUser aborts the current transaction, so we need to commit to
+        # make sure newly added jobs are still there after we call it.
         self.layer.txn.commit()
         self.layer.switchDbUser(config.reclaimbranchspace.dbuser)
         for job in ReclaimBranchSpaceJob.iterReady():
