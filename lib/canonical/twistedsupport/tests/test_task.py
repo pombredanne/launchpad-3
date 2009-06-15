@@ -158,31 +158,24 @@ class TestPollingTaskSource(TestCase):
 
     def test_starting_again_changes_consumer(self):
         # Starting a task source again changes the task consumer.
-        tasks = ['foo', 'bar']
-        consumer1 = []
-        consumer2 = []
+        tasks = [
+            self.factory.getUniqueString(), self.factory.getUniqueString()]
+        consumer1_tasks = []
+        consumer2_tasks = []
         task_source = self.makeTaskSource(task_producer=iter(tasks).next)
-        task_source.start(AppendingTaskConsumer(consumer1))
-        task_source.start(AppendingTaskConsumer(consumer2))
-        self.assertEqual(([tasks[0]], [tasks[1]]), (consumer1, consumer2))
-
-    def test_task_consumer_called_when_factory_produces_task(self):
-        # The task_consumer passed to start is called when the factory produces
-        # a task.
-        tasks = ['foo', 'bar']
-        tasks_called = []
-        task_source = self.makeTaskSource(task_producer=iter(tasks).next)
-        task_source.start(AppendingTaskConsumer(tasks_called))
-        self.assertEqual([tasks[0]], tasks_called)
+        task_source.start(AppendingTaskConsumer(consumer1_tasks))
+        task_source.start(AppendingTaskConsumer(consumer2_tasks))
+        self.assertEqual(
+            ([tasks[0]], [tasks[1]]), (consumer1_tasks, consumer2_tasks))
 
     def test_task_consumer_not_called_when_factory_doesnt_produce(self):
         # The task_consumer passed to start is *not* called when the factory
         # returns None (implying there are no tasks to do right now).
         task_producer = lambda: None
-        tasks_called = []
+        started_tasks = []
         task_source = self.makeTaskSource(task_producer=task_producer)
-        task_source.start(AppendingTaskConsumer(tasks_called))
-        self.assertEqual([], tasks_called)
+        task_source.start(AppendingTaskConsumer(started_tasks))
+        self.assertEqual([], started_tasks)
 
     def test_stop_without_start(self):
         # Calling 'stop' before 'start' is called silently succeeds.
@@ -243,9 +236,16 @@ class TestParallelLimitedTaskConsumer(TestCase):
             worker_limit = 9999999
         return ParallelLimitedTaskConsumer(worker_limit=worker_limit)
 
+    def _neverEndingTask(self):
+        """A task that never completes.
+
+        Just return a deferred that we will never fire.
+        """
+        return Deferred()
+
     def test_implements_ITaskConsumer(self):
         # ParallelLimitedTaskConsumer instances provide ITaskConsumer.
-        self.assertProvides(self.makeConsumer(), ITaskSource)
+        self.assertProvides(self.makeConsumer(), ITaskConsumer)
 
     def test_consume_starts_source(self):
         # Calling `consume` with a task source starts that source.
@@ -323,10 +323,10 @@ class TestParallelLimitedTaskConsumer(TestCase):
         source = LoggingSource(log)
         consumer.consume(source)
         del log[:]
-        consumer.taskStarted(lambda: Deferred())
+        consumer.taskStarted(self._neverEndingTask)
         self.assertEqual([], log)
         for i in range(worker_limit - 1):
-            consumer.taskStarted(lambda: Deferred())
+            consumer.taskStarted(self._neverEndingTask)
         self.assertEqual(['stop'], log)
 
     def test_passing_working_limit_stops_source(self):
@@ -339,12 +339,12 @@ class TestParallelLimitedTaskConsumer(TestCase):
         source = LoggingSource(log)
         consumer.consume(source)
         del log[:]
-        consumer.taskStarted(lambda: Deferred())
+        consumer.taskStarted(self._neverEndingTask)
         # Reached the limit.
         self.assertEqual(['stop'], log)
         del log[:]
         # Passed the limit.
-        consumer.taskStarted(lambda: Deferred())
+        consumer.taskStarted(self._neverEndingTask)
         self.assertEqual(['stop'], log)
 
     def test_run_task_even_though_passed_limit(self):
@@ -370,7 +370,7 @@ class TestParallelLimitedTaskConsumer(TestCase):
         log = []
         source = LoggingSource(log)
         consumer.consume(source)
-        consumer.taskStarted(lambda: Deferred())
+        consumer.taskStarted(self._neverEndingTask)
         d = Deferred()
         consumer.taskStarted(lambda: d)
         # Reached the limit.
@@ -411,7 +411,7 @@ class TestParallelLimitedTaskConsumer(TestCase):
         terminator.addCallback(task_log.append)
         d = Deferred()
         consumer.taskStarted(lambda: d)
-        consumer.taskStarted(lambda: Deferred())
+        consumer.taskStarted(self._neverEndingTask)
         consumer.taskProductionFailed(None)
         del source_log[:]
         d.callback(None)
