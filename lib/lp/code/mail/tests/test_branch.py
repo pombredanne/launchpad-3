@@ -156,6 +156,6 @@ class TestBranchMailerHeaders(TestCaseWithFactory):
              'Message-Id': '<foobar-example-com>'},
             ctrl.headers)
 
-        
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
