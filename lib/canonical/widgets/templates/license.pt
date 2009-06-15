@@ -24,7 +24,6 @@
 YUI().use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         function make_slider(cfg) {
-            var slide;
             var target_name = '#' + cfg.which + '-expand';
             var table_name = '#' + cfg.which;
             var arrow_name = '#' + cfg.which + '-expand-arrow';
@@ -33,14 +32,26 @@ YUI().use('node', 'lazr.effects', function(Y) {
             if (Y.Lang.isValue(table)) {
                 // Workaround for a lazr-js bug.
                 table.setStyle('display', 'block');
+
+                // The table starts either collapsed or expanded.
+                if (cfg.in) {
+                    table.slide = Y.lazr.effects.slide_in(table_name);
+                }
+                else {
+                    table.slide = Y.lazr.effects.slide_out(table_name);
+                }
+                table.slide.stop();
+                table.slide.run();
             }
 
             Y.on('click', function(e) {
                 e.preventDefault();
                 var open = false;
+                var slide = e.target.slide;
                 if (!slide) {
                     Y.log('new slide: ' + table_name);
                     slide = Y.lazr.effects.slide_in(table_name);
+                    e.target.slide = slide;
                 }
                 else {
                     Y.log(table_name + ' (' + slide.get('reverse') + ')');
@@ -58,12 +69,6 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 }
                 Y.get(arrow_name).setAttribute('src', src);
             }, target_name);
-
-            // Some tables start out collapsed.
-            if (table && cfg.in) {
-                // XXX What do we do here?
-                //Y.lazr.effects.slide_in(table).run();
-            }
         }
         make_slider({which: 'recommended'});
         make_slider({which: 'more', in: true});
