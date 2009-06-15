@@ -21,13 +21,13 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.registry.interfaces.product import IProductSet
 from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.scripts import bugimport
 from lp.bugs.scripts.bugimport import ET
 from lp.bugs.scripts.checkwatches import BugWatchUpdater
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.interfaces.product import IProductSet
 
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import login, logout

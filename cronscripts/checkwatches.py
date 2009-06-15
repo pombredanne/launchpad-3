@@ -10,8 +10,8 @@ import time
 import _pythonpath
 
 from canonical.config import config
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.bugs.scripts.checkwatches import BugWatchUpdater
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class CheckWatches(LaunchpadCronScript):
