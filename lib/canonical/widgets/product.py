@@ -262,6 +262,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         }
 
     categories = None
+    show_deprecated = False
 
     def textForValue(self, term):
         """See `ItemsWidgetBase`."""
@@ -285,16 +286,24 @@ class LicenseWidget(CheckBoxMatrixWidget):
         """See `ItemsEditWidgetBase`."""
         rendered = super(LicenseWidget, self).renderSelectedItem(
             index, text, value, name, cssClass)
-        self._categorize(value, rendered)
+        category = self._categorize(value, rendered)
+        if category == 'deprecated':
+            show_deprecated = True
         return rendered
 
     def _categorize(self, value, rendered):
         # Place the value in the proper category.
         if self.categories is None:
             self.categories = {}
+        # When allow_pending_license is set, we'll see a radio button labeled
+        # "I haven't specified the license yet".  In that case, do not show
+        # the "I don't know" option.
+        if self.allow_pending_license and value == 'DONT_KNOW':
+            return
         category = self.CATEGORIES.get(value)
         assert category is not None, 'Uncategorized value: %s' % value
         self.categories.setdefault(category, []).append(rendered)
+        return category
 
     def __call__(self):
         # Trigger textForValue() which does the categorization of the
@@ -320,6 +329,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
                     break
                 html.append('<td>%s</td>' % rendered_items[index])
             html.append('</tr>')
+        html.append('</table>')
         return '\n'.join(html)
 
 

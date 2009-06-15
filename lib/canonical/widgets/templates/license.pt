@@ -19,6 +19,49 @@
   }
 //]]>
 </script>
+<script type="text/javascript">
+//<![CDATA[
+YUI().use('node', 'lazr.effects', function(Y) {
+    Y.on('domready', function() {
+        function toggle(cfg) {
+            var arrow = Y.get('#' + cfg.which + '-expand-arrow');
+            var table = Y.get('#' + cfg.which);
+            if (arrow.getAttribute('src') == '/@@/treeCollapsed/') {
+                // Expand the table.
+                arrow.setAttribute('src', '/@@/treeExpanded/');
+                Y.lazr.effects.slide_out(table).run();
+            }
+            else {
+                // Collapse the table.
+                arrow.setAttribute('src', '/@@/treeCollapsed/');
+                //var reset_height = table.getComputedStyle('height');
+                //table.setStyle('height', reset_height);
+                Y.lazr.effects.slide_in(table).run();
+            }
+        };
+        function set_toggle(cfg) {
+            var widget = Y.get('#' + cfg.which + '-expand');
+            // 'deprecated' isn't always displayed.
+            if (Y.Lang.isValue(widget)) {
+                widget.on('click',
+                    function(e) {
+                        e.preventDefault();
+                        toggle(cfg);
+                });
+                Y.get('#' + cfg.which + '-expand-arrow').on('click',
+                    function(e) {
+                        toggle(cfg);
+                });
+            }
+        };
+        set_toggle({which: 'recommended'});
+        set_toggle({which: 'more'});
+        set_toggle({which: 'deprecated'});
+        set_toggle({which: 'special'});
+    });
+});
+//]]>
+</script>
 <div style="color: black">
 
   Select the license(s) under which you release your project.
@@ -40,15 +83,49 @@
   <tal:allow-pending condition="view/allow_pending_license">
     <div tal:attributes="style string:padding-left: 20px"
          onclick="setLicensePendingStatus(false)">
+      <a href="" id="recommended-expand" class="js-action">
+        <img id="recommended-expand-arrow"
+             src="/@@/treeExpanded"
+             title="Recommended open source licenses"
+             alt="Recommended open source licenses"/>
+        Recommended open source licenses
+      </a>
       <input tal:replace="structure view/recommended" />
+      <a href="" id="more-expand" class="js-action">
+        <img id="more-expand-arrow"
+             src="/@@/treeExpanded"
+             title="More open source licenses"
+             alt="More open source licenses"/>
+        More open source licenses
+      </a>
       <input tal:replace="structure view/more" />
-      <input tal:replace="structure view/deprecated" />
+      <div tal:condition="view/show_deprecated">
+        <a href="" id="deprecated-expand" class="js-action">
+          <img id="deprecated-expand-arrow"
+               src="/@@/treeExpanded"
+               title="Deprecated licenses"
+               alt="Deprecated licenses"/>
+          Deprecated licenses
+        </a>
+        <input tal:replace="structure view/deprecated" />
+      </div>
+      <a href="" id="special-expand" class="js-action">
+        <img id="special-expand-arrow"
+             src="/@@/treeExpanded"
+             title="Other choices"
+             alt="Other choices"/>
+        Other choices
+      </a>
       <input tal:replace="structure view/special" />
     </div>
   </tal:allow-pending>
   <tal:do-not-allow-pending condition="not:view/allow_pending_license">
     <div>
-      <input tal:replace="structure view/checkbox_matrix" />
+      <input tal:replace="structure view/recommended" />
+      <input tal:replace="structure view/more" />
+      <input tal:condition="view/show_deprecated"
+             tal:replace="structure view/deprecated" />
+      <input tal:replace="structure view/special" />
     </div>
   </tal:do-not-allow-pending>
 
