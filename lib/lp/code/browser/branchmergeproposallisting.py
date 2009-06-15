@@ -176,22 +176,6 @@ class PersonBMPListingView(BranchMergeProposalListingView):
         return self.context
 
 
-#class PersonActiveReviewsView(PersonBMPListingView):
-#    """Branch merge proposals that the person has submitted."""
-#
-#    extra_columns = ['date_review_requested', 'vote_summary']
-#    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
-#
-#    @property
-#    def heading(self):
-#        return "Active code reviews for %s" % self.context.displayname
-#
-#    @property
-#    def no_proposal_message(self):
-#        """Shown when there is no table to show."""
-#        return "%s has no active code reviews." % self.context.displayname
-
-
 class PersonRequestedReviewsView(PersonBMPListingView):
     """Branch merge proposals for the person that are needing review."""
 

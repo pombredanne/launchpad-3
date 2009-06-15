@@ -9,7 +9,7 @@ from unittest import TestLoader
 import transaction
 
 from lp.code.browser.branchmergeproposallisting import (
-    BranchMergeProposalListingView, PersonActiveReviewsView,
+    ActiveReviewsView, BranchMergeProposalListingView, PersonActiveReviewsView,
     ProductActiveReviewsView)
 from lp.code.enums import CodeReviewVote
 from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
@@ -185,13 +185,13 @@ class _ActiveReviewGroupsTest:
 
     def test_not_logged_in(self):
         # If there is no logged in user, then the group is other.
-        self.assertReviewGroupForUser(None, self._view.OTHER)
+        self.assertReviewGroupForUser(None, ActiveReviewsView.OTHER)
 
     def test_source_branch_owner(self):
         # If the logged in user is the owner of the source branch,
         # then the review is MINE.
         self.assertReviewGroupForUser(
-            self.bmp.source_branch.owner, self._view.MINE)
+            self.bmp.source_branch.owner, ActiveReviewsView.MINE)
 
     def test_proposal_registrant(self):
         # If the logged in user it the registrant of the proposal, then it is
@@ -203,12 +203,12 @@ class _ActiveReviewGroupsTest:
         login_person(self.bmp.source_branch.owner)
         self.bmp.source_branch.owner = team
         self.assertReviewGroupForUser(
-            self.bmp.registrant, self._view.MINE)
+            self.bmp.registrant, ActiveReviewsView.MINE)
 
     def test_target_branch_owner(self):
         # For other people, even the target branch owner, it is other.
         self.assertReviewGroupForUser(
-            self.bmp.target_branch.owner, self._view.OTHER)
+            self.bmp.target_branch.owner, ActiveReviewsView.OTHER)
 
     def test_group_pending_review(self):
         # If the logged in user has a pending review request, it is a TO_DO.
@@ -216,7 +216,7 @@ class _ActiveReviewGroupsTest:
         login_person(self.bmp.registrant)
         self.bmp.nominateReviewer(reviewer, self.bmp.registrant)
         self.assertReviewGroupForUser(
-            reviewer, self._view.TO_DO)
+            reviewer, ActiveReviewsView.TO_DO)
 
     def test_group_pending_team_review(self):
         # If the logged in user of a team that has a pending review request,
@@ -226,7 +226,7 @@ class _ActiveReviewGroupsTest:
         team = self.factory.makeTeam(reviewer)
         self.bmp.nominateReviewer(team, self.bmp.registrant)
         self.assertReviewGroupForUser(
-            reviewer, self._view.CAN_DO)
+            reviewer, ActiveReviewsView.CAN_DO)
 
     def test_review_done(self):
         # If the logged in user has a completed review, then the review is
@@ -236,7 +236,7 @@ class _ActiveReviewGroupsTest:
         self.bmp.createComment(
             reviewer, 'subject', vote=CodeReviewVote.APPROVE)
         self.assertReviewGroupForUser(
-            reviewer, self._view.ARE_DOING)
+            reviewer, ActiveReviewsView.ARE_DOING)
 
 
 class TestPersonActiveReviewGroups(_ActiveReviewGroupsTest,
