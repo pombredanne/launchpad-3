@@ -23,7 +23,8 @@ from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore, IRevisionSet
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import (
+    LaunchpadCronScript, SilentLaunchpadScriptFailure)
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
@@ -47,7 +48,8 @@ class TunableLoop:
         self.log = log
 
     def run(self):
-        assert self.maximum_chunk_size is not None, "Did not override."
+        assert self.maximum_chunk_size is not None, (
+            "Did not override maximum_chunk_size.")
         DBLoopTuner(
             self, self.goal_seconds,
             minimum_chunk_size = self.minimum_chunk_size,
@@ -304,56 +306,51 @@ class HWSubmissionEmailLinker(TunableLoop):
     `EmailAddress` is linked to a person, then the `HWSubmission` is
     linked to the same.
     """
-
-    maximum_chunk_size = 1000
-
+    maximum_chunk_size = 50000
     def __init__(self, log):
         super(HWSubmissionEmailLinker, self).__init__(log)
         self.submission_store = IMasterStore(HWSubmission)
-        self.email_store = IMasterStore(EmailAddress)
-
-        (self.min_submission_id,
-         self.max_submission_id) = self.submission_store.find(
-            (Min(HWSubmission.id), Max(HWSubmission.id))).one()
-
-        self.next_submission_id = self.min_submission_id
+        self.submission_store.execute(
+            "DROP TABLE IF EXISTS NewlyMatchedSubmission")
+        self.submission_store.execute("""
+            CREATE TEMPORARY TABLE NewlyMatchedSubmission AS
+            SELECT
+                HWSubmission.id AS submission,
+                EmailAddress.person AS owner
+            FROM HWSubmission, EmailAddress
+            WHERE HWSubmission.owner IS NULL
+                AND EmailAddress.status IN %s
+                AND lower(HWSubmission.raw_emailaddress)
+                    = lower(EmailAddress.email)
+            """ % sqlvalues(
+                [EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED]),
+            noresult=True)
+        self.submission_store.execute("""
+            CREATE INDEX newlymatchsubmission__submission__idx
+            ON NewlyMatchedSubmission(submission)
+            """, noresult=True)
+        self.matched_submission_count = self.submission_store.execute("""
+            SELECT COUNT(*) FROM NewlyMatchedSubmission
+            """).get_one()[0]
+        self.offset = 0
 
     def isDone(self):
-        return (self.min_submission_id is None or
-                self.next_submission_id > self.max_submission_id)
+        return self.offset >= self.matched_submission_count
 
     def __call__(self, chunk_size):
-        result = self.submission_store.find(
-            HWSubmission,
-            HWSubmission.id >= self.next_submission_id,
-            HWSubmission.ownerID == None,
-            HWSubmission.raw_emailaddress != None)
-        result.order_by(HWSubmission.id)
-        submissions = list(result[:chunk_size])
-
-        # No more submissions found.
-        if len(submissions) == 0:
-            self.next_submission_id = self.max_submission_id + 1
-            transaction.commit()
-            return
-
-        emails = dict(self.email_store.find(
-            (EmailAddress.email.lower(), EmailAddress.personID),
-            EmailAddress.email.lower().is_in(
-                    [submission.raw_emailaddress.lower()
-                     for submission in submissions]),
-            EmailAddress.status.is_in([EmailAddressStatus.PREFERRED,
-                                       EmailAddressStatus.VALIDATED]),
-            EmailAddress.personID != None))
-
-        if emails:
-            for submission in submissions:
-                personID = emails.get(submission.raw_emailaddress.lower())
-                if personID is None:
-                    continue
-                submission.ownerID = personID
-
-        self.next_submission_id = submissions[-1].id + 1
+        self.submission_store.execute("""
+            UPDATE HWSubmission
+            SET owner=NewlyMatchedSubmission.owner
+            FROM (
+                SELECT submission, owner
+                FROM NewlyMatchedSubmission
+                ORDER BY submission
+                OFFSET %d
+                LIMIT %d
+                ) AS NewlyMatchedSubmission
+            WHERE HWSubmission.id = NewlyMatchedSubmission.submission
+            """ % (self.offset, chunk_size), noresult=True)
+        self.offset += chunk_size
         transaction.commit()
 
 
@@ -410,6 +407,8 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
     tunable_loops = None # Collection of TunableLoops. Override.
+    continue_on_failure = False # If True, an exception in a tunable loop
+                                # does not cause the script to abort.
 
     # _maximum_chunk_size is used to override the defined
     # maximum_chunk_size to allow our tests to ensure multiple calls to
@@ -423,13 +422,25 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             test_args=test_args)
 
     def main(self):
+        failure_count = 0
         for tunable_loop in self.tunable_loops:
             self.logger.info("Running %s" % tunable_loop.__name__)
             tunable_loop = tunable_loop(log=self.logger)
             if self._maximum_chunk_size is not None:
                 tunable_loop.maximum_chunk_size = self._maximum_chunk_size
-            tunable_loop.run()
-
+            try:
+                tunable_loop.run()
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except:
+                if not self.continue_on_failure:
+                    raise
+                self.logger.exception("Unhandled exception")
+                failure_count += 1
+                transaction.abort()
+            transaction.abort()
+        if failure_count:
+            raise SilentLaunchpadScriptFailure(failure_count)
 
 class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-hourly'

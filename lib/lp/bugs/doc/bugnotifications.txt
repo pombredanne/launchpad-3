@@ -37,7 +37,6 @@ those notifications look like.
     ...     title="firefox crashes all the time",
     ...     comment="this is a comment", owner=bug_submitter)
     >>> firefox_crashes = firefox.createBug(params)
-    >>> notify(ObjectCreatedEvent(firefox_crashes, firefox_crashes.owner))
 
     >>> from canonical.launchpad.database import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
@@ -52,9 +51,7 @@ those notifications look like.
 
 === Editing a bug report ===
 
-    >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import IBug
-
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> bug_before_modification = Snapshot(firefox_crashes, providing=IBug)
     >>> firefox_crashes.description = "a new description"

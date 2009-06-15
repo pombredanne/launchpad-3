@@ -14,7 +14,7 @@ notification they would like to receive.
     ...     CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchmergeproposal import (
     ...     IMergeProposalCreatedJobSource)
-    >>> from canonical.launchpad.interfaces.diff import IStaticDiffSource
+    >>> from lp.code.interfaces.diff import IStaticDiffSource
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')

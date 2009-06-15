@@ -386,6 +386,9 @@ class BranchView(LaunchpadView, FeedsMixin):
         targets = []
         targets_added = set()
         for proposal in self.context.landing_targets:
+            # Don't show the proposal if the user can't see it.
+            if not check_permission('launchpad.View', proposal):
+                continue
             # Only show the must recent proposal for any given target.
             target_id = proposal.target_branch.id
             if target_id in targets_added:
@@ -404,7 +407,8 @@ class BranchView(LaunchpadView, FeedsMixin):
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
-        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+        return [DecoratedMergeProposal(proposal) for proposal in candidates
+                if check_permission('launchpad.View', proposal)]
 
     def _getBranchCountText(self, count):
         """Help to show user friendly text."""
@@ -417,17 +421,18 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     @cachedproperty
     def dependent_branch_count_text(self):
-        branch_count = self.context.dependent_branches.count()
+        branch_count = len(self.dependent_branches)
         return self._getBranchCountText(branch_count)
 
     @cachedproperty
     def landing_candidate_count_text(self):
-        branch_count = self.context.landing_candidates.count()
+        branch_count = len(self.landing_candidates)
         return self._getBranchCountText(branch_count)
 
     @cachedproperty
     def dependent_branches(self):
-        return list(self.context.dependent_branches)
+        return [branch for branch in self.context.dependent_branches
+                if check_permission('launchpad.View', branch)]
 
     @cachedproperty
     def no_merges(self):
