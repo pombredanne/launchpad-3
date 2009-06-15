@@ -33,6 +33,8 @@ from lp.code.enums import (
     CodeImportReviewStatus, CodeReviewNotificationLevel,
     RevisionControlSystems)
 from lp.code.interfaces.branch import branch_name_validator
+from lp.code.interfaces.branchnamespace import (
+    get_branch_namespace, IBranchNamespacePolicy)
 from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
@@ -337,6 +339,19 @@ class CodeImportNewView(CodeImportBaseView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
+        # Make sure that the user is able to create branches for the specified
+        # namespace.
+        celebs = getUtility(ILaunchpadCelebrities)
+        product = data['product']
+        if product is not None:
+            namespace = get_branch_namespace(celebs.vcs_imports, product)
+            policy = IBranchNamespacePolicy(namespace)
+            if not policy.canCreateBranches(celebs.vcs_imports):
+                self.setFieldError(
+                    'product',
+                    "You are not allowed to register imports for %s."
+                    % product.displayname)
+
         rcs_type = data['rcs_type']
         # Make sure fields for unselected revision control systems
         # are blanked out:
