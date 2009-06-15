@@ -464,10 +464,19 @@ class GitImportWorker(PullingImportWorker):
     def getBazaarWorkingTree(self):
         """XXX"""
         tree = PullingImportWorker.getBazaarWorkingTree(self)
-        # Maybe fetch git.db into tree.
+        source_t = get_transport(config.codeimport.foreign_tree_store)
+        try:
+            o = source_t.get('%08x.db' % self.source_details.branch_id)
+        except NoSuchFile:
+            pass
+        else:
+            dest_t = tree.branch.repository._transport
+            dest_t.put_file('git.db', o)
         return tree
 
     def pushBazaarWorkingTree(self, bazaar_tree):
         """XXX"""
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
-        # Push git.db somewhere.
+        source_t = bazaar_tree.branch.repository._transport
+        dest_t = get_transport(config.codeimport.foreign_tree_store)
+        dest_t.put_file('%08x.db' % self.source_details.branch_id, source_t.get('git.db'))
