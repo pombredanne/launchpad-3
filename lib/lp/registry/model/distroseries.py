@@ -33,6 +33,11 @@ from canonical.database.sqlbase import (
     quote, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from canonical.launchpad.database.pofiletranslator import (
+    POFileTranslator)
+from canonical.launchpad.database.pofile import POFile
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.interfaces import IStore
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -1577,22 +1582,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getPOFileContributorsByLanguage(self, language):
         """See `IDistroSeries`."""
-        contributors = Person.select("""
-            POFileTranslator.person = Person.id AND
-            POFileTranslator.pofile = POFile.id AND
-            POFile.language = %s AND
-            POFile.potemplate = POTemplate.id AND
-            POTemplate.distroseries = %s AND
-            POTemplate.iscurrent = TRUE"""
-                % sqlvalues(language, self),
-            clauseTables=["POFileTranslator", "POFile", "POTemplate"],
-            distinct=True,
-            # XXX: kiko 2006-10-19:
-            # We can't use Person.sortingColumns because this is a
-            # distinct query. To use it we'd need to add the sorting
-            # function to the column results and then ignore it -- just
-            # like selectAlso does, ironically.
-            orderBy=["Person.displayname", "Person.name"])
+        contributors = IStore(Person).find(
+            Person,
+            POFileTranslator.personID == Person.id,
+            POFile.id == POFileTranslator.pofileID,
+            POFile.language == language,
+            POTemplate.id == POFile.potemplateID,
+            POTemplate.distroseries == self,
+            POTemplate.iscurrent == True)
+        contributors = contributors.order_by(*Person._storm_sortingColumns)
+        contributors = contributors.config(distinct=True)
         return contributors
 
     def getPendingPublications(self, archive, pocket, is_careful):
