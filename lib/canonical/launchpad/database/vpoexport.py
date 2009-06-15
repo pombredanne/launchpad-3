@@ -13,17 +13,15 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import quote, sqlvalues, cursor
-from lp.soyuz.model.component import Component
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.worlddata.model.language import Language
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
+from canonical.launchpad.interfaces import IStore, IVPOExportSet, IVPOExport
 
 
 class VPOExportSet:
@@ -143,65 +141,43 @@ class VPOExportSet:
         Selects `POFiles` based on the 'series', last modified 'date',
         archive 'component', and whether it belongs to a 'languagepack'
         """
-        tables = [
-            POTemplate,
-            DistroSeries,
-            ]
-
         conditions = [
-            'POTemplate.id = POFile.potemplate',
-            'POTemplate.distroseries = %s' % quote(series),
-            'DistroSeries.id = %s' % quote(series),
-            'POTemplate.iscurrent IS TRUE',
+            POTemplate.id == POFile.potemplateID,
+            POTemplate.distroseries == series,
+            POTemplate.iscurrent == True,
             ]
 
         if date is not None:
-            conditions.append("""
-                (
-                    POTemplate.date_last_updated > %s OR
-                    POFile.date_changed > %s
-                )
-                """ % sqlvalues(date, date))
+            conditions.append(Or(
+                POTemplate.date_last_updated > date,
+                POFile.date_changed > date))
 
         if component is not None:
-            tables.append(SourcePackagePublishingHistory)
-            conditions.append(
-                'SourcePackagePublishingHistory.distroseries = %s'
-                % quote(series))
-
-            tables.append(SourcePackageRelease)
-            conditions.append("""
-                SourcePackagePublishingHistory.sourcepackagerelease =
-                     SourcePackageRelease.id
-                """)
-
-            tables.append(Component)
-            conditions.append(
-                "SourcePackagePublishingHistory.component = Component.id")
-
-            conditions.append("""
-                SourcePackageRelease.sourcepackagename =
-                    POTemplate.sourcepackagename
-                """)
-
-            conditions.append('Component.name = %s' % quote(component))
-
-            conditions.append(
-                "SourcePackagePublishingHistory.dateremoved IS NULL")
-
-            conditions.append(
-                "SourcePackagePublishingHistory.archive = %s"
-                % quote(series.main_archive))
+            conditions.extend([
+                SourcePackagePublishingHistory.distroseries == series,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id,
+                SourcePackagePublishingHistory.componentID == Component.id,
+                POTemplate.sourcepackagenameID ==
+                    SourcePackageRelease.sourcepackagenameID,
+                Component.name == component,
+                SourcePackagePublishingHistory.dateremoved == None,
+                SourcePackagePublishingHistory.archive == series.main_archive,
+                ])
 
         if languagepack:
-            conditions.append('POTemplate.languagepack IS TRUE')
+            conditions.append(POTemplate.languagepack == True)
 
-        query = POFile.select(' AND '.join(conditions), clauseTables=tables)
+        query = IStore(POFile).find(POFile, *conditions)
+        query = query.config(distinct=True)
+
         # Order by POTemplate.  Caching in the export scripts can be
         # much more effective when consecutive POFiles belong to the
         # same POTemplate, e.g. they'll have the same POTMsgSets.
-        return query.distinct().orderBy([
-            'POFile.potemplate', 'POFile.language', 'POFile.variant'])
+        query = query.order_by(
+            POFile.potemplateID, POFile.languageID, POFile.variant)
+
+        return query
 
     def get_distroseries_pofiles_count(self, series, date=None,
                                         component=None, languagepack=None):
