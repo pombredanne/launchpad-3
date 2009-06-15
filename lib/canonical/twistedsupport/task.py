@@ -167,6 +167,9 @@ class ParallelLimitedTaskConsumer:
             raise AlreadyRunningError(self, self._task_source)
         self._task_source = task_source
         self._terminationDeferred = defer.Deferred()
+        # This merely begins polling. This means that we acquire our initial
+        # batch of work at the rate of one task per polling interval. As long
+        # as the polling interval is small, this is probably OK.
         task_source.start(self)
         return self._terminationDeferred
 
@@ -200,6 +203,10 @@ class ParallelLimitedTaskConsumer:
         If the source keeps failing, we'll eventually have no tasks running,
         at which point we stop the source and fire the termination deferred,
         signalling the end of this run.
+
+        This approach allows us to handle intermittent failures gracefully (by
+        retrying the next time a task finishes), and to handle persistent
+        failures well (by shutting down when there are no more tasks left).
 
         :raise NotRunningError: if 'consume' has not yet been called.
         """
