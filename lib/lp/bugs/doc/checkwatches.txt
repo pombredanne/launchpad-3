@@ -61,7 +61,7 @@ OOPSes reported by the checkwatches process are raised using the
 CheckWatchesErrorUtility. The errors have 'CW' in their oops prefix
 and their type is 'BugWatchUpdateWarning'.
 
-    >>> from canonical.launchpad.scripts.checkwatches import (
+    >>> from lp.bugs.scripts.checkwatches import (
     ...     CheckWatchesErrorUtility)
     >>> error_utility = CheckWatchesErrorUtility()
     >>> report = error_utility.getLastOopsReport()
@@ -97,7 +97,7 @@ First, we create some bug watches to test with:
     >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IBugSet)
-    >>> from canonical.launchpad.scripts.checkwatches import (
+    >>> from lp.bugs.scripts.checkwatches import (
     ...     BugWatchUpdater)
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet)
