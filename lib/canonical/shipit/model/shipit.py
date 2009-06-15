@@ -25,7 +25,7 @@ import os
 import random
 import re
 
-from storm.store import Store
+from storm.locals import Desc, Store
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.component import adapts, getUtility
@@ -47,7 +47,7 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces import ISlaveStore
+from canonical.launchpad.interfaces import ISlaveStore, IStore
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.datetimeutils import make_mondays_between
@@ -1734,16 +1734,13 @@ class ShipitAccount:
 
     def shippedShipItRequestsOfCurrentSeries(self):
         """See `IShipitAccount`."""
-        query = '''
-            ShippingRequest.recipient = %s
-            AND ShippingRequest.id = RequestedCDs.request
-            AND RequestedCDs.distroseries = %s
-            AND ShippingRequest.shipment IS NOT NULL
-            ''' % sqlvalues(self.account,
-                            ShipItConstants.current_distroseries)
-        return ShippingRequest.select(
-            query, clauseTables=['RequestedCDs'], distinct=True,
-            orderBy='-daterequested')
+        return IStore(ShippingRequest).find(
+            ShippingRequest,
+            ShippingRequest.recipient == self.account,
+            ShippingRequest.id == RequestedCDs.requestID,
+            RequestedCDs.distroseries == ShipItConstants.current_distroseries,
+            ShippingRequest.shipment != None).order_by(
+                Desc(ShippingRequest.daterequested)).config(distinct=True)
 
     def lastShippedRequest(self):
         """See `IShipitAccount`."""
