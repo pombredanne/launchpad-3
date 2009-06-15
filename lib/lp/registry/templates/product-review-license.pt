@@ -40,13 +40,13 @@
 
         <p>
           If the project appears legitimate, yet incomplete, that is fine.
-          Approve the project, consider send a request to ask the owner to
+          Approve the project, consider sending a request to ask the owner to
           update his project with more details because it will help him
           get contributors.
         </p>
 
         <p>
-          There are a few reason you may want to withhold approval, and you
+          There are a few reasons you may want to withhold approval, and you
           should contact the project owner if you do.
         </p>
 
@@ -57,7 +57,7 @@
           <li>
             The project has only Other/Open source selected as a license and
             the license info field does not contain a URL to a license, or
-            contain the whole license
+            contains the whole license
           </li>
           <li>
             The Other/Open source license appears to discriminate against who
