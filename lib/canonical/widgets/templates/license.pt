@@ -23,45 +23,52 @@
 //<![CDATA[
 YUI().use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
-        function toggle(cfg) {
-            var arrow = Y.get('#' + cfg.which + '-expand-arrow');
-            var table = Y.get('#' + cfg.which);
-            if (arrow.getAttribute('src') == '/@@/treeCollapsed/') {
-                // Expand the table.
-                arrow.setAttribute('src', '/@@/treeExpanded/');
-                Y.lazr.effects.slide_out(table).run();
+        function make_slider(cfg) {
+            var slide;
+            var target_name = '#' + cfg.which + '-expand';
+            var table_name = '#' + cfg.which;
+            var arrow_name = '#' + cfg.which + '-expand-arrow';
+
+            var table = Y.get(table_name);
+            if (Y.Lang.isValue(table)) {
+                // Workaround for a lazr-js bug.
+                table.setStyle('display', 'block');
             }
-            else {
-                // Collapse the table.
-                arrow.setAttribute('src', '/@@/treeCollapsed/');
-                Y.lazr.effects.slide_in(table).run();
-            }
-        };
-        function set_toggle(cfg) {
-            var widget = Y.get('#' + cfg.which + '-expand');
-            // 'deprecated' isn't always displayed.
-            if (Y.Lang.isValue(widget)) {
-                widget.on('click',
-                    function(e) {
-                        e.preventDefault();
-                        toggle(cfg);
-                });
-                Y.get('#' + cfg.which + '-expand-arrow').on('click',
-                    function(e) {
-                        toggle(cfg);
-                });
-                if (cfg.start == 'in') {
-                    Y.log('sucking it up: ' + cfg.which);
-                    toggle(cfg);
+
+            Y.on('click', function(e) {
+                e.preventDefault();
+                var open = false;
+                if (!slide) {
+                    Y.log('new slide: ' + table_name);
+                    slide = Y.lazr.effects.slide_in(table_name);
                 }
-                // Work around a bug in lazr.effects.slide_in()
-                Y.get('#' + cfg.which).setStyle('display', 'block');
+                else {
+                    Y.log(table_name + ' (' + slide.get('reverse') + ')');
+                    open = !slide.get('reverse');
+                    slide.set('reverse', open);
+                }
+                slide.stop();
+                slide.run();
+                var src;
+                if (open) {
+                    src = '/@@/treeExpanded';
+                }
+                else {
+                    src = '/@@/treeCollapsed';
+                }
+                Y.get(arrow_name).setAttribute('src', src);
+            }, target_name);
+
+            // Some tables start out collapsed.
+            if (table && cfg.in) {
+                // XXX What do we do here?
+                //Y.lazr.effects.slide_in(table).run();
             }
-        };
-        set_toggle({which: 'recommended'});
-        set_toggle({which: 'more', start: 'in'});
-        set_toggle({which: 'deprecated', start: 'in'});
-        set_toggle({which: 'special', start: 'in'});
+        }
+        make_slider({which: 'recommended'});
+        make_slider({which: 'more', in: true});
+        make_slider({which: 'deprecated', in: true});
+        make_slider({which: 'special', in: true});
     });
 });
 //]]>
