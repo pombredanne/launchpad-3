@@ -136,6 +136,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         rationale = mailer._recipients.getReason('subscriber@example.com')[1]
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
+                    'X-Launchpad-Notification-Type': 'code-review',
                     'X-Launchpad-Project': source_branch.product.name,
                     'Message-Id': message.rfc822msgid,
                     'Reply-To': mailer._getReplyToAddress(),
