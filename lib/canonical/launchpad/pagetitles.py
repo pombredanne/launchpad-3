@@ -1091,7 +1091,7 @@ product_purchase_subscription = ContextDisplayName(
 
 product_files = ContextDisplayName('%s project files')
 
-product_review_license = ContextTitle('Review licensing for %s')
+product_review_license = ContextTitle('Review %s')
 
 product_series = ContextDisplayName('%s timeline')
 
@@ -1117,7 +1117,7 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
 
-products_review_licenses = 'Review licenses of projects'
+products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
 

@@ -27,6 +27,52 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info">
+      <div style="max-width: 45em;">
+        <p>
+          Examine the project's overview tab first, then examine if the
+          project is using code, bugs, etc.... Mark the project reviewed now.
+        </p>
+
+        <p>
+          Does the project appear to be legitimate? Are its licenses simple
+          and clearly open and free? Mark the project approved now.
+        </p>
+
+        <p>
+          If the project appears legitimate, yet incomplete, that is fine.
+          Approve the project, consider sending a request to ask the owner to
+          update his project with more details because it will help him
+          get contributors.
+        </p>
+
+        <p>
+          There are a few reasons you may want to withhold approval, and you
+          should contact the project owner if you do.
+        </p>
+
+        <ul>
+          <li>
+            The project has no license.
+          </li>
+          <li>
+            The project has only Other/Open source selected as a license and
+            the license info field does not contain a URL to a license, or
+            contains the whole license
+          </li>
+          <li>
+            The Other/Open source license appears to discriminate against who
+            or how the project's work is used.
+          </li>
+          <li>
+            The project is too vague to know if it is legitimate.
+          </li>
+        </ul>
+
+        <p>
+          If the project looks like a test, a prank, or spam, deactivate it.
+        </p>
+      </div>
+
       <input type="hidden" name="next_url"
         tal:attributes="value view/next_url" />
       <table class="listing" id="license-listing">
