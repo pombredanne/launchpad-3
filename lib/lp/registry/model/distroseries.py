@@ -17,7 +17,7 @@ from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
 
-from storm.locals import SQL, Join
+from storm.locals import Desc, SQL, Join
 from storm.store import Store
 
 from zope.component import getUtility
@@ -115,6 +115,7 @@ from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
+from lp.services.worlddata.model.language import Language
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -616,19 +617,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         # first find the set of all languages for which we have pofiles in
         # the distribution that are visible and not English
-        langidset = set(
-            language.id for language in Language.select('''
-                Language.visible IS TRUE AND
-                Language.id = POFile.language AND
-                Language.code <> 'en' AND
-                POFile.potemplate = POTemplate.id AND
-                POTemplate.distroseries = %s AND
-                POTemplate.iscurrent IS TRUE
-                ''' % sqlvalues(self.id),
-                orderBy=['code'],
-                distinct=True,
-                clauseTables=['POFile', 'POTemplate'])
-            )
+        languages = IStore(Language).find(
+            Language.id,
+            Language.visible == True,
+            Language.id == POFile.languageID,
+            Language.code <> 'en',
+            POFile.potemplateID == POTemplate.id,
+            POTemplate.distroseries == self,
+            POTemplate.iscurrent == True).config(distinct=True)
+        langidset = frozenset(language.id for language in languages)
+
         # now run through the existing DistroSeriesLanguages for the
         # distroseries, and update their stats, and remove them from the
         # list of languages we need to have stats for
@@ -1074,21 +1072,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def updateCompletePackageCache(self, archive, log, ztm, commit_chunk=500):
         """See `IDistroSeries`."""
         # Get the set of package names to deal with.
-        bpns = list(BinaryPackageName.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(self, archive),
-            distinct=True,
-            clauseTables=['BinaryPackagePublishingHistory',
-                          'DistroArchSeries',
-                          'BinaryPackageRelease']))
+        bpns = IStore(BinaryPackageName).find(
+            BinaryPackageName,
+            DistroArchSeries.distroseries == self,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.archive == archive,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackagePublishingHistory.dateremoved == None).config(
+                distinct=True)
 
         number_of_updates = 0
         chunk_size = 0
@@ -1108,20 +1102,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
 
         # get the set of published binarypackagereleases
-        bprs = BinaryPackageRelease.select("""
-            BinaryPackageRelease.binarypackagename = %s AND
-            BinaryPackageRelease.id =
-                BinaryPackagePublishingHistory.binarypackagerelease AND
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(binarypackagename, self, archive),
-            orderBy='-datecreated',
-            clauseTables=['BinaryPackagePublishingHistory',
-                          'DistroArchSeries'],
-            distinct=True)
+        bprs = IStore(BinaryPackageRelease).find(
+            BinaryPackageRelease,
+            BinaryPackageRelease.binarypackagename == binarypackagename,
+            BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseries == self,
+            BinaryPackagePublishingHistory.archive == archive,
+            BinaryPackagePublishingHistory.dateremoved == None)
+        bprs = bprs.order_by(Desc(BinaryPackageRelease.datecreated))
+        bprs = bprs.config(distinct=True)
+
         if bprs.count() == 0:
             log.debug("No binary releases found.")
             return
