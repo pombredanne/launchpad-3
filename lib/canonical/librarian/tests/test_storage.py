@@ -33,6 +33,7 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.orig_commit = self.store.commit
         self.orig_rollback = self.store.rollback
         def commit():
+            print 'Commit detected'
             self.committed = True
             self.orig_commit()
         self.store.commit = commit
@@ -102,61 +103,12 @@ class LibrarianStorageTestCase(unittest.TestCase):
         # were to ever happen
         self.assertEqual('12/34/56/789', _relFileLocation(0x123456789))
 
-    def test_transactionCommit(self):
-        # Use a stub library that doesn't really use the DB, but does record
-        # if the Storage tried to commit the transaction on the fake DB.
-        self.storage.library = StubLibrary()
-        data = 'data ' * 50
-        digest = sha.sha(data).hexdigest()
-        newfile = self.storage.startAddFile('file1', len(data))
-        newfile.contentID = 99
-        newfile.append(data)
-
-        # The transaction shouldn't be committed yet...
-        self.failIf(self.committed, "Committed too early.")
-
-        # Now try to store the file
-        fileid, aliasid = newfile.store()
-
-        # ...but it should be committed now.
-        self.failUnless(self.committed, "Transaction not committed.")
-
-        # And the file should now be in its final location on disk, too..
-        self.failUnless(self.storage.hasFile(fileid))
-        # ...and no longer at the temporary location
-        self.failIf(os.path.exists(newfile.tmpfilepath))
-
-    def test_transactionAbort(self):
-        # Use a stub library that doesn't really use the DB, but does record
-        # if the Storage tried to commit the transaction on the fake DB.
-        self.storage.library = StubLibrary()
-        data = 'data ' * 50
-        digest = sha.sha(data).hexdigest()
-        newfile = self.storage.startAddFile('file1', len(data))
-        newfile.contentID = 99
-        newfile.append(data)
-
-        # Cause the final step, the file rename, to break
-        newfile._move = lambda x: 1/0
-
-        # The transaction shouldn't have aborted yet...
-        self.failIf(self.rolledback)
-
-        # Now try to store the file, and catch the exception
-        self.assertRaises(ZeroDivisionError, newfile.store)
-
-        # ...and the transaction should have aborted.
-        self.failUnless(self.rolledback)
-
-        # And the file should have been removed from its temporary location
-        self.failIf(os.path.exists(newfile.tmpfilepath))
-
     def test_multipleFilesInOnePrefixedDirectory(self):
         # Check that creating a file that will be saved in 11/11/11/11
         # followed by a file that will be saved in 11/11/11/12 works
         # correctly -- i.e that creating a file works both if the directory
         # already exists, and if the directory doesn't already exist.
-        self.storage.library = StubLibrary2()
+        self.storage.library = StubLibrary()
         data = 'data ' * 50
         newfile = self.storage.startAddFile('file', len(data))
         newfile.contentID = 0x11111111
@@ -179,7 +131,7 @@ class LibrarianStorageTestCase(unittest.TestCase):
 
 
 class StubLibrary:
-    # Used by test_transactionCommit/Abort
+    # Used by test_multipleFilesInOnePrefixedDirectory
 
     def lookupBySHA1(self, digest):
         return []
@@ -189,10 +141,6 @@ class StubLibrary:
 
     def addAlias(self, fileid, filename, mimetype):
         pass
-
-
-class StubLibrary2(StubLibrary):
-    # Used by test_multipleFilesInOnePrefixedDirectory
 
     id = 0x11111110
 
