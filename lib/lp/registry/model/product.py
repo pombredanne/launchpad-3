@@ -19,9 +19,7 @@ import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
     StringCol)
-from storm.store import Store
-from storm.expr import And, Join
-from storm.locals import Unicode
+from storm.locals import And, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -32,6 +30,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.launchpad.interfaces import IStore
 from lp.code.model.branch import BranchSet
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -1085,49 +1084,46 @@ class ProductSet:
         conditions = []
 
         if license_reviewed is not None:
-            conditions.append('Product.reviewed = %s'
-                              % sqlvalues(license_reviewed))
+            conditions.append(Product.license_reviewed == license_reviewed)
 
         if active is not None:
-            conditions.append('Product.active = %s' % sqlvalues(active))
+            conditions.append(Product.active == active)
 
         if search_text is not None and search_text.strip() != '':
-            conditions.append('Product.fti @@ ftq(%s)'
-                              % sqlvalues(search_text))
+            conditions.append(SQL(
+                'Product.fti @@ ftq(%s)' % sqlvalues(search_text)))
 
         if created_after is not None:
-            conditions.append('Product.datecreated >= %s'
-                              % sqlvalues(created_after))
+            conditions.append(Product.datecreated >= created_after)
         if created_before is not None:
-            conditions.append('Product.datecreated <= %s'
-                              % sqlvalues(created_before))
+            conditions.append(Product.datecreated <= created_before)
 
         needs_join = False
         if subscription_expires_after is not None:
-            conditions.append('CommercialSubscription.date_expires >= %s'
-                              % sqlvalues(subscription_expires_after))
+            conditions.append(
+                CommercialSubscription.date_expires >=
+                    subscription_expires_after)
             needs_join = True
         if subscription_expires_before is not None:
-            conditions.append('CommercialSubscription.date_expires <= %s'
-                              % sqlvalues(subscription_expires_before))
+            conditions.append(
+                CommercialSubscription.date_expires <=
+                    subscription_expires_before)
             needs_join = True
 
         if subscription_modified_after is not None:
             conditions.append(
-                'CommercialSubscription.date_last_modified >= %s'
-                % sqlvalues(subscription_modified_after))
+                CommercialSubscription.date_last_modified >=
+                    subscription_modified_after)
             needs_join = True
         if subscription_modified_before is not None:
             conditions.append(
-                'CommercialSubscription.date_last_modified <= %s'
-                % sqlvalues(subscription_modified_before))
+                CommercialSubscription.date_last_modified <=
+                    subscription_modified_before)
             needs_join = True
 
-        clause_tables = []
         if needs_join:
             conditions.append(
-                'CommercialSubscription.product = Product.id')
-            clause_tables.append('CommercialSubscription')
+                CommercialSubscription.productID == Product.id)
 
         or_conditions = []
         if license_info_is_empty is True:
@@ -1176,12 +1172,11 @@ class ProductSet:
                 ''' % sqlvalues(tuple(licenses)))
 
         if len(or_conditions) != 0:
-            conditions.append('(%s)' % '\nOR '.join(or_conditions))
+            conditions.append(SQL('(%s)' % '\nOR '.join(or_conditions)))
 
-        conditions_string = '\nAND '.join(conditions)
-        result = Product.select(
-            conditions_string, clauseTables=clause_tables,
-            orderBy=['displayname', 'name'], distinct=True)
+        result = IStore(Product).find(
+            Product, *conditions).config(
+                distinct=True).order_by(Product.displayname, Product.name)
         return result
 
     def search(self, text=None, soyuz=None,
