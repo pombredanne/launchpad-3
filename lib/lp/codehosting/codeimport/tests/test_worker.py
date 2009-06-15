@@ -24,7 +24,7 @@ from canonical.cachedproperty import cachedproperty
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, ImportWorker,
-    PullingImportWorker, get_default_bazaar_branch_store,
+    GitImportWorker, get_default_bazaar_branch_store,
     get_default_foreign_tree_store)
 from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, SubversionServer)
@@ -660,7 +660,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
 
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
-        return PullingImportWorker(
+        return GitImportWorker(
             self.source_details, self.bazaar_store, logging.getLogger())
 
     def commitInForeignTree(self, foreign_tree):

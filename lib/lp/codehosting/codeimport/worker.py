@@ -305,6 +305,11 @@ class ImportWorker:
             self.source_details.branch_id, self.BZR_WORKING_TREE_PATH,
             self.required_format)
 
+    def pushBazaarWorkingTree(self, bazaar_tree):
+        """XXX."""
+        self.bazaar_branch_store.push(
+            self.source_details.branch_id, bazaar_tree, self.required_format)
+
     def getWorkingDirectory(self):
         """The directory we should change to and store all scratch files in.
         """
@@ -427,8 +432,7 @@ class CSCVSImportWorker(ImportWorker):
         foreign_tree = self.getForeignTree()
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
-        self.bazaar_branch_store.push(
-            self.source_details.branch_id, bazaar_tree, self.required_format)
+        self.pushBazaarWorkingTree(bazaar_tree)
         self.foreign_tree_store.archive(
             self.source_details, foreign_tree)
 
@@ -451,5 +455,19 @@ class PullingImportWorker(ImportWorker):
                 overwrite=True)
         finally:
             bzrlib.ui.ui_factory = saved_factory
-        self.bazaar_branch_store.push(
-            self.source_details.branch_id, bazaar_tree, self.required_format)
+        self.pushBazaarWorkingTree(bazaar_tree)
+
+
+class GitImportWorker(PullingImportWorker):
+    """An import worker for imports that can be done by a bzr plugin."""
+
+    def getBazaarWorkingTree(self):
+        """XXX"""
+        tree = PullingImportWorker.getBazaarWorkingTree(self)
+        # Maybe fetch git.db into tree.
+        return tree
+
+    def pushBazaarWorkingTree(self, bazaar_tree):
+        """XXX"""
+        PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
+        # Push git.db somewhere.
