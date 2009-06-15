@@ -1,17 +1,12 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
-# XXX: Andrew Bennetts 2005-03-24:
-#      This file can (and probably should) be re-written as a doctest file,
-#      for better readability.
-
-import unittest
-#from zope.testing.doctestunit import DocTestSuite
 
 import os
 import sha
 import shutil
 import tempfile
+import unittest
 
 from zope.component import getUtility
 
@@ -118,13 +113,13 @@ class LibrarianStorageTestCase(unittest.TestCase):
         newfile.append(data)
 
         # The transaction shouldn't be committed yet...
-        self.failIf(self.committed)
+        self.failIf(self.committed, "Committed too early.")
 
         # Now try to store the file
         fileid, aliasid = newfile.store()
 
         # ...but it should be committed now.
-        self.failUnless(self.committed)
+        self.failUnless(self.committed, "Transaction not committed.")
 
         # And the file should now be in its final location on disk, too..
         self.failUnless(self.storage.hasFile(fileid))
