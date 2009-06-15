@@ -47,7 +47,7 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
+from canonical.launchpad.interfaces import ISlaveStore
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.datetimeutils import make_mondays_between
@@ -728,35 +728,37 @@ class ShippingRequestSet:
         x86 = ShipItArchitecture.X86
         amd64 = ShipItArchitecture.AMD64
         for country in Country.select():
-            base_query = (
-                "shippingrequest.country = %s AND "
-                "shippingrequest.shipment IS NOT NULL"
-                % sqlvalues(country.id)
-                )
-            clauseTables = []
+            base_query = [
+                ShippingRequest.country == country,
+                ShippingRequest.shipment != None,
+                ]
             if current_series_only:
-                base_query += """
-                    AND RequestedCDs.distroseries = %s
-                    AND RequestedCDs.request = ShippingRequest.id
-                    """ % sqlvalues(ShipItConstants.current_distroseries)
-                clauseTables.append('RequestedCDs')
-            total_shipped_requests = ShippingRequest.select(
-                base_query, clauseTables=clauseTables, distinct=True).count()
+                base_query.extend([
+                    RequestedCDs.distroseries ==
+                        ShipItConstants.current_distroseries,
+                    RequestedCDs.requestID == ShippingRequest.id,
+                    ])
+            total_shipped_requests = ISlaveStore(ShippingRequest).find(
+                ShippingRequest, *base_query).config(distinct=True).count()
             if not total_shipped_requests:
                 continue
 
             shipped_cds_per_arch = self._getRequestedCDCount(
                 current_series_only, country=country, approved=True)
 
-            high_prio_orders = ShippingRequest.select(
-                base_query + " AND highpriority IS TRUE",
-                clauseTables=clauseTables, distinct=True)
-            high_prio_count = intOrZero(high_prio_orders.count())
+            high_prio_orders = ISlaveStore(ShippingRequest).find(
+                ShippingRequest,
+                ShippingRequest.highpriority == True,
+                *base_query).config(distinct=True)
+            high_prio_count = intOrZero(
+                high_prio_orders.count())
 
-            normal_prio_orders = ShippingRequest.select(
-                base_query + " AND highpriority IS FALSE",
-                clauseTables=clauseTables, distinct=True)
-            normal_prio_count = intOrZero(normal_prio_orders.count())
+            normal_prio_orders = ISlaveStore(ShippingRequest).find(
+                ShippingRequest,
+                ShippingRequest.highpriority == False,
+                *base_query).config(distinct=True)
+            normal_prio_count = intOrZero(
+                normal_prio_orders.count())
 
             shipped_cds = self._sumRequestedCDCount(shipped_cds_per_arch)
             requested_cd_count = self._getRequestedCDCount(
