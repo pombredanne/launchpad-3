@@ -180,7 +180,6 @@ class BranchMailer(BaseMailer):
         :param delta: an IBranchDelta representing the modification.
         :return: a BranchMailer.
         """
-        # If there is no one interested, then bail out early.
         recipients = branch.getNotificationRecipients()
         interested_levels = (
             BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
