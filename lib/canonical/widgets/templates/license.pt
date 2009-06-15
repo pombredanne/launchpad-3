@@ -83,7 +83,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
 
   Select the license(s) under which you release your project.
   <div tal:condition="view/allow_pending_license"
-     tal:define="is_empty not:view/_getFormInput">
+       tal:define="is_empty not:view/_getFormInput">
     <input id="license_pending" name="license_status" type="radio"
           tal:attributes="checked is_empty"
           onClick="unsetLicenses()" />
@@ -95,11 +95,11 @@ YUI().use('node', 'lazr.effects', function(Y) {
     <label for="license_complete">
       This project consists of code licensed under:
     </label>
-  </div>
-
-  <tal:allow-pending condition="view/allow_pending_license">
     <div tal:attributes="style string:padding-left: 20px"
-         onclick="setLicensePendingStatus(false)">
+         onclick="setLicensePendingStatus(false)"/>
+  </div>
+  <div tal:condition="not: view/allow_pending_license" />
+
       <a href="" id="recommended-expand" class="js-action">
         <img id="recommended-expand-arrow"
              src="/@@/treeExpanded"
@@ -134,17 +134,6 @@ YUI().use('node', 'lazr.effects', function(Y) {
         Other choices
       </a>
       <input tal:replace="structure view/special" />
-    </div>
-  </tal:allow-pending>
-  <tal:do-not-allow-pending condition="not:view/allow_pending_license">
-    <div>
-      <input tal:replace="structure view/recommended" />
-      <input tal:replace="structure view/more" />
-      <input tal:condition="view/show_deprecated"
-             tal:replace="structure view/deprecated" />
-      <input tal:replace="structure view/special" />
-    </div>
-  </tal:do-not-allow-pending>
 
   <p>
     Launchpad.net is free to use for software projects that share
