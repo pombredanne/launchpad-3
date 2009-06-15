@@ -207,7 +207,7 @@ BugWatchUpdater keeps a local copy of this variable, which we can
 override by passing a list of products to the BugWatchUpdater
 constructor.
 
-    >>> from canonical.launchpad.scripts import checkwatches
+    >>> from lp.bugs.scripts import checkwatches
     >>> (bug_watch_updater._syncable_gnome_products ==
     ...     checkwatches.SYNCABLE_GNOME_PRODUCTS)
     True
