@@ -86,7 +86,7 @@ comments. Calling importBugComments() and passing it our new
 comment-importing ExternalBugTracker instance will result in the three
 comments in the comment_dict being imported into Launchpad.
 
-    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bugwatch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 3 comments for remote bug 123456 on ...

@@ -27,7 +27,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.scripts import bugimport
 from lp.bugs.scripts.bugimport import ET
-from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+from lp.bugs.scripts.checkwatches import BugWatchUpdater
 
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import login, logout

@@ -11,7 +11,7 @@ import _pythonpath
 
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+from lp.bugs.scripts.checkwatches import BugWatchUpdater
 
 
 class CheckWatches(LaunchpadCronScript):
