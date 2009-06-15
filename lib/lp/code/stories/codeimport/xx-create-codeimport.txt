@@ -180,3 +180,19 @@ one.
     There is 1 error.
     There is already an existing import for firefox with the name of imported.
 
+
+== Requesting an import on a project where the user doesn't have permission ==
+
+If there are privacy policies that disallow the user from creating branches
+then an error is shown to the user.
+
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> browser.getControl('Project').value = "launchpad"
+    >>> browser.getControl('Branch Name').value = "imported"
+    >>> browser.getControl('Branch URL').value = (
+    ...     "http://svn.example.com/launchpage/fake")
+    >>> browser.getControl('Request Import').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    You are not allowed to register imports for Launchpad.
