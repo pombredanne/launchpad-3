@@ -27,7 +27,7 @@ from lp.codehosting.vfs import get_lp_server
 from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.database import MessageSet
-from lp.code.model.branchmergeproposal import (
+from lp.code.model.branchmergeproposaljob import (
     CreateMergeProposalJob, MergeProposalCreatedJob)
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)

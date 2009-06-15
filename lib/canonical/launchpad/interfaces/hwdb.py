@@ -22,6 +22,8 @@ __all__ = [
     'IHWDeviceNameVariantSet',
     'IHWDeviceSet',
     'IHWDriver',
+    'IHWDriverName',
+    'IHWDriverPackageName',
     'IHWDriverSet',
     'IHWSubmission',
     'IHWSubmissionBug',
@@ -317,7 +319,7 @@ class IHWSubmissionSet(Interface):
         """
 
     def deviceDriverOwnersAffectedByBugs(
-        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
         package_name=None, bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
         """Return persons affected by given bugs and owning a given device.
@@ -510,12 +512,35 @@ class IHWDriverSet(Interface):
         :return: An IHWDriver instance.
         """
 
-    package_names = List(
-        title=u'Package Names',
-        description=
-            u'All known distinct package names appearing in HWDriver.',
-        value_type=TextLine(),
-        readonly=True)
+    def all_driver_names():
+        """Return all known distinct driver names appearing in HWDriver."""
+
+    def all_package_names():
+        """Return all known distinct package names appearing in HWDriver."""
+
+
+class IHWDriverName(Interface):
+    """A driver name as appearing in `IHWDriver`.
+    """
+    export_as_webservice_entry()
+
+    name = exported(
+        TextLine(
+            title=u'Driver Name', required=True, readonly=True,
+            description=_("The name of a driver as it appears in "
+                          "IHWDriver.")))
+
+
+class IHWDriverPackageName(Interface):
+    """A driver name as appearing in `IHWDriver`.
+    """
+    export_as_webservice_entry()
+
+    package_name = exported(
+        TextLine(
+            title=u'Package Name', required=True, readonly=True,
+            description=_("The name of a package as it appears in "
+                          "IHWDriver.")))
 
 
 # Identification of a hardware device.
@@ -1163,12 +1188,21 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         :return: A list of strings with vendor IDs fr this bus,
         """
 
+    driver_names = exported(
+        CollectionField(
+            title=u'Driver Names',
+            description=
+                u'All known distinct driver names appearing in HWDriver',
+            value_type=Reference(schema=IHWDriverName),
+            readonly=True))
+
     package_names = exported(
-        List(title=u'Package Names',
-             description=
-                 u'All known distinct package names appearing in HWDriver.',
-             value_type=TextLine(),
-             readonly=True))
+        CollectionField(
+            title=u'Package Names',
+            description=
+                u'All known distinct package names appearing in HWDriver.',
+            value_type=Reference(schema=IHWDriverPackageName),
+            readonly=True))
 
     @operation_parameters(
         bus=Choice(

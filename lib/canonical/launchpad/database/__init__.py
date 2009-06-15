@@ -4,12 +4,6 @@
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
 from canonical.launchpad.database.account import *
-from lp.code.model.codeimport import *
-from lp.code.model.codeimportevent import *
-from lp.code.model.codeimportjob import *
-from lp.code.model.codeimportmachine import *
-from lp.code.model.codeimportresult import *
-from lp.code.model.codereviewvote import *
 from canonical.launchpad.database.customlanguagecode import *
 from lp.registry.model.milestone import *
 from lp.registry.model.person import *
@@ -85,11 +79,6 @@ from canonical.launchpad.database.translationsperson import *
 from canonical.launchpad.database.translationtemplateitem import *
 from canonical.launchpad.database.translator import *
 from lp.soyuz.model.processor import *
-from lp.code.model.branch import *
-from lp.code.model.branchmergeproposal import *
-from lp.code.model.branchrevision import *
-from lp.code.model.branchsubscription import *
-from lp.code.model.branchvisibilitypolicy import *
 from lp.soyuz.model.build import *
 from lp.soyuz.model.builder import *
 from lp.soyuz.model.buildqueue import *
@@ -131,7 +120,6 @@ from lp.answers.model.questionmessage import *
 from lp.answers.model.questionreopening import *
 from lp.answers.model.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
-from lp.code.model.revision import *
 from lp.registry.model.gpgkey import *
 from lp.soyuz.model.archive import *
 from canonical.launchpad.database.emailaddress import *
@@ -141,6 +129,5 @@ from lp.registry.model.mailinglist import *
 from canonical.launchpad.database.hwdb import *
 from lp.soyuz.model.archivedependency import *
 from lp.soyuz.model.packagediff import *
-from lp.code.model.codereviewcomment import *
 from lp.soyuz.model.archivepermission import *
 from lp.soyuz.model.packageset import *

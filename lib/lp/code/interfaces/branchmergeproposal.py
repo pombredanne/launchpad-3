@@ -31,7 +31,7 @@ from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
+from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
 from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference

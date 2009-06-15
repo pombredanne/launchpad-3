@@ -4,6 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:lp="http://namespaces.canonical.com/lp"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
   <include package=".browser"/>
 
@@ -23,7 +24,7 @@
       provides="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSet">
     <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSet"/>
   </securedutility>
-  <class class="canonical.launchpad.database.CodeReviewVoteReference">
+  <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"/>
   </class>
   <subscriber
@@ -33,7 +34,7 @@
 
   <!-- CodeImportMachine -->
 
-  <class class="canonical.launchpad.database.CodeImportMachine">
+  <class class="lp.code.model.codeimportmachine.CodeImportMachine">
     <implements interface="lp.code.interfaces.codeimportmachine.ICodeImportMachine"/>
     <allow attributes="
                     id
@@ -64,7 +65,7 @@
   <!-- CodeImportMachineSet -->
 
   <securedutility
-      class="canonical.launchpad.database.CodeImportMachineSet"
+      class="lp.code.model.codeimportmachine.CodeImportMachineSet"
       provides="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet">
     <allow interface="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"/>
   </securedutility>
@@ -94,6 +95,18 @@
       for="storm.store.Store"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.model.branchcollection.GenericBranchCollection"/>
+  <adapter
+      for="lp.registry.interfaces.person.IPerson"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_person"/>
+  <adapter
+      for="lp.registry.interfaces.product.IProduct"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_product"/>
+  <adapter
+      for="lp.registry.interfaces.project.IProject"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
   <securedutility
       class="lp.code.model.branchcollection.GenericBranchCollection"
       provides="lp.code.interfaces.branchcollection.IAllBranches">
@@ -125,7 +138,7 @@
 
   <!-- Branch Merge Proposal -->
 
-  <class class="canonical.launchpad.database.BranchMergeProposal">
+  <class class="lp.code.model.branchmergeproposal.BranchMergeProposal">
     <allow attributes="
                     address
                     id
@@ -189,7 +202,7 @@
                     createComment
                     createCommentFromMessage"/>
   </class>
-  <class class="canonical.launchpad.database.CreateMergeProposalJob">
+  <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
     <allow interface="canonical.launchpad.interfaces.IMessageJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
   </class>
@@ -213,7 +226,7 @@
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
       provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
       factory="lp.code.browser.branchmergeproposal.BranchMergeProposalPrimaryContext"/>
-  <class class="canonical.launchpad.database.MergeProposalCreatedJob">
+  <class class="lp.code.model.branchmergeproposaljob.MergeProposalCreatedJob">
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalCreatedJob"/>
   </class>
@@ -221,17 +234,17 @@
   <!-- hierarchy -->
 
   <securedutility
-      class="canonical.launchpad.database.BranchMergeProposalGetter"
+      class="lp.code.model.branchmergeproposal.BranchMergeProposalGetter"
       provides="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalGetter">
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalGetter"/>
   </securedutility>
   <securedutility
-      component="canonical.launchpad.database.CreateMergeProposalJob"
+      component="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob"
       provides="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJobSource">
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJobSource"/>
   </securedutility>
   <securedutility
-      component="canonical.launchpad.database.MergeProposalCreatedJob"
+      component="lp.code.model.branchmergeproposaljob.MergeProposalCreatedJob"
       provides="lp.code.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource">
     <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource"/>
   </securedutility>
@@ -259,14 +272,14 @@
 
   <!-- CodeImportResult -->
 
-  <class class="canonical.launchpad.database.CodeImportResult">
+  <class class="lp.code.model.codeimportresult.CodeImportResult">
     <allow interface="lp.code.interfaces.codeimportresult.ICodeImportResult"/>
   </class>
 
   <!-- CodeImportResultSet -->
 
   <securedutility
-      class="canonical.launchpad.database.CodeImportResultSet"
+      class="lp.code.model.codeimportresult.CodeImportResultSet"
       provides="lp.code.interfaces.codeimportresult.ICodeImportResultSet">
     <allow interface="lp.code.interfaces.codeimportresult.ICodeImportResultSet"/>
   </securedutility>
@@ -291,7 +304,7 @@
 
   <!-- BranchSubscription -->
 
-  <class class="canonical.launchpad.database.BranchSubscription">
+  <class class="lp.code.model.branchsubscription.BranchSubscription">
     <allow interface="lp.code.interfaces.branchsubscription.IBranchSubscription"/>
     <allow interface="lp.code.interfaces.branchtarget.IHasBranchTarget"/>
     <require
@@ -318,6 +331,7 @@
                     private
                     registrant
                     owner
+                    description
                     author
                     reviewer
                     code_reviewer
@@ -398,7 +412,7 @@
         permission="launchpad.Edit"
         attributes="destroySelf setPrivate"
         set_attributes="name url mirror_status_message
-                        owner author product lifecycle_status
+                        owner author description product lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
                         last_scanned last_scanned_id revision_count branch_type
@@ -454,13 +468,13 @@
 
   <!-- BranchSet -->
 
-  <class class="canonical.launchpad.database.BranchSet">
+  <class class="lp.code.model.branch.BranchSet">
     <allow interface="lp.code.interfaces.branch.IBranchSet"/>
   </class>
 
   <!-- BranchVisibilityPolicy -->
 
-  <class class="canonical.launchpad.database.BranchVisibilityTeamPolicy">
+  <class class="lp.code.model.branchvisibilitypolicy.BranchVisibilityTeamPolicy">
     <allow interface="canonical.launchpad.interfaces.IBranchVisibilityTeamPolicy"/>
   </class>
 
@@ -470,7 +484,7 @@
     <allow interface="lp.code.interfaces.branch.IBranchDelta"/>
   </class>
   <securedutility
-      class="canonical.launchpad.database.BranchSet"
+      class="lp.code.model.branch.BranchSet"
       provides="lp.code.interfaces.branch.IBranchSet">
     <allow interface="lp.code.interfaces.branch.IBranchSet"/>
   </securedutility>
@@ -533,24 +547,24 @@
       for="lp.code.interfaces.branchtarget.IBranchTarget"
       provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
       factory="lp.code.model.branchtarget.get_canonical_url_data_for_target"/>
-  <class class="canonical.launchpad.database.BranchRevision">
+  <class class="lp.code.model.branchrevision.BranchRevision">
     <allow interface="lp.code.interfaces.branchrevision.IBranchRevision"/>
   </class>
 
   <!-- BranchRevisionSet -->
 
-  <class class="canonical.launchpad.database.BranchRevisionSet">
+  <class class="lp.code.model.branchrevision.BranchRevisionSet">
     <allow interface="lp.code.interfaces.branchrevision.IBranchRevisionSet"/>
   </class>
   <securedutility
-      class="canonical.launchpad.database.BranchRevisionSet"
+      class="lp.code.model.branchrevision.BranchRevisionSet"
       provides="lp.code.interfaces.branchrevision.IBranchRevisionSet">
     <allow interface="lp.code.interfaces.branchrevision.IBranchRevisionSet"/>
   </securedutility>
 
   <!-- CodeReviewComment -->
 
-  <class class="canonical.launchpad.database.CodeReviewComment">
+  <class class="lp.code.model.codereviewcomment.CodeReviewComment">
     <allow interface="lp.code.interfaces.codereviewcomment.ICodeReviewComment"/>
     <allow interface="lp.code.interfaces.branchtarget.IHasBranchTarget"/>
   </class>
@@ -611,7 +625,7 @@
 
   <!-- CodeImport -->
 
-  <class class="canonical.launchpad.database.CodeImport">
+  <class class="lp.code.model.codeimport.CodeImport">
     <implements interface="lp.code.interfaces.codeimport.ICodeImport"/>
     <allow attributes="
                     id
@@ -660,21 +674,21 @@
   <!-- CodeImportSet -->
 
   <securedutility
-      class="canonical.launchpad.database.CodeImportSet"
+      class="lp.code.model.codeimport.CodeImportSet"
       provides="lp.code.interfaces.codeimport.ICodeImportSet">
     <allow interface="lp.code.interfaces.codeimport.ICodeImportSet"/>
   </securedutility>
 
   <!-- CodeImportJob -->
 
-  <class class="canonical.launchpad.database.CodeImportJob">
+  <class class="lp.code.model.codeimportjob.CodeImportJob">
     <allow interface="lp.code.interfaces.codeimportjob.ICodeImportJob"/>
   </class>
 
   <!-- CodeImportJobSet -->
 
   <securedutility
-      class="canonical.launchpad.database.CodeImportJobSet"
+      class="lp.code.model.codeimportjob.CodeImportJobSet"
       provides="lp.code.interfaces.codeimportjob.ICodeImportJobSet">
     <require
         permission="launchpad.View"
@@ -685,7 +699,7 @@
   <!-- CodeImportJobWorkflow -->
 
   <securedutility
-      class="canonical.launchpad.database.CodeImportJobWorkflow"
+      class="lp.code.model.codeimportjob.CodeImportJobWorkflow"
       provides="lp.code.interfaces.codeimportjob.ICodeImportJobWorkflow">
     <require
         permission="launchpad.Edit"
@@ -712,47 +726,47 @@
 
   <!-- CodeImportEvent -->
 
-  <class class="canonical.launchpad.database.CodeImportEvent">
+  <class class="lp.code.model.codeimportevent.CodeImportEvent">
     <allow interface="lp.code.interfaces.codeimportevent.ICodeImportEvent"/>
   </class>
 
   <!-- CodeImportEventSet -->
 
   <securedutility
-      class="canonical.launchpad.database.CodeImportEventSet"
+      class="lp.code.model.codeimportevent.CodeImportEventSet"
       provides="lp.code.interfaces.codeimportevent.ICodeImportEventSet">
     <allow interface="lp.code.interfaces.codeimportevent.ICodeImportEventSet"/>
   </securedutility>
 
   <!-- CodeImportEventToken -->
 
-  <class class="canonical.launchpad.database.CodeImportEventToken">
+  <class class="lp.code.model.codeimportevent.CodeImportEventToken">
     <allow interface="lp.code.interfaces.codeimportevent.ICodeImportEventToken"/>
   </class>
 
-  <class class="canonical.launchpad.database.Revision">
+  <class class="lp.code.model.revision.Revision">
     <allow interface="canonical.launchpad.interfaces.IRevision"/>
   </class>
 
-  <class class="canonical.launchpad.database.RevisionAuthor">
+  <class class="lp.code.model.revision.RevisionAuthor">
     <allow interface="canonical.launchpad.interfaces.IRevisionAuthor"/>
   </class>
 
-  <class class="canonical.launchpad.database.RevisionParent">
+  <class class="lp.code.model.revision.RevisionParent">
     <allow interface="canonical.launchpad.interfaces.IRevisionParent" />
   </class>
 
-  <class class="canonical.launchpad.database.RevisionProperty">
+  <class class="lp.code.model.revision.RevisionProperty">
     <allow interface="canonical.launchpad.interfaces.IRevisionProperty" />
   </class>
 
   <!-- RevisionSet -->
-  <class class="canonical.launchpad.database.RevisionSet">
+  <class class="lp.code.model.revision.RevisionSet">
     <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
   </class>
 
   <securedutility
-      class="canonical.launchpad.database.RevisionSet"
+      class="lp.code.model.revision.RevisionSet"
       provides="canonical.launchpad.interfaces.IRevisionSet" >
     <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
   </securedutility>
@@ -764,4 +778,26 @@
 
   <lp:help-folder
       folder="help" type="canonical.launchpad.layers.CodeLayer" />
+
+  <!-- Diffs -->
+  <class class="lp.code.model.diff.Diff">
+    <allow interface="lp.code.interfaces.diff.IDiff" />
+  </class>
+  <class class="lp.code.model.diff.StaticDiff">
+    <allow interface="lp.code.interfaces.diff.IStaticDiff" />
+  </class>
+  <class class="lp.code.model.diff.PreviewDiff">
+    <allow interface="lp.code.interfaces.diff.IPreviewDiff" />
+  </class>
+  <securedutility
+      component="lp.code.model.diff.StaticDiff"
+      provides="lp.code.interfaces.diff.IStaticDiffSource" >
+    <allow
+      interface="lp.code.interfaces.diff.IStaticDiffSource" />
+  </securedutility>
+
+  <!-- Most of the interfaces are registered through
+       canonical.launchpad.interfaces right now  -->
+  <webservice:register module="lp.code.interfaces.diff" />
+
 </configure>

@@ -73,17 +73,50 @@ def test_inline_subscriber():
         validator=u'style.backgroundImage|url(/@@/add)')
     client.asserts.assertNotNode(id=SAMPLE_PERSON_ID)
 
-    # To test unsubscribing of teams, a team must first be subscribed.
+    # Test inline subscribing of others by subscribing Ubuntu Team.
     # To confirm, look for the Ubuntu Team element after subscribing.
     client.click(link=u'Subscribe someone else')
     client.waits.forElement(
-        id=u'field.person', timeout=WAIT_ELEMENT_COMPLETE)
-    client.type(text=u'ubuntu-team', id=u'field.person')
-    client.click(id=u'field.actions.add')
-    client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+        name=u'search', timeout=WAIT_ELEMENT_COMPLETE)
+    client.type(text=u'ubuntu-team', name=u'search')
+    client.click(
+        xpath=u'//table[contains(@class, "yui-picker") '
+               'and not(contains(@class, "yui-picker-hidden"))]'
+               '//div[@class="yui-picker-search-box"]/button')
+    search_result_xpath = (u'//table[contains(@class, "yui-picker") '
+                            'and not(contains(@class, "yui-picker-hidden"))]'
+                            '//ul[@class="yui-picker-results"]/li[2]/span')
+    client.waits.forElement(
+        xpath=search_result_xpath, timeout=WAIT_ELEMENT_COMPLETE)
+    client.click(xpath=search_result_xpath)
     client.waits.forElement(
         id=u'subscribers-links', timeout=WAIT_ELEMENT_COMPLETE)
     client.asserts.assertNode(id=u'subscriber-ubuntu-team')
+
+    # The same team cannot be subscribed again.
+    client.click(link=u'Subscribe someone else')
+    client.waits.forElement(
+        name=u'search', timeout=WAIT_ELEMENT_COMPLETE)
+    client.type(text=u'ubuntu-team', name=u'search')
+    client.click(
+        xpath=u'//table[contains(@class, "yui-picker") '
+               'and not(contains(@class, "yui-picker-hidden"))]'
+               '//div[@class="yui-picker-search-box"]/button')
+    search_result_xpath = (u'//table[contains(@class, "yui-picker") '
+                            'and not(contains(@class, "yui-picker-hidden"))]'
+                            '//ul[@class="yui-picker-results"]/li[2]/span')
+    client.waits.forElement(
+        xpath=search_result_xpath, timeout=WAIT_ELEMENT_COMPLETE)
+    client.click(xpath=search_result_xpath)
+    client.waits.forElement(
+        classname=u'yui-lazr-formoverlay-errors',
+        timeout=WAIT_ELEMENT_COMPLETE)
+    client.asserts.assertText(
+        classname=u'yui-lazr-formoverlay-errors',
+        validator=u'Ubuntu Team has already been subscribed')
+    # Clear the error message by clicking the OK button.
+    client.click(
+        xpath=u'//div[@class="yui-lazr-formoverlay-actions"]/button[2]')
 
     # Sample Person is logged in currently. She is not a
     # member of Ubuntu Team, and so, does not have permission
