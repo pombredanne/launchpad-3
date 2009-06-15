@@ -666,6 +666,13 @@ class BranchMergeProposalGetter:
             raise BadBranchMergeProposalSearchContext(context)
         return collection.getMergeProposals(status)
 
+    @staticmethod
+    def getProposalsForParticipant(participant, status=None,
+       visible_by_user=None):
+       """See `IBranchMergeProposalGetter`."""
+       collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+       collection = collection.ownedBy(context)
+       return collection.getMergeProposals(status)
 
     @staticmethod
     def getVotesForProposals(proposals):
