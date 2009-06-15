@@ -549,6 +549,10 @@ distroarchseriesbinarypackage_index = ContextTitle('%s')
 
 distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
+def distroseries_add(context, view):
+    """Return the page title to change the driver."""
+    return view.page_title
+
 distroseries_addport = ContextTitle('Add a port of %s')
 
 distroseries_admin = ContextTitle('Administer %s')
@@ -1087,7 +1091,7 @@ product_purchase_subscription = ContextDisplayName(
 
 product_files = ContextDisplayName('%s project files')
 
-product_review_license = ContextTitle('Review licensing for %s')
+product_review_license = ContextTitle('Review %s')
 
 product_series = ContextDisplayName('%s timeline')
 
@@ -1113,7 +1117,7 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
 
-products_review_licenses = 'Review licenses of projects'
+products_review_licenses = 'Review projects'
 
 productserieslanguage_index = ContextTitle('%s')
 

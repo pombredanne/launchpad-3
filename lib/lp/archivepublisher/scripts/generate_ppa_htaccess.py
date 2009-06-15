@@ -9,13 +9,18 @@ from operator import attrgetter
 
 from zope.component import getUtility
 
-from lp.archivepublisher.config import getPubConfig
 from canonical.config import config
+from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.mail import format_address, simple_sendmail
+from canonical.launchpad.webapp import canonical_url
+
+from lp.archivepublisher.config import getPubConfig
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet)
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -134,21 +139,53 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         return False
 
-    def deactivateTokens(self, ppa):
+    def sendCancellationEmail(self, token):
+        """Send an email to the person whose subscription was cancelled."""
+        send_to_person = token.person
+        ppa_name = token.archive.displayname
+        ppa_owner_url = canonical_url(token.archive.owner)
+        subject = "PPA subscription cancelled for %s" % ppa_name
+        template = get_email_template("ppa-subscription-cancelled.txt")
+
+        assert not send_to_person.isTeam(), (
+            "Token.person is a team, it should always be individuals.")
+
+        if send_to_person.preferredemail is None:
+            # The person has no preferred email set, so we don't
+            # email them.
+            return
+
+        to_address = [send_to_person.preferredemail.email]
+        replacements = {
+            'recipient_name' : send_to_person.displayname,
+            'ppa_name' : ppa_name,
+            'ppa_owner_url' : ppa_owner_url,
+            }
+        body = MailWrapper(72).format(
+            template % replacements, force_wrap=True)
+
+        from_address = format_address(
+            ppa_name,
+            config.canonical.noreply_from_address)
+
+        headers = {
+            'Sender' : config.canonical.bounce_address,
+            }
+
+        simple_sendmail(from_address, to_address, subject, body, headers)
+
+    def deactivateTokens(self, ppa, send_email=False):
         """Deactivate tokens as necessary.
 
         If a subscriber no longer has an active token for the PPA, we
         deactivate it.
 
         :param ppa: The PPA to check tokens for.
+        :param send_email: Whether to send a cancellation email to the owner
+            of the token.  This defaults to False to speed up the test
+            suite.
         :return: a list of valid tokens.
         """
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archiveauthtoken import (
-            IArchiveAuthTokenSet)
-        from lp.soyuz.interfaces.archivesubscriber import (
-            IArchiveSubscriberSet)
-
         tokens = getUtility(IArchiveAuthTokenSet).getByArchive(ppa)
         valid_tokens = []
         for token in tokens:
@@ -158,6 +195,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             if result.count() == 0:
                 # The subscriber's token is no longer active,
                 # deactivate it.
+                if send_email:
+                    self.sendCancellationEmail(token)
                 token.deactivate()
             else:
                 valid_tokens.append(token)
@@ -171,10 +210,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         :param ppa: The PPA to expire subscriptons for.
         """
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archivesubscriber import (
-            ArchiveSubscriberStatus, IArchiveSubscriberSet)
-
         now = datetime.now(pytz.UTC)
         subscribers = getUtility(IArchiveSubscriberSet).getByArchive(ppa)
         for subscriber in subscribers:
@@ -186,14 +221,11 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
     def main(self):
         """Script entry point."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archive import IArchiveSet
-
         self.logger.info('Starting the PPA .htaccess generation')
         ppas = getUtility(IArchiveSet).getPrivatePPAs()
         for ppa in ppas:
             self.expireSubscriptions(ppa)
-            valid_tokens = self.deactivateTokens(ppa)
+            valid_tokens = self.deactivateTokens(ppa, send_email=True)
 
             # If this PPA is blacklisted, do not touch it's htaccess/pwd
             # files.
