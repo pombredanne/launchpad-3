@@ -44,8 +44,8 @@ from zope.schema import (
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_write_operation, exported,
-    operation_parameters, operation_returns_entry)
+    export_as_webservice_entry, export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_entry)
 
 from canonical.config import config
 
@@ -765,7 +765,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_("The person to unsubscribe"),
             schema=IPerson))
     @operation_returns_entry(Interface) # Really IBranchSubscription
-    @export_write_operation()
+    @export_read_operation()
     def getSubscription(person):
         """Return the BranchSubscription for this person."""
 
