@@ -275,6 +275,17 @@ And a non-public team must have restricted membership.
     ...     print error
     Private teams must have a Restricted subscription policy.
 
+= Visibility transitions =
+
+A team can only change visibility if the new state will not leak any
+data or put the team into an inconsistent state.  The rules are:
+
+Private -> anything: Fail
+Private Membership -> Private : OK
+Private Membership -> Public : OK
+Public -> Private/PMT : OK, if the team only has the permitted artifacts
+Public -> Private/PMT : Fail, if the team has a restricted artifact
+
 Private teams cannot be made public.
 
     >>> super_secret2 = personset.getByName('super-secret2')
@@ -311,10 +322,77 @@ displayname for the team is the old value.
     >>> print super_secret2.displayname
     Shhhh
 
+Private teams cannot become private membership.
+
+    >>> form = {
+    ...     'field.name': 'super-secret-two',
+    ...     'field.displayname': 'New Display Name',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Private Membership',
+    ...     'field.actions.save': 'Save',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     super_secret2, '+edit',
+    ...     form=form, principal=foo_bar)
+
+    >>> for notification in view.request.notifications:
+    ...     print notification.message
+    A private team cannot change visibility.
+
+    >>> print len(view.errors)
+    0
+
+Private Membership teams can be made private.
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> login('foo.bar@canonical.com')
+    >>> team = factory.makeTeam(
+    ...     owner=foo_bar,
+    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+
+    >>> form = {
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.visibility': 'Private',
+    ...     'field.actions.save': 'Save',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     team, '+edit',
+    ...     form=form, principal=foo_bar)
+
+    >>> print len(view.request.notifications)
+    0
+    >>> print len(view.errors)
+    0
+
+Private Membership teams can be made public.
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> login('foo.bar@canonical.com')
+    >>> team = factory.makeTeam(
+    ...     owner=foo_bar,
+    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+
+    >>> form = {
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.visibility': 'Public',
+    ...     'field.actions.save': 'Save',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     team, '+edit',
+    ...     form=form, principal=foo_bar)
+
+    >>> print len(view.request.notifications)
+    0
+    >>> print len(view.errors)
+    0
+
 Public teams can be made private if the only artifacts they have are
 those permitted by private teams.
 
-    >>> from lp.registry.interfaces.person import PersonVisibility
     >>> def createTeamArtifacts(team, team_owner):
     ...     # A bug subscription.
     ...     bug = factory.makeBug()
@@ -366,12 +444,12 @@ those permitted by private teams.
 
 
     >>> login('foo.bar@canonical.com')
-    >>> team_one = factory.makeTeam(name='team-one',
+    >>> team = factory.makeTeam(
     ...     owner=foo_bar,
     ...     visibility=PersonVisibility.PUBLIC)
 
     >>> # Now let's create a bunch of allowable artifacts.
-    >>> createTeamArtifacts(team_one, foo_bar)
+    >>> createTeamArtifacts(team, foo_bar)
 
     >>> # With all of those artifacts in place we can still transition to private.
     >>> form = {
@@ -380,30 +458,59 @@ those permitted by private teams.
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(
-    ...     team_one, '+edit',
+    ...     team, '+edit',
+    ...     form=form, principal=foo_bar)
+    >>> print len(view.request.notifications)
+    0
+    >>> print len(view.errors)
+    0
+
+If the team has any other artifacts then it will not be allowed to
+change to Private.
+
+    >>> team = factory.makeTeam(
+    ...     owner=foo_bar,
+    ...     visibility=PersonVisibility.PUBLIC)
+
+    >>> # Now let's create a bunch of allowable artifacts.
+    >>> createTeamArtifacts(team, foo_bar)
+
+    >>> # Create a forbidden artifact.  Private teams cannot own bug trackers.
+    >>> bug_tracker = factory.makeBugTracker()
+    >>> bug_tracker.owner = team
+
+    >>> # With the addtion of hte bug tracker artifact the team will not
+    >>> # be allowed to transition to Private.
+    >>> form = {
+    ...     'field.visibility': 'Private',
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.actions.save': 'Save',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     team, '+edit',
     ...     form=form, principal=foo_bar)
     >>> print len(view.request.notifications)
     0
     >>> for error in view.errors:
     ...     print error
-
+    This team cannot be converted to Private since it is referenced by a bugtracker.
 
 The artifacts we have for the team will prevent it from transitioning
 from Public to Private Membership.
 
     >>> login('foo.bar@canonical.com')
-    >>> team_two = factory.makeTeam(name='team-two',
+    >>> team = factory.makeTeam(
     ...     owner=foo_bar,
     ...     visibility=PersonVisibility.PUBLIC)
 
-    >>> createTeamArtifacts(team_two, foo_bar)
+    >>> createTeamArtifacts(team, foo_bar)
     >>> form = {
     ...     'field.visibility': 'Private Membership',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(
-    ...     team_two, '+edit',
+    ...     team, '+edit',
     ...     form=form, principal=foo_bar)
 
     >>> print len(view.request.notifications)
@@ -412,6 +519,27 @@ from Public to Private Membership.
     ...     print error
     This team cannot be converted to Private Membership since it is referenced by a branch, a branchsubscription,
     a branchvisibilitypolicy, a bugsubscription, a bugtask and an archive.
+
+A team with no artifacts can be converted from Public to Private Membership.
+
+    >>> login('foo.bar@canonical.com')
+    >>> team = factory.makeTeam(
+    ...     owner=foo_bar,
+    ...     visibility=PersonVisibility.PUBLIC)
+
+    >>> form = {
+    ...     'field.visibility': 'Private Membership',
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.actions.save': 'Save',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     team, '+edit',
+    ...     form=form, principal=foo_bar)
+
+    >>> print len(view.request.notifications)
+    0
+    >>> print len(view.errors)
+    0
 
 
 = Use of 'private-' prefix =
