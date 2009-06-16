@@ -424,13 +424,12 @@ class TestCaseWithFactory(TestCase):
             tree_location, lightweight=True)
 
     @staticmethod
-    def getMirroredPath(branch):
+    def getBranchPath(branch, base):
         """Return the path of the branch in the mirrored area.
 
         This always uses the configured mirrored area, ignoring whatever
         server might be providing lp-mirrored: urls.
         """
-        base = config.codehosting.internal_branch_by_id_root
         # XXX gary 2009-5-28 bug 381325
         # This is a work-around for some failures on PQM, arguably caused by
         # relying on test set-up that is happening in the Makefile rather than
@@ -453,9 +452,10 @@ class TestCaseWithFactory(TestCase):
         :return: a `Branch` and a workingtree.
         """
         from bzrlib.bzrdir import BzrDir
-        from bzrlib.transport import get_transport
         db_branch = self.factory.makeAnyBranch()
-        transport = get_transport(self.getMirroredPath(db_branch))
+        transport = get_transport(
+            self.getBranchPath(
+                db_branch, config.codehosting.internal_branch_by_id_root))
         # Ensure the parent directories exist so that we can stick a branch
         # in them.
         transport.clone('../../..').ensure_base()
@@ -489,7 +489,6 @@ class TestCaseWithFactory(TestCase):
         """
         from lp.codehosting.scanner.tests.test_bzrsync import (
             FakeTransportServer)
-        from bzrlib.transport import get_transport
         self.useTempBzrHome()
         self.real_bzr_server = real_server
         if real_server:

@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 
-import os.path
-
+import os
+import shutil
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
@@ -20,6 +20,7 @@ from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.interfaces.translations import (
@@ -37,13 +38,15 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IBranchUpgradeJob,IRevisionMailJob,
-    IRosettaUploadJob)
+    IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
+    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
 from lp.code.model.branchjob import (
     BranchDiffJob, BranchJob, BranchJobType, BranchUpgradeJob,
-    RevisionsAddedJob, RevisionMailJob, RosettaUploadJob)
+    ReclaimBranchSpaceJob, RevisionMailJob, RevisionsAddedJob,
+    RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
+from lp.codehosting.vfs import branch_id_to_path
 
 
 class TestBranchJob(TestCaseWithFactory):
@@ -884,6 +887,101 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         job.context.sync()
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([job], ready_jobs)
+
+
+class TestReclaimBranchSpaceJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def cleanHostedAndMirroredAreas(self):
+        """Ensure that hosted and mirrored branch areas are present and empty.
+        """
+        hosted = config.codehosting.hosted_branches_root
+        shutil.rmtree(hosted, ignore_errors=True)
+        os.mkdir(hosted)
+        self.addCleanup(shutil.rmtree, hosted)
+        mirrored = config.codehosting.mirrored_branches_root
+        shutil.rmtree(mirrored, ignore_errors=True)
+        os.mkdir(mirrored)
+        self.addCleanup(shutil.rmtree, mirrored)
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.cleanHostedAndMirroredAreas()
+
+    def test_providesInterface(self):
+        # ReclaimBranchSpaceJob implements IReclaimBranchSpaceJob.
+        job = getUtility(IReclaimBranchSpaceJobSource).create(
+            self.factory.getUniqueInteger())
+        self.assertCorrectlyProvides(job, IReclaimBranchSpaceJob)
+
+    def test_stores_id(self):
+        # An instance of ReclaimBranchSpaceJob stores the ID of the branch
+        # that has been deleted.
+        branch_id = self.factory.getUniqueInteger()
+        job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        self.assertEqual(branch_id, job.branch_id)
+
+    def runReadyJobs(self):
+        """Run all ready `ReclaimBranchSpaceJob`s with the appropriate dbuser.
+        """
+        # switchDbUser aborts the current transaction, so we need to commit to
+        # make sure newly added jobs are still there after we call it.
+        self.layer.txn.commit()
+        self.layer.switchDbUser(config.reclaimbranchspace.dbuser)
+        for job in ReclaimBranchSpaceJob.iterReady():
+            job.run()
+
+    def test_run_branch_in_neither_area(self):
+        # Running a job to reclaim space for a branch that was never pushed to
+        # does nothing quietly.
+        branch_id = self.factory.getUniqueInteger()
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        # Just "assertNotRaises"
+        self.runReadyJobs()
+
+    def test_run_branch_in_hosted_area(self):
+        # Running a job to reclaim space for a branch that was pushed to
+        # but never mirrored removes the branch from the hosted area.
+        branch_id = self.factory.getUniqueInteger()
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        hosted_branch_path = os.path.join(
+            config.codehosting.hosted_branches_root,
+            branch_id_to_path(branch_id), '.bzr')
+        os.makedirs(hosted_branch_path)
+        self.runReadyJobs()
+        self.assertFalse(os.path.exists(hosted_branch_path))
+
+    def test_run_branch_in_mirrored_area(self):
+        # Running a job to reclaim space for a branch that only exists in the
+        # mirrored area (e.g. a MIRRORED branch) removes the branch from the
+        # mirrored area.
+        branch_id = self.factory.getUniqueInteger()
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        mirrored_branch_path = os.path.join(
+            config.codehosting.mirrored_branches_root,
+            branch_id_to_path(branch_id), '.bzr')
+        os.makedirs(mirrored_branch_path)
+        self.runReadyJobs()
+        self.assertFalse(os.path.exists(mirrored_branch_path))
+
+    def test_run_branch_in_both_areas(self):
+        # Running a job to reclaim space for a branch is present in both the
+        # mirrored and hosted area removes the branch from both areas.
+        branch_id = self.factory.getUniqueInteger()
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        hosted_branch_path = os.path.join(
+            config.codehosting.hosted_branches_root,
+            branch_id_to_path(branch_id), '.bzr')
+        mirrored_branch_path = os.path.join(
+            config.codehosting.mirrored_branches_root,
+            branch_id_to_path(branch_id), '.bzr')
+        os.makedirs(hosted_branch_path)
+        os.makedirs(mirrored_branch_path)
+        self.runReadyJobs()
+        self.assertFalse(
+            os.path.exists(hosted_branch_path)
+            or os.path.exists(mirrored_branch_path))
 
 
 def test_suite():
