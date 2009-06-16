@@ -10,8 +10,6 @@
       tal:repeat="subscription view/subscriptions"
       tal:attributes="id string:subscriber-${subscription/person/name}"
     >
-      <metal:subscriber metal:define-macro="subscriber-row">
-
         <a
           tal:condition="subscription/person/name|nothing"
           tal:attributes="href subscription/person/fmt:url">
@@ -28,8 +26,6 @@
           <img class="editsub-icon" src="/@@/edit"
             tal:attributes="id string:editsubscription-icon-${subscription/person/name}" />
         </a>
-
-      </metal:subscriber>
     </div>
     <div id="none-subscribers"
       tal:condition="not:view/subscriptions">No subscribers.</div>

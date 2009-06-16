@@ -49,8 +49,8 @@
         tal:define="link context_menu/subscription"
         tal:condition="link/enabled"
         >
-        <img tal:attributes="alt link/text;title link/text" src="/@@/add" />
         <a id="selfsubscription"
+           class="bg-image add"
            tal:attributes="href link/url"
            tal:content="link/text" />
       </div>
@@ -61,7 +61,11 @@
         />
       </div>
       <h2>Subscribers</h2>
-      <p id="subscriber-list"></p>
+      <p id="subscriber-list">
+        <noscript>
+          Please enable javascript to view branch subscribers.
+        </noscript>
+      </p>
       <div id="subscribers-portlet-spinner"
           style="text-align: center; display: none;">
         <img src="/@@/spinner" />
@@ -90,9 +94,9 @@ function update_subscriber_list() {
                 Y.get('#subscriber-list').set(
                     'innerHTML', response.responseText);
 
-                var ele = Y.get('.menu-link-subscription');
-                if (ele.get('innerHTML') == 'Edit your subscription') {
-                    ele.setStyle('display', 'none');
+                var element = Y.get('.menu-link-subscription');
+                if (element.get('innerHTML') == 'Edit your subscription') {
+                    element.setStyle('display', 'none');
                 }
                 }}});
 }

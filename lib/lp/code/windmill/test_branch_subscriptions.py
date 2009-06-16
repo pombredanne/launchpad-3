@@ -38,4 +38,3 @@ def test_branch_subscription_ajax_load():
     client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
     client.asserts.assertText(id=u'none-subscribers',
         validator=u'No subscribers.')
-
