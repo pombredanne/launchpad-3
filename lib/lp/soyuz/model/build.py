@@ -475,7 +475,7 @@ class Build(SQLBase):
                 "'%r' from %s (%s) with the following dependencies: %s\n"
                 "It is expected to be a tuple containing only another "
                 "tuple with 3 elements  (name, version, relation)."
-                % (token, self.title, self.id, self.depedencies))
+                % (token, self.title, self.id, self.dependencies))
         return (name, version, relation)
 
     def _checkDependencyVersion(self, available, required, relation):
@@ -561,7 +561,7 @@ class Build(SQLBase):
             raise AssertionError(
                 "Build dependencies for %s (%s) could not be parsed: '%s'\n"
                 "It indicates that something is wrong in buildd-slaves."
-                % (self.title, self.id, self.depedencies))
+                % (self.title, self.id, self.dependencies))
 
         remaining_deps = [
             self._toAptFormat(token) for token in parsed_deps

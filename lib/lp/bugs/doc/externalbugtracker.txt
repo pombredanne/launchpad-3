@@ -36,7 +36,7 @@ transaction, since it doesn't need DB access.
     ...     def begin(self):
     ...         print "BEGIN"
 
-    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(FakeTransaction())
     >>> bug_watch_updater.updateBugWatches(
     ...     InitializingExternalBugTracker(), [])
@@ -207,7 +207,7 @@ BugWatchUpdater keeps a local copy of this variable, which we can
 override by passing a list of products to the BugWatchUpdater
 constructor.
 
-    >>> from canonical.launchpad.scripts import checkwatches
+    >>> from lp.bugs.scripts import checkwatches
     >>> (bug_watch_updater._syncable_gnome_products ==
     ...     checkwatches.SYNCABLE_GNOME_PRODUCTS)
     True
@@ -773,7 +773,7 @@ We temporarily silence the logging from this function because we're not
 interested in it. Again, the watch's lastchecked field will also be
 updated.
 
-    >>> from canonical.launchpad.scripts.checkwatches import (
+    >>> from lp.bugs.scripts.checkwatches import (
     ...     CheckWatchesErrorUtility)
     >>> error_utility = CheckWatchesErrorUtility()
 
