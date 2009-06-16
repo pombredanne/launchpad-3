@@ -766,6 +766,11 @@ class IBranch(IHasOwner, IHasBranchTarget):
     def hasSubscription(person):
         """Is this person subscribed to the branch?"""
 
+    @operation_parameters(
+        person=Reference(
+            title=_("The person to unsubscribe"),
+            schema=IPerson))
+    @export_write_operation()
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
 

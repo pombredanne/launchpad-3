@@ -80,3 +80,18 @@ only one subscription.
     ...     print subscriber['display_name']
     Farmer Joe
 
+
+Unsubscribing from a branch
+===========================
+
+Sometimes branches get too noisy.  It's possible to unsubscribe from the branch
+through the API as well.
+
+    >>> subscription = webservice.named_post(
+    ...     corn['self_link'], 'unsubscribe', person=joe['self_link'])
+
+    >>> subscribers = webservice.get(
+    ...     corn['subscribers_collection_link']).jsonBody()
+    >>> print len(subscribers['entries'])
+    0
+
