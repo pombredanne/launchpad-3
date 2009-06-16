@@ -404,10 +404,15 @@ class BugView(LaunchpadView):
     @property
     def subscription_class(self):
         """Returns a CSS class name based on subscription status."""
-        if self.context.isSubscribed(self.user):
-            return 'subscribed-true'
+        if self.context.isSubscribedToDupes(self.user):
+            dup_class = 'dup-subscribed-true'
         else:
-            return 'subscribed-false'
+            dup_class = 'dup-subscribed-false'
+
+        if self.context.isSubscribed(self.user):
+            return 'subscribed-true %s' % dup_class
+        else:
+            return 'subscribed-false %s' % dup_class
 
     def duplicates(self):
         """Return a list of dicts of duplicates.

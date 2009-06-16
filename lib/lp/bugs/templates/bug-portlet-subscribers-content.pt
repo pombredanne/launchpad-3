@@ -33,7 +33,9 @@
             <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
                href="+subscribe"
                tal:attributes="title string:Unsubscribe ${subscription/person/fmt:displayname};
-                               id string:unsubscribe-${subscription/person/name}">
+                               id string:unsubscribe-${subscription/person/name};
+                               class view/subscription_class"
+            >
               <img class="unsub-icon" src="/@@/remove"
                 tal:attributes="id string:unsubscribe-icon-${subscription/person/name}" />
             </a>
@@ -50,7 +52,10 @@
     class="section"
   >
     <h2>From duplicates</h2>
-    <div tal:repeat="subscription from_dupes_subscriptions">
+    <div
+      tal:repeat="subscription from_dupes_subscriptions"
+      tal:attributes="id string:subscriber-${subscription/person/name}"
+    >
       <metal:subscriber metal:use-macro="template/macros/subscriber-row" />
     </div>
   </div>

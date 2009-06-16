@@ -78,3 +78,16 @@ class BugPortletSubcribersContents(LaunchpadView):
     def getSortedSubscriptionsFromDuplicates(self):
         """Get the list of subscriptions to duplicates of this bug."""
         return self.context.getSubscriptionsFromDuplicates()
+
+    @property
+    def subscription_class(self):
+        """Returns a CSS class name based on subscription status."""
+        if self.context.isSubscribedToDupes(self.user):
+            dup_class = 'dup-subscribed-true'
+        else:
+            dup_class = 'dup-subscribed-false'
+
+        if self.context.isSubscribed(self.user):
+            return 'subscribed-true %s' % dup_class
+        else:
+            return 'subscribed-false %s' % dup_class
