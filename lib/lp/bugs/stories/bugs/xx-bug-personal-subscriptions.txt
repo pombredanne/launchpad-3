@@ -352,5 +352,5 @@ also trimmed to 20 characters, so that they fit alongside the unsubscribe icon.
   ...     browser.contents, 'subscribers-direct')
   >>> for subscriber in subscriber_list.findAll('div'):
   ...     if '~abuser' in subscriber.a['href']:
-  ...         print subscriber.a.contents[0].strip()
+  ...         print subscriber.a.contents[2].strip()
   &lt;script&gt;javascrip...
