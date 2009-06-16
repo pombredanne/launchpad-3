@@ -176,22 +176,6 @@ class PersonBMPListingView(BranchMergeProposalListingView):
         return self.context
 
 
-class PersonActiveReviewsView(PersonBMPListingView):
-    """Branch merge proposals that the person has submitted."""
-
-    extra_columns = ['date_review_requested', 'vote_summary']
-    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
-
-    @property
-    def heading(self):
-        return "Active code reviews for %s" % self.context.displayname
-
-    @property
-    def no_proposal_message(self):
-        """Shown when there is no table to show."""
-        return "%s has no active code reviews." % self.context.displayname
-
-
 class PersonRequestedReviewsView(PersonBMPListingView):
     """Branch merge proposals for the person that are needing review."""
 
@@ -230,8 +214,8 @@ class PersonApprovedMergesView(PersonBMPListingView):
         return "%s has no approved merges." % self.context.displayname
 
 
-class ProductActiveReviewsView(BranchMergeProposalListingView):
-    """Branch merge proposals for the product that are needing review."""
+class ActiveReviewsView(BranchMergeProposalListingView):
+    """Branch merge proposals for a context that are needing review."""
 
     show_diffs = False
 
@@ -241,6 +225,10 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
     CAN_DO = 'can_do'
     MINE = 'mine'
     OTHER = 'other'
+
+    def _getProposals(self):
+        """Get the proposals for the view."""
+        return []
 
     def _getReviewGroup(self, proposal, votes):
         """Return one of MINE, TO_DO, CAN_DO, ARE_DOING, or OTHER.
@@ -283,12 +271,10 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
     def initialize(self):
         # Work out the review groups
         self.review_groups = {}
-        getter = getUtility(IBranchMergeProposalGetter)
-        proposals = list(getter.getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW],
-            self.user))
-        all_votes = getter.getVotesForProposals(proposals)
-        vote_summaries = getter.getVoteSummariesForProposals(proposals)
+        self.getter = getUtility(IBranchMergeProposalGetter)
+        proposals = self._getProposals()
+        all_votes = self.getter.getVotesForProposals(proposals)
+        vote_summaries = self.getter.getVoteSummariesForProposals(proposals)
         for proposal in proposals:
             proposal_votes = all_votes[proposal]
             review_group = self._getReviewGroup(
@@ -327,6 +313,26 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
     def no_proposal_message(self):
         """Shown when there is no table to show."""
         return "%s has no active code reviews." % self.context.displayname
+
+
+class PersonActiveReviewsView(ActiveReviewsView):
+    """Branch merge proposals for the person that are needing review."""
+
+    def _getProposals(self):
+        """See `ActiveReviewsView`."""
+        return list(self.getter.getProposalsForParticipant(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW],
+            self.user))
+
+
+class ProductActiveReviewsView(ActiveReviewsView):
+    """Branch merge proposals for the product that are needing review."""
+
+    def _getProposals(self):
+        """See `ActiveReviewsView`."""
+        return list(self.getter.getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW],
+            self.user))
 
 
 class ProductApprovedMergesView(BranchMergeProposalListingView):

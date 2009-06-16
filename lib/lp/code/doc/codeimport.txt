@@ -19,7 +19,7 @@ of the vcs-imports team.
 CodeImports are created and found using the ICodeImportSet interface,
 which is registered as a utility.
 
-    >>> from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
+    >>> from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
@@ -30,7 +30,7 @@ which is registered as a utility.
 CodeImports record who created them, and we're going to pretend that
 this is done by 'No Privileges Person'.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
 
 
@@ -39,7 +39,7 @@ this is done by 'No Privileges Person'.
 Most mutating operations affecting code imports should create
 CodeImportEvent objects in the database to provide an audit trail.
 
-    >>> from canonical.launchpad.interfaces import ICodeImportEventSet
+    >>> from lp.code.interfaces.codeimportevent import ICodeImportEventSet
     >>> event_set = getUtility(ICodeImportEventSet)
 
 
@@ -65,7 +65,7 @@ in the repository, known as the "module".
     >>> cvs = RevisionControlSystems.CVS
     >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
     >>> cvs_module = 'hello'
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> product = getUtility(IProductSet).getByName('firefox')
     >>> cvs_import = code_import_set.new(
     ...     registrant=nopriv, product=product, branch_name='trunk-cvs',
