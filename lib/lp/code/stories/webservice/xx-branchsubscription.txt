@@ -37,12 +37,19 @@ A user can subscribe to a branch through the API.
     review_level: u'No email'
     self_link: u'http://.../~farmer-joe/farm/corn/+subscription/farmer-joe'
 
-    >>> subscribers = webservice.get(
-    ...     corn['subscribers_collection_link']).jsonBody()
-    >>> print len(subscribers['entries'])
+    >>> def print_subscriber_count(branch):
+    ...     subscribers = webservice.get(
+    ...         corn['subscribers_collection_link']).jsonBody()
+    ...     print len(subscribers['entries'])
+    >>> print_subscriber_count(corn)
     1
-    >>> for subscriber in subscribers['entries']:
-    ...     print subscriber['display_name']
+
+    >>> def print_subscriber_names(branch):
+    ...     subscribers = webservice.get(
+    ...         corn['subscribers_collection_link']).jsonBody()
+    ...     for subscriber in subscribers['entries']:
+    ...         print subscriber['display_name']
+    >>> print_subscriber_names(corn)
     Farmer Joe
 
 
@@ -72,12 +79,9 @@ was originally subscribed.
 We print the count, and even though subscribe was called again, there's still
 only one subscription.
 
-    >>> subscribers = webservice.get(
-    ...     corn['subscribers_collection_link']).jsonBody()
-    >>> print len(subscribers['entries'])
+    >>> print_subscriber_count(corn)
     1
-    >>> for subscriber in subscribers['entries']:
-    ...     print subscriber['display_name']
+    >>> print_subscriber_names(corn)
     Farmer Joe
 
 
@@ -90,8 +94,7 @@ through the API as well.
     >>> subscription = webservice.named_post(
     ...     corn['self_link'], 'unsubscribe', person=joe['self_link'])
 
-    >>> subscribers = webservice.get(
-    ...     corn['subscribers_collection_link']).jsonBody()
-    >>> print len(subscribers['entries'])
+    >>> print_subscriber_count(corn)
     0
+    >>> print_subscriber_names(corn)
 
