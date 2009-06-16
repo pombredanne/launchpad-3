@@ -1,4 +1,5 @@
-= Introduction =
+Introduction
+============
 
 Launchpad provides two ways to programmatically interact with your
 branches. You can either interact with the branches themselves using
@@ -25,7 +26,8 @@ helpers. This one turns a JSON date/time response into a Python
     ...     return marshaller.marshall_from_json_data(returned_time)
 
 
-== Requesting a mirror ==
+Requesting a mirror
+===================
 
 Many of the branches on Launchpad are mirrored branches: branches that
 are hosted on other servers and then mirrored regularly by Launchpad's
@@ -64,7 +66,8 @@ request for a mirror:
     True
 
 
-== Basic branch attributes ==
+Basic branch attributes
+=======================
 
 Not everything about a branch is exposed.  Hopefully most of what users
 really care about is exposed, and we will undoubtedly expand this as
@@ -240,7 +243,8 @@ in its landing_targets.
     http://.../~eric/fooix/trunk
 
 
-== Project branches ==
+Project branches
+================
 
 The branches of a project are also available.
 
@@ -262,7 +266,8 @@ A list of lifecycle statuses can be provided for filtering.
     >>> print_branches(webservice, '/fooix', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
 
-== Branches for people ==
+Branches for people
+===================
 
 The branches owned by a person are available from the person object.
 
@@ -275,7 +280,8 @@ As with projects, these can be filtered by the branch status.
     >>> print_branches(webservice, '/~eric', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
 
-== Project group branches ==
+Project group branches
+======================
 
 Branches are also accessible for a project group.
 
