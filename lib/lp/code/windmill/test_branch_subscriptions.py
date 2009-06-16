@@ -26,11 +26,11 @@ def test_branch_subscription_ajax_load():
     client.waits.forPageLoad(timeout=u'100000')
     client.click(id=u'field.actions.subscribe')
 
-    client.waits.forElement(id=u'editsubscription-icon-name12',
+    client.waits.forElement(id=u'editsubscription-icon-name16',
         timeout=u'10000')
-    client.asserts.assertText(id=u'editsubscription-icon-name12',
-        validator=u'Sample Person')
-    client.click(id=u'editsubscription-icon-name12')
+    client.asserts.assertText(id=u'subscriber-name16',
+        validator=u'Foo Bar')
+    client.click(id=u'editsubscription-icon-name16')
 
     client.waits.forPageLoad(timeout=u'100000')
     client.click(id=u'field.actions.unsubscribe')
