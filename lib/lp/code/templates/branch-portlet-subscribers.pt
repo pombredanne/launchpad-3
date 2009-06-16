@@ -72,37 +72,41 @@
       </div>
     </div>
   </div>
-  <js tal:replace="structure string:<script type='text/javascript'>
+  <tal:script
+    replace="structure
+    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
+    <!--
 
-YUI().use('io-base', 'node', function(Y) {
+    YUI().use('io-base', 'node', function(Y) {
 
-Y.on('domready', function() {
-    update_subscriber_list();
-});
+    Y.on('domready', function() {
+        update_subscriber_list();
+    });
 
-/*
- * Update the subscriber list via Ajax.
- */
-function update_subscriber_list() {
+    /*
+     * Update the subscriber list via Ajax.
+     */
+    function update_subscriber_list() {
 
-    Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
-    Y.io('+branch-portlet-subscriber-content', {
-        on: {
-            complete: function(id, response) {
-                Y.get('#subscribers-portlet-spinner').setStyle(
-                    'display', 'none');
-                Y.get('#subscriber-list').set(
-                    'innerHTML', response.responseText);
+        Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
+        Y.io('+branch-portlet-subscriber-content', {
+            on: {
+                complete: function(id, response) {
+                    Y.get('#subscribers-portlet-spinner').setStyle(
+                        'display', 'none');
+                    Y.get('#subscriber-list').set(
+                        'innerHTML', response.responseText);
 
-                var element = Y.get('.menu-link-subscription');
-                if (element.get('innerHTML') == 'Edit your subscription') {
-                    element.setStyle('display', 'none');
-                }
-                }}});
-}
+                    var element = Y.get('.menu-link-subscription');
+                    if (element.get('innerHTML') == 'Edit your subscription') {
+                        element.setStyle('display', 'none');
+                    }
+                    }}});
+    }
 
-});
-  </script>" />
+    });
+    -->
+  <tal:script replace="structure string:&lt;/script&gt;" />
 
 
 </div>
