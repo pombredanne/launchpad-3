@@ -12,9 +12,9 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import List, Object
 
 from canonical.launchpad import _
+from lazr.restful.fields import CollectionField, Reference
 
 
 class ICommentBody(Interface):
@@ -28,12 +28,13 @@ class ICommentActivity(Interface):
 class IComment(Interface):
     """A comment which may have a body or activity."""
 
-    body = Object(schema=ICommentBody, title=_('The comment body.'))
-    activity = ICommentActivity
+    body = Reference(schema=ICommentBody, title=_('The comment body.'))
+    activity = Reference(schema=ICommentActivity, title=_('The activity.'))
 
 
 class IConversation(Interface):
     """A conversation has a number of comments."""
 
-    comments = List(
-        value_type=IComment, title=_('The comments in the conversation'))
+    comments = CollectionField(
+        value_type=Reference(schema=IComment),
+        title=_('The comments in the conversation'))
