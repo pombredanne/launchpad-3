@@ -10,6 +10,10 @@ from windmill.authoring import WindmillTestClient
 from canonical.launchpad.windmill.testing import lpuser
 
 
+# XXX: rockstar - Also needs testing : Admins can edit/delete, members of the
+# team can edit/delete.  At least the latter will require the Launchpad object
+# factory.
+
 def test_branch_subscription_ajax_load():
     """Test branch subscriptions loaded via ajax."""
     client = WindmillTestClient("Branch Subscription Ajax Load Test")
