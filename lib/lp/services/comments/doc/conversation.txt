@@ -1,0 +1,18 @@
+= Launchpad Comments =
+
+The comments service module provides some interfaces to handle consistent
+rendering of comments within Launchpad.
+
+
+== How does it work? ==
+
+In pages where a conversation is to be rendered, the view should provide an
+attribute that provides the IConversation interface.  This is then rendered
+using the +render view on the interface.
+
+   <tal:conversation replace="structure view/conversation/@@+render"/>
+
+Each comment in the conversation's comment list is then rendered using the
+standard Launchpad style.  This is defined in the templates directory as
+xxx-todo-fillin.
+

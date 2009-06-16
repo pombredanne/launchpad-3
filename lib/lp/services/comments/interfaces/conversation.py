@@ -1,0 +1,39 @@
+# Copyright 2009 Canonical Ltd.  All rights reserved.
+
+"""Interfaces to do with conversations on Launchpad entities."""
+
+__metaclass__ = type
+__all__ = [
+    'IComment',
+    'ICommentActivity',
+    'ICommentBody',
+    'IConversation',
+    ]
+
+
+from zope.interface import Interface
+from zope.schema import List, Object
+
+from canonical.launchpad import _
+
+
+class ICommentBody(Interface):
+    """A marker interface to indicate a ..."""
+
+
+class ICommentActivity(Interface):
+    """A ..."""
+
+
+class IComment(Interface):
+    """A comment which may have a body or activity."""
+
+    body = Object(schema=ICommentBody, title=_('The comment body.'))
+    activity = ICommentActivity
+
+
+class IConversation(Interface):
+    """A conversation has a number of comments."""
+
+    comments = List(
+        value_type=IComment, title=_('The comments in the conversation'))
