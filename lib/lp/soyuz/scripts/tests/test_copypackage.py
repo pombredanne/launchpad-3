@@ -49,14 +49,16 @@ class TestCheckCopyHarness:
     def assertCanCopySourceOnly(self):
         """check_copy() for source-only copy returns None."""
         self.assertIs(
+            None,
             check_copy(self.source, self.archive, self.series,
-                       self.pocket, False), None)
+                       self.pocket, False))
 
     def assertCanCopyBinaries(self):
         """check_copy() for copy including binaries returns None."""
         self.assertIs(
+            None,
             check_copy(self.source, self.archive, self.series,
-                       self.pocket, True), None)
+                       self.pocket, True))
 
     def assertCannotCopySourceOnly(self, msg):
         """check_copy() for source-only copy raises CannotCopy."""
@@ -109,7 +111,7 @@ class TestCheckCopyHarnessSameArchive(TestCaseWithFactory,
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestCheckCopyHarnessSameArchive, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
         self.source = self.test_publisher.getPubSource()
@@ -155,7 +157,7 @@ class TestCheckCopyHarnessDifferentArchive(TestCaseWithFactory,
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestCheckCopyHarnessDifferentArchive, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
         self.source = self.test_publisher.getPubSource()
@@ -192,11 +194,11 @@ class TestCheckCopy(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestCheckCopy, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
 
-    def testBug316431(self):
+    def testCannotCopyExpiredBinaries(self):
         # check_copy() raises CannotCopy if the copy includes binaries
         # and the binaries contain expired files. Publications of
         # expired files can't be processed by the publisher since
@@ -215,9 +217,9 @@ class TestCheckCopy(TestCaseWithFactory):
 
         # At this point copy is allowed with or without binaries.
         self.assertIs(
-            check_copy(source, archive, series, pocket, False), None)
+            None, check_copy(source, archive, series, pocket, False))
         self.assertIs(
-            check_copy(source, archive, series, pocket, True), None)
+            None, check_copy(source, archive, series, pocket, True))
 
         # Set the expiration date of one of the testing binary files.
         utc = pytz.timezone('UTC')
@@ -227,7 +229,7 @@ class TestCheckCopy(TestCaseWithFactory):
 
         # Now source-only copies are allowed.
         self.assertIs(
-            check_copy(source, archive, series, pocket, False), None)
+            None, check_copy(source, archive, series, pocket, False))
 
         # Copies with binaries are denied.
         self.assertRaisesWithContent(
@@ -241,14 +243,14 @@ class TestDoCopy(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestDoCopy, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
 
-    def testBug387589(self):
+    def testCanCopyArchIndependentBinariesBuiltInAnUnsupportedArch(self):
         # do_copy() uses the binary candidate build architecture,
         # instead of the publish one, in other to check if it's
-        # suitable to the destination. It avoid skipping the single
+        # suitable for the destination. It avoids skipping the single
         # arch-indep publication returned by SPPH.getBuiltBinaries()
         # if it happens to be published in an unsupportted architecture
         # in the destination series.
@@ -263,7 +265,7 @@ class TestDoCopy(TestCaseWithFactory):
             [arch.architecturetag for arch in hoary_test.architectures])
 
         # Create an arch-indep testing source with binaries in
-        # ubuntutest/breezy-autotest, which does support 'hppa'
+        # ubuntutest/breezy-autotest which does support 'hppa'.
         source = self.test_publisher.getPubSource()
         [i386_bin, hppa_bin] = self.test_publisher.getPubBinaries(
             pub_source=source)
@@ -278,12 +280,11 @@ class TestDoCopy(TestCaseWithFactory):
         copies = do_copy(
             [source], source.archive, hoary_test, source.pocket, True)
         self.assertEquals(
-            [copy.displayname for copy in copies], [
-                'foo 666 in hoary-test',
-                'foo-bin 666 in hoary-test amd64',
-                'foo-bin 666 in hoary-test i386'
-                ]
-            )
+            ['foo 666 in hoary-test',
+             'foo-bin 666 in hoary-test amd64',
+             'foo-bin 666 in hoary-test i386',
+             ],
+            [copy.displayname for copy in copies])
 
 
 class TestCopyPackageScript(unittest.TestCase):
