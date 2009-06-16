@@ -16,7 +16,13 @@
 #  $ make stagingsetup STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
 #  $ make stagingswitch STAGING_CONFIG=dev-staging
 #
-LAG=10 seconds
+
+# This used to be 10 seconds, so we always ran staging lagged to detect
+# replication glitches more easily. However, this does not play well
+# with DBLoopTuner, as it correctly blocks when it detects lag.
+# We should put this back when DBLoopTuner is more intelligent, perhaps
+# pulling the allowable lag setting from a config file.
+LAG=0 seconds
 
 DEV_CONFIG=replicated-development
 NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.

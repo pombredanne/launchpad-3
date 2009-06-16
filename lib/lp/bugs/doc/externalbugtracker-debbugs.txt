@@ -92,7 +92,7 @@ Log in and kick off the update. The importing of comments, which is
 controlled by a configuration option, is disabled here and will be
 tested later.
 
-    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> external_debbugs.sync_comments = False
     >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
