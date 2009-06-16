@@ -384,6 +384,25 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=added_activity,
             expected_notification=added_notification)
 
+    def test_link_branch_to_complete_bug(self):
+        # Linking a branch to a bug that is "complete" (see
+        # IBug.is_complete) adds to the activity log but does *not*
+        # send an e-mail notification.
+        for bug_task in self.bug.bugtasks:
+            bug_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, user=self.user)
+        self.failUnless(self.bug.is_complete)
+        self.saveOldChanges()
+        branch = self.factory.makeBranch()
+        self.bug.addBranch(branch, self.user)
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'branch linked',
+            'newvalue': branch.bzr_identity,
+            }
+        self.assertRecordedChange(
+            expected_activity=expected_activity)
+
     def test_link_private_branch(self):
         # Linking a *private* branch to a bug adds *nothing* to the
         # activity log and does *not* send an e-mail notification.
@@ -410,6 +429,26 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_activity=added_activity,
             expected_notification=added_notification)
+
+    def test_unlink_branch_from_complete_bug(self):
+        # Unlinking a branch from a bug that is "complete" (see
+        # IBug.is_complete) adds to the activity log but does *not*
+        # send an e-mail notification.
+        for bug_task in self.bug.bugtasks:
+            bug_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, user=self.user)
+        self.failUnless(self.bug.is_complete)
+        branch = self.factory.makeBranch()
+        self.bug.addBranch(branch, self.user)
+        self.saveOldChanges()
+        self.bug.removeBranch(branch, self.user)
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'branch unlinked',
+            'oldvalue': branch.bzr_identity,
+            }
+        self.assertRecordedChange(
+            expected_activity=expected_activity)
 
     def test_unlink_private_branch(self):
         # Unlinking a *private* branch from a bug adds *nothing* to
