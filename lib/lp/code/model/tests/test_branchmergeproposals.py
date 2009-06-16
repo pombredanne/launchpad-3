@@ -847,6 +847,24 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             context, status, visible_by_user)
         return sorted([bmp.source_branch.unique_name for bmp in results])
 
+    def test_getProposalsForParticipant(self):
+        # It's possible to get all the merge proposals for a single
+        # participant.
+        wally = self.factory.makePerson(name='wally')
+        beaver = self.factory.makePerson(name='beaver')
+
+        bmp1 = self._make_merge_proposal('wally', 'gokart', 'turbo', True)
+        bmp1.nominateReviewer(beaver, wally)
+        bmp2 = self._make_merge_proposal('beaver', 'gokart', 'brakes', True)
+
+        wally_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+            wally, [BranchMergeProposalStatus.NEEDS_REVIEW], wally)
+        self.assertEqual(wally_proposals.count(), 1)
+
+        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+            beaver, [BranchMergeProposalStatus.NEEDS_REVIEW], beaver)
+        self.assertEqual(beave_proposals.count(), 2)
+
     def test_created_proposal_default_status(self):
         # When we create a merge proposal using the helper method, the default
         # status of the proposal is work in progress.

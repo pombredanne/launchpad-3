@@ -340,6 +340,12 @@ class IBranch(IHasOwner, IHasBranchTarget):
                 "This is the external location where the Bazaar "
                 "branch is hosted.")))
 
+    description = exported(
+        Text(
+            title=_('Description'), required=False,
+            description=_(
+                'A short description of the changes in this branch.')))
+
     branch_format = exported(
         Choice(
             title=_("Branch Format"),

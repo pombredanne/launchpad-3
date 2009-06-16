@@ -18,7 +18,6 @@ __all__ = [
     ]
 
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -47,7 +46,8 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
+from canonical.launchpad.webapp.launchpadform import (
+    LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
@@ -496,21 +496,25 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class DistroSeriesAddView(AddView):
-    __used_for__ = IDistroSeries
+class DistroSeriesAddView(LaunchpadFormView):
+    """A view to creat an `IDistrobutionSeries`."""
+    schema = IDistroSeries
+    field_names = [
+        'name', 'displayname', 'title', 'summary', 'description', 'version',
+        'parent_series']
+    label = "Register a new series"
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
+    @property
+    def page_title(self):
+        """The page title."""
+        return 'Register a series in %s' % self.context.displayname
 
-    def createAndAdd(self, data):
+    @action(_('Create Series'), name='create')
+    def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
         owner = getUtility(ILaunchBag).user
 
         assert owner is not None
-
         distroseries = self.context.newSeries(
             name = data['name'],
             displayname = data['displayname'],
@@ -522,11 +526,12 @@ class DistroSeriesAddView(AddView):
             owner = owner
             )
         notify(ObjectCreatedEvent(distroseries))
-        self._nextURL = data['name']
+        self.next_url = canonical_url(distroseries)
         return distroseries
 
-    def nextURL(self):
-        return self._nextURL
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):

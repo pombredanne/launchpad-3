@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from email.Utils import make_msgid
-from storm.expr import And
+from storm.expr import And, Or, Select
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
@@ -662,6 +662,24 @@ class BranchMergeProposalGetter:
             raise BadBranchMergeProposalSearchContext(context)
         return collection.getMergeProposals(status)
 
+    @staticmethod
+    def getProposalsForParticipant(participant, status=None,
+        visible_by_user=None):
+        """See `IBranchMergeProposalGetter`."""
+        registrant_select = Select(
+            BranchMergeProposal.id,
+            BranchMergeProposal.registrantID == participant.id)
+
+        review_select = Select(
+                [CodeReviewVoteReference.branch_merge_proposalID],
+                [CodeReviewVoteReference.reviewerID == participant.id])
+
+        query = Store.of(participant).find(
+            BranchMergeProposal,
+            BranchMergeProposal.queue_status in status,
+            Or(BranchMergeProposal.id.is_in(registrant_select),
+                BranchMergeProposal.id.is_in(review_select)))
+        return query
 
     @staticmethod
     def getVotesForProposals(proposals):

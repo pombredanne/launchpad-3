@@ -19,10 +19,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import begin, commit, rollback
-from lp.codehosting.codeimport.worker import CodeImportSourceDetails
-from canonical.launchpad.interfaces import (
-     ICodeImportJobSet, ICodeImportJobWorkflow, ILibraryFileAliasSet)
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interaction import Participation
 from canonical.launchpad.webapp import canonical_url
 from canonical.twistedsupport import defer_to_thread
@@ -31,6 +28,10 @@ from canonical.twistedsupport.loggingsupport import (
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
 from lp.code.enums import CodeImportResultStatus
+from lp.code.interfaces.codeimportjob import (
+    ICodeImportJobSet, ICodeImportJobWorkflow)
+from lp.codehosting.codeimport.worker import CodeImportSourceDetails
+from lp.testing import login, logout, ANONYMOUS
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
