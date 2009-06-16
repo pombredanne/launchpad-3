@@ -293,7 +293,7 @@ class IProductCommercialRestricted(Interface):
             required=False,
             description=_(
                 "Notes on the project's license, editable only by reviewers "
-                "(Admins & Commercial Admins).")))
+                "(Admins and Commercial Admins).")))
 
     is_permitted = exported(
         Bool(
@@ -306,18 +306,17 @@ class IProductCommercialRestricted(Interface):
 
     license_reviewed = exported(
         Bool(
-            title=_('License reviewed'),
-            description=_("Whether or not this project's license has been "
-                          "reviewed. Editable only by reviewers (Admins & "
-                          "Commercial Admins).")))
+            title=_('Project reviewed'),
+            description=_("Whether or not this project has been reviewed. "
+                          "If you looked at the project and how it uses "
+                          "Launchpad, you reviewed it.")))
 
     license_approved = exported(
         Bool(
-            title=_("License approved"),
+            title=_("Project approved"),
             description=_(
-                "Whether a license is manually approved for free "
-                "hosting after automatic approval fails.  May only "
-                "be applied to licenses of 'Other/Open Source'.")))
+                "The project is legitimate and its license appears valid. "
+                "Not application to 'Other/Proprietary'.")))
 
 
 class IProductPublic(
@@ -931,7 +930,11 @@ class IProductReviewSearch(Interface):
         required=False, default=True)
 
     license_reviewed = Choice(
-        title=_('License Reviewed'), values=[True, False],
+        title=_('Project Reviewed'), values=[True, False],
+        required=False, default=False)
+
+    license_approved = Choice(
+        title=_('Project Approved'), values=[True, False],
         required=False, default=False)
 
     license_info_is_empty = Choice(
