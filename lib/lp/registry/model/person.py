@@ -1841,8 +1841,8 @@ class Person(
                 message = '%s and %s' % (
                     ', '.join(warnings[:-1]),
                     warnings[-1])
-            return ('This team cannot be converted to %s since it is referenced'
-                    ' by %s.' % (new_value, message))
+            return ('This team cannot be converted to %s since it is '
+                    'referenced by %s.' % (new_value, message))
 
     @property
     def member_memberships(self):
