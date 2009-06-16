@@ -156,7 +156,7 @@
           <td class="amount"
               tal:content="question/id"
               >42</td>
-          <td>
+          <td class="questionTITLE">
             <a href="#"
                tal:content="question/title"
                tal:attributes="href question/fmt:url">
