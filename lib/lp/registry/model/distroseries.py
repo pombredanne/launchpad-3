@@ -617,15 +617,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         # first find the set of all languages for which we have pofiles in
         # the distribution that are visible and not English
-        languages = IStore(Language).find(
+        langidset = set(IStore(Language).find(
             Language.id,
             Language.visible == True,
             Language.id == POFile.languageID,
             Language.code <> 'en',
             POFile.potemplateID == POTemplate.id,
             POTemplate.distroseries == self,
-            POTemplate.iscurrent == True).config(distinct=True)
-        langidset = frozenset(language.id for language in languages)
+            POTemplate.iscurrent == True).config(distinct=True))
 
         # now run through the existing DistroSeriesLanguages for the
         # distroseries, and update their stats, and remove them from the
