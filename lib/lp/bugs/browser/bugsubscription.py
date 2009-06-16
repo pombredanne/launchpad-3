@@ -81,7 +81,10 @@ class BugPortletSubcribersContents(LaunchpadView):
 
     @property
     def subscription_class(self):
-        """Returns a CSS class name based on subscription status."""
+        """Returns a set of CSS class names based on subscription status.
+
+        For example, "subscribed-false dup-subscribed-true".
+        """
         if self.context.isSubscribedToDupes(self.user):
             dup_class = 'dup-subscribed-true'
         else:
