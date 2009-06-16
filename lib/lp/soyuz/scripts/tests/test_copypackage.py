@@ -35,12 +35,156 @@ from lp.soyuz.interfaces.publishing import (
 from canonical.launchpad.scripts import BufferLogger
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
-    PackageCopier, UnembargoSecurityPackage, check_copy)
+    PackageCopier, UnembargoSecurityPackage, check_copy, do_copy)
 from lp.testing import (
     TestCase, TestCaseWithFactory)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
 from canonical.librarian.ftests.harness import fillLibrarianFile
+
+
+class TestCheckCopyHarness:
+    """Basic checks common for all scenarios."""
+
+    def assertCanCopySourceOnly(self):
+        """check_copy() for source-only copy returns None."""
+        self.assertIs(
+            check_copy(self.source, self.archive, self.series,
+                       self.pocket, False), None)
+
+    def assertCanCopyBinaries(self):
+        """check_copy() for copy including binaries returns None."""
+        self.assertIs(
+            check_copy(self.source, self.archive, self.series,
+                       self.pocket, True), None)
+
+    def assertCannotCopySourceOnly(self, msg):
+        """check_copy() for source-only copy raises CannotCopy."""
+        self.assertRaisesWithContent(
+            CannotCopy, msg, check_copy, self.source, self.archive,
+            self.series, self.pocket, False)
+
+    def assertCannotCopyBinaries(self, msg):
+        """check_copy() for copy including binaries raises CannotCopy."""
+        self.assertRaisesWithContent(
+            CannotCopy, msg, check_copy, self.source, self.archive,
+            self.series, self.pocket, True)
+
+    def testCannotCopyBinariesFromBuilding(self):
+        [build] = self.source.createMissingBuilds()
+        self.assertCannotCopyBinaries(
+            'source has no binaries to be copied')
+
+    def testCannotCopyBinariesFromFTBFS(self):
+        [build] = self.source.createMissingBuilds()
+        build.buildstate = BuildStatus.FAILEDTOBUILD
+        self.assertCannotCopyBinaries(
+            'source has no binaries to be copied')
+
+    def testCanCopyOnlySourceFromFTBFS(self):
+        # XXX cprov 2009-06-16: This is not ideal for PPA, since
+        # they contain 'rolling' series, any previous build can be
+        # retried anytime, but they will fail-to-upload if a copy
+        # has built successfully.
+        [build] = self.source.createMissingBuilds()
+        build.buildstate = BuildStatus.FAILEDTOBUILD
+        self.assertCanCopySourceOnly()
+
+    def testCannotCopyBinariesFromBinariesPendingPublication(self):
+        [build] = self.source.createMissingBuilds()
+        self.test_publisher.uploadBinaryForBuild(build, 'lazy-bin')
+        self.assertCannotCopyBinaries(
+            'source has no binaries to be copied')
+
+    def testCanCopyBinariesFromFullyBuiltAndPublishedSources(self):
+        self.test_publisher.getPubBinaries(
+            pub_source=self.source,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.layer.txn.commit()
+        self.assertCanCopyBinaries()
+
+
+class TestCheckCopyHarnessSameArchive(TestCaseWithFactory,
+                                      TestCheckCopyHarness):
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
+        self.source = self.test_publisher.getPubSource()
+
+        # Set copy destination to an existing distroseries in the
+        # same archive.
+        self.archive = self.test_publisher.ubuntutest.main_archive
+        self.series = self.test_publisher.ubuntutest.getSeries('hoary-test')
+        self.pocket = PackagePublishingPocket.RELEASE
+
+    def testCannotCopyOnlySourcesFromBuilding(self):
+        [build] = self.source.createMissingBuilds()
+        self.assertCannotCopySourceOnly(
+            'same version already building in the destination archive '
+            'for Breezy Badger Autotest')
+
+    def testCannotCopyOnlySourceFromBinariesPendingPublication(self):
+        [build] = self.source.createMissingBuilds()
+        self.test_publisher.uploadBinaryForBuild(build, 'lazy-bin')
+        self.assertCannotCopySourceOnly(
+            'same version has unpublished binaries in the destination '
+            'archive for Breezy Badger Autotest, please wait for them '
+            'to be published before copying')
+
+    def testCannotCopyBinariesFromBinariesPublishedAsPending(self):
+        self.test_publisher.getPubBinaries(pub_source=self.source)
+        self.assertCannotCopyBinaries(
+            'same version has unpublished binaries in the destination '
+            'archive for Breezy Badger Autotest, please wait for them '
+            'to be published before copying')
+
+    def testCannotCopyOnlySourceFromFullyBuiltAndPublishedSources(self):
+        self.test_publisher.getPubBinaries(
+            pub_source=self.source,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertCannotCopySourceOnly(
+            'same version already has published binaries in the '
+            'destination archive')
+
+
+class TestCheckCopyHarnessDifferentArchive(TestCaseWithFactory,
+                                           TestCheckCopyHarness):
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
+        self.source = self.test_publisher.getPubSource()
+
+        # Set copy destination to a brand new PPA.
+        self.archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        self.series = self.source.distroseries
+        self.pocket = PackagePublishingPocket.RELEASE
+
+    def testCanCopyOnlySourcesFromBuilding(self):
+        [build] = self.source.createMissingBuilds()
+        self.assertCanCopySourceOnly()
+
+    def testCanCopyOnlySourceFromBinariesPendingPublication(self):
+        [build] = self.source.createMissingBuilds()
+        self.test_publisher.uploadBinaryForBuild(build, 'lazy-bin')
+        self.assertCanCopySourceOnly()
+
+    def testCanCopyBinariesFromBinariesPublishedAsPending(self):
+        self.test_publisher.getPubBinaries(pub_source=self.source)
+        self.assertCanCopyBinaries()
+
+    def testCanCopyOnlySourceFromFullyBuiltAndPublishedSources(self):
+        self.test_publisher.getPubBinaries(
+            pub_source=self.source,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertCanCopySourceOnly()
 
 
 class TestCheckCopy(TestCaseWithFactory):
@@ -52,7 +196,7 @@ class TestCheckCopy(TestCaseWithFactory):
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
 
-    def testExpiredFilesCannotBeCopied(self):
+    def testBug316431(self):
         # check_copy() raises CannotCopy if the copy includes binaries
         # and the binaries contain expired files. Publications of
         # expired files can't be processed by the publisher since
@@ -90,6 +234,56 @@ class TestCheckCopy(TestCaseWithFactory):
             CannotCopy,
             'source has expired binaries',
             check_copy, source, archive, series, pocket, True)
+
+
+class TestDoCopy(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
+
+    def testBug387589(self):
+        # do_copy() uses the binary candidate build architecture,
+        # instead of the publish one, in other to check if it's
+        # suitable to the destination. It avoid skipping the single
+        # arch-indep publication returned by SPPH.getBuiltBinaries()
+        # if it happens to be published in an unsupportted architecture
+        # in the destination series.
+
+        # Setup ubuntutest/hoary-test for building. Note that it doesn't
+        # support 'hppa'.
+        hoary_test = self.test_publisher.ubuntutest.getSeries('hoary-test')
+        hoary_test.nominatedarchindep = hoary_test['i386']
+        self.test_publisher.addFakeChroots(hoary_test)
+        self.assertNotIn(
+            'hppa',
+            [arch.architecturetag for arch in hoary_test.architectures])
+
+        # Create an arch-indep testing source with binaries in
+        # ubuntutest/breezy-autotest, which does support 'hppa'
+        source = self.test_publisher.getPubSource()
+        [i386_bin, hppa_bin] = self.test_publisher.getPubBinaries(
+            pub_source=source)
+
+        # The creation of an override (newer publication) for the hppa
+        # binary will influence ISPPH.getBuiltBinary() results.
+        hppa_bin.changeOverride(
+            new_component=getUtility(IComponentSet)['universe'])
+        self.layer.txn.commit()
+
+        # Copy succeeds.
+        copies = do_copy(
+            [source], source.archive, hoary_test, source.pocket, True)
+        self.assertEquals(
+            [copy.displayname for copy in copies], [
+                'foo 666 in hoary-test',
+                'foo-bin 666 in hoary-test amd64',
+                'foo-bin 666 in hoary-test i386'
+                ]
+            )
 
 
 class TestCopyPackageScript(unittest.TestCase):
