@@ -16,16 +16,16 @@ The page contains a few interesting details about team membership.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
     Recently approved
-    Warty Gnome Team (warty-gnome)
-    Daniel Silverstone (kinnison)
-    Celso Providelo (cprov)
-    Steve Alexander (stevea)...
+    Warty Gnome Team
+    Daniel Silverstone
+    Celso Providelo
+    Steve Alexander...
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
     Recently applied
-    Sample Person (name12)
-    Andrew Bennetts (spiv)
+    Sample Person
+    Andrew Bennetts
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'team-details'))
@@ -148,8 +148,8 @@ Team owners and admins can see a link to approve and decline applicants.
     >>> print extract_text(
     ...     find_tag_by_id(owner_browser.contents, 'recently-applied'))
     Recently applied
-    Sample Person (name12)
-    Andrew Bennetts (spiv)
+    Sample Person
+    Andrew Bennetts
     Approve/Decline applicants
 
     >>> owner_browser.getLink('Approve/Decline applicants')
