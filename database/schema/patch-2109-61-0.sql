@@ -1,7 +1,5 @@
-/* TODO: When I try to drop the column altogether, I get an sql error.  This
-   patch should really just drop the column.
-*/
-ALTER TABLE BugBranch
-    ALTER COLUMN status DROP NOT NULL;
+SET client_min_messages=ERROR;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+ALTER TABLE BugBranch DROP status;
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 61, 0);
