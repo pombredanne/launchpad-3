@@ -161,7 +161,7 @@ class BuildView(LaunchpadView):
     @property
     def changesfile(self):
         """Return a `ProxiedLibraryFileAlias` for the Build changesfile."""
-        changesfile = self.context.changesfile
+        changesfile = self.context.upload_changesfile
         if changesfile is None:
             return None
 
@@ -195,7 +195,7 @@ class BuildRescoringView(LaunchpadFormView):
     def action_rescore(self, action, data):
         """Set the given score value."""
         score = data.get('priority')
-        self.context.buildqueue_record.manualScore(score)
+        self.context.rescore(score)
         self.request.response.addNotification(
             "Build rescored to %s." % score)
 

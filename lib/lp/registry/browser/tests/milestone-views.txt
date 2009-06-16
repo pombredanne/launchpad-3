@@ -1,3 +1,4 @@
+
 = Milestone pages =
 
 Users can directly see and edit milestones through the milestone views.
@@ -87,6 +88,23 @@ supports plural descriptions.
     >>> print view.specification_count_text
     <strong>2 blueprints</strong>
 
+The view provides a list of StatusCounts that summarise the targeted
+specifications and bugtasks.
+
+    >>> from lp.blueprints.interfaces.specification import (
+    ...     SpecificationImplementationStatus)
+
+    >>> spec.implementation_status = SpecificationImplementationStatus.GOOD
+    >>> status = spec.updateLifecycleStatus(person)
+    >>> for status_count in view.specification_status_counts:
+    ...     print '%s: %s' % (status_count.status.title, status_count.count)
+    Good progress: 1
+    Unknown: 1
+
+    >>> for status_count in view.bugtask_status_counts:
+    ...     print '%s: %s' % (status_count.status.title, status_count.count)
+    New: 2
+
 The view uses ProductDownloadFileMixin to provide access to downloadable
 files. It implements getReleases() that always returns the view's release
 as a set.
@@ -102,23 +120,15 @@ files. If there is no release, or no files, None is returned.
     >>> print view.download_files
     None
 
-If there are files, each file has a url, md5_url and signatue_url for
-downloading.
+If there are files, these files will be returned as a list.
 
     >>> release_file = release.addReleaseFile(
     ...     'test.txt', 'test', 'text/plain', person,
     ...     signature_filename='test.txt.asc', signature_content='123',
     ...     description="test file")
     >>> view = create_view(milestone, '+index')
-    >>> download_file = view.download_files[0]
-    >>> print download_file.url
-    http://launchpad.dev/puffin/awk/kakapo/+download/test.txt
-
-    >>> print download_file.md5_url
-    http://launchpad.dev/puffin/awk/kakapo/+download/test.txt/+md5
-
-    >>> print download_file.signature_url
-    http://launchpad.dev/puffin/awk/kakapo/+download/test.txt.asc
+    >>> [file.libraryfile.filename for file in view.download_files]
+    [u'test.txt']
 
 
 == Editing milestones ==

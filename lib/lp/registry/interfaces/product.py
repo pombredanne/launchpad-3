@@ -28,7 +28,7 @@ from textwrap import dedent
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Date, Datetime, Int, List, Object, Set, Text, TextLine)
+    Bool, Choice, Date, Datetime, Int, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -37,12 +37,10 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
-from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, BranchMergeProposalStatus)
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import (
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
+from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
@@ -182,34 +180,81 @@ class License(DBEnumeratedType):
         'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
         'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
-    ACADEMIC = DBItem(10, "Academic Free License")
-    AFFERO = DBItem(20, "GNU Affero GPL v3")
-    APACHE = DBItem(30, "Apache License")
-    # http://www.perlfoundation.org/artistic_license_1_0
-    ARTISTIC = DBItem(40, "Artistic License 1.0")
-    # http://www.opensource.org/licenses/artistic-license-2.0.php
-    ARTISTIC_2_0 = DBItem(45, 'Artistic License 2.0')
-    BSD = DBItem(50, "Simplified BSD License")
-    COMMON_PUBLIC = DBItem(80, "Common Public License")
-    ECLIPSE = DBItem(90, "Eclipse Public License")
-    EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
-    GNU_GPL_V2 = DBItem(130, "GNU GPL v2")
-    GNU_GPL_V3 = DBItem(135, "GNU GPL v3")
-    GNU_LGPL_V2_1 = DBItem(150, "GNU LGPL v2.1")
-    GNU_LGPL_V3 = DBItem(155, "GNU LGPL v3")
-    MIT = DBItem(160, "MIT / X / Expat License")
-    MPL = DBItem(170, "Mozilla Public License")
-    OPEN_SOFTWARE = DBItem(190, "Open Software License")
-    PERL = DBItem(200, "Perl License")
-    PHP = DBItem(210, "PHP License")
-    PUBLIC_DOMAIN = DBItem(220, "Public Domain")
-    PYTHON = DBItem(230, "Python License")
-    ZPL = DBItem(280, "Zope Public License")
-    # http://creativecommons.org/about/licenses
-    CC_BY = DBItem(300, 'Creative Commons - Attribution')
-    CC_BY_SA = DBItem(310, 'Creative Commons - Attribution Share Alike')
-    # http://creativecommons.org/about/cc0
-    CC_0 = DBItem(320, 'Creative Commons - No Rights Reserved')
+    ACADEMIC = DBItem(
+        10, "Academic Free License",
+        url='http://www.opensource.org/licenses/afl-3.0.php')
+    AFFERO = DBItem(
+        20, "GNU Affero GPL v3",
+        url='http://www.opensource.org/licenses/agpl-v3.html')
+    APACHE = DBItem(
+        30, "Apache License",
+        url='http://www.opensource.org/licenses/apache2.0.php')
+    ARTISTIC = DBItem(
+        40, "Artistic License 1.0",
+        url='http://opensource.org/licenses/artistic-license-1.0.php')
+    ARTISTIC_2_0 = DBItem(
+        45, 'Artistic License 2.0',
+        url='http://www.opensource.org/licenses/artistic-license-2.0.php')
+    BSD = DBItem(
+        50, "Simplified BSD License",
+        url='http://www.opensource.org/licenses/bsd-license.php')
+    COMMON_PUBLIC = DBItem(
+        80, "Common Public License",
+        url='http://www.opensource.org/licenses/cpl1.0.php')
+    ECLIPSE = DBItem(
+        90, "Eclipse Public License",
+        url='http://www.opensource.org/licenses/eclipse-1.0.php')
+    EDUCATIONAL_COMMUNITY = DBItem(
+        100, "Educational Community License",
+        url='http://www.opensource.org/licenses/ecl2.php')
+    GNU_GPL_V2 = DBItem(
+        130, "GNU GPL v2",
+        url='http://www.opensource.org/licenses/gpl-2.0.php')
+    GNU_GPL_V3 = DBItem(
+        135, "GNU GPL v3",
+        url='http://www.opensource.org/licenses/gpl-3.0.html')
+    GNU_LGPL_V2_1 = DBItem(
+        150, "GNU LGPL v2.1",
+        url='http://www.opensource.org/licenses/lgpl-2.1.php')
+    GNU_LGPL_V3 = DBItem(
+        155, "GNU LGPL v3",
+        url='http://www.opensource.org/licenses/lgpl-3.0.html')
+    MIT = DBItem(
+        160, "MIT / X / Expat License",
+        url='http://www.opensource.org/licenses/mit-license.php')
+    MPL = DBItem(
+        170, "Mozilla Public License",
+        url='http://www.opensource.org/licenses/mozilla1.1.php')
+    OPEN_SOFTWARE = DBItem(
+        190, "Open Software License v 3.0",
+        url='http://www.opensource.org/licenses/osl-3.0.php')
+    # XXX BarryWarsaw 2009-06-10 There is really no such thing as the "Perl
+    # License".  See bug 326308 for details.  We can't remove this option
+    # because of the existing data in production, however the plan is to hide
+    # this choice from users during project creation as part of bug 333932.
+    PERL = DBItem(
+        200, "Perl License")
+    PHP = DBItem(
+        210, "PHP License",
+        url='http://www.opensource.org/licenses/php.php')
+    PUBLIC_DOMAIN = DBItem(
+        220, "Public Domain",
+        url='https://answers.launchpad.net/launchpad/+faq/564')
+    PYTHON = DBItem(
+        230, "Python License",
+        url='http://www.opensource.org/licenses/PythonSoftFoundation.php')
+    ZPL = DBItem(
+        280, "Zope Public License",
+        url='http://www.opensource.org/licenses/zpl.php')
+    CC_BY = DBItem(
+        300, 'Creative Commons - Attribution',
+        url='http://creativecommons.org/about/licenses')
+    CC_BY_SA = DBItem(
+        310, 'Creative Commons - Attribution Share Alike',
+        url='http://creativecommons.org/about/licenses')
+    CC_0 = DBItem(
+        320, 'Creative Commons - No Rights Reserved',
+        url='http://creativecommons.org/about/cc0')
     # This is a placeholder "license" for users who know they want something
     # open source but haven't yet chosen a license for their project.  We do
     # not want to block them from registering their project, but this choice
@@ -248,7 +293,7 @@ class IProductCommercialRestricted(Interface):
             required=False,
             description=_(
                 "Notes on the project's license, editable only by reviewers "
-                "(Admins & Commercial Admins).")))
+                "(Admins and Commercial Admins).")))
 
     is_permitted = exported(
         Bool(
@@ -261,27 +306,26 @@ class IProductCommercialRestricted(Interface):
 
     license_reviewed = exported(
         Bool(
-            title=_('License reviewed'),
-            description=_("Whether or not this project's license has been "
-                          "reviewed. Editable only by reviewers (Admins & "
-                          "Commercial Admins).")))
+            title=_('Project reviewed'),
+            description=_("Whether or not this project has been reviewed. "
+                          "If you looked at the project and how it uses "
+                          "Launchpad, you reviewed it.")))
 
     license_approved = exported(
         Bool(
-            title=_("License approved"),
+            title=_("Project approved"),
             description=_(
-                "Whether a license is manually approved for free "
-                "hosting after automatic approval fails.  May only "
-                "be applied to licenses of 'Other/Open Source'.")))
+                "The project is legitimate and its license appears valid. "
+                "Not application to 'Other/Proprietary'.")))
 
 
 class IProductPublic(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
-    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
-    IPillar, ISpecificationTarget):
+    IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
+    IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
+    IHasTranslationGroup, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
@@ -529,13 +573,6 @@ class IProductPublic(
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
-    branches = exported(
-        CollectionField(
-            title=_("An iterator over the Bazaar branches that are "
-                    "related to this product."),
-            readonly=True,
-            value_type=Reference(schema=IBranch)))
-
     bounties = Attribute(_("The bounties that are related to this product."))
 
     translatable_packages = Attribute(
@@ -636,21 +673,6 @@ class IProductPublic(
 
         Products may override language code definitions for translation
         import purposes.
-        """
-
-    @operation_parameters(
-        status=List(
-            title=_("A list of merge proposal statuses to filter by."),
-            value_type=Choice(vocabulary=BranchMergeProposalStatus)))
-    @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(IBranchMergeProposal)
-    @export_read_operation()
-    def getMergeProposals(status=None, visible_by_user=None):
-        """Returns all merge proposals of a given status.
-
-        :param status: A list of statuses to filter with.
-        :param visible_by_user: Normally the user who is asking.
-        :returns: A list of `IBranchMergeProposal`.
         """
 
     def userCanEdit(user):
@@ -908,7 +930,11 @@ class IProductReviewSearch(Interface):
         required=False, default=True)
 
     license_reviewed = Choice(
-        title=_('License Reviewed'), values=[True, False],
+        title=_('Project Reviewed'), values=[True, False],
+        required=False, default=False)
+
+    license_approved = Choice(
+        title=_('Project Approved'), values=[True, False],
         required=False, default=False)
 
     license_info_is_empty = Choice(

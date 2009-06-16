@@ -30,7 +30,7 @@
         factory="canonical.launchpad.database.POTemplateToTranslationFileDataAdapter" />
 
     <browser:navigation
-        module="canonical.launchpad.browser"
+        module="canonical.launchpad.browser.potemplate"
         classes="POTemplateNavigation POTemplateSubsetNavigation
                  POTemplateSetNavigation"
         />
@@ -44,7 +44,7 @@
     <browser:page
         name="+preferred-chart"
         for="canonical.launchpad.interfaces.IPOTemplate"
-        class="canonical.launchpad.browser.POTemplateViewPreferred"
+        class="canonical.launchpad.browser.potemplate.POTemplateViewPreferred"
         permission="zope.Public"
         template="../templates/potemplate-chart.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"
@@ -52,7 +52,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IPOTemplate"
-        class="canonical.launchpad.browser.POTemplateView"
+        class="canonical.launchpad.browser.potemplate.POTemplateView"
         permission="zope.Public"
         layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
@@ -78,14 +78,14 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.Edit"
         template="../templates/potemplate-upload.pt"
-        class="canonical.launchpad.browser.POTemplateView"
+        class="canonical.launchpad.browser.potemplate.POTemplateView"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IPOTemplate"
-        class="canonical.launchpad.browser.POTemplateEditView"
+        class="canonical.launchpad.browser.potemplate.POTemplateEditView"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"
@@ -94,7 +94,7 @@
     <browser:page
         name="+admin"
         for="canonical.launchpad.interfaces.IPOTemplate"
-        class="canonical.launchpad.browser.POTemplateAdminView"
+        class="canonical.launchpad.browser.potemplate.POTemplateAdminView"
         permission="launchpad.Admin"
         template="../templates/potemplate-edit.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"
@@ -105,7 +105,7 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.AnyPerson"
         template="../templates/potemplate-export.pt"
-        class="canonical.launchpad.browser.POTemplateExportView"
+        class="canonical.launchpad.browser.potemplate.POTemplateExportView"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
@@ -129,14 +129,21 @@
             />
     </class>
 
+    <class class="canonical.launchpad.database.potemplate.POTemplateSharingSubset">
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IPOTemplateSharingSubset"
+            />
+    </class>
+
     <browser:url
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
-        urldata="canonical.launchpad.browser.POTemplateSubsetURL"
+        urldata="canonical.launchpad.browser.potemplate.POTemplateSubsetURL"
         />
 
     <browser:url
         for="canonical.launchpad.interfaces.IPOTemplate"
-        urldata="canonical.launchpad.browser.POTemplateURL"
+        urldata="canonical.launchpad.browser.potemplate.POTemplateURL"
         />
 
     <browser:defaultView
@@ -149,7 +156,7 @@
         name="+index"
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
         permission="zope.Public"
-        class="canonical.launchpad.browser.POTemplateSubsetView"
+        class="canonical.launchpad.browser.potemplate.POTemplateSubsetView"
         attribute="__call__"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />

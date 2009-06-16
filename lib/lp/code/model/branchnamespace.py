@@ -20,21 +20,20 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import Branch
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchMergeControlStatus,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    BranchVisibilityRule, CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus,
-    BranchMergeControlStatus, IBranch, NoSuchBranch,
+    BranchCreatorNotOwner, BranchExists,
+    IBranch, NoSuchBranch,
     user_has_special_branch_access)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.branchvisibilitypolicy import (
-    BranchVisibilityRule)
+from lp.code.model.branch import Branch
 from lp.registry.interfaces.distribution import (
     IDistributionSet, NoSuchDistribution)
 from lp.registry.interfaces.distroseries import (

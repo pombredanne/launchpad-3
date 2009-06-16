@@ -13,7 +13,10 @@ in the table HWDriver.
     ...     pprint_collection, pprint_entry)
     >>> hwdb_root = webservice.get('/+hwdb').jsonBody()
     >>> pprint_entry(hwdb_root)
-    package_names: [u'linux-image-2.6.24-19-generic']
+    driver_names_collection_link:
+        u'http://api.launchpad.dev/beta/+hwdb/driver_names'
+    package_names_collection_link:
+        u'http://api.launchpad.dev/beta/+hwdb/package_names'
     resource_type_link: u'http://api.launchpad.dev/beta/#hwdb'
     self_link: u'http://api.launchpad.dev/beta/+hwdb'
 
@@ -415,6 +418,51 @@ We can filter by distribution series and processor architecture.
     >>> for submission in submissions['entries']:
     ...     print submission['submission_key']
     sample-submission
+
+
+=== Driver names and package names ===
+
+The HWDB application object provides a list of known driver names...
+
+    >>> driver_names = webservice.get(
+    ...     hwdb_root['driver_names_collection_link']).jsonBody()
+    >>> for driver_name in driver_names['entries']:
+    ...     pprint_entry(driver_name)
+    name: u'ahci'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver_name'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+drivername/ahci'
+    name: u'ehci_hcd'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver_name'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+drivername/ehci_hcd'
+    name: u'foo'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver_name'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+drivername/foo'
+    name: u'hub'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver_name'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+drivername/hub'
+    name: u'nv'
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver_name'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+drivername/nv'
+
+...and of package names.
+
+    >>> package_names = webservice.get(
+    ...     hwdb_root['package_names_collection_link']).jsonBody()
+    >>> for package_name in package_names['entries']:
+    ...     pprint_entry(package_name)
+    package_name: u''
+    resource_type_link:
+        u'http://api.launchpad.dev/beta/#h_w_driver_package_name'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driverpackagename/'
+    package_name: u'linux-image-2.6.24-19-generic'
+    resource_type_link:
+        u'http://api.launchpad.dev/beta/#h_w_driver_package_name'
+    self_link:
+        u'http://api.launchpad.dev/beta/+hwdb/+driverpackagename/linux-...
+    package_name: u'xorg'
+    resource_type_link:
+        u'http://api.launchpad.dev/beta/#h_w_driver_package_name'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driverpackagename/xorg'
 
 
 === HWDB submissions and submission queries ===

@@ -247,8 +247,18 @@ def check_copy(source, archive, series, pocket, include_binaries,
         raise CannotCopy("Cannot copy private source into public archives.")
 
     if include_binaries:
-        if len(source.getBuiltBinaries()) == 0:
+        built_binaries = source.getBuiltBinaries()
+        if len(built_binaries) == 0:
             raise CannotCopy("source has no binaries to be copied")
+        # Deny copies of binary publications containing files with
+        # expiration date set. We only set such value for immediate
+        # expiration of old superseded binaries, so no point in
+        # checking its content, the fact it is set is already enough
+        # for denying the copy.
+        for binary_pub in built_binaries:
+            for binary_file in binary_pub.binarypackagerelease.files:
+                if binary_file.libraryfile.expires is not None:
+                    raise CannotCopy('source has expired binaries')
 
     # Check if there is already a source with the same name and version
     # published in the destination archive.
@@ -594,17 +604,14 @@ class UnembargoSecurityPackage(PackageCopier):
         """
         if ISourcePackagePublishingHistory.providedBy(pub_record):
             files = pub_record.sourcepackagerelease.files
+
             # Re-upload the changes file if necessary.
             sourcepackagerelease = pub_record.sourcepackagerelease
-            queue_record = sourcepackagerelease.getQueueRecord(
-                distroseries=pub_record.distroseries)
-            if queue_record is not None:
-                changesfile = queue_record.changesfile
-            else:
-                changesfile = None
+            changesfile = sourcepackagerelease.upload_changesfile
             if changesfile is not None and changesfile.restricted:
                 new_lfa = self.reUploadFile(changesfile, False)
-                queue_record.changesfile = new_lfa
+                sourcepackagerelease.package_upload.changesfile = new_lfa
+
             # Re-upload the package diff files if necessary.
             diffs = sourcepackagerelease.package_diffs
             for diff in diffs:
@@ -613,17 +620,19 @@ class UnembargoSecurityPackage(PackageCopier):
                     diff.diff_content = new_lfa
         elif IBinaryPackagePublishingHistory.providedBy(pub_record):
             files = pub_record.binarypackagerelease.files
+            build = pub_record.binarypackagerelease.build
+
             # Re-upload the binary changes file as necessary.
-            upload = pub_record.binarypackagerelease.build.package_upload
-            changesfile = upload.changesfile
+            changesfile = build.package_upload.changesfile
             if changesfile is not None and changesfile.restricted:
                 new_lfa = self.reUploadFile(changesfile, False)
-                upload.changesfile = new_lfa
+                build.package_upload.changesfile = new_lfa
+
             # Re-upload the buildlog file as necessary.
-            buildlog = pub_record.binarypackagerelease.build.buildlog
+            buildlog = build.buildlog
             if buildlog is not None and buildlog.restricted:
                 new_lfa = self.reUploadFile(buildlog, False)
-                pub_record.binarypackagerelease.build.buildlog = new_lfa
+                build.buildlog = new_lfa
         else:
             raise AssertionError(
                 "pub_record is not one of SourcePackagePublishingHistory "

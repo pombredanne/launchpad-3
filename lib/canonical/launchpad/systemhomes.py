@@ -22,26 +22,28 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.bug import (
-    CreateBugParams, IBugSet, InvalidBugTargetType)
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
+    IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
     ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
-from lp.code.interfaces.codehosting import (
-    IBranchFileSystemApplication, IBranchPullerApplication)
 from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
     IHWVendorIDSet, ParameterError)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.bugs.interfaces.bug import (
+    CreateBugParams, IBugSet, InvalidBugTargetType)
+from lp.code.interfaces.codehosting import (
+    IBranchFileSystemApplication, IBranchPullerApplication)
+from lp.code.interfaces.codeimportscheduler import (
+    ICodeImportSchedulerApplication)
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lazr.restful import ServiceRootResource
 
 
@@ -251,9 +253,14 @@ class HWDBApplication:
         return getUtility(IHWVendorIDSet).idsForBus(bus)
 
     @property
+    def driver_names(self):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWDriverSet).all_driver_names()
+
+    @property
     def package_names(self):
         """See `IHWDBApplication`."""
-        return getUtility(IHWDriverSet).package_names
+        return getUtility(IHWDriverSet).all_package_names()
 
     def getDistroTarget(self, distribution, distroseries, distroarchseries):
         distro_targets = [

@@ -281,7 +281,7 @@ milestone, it is "inheritied" by the project milestone.
 When we change the milestone for a bug task, subscribers to both the old
 milestone and the new one are notified.
 
-    >>> from canonical.launchpad.database.bugnotification import (
+    >>> from lp.bugs.model.bugnotification import (
     ...     BugNotification)
     >>> from canonical.launchpad.interfaces import (
     ...     IBugSet, IPersonSet, IProductSet)

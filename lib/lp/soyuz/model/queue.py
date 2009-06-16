@@ -146,9 +146,8 @@ class PackageUpload(SQLBase):
     pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
                      schema=PackagePublishingPocket)
 
-    # XXX: kiko 2007-02-10: This is NULLable. Fix sampledata?
-    changesfile = ForeignKey(dbName='changesfile',
-                             foreignKey="LibraryFileAlias")
+    changesfile = ForeignKey(
+        dbName='changesfile', foreignKey="LibraryFileAlias", notNull=False)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
@@ -156,8 +155,8 @@ class PackageUpload(SQLBase):
                              notNull=False)
 
     # XXX julian 2007-05-06:
-    # Sources and builds should not be SQLMultipleJoin, there is only
-    # ever one of each at most.
+    # Sources should not be SQLMultipleJoin, there is only ever one
+    # of each at most.
 
     # Join this table to the PackageUploadBuild and the
     # PackageUploadSource objects which are related.

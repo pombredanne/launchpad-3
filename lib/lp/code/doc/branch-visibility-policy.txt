@@ -14,7 +14,7 @@ non-specifying of a team means *everyone*.
 
 The Policy is defined by the enumerated type BranchVisibilityRule.
 
-    >>> from canonical.launchpad.interfaces import BranchVisibilityRule
+    >>> from lp.code.enums import BranchVisibilityRule
 
 There are currently four visibility policies:
  * Public - branches are public by default for the specified team.
@@ -43,8 +43,9 @@ products can set branch visibility policies.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProjectSet, IHasBranchVisibilityPolicy)
+    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.code.interfaces.branchvisibilitypolicy import (
+    ...     IHasBranchVisibilityPolicy)
     >>> project_set = getUtility(IProjectSet)
     >>> mozilla = project_set.getByName('mozilla')
     >>> IHasBranchVisibilityPolicy.providedBy(mozilla)
@@ -62,11 +63,11 @@ products can set branch visibility policies.
 
 == Teams to work with ==
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> launchpad_team = person_set.getByName('launchpad')
     >>> ubuntu_gnome_team = person_set.getByName('name18')
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> launchpad = getUtility(IProductSet).getByName('launchpad')
     >>> evolution = getUtility(IProductSet).getByName('evolution')
 

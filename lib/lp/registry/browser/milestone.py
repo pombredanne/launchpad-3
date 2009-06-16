@@ -14,14 +14,15 @@ __all__ = [
     'MilestoneSetNavigation',
     ]
 
+
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.browser.bugtask import BugTaskListingItem
-from canonical.launchpad.interfaces.bugtask import (
+from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
@@ -32,7 +33,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import DateWidget
 
-from lp.registry.browser import RegistryDeleteViewMixin
+from lp.registry.browser import get_status_counts, RegistryDeleteViewMixin
 from lp.registry.browser.product import ProductDownloadFileMixin
 
 
@@ -73,11 +74,13 @@ class MilestoneContextMenu(ContextMenu):
     def create_release(self):
         """The link to create a release for this milestone."""
         text = 'Create release'
+        summary = 'Create a release from this milestone'
         # Releases only exist for products.
         # A milestone can only have a single product release.
         enabled = (not IProjectMilestone.providedBy(self.context)
                    and self.context.product_release is None)
-        return Link('+addrelease', text, icon='add', enabled=enabled)
+        return Link(
+            '+addrelease', text, summary, icon='add', enabled=enabled)
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu):
@@ -127,8 +130,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The release's files as DownloadFiles."""
         if self.release is None or self.release.files.count() == 0:
             return None
-        return [self.getDownloadFile(file_, self.release)
-                for file_ in self.release.files]
+        return list(self.release.files)
 
     # Listify and cache the specifications, ProductReleaseFiles and bugtasks
     # to avoid making the same query over and over again when evaluating in
@@ -195,6 +197,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             return '<strong>%d bugs</strong>' % count
 
     @property
+    def bugtask_status_counts(self):
+        """A list StatusCounts summarising the targeted bugtasks."""
+        return get_status_counts(self.bugtasks, 'status')
+
+    @property
     def specification_count_text(self):
         """The formatted count of specifications for this milestone."""
         count = len(self.specifications)
@@ -202,6 +209,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             return '<strong>1 blueprint</strong>'
         else:
             return '<strong>%d blueprints</strong>' % count
+
+    @property
+    def specification_status_counts(self):
+        """A list StatusCounts summarising the targeted specification."""
+        return get_status_counts(self.specifications, 'implementation_status')
 
     @cachedproperty
     def total_downloads(self):

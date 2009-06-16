@@ -6,10 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeImportReviewStatus',
     'ICodeImport',
     'ICodeImportSet',
-    'RevisionControlSystems',
     ]
 
 import re
@@ -17,78 +15,11 @@ import re
 from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 from CVS.protocol import CVSRoot, CvsRootError
-from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, URIField
 from canonical.launchpad.validators import LaunchpadValidationError
-
-
-class RevisionControlSystems(DBEnumeratedType):
-    """Revision Control Systems
-
-    Bazaar brings code from a variety of upstream revision control
-    systems into bzr. This schema documents the known and supported
-    revision control systems.
-    """
-
-    CVS = DBItem(1, """
-        Concurrent Versions System
-
-        Imports from CVS via CSCVS.
-        """)
-
-    SVN = DBItem(2, """
-        Subversion
-
-        Imports from SVN using CSCVS.
-        """)
-
-    BZR_SVN = DBItem(3, """
-        Subversion via bzr-svn
-
-        Imports from SVN using bzr-svn.
-        """)
-
-    GIT = DBItem(4, """
-        Git
-
-        Imports from Git using bzr-git.
-        """)
-
-
-class CodeImportReviewStatus(DBEnumeratedType):
-    """CodeImport review status.
-
-    Before a code import is performed, it is reviewed. Only reviewed imports
-    are processed.
-    """
-
-    NEW = DBItem(1, """Pending Review
-
-        This code import request has recently been filed and has not
-        been reviewed yet.
-        """)
-
-    INVALID = DBItem(10, """Invalid
-
-        This code import will not be processed.
-        """)
-
-    REVIEWED = DBItem(20, """Reviewed
-
-        This code import has been approved and will be processed.
-        """)
-
-    SUSPENDED = DBItem(30, """Suspended
-
-        This code import has been approved, but it has been suspended
-        and is not processed.""")
-
-    FAILING = DBItem(40, """Failed
-
-        The code import is failing for some reason and is no longer being
-        attempted.""")
+from lp.code.enums import CodeImportReviewStatus, RevisionControlSystems
 
 
 def validate_cvs_root(cvsroot):

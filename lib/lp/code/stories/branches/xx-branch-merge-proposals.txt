@@ -8,9 +8,9 @@ In order to test notifications, we need a subscriber for the branch.
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchSubscriptionNotificationLevel,
-    ...     CodeReviewNotificationLevel, IPersonSet)
+    >>> from lp.code.enums import (
+    ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> subscriber = getUtility(IPersonSet).getByEmail(
     ...     'foo.bar@canonical.com')
@@ -269,6 +269,32 @@ Only the last request is listed, showing the last review type.
                                                  Request another review
 
 
+== Reviewing ==
+
+People not logged in cannot perform reviews.
+
+    >>> anon_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
+    ...     '/klingon/+merge/1')
+    >>> link = anon_browser.getLink('[Review]')
+    Traceback (most recent call last):
+    LinkNotFoundError
+
+People who are logged in can perform reviews.
+
+    >>> nopriv_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
+    ...     '/klingon/+merge/1')
+    >>> nopriv_browser.getLink('[Review]').click()
+    >>> nopriv_browser.getControl('Comment').value = "Don't like it"
+    >>> nopriv_browser.getControl('Reviewer says:').getControl(
+    ...     'Disapprove').click()
+    >>> nopriv_browser.getControl('Save Review').click()
+    >>> pending = find_tag_by_id(
+    ...     nopriv_browser.contents, 'code-review-votes')
+    >>> print extract_text(pending)
+    Reviewer             Review Type  Date Requested  Status
+    No Privileges Person                              Disapprove ...
+
+
 == Commenting on a Merge Proposal ==
 
 Merge proposal comments should be converted to html in the case of referenced
@@ -277,7 +303,7 @@ bugs and urls.
     >>> sample_browser.getLink('[Review]').click()
     >>> sample_browser.getControl('Comment').value = 'This fixes bug #1'
     >>> sample_browser.getControl('Save Review').click()
-    >>> comment = find_tag_by_id(sample_browser.contents, 'comment1')
+    >>> comment = find_tag_by_id(sample_browser.contents, 'comment2')
     >>> print comment.find('div',
     ...     {'class': 'boardCommentBody codereviewcomment'}).contents[1]
     <pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;">This fixes <a href="/bugs/1" title="Firefox does not support SVG">bug #1</a></pre>
@@ -386,6 +412,7 @@ branches but with the state set to work-in-progress.
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges')
     >>> sample_browser.getLink('view proposal details').click()
+    >>> orig_url = sample_browser.url
     >>> sample_browser.getLink('Change status').click()
     >>> sample_browser.getControl(name='field.queue_status').displayValue = (
     ...     ['Resubmit'])
@@ -427,8 +454,63 @@ new proposal that supersedes it.
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'superseded-by'))
     This proposal has been superseded by a proposal from ...
-    >>> sample_browser.getLink(
-    ...     re.compile('proposal from .*')).click()
+    >>> link = sample_browser.getLink(re.compile('proposal from .*'))
+    >>> superseding_url = link.url
+
+The superseded proposal can't be made active because of the duplicate
+proposal.  It can only be set to another inactive state like "rejected" or
+"merged".
+
+    >>> sample_browser.getLink('Change status').click()
+    >>> def print_options(field):
+    ...     for option in field.options:
+    ...         print option
+    >>> print_options(sample_browser.getControl(name='field.queue_status'))
+    REJECTED
+    MERGED
+    SUPERSEDED
+
+If we make the superseding proposal inactive, we can set the original back to
+work-in-progress.
+
+    >>> sample_browser.open(superseding_url)
+    >>> sample_browser.getLink('Change status').click()
+    >>> sample_browser.getControl(name='field.queue_status').displayValue = (
+    ...     ['Merged'])
+    >>> sample_browser.getControl('Change Status').click()
+    >>> print_summary(sample_browser)
+    Status: Merged
+    ...
+    >>> sample_browser.open(orig_url)
+    >>> print_summary(sample_browser)
+    Status: Superseded
+    ...
+    >>> sample_browser.getLink('Change status').click()
+    >>> print_options(sample_browser.getControl(name='field.queue_status'))
+    WORK_IN_PROGRESS
+    NEEDS_REVIEW
+    CODE_APPROVED
+    REJECTED
+    MERGED
+    SUPERSEDED
+
+Merged proposals can be reset to other values, because they may have been
+marked merged by mistake, in the UI.
+
+    >>> sample_browser.getControl(name='field.queue_status').displayValue = (
+    ...     ['Merged'])
+    >>> sample_browser.getControl('Change Status').click()
+    >>> print_summary(sample_browser)
+    Status: Merged
+    ...
+    >>> sample_browser.getLink('Change status').click()
+    >>> print_options(sample_browser.getControl(name='field.queue_status'))
+    WORK_IN_PROGRESS
+    NEEDS_REVIEW
+    CODE_APPROVED
+    REJECTED
+    MERGED
+    SUPERSEDED
 
 
 == Default target branches ==
@@ -609,7 +691,7 @@ they'll get a 404.
 Create merge proposal with a review diff, and go to its index page.
 
     >>> login('admin@canonical.com')
-    >>> from canonical.launchpad.database.diff import StaticDiff
+    >>> from lp.code.model.diff import StaticDiff
     >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff'
     ...     u'\u1010'.encode('utf-8'))
     >>> transaction.commit()

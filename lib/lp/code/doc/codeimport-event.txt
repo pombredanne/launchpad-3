@@ -19,7 +19,7 @@ ICodeImportEventSet utility.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import ICodeImportEventSet
+    >>> from lp.code.interfaces.codeimportevent import ICodeImportEventSet
     >>> event_set = getUtility(ICodeImportEventSet)
     >>> verifyObject(ICodeImportEventSet, removeSecurityProxy(event_set))
     True
@@ -27,7 +27,7 @@ ICodeImportEventSet utility.
 To easily verify objects returned by the individual event creation
 methods, we define a small helper function:
 
-    >>> from canonical.launchpad.interfaces import ICodeImportEvent
+    >>> from lp.code.interfaces.codeimportevent import ICodeImportEvent
     >>> def verify_event(event):
     ...     if verifyObject(ICodeImportEvent, removeSecurityProxy(event)):
     ...         print event.event_type.name
@@ -85,10 +85,11 @@ Creating a CodeImport is complicated, and we will create two of them, so
 we define a helper function. Since CodeImportSet.new should record the
 CodeImportEvent, we need to use the CodeImport constructor directly.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CodeImportEventDataType, BranchType, ILaunchpadCelebrities,
-    ...     IPersonSet, IProductSet)
-    >>> from canonical.launchpad.database import CodeImport
+    >>> from lp.code.enums import BranchType, CodeImportEventDataType
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.code.model.codeimport import CodeImport
     >>> from lp.code.interfaces.branchnamespace import (
     ...     get_branch_namespace)
 
@@ -106,7 +107,7 @@ CodeImportEvent, we need to use the CodeImport constructor directly.
 
 First we create a Subversion import.
 
-    >>> from canonical.launchpad.interfaces import RevisionControlSystems
+    >>> from lp.code.enums import RevisionControlSystems
     >>> svn_url = 'svn://svn.example.com/trunk'
     >>> svn_import = new_code_import('svn-trunk',
     ...     rcs_type=RevisionControlSystems.SVN, svn_branch_url=svn_url)
@@ -202,7 +203,7 @@ state of the code import.
 
 Then changes can be applied.
 
-    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
+    >>> from lp.code.enums import CodeImportReviewStatus
     >>> svn_import.review_status = CodeImportReviewStatus.REVIEWED
 
 After applying changes, the newModify method can create an event that
@@ -325,7 +326,7 @@ useful to collate events associated with deleted CodeImport objects.
 Execution of import jobs is controlled by code-import-controller daemons
 on multiple machines.
 
-    >>> from canonical.launchpad.interfaces import ICodeImportMachineSet
+    >>> from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine = machine_set.getByHostname('bazaar-importer')
 
@@ -369,8 +370,7 @@ CodeImportMachine is called to mark it as no longer running. This method
 logs the change by creating an OFFLINE event using the
 ICodeImportSet.newOffline method.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CodeImportMachineOfflineReason)
+    >>> from lp.code.enums import CodeImportMachineOfflineReason
     >>> QUIESCED = CodeImportMachineOfflineReason.QUIESCED
 
     >>> fail_if_argument_is_none(event_set.newOffline, None, QUIESCED)

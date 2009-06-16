@@ -25,7 +25,7 @@ from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.registry.interfaces.person import IPerson
@@ -64,10 +64,6 @@ class IMessage(Interface):
         Reference(title=_('Parent'), schema=Interface,
                   required=False, readonly=True))
 
-    distribution = Reference(
-        title=_('Distribution'),
-        schema=Interface, # Redefined in distribution.py
-        required=False, readonly=True)
     rfc822msgid = TextLine(
         title=_('RFC822 Msg ID'), required=True, readonly=True)
     raw = Reference(title=_('Original unmodified email'),

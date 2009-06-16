@@ -551,6 +551,10 @@ distroarchseriesbinarypackage_index = ContextTitle('%s')
 
 distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
+def distroseries_add(context, view):
+    """Return the page title to change the driver."""
+    return view.page_title
+
 distroseries_addport = ContextTitle('Add a port of %s')
 
 distroseries_admin = ContextTitle('Administer %s')
@@ -831,7 +835,9 @@ oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 object_branding = ContextDisplayName('Change the images used to represent '
     '%s in Launchpad')
 
-object_driver = ContextTitle('Appoint the driver for %s')
+def object_driver(context, view):
+    """Return the page title to change the driver."""
+    return view.page_title
 
 object_milestones = ContextTitle(smartquote("%s's milestones"))
 
@@ -892,6 +898,8 @@ people_newteam = 'Register a new team in Launchpad'
 people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+active_reviews = ContextDisplayName('Pending proposals for %s')
 
 person_archive_subscription = ContextDisplayName('%s')
 
@@ -1048,8 +1056,6 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-product_active_reviews = ContextDisplayName('Pending proposals for %s')
-
 product_add_from_project = 'Register a project in your project group'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
@@ -1087,9 +1093,11 @@ product_purchase_subscription = ContextDisplayName(
 
 product_files = ContextDisplayName('%s project files')
 
-product_review_license = ContextTitle('Review licensing for %s')
+product_review_license = ContextTitle('Review %s')
 
 product_series = ContextDisplayName('%s timeline')
+
+product_timeline = ContextTitle('Timeline Diagram for %s')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
@@ -1111,13 +1119,15 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
 
-products_review_licenses = 'Review licenses of projects'
+products_review_licenses = 'Review projects'
+
+productserieslanguage_index = ContextTitle('%s')
 
 productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_linkbranch = ContextTitle('Link an existing branch to %s')
 
-productseries_index = ContextTitle('Overview of %s')
+productseries_index = ContextTitle('%s')
 
 productseries_delete = ContextTitle('Delete %s')
 
@@ -1125,6 +1135,8 @@ productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 
 productseries_review = ContextTitle('Review %s')
+
+productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 

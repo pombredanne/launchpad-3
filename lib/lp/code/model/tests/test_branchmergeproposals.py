@@ -20,29 +20,29 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob, BranchMergeProposalJobType,
+    CreateMergeProposalJob, MergeProposalCreatedJob)
 from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal, BranchMergeProposalGetter, BranchMergeProposalJob,
-    BranchMergeProposalJobType, CreateMergeProposalJob, is_valid_transition,
-    MergeProposalCreatedJob)
-from canonical.launchpad.database.diff import StaticDiff
+    BranchMergeProposal, BranchMergeProposalGetter, is_valid_transition)
+from lp.code.model.diff import StaticDiff
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
 from canonical.launchpad.ftests import (
     ANONYMOUS, import_secret_test_key, login, logout, syncUpdate)
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import (
+    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
+    BranchType, CodeReviewNotificationLevel, CodeReviewVote)
 from lp.code.interfaces.branchmergeproposal import (
-    BadStateTransition, BranchMergeProposalStatus,
+    BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, WrongBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.codereviewcomment import CodeReviewVote
 from lp.testing import (
     capture_events, login_person, TestCaseWithFactory, time_counter)
 from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
@@ -846,6 +846,24 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         results = BranchMergeProposalGetter.getProposalsForContext(
             context, status, visible_by_user)
         return sorted([bmp.source_branch.unique_name for bmp in results])
+
+    def test_getProposalsForParticipant(self):
+        # It's possible to get all the merge proposals for a single
+        # participant.
+        wally = self.factory.makePerson(name='wally')
+        beaver = self.factory.makePerson(name='beaver')
+
+        bmp1 = self._make_merge_proposal('wally', 'gokart', 'turbo', True)
+        bmp1.nominateReviewer(beaver, wally)
+        bmp2 = self._make_merge_proposal('beaver', 'gokart', 'brakes', True)
+
+        wally_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+            wally, [BranchMergeProposalStatus.NEEDS_REVIEW], wally)
+        self.assertEqual(wally_proposals.count(), 1)
+
+        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+            beaver, [BranchMergeProposalStatus.NEEDS_REVIEW], beaver)
+        self.assertEqual(beave_proposals.count(), 2)
 
     def test_created_proposal_default_status(self):
         # When we create a merge proposal using the helper method, the default

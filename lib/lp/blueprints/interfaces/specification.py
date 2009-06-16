@@ -814,7 +814,6 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
 
         It returns a SpecificationLifecycleStatus dbschema showing the
         overall state of the specification IF the state has changed.
-
         """
 
     # event-related methods

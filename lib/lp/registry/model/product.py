@@ -32,16 +32,16 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from lp.code.model.branch import BranchSet
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
-from canonical.launchpad.database.bug import (
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import (
+from lp.bugs.model.bugtarget import (
     BugTargetBase, OfficialBugTagTargetMixin)
-from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.bugtracker import BugTracker
-from canonical.launchpad.database.bugwatch import BugWatch
+from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtracker import BugTracker
+from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -72,10 +72,8 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 
 from lp.code.interfaces.branch import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet)
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
@@ -92,6 +90,7 @@ from lp.blueprints.interfaces.specification import (
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
+from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
 
@@ -164,7 +163,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin, OfficialBugTagTargetMixin):
+              HasMilestonesMixin, OfficialBugTagTargetMixin,
+              HasBranchesMixin, HasMergeProposalsMixin):
 
     """A Product."""
 
@@ -608,7 +608,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def getLatestBranches(self, quantity=5, visible_by_user=None):
         """See `IProduct`."""
         return shortlist(
-            BranchSet().getLatestBranchesForProduct(
+            getUtility(IBranchSet).getLatestBranchesForProduct(
                 self, quantity, visible_by_user))
 
     def getPackage(self, distroseries):
@@ -936,18 +936,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
 
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IProduct`."""
-        if status is None:
-            status = (
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW,
-                BranchMergeProposalStatus.WORK_IN_PROGRESS)
-
-        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self, status, visible_by_user=visible_by_user)
-
-
     def userCanEdit(self, user):
         """See `IProduct`."""
         if user is None:
@@ -969,8 +957,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getTimeline(self, include_inactive=False):
         """See `IProduct`."""
+        series_list = sorted_version_numbers(self.serieses,
+                                             key=operator.attrgetter('name'))
+        if self.development_focus in series_list:
+            series_list.remove(self.development_focus)
+        series_list.insert(0, self.development_focus)
+        series_list.reverse()
         return [series.getTimeline(include_inactive=include_inactive)
-                for series in self.serieses]
+                for series in series_list]
 
 
 class ProductSet:
@@ -1073,7 +1067,7 @@ class ProductSet:
         return product
 
     def forReview(self, search_text=None, active=None,
-                  license_reviewed=None, licenses=None,
+                  license_reviewed=None, license_approved=None, licenses=None,
                   license_info_is_empty=None,
                   has_zero_licenses=None,
                   created_after=None, created_before=None,
@@ -1088,6 +1082,9 @@ class ProductSet:
         if license_reviewed is not None:
             conditions.append('Product.reviewed = %s'
                               % sqlvalues(license_reviewed))
+        if license_approved is not None:
+            conditions.append('Product.license_approved = %s'
+                              % sqlvalues(license_approved))
 
         if active is not None:
             conditions.append('Product.active = %s' % sqlvalues(active))

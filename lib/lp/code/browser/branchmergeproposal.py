@@ -1,5 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=C0322
+# pylint: disable-msg=C0322,F0401
 
 """Views, navigation and actions for BranchMergeProposals."""
 
@@ -45,13 +45,12 @@ from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import (
+    BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
+    CodeReviewVote)
 from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposal, WrongBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    CodeReviewNotificationLevel)
-from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote, ICodeReviewComment)
+    IBranchMergeProposal, WrongBranchMergeProposal)
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
@@ -150,16 +149,14 @@ class BranchMergeProposalContextMenu(ContextMenu):
     def edit_commit_message(self):
         text = 'Edit commit message'
         enabled = self.context.isMergable()
-        return Link('+edit-commit-message', text, icon='edit', enabled=enabled)
+        return Link('+edit-commit-message', text, icon='edit',
+                    enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
         text = 'Change status'
         status = self.context.queue_status
-        # Can't change the status if Merged or Superseded.
-        enabled = status not in (BranchMergeProposalStatus.SUPERSEDED,
-                                 BranchMergeProposalStatus.MERGED)
-        return Link('+edit-status', text, icon='edit', enabled=enabled)
+        return Link('+edit-status', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -352,10 +349,13 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     @property
     def review_diff(self):
         """Return a (hopefully) intelligently encoded review diff."""
+        if self.context.review_diff is None:
+            return None
         try:
             diff = self.context.review_diff.diff.text.decode('utf-8')
         except UnicodeDecodeError:
-            diff = self.context.review_diff.diff.text.decode('windows-1252')
+            diff = self.context.review_diff.diff.text.decode('windows-1252',
+                                                             'replace')
         return diff
 
     @property
@@ -477,11 +477,11 @@ class BranchMergeProposalVoteView(LaunchpadView):
     @cachedproperty
     def show_user_review_link(self):
         """Show self in the review table if can review and not asked."""
+        if self.user is None or not self.context.isMergable():
+            return False
         reviewers = [review.reviewer for review in self.reviews]
         # The owner of the source branch should not get a review link.
-        return (self.context.isPersonValidReviewer(self.user) and
-                self.user not in reviewers and
-                self.context.isMergable())
+        return self.user not in reviewers
 
 
 class IReviewRequest(Interface):
@@ -969,11 +969,6 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         """Update the status."""
 
         curr_status = self.context.queue_status
-        # If the status has been updated elsewhere to set the proposal to
-        # merged or superseded, then return.
-        if curr_status in (BranchMergeProposalStatus.SUPERSEDED,
-                           BranchMergeProposalStatus.MERGED):
-            return
         # Assume for now that the queue_status in the data is a valid
         # transition from where we are.
         rev_id = self.request.form['revno']
@@ -1052,27 +1047,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
 
         if self.user is None:
             # Anonymous users are not valid voters.
-            valid_voter = False
-        elif self.context.isPersonValidReviewer(self.user):
-            # A user who is a valid reviewer for the proposal is a valid
-            # voter.
-            valid_voter = True
-        elif self.users_vote_ref is not None:
-            # The user has already voted, so can change their vote.
-            valid_voter = True
-        else:
-            valid_voter = False
-            # Look through the requested reviewers.
-            for vote_reference in self.context.votes:
-                # If the user is in the team of a pending team review request,
-                # then they are valid voters.
-                if (vote_reference.comment is None and
-                    self.user.inTeam(vote_reference.reviewer)):
-                    valid_voter = True
-
-        if not valid_voter:
             raise AssertionError('Invalid voter')
-
         LaunchpadFormView.initialize(self)
 
     def setUpFields(self):

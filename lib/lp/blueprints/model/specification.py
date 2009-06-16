@@ -19,7 +19,7 @@ from sqlobject import (
 from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 
-from canonical.launchpad.interfaces.buglink import IBugLinkTarget
+from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.blueprints.interfaces.specification import (
     ISpecification, ISpecificationSet, SpecificationDefinitionStatus,
     SpecificationFilter, SpecificationGoalStatus,
@@ -36,7 +36,7 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses, shortlist)
 
 
-from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
+from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.interfaces.person import validate_public_person
 from lp.blueprints.model.specificationdependency import (

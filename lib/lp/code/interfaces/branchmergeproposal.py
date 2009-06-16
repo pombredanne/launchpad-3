@@ -8,7 +8,6 @@ __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchMergeProposalExists',
-    'BranchMergeProposalStatus',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
@@ -26,13 +25,13 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bytes, Choice, Datetime, Int, Object, Text, TextLine)
-from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
+from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
 from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
@@ -72,65 +71,6 @@ class WrongBranchMergeProposal(Exception):
 
 class BadBranchMergeProposalSearchContext(Exception):
     """The context is not valid for a branch merge proposal search."""
-
-
-class BranchMergeProposalStatus(DBEnumeratedType):
-    """Branch Merge Proposal Status
-
-    The current state of a proposal to merge.
-    """
-
-    WORK_IN_PROGRESS = DBItem(1, """
-        Work in progress
-
-        The source branch is actively being worked on.
-        """)
-
-    NEEDS_REVIEW = DBItem(2, """
-        Needs review
-
-        A review of the changes has been requested.
-        """)
-
-    CODE_APPROVED = DBItem(3, """
-        Approved
-
-        The changes have been approved for merging.
-        """)
-
-    REJECTED = DBItem(4, """
-        Rejected
-
-        The changes have been rejected and will not be merged in their
-        current state.
-        """)
-
-    MERGED = DBItem(5, """
-        Merged
-
-        The changes from the source branch were merged into the target
-        branch.
-        """)
-
-    MERGE_FAILED = DBItem(6, """
-        Code failed to merge
-
-        The changes from the source branch failed to merge into the
-        target branch for some reason.
-        """)
-
-    QUEUED = DBItem(7, """
-        Queued
-
-        The changes from the source branch are queued to be merged into the
-        target branch.
-        """)
-
-    SUPERSEDED = DBItem(10, """
-        Superseded
-
-        This proposal has been superseded by anther proposal to merge.
-        """)
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
@@ -482,7 +422,7 @@ class IBranchMergeProposal(Interface):
 
     @operation_parameters(
         subject=Text(), content=Text(),
-        vote=Choice(vocabulary='CodeReviewVote'), review_type=Text(),
+        vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface))
     @call_with(owner=REQUEST_USER)
     @export_write_operation()
@@ -577,6 +517,23 @@ class IBranchMergeProposalGetter(Interface):
             the branch, and to LP admins.
         :raises BadBranchMergeProposalSearchContext: If the context is not
             understood.
+        """
+
+    def getProposalsForParticipant(participant, status=None,
+        visible_by_user=None):
+        """Return BranchMergeProposals associated with the context.
+
+        :param participant: An `IPerson` that is participating in the merge
+            proposal, either a reviewer or reviewee.
+        :param status: An iterable of queue_status of the proposals to return.
+            If None is specified, all the proposals of all possible states
+            are returned.
+        :param visible_by_user: If a person is not supplied, only merge
+            proposals based on public branches are returned.  If a person is
+            supplied, merge proposals based on both public branches, and the
+            private branches that the person is entitled to see are returned.
+            Private branches are only visible to the owner and subscribers of
+            the branch, and to LP admins.
         """
 
     def getVotesForProposals(proposals):

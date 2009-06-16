@@ -30,7 +30,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from lp.registry.interfaces.announcement import IMakesAnnouncements
-from canonical.launchpad.interfaces.bugtarget import (
+from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.karma import IKarmaContext
@@ -38,7 +38,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
     ILaunchpadUsage)
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.interfaces.message import IMessage
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from lp.registry.interfaces.pillar import IPillar
@@ -509,9 +508,6 @@ class IDistributionPublic(
 class IDistribution(IDistributionEditRestricted, IDistributionPublic):
     """An operating system distribution."""
     export_as_webservice_entry()
-
-# We are forced to define this now to avoid circular import problems.
-IMessage['distribution'].schema = IDistribution
 
 # Patch the official_bug_tags field to make sure that it's
 # writable from the API, and not readonly like its definition
