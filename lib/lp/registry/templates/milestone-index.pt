@@ -110,40 +110,37 @@
         <table id="downloads" class="listing">
           <thead>
             <tr>
-              <th>Download</th>
+              <th>File</th>
               <th>Description</th>
+              <th>Downloads</th>
               <th tal:condition="has_edit" width="10%">Delete</th>
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="file view/release/files">
-              <td>
-                <img alt="download icon" src="/@@/download" />
-                <strong><a
-                  tal:attributes="href python:view.fileURL(file.libraryfile)"
-                  tal:content="file/libraryfile/filename"
-                  >filename</a></strong>
-                (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
-                >md5</a><tal:signature condition="file/signature">,
-                <a tal:attributes="href python:view.fileURL(file.signature)">
-                sig</a></tal:signature>)
-              </td>
-              <td tal:content="file/description">Installer for i386</td>
-              <td tal:condition="has_edit"
-                  align="center">
-                <input type="checkbox"
-                       tal:define="cbnum string:${repeat/file/index}"
-                       tal:attributes="value file/libraryfile/id;
-                                       name string:checkbox_${cbnum}" />
-              </td>
+            <tr tal:repeat="file view/download_files">
+              <tal:define-vars
+                define="checkbox_index string:${repeat/file/index}">
+                <tal:release-file
+                  metal:use-macro="file/@@+macros/detailed_display" />
+              </tal:define-vars>
             </tr>
           </tbody>
+          <tfoot tal:condition="view/total_downloads">
+            <tr>
+              <th colspan="2" style="padding-top: 1em; text-align: right;">
+                Total downloads:
+              </th>
+              <td style="border: none; text-align: center;">
+                <span tal:replace="view/total_downloads/fmt:intcomma" />
+              </td>
+            </tr>
+          </tfoot>
         </table>
 
         <div style="margin-top: .4em;" tal:condition="has_edit">
           <div style="float:right">
             <input type="submit" name="delete_files" value="Delete Files"
-              tal:condition="view/release/files"/>
+              tal:condition="view/product_release_files"/>
           </div>
           <div
             tal:define="link release_menu/add_file"

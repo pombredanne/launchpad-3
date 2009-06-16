@@ -12,8 +12,8 @@ import unittest
 import pytz
 from zope.component import getUtility
 
-from canonical.archivepublisher.config import Config
-from canonical.archivepublisher.diskpool import DiskPool
+from lp.archivepublisher.config import Config
+from lp.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp.soyuz.model.publishing import (
@@ -106,7 +106,7 @@ class SoyuzTestPublisher:
         for arch in distroseries.architectures:
             arch.addOrUpdateChroot(fake_chroot)
 
-    def regetBreezyAutotest(self): 
+    def regetBreezyAutotest(self):
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
         self.person = getUtility(IPersonSet).getByName('name16')
@@ -318,7 +318,21 @@ class SoyuzTestPublisher:
             restricted=build.archive.private)
         binarypackagerelease.addFile(alias)
 
+        # Adjust the build record in way it looks complete.
         build.buildstate = BuildStatus.FULLYBUILT
+        build.datebuilt = datetime.datetime(
+            2008, 1, 1, 0, 5, 0, tzinfo=pytz.timezone("UTC"))
+        build.buildduration = datetime.timedelta(minutes=5)
+        buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
+            build.distribution.name,
+            build.distroseries.name,
+            build.distroarchseries.architecturetag,
+            build.sourcepackagerelease.name,
+            build.sourcepackagerelease.version,
+            build.buildstate.name)
+        build.buildlog = self.addMockFile(
+            buildlog_filename, filecontent='Built!',
+            restricted=build.archive.private)
 
         return binarypackagerelease
 

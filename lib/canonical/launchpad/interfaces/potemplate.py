@@ -26,6 +26,7 @@ __all__ = [
     'IHasTranslationTemplates',
     'IPOTemplate',
     'IPOTemplateSet',
+    'IPOTemplateSharingSubset',
     'IPOTemplateSubset',
     'IPOTemplateWithContent',
     'LanguageNotFound',
@@ -566,6 +567,12 @@ class IPOTemplateSet(Interface):
         """Return a POTemplateSubset object depending on the given arguments.
         """
 
+    def getSharingSubset(distribution=None, sourcepackagename=None,
+                         products=None):
+        """Return a POTemplateSharingSubset object depending on the given
+        arguments.
+        """
+
     def getSubsetFromImporterSourcePackageName(
         distroseries, sourcepackagename, iscurrent=None):
         """Return a POTemplateSubset based on the origin sourcepackagename.
@@ -577,6 +584,53 @@ class IPOTemplateSet(Interface):
            came from the given arguments.
 
         Return None if there is no such `IPOTemplate`.
+        """
+
+    def compareSharingPrecedence(left, right):
+        """Sort comparison: order sharing templates by precedence.
+
+        Sort using this function to order sharing templates from most
+        representative to least representative, as per the message-sharing
+        migration spec.
+        """
+
+
+class IPOTemplateSharingSubset(Interface):
+    """A subset of sharing PO templates."""
+
+    distribution = Object(
+        title=_(
+            'The `IDistribution` associated with this subset.'),
+        schema=IDistribution)
+
+    product = Object(
+        title=_(
+            'The `IProduct` associated with this subset.'),
+        schema=IProduct)
+
+    sourcepackagename = Object(
+        title=_(
+            'The `ISourcePackageName` associated with this subset.'),
+        schema=ISourcePackageName,
+        required=False)
+
+    def groupEquivalentPOTemplates(name_pattern=None):
+        """Within given IProduct or IDistribution, find equivalent templates.
+
+        Partitions all templates in the given context into equivalence
+        classes. This means that is groups all templates together for which
+        the tuple (template.name, sourcepackagename.name) is identical. This
+        tuple is called the equivalence class. When working with a product,
+        sourcepackagename.name is always None, so effectively the name of
+        the template is the class.
+
+        :param name_pattern: an optional regex pattern indicating which
+            template names are to be merged. If you're operating on
+            a distribution, you may want to pass a this to avoid doing too
+            much in one go.
+        :return: a dict mapping each equivalence class to a list of
+            `POTemplate`s in that class, each sorted from most to least
+            representative.
         """
 
 

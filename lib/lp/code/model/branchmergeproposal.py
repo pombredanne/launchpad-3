@@ -1,5 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212
+# pylint: disable-msg=E0611,W0212,F0401
 
 """Database class for branch merge prosals."""
 
@@ -7,45 +7,32 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
     'BranchMergeProposalGetter',
-    'BranchMergeProposalJob',
-    'CreateMergeProposalJob',
     'is_valid_transition',
-    'MergeProposalCreatedJob',
     ]
 
-from email.Utils import make_msgid, parseaddr
-
-from lazr.delegates import delegates
-from lazr.enum import DBEnumeratedType, DBItem
-import simplejson
-from storm.expr import And, Or
+from email.Utils import make_msgid
+from storm.expr import And, Or, Select
 from storm.store import Store
-from storm.base import Storm
-import transaction
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import classProvides, implements
+from zope.interface import implements
 
 from storm.expr import Join, LeftJoin
-from storm.locals import Int, Reference, Unicode
-from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+from storm.locals import Int, Reference
+from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
-from lp.codehosting.vfs import get_multi_server
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
+from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
     CodeReviewVoteReference)
-from canonical.launchpad.database.diff import Diff, PreviewDiff, StaticDiff
-from lp.services.job.model.job import Job
-from canonical.launchpad.database.message import (
-    Message, MessageChunk, MessageJob, MessageJobAction)
+from lp.code.model.diff import Diff, PreviewDiff
 from lp.registry.model.person import Person
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
@@ -54,60 +41,32 @@ from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
-    BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
-    ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob, UserNotBranchReviewer, WrongBranchMergeProposal)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
+    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer, WrongBranchMergeProposal)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from lp.code.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.code.mail.branch import RecipientReason
-from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
-    MASTER_FLAVOR)
-from canonical.launchpad.webapp.interaction import setupInteraction
-
-
-VALID_TRANSITION_GRAPH = {
-    # It is valid to transition to any state from work in progress or needs
-    # review, although additional user checks are requried.
-    BranchMergeProposalStatus.WORK_IN_PROGRESS:
-        BranchMergeProposalStatus.items,
-    BranchMergeProposalStatus.NEEDS_REVIEW:
-        BranchMergeProposalStatus.items,
-    # If the proposal has been approved, any transition is valid.
-    BranchMergeProposalStatus.CODE_APPROVED: BranchMergeProposalStatus.items,
-    # Rejected is mostly terminal, can only resubmitted.
-    BranchMergeProposalStatus.REJECTED: [
-        BranchMergeProposalStatus.SUPERSEDED,
-        ],
-    # Merged is truly terminal, so nothing is valid.
-    BranchMergeProposalStatus.MERGED: [],
-    # It is valid to transition to any state from merge failed, although
-    # additional user checks are requried.
-    BranchMergeProposalStatus.MERGE_FAILED:
-        BranchMergeProposalStatus.items,
-    # Queued can only be transitioned to merged or merge failed.
-    # Dequeing is a special case.
-    BranchMergeProposalStatus.QUEUED: [
-        BranchMergeProposalStatus.MERGED,
-        BranchMergeProposalStatus.MERGE_FAILED,
-        ],
-    # Superseded is truly terminal, so nothing is valid.
-    BranchMergeProposalStatus.SUPERSEDED: [],
-    }
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
-    """Is it valid for the proposal to move to next_state from from_state?"""
+    """Is it valid for this user to move this proposal to to next_state?
+
+    :param proposal: The merge proposal.
+    :param from_state: The previous state
+    :param to_state: The new state to change to
+    :param user: The user who may change the state
+    """
     # Trivial acceptance case.
     if from_state == next_state:
         return True
+    if from_state in FINAL_STATES and next_state not in FINAL_STATES:
+        dupes = BranchMergeProposalGetter.activeProposalsForBranches(
+            proposal.source_branch, proposal.target_branch)
+        if dupes.count() > 0:
+            return False
 
     [wip, needs_review, code_approved, rejected,
      merged, merge_failed, queued, superseded
@@ -118,12 +77,14 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     valid_reviewer = proposal.isPersonValidReviewer(user)
     if (next_state == rejected and not valid_reviewer):
         return False
+    # Non-reviewers can toggle between code_approved and queued, but not
+    # make anything else approved or queued.
     elif (next_state in (code_approved, queued) and
-          from_state in (wip, needs_review, merge_failed)
+          from_state not in (code_approved, queued)
           and not valid_reviewer):
         return False
-
-    return next_state in VALID_TRANSITION_GRAPH[from_state]
+    else:
+        return True
 
 
 class BranchMergeProposal(SQLBase):
@@ -350,8 +311,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         # As long as the source branch has not been merged, rejected
         # or superseded, then it is valid to be merged.
-        return (self.queue_status not in
-                BRANCH_MERGE_PROPOSAL_FINAL_STATES)
+        return (self.queue_status not in FINAL_STATES)
 
     def _reviewProposal(self, reviewer, next_state, revision_id):
         """Set the proposal to one of the two review statuses."""
@@ -519,6 +479,8 @@ class BranchMergeProposal(SQLBase):
             comment.destroySelf()
         # Delete all jobs referring to the BranchMergeProposal, whether
         # or not they have completed.
+        from lp.code.model.branchmergeproposaljob import (
+            BranchMergeProposalJob)
         for job in BranchMergeProposalJob.selectBy(
             branch_merge_proposal=self.id):
             job.destroySelf()
@@ -558,6 +520,9 @@ class BranchMergeProposal(SQLBase):
             if not subject.startswith('Re: '):
                 subject = 'Re: ' + subject
 
+        # Until these are moved into the lp module, import here to avoid
+        # circular dependencies from canonical.launchpad.database.__init__.py
+        from canonical.launchpad.database.message import Message, MessageChunk
         msgid = make_msgid('codereview')
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
@@ -701,6 +666,24 @@ class BranchMergeProposalGetter:
             raise BadBranchMergeProposalSearchContext(context)
         return collection.getMergeProposals(status)
 
+    @staticmethod
+    def getProposalsForParticipant(participant, status=None,
+        visible_by_user=None):
+        """See `IBranchMergeProposalGetter`."""
+        registrant_select = Select(
+            BranchMergeProposal.id,
+            BranchMergeProposal.registrantID == participant.id)
+
+        review_select = Select(
+                [CodeReviewVoteReference.branch_merge_proposalID],
+                [CodeReviewVoteReference.reviewerID == participant.id])
+
+        query = Store.of(participant).find(
+            BranchMergeProposal,
+            BranchMergeProposal.queue_status in status,
+            Or(BranchMergeProposal.id.is_in(registrant_select),
+                BranchMergeProposal.id.is_in(review_select)))
+        return query
 
     @staticmethod
     def getVotesForProposals(proposals):
@@ -770,241 +753,12 @@ class BranchMergeProposalGetter:
             summary.update(vote_counts.get(proposal.id, {}))
         return result
 
-
-class BranchMergeProposalJobType(DBEnumeratedType):
-    """Values that ICodeImportJob.state can take."""
-
-    MERGE_PROPOSAL_CREATED = DBItem(0, """
-        Merge proposal created
-
-        This job generates the review diff for a BranchMergeProposal if
-        needed, then sends mail to all interested parties.
-        """)
-
-
-class BranchMergeProposalJob(Storm):
-    """Base class for jobs related to branch merge proposals."""
-
-    implements(IBranchMergeProposalJob)
-
-    __storm_table__ = 'BranchMergeProposalJob'
-
-    id = Int(primary=True)
-
-    jobID = Int('job')
-    job = Reference(jobID, Job.id)
-
-    branch_merge_proposalID = Int('branch_merge_proposal', allow_none=False)
-    branch_merge_proposal = Reference(
-        branch_merge_proposalID, BranchMergeProposal.id)
-
-    job_type = EnumCol(enum=BranchMergeProposalJobType, notNull=True)
-
-    _json_data = Unicode('json_data')
-
-    @property
-    def metadata(self):
-        return simplejson.loads(self._json_data)
-
-    def __init__(self, branch_merge_proposal, job_type, metadata):
-        """Constructor.
-
-        :param branch_merge_proposal: The proposal this job relates to.
-        :param job_type: The BranchMergeProposalJobType of this job.
-        :param metadata: The type-specific variables, as a JSON-compatible
-            dict.
-        """
-        Storm.__init__(self)
-        json_data = simplejson.dumps(metadata)
-        self.job = Job()
-        self.branch_merge_proposal = branch_merge_proposal
-        self.job_type = job_type
-        # XXX AaronBentley 2009-01-29 bug=322819: This should be a bytestring,
-        # but the DB representation is unicode.
-        self._json_data = json_data.decode('utf-8')
-
-    def sync(self):
-        store = Store.of(self)
-        store.flush()
-        store.autoreload(self)
-
-    def destroySelf(self):
-        Store.of(self).remove(self)
-
-    @classmethod
-    def selectBy(klass, **kwargs):
-        """Return selected instances of this class.
-
-        At least one pair of keyword arguments must be supplied.
-        foo=bar is interpreted as 'select all instances of
-        BranchMergeProposalJob whose property "foo" is equal to "bar"'.
-        """
-        assert len(kwargs) > 0
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(klass, **kwargs)
-
-    @classmethod
-    def get(klass, key):
-        """Return the instance of this class whose key is supplied.
-
-        :raises: SQLObjectNotFound
-        """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        instance = store.get(klass, key)
-        if instance is None:
-            raise SQLObjectNotFound(
-                'No occurrence of %s has key %s' % (klass.__name__, key))
-        return instance
-
-
-class BranchMergeProposalJobDerived(object):
-
-    """Intermediate class for deriving from BranchMergeProposalJob."""
-    delegates(IBranchMergeProposalJob)
-
-    def __init__(self, job):
-        self.context = job
-
-    def __eq__(self, job):
-        return (self.__class__ is job.__class__ and self.job == job.job)
-
-    def __ne__(self, job):
-        return not (self == job)
-
-    @classmethod
-    def iterReady(klass):
-        """Iterate through all ready BranchMergeProposalJobs."""
-        from lp.code.model.branch import Branch
-        from lp.code.interfaces.branch import BranchType
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.find(
-            (BranchMergeProposalJob),
-            And(BranchMergeProposalJob.job_type == klass.class_job_type,
-                BranchMergeProposalJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs),
-                BranchMergeProposal.source_branch == Branch.id,
-                # A proposal isn't considered ready if it has no revisions,
-                # or if it is hosted but pending a mirror.
-                Branch.revision_count > 0,
-                Or(Branch.next_mirror_time == None,
-                   Branch.branch_type != BranchType.HOSTED)
-                ))
-        jobs.config(distinct=True)
-        return (klass(job) for job in jobs)
-
-
-class CreateMergeProposalJob(object):
-    """See `ICreateMergeProposalJob` and `ICreateMergeProposalJobSource`."""
-
-    classProvides(ICreateMergeProposalJobSource)
-
-    delegates(IMessageJob)
-
-    class_action = MessageJobAction.CREATE_MERGE_PROPOSAL
-
-    implements(ICreateMergeProposalJob)
-
-    def __init__(self, context):
-        """Create an instance of CreateMergeProposalJob.
-
-        :param context: a MessageJob.
-        """
-        self.context = context
-
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.context == other.context)
-
-    @classmethod
-    def create(klass, message_bytes):
-        """See `ICreateMergeProposalJobSource`."""
-        context = MessageJob(
-            message_bytes, MessageJobAction.CREATE_MERGE_PROPOSAL)
-        return klass(context)
-
-    @classmethod
-    def iterReady(klass):
-        """Iterate through all ready BranchMergeProposalJobs."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.find(
-            (MessageJob),
-            And(MessageJob.action == klass.class_action,
-                MessageJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs)))
-        return (klass(job) for job in jobs)
-
-    def run(self):
-        """See `ICreateMergeProposalJob`."""
-        # Avoid circular import
-        from lp.code.mail.codehandler import CodeHandler
-        message = self.getMessage()
-        # Since the message was checked as signed before it was saved in the
-        # Librarian, just create the principle from the sender and setup the
-        # interaction.
-        name, email_addr = parseaddr(message['From'])
-        authutil = getUtility(IPlacelessAuthUtility)
-        principal = authutil.getPrincipalByLogin(email_addr)
-        if principal is None:
-            raise AssertionError('No principal found for %s' % email_addr)
-        setupInteraction(principal, email_addr)
-
-        server = get_multi_server(write_hosted=True)
-        server.setUp()
-        try:
-            return CodeHandler().processMergeProposal(message)
-        finally:
-            server.tearDown()
-
-
-class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
-    """See `IMergeProposalCreatedJob`."""
-
-    implements(IMergeProposalCreatedJob)
-
-    class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
-
-    @classmethod
-    def create(klass, bmp):
-        """See `IMergeProposalCreationJob`."""
-        job = BranchMergeProposalJob(
-            bmp, klass.class_job_type, {})
-        return klass(job)
-
-    def run(self):
-        """See `IMergeProposalCreatedJob`."""
-        if self.branch_merge_proposal.review_diff is None:
-            self.branch_merge_proposal.review_diff = self._makeReviewDiff()
-            transaction.commit()
-        mailer = BMPMailer.forCreation(
-            self.branch_merge_proposal, self.branch_merge_proposal.registrant)
-        mailer.sendAll()
-        return self.branch_merge_proposal.review_diff
-
-    def _makeReviewDiff(self):
-        """Return a StaticDiff to be used as a review diff."""
-        cleanups = []
-        def get_branch(branch):
-            bzr_branch = branch.getBzrBranch()
-            bzr_branch.lock_read()
-            cleanups.append(bzr_branch.unlock)
-            return bzr_branch
-        try:
-            bzr_source = get_branch(self.branch_merge_proposal.source_branch)
-            bzr_target = get_branch(self.branch_merge_proposal.target_branch)
-            lca, source_revision = self._findRevisions(
-                bzr_source, bzr_target)
-            diff = StaticDiff.acquire(
-                lca, source_revision, bzr_source.repository)
-        finally:
-            for cleanup in reversed(cleanups):
-                cleanup()
-        return diff
-
     @staticmethod
-    def _findRevisions(bzr_source, bzr_target):
-        """Return the revisions to use for a review diff."""
-        source_revision = bzr_source.last_revision()
-        target_revision = bzr_target.last_revision()
-        graph = bzr_target.repository.get_graph(bzr_source.repository)
-        lca = graph.find_unique_lca(source_revision, target_revision)
-        return lca, source_revision
+    def activeProposalsForBranches(source_branch, target_branch):
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.source_branch = %s AND
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+                """ % sqlvalues(source_branch, target_branch, FINAL_STATES))
+
+

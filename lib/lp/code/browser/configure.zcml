@@ -84,7 +84,7 @@
         <browser:url
             for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
             path_expression="string:+machines"
-            parent_utility="canonical.launchpad.interfaces.ICodeImportSet"
+            parent_utility="lp.code.interfaces.codeimport.ICodeImportSet"
             rootsite="code"/>
         <browser:defaultView
             for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
@@ -259,7 +259,7 @@
     <browser:page
         name="+comment"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        class="canonical.launchpad.browser.CodeReviewCommentAddView"
+        class="lp.code.browser.codereviewcomment.CodeReviewCommentAddView"
         facet="branches"
         permission="launchpad.AnyPerson"
         template="../templates/codereviewcomment-reply.pt"/>
@@ -407,7 +407,7 @@
     <browser:page
         name="+edit-import"
         for="lp.code.interfaces.branch.IBranch"
-        class="canonical.launchpad.browser.CodeImportEditView"
+        class="lp.code.browser.codeimport.CodeImportEditView"
         facet="branches"
         permission="launchpad.Edit"
         template="../templates/codeimport-edit.pt"/>
@@ -433,7 +433,7 @@
     <browser:page
         name="+subscribe"
         for="lp.code.interfaces.branch.IBranch"
-        class="canonical.launchpad.browser.BranchSubscriptionAddView"
+        class="lp.code.browser.branchsubscription.BranchSubscriptionAddView"
         facet="branches"
         permission="launchpad.AnyPerson"
         template="../templates/branch-subscription.pt"/>
@@ -447,28 +447,28 @@
     <browser:page
         name="+linkbug"
         for="lp.code.interfaces.branch.IBranch"
-        class="canonical.launchpad.browser.BranchLinkToBugView"
+        class="lp.bugs.browser.bugbranch.BranchLinkToBugView"
         facet="branches"
         permission="launchpad.AnyPerson"
         template="../templates/branch-link-to-bug.pt"/>
     <browser:page
         name="+linkblueprint"
         for="lp.code.interfaces.branch.IBranch"
-        class="canonical.launchpad.browser.BranchLinkToSpecificationView"
+        class="lp.blueprints.browser.specificationbranch.BranchLinkToSpecificationView"
         facet="branches"
         permission="launchpad.AnyPerson"
         template="../templates/branch-link-to-spec.pt"/>
     <browser:page
         name="+addsubscriber"
         for="lp.code.interfaces.branch.IBranch"
-        class="canonical.launchpad.browser.BranchSubscriptionAddOtherView"
+        class="lp.code.browser.branchsubscription.BranchSubscriptionAddOtherView"
         facet="branches"
         permission="launchpad.AnyPerson"
         template="../templates/branch-subscription.pt"/>
     <browser:page
         name="+edit-subscription"
         for="lp.code.interfaces.branch.IBranch"
-        class="canonical.launchpad.browser.BranchSubscriptionEditOwnView"
+        class="lp.code.browser.branchsubscription.BranchSubscriptionEditOwnView"
         facet="branches"
         permission="launchpad.AnyPerson"
         template="../templates/branch-edit-subscription.pt"/>
@@ -485,23 +485,23 @@
         permission="zope.Public"/>
     <browser:page
         name="+branchvisibility"
-        for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
+        for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
-        class="canonical.launchpad.browser.BranchVisibilityPolicyView"
+        class="lp.code.browser.branchvisibilitypolicy.BranchVisibilityPolicyView"
         permission="launchpad.Admin"
         template="../templates/branch-visibility.pt"/>
     <browser:page
         name="+addbranchvisibilitypolicy"
-        for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
+        for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
-        class="canonical.launchpad.browser.AddBranchVisibilityTeamPolicyView"
+        class="lp.code.browser.branchvisibilitypolicy.AddBranchVisibilityTeamPolicyView"
         permission="launchpad.Admin"
         template="../templates/branch-visibility-edit.pt"/>
     <browser:page
         name="+removebranchvisibilitypolicy"
-        for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
+        for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
-        class="canonical.launchpad.browser.RemoveBranchVisibilityTeamPolicyView"
+        class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
         permission="launchpad.Admin"
         template="../templates/branch-visibility-edit.pt"/>
     <browser:page
@@ -671,7 +671,7 @@
             permission="zope.Public"
             facet="branches"
             name="+activereviews"
-            template="../templates/person-mergeproposals.pt"/>
+            template="../templates/active-reviews.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchmergeproposallisting.PersonRequestedReviewsView"
@@ -732,7 +732,7 @@
         permission="zope.Public"
         facet="branches"
         name="+activereviews"
-        template="../templates/product-active-reviews.pt"/>
+        template="../templates/active-reviews.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchmergeproposallisting.ProductApprovedMergesView"
@@ -764,4 +764,11 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         layer="canonical.launchpad.layers.CodeLayer"
         name="+branches"/>
+
+    <browser:url
+        for="lp.code.interfaces.diff.IPreviewDiff"
+        path_expression="string:+preview-diff"
+        attribute_to_parent="branch_merge_proposal"
+        rootsite="code" />
+
 </configure>

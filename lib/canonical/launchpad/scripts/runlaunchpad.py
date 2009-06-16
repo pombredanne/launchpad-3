@@ -92,6 +92,12 @@ class TacFile(Service):
             "--logfile", logfile,
             ]
 
+        # We want to make sure that the Launchpad process will have the benefit
+        # of all of the dependency paths inserted by the buildout bin/run
+        # script. We pass them via PYTHONPATH.
+        env = dict(os.environ)
+        env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
+
         if config[self.section_name].spew:
             args.append("--spew")
 
@@ -100,7 +106,7 @@ class TacFile(Service):
         # log to stdout and redirect it ourselves because we then lose the
         # ability to cycle the log files by sending a signal to the twisted
         # process.
-        process = subprocess.Popen(args, stdin=subprocess.PIPE)
+        process = subprocess.Popen(args, stdin=subprocess.PIPE, env=env)
         process.stdin.close()
         # I've left this off - we still check at termination and we can
         # avoid the startup delay. -- StuartBishop 20050525

@@ -19,8 +19,8 @@ from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
-    Description, PublicPersonChoice, Summary, Title)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
+    ContentNameField, Description, PublicPersonChoice, Summary, Title)
+from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -31,6 +31,7 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
@@ -108,6 +109,27 @@ class DistroSeriesStatus(DBEnumeratedType):
         """)
 
 
+class DistroSeriesNameField(ContentNameField):
+    """A class to ensure `IDistroSeries` has unique names."""
+    errormessage = _("%s is already in use by another series.")
+
+    @property
+    def _content_iface(self):
+        """See `IField`."""
+        return IDistroSeries
+
+    def _getByName(self, name):
+        """See `IField`."""
+        try:
+            if self._content_iface.providedBy(self.context):
+                return self.context.distribution.getSeries(name)
+            else:
+                return self.context.getSeries(name)
+        except NoSuchDistroSeries:
+            # The name is available for the new series.
+            return None
+
+
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
 
@@ -122,9 +144,10 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     id = Attribute("The distroseries's unique number.")
     name = exported(
-        TextLine(
+        DistroSeriesNameField(
             title=_("Name"), required=True,
-            description=_("The name of this series.")))
+            description=_("The name of this series."),
+            constraint=name_validator))
     displayname = exported(
         TextLine(
             title=_("Display name"), required=True,
@@ -207,9 +230,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    architectures = Attribute("All architectures in this series.")
-    virtualized_architectures = Attribute(
-        "All architectures in this series where PPA is supported.")
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
@@ -344,6 +364,15 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         IDistroSeriesSourcePackageRelease instances
         """
 
+    # DistroArchSeries lookup properties/methods.
+    architectures = Attribute("All architectures in this series.")
+
+    virtualized_architectures = Attribute(
+        "All architectures in this series where PPA is supported.")
+
+    enabled_architectures = Attribute(
+        "All architectures in this series with available chroot tarball.")
+
     def __getitem__(archtag):
         """Return the distroarchseries for this distroseries with the
         given architecturetag.
@@ -358,6 +387,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return the distroarchseries for this distroseries with the
         given architecturetag.
         """
+    # End of DistroArchSeries lookup methods.
 
     def updateStatistics(ztm):
         """Update all the Rosetta stats for this distro series."""
@@ -663,7 +693,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
           in the initialisation of a derivative.
         """
 
-    def copyMissingTranslationsFromParent(ztm):
+    def copyTranslationsFromParent(ztm):
         """Copy any translation done in parent that we lack.
 
         If there is another translation already added to this one, we ignore

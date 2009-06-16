@@ -10,20 +10,20 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
-from lp.code.adapters.branch import BranchMergeProposalDelta
-from canonical.launchpad.database import CodeReviewVoteReference
-from canonical.launchpad.database.diff import StaticDiff
+from lp.code.model.diff import StaticDiff
 from lazr.lifecycle.event import ObjectModifiedEvent
-from canonical.launchpad.ftests import login, login_person
-from canonical.launchpad.interfaces import (
+from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import (
     BMPMailer, send_merge_proposal_modified_notifications)
-from lp.testing.mail_helpers import pop_notifications
+from lp.code.model.branch import update_trigger_modified_fields
+from lp.code.model.codereviewvote import CodeReviewVoteReference
 from canonical.launchpad.webapp import canonical_url
-from lp.testing import TestCaseWithFactory
+from lp.testing import login, login_person, TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestMergeProposalMailing(TestCase):
@@ -61,6 +61,10 @@ class TestMergeProposalMailing(TestCase):
         bmp.source_branch.name = 'fix-foo-for-bar'
         bmp.target_branch.owner.name = 'mary'
         bmp.target_branch.name = 'bar'
+        # Call the function that is normally called through the event system
+        # to auto reload the fields updated by the db triggers.
+        update_trigger_modified_fields(bmp.source_branch)
+        update_trigger_modified_fields(bmp.target_branch)
         return bmp, subscriber
 
     def test_generateCreationEmail(self):
@@ -87,6 +91,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
+             'X-Launchpad-Notification-Type': 'code-review',
              'X-Launchpad-Project': bmp.source_branch.product.name,
              'Reply-To': bmp.address,
              'Message-Id': '<foobar-example-com>'},

@@ -26,12 +26,11 @@ from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
 
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from lp.code.enums import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchJob, IRevisionMailJob, IRosettaUploadJob)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize,)
 from lp.code.model.branchjob import (
     BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
     RevisionMailJob, RosettaUploadJob)
@@ -177,7 +176,8 @@ class TestRevisionMailJob(TestCaseWithFactory):
         self.assertEqual('subject', mail['subject'])
         self.assertEqual(
             'hello\n'
-            '\n--\n\n'
+            '\n--\n'
+            '%(identity)s\n'
             '%(url)s\n'
             '\nYou are subscribed to branch %(identity)s.\n'
             'To unsubscribe from this branch go to'

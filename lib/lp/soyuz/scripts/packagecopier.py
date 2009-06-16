@@ -50,43 +50,6 @@ def is_completely_built(source):
     return True
 
 
-def has_unpublished_binaries(source):
-    """Whether or not a source publication has unpublished binaries.
-
-    Check if there are binaries built from the source in the same
-    publication context. If there are none, return False since there is
-    nothing to be published.
-
-    If there are built binaries, check if they match the ones published
-    for the source in its context.
-
-    :param source: context `ISourcePackagePublishingHistory`.
-
-    :return: True if there are unpublished binaries, False otherwise.
-    """
-    # Binaries built from this source in the publishing context.
-    built_binaries = set()
-    for build in source.getBuilds():
-        if source.pocket != build.pocket:
-            continue
-        for binarypackagerelease in build.binarypackages:
-            built_binaries.add(binarypackagerelease)
-
-    # No binaries built, thus none unpublished.
-    if len(built_binaries) == 0:
-        return False
-
-    # Binaries have been published in the same publishing context,
-    # but are some not yet published?
-    candidate_binaries = set(
-        pub_binary.binarypackagerelease
-        for pub_binary in source.getBuiltBinaries())
-    if candidate_binaries != built_binaries:
-        return True
-
-    return False
-
-
 def compare_sources(source, ancestry):
     """Compare `ISourcePackagePublishingHistory` records versions.
 
@@ -152,7 +115,6 @@ def check_archive_conflicts(source, archive, series, include_binaries):
     destination_archive_conflicts = archive.getPublishedSources(
         name=source.sourcepackagerelease.name,
         version=source.sourcepackagerelease.version,
-        status=active_publishing_status,
         exact_match=True)
 
     if destination_archive_conflicts.count() == 0:
@@ -186,7 +148,8 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # not going to change in terms of new builds and the resulting
         # binaries will match. See more details in
         # `ISourcePackageRelease.getBuildsByArch`.
-        if candidate.distroseries.id == series.id:
+        if (candidate.distroseries.id == series.id and
+            archive.id == source.archive.id):
             continue
 
         # Conflicting candidates building in a different series are a
@@ -202,7 +165,9 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # next publishing cycle to happen before copying the package.
         # The copy is only allowed when all built binaries are published,
         # this way there is no chance of a conflict.
-        if has_unpublished_binaries(candidate):
+        unpublished_builds = candidate.getUnpublishedBuilds()
+        if (unpublished_builds.count() > 0 and
+            candidate.status in active_publishing_status):
             raise CannotCopy(
                 "same version has unpublished binaries in the destination "
                 "archive for %s, please wait for them to be published "
@@ -211,7 +176,7 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # Update published binaries inventory for the conflicting candidates.
         archive_binaries = set(
             pub_binary.binarypackagerelease.id
-            for pub_binary in candidate.getPublishedBinaries())
+            for pub_binary in candidate.getBuiltBinaries())
         published_binaries.update(archive_binaries)
 
     if not include_binaries:
@@ -282,8 +247,18 @@ def check_copy(source, archive, series, pocket, include_binaries,
         raise CannotCopy("Cannot copy private source into public archives.")
 
     if include_binaries:
-        if len(source.getBuiltBinaries()) == 0:
+        built_binaries = source.getBuiltBinaries()
+        if len(built_binaries) == 0:
             raise CannotCopy("source has no binaries to be copied")
+        # Deny copies of binary publications containing files with
+        # expiration date set. We only set such value for immediate
+        # expiration of old superseded binaries, so no point in
+        # checking its content, the fact it is set is already enough
+        # for denying the copy.
+        for binary_pub in built_binaries:
+            for binary_file in binary_pub.binarypackagerelease.files:
+                if binary_file.libraryfile.expires is not None:
+                    raise CannotCopy('source has expired binaries')
 
     # Check if there is already a source with the same name and version
     # published in the destination archive.
@@ -335,11 +310,12 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
             source_copy = source.copyTo(destination_series, pocket, archive)
             close_bugs_for_sourcepublication(source_copy)
             copies.append(source_copy)
-            if not include_binaries:
-                source_copy.createMissingBuilds()
-                continue
         else:
             source_copy = source_in_destination[0]
+
+        if not include_binaries:
+            source_copy.createMissingBuilds()
+            continue
 
         # Copy missing suitable binaries.
         for binary in source.getBuiltBinaries():
@@ -628,17 +604,14 @@ class UnembargoSecurityPackage(PackageCopier):
         """
         if ISourcePackagePublishingHistory.providedBy(pub_record):
             files = pub_record.sourcepackagerelease.files
+
             # Re-upload the changes file if necessary.
             sourcepackagerelease = pub_record.sourcepackagerelease
-            queue_record = sourcepackagerelease.getQueueRecord(
-                distroseries=pub_record.distroseries)
-            if queue_record is not None:
-                changesfile = queue_record.changesfile
-            else:
-                changesfile = None
+            changesfile = sourcepackagerelease.upload_changesfile
             if changesfile is not None and changesfile.restricted:
                 new_lfa = self.reUploadFile(changesfile, False)
-                queue_record.changesfile = new_lfa
+                sourcepackagerelease.package_upload.changesfile = new_lfa
+
             # Re-upload the package diff files if necessary.
             diffs = sourcepackagerelease.package_diffs
             for diff in diffs:
@@ -647,17 +620,19 @@ class UnembargoSecurityPackage(PackageCopier):
                     diff.diff_content = new_lfa
         elif IBinaryPackagePublishingHistory.providedBy(pub_record):
             files = pub_record.binarypackagerelease.files
+            build = pub_record.binarypackagerelease.build
+
             # Re-upload the binary changes file as necessary.
-            upload = pub_record.binarypackagerelease.build.package_upload
-            changesfile = upload.changesfile
+            changesfile = build.package_upload.changesfile
             if changesfile is not None and changesfile.restricted:
                 new_lfa = self.reUploadFile(changesfile, False)
-                upload.changesfile = new_lfa
+                build.package_upload.changesfile = new_lfa
+
             # Re-upload the buildlog file as necessary.
-            buildlog = pub_record.binarypackagerelease.build.buildlog
+            buildlog = build.buildlog
             if buildlog is not None and buildlog.restricted:
                 new_lfa = self.reUploadFile(buildlog, False)
-                pub_record.binarypackagerelease.build.buildlog = new_lfa
+                build.buildlog = new_lfa
         else:
             raise AssertionError(
                 "pub_record is not one of SourcePackagePublishingHistory "

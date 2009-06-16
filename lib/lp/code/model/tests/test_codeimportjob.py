@@ -21,21 +21,22 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import (
-    CodeImportMachine, CodeImportResult)
-from canonical.launchpad.database import CodeImportJob
+from lp.code.model.codeimportjob import CodeImportJob
+from lp.code.model.codeimportmachine import CodeImportMachine
+from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.code.interfaces.codeimport import (
-    CodeImportReviewStatus, ICodeImportSet)
-from lp.code.interfaces.codeimportevent import (
-    CodeImportEventType, ICodeImportEventSet)
+from lp.code.enums import (
+    CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
+    CodeImportReviewStatus)
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJobSet, ICodeImportJobWorkflow)
+    ICodeImportJobSet, ICodeImportJobWorkflow)
 from lp.code.interfaces.codeimportresult import (
-    CodeImportResultStatus, ICodeImportResult, ICodeImportResultSet)
+    ICodeImportResult, ICodeImportResultSet)
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.ftests import sync
+from lp.testing import ANONYMOUS, login, logout, TestCaseWithFactory
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
 from canonical.launchpad.testing.pages import get_feedback_messages

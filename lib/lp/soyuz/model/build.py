@@ -7,58 +7,58 @@ __all__ = ['Build', 'BuildSet']
 
 import apt_pkg
 from cStringIO import StringIO
-from datetime import datetime, timedelta
+import datetime
 import logging
+import operator
 
 from zope.interface import implements
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-
+from storm.expr import (
+    Desc, In, Join, LeftJoin)
+from storm.references import Reference
+from storm.store import Store
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
 
-from storm.expr import Desc, In, LeftJoin
-from storm.references import Reference
-from storm.store import Store
-
 from canonical.config import config
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
-
-from canonical.archivepublisher.utils import get_ppa_reference
-from lp.soyuz.adapters.archivedependencies import (
-    get_components_for_building)
+from canonical.database.sqlbase import (
+    cursor, quote_like, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.builder import Builder
-from lp.soyuz.model.buildqueue import BuildQueue
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
-from lp.soyuz.model.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
      get_contact_email_addresses, filenameToContentType, get_email_template)
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import (
-    BuildStatus, BuildSetStatus, IBuild, IBuildSet)
-from lp.soyuz.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, active_publishing_status)
-from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mail import (
+    simple_sendmail, format_address)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.archivepublisher.utils import get_ppa_reference
+from lp.soyuz.adapters.archivedependencies import (
+    get_components_for_building)
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.build import (
+    BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
+from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingPocket, active_publishing_status)
+from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.builder import Builder
+from lp.soyuz.model.buildqueue import BuildQueue
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.queue import (
+    PackageUpload, PackageUploadBuild)
 
 
 class Build(SQLBase):
@@ -117,39 +117,77 @@ class Build(SQLBase):
             return None
         return self._getProxiedFileURL(self.buildlog)
 
-    @property
-    def current_component(self):
-        """See `IBuild`."""
-        pub = self.current_source_publication
-        if pub is not None:
-            return pub.component
-        return self.sourcepackagerelease.component
-
-    @property
-    def current_source_publication(self):
-        """See `IBuild`."""
+    def _getLatestPublication(self):
         store = Store.of(self)
         results = store.find(
             SourcePackagePublishingHistory,
             SourcePackagePublishingHistory.archive == self.archive,
             SourcePackagePublishingHistory.distroseries == self.distroseries,
             SourcePackagePublishingHistory.sourcepackagerelease ==
-                self.sourcepackagerelease,
-            SourcePackagePublishingHistory.status.is_in(
-                active_publishing_status))
-
-        current_publication = results.order_by(
+                self.sourcepackagerelease)
+        return results.order_by(
             Desc(SourcePackagePublishingHistory.id)).first()
 
-        return current_publication
+    @property
+    def current_component(self):
+        """See `IBuild`."""
+        latest_publication = self._getLatestPublication()
+
+        # XXX cprov 2009-06-06 bug=384220:
+        # This assertion works fine in production, since all build records
+        # are legitimate and have a corresponding source publishing record
+        # (which triggered their creation, in first place). However our
+        # sampledata is severely broken in this area and depends heavily
+        # on the fallback to the source package original component.
+        #assert latest_publication is not None, (
+        #    'Build %d lacks a corresponding source publication.' % self.id)
+        if latest_publication is None:
+            return self.sourcepackagerelease.component
+
+        return latest_publication.component
 
     @property
-    def changesfile(self):
+    def current_source_publication(self):
+        """See `IBuild`."""
+        latest_publication = self._getLatestPublication()
+        if (latest_publication is not None and
+            latest_publication.status in active_publishing_status):
+            return latest_publication
+        return None
+
+    @property
+    def upload_changesfile(self):
         """See `IBuild`"""
-        queue_item = PackageUploadBuild.selectOneBy(build=self)
-        if queue_item is None:
+        package_upload = self.package_upload
+        if package_upload is None:
             return None
-        return queue_item.packageupload.changesfile
+        return package_upload.changesfile
+
+    @property
+    def package_upload(self):
+        """See `IBuild`."""
+        store = Store.of(self)
+        origin = [
+            PackageUploadBuild,
+            Join(PackageUpload,
+                 PackageUploadBuild.packageuploadID == PackageUpload.id),
+            Join(LibraryFileAlias,
+                 LibraryFileAlias.id == PackageUpload.changesfileID),
+            Join(LibraryFileContent,
+                 LibraryFileContent.id == LibraryFileAlias.contentID),
+            ]
+        results = store.using(*origin).find(
+            (PackageUpload, LibraryFileAlias, LibraryFileContent),
+            PackageUploadBuild.build == self,
+            PackageUpload.status == PackageUploadStatus.DONE,
+            PackageUpload.archive == self.archive,
+            PackageUpload.distroseries == self.distroseries)
+
+        # Return the unique `PackageUpload` record that corresponds to the
+        # upload of the result of this `Build`, load the `LibraryFileAlias`
+        # and the `LibraryFileContent` in cache because it's most likely
+        # they will be needed.
+        return DecoratedResultSet(results, operator.itemgetter(0)).one()
 
     @property
     def distroseries(self):
@@ -254,15 +292,6 @@ class Build(SQLBase):
             % self.id)
         return self.datebuilt - self.buildduration
 
-    @property
-    def package_upload(self):
-        """See `IBuild`."""
-        packageuploadbuild = PackageUploadBuild.selectOneBy(build=self.id)
-        if packageuploadbuild is None:
-            return None
-        else:
-            return packageuploadbuild.packageupload
-
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
@@ -274,6 +303,13 @@ class Build(SQLBase):
         self.upload_log = None
         self.dependencies = None
         self.createBuildQueueEntry()
+
+    def rescore(self, score):
+        """See `IBuild`."""
+        if not self.can_be_rescored:
+            raise CannotBeRescored("Build cannot be rescored.")
+
+        self.buildqueue_record.manualScore(score)
 
     def getEstimatedBuildStartTime(self):
         """See `IBuild`.
@@ -354,7 +390,10 @@ class Build(SQLBase):
                 # pointer number for the purpose of the division below.
                 pool_size = float(pool_size)
                 start_time = headjob_delay + int(sum_of_delays/pool_size)
-            result = datetime.utcnow() + timedelta(seconds=start_time)
+
+            result = (
+                datetime.datetime.utcnow() +
+                datetime.timedelta(seconds=start_time))
 
         return result
 
@@ -436,7 +475,7 @@ class Build(SQLBase):
                 "'%r' from %s (%s) with the following dependencies: %s\n"
                 "It is expected to be a tuple containing only another "
                 "tuple with 3 elements  (name, version, relation)."
-                % (token, self.title, self.id, self.depedencies))
+                % (token, self.title, self.id, self.dependencies))
         return (name, version, relation)
 
     def _checkDependencyVersion(self, available, required, relation):
@@ -522,7 +561,7 @@ class Build(SQLBase):
             raise AssertionError(
                 "Build dependencies for %s (%s) could not be parsed: '%s'\n"
                 "It indicates that something is wrong in buildd-slaves."
-                % (self.title, self.id, self.depedencies))
+                % (self.title, self.id, self.dependencies))
 
         remaining_deps = [
             self._toAptFormat(token) for token in parsed_deps
@@ -717,7 +756,7 @@ class Build(SQLBase):
     def getFileByName(self, filename):
         """See `IBuild`."""
         if filename.endswith('.changes'):
-            file_object = self.changesfile
+            file_object = self.upload_changesfile
         elif filename.endswith('.txt.gz'):
             file_object = self.buildlog
         elif filename.endswith('_log.txt'):

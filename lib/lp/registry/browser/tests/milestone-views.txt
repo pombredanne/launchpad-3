@@ -1,9 +1,11 @@
+
 = Milestone pages =
 
 Users can directly see and edit milestones through the milestone views.
 
-
-    >>> milestone = factory.makeMilestone(name="kakapo")
+    >>> product = factory.makeProduct(name="puffin")
+    >>> series = factory.makeProductSeries(product=product, name="awk")
+    >>> milestone = factory.makeMilestone(productseries=series, name="kakapo")
     >>> person = milestone.product.owner
     >>> login_person(person)
     >>> view = create_view(milestone, '+index')
@@ -47,6 +49,23 @@ milestone has any bugs or specifications.
     ...     print spec.title
     dodo
 
+The bugtasks are decorated. They are wrapped by the BugTaskListingItem that
+has cached information to create badges quickly. The _bug_badge_properties
+property provides the additional information that is used by the decorator.
+
+    >>> view.bugtasks
+    [<...BugTaskListingItem ...>]
+
+    >>> for bugtask in view._bug_badge_properties:
+    ...     bugtask
+    ...     badge_dict = view._bug_badge_properties[bugtask]
+    ...     for key in sorted(badge_dict):
+    ...         print '%s: %s' % (key, badge_dict[key])
+    <BugTask ...>
+        has_branch: False
+        has_mentoring_offer: False
+        has_specification: False
+
 There bugtask_count_text and specification_count_text properties provide
 formatted text descriptions of the bugtasks and specifications. The text
 supports plural descriptions.
@@ -69,6 +88,23 @@ supports plural descriptions.
     >>> print view.specification_count_text
     <strong>2 blueprints</strong>
 
+The view provides a list of StatusCounts that summarise the targeted
+specifications and bugtasks.
+
+    >>> from lp.blueprints.interfaces.specification import (
+    ...     SpecificationImplementationStatus)
+
+    >>> spec.implementation_status = SpecificationImplementationStatus.GOOD
+    >>> status = spec.updateLifecycleStatus(person)
+    >>> for status_count in view.specification_status_counts:
+    ...     print '%s: %s' % (status_count.status.title, status_count.count)
+    Good progress: 1
+    Unknown: 1
+
+    >>> for status_count in view.bugtask_status_counts:
+    ...     print '%s: %s' % (status_count.status.title, status_count.count)
+    New: 2
+
 The view uses ProductDownloadFileMixin to provide access to downloadable
 files. It implements getReleases() that always returns the view's release
 as a set.
@@ -77,6 +113,22 @@ as a set.
     set([<ProductRelease ...>])
     >>> [release.version for release in view.getReleases()]
     [u'kakapo']
+
+The download_files property returns a decorated list of IProductRelease
+files. If there is no release, or no files, None is returned.
+
+    >>> print view.download_files
+    None
+
+If there are files, these files will be returned as a list.
+
+    >>> release_file = release.addReleaseFile(
+    ...     'test.txt', 'test', 'text/plain', person,
+    ...     signature_filename='test.txt.asc', signature_content='123',
+    ...     description="test file")
+    >>> view = create_view(milestone, '+index')
+    >>> [file.libraryfile.filename for file in view.download_files]
+    [u'test.txt']
 
 
 == Editing milestones ==

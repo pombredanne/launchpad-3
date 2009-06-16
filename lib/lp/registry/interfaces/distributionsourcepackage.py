@@ -19,8 +19,8 @@ from lazr.restful.declarations import (
     rename_parameters_as)
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
@@ -58,9 +58,10 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
             schema=Interface))
 
     currentrelease = Attribute(
-        "The latest published SourcePackageRelease of a source package with "
-        "this name in the distribution or distroseries, or None if no source "
-        "package with that name is published in this distroseries.")
+        "The latest published `IDistributionSourcePackageRelease` of a "
+        "source package with this name in the distribution or distroseries, "
+        "or None if no source package with that name is published in this "
+        "distroseries.")
 
     releases = Attribute(
         "The list of all releases of this source package "

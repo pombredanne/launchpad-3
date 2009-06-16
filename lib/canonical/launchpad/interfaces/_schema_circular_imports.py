@@ -21,8 +21,9 @@ from canonical.launchpad.components.apihelpers import (
     patch_collection_return_type, patch_plain_parameter_type,
     patch_choice_parameter_type, patch_reference_property)
 
-from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -30,16 +31,12 @@ from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    CodeReviewNotificationLevel, IBranchSubscription)
-from lp.code.interfaces.codereviewcomment import (
-    CodeReviewVote, ICodeReviewComment)
-from lp.code.interfaces.codereviewvote import (
-    ICodeReviewVoteReference)
-from canonical.launchpad.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -58,6 +55,7 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.packageset import IPackageset
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
@@ -68,36 +66,42 @@ IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
 IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
-IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
-    'notification_level'].vocabulary = BranchSubscriptionNotificationLevel
-IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
-    'max_diff_lines'].vocabulary = BranchSubscriptionDiffSize
-IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
-    'code_review_level'].vocabulary = CodeReviewNotificationLevel
 IBranch['bug_branches'].value_type.schema = IBugBranch
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
 IBranchMergeProposal['createComment'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['vote'].vocabulary = CodeReviewVote
-IBranchMergeProposal['createComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['parent'].schema = \
         ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
+IHasBranches['getBranches'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
+        IBranch
+IHasMergeProposals['getMergeProposals'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
+        IBranchMergeProposal
+
+# IBug
+
 IBug['addBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBugBranch
 
+# IBugTask
+
+IBugTask['findSimilarBugs'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBug
+patch_plain_parameter_type(
+    IBug, 'linkHWSubmission', 'submission', IHWSubmission)
+patch_plain_parameter_type(
+    IBug, 'unlinkHWSubmission', 'submission', IHWSubmission)
+patch_collection_return_type(
+    IBug, 'getHWSubmissions', IHWSubmission)
+
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
-IPersonPublic['getMergeProposals'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
-        IBranchMergeProposal
-IPersonPublic['getMergeProposals'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['status'].value_type.vocabulary = \
-        BranchMergeProposalStatus
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
@@ -208,3 +212,13 @@ patch_reference_property(
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
+
+# IPackageset
+patch_collection_return_type(
+    IPackageset, 'setsIncluded', IPackageset)
+patch_collection_return_type(
+    IPackageset, 'setsIncludedBy', IPackageset)
+patch_plain_parameter_type(
+    IPackageset, 'getSourcesSharedBy', 'other_package_set', IPackageset)
+patch_plain_parameter_type(
+    IPackageset, 'getSourcesNotSharedBy', 'other_package_set', IPackageset)

@@ -51,6 +51,7 @@ def test_projects_plusnew_step_two():
         validator='className|unseen')
     # Clicking on the href expands the search results.
     client.click(id='search-results-expander')
+    client.waits.sleep(milliseconds=u'1000')
     client.asserts.assertProperty(
         id=u'search-results',
         validator='className|lazr-opened')

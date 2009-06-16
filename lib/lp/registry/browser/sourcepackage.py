@@ -17,7 +17,7 @@ from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)

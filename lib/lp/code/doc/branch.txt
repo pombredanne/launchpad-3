@@ -26,10 +26,11 @@ ancestry of revisions, at least in Branch5 and older branches.
 == Interfaces ==
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, IBranch, IBranchSet, IBranchSubscription)
-    >>> from canonical.launchpad.database import (
-    ...     Branch, BranchSet, BranchSubscription,)
+    >>> from lp.code.enums import BranchType
+    >>> from lp.code.interfaces.branch import IBranch, IBranchSet
+    >>> from lp.code.interfaces.branchsubscription import IBranchSubscription
+    >>> from lp.code.model.branch import Branch, BranchSet
+    >>> from lp.code.model.branchsubscription import BranchSubscription
     >>> verifyObject(IBranchSet, BranchSet())
     True
     >>> verifyObject(IBranch, Branch.get(1))
@@ -72,7 +73,7 @@ The collection of all branches is represented by IBranchSet, which is
 registered as an utility.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> branchset = getUtility(IBranchSet)
     >>> branch_lookup = getUtility(IBranchLookup)
@@ -296,9 +297,11 @@ Both of these attributes are contolled through the UI through the use
 of the enumerated types: BranchSubscriptionDiffSize, and
 BranchSubscriptionNotificationLevel.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    ...     CodeReviewNotificationLevel, IBranchSubscription)
+    ...     CodeReviewNotificationLevel)
+    >>> from lp.code.interfaces.branchsubscription import (
+    ...     IBranchSubscription)
     >>> subscriber = factory.makePerson(name='subscriber')
     >>> branch = factory.makeProductBranch(
     ...     owner=user, product=product, name='subscribed')
@@ -398,7 +401,7 @@ history, latest revisions first. All revision history items must implement the
 IBranchRevision interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
-    >>> from canonical.launchpad.interfaces import IBranchRevision
+    >>> from lp.code.interfaces.branchrevision import IBranchRevision
     >>> junk.revision_count
     6
     >>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
@@ -468,7 +471,7 @@ foreign key, so existing parents and ghosts can be modelled in the same way.
 To try and retrieve a Revision given its globally unique id, you can use the
 RevisionSet utility.
 
-    >>> from canonical.launchpad.interfaces import IRevisionSet
+    >>> from lp.code.interfaces.revision import IRevisionSet
     >>> revisionset = getUtility(IRevisionSet)
     >>> [parent_id] = commit.parent_ids
     >>> parent = revisionset.getByRevisionId(parent_id)
@@ -595,8 +598,9 @@ The current references to the branch table are shown here.
     bugbranch.branch
     codeimport.branch
     productseries.branch
+    productseries.translations_branch
     seriessourcepackagebranch.branch
     specificationbranch.branch
 
-(Unfortunately, references can form a graph-- note that codereviewcomments
+(Unfortunately, references can form a cycle-- note that codereviewcomments
  aren't shown.)

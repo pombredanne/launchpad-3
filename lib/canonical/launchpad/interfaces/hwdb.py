@@ -22,6 +22,8 @@ __all__ = [
     'IHWDeviceNameVariantSet',
     'IHWDeviceSet',
     'IHWDriver',
+    'IHWDriverName',
+    'IHWDriverPackageName',
     'IHWDriverSet',
     'IHWSubmission',
     'IHWSubmissionBug',
@@ -61,8 +63,9 @@ from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import ITopLevelEntryLink
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of, webservice_error)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_read_operation, exported, operation_parameters,
+    operation_returns_collection_of, webservice_error)
 
 
 def validate_new_submission_key(submission_key):
@@ -315,6 +318,61 @@ class IHWSubmissionSet(Interface):
             (optional).
         """
 
+    def deviceDriverOwnersAffectedByBugs(
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """Return persons affected by given bugs and owning a given device.
+
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: Limit the search to devices controlled by the
+            given driver.
+        :param package_name: Limit the search to devices controlled by a
+            driver from the given package.
+        :param bug_ids: A sequence of bug IDs for which affected device
+            owners are looked up.
+        :param bug_tags: A sequence of bug tags.
+        :param affected_by_bug: If True, those persons are looked up that
+            have marked themselves as being affected by a one of the bugs
+            matching the bug criteria.
+        :param subscribed_to_bug: If True, those persons are looked up that
+            are subscribed to a bug matching one of the bug criteria.
+        :param user: The person making the query.
+
+        `bug_ids` must be a non-empty sequence of bug IDs, or `bug_tags`
+        must be a non-empty sequence of bug tags.
+
+        The parameters `bus`, `vendor_id`, `product_id` must not be None, or
+        `driver_name` must not be None.
+
+        By default, only those persons are returned which have reported a
+        bug matching the given bug conditions.
+
+        Owners of private submissions are returned only if user is the
+        owner of the private submission or if user is an admin.
+        """
+
+    def hwInfoByBugRelatedUsers(
+        bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """Return a list of owners and devices related to given bugs.
+
+        Actually returns a list of tuples where the tuple is of the form,
+        (person name, bus name, vendor id, product id).`
+
+        :param bug_ids: A sequence of bug IDs for which affected
+            are looked up.
+        :param bug_tags: A sequence of bug tags
+        :param affected_by_bug: If True, those persons are looked up that
+            have marked themselves as being affected by a one of the bugs
+            matching the bug criteria.
+        :param subscribed_to_bug: If True, those persons are looked up that
+            are subscribed to a bug matching one of the bug criteria.
+        :param user: The person making the query.
+        """
+
 
 class IHWSystemFingerprint(Interface):
     """Identifiers of a computer system."""
@@ -454,12 +512,35 @@ class IHWDriverSet(Interface):
         :return: An IHWDriver instance.
         """
 
-    package_names = List(
-        title=u'Package Names',
-        description=
-            u'All known distinct package names appearing in HWDriver.',
-        value_type=TextLine(),
-        readonly=True)
+    def all_driver_names():
+        """Return all known distinct driver names appearing in HWDriver."""
+
+    def all_package_names():
+        """Return all known distinct package names appearing in HWDriver."""
+
+
+class IHWDriverName(Interface):
+    """A driver name as appearing in `IHWDriver`.
+    """
+    export_as_webservice_entry()
+
+    name = exported(
+        TextLine(
+            title=u'Driver Name', required=True, readonly=True,
+            description=_("The name of a driver as it appears in "
+                          "IHWDriver.")))
+
+
+class IHWDriverPackageName(Interface):
+    """A driver name as appearing in `IHWDriver`.
+    """
+    export_as_webservice_entry()
+
+    package_name = exported(
+        TextLine(
+            title=u'Package Name', required=True, readonly=True,
+            description=_("The name of a package as it appears in "
+                          "IHWDriver.")))
 
 
 # Identification of a hardware device.
@@ -1036,6 +1117,25 @@ class IHWSubmissionBugSet(Interface):
         :param bug: An IBug instance.
         """
 
+    def remove(hwsubmission, bug):
+        """Remove the link between `hwsubmission` and `bug`.
+
+        :param hwsubmission: An IHWSubmission instance.
+        :param bug: An IBug instance.
+        """
+
+    def submissionsForBug(bug, user=None):
+        """Return the HWDB submissions linked to the bug `bug`.
+
+        :return: A sequence of HWDB submissions linked to `bug`.
+        :param user: The user making the request.
+
+        Only those submissions are returned which the user can access.
+        Public submissions are always included; private submisisons only
+        if the user is the owner or an admin.
+        """
+
+
 class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
     """Hardware database application application root."""
 
@@ -1088,12 +1188,21 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         :return: A list of strings with vendor IDs fr this bus,
         """
 
+    driver_names = exported(
+        CollectionField(
+            title=u'Driver Names',
+            description=
+                u'All known distinct driver names appearing in HWDriver',
+            value_type=Reference(schema=IHWDriverName),
+            readonly=True))
+
     package_names = exported(
-        List(title=u'Package Names',
-             description=
-                 u'All known distinct package names appearing in HWDriver.',
-             value_type=TextLine(),
-             readonly=True))
+        CollectionField(
+            title=u'Package Names',
+            description=
+                u'All known distinct package names appearing in HWDriver.',
+            value_type=Reference(schema=IHWDriverPackageName),
+            readonly=True))
 
     @operation_parameters(
         bus=Choice(
@@ -1307,6 +1416,125 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         You may specify at most one of the parameters distribution,
         distroseries or distroarchseries.
         """
+
+    @operation_parameters(
+        bus=Choice(
+            title=u'The device bus', vocabulary=HWBus, required=False),
+        vendor_id=TextLine(
+            title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
+             required=False),
+        product_id=TextLine(
+            title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
+            required=False),
+        driver_name=TextLine(
+            title=u'A driver name', required=False,
+            description=u'If specified, the search is limited to devices '
+                        u'controlled by this driver.'),
+        package_name=TextLine(
+            title=u'A package name', required=False,
+            description=u'If specified, the search is limited to devices '
+                        u'controlled by a driver from this package.'),
+        bug_ids=List(title=u'A set of bug IDs',
+             description=u'Search submitters, subscribers or affected users '
+                         u'of bugs with these IDs.',
+             value_type=Int(),
+             required=False),
+        bug_tags=List(title=u'A set of bug tags',
+             description=u'Search submitters, subscribers or affected users '
+                         u'of bugs having one of these tags.',
+             value_type=TextLine(),
+             required=False),
+        affected_by_bug=Bool(
+            title=u'Search for users affected by a bug',
+            description=u'If true, those device owners are looked up which '
+                        u'are affected by one of the selected bugs.',
+            required=False),
+        subscribed_to_bug=Bool(
+            title=u'Search for users who subscribed to a bug',
+            description=u'If true, those device owners are looked up which '
+                        u'to one of the selected bugs.',
+            required=False))
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(IPerson)
+    @export_read_operation()
+    def deviceDriverOwnersAffectedByBugs(
+        bus, vendor_id, product_id, driver_name=None, package_name=None,
+        bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """Return persons affected by given bugs and owning a given device.
+
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: Limit the search to devices controlled by the
+            given driver.
+        :param package_name: Limit the search to devices controlled by a
+            driver from the given package.
+        :param bug_ids: A sequence of bug IDs for which affected
+            are looked up.
+        :param bug_tags: A sequence of bug tags
+        :param affected_by_bug: If True, those persons are looked up that
+            have marked themselves as being affected by a one of the bugs
+            matching the bug criteria.
+        :param subscribed_to_bug: If True, those persons are looked up that
+            are subscribed to a bug matching one of the bug criteria.
+        :param user: The person making the query.
+
+        bug_ids must be a non-empty sequence of bug IDs, or bug_tags
+        must be a non-empty sequence of bug tags.
+
+        The parameters bus, vendor_id, product_id must not be None, or
+        driver_name must not be None.
+
+        By default, only those persons are returned which have reported a
+        bug matching the given bug conditions.
+
+        Owners of private submissions are returned only if user is the
+        owner of the private submission or if user is an admin.
+        """
+
+    @operation_parameters(
+        bug_ids=List(title=u'A set of bug IDs',
+             description=u'Search for devices and their owners related to '
+                         u'bugs with these IDs.',
+             value_type=Int(),
+             required=False),
+        bug_tags=List(title=u'A set of bug tags',
+             description=u'Search for devices and their owners related to '
+                         u'bugs having one of these tags.',
+             value_type=TextLine(),
+             required=False),
+        affected_by_bug=Bool(
+            title=u'Search for users affected by a bug',
+            description=u'If true, those device owners are looked up which '
+                        u'are affected by one of the selected bugs.',
+            required=False),
+        subscribed_to_bug=Bool(
+            title=u'Search for users who subscribed to a bug',
+            description=u'If true, those device owners are looked up which '
+                        u'to one of the selected bugs.',
+            required=False))
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
+    def hwInfoByBugRelatedUsers(
+        bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """Return a list of owners and devices related to given bugs.
+
+        Actually returns a list of tuples where the tuple is of the form,
+        (person name, bus name, vendor id, product id).`
+
+        :param bug_ids: A sequence of bug IDs for which affected
+            are looked up.
+        :param bug_tags: A sequence of bug tags
+        :param affected_by_bug: If True, those persons are looked up that
+            have marked themselves as being affected by a one of the bugs
+            matching the bug criteria.
+        :param subscribed_to_bug: If True, those persons are looked up that
+            are subscribed to a bug matching one of the bug criteria.
+        :param user: The person making the query.
+        """
+
 
 class IllegalQuery(Exception):
     """Exception raised when trying to run an illegal submissions query."""

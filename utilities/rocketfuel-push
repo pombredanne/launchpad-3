@@ -1,7 +1,7 @@
 #! /bin/bash
 
-# Push all of your branches to devpad, so that you have a server-side backup
-# of everything, assuming your ~/.bazaar/locations.conf has been setup
+# Push all of your branches to launchpad, so that you have a server-side
+# backup of everything, assuming your ~/.bazaar/locations.conf has been setup
 # correctly by rocketfuel-setup.
 
 source "$HOME/.rocketfuel-env.sh"

@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=F0401
 
 """Tests for BranchMergeProposals."""
 
@@ -19,28 +20,29 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob, BranchMergeProposalJobType,
+    CreateMergeProposalJob, MergeProposalCreatedJob)
 from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal, BranchMergeProposalGetter, BranchMergeProposalJob,
-    BranchMergeProposalJobType, CreateMergeProposalJob, is_valid_transition,
-    MergeProposalCreatedJob)
-from canonical.launchpad.database.diff import StaticDiff
+    BranchMergeProposal, BranchMergeProposalGetter, is_valid_transition)
+from lp.code.model.diff import StaticDiff
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
 from canonical.launchpad.ftests import (
     ANONYMOUS, import_secret_test_key, login, logout, syncUpdate)
-from lp.code.interfaces.branch import BranchType
+from lp.code.enums import (
+    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
+    BranchType, CodeReviewNotificationLevel, CodeReviewVote)
 from lp.code.interfaces.branchmergeproposal import (
-    BadStateTransition, BranchMergeProposalStatus, IBranchMergeProposalGetter,
-    IBranchMergeProposalJob, ICreateMergeProposalJob,
-    ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
-    WrongBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+    BadStateTransition,
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
+    IBranchMergeProposalGetter, IBranchMergeProposalJob,
+    ICreateMergeProposalJob, ICreateMergeProposalJobSource,
+    IMergeProposalCreatedJob, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.codereviewcomment import CodeReviewVote
 from lp.testing import (
     capture_events, login_person, TestCaseWithFactory, time_counter)
 from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
@@ -110,16 +112,39 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
                           self._attemptTransition,
                           proposal, to_state)
 
+    def prepareDupeTransition(self, from_state):
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=from_state)
+        if from_state == BranchMergeProposalStatus.SUPERSEDED:
+            # Setting a proposal SUPERSEDED has the side effect of creating
+            # an active duplicate proposal, so make it inactive.
+            proposal.superseded_by.rejectBranch(self.target_branch.owner,
+                                                None)
+        self.assertProposalState(proposal, from_state)
+        dupe = self.factory.makeBranchMergeProposal(
+            target_branch=proposal.target_branch,
+            source_branch=proposal.source_branch)
+        return proposal
+
+    def assertBadDupeTransition(self, from_state, to_state):
+        """Assert that trying to go from `from_state` to `to_state` fails."""
+        proposal = self.prepareDupeTransition(from_state)
+        self.assertRaises(BadStateTransition,
+                          self._attemptTransition,
+                          proposal, to_state)
+
+
+    def assertGoodDupeTransition(self, from_state, to_state):
+        """Trying to go from `from_state` to `to_state` succeeds."""
+        proposal = self.prepareDupeTransition(from_state)
+        self._attemptTransition(proposal, to_state)
+        self.assertProposalState(proposal, to_state)
+
     def assertAllTransitionsGood(self, from_state):
         """Assert that we can go from `from_state` to any state."""
         for status in BranchMergeProposalStatus.items:
             self.assertGoodTransition(from_state, status)
-
-    def assertTerminatingState(self, from_state):
-        """Assert that the proposal cannot go to any other state."""
-        for status in BranchMergeProposalStatus.items:
-            if status != from_state:
-                self.assertBadTransition(from_state, status)
 
     def test_transitions_from_wip(self):
         """We can go from work in progress to any other state."""
@@ -139,18 +164,23 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
     def test_transitions_from_rejected(self):
         """Rejected proposals can only be resubmitted."""
         # Test the transitions from rejected.
-        [wip, needs_review, code_approved, rejected,
-         merged, merge_failed, queued, superseded
-         ] = BranchMergeProposalStatus.items
+        self.assertAllTransitionsGood(BranchMergeProposalStatus.REJECTED)
 
-        for status in (wip, needs_review, code_approved,
-                       merged, queued, merge_failed):
-            # All bad, rejected is a final state.
-            self.assertBadTransition(rejected, status)
-        # Rejected -> Rejected is valid.
-        self.assertGoodTransition(rejected, rejected)
-        # Can resubmit (supersede) a rejected proposal.
-        self.assertGoodTransition(rejected, superseded)
+    def test_transition_from_final_with_dupes(self):
+        """Proposals cannot be set active if there are similar active ones.
+
+        So transitioning from a final state to an active one should cause
+        an exception, but transitioning from a final state to a different
+        final state should be fine.
+        """
+        for from_status in FINAL_STATES:
+            for to_status in BranchMergeProposalStatus.items:
+                if to_status == BranchMergeProposalStatus.SUPERSEDED:
+                    continue
+                if to_status in FINAL_STATES:
+                    self.assertGoodDupeTransition(from_status, to_status)
+                else:
+                    self.assertBadDupeTransition(from_status, to_status)
 
     def assertValidTransitions(self, expected, proposal, to_state, by_user):
         # Check the valid transitions for the merge proposal by the specified
@@ -163,12 +193,8 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
 
     def test_transition_to_rejected_by_reviewer(self):
         # A proposal should be able to go from any states to rejected if the
-        # user is a reviewer, except for superseded, merged or queued.
+        # user is a reviewer.
         valid_transitions = set(BranchMergeProposalStatus.items)
-        valid_transitions -= set(
-            [BranchMergeProposalStatus.MERGED,
-             BranchMergeProposalStatus.QUEUED,
-             BranchMergeProposalStatus.SUPERSEDED])
         proposal = self.factory.makeBranchMergeProposal()
         self.assertValidTransitions(
             valid_transitions, proposal, BranchMergeProposalStatus.REJECTED,
@@ -183,26 +209,9 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
             proposal, BranchMergeProposalStatus.REJECTED,
             proposal.source_branch.owner)
 
-    def test_transitions_from_merged(self):
-        """Merged is a terminal state, so no transitions are valid."""
-        self.assertTerminatingState(BranchMergeProposalStatus.MERGED)
-
     def test_transitions_from_merge_failed(self):
         """We can go from merge failed to any other state."""
         self.assertAllTransitionsGood(BranchMergeProposalStatus.MERGE_FAILED)
-
-    def test_transitions_from_queued(self):
-        """Queued proposals can only be marked as merged or merge failed.
-        Queued proposals can be moved out of the queue using the `dequeue`
-        method, and no other transitions are valid.
-        """
-        queued = BranchMergeProposalStatus.QUEUED
-        for status in BranchMergeProposalStatus.items:
-            if status in (BranchMergeProposalStatus.MERGED,
-                          BranchMergeProposalStatus.MERGE_FAILED):
-                self.assertGoodTransition(queued, status)
-            else:
-                self.assertBadTransition(queued, status)
 
     def test_transitions_from_queued_dequeue(self):
         # When a proposal is dequeued it is set to code approved, and the
@@ -253,20 +262,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertIs(None, proposal.reviewer)
         self.assertIs(None, proposal.date_reviewed)
         self.assertIs(None, proposal.reviewed_revision_id)
-
-    def test_transitions_from_superseded(self):
-        """Superseded is a terminal state, so no transitions are valid."""
-        self.assertTerminatingState(BranchMergeProposalStatus.SUPERSEDED)
-
-    def test_valid_transition_graph_is_complete(self):
-        """The valid transition graph should have a key for all possible
-        queue states."""
-        from lp.code.model.branchmergeproposal import (
-            VALID_TRANSITION_GRAPH)
-        keys = VALID_TRANSITION_GRAPH.keys()
-        all_states = BranchMergeProposalStatus.items
-        self.assertEqual(sorted(all_states), sorted(keys),
-                         "Missing possible states from the transition graph.")
 
 
 class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
@@ -787,6 +782,31 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
             getUtility(IBranchMergeProposalGetter).getVotesForProposals(
                 [mp_with_reviews, mp_no_reviews]))
 
+    def test_activeProposalsForBranches_different_branches(self):
+        """Only proposals for the correct branches are returned."""
+        mp = self.factory.makeBranchMergeProposal()
+        mp2 = self.factory.makeBranchMergeProposal()
+        active = BranchMergeProposalGetter.activeProposalsForBranches(
+            mp.source_branch, mp.target_branch)
+        self.assertEqual([mp], list(active))
+        active2 = BranchMergeProposalGetter.activeProposalsForBranches(
+            mp2.source_branch, mp2.target_branch)
+        self.assertEqual([mp2], list(active2))
+
+    def test_activeProposalsForBranches_different_states(self):
+        """Only proposals for active states are returned."""
+        for state in BranchMergeProposalStatus.items:
+            mp = self.factory.makeBranchMergeProposal(set_state=state)
+            active = BranchMergeProposalGetter.activeProposalsForBranches(
+                mp.source_branch, mp.target_branch)
+            # If a proposal is superseded, there is an active proposal which
+            # supersedes it.
+            if state == BranchMergeProposalStatus.SUPERSEDED:
+                self.assertEqual([mp.superseded_by], list(active))
+            elif state in FINAL_STATES:
+                self.assertEqual([], list(active))
+            else:
+                self.assertEqual([mp], list(active))
 
 class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
     """Test the getProposalsForContext method."""
@@ -826,6 +846,24 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         results = BranchMergeProposalGetter.getProposalsForContext(
             context, status, visible_by_user)
         return sorted([bmp.source_branch.unique_name for bmp in results])
+
+    def test_getProposalsForParticipant(self):
+        # It's possible to get all the merge proposals for a single
+        # participant.
+        wally = self.factory.makePerson(name='wally')
+        beaver = self.factory.makePerson(name='beaver')
+
+        bmp1 = self._make_merge_proposal('wally', 'gokart', 'turbo', True)
+        bmp1.nominateReviewer(beaver, wally)
+        bmp2 = self._make_merge_proposal('beaver', 'gokart', 'brakes', True)
+
+        wally_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+            wally, [BranchMergeProposalStatus.NEEDS_REVIEW], wally)
+        self.assertEqual(wally_proposals.count(), 1)
+
+        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+            beaver, [BranchMergeProposalStatus.NEEDS_REVIEW], beaver)
+        self.assertEqual(beave_proposals.count(), 2)
 
     def test_created_proposal_default_status(self):
         # When we create a merge proposal using the helper method, the default

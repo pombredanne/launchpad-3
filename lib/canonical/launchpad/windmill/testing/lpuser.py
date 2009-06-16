@@ -44,11 +44,13 @@ class AnonymousUser:
 
     def ensure_login(self, client):
         """Ensure that the user is surfing anonymously."""
-        if client.asserts.assertNode(
-            link=u'Log in / Register', assertion=False):
+        result = client.asserts.assertNode(
+            link=u'Log in / Register', assertion=False)
+        if result['result']:
             return
+        client.waits.forElement(name="logout", timeout=u"100000")
         client.click(name="logout")
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=u'100000')
 
 
 # Well Known Users

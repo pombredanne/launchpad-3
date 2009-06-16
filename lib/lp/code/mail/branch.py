@@ -5,13 +5,13 @@
 __metaclass__ = type
 
 
+from canonical.launchpad.mail import format_address
+from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
-from lp.code.interfaces.branchsubscription import (
+from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.mail import format_address
 from lp.services.mail.basemailer import BaseMailer
-from canonical.launchpad.webapp import canonical_url
 
 
 def send_branch_modified_notifications(branch, event):
@@ -21,33 +21,7 @@ def send_branch_modified_notifications(branch, event):
         event.object_before_modification, branch, user)
     if branch_delta is None:
         return
-    # If there is no one interested, then bail out early.
-    recipients = branch.getNotificationRecipients()
-    interested_levels = (
-        BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-        BranchSubscriptionNotificationLevel.FULL)
-    actual_recipients = {}
-    # If the person editing the branch isn't in the team of the owner
-    # then notify the branch owner of the changes as well.
-    if not user.inTeam(branch.owner):
-        # Existing rationales are kept.
-        recipients.add(branch.owner, None, None)
-    for recipient in recipients:
-        subscription, rationale = recipients.getReason(recipient)
-        if (subscription is not None and
-            subscription.notification_level not in interested_levels):
-            continue
-        if subscription is None:
-            actual_recipients[recipient] = RecipientReason.forBranchOwner(
-                branch, recipient)
-        else:
-            actual_recipients[recipient] = \
-                RecipientReason.forBranchSubscriber(
-                    subscription, recipient, rationale)
-    from_address = format_address(
-        user.displayname, user.preferredemail.email)
-    mailer = BranchMailer.forBranchModified(branch, actual_recipients,
-        from_address, branch_delta)
+    mailer = BranchMailer.forBranchModified(branch, user, branch_delta)
     mailer.sendAll()
 
 
@@ -189,28 +163,51 @@ class BranchMailer(BaseMailer):
 
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, contents=None, diff=None, message_id=None,
-                 revno=None):
+                 revno=None, notification_type=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
-                            from_address, delta, message_id)
+                            from_address, delta, message_id,
+                            notification_type)
         self.contents = contents
         self.diff = diff
         self.revno = revno
 
     @classmethod
-    def forBranchModified(cls, branch, recipients, from_address, delta):
+    def forBranchModified(cls, branch, user, delta):
         """Construct a BranchMailer for mail about a branch modification.
 
         :param branch: The branch that was modified.
-        :param recipients: A dict of {Person: RecipientReason} for all people
-            who should be notified.
-        :param from_address: The email address this message should come from.
+        :param user: The user making the change.
         :param delta: an IBranchDelta representing the modification.
         :return: a BranchMailer.
         """
+        recipients = branch.getNotificationRecipients()
+        interested_levels = (
+            BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+            BranchSubscriptionNotificationLevel.FULL)
+        actual_recipients = {}
+        # If the person editing the branch isn't in the team of the owner
+        # then notify the branch owner of the changes as well.
+        if not user.inTeam(branch.owner):
+            # Existing rationales are kept.
+            recipients.add(branch.owner, None, None)
+        for recipient in recipients:
+            subscription, rationale = recipients.getReason(recipient)
+            if (subscription is not None and
+                subscription.notification_level not in interested_levels):
+                continue
+            if subscription is None:
+                actual_recipients[recipient] = RecipientReason.forBranchOwner(
+                    branch, recipient)
+            else:
+                actual_recipients[recipient] = \
+                    RecipientReason.forBranchSubscriber(
+                    subscription, recipient, rationale)
+        from_address = format_address(
+            user.displayname, user.preferredemail.email)
         subject = cls._branchSubject(branch)
         return cls(
-            subject, 'branch-modified.txt', recipients, from_address,
-            delta=delta)
+            subject, 'branch-modified.txt', actual_recipients, from_address,
+            delta=delta, notification_type='branch-updated')
 
     @classmethod
     def forRevision(cls, db_branch, revno, from_address, contents, diff,
@@ -238,7 +235,8 @@ class BranchMailer(BaseMailer):
                 recipient_dict[recipient] = subscriber_reason
         subject = cls._branchSubject(db_branch, subject)
         return cls(subject, 'branch-modified.txt', recipient_dict,
-            from_address, contents=contents, diff=diff, revno=revno)
+            from_address, contents=contents, diff=diff, revno=revno,
+            notification_type='branch-revision')
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
@@ -249,10 +247,7 @@ class BranchMailer(BaseMailer):
         """
         if subject is not None:
             return subject
-        branch_title = db_branch.title
-        if branch_title is None:
-            branch_title = ''
-        return '[Branch %s] %s' % (db_branch.unique_name, branch_title)
+        return '[Branch %s]' % (db_branch.unique_name)
 
     def _diffText(self, max_diff):
         """Determine the text to use for the diff.
@@ -291,10 +286,7 @@ class BranchMailer(BaseMailer):
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
         reason, rationale = self._recipients.getReason(email)
-        branch_title = reason.branch.title
-        if branch_title is None:
-            branch_title = ''
-        params['branch_title'] = branch_title
+        params['branch_identity'] = reason.branch.bzr_identity
         params['branch_url'] = canonical_url(reason.branch)
         if reason.recipient in reason.branch.subscribers:
             # Give subscribers a link to unsubscribe.
