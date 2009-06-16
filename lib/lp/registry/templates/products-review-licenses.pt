@@ -19,13 +19,12 @@
 <div metal:fill-slot="main"
      tal:define="batch view/forReviewBatched">
 
-  <h1>Projects for review</h1>
+  <h1>Review projects</h1>
 
   <div tal:condition="not: batch/currentBatch" class="warning message">
     No items found with these search options.
   </div>
   <tal:result condition="batch/currentBatch">
-    <h3 >Please review these items.</h3>
     <tal:navigation replace="structure batch/@@+navigation-links-upper" />
     <table id="product-listing" class="listing">
       <thead>

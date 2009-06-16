@@ -543,6 +543,7 @@ class BranchEditSchema(Interface):
         'owner',
         'name',
         'url',
+        'description',
         'lifecycle_status',
         'whiteboard',
         ])
@@ -766,7 +767,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'name', 'private', 'url', 'lifecycle_status']
+        'owner', 'name', 'private', 'url', 'description', 'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 

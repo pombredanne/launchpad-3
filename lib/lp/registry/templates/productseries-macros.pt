@@ -23,20 +23,24 @@
   </em>
   <div>
     <tal:milestones condition="series/milestones">
-      Milestones
+      Milestones:
       <tal:milestone repeat="milestone series/milestones">
         <a tal:attributes="href milestone/fmt:url" tal:content="milestone/name"
           >name</a><tal:comma condition="not:repeat/milestone/end">,</tal:comma>
       </tal:milestone>
     </tal:milestones>
-    <tal:releases condition="series/releases">
-      <tal:comma condition="series/milestones">, </tal:comma>
-        Releases
-      <tal:release repeat="release series/releases">
-        <a tal:attributes="href release/fmt:url" tal:content="release/version"
-          >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
-      </tal:release>
-    </tal:releases>
+    <tal:release repeat="release series/releases">
+      <tal:release-start condition="repeat/release/start">
+        <tal:comment condition="nothing">
+          Releases may be a list or an resultset. We cannot easily know if there
+          releases until the first one is returned.
+        </tal:comment>
+        <tal:comma condition="series/milestones"> &nbsp &nbsp </tal:comma>
+        Releases:
+      </tal:release-start>
+      <a tal:attributes="href release/fmt:url" tal:content="release/version"
+        >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
+    </tal:release>
   </div>
   <metal:extra define-slot="extra" />
 </metal:detailed_display>
