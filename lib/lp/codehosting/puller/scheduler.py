@@ -1,4 +1,4 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0702
 
 __metaclass__ = type
@@ -345,6 +345,10 @@ class PullerMaster:
         """Launch a child worker and mirror a branch, handling errors.
 
         This is the main method to call to mirror a branch.
+
+        :return: A Deferred that fires when the mirroring job is completed,
+            one way or the other. It will never fire with a failure. The value
+            of the Deferred itself is uninteresting (probably None).
         """
         deferred = self.mirror()
         deferred.addErrback(self.unexpectedError)

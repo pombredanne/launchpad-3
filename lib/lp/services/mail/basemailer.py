@@ -25,7 +25,7 @@ class BaseMailer:
     """
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, message_id=None):
+                 delta=None, message_id=None, notification_type=None):
         """Constructor.
 
         :param subject: A Python dict-replacement template for the subject
@@ -46,6 +46,7 @@ class BaseMailer:
         self.from_address = from_address
         self.delta = delta
         self.message_id = message_id
+        self.notification_type = notification_type
 
     def generateEmail(self, email, recipient):
         """Generate the email for this recipient.
@@ -73,6 +74,8 @@ class BaseMailer:
         """Return the mail headers to use."""
         reason, rationale = self._recipients.getReason(email)
         headers = {'X-Launchpad-Message-Rationale': reason.mail_header}
+        if self.notification_type is not None:
+            headers['X-Launchpad-Notification-Type'] = self.notification_type
         reply_to = self._getReplyToAddress()
         if reply_to is not None:
             headers['Reply-To'] = reply_to

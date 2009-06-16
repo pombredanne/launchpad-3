@@ -9,7 +9,7 @@ is really happening in the 1.0 series.
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> owner_browser.open('http://launchpad.dev/firefox/trunk')
     >>> print owner_browser.title
-    Overview of Mozilla Firefox trunk series
+    Mozilla Firefox trunk series
 
     >>> owner_browser.getLink('Delete series').click()
     >>> print owner_browser.title

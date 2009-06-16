@@ -87,15 +87,14 @@ class InlineAddMilestoneForReleaseTest:
 
         # Verify that the release was created.
         milestone_xpath = (
-            "//table[@id='series_trunk']//a[@href='/bzr/trunk/%s']"
+            "//table[@id='series_trunk']//a[@href='/bzr/+milestone/%s']"
             % milestone_name.lower())
         self.client.waits.forElement(xpath=milestone_xpath, timeout=u'8000')
         self.client.asserts.assertText(
             xpath=milestone_xpath, validator=milestone_name.lower())
         self.client.asserts.assertText(
             xpath="//table[@id='series_trunk']"
-                  "//a[@href='/bzr/trunk/%s']"
-                  "/ancestor::td/following-sibling::td"
+                  "//a[@href='/bzr/+milestone/%s']"
                   % milestone_name.lower(),
             validator=code_name)
 

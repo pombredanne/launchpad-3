@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0222,W0231
 
 __metaclass__ = type

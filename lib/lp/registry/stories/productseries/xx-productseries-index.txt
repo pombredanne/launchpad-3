@@ -5,7 +5,7 @@ The product series overview page summarises the series.
 
     >>> anon_browser.open('http://launchpad.dev/firefox/trunk')
     >>> print extract_text(anon_browser.title)
-    Overview of Mozilla Firefox trunk series
+    Mozilla Firefox trunk series
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(content.h1)
@@ -115,7 +115,7 @@ in each Ubuntu series.
     >>> print extract_text(find_tag_by_id(content, 'distribution-packaging'))
     Ubuntu Warty mozilla-firefox
 
-    >>> anon_browser.getLink('mozilla-firefox')
+    >>> anon_browser.getLink('Ubuntu Warty mozilla-firefox')
     <Link ... url='http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox'>
 
 If there are no sourcepackages, any user can see there are none:

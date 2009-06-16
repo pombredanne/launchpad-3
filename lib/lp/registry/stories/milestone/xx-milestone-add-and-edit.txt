@@ -84,7 +84,7 @@ the series.
     >>> driver_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> driver_browser.open('http://launchpad.dev/firefox/trunk')
     >>> print driver_browser.title
-    Overview of Mozilla Firefox trunk series
+    Mozilla Firefox trunk series
     >>> print extract_text(find_tag_by_id(
     ...     driver_browser.contents, 'series_trunk'))
     Version "Codename"         Expected   Released     Summary
@@ -117,7 +117,7 @@ successful.
 
     >>> driver_browser.getControl('Delete this Milestone').click()
     >>> print driver_browser.title
-    Overview of Mozilla Firefox trunk series
+    Mozilla Firefox trunk series
     >>> for message in get_feedback_messages(driver_browser.contents):
     ...     print message
     Milestone 0.9.2 deleted.
