@@ -475,7 +475,7 @@
   <!-- BranchVisibilityPolicy -->
 
   <class class="lp.code.model.branchvisibilitypolicy.BranchVisibilityTeamPolicy">
-    <allow interface="canonical.launchpad.interfaces.IBranchVisibilityTeamPolicy"/>
+    <allow interface="lp.code.interfaces.branchvisibilitypolicy.IBranchVisibilityTeamPolicy"/>
   </class>
 
   <!-- BranchDelta -->
@@ -745,30 +745,30 @@
   </class>
 
   <class class="lp.code.model.revision.Revision">
-    <allow interface="canonical.launchpad.interfaces.IRevision"/>
+    <allow interface="lp.code.interfaces.revision.IRevision"/>
   </class>
 
   <class class="lp.code.model.revision.RevisionAuthor">
-    <allow interface="canonical.launchpad.interfaces.IRevisionAuthor"/>
+    <allow interface="lp.code.interfaces.revision.IRevisionAuthor"/>
   </class>
 
   <class class="lp.code.model.revision.RevisionParent">
-    <allow interface="canonical.launchpad.interfaces.IRevisionParent" />
+    <allow interface="lp.code.interfaces.revision.IRevisionParent" />
   </class>
 
   <class class="lp.code.model.revision.RevisionProperty">
-    <allow interface="canonical.launchpad.interfaces.IRevisionProperty" />
+    <allow interface="lp.code.interfaces.revision.IRevisionProperty" />
   </class>
 
   <!-- RevisionSet -->
   <class class="lp.code.model.revision.RevisionSet">
-    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
+    <allow interface="lp.code.interfaces.revision.IRevisionSet" />
   </class>
 
   <securedutility
       class="lp.code.model.revision.RevisionSet"
-      provides="canonical.launchpad.interfaces.IRevisionSet" >
-    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
+      provides="lp.code.interfaces.revision.IRevisionSet" >
+    <allow interface="lp.code.interfaces.revision.IRevisionSet" />
   </securedutility>
 
   <!-- Linked branches -->
@@ -796,8 +796,6 @@
       interface="lp.code.interfaces.diff.IStaticDiffSource" />
   </securedutility>
 
-  <!-- Most of the interfaces are registered through
-       canonical.launchpad.interfaces right now  -->
-  <webservice:register module="lp.code.interfaces.diff" />
+  <webservice:register module="lp.code.interfaces.webservice" />
 
 </configure>

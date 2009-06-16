@@ -225,7 +225,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def subscribe(self):
         """Return a link to subscribe to bug mail."""
         text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='add')
+        return Link('+subscribe', text, icon='edit')
 
 
 class ProductSeriesBugsMenu(ApplicationMenu):
