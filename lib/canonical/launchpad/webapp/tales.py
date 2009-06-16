@@ -480,34 +480,32 @@ class ObjectImageDisplayAPI:
     def __init__(self, context):
         self._context = context
 
+    #def default_icon_resource(self, context):
     def sprite_css(self):
         """Return the CSS class for the sprite"""
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
         context = self._context
-        sprite_base_css = 'sprite'
         if IProduct.providedBy(context):
-            context_css = 'product'
+            return 'sprite product'
         elif IProject.providedBy(context):
-            context_css = 'project'
+            return 'sprite project'
         elif IPerson.providedBy(context):
             if context.isTeam():
-                context_css = 'team'
+                return 'sprite team'
             else:
                 if context.is_valid_person:
-                    context_css = 'person'
+                    return 'sprite person'
                 else:
-                    context_css = 'person-inactive'
+                    return 'sprite person-inactive'
         elif IDistribution.providedBy(context):
-            context_css = 'distribution'
+            return 'sprite distribution'
         elif ISprint.providedBy(context):
-            context_css = 'meeting'
+            return 'sprite meeting'
         elif IBug.providedBy(context):
-            context_css = 'bug'
-        else:
-            return None
-        return sprite_base_css + ' ' + context_css
+            return 'sprite bug'
+        return None
 
     def default_logo_resource(self, context):
         # XXX: mars 2008-08-22 bug=260468
@@ -670,6 +668,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
             alt = ""
             title = ""
             css = self.sprite_css()
+
         return self.icon_template % (alt, title, css)
 
     def _hasMentoringOffer(self):
