@@ -81,7 +81,7 @@
 
     if(Y.UA.ie) {
         Y.get('#subscriber-list').set('innerHTML',
-            'view subscribers');
+            'Could not load subscribers, javascript is disabled.');
         return;
     }
 
