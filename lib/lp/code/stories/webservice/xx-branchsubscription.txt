@@ -53,6 +53,20 @@ A user can subscribe to a branch through the API.
     Farmer Joe
 
 
+Get the subscription
+====================
+
+Sometimes it's necessary to get a single person's subscriptions through the API
+without getting everyone's subscriptions.
+
+    >>> subscription = webservice.named_post(
+    ...     corn['self_link'], 'getSubscription',
+    ...     person=joe['self_link']).jsonBody()
+
+    >>> print subscription['self_link']
+    http://.../~farmer-joe/farm/corn/+subscription/farmer-joe
+
+
 Edit your subscription
 ======================
 
@@ -91,10 +105,9 @@ Unsubscribing from a branch
 Sometimes branches get too noisy.  It's possible to unsubscribe from the branch
 through the API as well.
 
-    >>> subscription = webservice.named_post(
+    >>> _unused = webservice.named_post(
     ...     corn['self_link'], 'unsubscribe', person=joe['self_link'])
 
     >>> print_subscriber_count(corn)
     0
-    >>> print_subscriber_names(corn)
 

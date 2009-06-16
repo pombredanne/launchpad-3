@@ -760,6 +760,12 @@ class IBranch(IHasOwner, IHasBranchTarget):
             notification.
         :return: new or existing BranchSubscription."""
 
+    @operation_parameters(
+        person=Reference(
+            title=_("The person to unsubscribe"),
+            schema=IPerson))
+    @operation_returns_entry(Interface) # Really IBranchSubscription
+    @export_write_operation()
     def getSubscription(person):
         """Return the BranchSubscription for this person."""
 
