@@ -277,7 +277,7 @@ class UploadProcessor:
         # Reject the upload since we could not process the path,
         # Store the exception information as a rejection message.
         relative_path = os.path.dirname(changes_file)
-        error = None
+        upload_path_error = None
         try:
             (distribution, suite_name,
              archive) = parse_upload_path(relative_path)
@@ -287,7 +287,10 @@ class UploadProcessor:
             distribution = getUtility(IDistributionSet)['ubuntu']
             suite_name = None
             archive = distribution.main_archive
-            error = str(e)
+            upload_path_error = (
+                "Failed to process the upload path '%s': %s\nPlease "
+                "update your dput/dupload configuration and re-upload." %
+                (relative_path, str(e)))
         except PPAUploadPathError, e:
             # Again, pick some defaults but leave a hint for the rejection
             # emailer that it was a PPA failure.
@@ -299,7 +302,12 @@ class UploadProcessor:
             # enough). On the other hand if we set an arbitrary owner it
             # will break nascentupload ACL calculations.
             archive = distribution.getAllPPAs()[0]
-            error = str(e)
+            upload_path_error = (
+                "Failed to process the upload path '%s': %s\n"
+                "Your dput/dupload is not configured properly, "
+                "please check the documentation in "
+                "https://help.launchpad.net/Packaging/PPA#Uploading "
+                "and update it accordingly." % (relative_path, str(e)))
 
         self.log.debug("Finding fresh policy")
         self.options.distro = distribution.name
@@ -327,9 +335,9 @@ class UploadProcessor:
             upload.reject(error_message)
             self.log.error(error_message)
 
-        # Store archive lookup error in the upload if it was the case.
-        if error is not None:
-            upload.reject(error)
+        # Reject upload with path processing errors.
+        if upload_path_error is not None:
+            upload.reject(upload_path_error)
 
         # Store processed NascentUpload instance, mostly used for tests.
         self.last_processed_upload = upload
