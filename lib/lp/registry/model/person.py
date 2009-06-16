@@ -3377,7 +3377,12 @@ class PersonSet:
         subscriber_ids = [
             subscription.subscriberID for subscription in subscriptions]
         if len(subscriber_ids) > 0:
-            list(Person.select("id IN %s" % sqlvalues(subscriber_ids)))
+            # Pull in ValidPersonCache records in addition to Person
+            # records to warm up the cache.
+            list(IStore(Person).find(
+                    (Person, ValidPersonCache),
+                    In(Person.id, subscriber_ids),
+                    ValidPersonCache.id == Person.id))
 
         subscribers = set()
         for subscription in subscriptions:
