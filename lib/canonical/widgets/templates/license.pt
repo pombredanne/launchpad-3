@@ -6,17 +6,17 @@
 <script type="text/javascript"
         tal:condition="view/allow_pending_license">
 //<![CDATA[
-  function unsetLicenses() {
-    var checkboxes = document.getElementsByName('field.licenses');
-    for (var i = 0; i < checkboxes.length; i++) {
-      checkboxes[i].checked = false;
-    }
-  }
+function license_chosen() {
+  document.getElementById('license_pending').checked = false;
+  document.getElementById('license_complete').checked = true;
+}
 
-  function setLicensePendingStatus(pending) {
-    document.getElementById('license_pending').checked = pending;
-    document.getElementById('license_complete').checked = !pending;
+function unset_licenses() {
+  var checkboxes = document.getElementsByName('field.licenses');
+  for (var i = 0; i < checkboxes.length; i++) {
+    checkboxes[i].checked = false;
   }
+}
 //]]>
 </script>
 <script type="text/javascript">
@@ -75,6 +75,11 @@ YUI().use('node', 'lazr.effects', function(Y) {
         make_slider({which: 'more', in: true});
         make_slider({which: 'deprecated', in: true});
         make_slider({which: 'special', in: true});
+
+        var div = Y.get('#pending-div');
+        if (Y.Lang.isValue(div)) {
+            div.setAttribute('onclick', 'license_chosen()');
+        }
     });
 });
 //]]>
@@ -85,8 +90,8 @@ YUI().use('node', 'lazr.effects', function(Y) {
   <div tal:condition="view/allow_pending_license"
        tal:define="is_empty not:view/_getFormInput">
     <input id="license_pending" name="license_status" type="radio"
-          tal:attributes="checked is_empty"
-          onClick="unsetLicenses()" />
+           tal:attributes="checked is_empty"
+            onClick="unset_licenses()" />
     <label for="license_pending">I haven't specified the license yet</label>
     <br/>
 
@@ -95,46 +100,44 @@ YUI().use('node', 'lazr.effects', function(Y) {
     <label for="license_complete">
       This project consists of code licensed under:
     </label>
-    <div tal:attributes="style string:padding-left: 20px"
-         onclick="setLicensePendingStatus(false)"/>
   </div>
-  <div tal:condition="not: view/allow_pending_license" />
 
-      <a href="" id="recommended-expand" class="js-action">
-        <img id="recommended-expand-arrow"
-             src="/@@/treeExpanded"
-             title="Recommended open source licenses"
-             alt="Recommended open source licenses"/>
-        Recommended open source licenses
-      </a>
-      <input tal:replace="structure view/recommended" />
-      <a href="" id="more-expand" class="js-action">
-        <img id="more-expand-arrow"
+  <div id="pending-div" style="padding-left: 20px">
+    <a href="" id="recommended-expand" class="js-action">
+      <img id="recommended-expand-arrow"
+           src="/@@/treeExpanded"
+           title="Recommended open source licenses"
+           alt="Recommended open source licenses"/>
+      Recommended open source licenses
+    </a>
+    <input tal:replace="structure view/recommended" />
+    <a href="" id="more-expand" class="js-action">
+      <img id="more-expand-arrow"
+           src="/@@/treeCollapsed"
+           title="More open source licenses"
+           alt="More open source licenses"/>
+      More open source licenses
+    </a>
+    <input tal:replace="structure view/more" />
+    <div tal:condition="view/show_deprecated">
+      <a href="" id="deprecated-expand" class="js-action">
+        <img id="deprecated-expand-arrow"
              src="/@@/treeCollapsed"
-             title="More open source licenses"
-             alt="More open source licenses"/>
-        More open source licenses
+             title="Deprecated licenses"
+             alt="Deprecated licenses"/>
+        Deprecated licenses
       </a>
-      <input tal:replace="structure view/more" />
-      <div tal:condition="view/show_deprecated">
-        <a href="" id="deprecated-expand" class="js-action">
-          <img id="deprecated-expand-arrow"
-               src="/@@/treeCollapsed"
-               title="Deprecated licenses"
-               alt="Deprecated licenses"/>
-          Deprecated licenses
-        </a>
-        <input tal:replace="structure view/deprecated" />
-      </div>
-      <a href="" id="special-expand" class="js-action">
-        <img id="special-expand-arrow"
-             src="/@@/treeCollapsed"
-             title="Other choices"
-             alt="Other choices"/>
-        Other choices
-      </a>
-      <input tal:replace="structure view/special" />
-
+      <input tal:replace="structure view/deprecated" />
+    </div>
+    <a href="" id="special-expand" class="js-action">
+      <img id="special-expand-arrow"
+           src="/@@/treeCollapsed"
+           title="Other choices"
+           alt="Other choices"/>
+      Other choices
+    </a>
+    <input tal:replace="structure view/special" />
+  </div>
   <p>
     Launchpad.net is free to use for software projects that share
     their source code and comply with these
