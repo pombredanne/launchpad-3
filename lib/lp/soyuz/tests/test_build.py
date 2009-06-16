@@ -10,9 +10,10 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import TestCaseWithFactory
 
 
-class TestBuildUpdateDependencies(unittest.TestCase):
+class TestBuildUpdateDependencies(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -28,7 +29,7 @@ class TestBuildUpdateDependencies(unittest.TestCase):
         depwait_source = test_publisher.getPubSource(
             sourcename='depwait-source')
 
-        dependencies = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             binaryname='dep-bin',
             status=PackagePublishingStatus.PUBLISHED)
 
@@ -44,6 +45,32 @@ class TestBuildUpdateDependencies(unittest.TestCase):
         depwait_build = self._setupSimpleDepwaitContext()
         depwait_build.updateDependencies()
         self.assertEquals(depwait_build.dependencies, '')
+
+    def testInvalidDependencies(self):
+        # Calling `IBuild.updateDependencies` on a build with
+        # invalid 'dependencies' raises an AssertionError.
+        # Anything not following '<name> [([relation] <version>)][, ...]'
+        depwait_build = self._setupSimpleDepwaitContext()
+
+        # None is not a valid dependency values.
+        depwait_build.dependencies = None
+        self.assertRaises(
+            AssertionError, depwait_build.updateDependencies)
+
+        # Missing 'name'.
+        depwait_build.dependencies = '(>> version)'
+        self.assertRaises(
+            AssertionError, depwait_build.updateDependencies)
+
+        # Missing 'version'.
+        depwait_build.dependencies = 'name (>>)'
+        self.assertRaises(
+            AssertionError, depwait_build.updateDependencies)
+
+        # Missing comman between dependencies.
+        depwait_build.dependencies = 'name1 name2'
+        self.assertRaises(
+            AssertionError, depwait_build.updateDependencies)
 
     def testBug378828(self):
         # `IBuild.updateDependencies` copes with the scenario where

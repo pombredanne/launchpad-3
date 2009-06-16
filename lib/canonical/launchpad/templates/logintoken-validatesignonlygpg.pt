@@ -16,19 +16,21 @@
     <div metal:use-macro="context/@@launchpad_form/form">
 
       <metal:heading fill-slot="heading">
-        Confirm OpenPGP key
+        <h1>Confirm your OpenPGP key</h1>
       </metal:heading>
 
       <p metal:fill-slot="extra_info">
-        Confirm the key <code tal:content="context/fingerprint"/> by
-        <tal:name replace="context/requester/fmt:displayname">Foo Bar</tal:name>
+        Thanks for adding your OpenPGP key to Launchpad. So we can confirm that the key is yours, we need you to use the key to sign some text.
+      </p>
+
+      <p>
+        <strong>Your key's fingerprint:</strong> <code tal:content="context/fingerprint"/>
       </p>
 
       <div metal:fill-slot="extra_top">
-        <p>Please paste a clear-signed copy of the following phrase
-        into the box below.  This can be achieved by saving the
-        phrase to a file and running <kbd>gpg --clearsign
-        FILENAME</kbd>.</p>
+        <p>
+          Please paste a clear-signed copy of the following paragraph into the box beneath it. (<a href="/+help/pgp-key-clearsign.html" target="help">How do I do that?</a>)
+        </p>
 
         <pre tal:content="view/validationphrase">
           Please register ABCDEF... to the Launchpad user joe

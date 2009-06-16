@@ -30,7 +30,7 @@ The only field shown is the branch field.
 Updating the branch takes the user back to the product series page.
 
     >>> print sample_browser.title
-    Overview of Mozilla Firefox Series: trunk
+    Mozilla Firefox Series: trunk
     >>> branch = find_tag_by_id(sample_browser.contents, 'branch-details')
     >>> print extract_text(branch)
     lp://dev/firefox - Sample Person

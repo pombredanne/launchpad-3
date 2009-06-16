@@ -95,6 +95,6 @@ a notification is produced when the comment is created.
 The CodeReviewComment must implement the ICodeReviewComment interface.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ICodeReviewComment
+    >>> from lp.code.interfaces.codereviewcomment import ICodeReviewComment
     >>> verifyObject(ICodeReviewComment, comment)
     True

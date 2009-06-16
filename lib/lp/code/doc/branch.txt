@@ -73,7 +73,7 @@ The collection of all branches is represented by IBranchSet, which is
 registered as an utility.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> branchset = getUtility(IBranchSet)
     >>> branch_lookup = getUtility(IBranchLookup)
@@ -401,7 +401,7 @@ history, latest revisions first. All revision history items must implement the
 IBranchRevision interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
-    >>> from canonical.launchpad.interfaces import IBranchRevision
+    >>> from lp.code.interfaces.branchrevision import IBranchRevision
     >>> junk.revision_count
     6
     >>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
@@ -471,7 +471,7 @@ foreign key, so existing parents and ghosts can be modelled in the same way.
 To try and retrieve a Revision given its globally unique id, you can use the
 RevisionSet utility.
 
-    >>> from canonical.launchpad.interfaces import IRevisionSet
+    >>> from lp.code.interfaces.revision import IRevisionSet
     >>> revisionset = getUtility(IRevisionSet)
     >>> [parent_id] = commit.parent_ids
     >>> parent = revisionset.getByRevisionId(parent_id)
