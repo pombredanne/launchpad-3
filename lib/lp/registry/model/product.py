@@ -23,6 +23,7 @@ from storm.locals import And, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
+from canonical.launchpad.components.precache import precache
 from canonical.cachedproperty import cachedproperty
 from lazr.delegates import delegates
 from canonical.lazr.utils import safe_hasattr
@@ -44,6 +45,8 @@ from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
+from canonical.launchpad.database.potemplate import POTemplate
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.karma import KarmaContextMixin
 from lp.answers.model.faq import FAQ, FAQSearch
@@ -55,6 +58,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.model.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
+from lp.registry.model.person import Person
 from canonical.launchpad.database.productbounty import ProductBounty
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
@@ -904,17 +908,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 Milestone.name == version)).one()
 
     def packagedInDistros(self):
-        distros = Distribution.select(
-            "Packaging.productseries = ProductSeries.id AND "
-            "ProductSeries.product = %s AND "
-            "Packaging.distroseries = DistroSeries.id AND "
-            "DistroSeries.distribution = Distribution.id"
-            "" % sqlvalues(self.id),
-            clauseTables=['Packaging', 'ProductSeries', 'DistroSeries'],
-            orderBy='name',
-            distinct=True
-            )
-        return distros
+        return IStore(Distribution).find(
+            Distribution,
+            Packaging.productseriesID == ProductSeries.id,
+            ProductSeries.product == self,
+            Packaging.distroseriesID == DistroSeries.id,
+            DistroSeries.distributionID == Distribution.id
+            ).config(distinct=True).order_by(Distribution.name)
 
     def ensureRelatedBounty(self, bounty):
         """See `IProduct`."""
@@ -1212,16 +1212,18 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
-        upstream = Product.select('''
-            Product.active AND
-            Product.id = ProductSeries.product AND
-            POTemplate.productseries = ProductSeries.id AND
-            Product.official_rosetta
-            ''',
-            clauseTables=['ProductSeries', 'POTemplate'],
-            orderBy='Product.title',
-            distinct=True)
-        return upstream.prejoin(['owner'])
+        results = IStore(Product).find(
+            (Product, Person),
+            Product.active == True,
+            Product.id == ProductSeries.productID,
+            POTemplate.productseriesID == ProductSeries.id,
+            Product.official_rosetta == True,
+            Person.id == Product.ownerID
+            ).config(distinct=True).order_by(Product.title)
+
+        # We only want Product - the other tables are just to populate
+        # the cache.
+        return precache(results)
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
