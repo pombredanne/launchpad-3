@@ -480,32 +480,34 @@ class ObjectImageDisplayAPI:
     def __init__(self, context):
         self._context = context
 
-    #def default_icon_resource(self, context):
     def sprite_css(self):
         """Return the CSS class for the sprite"""
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
         context = self._context
+        sprite_base_css = 'sprite'
         if IProduct.providedBy(context):
-            return 'sprite product'
+            context_css = 'product'
         elif IProject.providedBy(context):
-            return 'sprite project'
+            context_css = 'project'
         elif IPerson.providedBy(context):
             if context.isTeam():
-                return 'sprite team'
+                context_css = 'team'
             else:
                 if context.is_valid_person:
-                    return 'sprite person'
+                    context_css = 'person'
                 else:
-                    return 'sprite person-inactive'
+                    context_css = 'person-inactive'
         elif IDistribution.providedBy(context):
-            return 'sprite distribution'
+            context_css = 'distribution'
         elif ISprint.providedBy(context):
-            return 'sprite meeting'
+            context_css = 'meeting'
         elif IBug.providedBy(context):
-            return 'sprite bug'
-        return None
+            context_css = 'bug'
+        else:
+            return None
+        return sprite_base_css + ' ' + context_css
 
     def default_logo_resource(self, context):
         # XXX: mars 2008-08-22 bug=260468
@@ -557,6 +559,8 @@ class ObjectImageDisplayAPI:
         if IHasIcon.providedBy(context) and context.icon is not None:
             icon_url = context.icon.getURL()
             icon = '<img alt="" width="14" height="14" src="%s" />' % icon_url
+        elif context is None:
+            return ''
         else:
             return None
 
@@ -665,8 +669,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         else:
             alt = ""
             title = ""
-            css = "sprite bug"
-
+            css = self.sprite_css()
         return self.icon_template % (alt, title, css)
 
     def _hasMentoringOffer(self):
