@@ -1,5 +1,6 @@
 # Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
+"""Models for `IProductSeries`."""
 
 __metaclass__ = type
 
@@ -8,10 +9,12 @@ __all__ = [
     'ProductSeriesSet',
     ]
 
+import datetime
+import operator
+
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In
-from warnings import warn
+from storm.expr import In, Sum
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
@@ -22,16 +25,20 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bug import (
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bugtask import BugTask
+from lp.services.worlddata.model.language import Language
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.interfaces.person import validate_public_person
+from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.potemplate import POTemplate
 from lp.registry.model.productrelease import ProductRelease
+from canonical.launchpad.database.productserieslanguage import (
+    ProductSeriesLanguage)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
@@ -55,6 +62,17 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+
+def landmark_key(landmark):
+    """Sorts landmarks by date and name."""
+    if landmark['date'] is None:
+        # Null dates are assumed to be in the future.
+        date = '9999-99-99'
+    else:
+        date = landmark['date']
+    return date + landmark['name']
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -162,12 +180,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     @property
     def title(self):
         return self.product.displayname + ' Series: ' + self.displayname
-
-    def shortdesc(self):
-        warn('ProductSeries.shortdesc should be ProductSeries.summary',
-             DeprecationWarning)
-        return self.summary
-    shortdesc = property(shortdesc)
 
     @property
     def bug_reporting_guidelines(self):
@@ -416,7 +428,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                                      orderBy=['-priority','name'])
         return shortlist(result, 300)
 
-    def getCurrentTranslationTemplates(self):
+    def _getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''
             productseries = %s AND
@@ -427,7 +439,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             ''' % sqlvalues(self),
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
-        return shortlist(result, 300)
+        return result
+
+    def getCurrentTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        return shortlist(self._getCurrentTranslationTemplates(), 300)
+
+    @property
+    def potemplate_count(self):
+        """See `IProductSeries`."""
+        return self._getCurrentTranslationTemplates().count()
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -441,6 +462,67 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
 
+    @property
+    def productserieslanguages(self):
+        """See `IProductSeries`."""
+        store = Store.of(self)
+
+        results = []
+        if self.potemplate_count == 1:
+            # If there is only one POTemplate in a ProductSeries, fetch
+            # Languages and corresponding POFiles with one query, along
+            # with their stats, and put them into ProductSeriesLanguage
+            # objects.
+            origin = [Language, POFile, POTemplate]
+            query = store.using(*origin).find(
+                (Language, POFile),
+                POFile.language==Language.id,
+                POFile.variant==None,
+                Language.visible==True,
+                POFile.potemplate==POTemplate.id,
+                POTemplate.productseries==self,
+                POTemplate.iscurrent==True)
+
+            for language, pofile in query.order_by(['Language.englishname']):
+                psl = ProductSeriesLanguage(self, language, pofile=pofile)
+                psl.setCounts(pofile.potemplate.messageCount(),
+                              pofile.currentCount(),
+                              pofile.updatesCount(),
+                              pofile.rosettaCount(),
+                              pofile.unreviewedCount())
+                results.append(psl)
+        else:
+            # If there is more than one template, do a single
+            # query to count total messages in all templates.
+            query = store.find(Sum(POTemplate.messagecount),
+                                POTemplate.productseries==self,
+                                POTemplate.iscurrent==True)
+            total, = query
+            # And another query to fetch all Languages with translations
+            # in this ProductSeries, along with their cumulative stats
+            # for imported, changed, rosetta-provided and unreviewed
+            # translations.
+            query = store.find(
+                (Language,
+                 Sum(POFile.currentcount),
+                 Sum(POFile.updatescount),
+                 Sum(POFile.rosettacount),
+                 Sum(POFile.unreviewed_count)),
+                POFile.language==Language.id,
+                POFile.variant==None,
+                Language.visible==True,
+                POFile.potemplate==POTemplate.id,
+                POTemplate.productseries==self,
+                POTemplate.iscurrent==True).group_by(Language)
+
+            for (language, imported, changed, new, unreviewed) in (
+                query.order_by(['Language.englishname'])):
+                psl = ProductSeriesLanguage(self, language)
+                psl.setCounts(total, imported, changed, new, unreviewed)
+                results.append(psl)
+
+        return results
+
     def getTimeline(self, include_inactive=False):
         landmarks = []
         for milestone in self.all_milestones:
@@ -450,16 +532,33 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 if not include_inactive and not milestone.active:
                     continue
                 node_type = 'milestone'
+                date = milestone.dateexpected
+                uri = canonical_url(milestone, path_only_if_possible=True)
             else:
                 node_type = 'release'
+                date = milestone.product_release.datereleased
+                uri = canonical_url(
+                    milestone.product_release, path_only_if_possible=True)
+
+            if isinstance(date, datetime.datetime):
+                date = date.date().isoformat()
+            elif isinstance(date, datetime.date):
+                date = date.isoformat()
+
             entry = dict(
                 name=milestone.name,
                 code_name=milestone.code_name,
-                type=node_type)
+                type=node_type,
+                date=date,
+                uri=uri)
             landmarks.append(entry)
+
+        landmarks = sorted_dotted_numbers(landmarks, key=landmark_key)
+        landmarks.reverse()
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
+            uri=canonical_url(self, path_only_if_possible=True),
             landmarks=landmarks)
 
 

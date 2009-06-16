@@ -31,17 +31,17 @@ __all__ = [
 from operator import attrgetter
 import os
 
+from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+
 from zope.event import notify
 from zope.component import getUtility
 from zope.formlib import form
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.session.interfaces import ISession
 
-from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.lazr import ExportedFolder
-
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.widgets import CheckBoxMatrixWidget, LabeledMultiCheckBoxWidget

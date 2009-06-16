@@ -175,7 +175,7 @@
                 tal:content="context/datebuilt/fmt:approximatedate"/>
               <tal:duration condition="context/buildduration">
                 (took <span tal:replace="
-                     context/buildduration/fmt:approximateduration"/>)
+                     context/buildduration/fmt:exactduration"/>)
               </tal:duration>
             </td>
             <td tal:condition="not: context/datebuilt">

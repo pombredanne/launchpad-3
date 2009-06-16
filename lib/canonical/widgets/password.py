@@ -10,10 +10,11 @@ __metaclass__ = type
 from zope.app.form.browser import PasswordWidget
 from zope.app.form.browser.interfaces import ITextBrowserWidget
 from zope.app.form.interfaces import WidgetInputError
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import ValidationError
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IPasswordEncryptor

@@ -53,7 +53,7 @@
       <td>
         <span class="votePENDING">Pending</span>
         <tal:vote-link condition="review/user_can_review">
-          <a tal:attributes="href string:+review?claim=${review/reviewer/name}&review_type=${review/review_type_str}">[Review]</a>
+          <a tal:attributes="href string:+review?claim=${review/reviewer/name}&amp;review_type=${review/review_type_str}">[Review]</a>
         </tal:vote-link>
       </td>
     </tr>

@@ -13,17 +13,20 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.archivepublisher.config import getPubConfig
-from lp.archivepublisher.scripts.generate_ppa_htaccess import (
-    HtaccessTokenGenerator)
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistributionSet, IPersonSet, TeamMembershipStatus)
+from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.testing.layers import LaunchpadZopelessLayer
+
+from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.scripts.generate_ppa_htaccess import (
+    HtaccessTokenGenerator)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
-from canonical.launchpad.scripts import QuietFakeLogger
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing.mail_helpers import pop_notifications
+from lp.services.mail import stub
 
 
 class TestPPAHtaccessTokenGeneration(unittest.TestCase):
@@ -295,23 +298,39 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         team1_person.leave(team1)
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
-        script.deactivateTokens(self.ppa)
+        # Clear out emails generated when leaving a team.
+        pop_notifications()
+
+        script.deactivateTokens(self.ppa, send_email=True)
         self.assertDeactivated(tokens[team1_person])
         del tokens[team1_person]
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
 
+        # Ensure that a cancellation email was sent.
+        num_emails = len(stub.test_emails)
+        self.assertEqual(
+            num_emails, 1, "Expected 1 email, got %s" % num_emails)
+
         # Promiscuous_person now leaves team1, but does not lose his
         # token because he's also in team2. No other tokens are
         # affected.
+        self.layer.txn.commit()
         self.layer.switchDbUser("launchpad")
         promiscuous_person.leave(team1)
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
-        script.deactivateTokens(self.ppa)
+        # Clear out emails generated when leaving a team.
+        pop_notifications()
+        script.deactivateTokens(self.ppa, send_email=True)
         self.assertNotDeactivated(tokens[promiscuous_person])
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
+
+        # Ensure that a cancellation email was not sent.
+        num_emails = len(stub.test_emails)
+        self.assertEqual(
+            num_emails, 0, "Expected no emails, got %s" % num_emails)
 
         # Team 2 now leaves parent_team, and all its members lose their
         # tokens.
@@ -452,6 +471,58 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # But the htaccess is not touched.
         self.assertFalse(os.path.isfile(htaccess))
         self.assertFalse(os.path.isfile(htpasswd))
+
+    def testSendingCancellationEmail(self):
+        """Test that when a token is deactivated, its user gets an email.
+        
+        The email must contain the right headers and text.
+        """
+        subs, tokens = self.setupDummyTokens()
+        script = self.getScript()
+
+        # Clear out any existing email.
+        pop_notifications()
+
+        script.sendCancellationEmail(tokens[0])
+
+        num_emails = len(stub.test_emails)
+        self.assertEqual(
+            num_emails, 1, "Expected 1 email, got %s" % num_emails)
+
+        [email] = pop_notifications()
+        self.assertEqual(
+            email['Subject'],
+            "PPA subscription cancelled for PPA for Celso Providelo")
+        self.assertEqual(email['To'], "test@canonical.com")
+        self.assertEqual(
+            email['From'], "PPA for Celso Providelo <noreply@launchpad.net>")
+        self.assertEqual(email['Sender'], "bounces@canonical.com")
+
+        body = email.get_payload()
+        self.assertEqual(
+            body,
+            "Hello Sample Person,\n\n"
+            "Launchpad: cancellation of archive subscription\n"
+            "-----------------------------------------------\n\n"
+            "Your subscription to the private software archive "
+                "\"PPA for Celso\n"
+            "Providelo\", which is hosted by Launchpad, has been "
+                "cancelled.\n\n"
+            "You will now no longer be able to download software from this "
+                "archive.\n"
+            "If you think this cancellation is in error, you should contact "
+                "the owner\n"
+            "of the archive to verify it.\n\n"
+            "You can contact the archive owner by visiting his/her Launchpad "
+                "page\n"
+            "here:\n\n"
+            "<http://launchpad.dev/~cprov>\n\n"
+            "If you have any concerns you can contact the Launchpad team by "
+                "emailing\n"
+            "feedback@launchpad.net\n\n"
+            "Regards,\n"
+            "The Launchpad team")
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

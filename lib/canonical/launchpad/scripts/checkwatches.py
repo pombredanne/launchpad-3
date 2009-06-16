@@ -16,13 +16,13 @@ from zope.event import notify
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.components import externalbugtracker
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs import externalbugtracker
+from lp.bugs.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
-from canonical.launchpad.components.externalbugtracker.bugzilla import (
+from lp.bugs.externalbugtracker.bugzilla import (
     BugzillaLPPlugin)
 from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
@@ -31,8 +31,8 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.externalbugtracker import (
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -414,6 +414,17 @@ class BugWatchUpdater(object):
         :param now: The current time (used for testing)
         :return: A list of remote bug IDs to be updated.
         """
+        # Check that the remote server's notion of time agrees with
+        # ours. If not, raise a TooMuchTimeSkew error, since if the
+        # server's wrong about the time it'll mess up all our times when
+        # we import things.
+        if now is None:
+            now = datetime.now(pytz.timezone('UTC'))
+
+        if (server_time is not None and
+            abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
+            raise TooMuchTimeSkew(abs(server_time - now))
+
         old_bug_watches = [
             bug_watch for bug_watch in bug_watches
             if bug_watch.lastchecked is not None]
@@ -429,17 +440,10 @@ class BugWatchUpdater(object):
             set(bug_watch.remotebug for bug_watch in bug_watches
                 if bug_watch not in old_bug_watches))
 
-        if now is None:
-            now = datetime.now(pytz.timezone('UTC'))
-
-        if (server_time is not None and
-            abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
-            raise TooMuchTimeSkew(abs(server_time - now))
-
         # We only make the call to getModifiedRemoteBugs() if there
         # are actually some bugs that we're interested in so as to
         # avoid unnecessary network traffic.
-        elif server_time is not None and len(remote_old_ids) > 0:
+        if server_time is not None and len(remote_old_ids) > 0:
             old_ids_to_check = remotesystem.getModifiedRemoteBugs(
                 remote_old_ids, oldest_lastchecked)
         else:
@@ -762,8 +766,8 @@ class BugWatchUpdater(object):
             external_bugtracker.getBugSummaryAndDescription(remote_bug))
         bug = bug_target.createBug(
             CreateBugParams(
-                reporter, summary, description, subscribe_reporter=False))
-
+                reporter, summary, description, subscribe_owner=False,
+                filed_by=getUtility(ILaunchpadCelebrities).bug_watch_updater))
         [added_task] = bug.bugtasks
         bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug=bug,

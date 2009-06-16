@@ -48,7 +48,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ITranslationMessage"
-        class="canonical.launchpad.browser.CurrentTranslationMessageIndexView"
+        class="canonical.launchpad.browser.translationmessage.CurrentTranslationMessageIndexView"
         permission="zope.Public"
         name="+index"
         layer="canonical.launchpad.layers.TranslationsLayer"
@@ -57,7 +57,7 @@
     <browser:page
         name="+translate"
         for="canonical.launchpad.interfaces.ITranslationMessage"
-        class="canonical.launchpad.browser.TranslateRedirectView"
+        class="canonical.launchpad.browser.translations.TranslateRedirectView"
         permission="zope.Public"
         />
 
@@ -66,7 +66,7 @@
         for="canonical.launchpad.interfaces.ITranslationMessage"
         permission="zope.Public"
         template="../templates/translationmessage-translate.pt"
-        class="canonical.launchpad.browser.CurrentTranslationMessagePageView"
+        class="canonical.launchpad.browser.translationmessage.CurrentTranslationMessagePageView"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 

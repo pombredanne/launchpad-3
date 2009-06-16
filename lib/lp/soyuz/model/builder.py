@@ -36,7 +36,8 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.interfaces._schema_circular_imports import IHasBuildRecords
+from canonical.launchpad.interfaces._schema_circular_imports import (
+    IHasBuildRecords)
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -414,12 +415,13 @@ class Builder(SQLBase):
             return 'Idle'
 
         msg = 'Building %s' % currentjob.build.title
-        if currentjob.build.archive.is_ppa:
-            return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
-        if currentjob.build.archive.is_copy:
-            return ('%s [%s/%s]' %
-                    (msg, currentjob.build.archive.owner.name,
-                     currentjob.build.archive.name))
+        archive = currentjob.build.archive
+        if archive.is_ppa or archive.is_copy:
+            return '%s [%s/%s]' % (
+                msg,
+                currentjob.build.archive.owner.name,
+                currentjob.build.archive.name,
+                )
         else:
             return msg
 

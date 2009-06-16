@@ -17,7 +17,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.vocabularies import MilestoneVocabulary
 
 from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.testing import DatabaseFunctionalLayer
 
 
