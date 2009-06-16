@@ -1451,8 +1451,8 @@ class IPersonCommAdminWriteRestricted(Interface):
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
-                   "Public visibility is standard.  Private Membership"
-                   " means that a team's members are hidden."
+                   "Public visibility is standard.  Private Membership "
+                   "means that a team's members are hidden.  "
                    "Private means the team is completely "
                    "hidden [experimental]."
                    ),
