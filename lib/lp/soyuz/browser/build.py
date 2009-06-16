@@ -16,6 +16,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin, ProxiedLibraryFileAlias)
@@ -166,6 +167,19 @@ class BuildView(LaunchpadView):
             return None
 
         return ProxiedLibraryFileAlias(changesfile, self.context)
+
+    @cachedproperty
+    def files(self):
+        """Return `LibraryFileAlias`es for files produced by this build."""
+        if not self.context.was_built:
+            return None
+
+        files = []
+        for package in self.context.binarypackages:
+            for file in package.files:
+                files.append(file)
+
+        return files
 
 
 class BuildRescoringView(LaunchpadFormView):
