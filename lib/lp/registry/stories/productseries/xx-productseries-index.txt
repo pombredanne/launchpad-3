@@ -5,7 +5,7 @@ The product series overview page summarises the series.
 
     >>> anon_browser.open('http://launchpad.dev/firefox/trunk')
     >>> print extract_text(anon_browser.title)
-    Overview of Mozilla Firefox Series: trunk
+    Mozilla Firefox Series: trunk
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(content.h1)
@@ -15,7 +15,8 @@ The product series overview page summarises the series.
     Project: Mozilla Firefox ...
     Series: trunk
     Status: Active Development
-    Drivers: Sample Person
+    Project drivers: Sample Person
+    Release manager: None
 
     >>> print extract_text(find_tag_by_id(content, 'description'))
     Summary
@@ -34,7 +35,7 @@ and thus a member of the series drivers.
     >>> driver_browser.getLink('Change details', index=0)
     <Link ... url='http://launchpad.dev/firefox/trunk/+edit'>
 
-    >>> driver_browser.getLink('Appoint driver')
+    >>> driver_browser.getLink('Appoint release manager')
     <Link ... url='http://launchpad.dev/firefox/trunk/+driver'>
 
 Any user can subscribe to bug mail via the link on the page.
@@ -110,7 +111,7 @@ in each Ubuntu series.
     >>> print extract_text(find_tag_by_id(content, 'distribution-packaging'))
     Ubuntu Warty mozilla-firefox
 
-    >>> anon_browser.getLink('mozilla-firefox')
+    >>> anon_browser.getLink('Ubuntu Warty mozilla-firefox')
     <Link ... url='http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox'>
 
 The driver sees two packaging links near the distribution packaging.

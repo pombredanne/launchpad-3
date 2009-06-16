@@ -165,7 +165,9 @@ div#package_counters p {
         <div tal:condition="archive_active" >
 
           <h2>apt sources.list entries</h2>
-          <p>Copy the lines below and add them to your system's software sources (<a href="/+help/soyuz/ppa-sources-list.html" target="help">How do I do that?</a>)</p>
+          <p>Copy the lines below and add them to your system's software
+             sources. (<a href="/+help/soyuz/ppa-sources-list.html"
+             target="help">How do I do that?</a>)</p>
           <tal:entries replace="structure view/sources_list_entries" />
 
         </div>
@@ -178,8 +180,8 @@ div#package_counters p {
           <a tal:attributes="href signing_key/keyserverURL">
             <code tal:content="signing_key/displayname">
               1024R/23456789
-            </code></a>
-          <a href="/+help/ppa-sources-list.html" target="help">Help on installing software from this PPA</a>.</p>
+            </code></a>. <a href="/+help/soyuz/ppa-sources-list.html"
+            target="help">Help on installing software from this PPA</a>.</p>
       </div> <!-- signing-key -->
 
       <div id="archive-dependencies" tal:condition="context/dependencies">

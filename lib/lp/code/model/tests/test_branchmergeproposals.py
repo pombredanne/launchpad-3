@@ -20,11 +20,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob, BranchMergeProposalJobType,
+    CreateMergeProposalJob, MergeProposalCreatedJob)
 from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal, BranchMergeProposalGetter, BranchMergeProposalJob,
-    BranchMergeProposalJobType, CreateMergeProposalJob, is_valid_transition,
-    MergeProposalCreatedJob)
-from canonical.launchpad.database.diff import StaticDiff
+    BranchMergeProposal, BranchMergeProposalGetter, is_valid_transition)
+from lp.code.model.diff import StaticDiff
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -845,6 +846,24 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         results = BranchMergeProposalGetter.getProposalsForContext(
             context, status, visible_by_user)
         return sorted([bmp.source_branch.unique_name for bmp in results])
+
+    def test_getProposalsForParticipant(self):
+        # It's possible to get all the merge proposals for a single
+        # participant.
+        wally = self.factory.makePerson(name='wally')
+        beaver = self.factory.makePerson(name='beaver')
+
+        bmp1 = self._make_merge_proposal('wally', 'gokart', 'turbo', True)
+        bmp1.nominateReviewer(beaver, wally)
+        bmp2 = self._make_merge_proposal('beaver', 'gokart', 'brakes', True)
+
+        wally_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+            wally, [BranchMergeProposalStatus.NEEDS_REVIEW], wally)
+        self.assertEqual(wally_proposals.count(), 1)
+
+        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+            beaver, [BranchMergeProposalStatus.NEEDS_REVIEW], beaver)
+        self.assertEqual(beave_proposals.count(), 2)
 
     def test_created_proposal_default_status(self):
         # When we create a merge proposal using the helper method, the default

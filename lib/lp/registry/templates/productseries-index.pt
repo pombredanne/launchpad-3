@@ -36,13 +36,22 @@
         </td>
       </tr>
       <tr>
-        <th>Drivers:</th>
+        <th>Project drivers:</th>
         <td>
         <tal:per_driver repeat="driver context/drivers">
           <a tal:replace="structure driver/fmt:link">driver</a><tal:comma
             condition="not: repeat/driver/end">,</tal:comma>
         </tal:per_driver>
-        <a tal:replace="structure overview_menu/driver/fmt:icon" />
+         </td>
+       </tr>
+       <tr>
+         <th>Release manager:</th>
+         <td>
+           <tal:no-driver condition="not: context/driver">None</tal:no-driver>
+           <a
+             tal:condition="context/driver"
+             tal:replace="structure context/driver/fmt:link">series driver</a>
+           <a tal:replace="structure overview_menu/driver/fmt:icon" />
         </td>
       </tr>
     </table>
@@ -58,7 +67,7 @@
     </div>
 
     <div>
-      <a tal:replace="structure overview_menu/subscribe/fmt:icon-link" />
+      <a tal:replace="structure overview_menu/subscribe/fmt:link-icon" />
     </div>
 
     <h2 style="margin-top: 2em;">Milestones and releases</h2>
@@ -67,6 +76,7 @@
 
     <div>
       <a tal:replace="structure overview_menu/create_milestone/fmt:icon-link" />
+      &nbsp;
       <a tal:replace="structure overview_menu/create_release/fmt:icon-link" />
     </div>
 
@@ -84,21 +94,21 @@
       This series is packaged in the following places:
     </p>
 
-    <ul id="distribution-packaging">
-      <li tal:repeat="package context/sourcepackages">
-         <tal:distro tal:content="package/distroseries/distribution/displayname">
-           Ubuntu
-         </tal:distro>
-         <tal:series tal:replace="package/distroseries/displayname">
-           Warty
-         </tal:series>
-         <a tal:content="package/name"
-            tal:attributes="href package/fmt:url">apache</a>
+    <ul id="distribution-packaging" class="source package">
+      <li class="packages"
+        tal:repeat="package context/sourcepackages">
+        <a tal:attributes="href package/fmt:url"><tal:distro
+          tal:content="package/distroseries/distribution/displayname">
+          Ubuntu</tal:distro>
+          <tal:series tal:replace="package/distroseries/displayname">
+          Warty</tal:series>
+          <tal:package tal:content="package/name">firefox</tal:package></a>
       </li>
     </ul>
 
     <div>
       <a tal:replace="structure overview_menu/ubuntupkg/fmt:icon-link" />
+      &nbsp;
       <a tal:replace="structure overview_menu/add_package/fmt:icon-link" />
     </div>
 

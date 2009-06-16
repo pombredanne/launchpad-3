@@ -72,7 +72,6 @@
       </style>
     </noscript>
 
-
     <metal:load-javascript
       use-macro="context/@@+main-template-macros/load-javascript" />
 

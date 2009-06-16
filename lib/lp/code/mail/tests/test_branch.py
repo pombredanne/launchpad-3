@@ -6,12 +6,11 @@ from unittest import TestLoader
 
 from canonical.testing import DatabaseFunctionalLayer
 
-from canonical.launchpad.database import Branch
-from canonical.launchpad.ftests import login_person
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-from lp.code.mail.branch import RecipientReason
-from lp.testing import TestCaseWithFactory
+from lp.code.mail.branch import BranchMailer, RecipientReason
+from lp.code.model.branch import Branch
+from lp.testing import login_person, TestCaseWithFactory
 
 
 class TestRecipientReason(TestCaseWithFactory):
@@ -114,6 +113,48 @@ class TestRecipientReason(TestCaseWithFactory):
         self.assertEqual(
             'You are subscribed to branch lp://fake.',
             reason.getReason())
+
+
+class TestBranchMailerHeaders(TestCaseWithFactory):
+    """Check the headers are correct for Branch email."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_branch_modified(self):
+        # Test the email headers for a branch modified email.
+        bob = self.factory.makePerson(email='bob@example.com')
+        branch = self.factory.makeProductBranch(owner=bob)
+        branch.getSubscription(bob).notification_level = (
+            BranchSubscriptionNotificationLevel.FULL)
+        mailer = BranchMailer.forBranchModified(branch, branch.owner, None)
+        mailer.message_id = '<foobar-example-com>'
+        ctrl = mailer.generateEmail('bob@example.com', branch.owner)
+        self.assertEqual(
+            {'X-Launchpad-Branch': branch.unique_name,
+             'X-Launchpad-Message-Rationale': 'Subscriber',
+             'X-Launchpad-Notification-Type': 'branch-updated',
+             'X-Launchpad-Project': branch.product.name,
+             'Message-Id': '<foobar-example-com>'},
+            ctrl.headers)
+
+    def test_branch_revision(self):
+        # Test the email headers for new revision email.
+        bob = self.factory.makePerson(email='bob@example.com')
+        branch = self.factory.makeProductBranch(owner=bob)
+        branch.getSubscription(bob).notification_level = (
+            BranchSubscriptionNotificationLevel.FULL)
+        mailer = BranchMailer.forRevision(
+            branch, 1, 'from@example.com', contents='', diff=None, subject='')
+        mailer.message_id = '<foobar-example-com>'
+        ctrl = mailer.generateEmail('bob@example.com', branch.owner)
+        self.assertEqual(
+            {'X-Launchpad-Branch': branch.unique_name,
+             'X-Launchpad-Message-Rationale': 'Subscriber',
+             'X-Launchpad-Notification-Type': 'branch-revision',
+             'X-Launchpad-Branch-Revision-Number': '1',
+             'X-Launchpad-Project': branch.product.name,
+             'Message-Id': '<foobar-example-com>'},
+            ctrl.headers)
 
 
 def test_suite():

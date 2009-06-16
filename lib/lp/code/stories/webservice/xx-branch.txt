@@ -1,4 +1,5 @@
-= Introduction =
+Introduction
+============
 
 Launchpad provides two ways to programmatically interact with your
 branches. You can either interact with the branches themselves using
@@ -9,7 +10,7 @@ the things on Launchpad.
     >>> from datetime import datetime
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.code.enums import BranchType
+    >>> from lp.code.enums import BranchLifecycleStatus, BranchType
     >>> from lp.code.interfaces.branch import IBranch
     >>> from lazr.restful.marshallers import DateTimeFieldMarshaller
 
@@ -25,7 +26,8 @@ helpers. This one turns a JSON date/time response into a Python
     ...     return marshaller.marshall_from_json_data(returned_time)
 
 
-== Requesting a mirror ==
+Requesting a mirror
+===================
 
 Many of the branches on Launchpad are mirrored branches: branches that
 are hosted on other servers and then mirrored regularly by Launchpad's
@@ -64,13 +66,14 @@ request for a mirror:
     True
 
 
-== Basic branch attributes ==
+Basic branch attributes
+=======================
 
 Not everything about a branch is exposed.  Hopefully most of what users
 really care about is exposed, and we will undoubtedly expand this as
 time goes on.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> eric = factory.makePerson(name='eric')
     >>> marley = factory.makePerson(name='marley')
     >>> fooix = factory.makeProduct(name='fooix')
@@ -78,7 +81,8 @@ time goes on.
     ...     branch_type=BranchType.HOSTED, owner=eric, product=fooix,
     ...     name='trunk', title='The Fooix Trunk')
     >>> feature_branch = factory.makeAnyBranch(
-    ...     owner=eric, product=fooix, name='feature-branch')
+    ...     owner=eric, product=fooix, name='feature-branch',
+    ...     lifecycle_status=BranchLifecycleStatus.EXPERIMENTAL)
     >>> feature_branch_bug = factory.makeBug(product=fooix,
     ...     title='Stuff needs features')
     >>> feature_branch_spec = factory.makeSpecification(product=fooix,
@@ -108,6 +112,7 @@ time goes on.
     date_created: ...
     date_last_modified: ...
     dependent_branches_collection_link: u'.../~eric/fooix/trunk/dependent_branches'
+    description: None
     display_name: u'lp://dev/~eric/fooix/trunk'
     landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
     landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
@@ -238,45 +243,62 @@ in its landing_targets.
     http://.../~eric/fooix/trunk
 
 
-== Branch subscriptions ==
-
-A user can subscribe to a branch through the API.
-
-    >>> marley = webservice.get('/~marley').jsonBody()
-    >>> subscription = webservice.named_post(
-    ...     fooix_trunk['self_link'], 'subscribe', person=marley['self_link'],
-    ...     notification_level=u'Branch attribute notifications only',
-    ...     max_diff_lines=u'Don\'t send diffs',
-    ...     code_review_level=u'No email')
-
-    >>> pprint_entry(subscription.jsonBody())
-    branch_link: u'http://.../~eric/fooix/trunk'
-    max_diff_lines: u"Don't send diffs"
-    notification_level: u'Branch attribute notifications only'
-    person_link: u'http://.../~marley'
-    resource_type_link: u'http://.../#branch_subscription'
-    review_level: u'No email'
-    self_link: u'http://.../~eric/fooix/trunk/+subscription/marley'
-
-
-    >>> subscribers = webservice.get(
-    ...     fooix_trunk['subscribers_collection_link']).jsonBody()
-    >>> print len(subscribers['entries'])
-    2
-    >>> for subscriber in subscribers['entries']:
-    ...     print subscriber['display_name']
-    Eric
-    Marley
-
-
-== Project branches ==
+Project branches
+================
 
 The branches of a project are also available.
 
-    >>> project = webservice.get('/fooix').jsonBody()
-    >>> branches = webservice.get(
-    ...     project['branches_collection_link']).jsonBody()
-    >>> for branch in branches['entries']:
-    ...     print branch['unique_name']
-    ~eric/fooix/trunk
-    ~eric/fooix/feature-branch
+    >>> def print_branch(branch):
+    ...     print branch['unique_name'] + ' - ' + branch['lifecycle_status']
+    >>> def print_branches(webservice, url, status=None):
+    ...     branches = webservice.named_get(
+    ...         url, 'getBranches',
+    ...         status=status).jsonBody()
+    ...     for branch in branches['entries']:
+    ...         print_branch(branch)
+
+    >>> print_branches(webservice, '/fooix')
+    ~eric/fooix/trunk - Development
+    ~eric/fooix/feature-branch - Experimental
+
+A list of lifecycle statuses can be provided for filtering.
+
+    >>> print_branches(webservice, '/fooix', ('Experimental'))
+    ~eric/fooix/feature-branch - Experimental
+
+Branches for people
+===================
+
+The branches owned by a person are available from the person object.
+
+    >>> print_branches(webservice, '/~eric')
+    ~eric/fooix/trunk - Development
+    ~eric/fooix/feature-branch - Experimental
+
+As with projects, these can be filtered by the branch status.
+
+    >>> print_branches(webservice, '/~eric', ('Experimental'))
+    ~eric/fooix/feature-branch - Experimental
+
+Project group branches
+======================
+
+Branches are also accessible for a project group.
+
+    >>> login('admin@canonical.com')
+    >>> project = factory.makeProject(name='widgets')
+    >>> fooix.project = project
+    >>> blob = factory.makeProduct(name='blob', project=project)
+    >>> branch = factory.makeProductBranch(product=blob, name='bar')
+    >>> branch.owner.name = 'mary'
+    >>> logout()
+
+    >>> print_branches(webservice, '/widgets')
+    ~eric/fooix/trunk - Development
+    ~eric/fooix/feature-branch - Experimental
+    ~mary/blob/bar - Development
+
+As with projects, these can be filtered by the branch status.
+
+    >>> print_branches(webservice, '/widgets', ('Experimental'))
+    ~eric/fooix/feature-branch - Experimental

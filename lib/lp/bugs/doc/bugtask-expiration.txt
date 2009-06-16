@@ -518,10 +518,10 @@ master and slave bugtasks were expired.
 
 The bug's activity log was updated too with the status change.
 
-    >>> for activity in hoary_bugtask.bug.activity[1:]:
-    ...     print "%s %s %s %s" % (
-    ...         activity.person.displayname,
-    ...         activity.whatchanged, activity.oldvalue, activity.newvalue)
+    >>> activity = hoary_bugtask.bug.activity[-1]
+    >>> print "%s  %s  %s  %s" % (
+    ...     activity.person.displayname, activity.whatchanged,
+    ...     activity.oldvalue, activity.newvalue)
     Launchpad Janitor  Ubuntu Hoary: status  Incomplete  Invalid
 
 

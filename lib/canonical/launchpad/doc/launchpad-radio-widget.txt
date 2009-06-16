@@ -11,7 +11,7 @@ an enumerated type.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import IBranch
+    >>> from lp.code.interfaces.branch import IBranch
     >>> branch = factory.makeAnyBranch()
     >>> branch_type_field = IBranch['branch_type'].bind(branch)
     >>> request = LaunchpadTestRequest()

@@ -33,7 +33,7 @@ downloaded and the date of the last download on that table as well.
     >>> anon_browser.reload()
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'downloads'))
     File                            Description  Downloads
-    firefox-0.9.2.orig.tar.gz (md5)              1 ... since last download
+    firefox-0.9.2.orig.tar.gz (md5)              1 last downloaded ...
                               Total downloads:   1
 
 When a file has been downloaded on the present day, all we can say is that

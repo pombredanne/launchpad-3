@@ -18,7 +18,7 @@ external connections.
     >>> from canonical.database.sqlbase import (
     ...     ZopelessTransactionManager)
     >>> from canonical.launchpad.scripts import FakeLogger
-    >>> from canonical.launchpad.scripts.checkwatches import (
+    >>> from lp.bugs.scripts.checkwatches import (
     ...     BugWatchUpdater)
     >>> transactionmgr = ZopelessTransactionManager._installed
     >>> updater = BugWatchUpdater(transactionmgr, log=FakeLogger())

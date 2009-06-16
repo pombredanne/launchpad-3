@@ -11,7 +11,7 @@ They can be accessed via a utility registered for the ICodeImportJobSet
 interface.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ICodeImportJobSet
+    >>> from lp.code.interfaces.codeimportjob import ICodeImportJobSet
     >>> job_set = getUtility(ICodeImportJobSet)
     >>> verifyObject(ICodeImportJobSet, job_set)
     True
@@ -19,7 +19,7 @@ interface.
 The code-import-worker scripts are attached to specific job objects and
 retrieve jobs by database id using the CodeImportJobSet.getById method.
 
-    >>> from canonical.launchpad.interfaces import ICodeImportJob
+    >>> from lp.code.interfaces.codeimportjob import ICodeImportJob
     >>> verifyObject(ICodeImportJob, job_set.getById(1))
     True
 
@@ -30,7 +30,7 @@ CodeImportJob objects can also be retrieved using the import_job
 property of a CodeImport object. It is useful for the webapp to display
 the current job of a given CodeImport.
 
-    >>> from canonical.launchpad.interfaces import ICodeImportSet
+    >>> from lp.code.interfaces.codeimport import ICodeImportSet
     >>> code_import = getUtility(ICodeImportSet).get(1)
     >>> verifyObject(ICodeImportJob, code_import.import_job)
     True
@@ -39,7 +39,7 @@ The life cycle of a CodeImportJob involves the creation of other objects
 at various points. To enforce this, CodeImportJob objects are only
 modified using the CodeImportJobWorkflow utility.
 
-    >>> from canonical.launchpad.interfaces import ICodeImportJobWorkflow
+    >>> from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
     >>> workflow = getUtility(ICodeImportJobWorkflow)
     >>> verifyObject(ICodeImportJobWorkflow, workflow)
     True
@@ -49,7 +49,7 @@ modified using the CodeImportJobWorkflow utility.
 
 There are two CodeImport objects of interest in the sample data.
 
-    >>> from canonical.launchpad.interfaces import ICodeImportSet
+    >>> from lp.code.interfaces.codeimport import ICodeImportSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> branch_lookup = getUtility(IBranchLookup)
     >>> code_import_set = getUtility(ICodeImportSet)
@@ -74,7 +74,7 @@ Some workflow methods expect the user that is requesting the action. We
 use the No Privileges Person, regardless of what privileges may be
 required to initiate the action.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> nopriv = person_set.getByName('no-priv')
 
@@ -234,7 +234,7 @@ When a job is about to performed by a code import worker, the startJob
 workflow method updates the job's fields to indicate that it is now
 running and which machine it is running on.
 
-    >>> from canonical.launchpad.interfaces import ICodeImportMachineSet
+    >>> from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine = machine_set.getByHostname('bazaar-importer')
     >>> new_events = NewEvents()

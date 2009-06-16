@@ -390,8 +390,18 @@ def check_copy(source, archive, series, pocket, include_binaries,
         raise CannotCopy("Cannot copy private source into public archives.")
 
     if include_binaries:
-        if len(source.getBuiltBinaries()) == 0:
+        built_binaries = source.getBuiltBinaries()
+        if len(built_binaries) == 0:
             raise CannotCopy("source has no binaries to be copied")
+        # Deny copies of binary publications containing files with
+        # expiration date set. We only set such value for immediate
+        # expiration of old superseded binaries, so no point in
+        # checking its content, the fact it is set is already enough
+        # for denying the copy.
+        for binary_pub in built_binaries:
+            for binary_file in binary_pub.binarypackagerelease.files:
+                if binary_file.libraryfile.expires is not None:
+                    raise CannotCopy('source has expired binaries')
 
     # Check if there is already a source with the same name and version
     # published in the destination archive.

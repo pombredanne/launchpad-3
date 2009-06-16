@@ -373,7 +373,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBranch"
+        for="lp.code.interfaces.branch.IBranch"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchFormatterAPI"
         name="fmt"
@@ -394,14 +394,14 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBranchSubscription"
+        for="lp.code.interfaces.branchsubscription.IBranchSubscription"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchSubscriptionFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBranchMergeProposal"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchMergeProposalFormatterAPI"
         name="fmt"
@@ -415,21 +415,21 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.diff.IPreviewDiff"
+        for="lp.code.interfaces.diff.IPreviewDiff"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.ICodeImport"
+        for="lp.code.interfaces.codeimport.ICodeImport"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
         name="fmt"
@@ -478,7 +478,7 @@
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.ICodeReviewComment"
+        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeReviewCommentFormatterAPI"
         name="fmt"

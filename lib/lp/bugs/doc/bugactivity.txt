@@ -37,10 +37,6 @@ are simple little functions.
     ...     comment="this is only a test bug\nplease ignore",
     ...     owner=user)
     >>> bug = firefox.createBug(params)
-    >>> bug.activity.count()
-    0
-    >>> object_created = ObjectCreatedEvent(bug)
-    >>> notify(object_created)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.person == user
     True

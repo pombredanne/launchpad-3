@@ -2,7 +2,9 @@
 
 __metaclass__ = type
 
+import datetime
 import os
+import pytz
 import subprocess
 import sys
 import unittest
@@ -22,7 +24,8 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.adapters.packagelocation import PackageLocationError
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose, CannotCopy)
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
@@ -35,10 +38,11 @@ from lp.soyuz.model.publishing import (
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
-    PackageCopier, UnembargoSecurityPackage, override_from_ancestry,
-    re_upload_file, update_files_privacy)
+    PackageCopier, UnembargoSecurityPackage, check_copy,
+    override_from_ancestry, re_upload_file, update_files_privacy)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCase, TestCaseWithFactory)
 
 
 class TestReUploadFile(TestCaseWithFactory):
@@ -525,6 +529,55 @@ class TestOverrideFromAncestry(TestCaseWithFactory):
         # Overridden copy it targeted to 'universe'.
         self.copyAndCheck(
             binary, binary.distroarchseries.distroseries, 'universe')
+
+
+class TestCheckCopy(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
+
+    def testExpiredFilesCannotBeCopied(self):
+        # check_copy() raises CannotCopy if the copy includes binaries
+        # and the binaries contain expired files. Publications of
+        # expired files can't be processed by the publisher since
+        # the file is unreachable.
+
+        # Create a testing source and binaries.
+        source = self.test_publisher.getPubSource()
+        binaries = self.test_publisher.getPubBinaries(pub_source=source)
+
+        # Create a fresh PPA which will be the destination copy.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        series = source.distroseries
+        pocket = source.pocket
+
+        # At this point copy is allowed with or without binaries.
+        self.assertIs(
+            check_copy(source, archive, series, pocket, False), None)
+        self.assertIs(
+            check_copy(source, archive, series, pocket, True), None)
+
+        # Set the expiration date of one of the testing binary files.
+        utc = pytz.timezone('UTC')
+        old_date = datetime.datetime(1970, 1, 1, tzinfo=utc)
+        a_binary_file = binaries[0].binarypackagerelease.files[0]
+        a_binary_file.libraryfile.expires = old_date
+
+        # Now source-only copies are allowed.
+        self.assertIs(
+            check_copy(source, archive, series, pocket, False), None)
+
+        # Copies with binaries are denied.
+        self.assertRaisesWithContent(
+            CannotCopy,
+            'source has expired binaries',
+            check_copy, source, archive, series, pocket, True)
 
 
 class TestCopyPackageScript(unittest.TestCase):

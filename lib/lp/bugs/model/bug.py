@@ -102,7 +102,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
+    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 
 # XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
@@ -173,6 +173,17 @@ def get_bug_tags_open_count(context_condition, user):
         columns=columns, where=And(*where_conditions), tables=tables,
         group_by=BugTag.tag, order_by=BugTag.tag))
     return shortlist([(row[0], row[1]) for row in result.get_all()])
+
+
+def snapshot_bug_params(bug_params):
+    """Return a snapshot of a `CreateBugParams` object."""
+    return Snapshot(
+        bug_params, names=[
+            "owner", "title", "comment", "description", "msg",
+            "datecreated", "security_related", "private",
+            "distribution", "sourcepackagename", "binarypackagename",
+            "product", "status", "subscribers", "tags",
+            "subscribe_owner", "filed_by"])
 
 
 class BugTag(SQLBase):
@@ -407,7 +418,7 @@ class Bug(SQLBase):
     def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
         if person is None:
-            person = getUtility(ILaunchBag).user
+            person = unsubscribed_by
 
         for sub in self.subscriptions:
             if sub.person.id == person.id:
@@ -1457,70 +1468,14 @@ class BugSet:
         """See `IBugSet`."""
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
-        params = Snapshot(
-            bug_params, names=[
-                "owner", "title", "comment", "description", "msg",
-                "datecreated", "security_related", "private",
-                "distribution", "sourcepackagename", "binarypackagename",
-                "product", "status", "subscribers", "tags",
-                "subscribe_reporter"])
+        params = snapshot_bug_params(bug_params)
 
-        if not (params.comment or params.description or params.msg):
-            raise AssertionError(
-                'Method createBug requires a comment, msg, or description.')
-
-        if not params.datecreated:
-            params.datecreated = UTC_NOW
-
-        # make sure we did not get TOO MUCH information
-        assert params.comment is None or params.msg is None, (
-            "Expected either a comment or a msg, but got both.")
         if params.product and params.product.private_bugs:
             # If the private_bugs flag is set on a product, then
             # force the new bug report to be private.
             params.private = True
 
-        # Store binary package name in the description, because
-        # storing it as a separate field was a maintenance burden to
-        # developers.
-        if params.binarypackagename:
-            params.comment = "Binary package hint: %s\n\n%s" % (
-                params.binarypackagename.name, params.comment)
-
-        # Create the bug comment if one was given.
-        if params.comment:
-            rfc822msgid = make_msgid('malonedeb')
-            params.msg = Message(
-                subject=params.title, distribution=params.distribution,
-                rfc822msgid=rfc822msgid, owner=params.owner,
-                datecreated=params.datecreated)
-            MessageChunk(
-                message=params.msg, sequence=1, content=params.comment,
-                blob=None)
-
-        # Extract the details needed to create the bug and optional msg.
-        if not params.description:
-            params.description = params.msg.text_contents
-
-        extra_params = {}
-        if params.private:
-            # We add some auditing information. After bug creation
-            # time these attributes are updated by Bug.setPrivate().
-            extra_params.update(
-                date_made_private=params.datecreated,
-                who_made_private=params.owner)
-
-        bug = Bug(
-            title=params.title, description=params.description,
-            private=params.private, owner=params.owner,
-            datecreated=params.datecreated,
-            security_related=params.security_related,
-            **extra_params)
-
-        if params.subscribe_reporter:
-            bug.subscribe(params.owner, params.owner)
-        if params.tags:
-            bug.tags = params.tags
+        bug, event = self.createBugWithoutTarget(params)
 
         if params.security_related:
             assert params.private, (
@@ -1549,13 +1504,6 @@ class BugSet:
             # nothing to do
             pass
 
-        # Subscribe other users.
-        for subscriber in params.subscribers:
-            bug.subscribe(subscriber, params.owner)
-
-        # Link the bug to the message.
-        BugMessage(bug=bug, message=params.msg)
-
         # Create the task on a product if one was passed.
         if params.product:
             BugTaskSet().createTask(
@@ -1569,10 +1517,86 @@ class BugSet:
                 sourcepackagename=params.sourcepackagename,
                 owner=params.owner, status=params.status)
 
+        # Tell everyone.
+        notify(event)
+
+        return bug
+
+    def createBugWithoutTarget(self, bug_params):
+        """See `IBugSet`."""
+        # Make a copy of the parameter object, because we might modify some
+        # of its attribute values below.
+        params = snapshot_bug_params(bug_params)
+
+        if not (params.comment or params.description or params.msg):
+            raise AssertionError(
+                'Either comment, msg, or description should be specified.')
+
+        if not params.datecreated:
+            params.datecreated = UTC_NOW
+
+        # make sure we did not get TOO MUCH information
+        assert params.comment is None or params.msg is None, (
+            "Expected either a comment or a msg, but got both.")
+
+        # Store binary package name in the description, because
+        # storing it as a separate field was a maintenance burden to
+        # developers.
+        if params.binarypackagename:
+            params.comment = "Binary package hint: %s\n\n%s" % (
+                params.binarypackagename.name, params.comment)
+
+        # Create the bug comment if one was given.
+        if params.comment:
+            rfc822msgid = make_msgid('malonedeb')
+            params.msg = Message(
+                subject=params.title, rfc822msgid=rfc822msgid,
+                owner=params.owner, datecreated=params.datecreated)
+            MessageChunk(
+                message=params.msg, sequence=1, content=params.comment,
+                blob=None)
+
+        # Extract the details needed to create the bug and optional msg.
+        if not params.description:
+            params.description = params.msg.text_contents
+
+        extra_params = {}
+        if params.private:
+            # We add some auditing information. After bug creation
+            # time these attributes are updated by Bug.setPrivate().
+            extra_params.update(
+                date_made_private=params.datecreated,
+                who_made_private=params.owner)
+
+        bug = Bug(
+            title=params.title, description=params.description,
+            private=params.private, owner=params.owner,
+            datecreated=params.datecreated,
+            security_related=params.security_related,
+            **extra_params)
+
+        if params.subscribe_owner:
+            bug.subscribe(params.owner, params.owner)
+        if params.tags:
+            bug.tags = params.tags
+
+        # Subscribe other users.
+        for subscriber in params.subscribers:
+            bug.subscribe(subscriber, params.owner)
+
+        # Link the bug to the message.
+        BugMessage(bug=bug, message=params.msg)
+
         # Mark the bug reporter as affected by that bug.
         bug.markUserAffected(bug.owner)
 
-        return bug
+        # Populate the creation event.
+        if params.filed_by is None:
+            event = ObjectCreatedEvent(bug, user=params.owner)
+        else:
+            event = ObjectCreatedEvent(bug, user=params.filed_by)
+
+        return (bug, event)
 
     def getDistinctBugsForBugTasks(self, bug_tasks, user, limit=10):
         """See `IBugSet`."""
