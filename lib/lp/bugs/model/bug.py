@@ -468,7 +468,8 @@ class Bug(SQLBase):
         # join). However, this ran slowly (far from optimal query
         # plan), so we're doing it as two queries now.
         valid_persons = Store.of(self).find(
-            ValidPersonCache,
+            (Person, ValidPersonCache),
+            Person.id == ValidPersonCache.id,
             ValidPersonCache.id == BugSubscription.personID,
             BugSubscription.bug == self)
         # Suck in all the records so that they're actually cached.
