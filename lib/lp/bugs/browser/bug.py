@@ -17,6 +17,7 @@ __all__ = [
     'BugTextView',
     'BugURL',
     'BugView',
+    'BugViewMixin',
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
     'MaloneView',
@@ -373,7 +374,27 @@ class MaloneView(LaunchpadFormView):
         return getUtility(ICveSet).getBugCveCount()
 
 
-class BugView(LaunchpadView):
+class BugViewMixin:
+    """Mix-in class to share methods between bug and portlet views."""
+
+    @property
+    def subscription_class(self):
+        """Returns a set of CSS class names based on subscription status.
+
+        For example, "subscribed-false dup-subscribed-true".
+        """
+        if self.context.isSubscribedToDupes(self.user):
+            dup_class = 'dup-subscribed-true'
+        else:
+            dup_class = 'dup-subscribed-false'
+
+        if self.context.isSubscribed(self.user):
+            return 'subscribed-true %s' % dup_class
+        else:
+            return 'subscribed-false %s' % dup_class
+
+
+class BugView(LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be
@@ -400,22 +421,6 @@ class BugView(LaunchpadView):
         if user is None:
             return False
         return self.context.isSubscribed(user)
-
-    @property
-    def subscription_class(self):
-        """Returns a set of CSS class names based on subscription status.
-
-        For example, "subscribed-false dup-subscribed-true".
-        """
-        if self.context.isSubscribedToDupes(self.user):
-            dup_class = 'dup-subscribed-true'
-        else:
-            dup_class = 'dup-subscribed-false'
-
-        if self.context.isSubscribed(self.user):
-            return 'subscribed-true %s' % dup_class
-        else:
-            return 'subscribed-false %s' % dup_class
 
     def duplicates(self):
         """Return a list of dicts of duplicates.

@@ -12,6 +12,7 @@ from zope.event import notify
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 
+from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
@@ -52,7 +53,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
         super(BugSubscriptionAddView, self).validate_widgets(data, names)
 
 
-class BugPortletSubcribersContents(LaunchpadView):
+class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
 
     def getSortedDirectSubscriptions(self):
@@ -78,19 +79,3 @@ class BugPortletSubcribersContents(LaunchpadView):
     def getSortedSubscriptionsFromDuplicates(self):
         """Get the list of subscriptions to duplicates of this bug."""
         return self.context.getSubscriptionsFromDuplicates()
-
-    @property
-    def subscription_class(self):
-        """Returns a set of CSS class names based on subscription status.
-
-        For example, "subscribed-false dup-subscribed-true".
-        """
-        if self.context.isSubscribedToDupes(self.user):
-            dup_class = 'dup-subscribed-true'
-        else:
-            dup_class = 'dup-subscribed-false'
-
-        if self.context.isSubscribed(self.user):
-            return 'subscribed-true %s' % dup_class
-        else:
-            return 'subscribed-false %s' % dup_class
