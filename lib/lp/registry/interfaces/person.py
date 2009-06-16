@@ -780,7 +780,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
 
-    visibility_consistency_warning = Attribute(
+    visibilityConsistencyWarning = Attribute(
         "Warning that a private team may leak membership info.")
 
     sub_teams = exported(

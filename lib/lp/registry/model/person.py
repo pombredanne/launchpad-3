@@ -202,7 +202,7 @@ def validate_person_visibility(person, attr, value):
     # If transitioning to a non-public visibility, check for existing
     # relationships that could leak data.
     if value != PersonVisibility.PUBLIC:
-        warning = person.visibility_consistency_warning
+        warning = person.visibilityConsistencyWarning(value)
         if warning is not None:
             raise ImmutableVisibilityError(warning)
 
@@ -1734,8 +1734,7 @@ class Person(
         else:
             return True
 
-    @property
-    def visibility_consistency_warning(self):
+    def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
 
         A private-membership team cannot be connected to other
@@ -1746,7 +1745,8 @@ class Person(
         # These tables will be skipped since they do not risk leaking
         # team membership information, except StructuralSubscription
         # which will be checked further down to provide a clearer warning.
-        skip = [
+        # Note all of the table names and columns must be all lowercase.
+        skip = set([
             ('emailaddress', 'person'),
             ('gpgkey', 'owner'),
             ('ircid', 'person'),
@@ -1769,7 +1769,21 @@ class Person(
             # Skip mailing lists because if the mailing list is purged, it's
             # not a problem.  Do this check separately below.
             ('mailinglist', 'team')
-            ]
+            ])
+
+        # Private teams may participate in more areas of Launchpad than
+        # Private Membership teams.  The following relationships are allowable
+        # for Private teams and thus should be skipped.
+        if new_value == PersonVisibility.PRIVATE:
+            skip.update([('bugsubscription', 'person'),
+                         ('bugtask', 'assignee'),
+                         ('branch', 'owner'),
+                         ('branchsubscription', 'person'),
+                         ('branchvisibilitypolicy', 'team'),
+                         ('archive', 'owner'),
+                         ('archivesubscriber', 'subscriber'),
+                         ])
+
         warnings = set()
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
             if (src_tab, src_col) in skip:
@@ -1827,8 +1841,8 @@ class Person(
                 message = '%s and %s' % (
                     ', '.join(warnings[:-1]),
                     warnings[-1])
-            return ('This team cannot be made private since it is referenced'
-                    ' by %s.' % message)
+            return ('This team cannot be converted to %s since it is referenced'
+                    ' by %s.' % (new_value, message))
 
     @property
     def member_memberships(self):
