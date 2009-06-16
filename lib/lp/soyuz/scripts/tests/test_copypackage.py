@@ -77,6 +77,9 @@ class TestReUploadFile(TestCaseWithFactory):
         self.assertEquals(reuploaded_file.hits, 0)
 
     def testReUploadFileToTheSameContext(self):
+        # Re-uploading a librarian file to the same privacy/server
+        # context results in a new `LibraryFileAlias` object with
+        # the same content and empty expiration date and usage counter.
         old = self.factory.makeLibraryFileAlias()
         transaction.commit()
 
@@ -90,6 +93,9 @@ class TestReUploadFile(TestCaseWithFactory):
         self.assertFileIsReset(new)
 
     def testReUploadFileToPublic(self):
+        # Re-uploading a private librarian file to the public context
+        # results in a new restricted `LibraryFileAlias` object with
+        # the same content and empty expiration date and usage counter.
         private_file = self.factory.makeLibraryFileAlias(restricted=True)
         transaction.commit()
 
@@ -103,6 +109,9 @@ class TestReUploadFile(TestCaseWithFactory):
         self.assertFileIsReset(public_file)
 
     def testReUploadFileToPrivate(self):
+        # Re-uploading a public librarian file to the private context
+        # results in a new restricted `LibraryFileAlias` object with
+        # the same content and empty expiration date and usage counter.
         public_file = self.factory.makeLibraryFileAlias()
         transaction.commit()
 
@@ -207,6 +216,11 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
         return source
 
     def testUpdateFilesPrivacyForSources(self):
+        # update_files_privacy() called on a private source
+        # publication that  was copied to a public location correctly
+        # makes all its related files (source files, upload changesfile
+        # and source diffs) public.
+
         # Create a new private PPA and a private source publication.
         private_source = self.makeSource(private=True)
         self.layer.commit()
@@ -276,6 +290,11 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
         self._checkBinaryFilesPrivacy(pub_record, False, number_of_files)
 
     def testUpdateFilesPrivacyForBinaries(self):
+        # update_files_privacy() called on a private binary
+        # publication that was copied to a public location correctly
+        # makes all its related files (deb file, upload changesfile
+        # and buildlog) public.
+
         # Create a new private PPA and a private source publication.
         private_source = self.makeSource(private=True)
         private_binary = private_source.getPublishedBinaries()[0]
@@ -373,7 +392,8 @@ class TestOverrideFromAncestry(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
 
     def testOverrideFromAncestryOnlyWorksForPublishing(self):
-        # override_from_ancestry only accepts `ISourcePackagePublishingHistory`
+        # override_from_ancestry only accepts
+        # `ISourcePackagePublishingHistory`
         # or `IBinaryPackagePublishingHistory` objects.
         self.assertRaisesWithContent(
             AssertionError,
@@ -421,7 +441,7 @@ class TestOverrideFromAncestry(TestCaseWithFactory):
         copied = pub_record.copyTo(
             series, pub_record.pocket, series.main_archive)
 
-        # Cope with heterogeneous results from copyTo()
+        # Cope with heterogeneous results from copyTo().
         try:
             copies = tuple(copied)
         except TypeError:

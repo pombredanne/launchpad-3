@@ -41,9 +41,9 @@ def re_upload_file(libraryfile, restricted=False):
     """Re-upload a librarian file to the public server.
 
     :param libraryfile: a `LibraryFileAlias`.
-    :param restricted: whether or not the file is restricted.
+    :param restricted: whether or not the new file should be restricted.
 
-    :return: A new LibraryFileAlias that is not restricted.
+    :return: A new `LibraryFileAlias`.
     """
     # Open the the libraryfile for reading.
     libraryfile.open()
