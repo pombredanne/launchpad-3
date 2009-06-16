@@ -96,7 +96,7 @@ calling the addRemoteComment() method of ISupportsCommentPushing for
 each Launchpad comment that needs to be pushed to the remote bug
 tracker.
 
-    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bugwatch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
     Comment added as remote comment 1

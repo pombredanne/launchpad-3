@@ -105,7 +105,7 @@
             tal:condition="context/products"
             tal:repeat="product context/products">
             <tal:link replace="structure product/fmt:link" />
-            <div tal:condition="product/releases">
+            <div tal:condition="product/releases/count">
               Releases:
               <tal:release repeat="release product/releases">
                 <a

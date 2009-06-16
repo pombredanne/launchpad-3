@@ -53,7 +53,7 @@ Mark the project as reviewed.
     >>> admin_browser.url
     'http://launchpad.dev/new-name'
 
-The project summary shows the status as reviewed.
+The project summary shows the status as reviewed for admins only.
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'summary'):
     ...       print extract_text(
@@ -62,7 +62,16 @@ The project summary shows the status as reviewed.
     Active
     Reviewed
 
-Administrators can also change the maintainer and registrant indepedent of
+Other users cannot see the Project group status in the details portlet.
+
+    >>> anon_browser.open('http://launchpad.dev/new-name')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'portlet-details'))
+    Maintainer: Sample Person
+    Driver: Not yet appointed
+    Bug tracker: The Mozilla.org Bug Tracker
+
+Administrators can also change the maintainer and registrant independent of
 each other, as well as adding aliases to the project group.
 
     >>> admin_browser.open('http://launchpad.dev/new-name')

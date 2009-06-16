@@ -1067,7 +1067,7 @@ class ProductSet:
         return product
 
     def forReview(self, search_text=None, active=None,
-                  license_reviewed=None, licenses=None,
+                  license_reviewed=None, license_approved=None, licenses=None,
                   license_info_is_empty=None,
                   has_zero_licenses=None,
                   created_after=None, created_before=None,
@@ -1082,6 +1082,9 @@ class ProductSet:
         if license_reviewed is not None:
             conditions.append('Product.reviewed = %s'
                               % sqlvalues(license_reviewed))
+        if license_approved is not None:
+            conditions.append('Product.license_approved = %s'
+                              % sqlvalues(license_approved))
 
         if active is not None:
             conditions.append('Product.active = %s' % sqlvalues(active))

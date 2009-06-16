@@ -319,14 +319,14 @@ Mozilla Firefox product, to complement the existing series "1.0":
     >>> browser.getControl('Summary').value = 'The Firefox 2.0 Series'
     >>> browser.getControl('Register Series').click()
     >>> print browser.title
-    Overview of Mozilla Firefox Series: 2.0
+    Mozilla Firefox Series: 2.0
 
 We'll also create a new test milestone within the "trunk" series:
 
     >>> browser.open('http://launchpad.dev/firefox')
     >>> browser.getLink('trunk').click()
     >>> print browser.title
-    Overview of Mozilla Firefox Series: trunk
+    Mozilla Firefox Series: trunk
 
     >>> browser.getLink('Create milestone').click()
     >>> print browser.title
@@ -337,7 +337,7 @@ We'll also create a new test milestone within the "trunk" series:
     >>> browser.getControl('Date Targeted').value = '2100-08-08'
     >>> browser.getControl('Register Milestone').click()
     >>> print browser.title
-    Overview of Mozilla Firefox Series: trunk
+    Mozilla Firefox Series: trunk
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'series_trunk'))
     Version "Codename"

@@ -33,11 +33,11 @@ A member of the Launchpad commercial team may successfully access the
     ...     auth='Basic commercial-member@canonical.com:test')
     >>> commercial_browser.open(
     ...     'http://launchpad.dev/projects/')
-    >>> commercial_browser.getLink("Review licenses").click()
+    >>> commercial_browser.getLink("Review projects").click()
     >>> commercial_browser.url
     'http://launchpad.dev/projects/+review-licenses'
     >>> commercial_browser.title
-    'Review licenses of projects'
+    'Review projects'
 
 
 == Searching from +review_licenses ==
