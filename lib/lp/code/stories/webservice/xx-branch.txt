@@ -240,37 +240,6 @@ in its landing_targets.
     http://.../~eric/fooix/trunk
 
 
-== Branch subscriptions ==
-
-A user can subscribe to a branch through the API.
-
-    >>> marley = webservice.get('/~marley').jsonBody()
-    >>> subscription = webservice.named_post(
-    ...     fooix_trunk['self_link'], 'subscribe', person=marley['self_link'],
-    ...     notification_level=u'Branch attribute notifications only',
-    ...     max_diff_lines=u'Don\'t send diffs',
-    ...     code_review_level=u'No email')
-
-    >>> pprint_entry(subscription.jsonBody())
-    branch_link: u'http://.../~eric/fooix/trunk'
-    max_diff_lines: u"Don't send diffs"
-    notification_level: u'Branch attribute notifications only'
-    person_link: u'http://.../~marley'
-    resource_type_link: u'http://.../#branch_subscription'
-    review_level: u'No email'
-    self_link: u'http://.../~eric/fooix/trunk/+subscription/marley'
-
-
-    >>> subscribers = webservice.get(
-    ...     fooix_trunk['subscribers_collection_link']).jsonBody()
-    >>> print len(subscribers['entries'])
-    2
-    >>> for subscriber in subscribers['entries']:
-    ...     print subscriber['display_name']
-    Eric
-    Marley
-
-
 == Project branches ==
 
 The branches of a project are also available.
