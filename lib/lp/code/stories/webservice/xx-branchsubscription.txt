@@ -1,0 +1,82 @@
+Branch subscriptions
+====================
+
+Set up a branch to be subscribed to.
+
+    >>> login('admin@canonical.com')
+    >>> farm = factory.makeProduct(name='farm')
+    >>> farmer_joe_db = factory.makePerson(name='farmer-joe',
+    ...     displayname='Farmer Joe')
+    >>> farmer_joe_url = '/~farmer-joe'
+    >>> corn_db = factory.makeAnyBranch(product=farm, owner=farmer_joe_db,
+    ...     name='corn')
+    >>> corn_url = '/' + corn_db.unique_name
+    >>> logout()
+
+
+Subscribing to branches
+=======================
+
+A user can subscribe to a branch through the API.
+
+    >>> joe = webservice.get(farmer_joe_url).jsonBody()
+    >>> corn = webservice.get(corn_url).jsonBody()
+    >>> subscription = webservice.named_post(
+    ...     corn['self_link'], 'subscribe', person=joe['self_link'],
+    ...     notification_level=u'Branch attribute notifications only',
+    ...     max_diff_lines=u'Don\'t send diffs',
+    ...     code_review_level=u'No email')
+
+    >>> from lazr.restful.testing.webservice import pprint_entry
+    >>> pprint_entry(subscription.jsonBody())
+    branch_link: u'http://.../~farmer-joe/farm/corn'
+    max_diff_lines: u"Don't send diffs"
+    notification_level: u'Branch attribute notifications only'
+    person_link: u'http://.../~farmer-joe'
+    resource_type_link: u'http://.../#branch_subscription'
+    review_level: u'No email'
+    self_link: u'http://.../~farmer-joe/farm/corn/+subscription/farmer-joe'
+
+    >>> subscribers = webservice.get(
+    ...     corn['subscribers_collection_link']).jsonBody()
+    >>> print len(subscribers['entries'])
+    1
+    >>> for subscriber in subscribers['entries']:
+    ...     print subscriber['display_name']
+    Farmer Joe
+
+
+Edit your subscription
+======================
+
+Once the subscription is created, it can be edited through the API as well.
+The way this works is to just subscribe to the branch again, the same way it
+was originally subscribed.
+
+    >>> subscription = webservice.named_post(
+    ...     corn['self_link'], 'subscribe', person=joe['self_link'],
+    ...     notification_level=u'No email',
+    ...     max_diff_lines=u'Send entire diff',
+    ...     code_review_level=u'Status changes only')
+
+    >>> pprint_entry(subscription.jsonBody())
+    branch_link: u'http://.../~farmer-joe/farm/corn'
+    max_diff_lines: u'Send entire diff'
+    notification_level: u'No email'
+    person_link: u'http://.../~farmer-joe'
+    resource_type_link: u'http://.../#branch_subscription'
+    review_level: u'Status changes only'
+    self_link: u'http://.../~farmer-joe/farm/corn/+subscription/farmer-joe'
+
+
+We print the count, and even though subscribe was called again, there's still
+only one subscription.
+
+    >>> subscribers = webservice.get(
+    ...     corn['subscribers_collection_link']).jsonBody()
+    >>> print len(subscribers['entries'])
+    1
+    >>> for subscriber in subscribers['entries']:
+    ...     print subscriber['display_name']
+    Farmer Joe
+
