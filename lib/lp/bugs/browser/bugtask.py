@@ -52,7 +52,7 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
-from zope.component import getUtility, getMultiAdapter
+from zope.component import getAdapter, getUtility, getMultiAdapter
 from zope.event import notify
 from zope import formlib
 from zope.interface import implementer, implements, providedBy
@@ -62,6 +62,7 @@ from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
+from zope.traversing.interfaces import IPathAdapter
 
 from z3c.ptcompat import ViewPageTemplateFile
 from lazr.delegates import delegates
@@ -2985,15 +2986,7 @@ class BugTaskTableRowView(LaunchpadView):
     @property
     def bugtask_icon(self):
         """Which icon should be shown for the task, if any?"""
-        if IDistroBugTask.providedBy(self.context):
-            if self.context.sourcepackagename:
-                return "/@@/package-source"
-            else:
-                return "/@@/distribution"
-        elif IUpstreamBugTask.providedBy(self.context):
-            return "/@@/product"
-        else:
-            return None
+        return getAdapter(self.context, IPathAdapter, 'image').sprite_css()
 
     def displayEditForm(self):
         """Return true if the BugTask edit form should be shown."""

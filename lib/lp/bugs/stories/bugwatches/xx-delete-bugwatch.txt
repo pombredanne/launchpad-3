@@ -6,7 +6,7 @@ the bug watch edit page.
     >>> user_browser.open('http://launchpad.dev/bugs/1')
     >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
     >>> for li in bug_watches('li'):
-    ...     print li.findAll('a')[1].renderContents()
+    ...     print li.findAll('a')[0].renderContents()
     mozilla.org #123543
     mozilla.org #2000
     mozilla.org #42
@@ -28,7 +28,7 @@ the bug watch edit page.
 
     >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
     >>> for li in bug_watches('li'):
-    ...     print li.findAll('a')[1].renderContents()
+    ...     print li.findAll('a')[0].renderContents()
     mozilla.org #2000
     mozilla.org #42
     debbugs #304014

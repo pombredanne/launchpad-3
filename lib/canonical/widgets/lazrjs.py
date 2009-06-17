@@ -52,8 +52,8 @@ class TextLineEditorWidget:
 
     # Template for the trigger button.
     TRIGGER_TEMPLATE = dedent(u"""\
-        <a href="%(edit_url)s" class="yui-editable_text-trigger"
-        ><img src="/@@/edit" alt="[edit]" title="%(title)s" /></a>
+        <a href="%(edit_url)s" class="yui-editable_text-trigger sprite edit"
+        ></a>
         """)
 
     # Template for the activation script.

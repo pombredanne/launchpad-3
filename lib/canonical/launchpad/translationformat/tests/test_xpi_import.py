@@ -350,6 +350,16 @@ class XpiTestCase(unittest.TestCase):
             ],
             messages)
 
+    def test_SystemEntityIsIgnored(self):
+        """Test handling of SYSTEM entities in DTD files."""
+        self.setUpTranslationImportQueueForTemplate('system-entity')
+        msgids = [
+            (potmsgset.msgid_singular.msgid, potmsgset.singular_text)
+            for potmsgset in self.firefox_template.getPOTMsgSets()]
+        self.assertEqual(msgids, [
+            ('firststring', 'First translatable string'),
+            ('secondstring', 'Second translatable string')])
+
 
 def test_suite():
     return unittest.defaultTestLoader.loadTestsFromName(__name__)
