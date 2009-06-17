@@ -809,18 +809,18 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
             name='stable', product=self.foo)
         self.foo.official_rosetta = True
 
-        # POTemplate is 'shared' if it has the same name ('messages').
-        self.devel_potemplate = self.factory.makePOTemplate(
-            productseries=self.foo_devel, name="messages")
-        self.stable_potemplate = self.factory.makePOTemplate(self.foo_stable,
-                                                        name="messages")
-
-    def test_on_pofile_creation(self):
+    def test_on_pofile_creation_shared(self):
         # When a pofile is created in a POTemplate it is also created in
         # all shared templates.
-        self.assertEqual(None, self.stable_potemplate.getPOFileByLang('eo'))
-        pofile_devel = self.devel_potemplate.newPOFile('eo')
-        pofile_stable = self.stable_potemplate.getPOFileByLang('eo')
+        # POTemplate is 'shared' if it has the same name ('messages').
+        devel_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_devel, name="messages")
+        stable_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="messages")
+
+        self.assertEqual(None, stable_potemplate.getPOFileByLang('eo'))
+        pofile_devel = devel_potemplate.newPOFile('eo')
+        pofile_stable = stable_potemplate.getPOFileByLang('eo')
         self.assertNotEqual(None, pofile_stable)
         self.assertEqual(pofile_devel.language.code,
                          pofile_stable.language.code)
@@ -828,30 +828,30 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
     def test_on_pofile_creation_not_shared(self):
         # When a pofile is created in a POTemplate it is not created in
         # other templates that are not shared.
-        other_stable_potemplate = self.factory.makePOTemplate(self.foo_stable)
-        pofile_devel = self.devel_potemplate.newPOFile('eo')
-        self.assertEqual(None, other_stable_potemplate.getPOFileByLang('eo'))
+        potemplate_devel_1 = self.factory.makePOTemplate(
+            productseries=self.foo_devel, name="template-1")
+        potemplate_stable_2 = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="template-2")
+
+        self.assertEqual(None, potemplate_devel_1.getPOFileByLang('eo'))
+        pofile_devel = potemplate_devel_1.newPOFile('eo')
+        self.assertEqual(None, potemplate_stable_2.getPOFileByLang('eo'))
 
     def test_on_potemplate_creation(self):
         # When a potemplate is created it receives a copy of all pofiles in
-        # all shared pofiles.
-        foo_other = self.factory.makeProductSeries(
-            name='other', product=self.foo)
+        # all shared potemplates.
+        devel_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_devel, name="messages")
         # These will automatically be shared across all sharing templates.
-        pofile_devel_eo = self.devel_potemplate.newPOFile('eo')
-        pofile_devel_de = self.devel_potemplate.newPOFile('de')
+        pofile_devel_eo = devel_potemplate.newPOFile('eo')
+        pofile_devel_de = devel_potemplate.newPOFile('de')
 
-        other_potemplate = self.factory.makePOTemplate(foo_other,
-                                                       name="messages")
-        pofile_other_eo = other_potemplate.getPOFileByLang('eo')
-        self.assertNotEqual(None, pofile_other_eo)
-        pofile_other_de = other_potemplate.getPOFileByLang('de')
-        self.assertNotEqual(None, pofile_other_de)
+        stable_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="messages")
 
-        self.assertEqual(pofile_devel_eo.language.code,
-                         pofile_other_eo.language.code)
-        self.assertEqual(pofile_devel_de.language.code,
-                         pofile_other_de.language.code)
+        self.assertEqual(2, len(list(stable_potemplate.pofiles)))
+        self.assertNotEqual(None, stable_potemplate.getPOFileByLang('eo'))
+        self.assertNotEqual(None, stable_potemplate.getPOFileByLang('de'))
 
 
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
