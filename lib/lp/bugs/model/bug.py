@@ -869,7 +869,7 @@ class Bug(SQLBase):
             registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
-        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch))
+        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch, self))
         notify(ObjectCreatedEvent(bug_branch))
 
         return bug_branch
@@ -878,7 +878,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
         if bug_branch is not None:
-            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch))
+            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch, self))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
 

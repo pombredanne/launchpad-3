@@ -283,9 +283,10 @@ class BugWatchRemoved(BugChangeBase):
 class BranchLinkedToBug(BugChangeBase):
     """A branch got linked to the bug."""
 
-    def __init__(self, when, person, branch):
+    def __init__(self, when, person, branch, bug):
         super(BranchLinkedToBug, self).__init__(when, person)
         self.branch = branch
+        self.bug = bug
 
     def getBugActivity(self):
         """See `IBugChange`."""
@@ -297,7 +298,7 @@ class BranchLinkedToBug(BugChangeBase):
 
     def getBugNotification(self):
         """See `IBugChange`."""
-        if self.branch.private:
+        if self.branch.private or self.bug.is_complete:
             return None
         return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
 
@@ -305,9 +306,10 @@ class BranchLinkedToBug(BugChangeBase):
 class BranchUnlinkedFromBug(BugChangeBase):
     """A branch got unlinked from the bug."""
 
-    def __init__(self, when, person, branch):
+    def __init__(self, when, person, branch, bug):
         super(BranchUnlinkedFromBug, self).__init__(when, person)
         self.branch = branch
+        self.bug = bug
 
     def getBugActivity(self):
         """See `IBugChange`."""
@@ -319,7 +321,7 @@ class BranchUnlinkedFromBug(BugChangeBase):
 
     def getBugNotification(self):
         """See `IBugChange`."""
-        if self.branch.private:
+        if self.branch.private or self.bug.is_complete:
             return None
         return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
 

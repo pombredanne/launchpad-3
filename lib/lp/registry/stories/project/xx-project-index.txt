@@ -157,11 +157,11 @@ the new product form for the project group.
 The home page of a project contains a list of all products which are part of that project.
 
     >>> browser.open('http://launchpad.dev/mozilla')
-    >>> products = find_tags_by_class(browser.contents, 'project')
+    >>> products = find_tags_by_class(browser.contents, 'sprite product')
     >>> for product in products:
-    ...     print repr(product.find('a').find(text=True))
-    u'&nbsp;Mozilla Firefox'
-    u'&nbsp;Mozilla Thunderbird'
+    ...     print product
+    <a...Mozilla Firefox</a>
+    <a...Mozilla Thunderbird</a>
 
 Inactive products are not included in that list, though.
 
@@ -173,10 +173,10 @@ Inactive products are not included in that list, though.
     >>> firefox.syncUpdate()
 
     >>> browser.open('http://launchpad.dev/mozilla')
-    >>> products = find_tags_by_class(browser.contents, 'project')
+    >>> products = find_tags_by_class(browser.contents, 'sprite product')
     >>> for product in products:
-    ...     print repr(product.find('a').find(text=True))
-    u'&nbsp;Mozilla Thunderbird'
+    ...     print product
+    <a...Mozilla Thunderbird</a>
 
     >>> firefox.active = True
     >>> firefox.syncUpdate()

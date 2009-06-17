@@ -38,8 +38,8 @@ they all implement IHasLogo, IHasMugshot and IHasIcon.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> test_tales("person/image:icon", person=sabdfl)
-    '<img ... src="/@@/person" />'
+    >>> test_tales("person/image:sprite_css", person=sabdfl)
+    'sprite person'
     >>> test_tales("person/image:logo", person=sabdfl)
     '<img ... src="/@@/person-logo" />'
 
@@ -54,8 +54,8 @@ an actual launchpad user.
     >>> matsubara = getUtility(IPersonSet).getByName('matsubara')
     >>> matsubara.is_valid_person
     False
-    >>> test_tales("person/image:icon", person=matsubara)
-    '<img ... src="/@@/person-inactive" />'
+    >>> test_tales("person/image:sprite_css", person=matsubara)
+    'sprite person-inactive'
     >>> test_tales("person/image:logo", person=matsubara)
     '<img ... src="/@@/person-inactive-logo" />'
     >>> test_tales("person/image:mugshot", person=matsubara)
@@ -77,8 +77,8 @@ We also have an icon for bugs.
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug = getUtility(IBugSet).get(1)
-    >>> print test_tales("bug/image:icon", bug=bug)
-    <img ... src="/@@/bug" />
+    >>> print test_tales("bug/image:sprite_css", bug=bug)
+    sprite bug
 
 Icons for each type (purpose) of archive we support. Starting with
 personal package archives (PPAs).
@@ -252,17 +252,14 @@ For a person or team, fmt:link gives us a link to that person's page,
 containing the person name and an icon.
 
     >>> test_tales("person/fmt:link", person=sabdfl)
-    u'<a href="http://.../~sabdfl" class="bg-image"
-    style="background-image: url(/@@/person)">Mark Shuttleworth</a>'
+    u'<a href="http://.../~sabdfl" class="sprite person">Mark Shuttleworth</a>'
 
     >>> test_tales("person/fmt:link", person=matsubara)
-    u'<a href="http://launchpad.dev/~matsubara" class="bg-image"
-    style="background-image: url(/@@/person-inactive)">Diogo Matsubara</a>'
+    u'<a href="http://launchpad.dev/~matsubara" class="sprite person-inactive">Diogo Matsubara</a>'
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> test_tales("person/fmt:link", person=ubuntu_team)
-    u'<a href="http://launchpad.dev/~ubuntu-team" class="bg-image"
-    style="background-image: url(/@@/team)">Ubuntu Team</a>'
+    u'<a href="http://launchpad.dev/~ubuntu-team" class="sprite team">Ubuntu Team</a>'
 
 The person's displayname is escaped to prevent markup from being
 interpreted by the browser. For example, a script added to Sample
@@ -283,15 +280,6 @@ the link:
     >>> test_tales("person/fmt:link/+edit", person=matsubara)
     u'<a href=".../~matsubara/+edit"...>...'
 
-If you are on bugs.launchpad.net, you need to specify the rootsite, so
-that the links and images are pointing at the right hostname.
-
-    >>> test_tales("person/fmt:link:mainsite/+edit", person=matsubara)
-    u'<a href="http://launchpad.dev/~matsubara/+edit"...>...'
-    >>> test_tales("person/fmt:link:bugs/+edit", person=matsubara)
-    u'<a href="http://bugs.launchpad.dev/~matsubara/+edit"...
-      url(http://bugs.launchpad.dev/@@/person-inactive)...>Diogo Matsubara</a>'
-
 The fmt:local-time formatter will return the local time for that person.
 If the person has no time_zone specified, we use UTC.
 
@@ -305,15 +293,6 @@ If the person has no time_zone specified, we use UTC.
     >>> test_tales("person/fmt:local-time", person=sabdfl)
     '... UTC'
 
-The fmt:icon_url formatter will return the URL for the person's or
-team's icon.
-
-    >>> test_tales("person/fmt:icon_url", person=sabdfl)
-    '/@@/person'
-
-    >>> test_tales("team/fmt:icon_url", team=ubuntu_team)
-    '/@@/team'
-
 
 === Branches ===
 
@@ -325,20 +304,17 @@ For branches, fmt:link links to the branch page.
     >>> branch = factory.makeProductBranch(
     ...     owner=eric, product=fooix, name='bar', title='The branch title')
     >>> print test_tales("branch/fmt:link", branch=branch)
-    <a href=".../~eric/fooix/bar"><img src="/@@/branch"
-       alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
+    <a href=".../~eric/fooix/bar" class="sprite branch">lp://dev/~eric/fooix/bar</a>
 
 The bzr-link formatter uses the bzr identity.
 
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
-    <a href="http://code.launchpad.dev/~eric/fooix/bar"><img src="/@@/branch"
-    alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
+    <a href="http://code.launchpad.dev/~eric/fooix/bar" class="sprite branch">lp://dev/~eric/fooix/bar</a>
 
     >>> login_person(fooix.owner, LaunchpadTestRequest())
     >>> fooix.development_focus.branch = branch
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
-    <a href=".../~eric/fooix/bar"><img src="/@@/branch"
-       alt=""/>&nbsp;lp://dev/fooix</a>
+    <a href=".../~eric/fooix/bar" class="sprite branch">lp://dev/fooix</a>
 
 
 === Bugs ===
@@ -347,16 +323,14 @@ For bugs, fmt:link takes to the bug redirect page.
 
     >>> bug = getUtility(IBugSet).get(1)
     >>> test_tales("bug/fmt:link", bug=bug)
-    u'<a href=".../bugs/1"><img ...src="/@@/bug" />&nbsp;Bug #1: Firefox does
-    not support SVG</a>'
+    u'<a href=".../bugs/1" class="sprite bug">Bug #1: Firefox does not support SVG</a>'
 
 For bugtasks, fmt:link shows the severity bug icon, and links to the
 appropriate project's bug.
 
     >>> bugtask = bug.bugtasks[0]
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
-    Firefox does not support SVG</a>'
+    u'<a href=".../firefox/+bug/1" class="sprite bug-low">Bug #1: Firefox does not support SVG</a>'
 
 Bug titles may contain markup (when describing issue regarding markup).
 Their titles are escaped so that they display correctly. This also
@@ -366,12 +340,10 @@ title might be interpreted by the browser.
     >>> login('test@canonical.com')
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
-    u'<a href=".../bugs/1"><img ...src="/@@/bug" />&nbsp;Bug #1:
-      Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+    u'<a href=".../bugs/1" class="sprite bug">Bug #1: Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
-      Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+    u'<a href=".../firefox/+bug/1" class="sprite bug-low">Bug #1: Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 
 === Branch subscriptions ===
@@ -424,7 +396,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> bug = factory.makeBug()
     >>> bugbranch = bug.addBranch(branch, branch.owner)
     >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
-    u'<a href="...+bug..."><img .../>&nbsp;Bug #...</a>'
+    u'<a href="...+bug...">Bug #...</a>'
 
 
 === Code imports ===
@@ -476,7 +448,7 @@ not included.
 
     >>> product_series = factory.makeSeries()
     >>> test_tales("product_series/fmt:link", product_series=product_series)
-    u'... Series: ...'
+    u'... series...'
 
 
 === Blueprints ===
@@ -484,7 +456,7 @@ not included.
     >>> login('test@canonical.com')
     >>> specification = factory.makeSpecification()
     >>> test_tales("specification/fmt:link", specification=specification)
-    u'<a...<img ... src="/@@/blueprint-undefined" />&nbsp;...</a>'
+    u'<a...class="sprite blueprint-undefined">...</a>'
 
 
 === Blueprint branches ===
@@ -494,14 +466,14 @@ not included.
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
     ...     specification_branch=specification_branch)
-    u'<a...<img ... src="/@@/blueprint-undefined" />&nbsp;...</a>'
+    u'<a...class="sprite blueprint-undefined">...</a>'
 
 
 === Projects ===
 
     >>> product = factory.makeProduct()
     >>> test_tales('product/fmt:link', product=product)
-    u'<a href=...><img alt="" ... src="/@@/product" />&nbsp;...</a>'
+    u'<a href=... class="sprite product">...</a>'
 
 
 === Questions ===
@@ -509,7 +481,7 @@ not included.
     >>> from canonical.launchpad.interfaces import IQuestionSet
     >>> question = getUtility(IQuestionSet).get(1)
     >>> test_tales("question/fmt:link", question=question)
-    u'<a...<img ... src="/@@/question" />&nbsp;1:...</a>'
+    u'<a... class="sprite question">1:...</a>'
 
 
 == The fmt: namespace for specially formatted object info ===
@@ -901,23 +873,18 @@ emphasise the linkage.
 
     >>> test_tales('foo/fmt:linkify-email',
     ...    foo='I am the mighty foo.bar@canonical.com hear me roar.')
-    u'...<a href="http://launchpad.dev/~name16"><img ...src="/@@/person"
-    />&nbsp;foo.bar@canonical.com</a>...'
+    u'...<a href="http://launchpad.dev/~name16" class="sprite person">&nbsp;foo.bar@canonical.com</a>...'
 
 Multiple addresses may be linkified at once:
 
     >>> test_tales('foo/fmt:linkify-email',
     ...     foo='foo.bar@canonical.com and cprov@ubuntu.com')
-    u'<a href="http://launchpad.dev/~name16"><img ...src="/@@/person"
-    />&nbsp;foo.bar@canonical.com</a> and
-    <a href="http://launchpad.dev/~cprov"><img ...src="/@@/person"
-    />&nbsp;cprov@ubuntu.com</a>'
+    u'<a href="http://launchpad.dev/~name16" class="sprite person">&nbsp;foo.bar@canonical.com</a> and <a href="http://launchpad.dev/~cprov" class="sprite person">&nbsp;cprov@ubuntu.com</a>'
 
 Team addresses are linkified with a team icon:
 
     >>> test_tales('foo/fmt:linkify-email', foo='support@ubuntu.com')
-    u'<a href="http://launchpad.dev/~ubuntu-team"><img ...src="/@@/team"
-    />&nbsp;support@ubuntu.com</a>'
+    u'<a href="http://launchpad.dev/~ubuntu-team" class="sprite team">&nbsp;support@ubuntu.com</a>'
 
 Unknown email addresses are not altered in any way:
 
@@ -1044,8 +1011,6 @@ do with 'None/fmt:foo'.
     >>> test_tales('foo/fmt:url', foo=None)
     ''
     >>> test_tales('foo/fmt:exactduration', foo=None)
-    ''
-    >>> test_tales('foo/image:icon', foo=None)
     ''
 
 
@@ -1200,36 +1165,28 @@ MenuLinks (ILink) can be formatted anchored text and icons.
 The link can be rendered as an anchored icon.
 
     >>> print test_tales('menu_link/fmt:icon', menu_link=menu_link)
-    <a href="http://launchpad.dev/+place" class="menu-link-test_link"
-       title="summary"><img src="/@@/icon" alt="text" /></a>
+    <a href="http://launchpad.dev/+place" 
+       class="menu-link-test_link sprite icon" title="summary"><span
+       class="invisible-link">text</span></a>
 
 The link can be rendered as text with an icon to the right.
 
     >>> print test_tales('menu_link/fmt:link-icon', menu_link=menu_link)
-    <a style="
-              background: url(/@@/icon) center right no-repeat;
-              line-height: 20px; padding-right: 18px"
-       href="http://launchpad.dev/+place" class="menu-link-test_link"
-       title="summary">text</a>
+    <a href="http://launchpad.dev/+place"
+       class="menu-link-test_link sprite icon" title="summary">text</a>
 
 The default rendering can be explicitly called too, text with an icon to
 the left.
 
     >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
-    <a style="
-              background: url(/@@/icon) center left no-repeat;
-              line-height: 20px; padding-left: 18px"
-       href="http://launchpad.dev/+place" class="menu-link-test_link"
-       title="summary">text</a>
+    <a href="http://launchpad.dev/+place"
+       class="menu-link-test_link sprite icon" title="summary">text</a>
 
 fmt:icon-link is an alias for fmt:link so that the fmt names are consistent.
 
     >>> print test_tales('menu_link/fmt:icon-link', menu_link=menu_link)
-    <a style="
-              background: url(/@@/icon) center left no-repeat;
-              line-height: 20px; padding-left: 18px"
-       href="http://launchpad.dev/+place" class="menu-link-test_link"
-       title="summary">text</a>
+    <a href="http://launchpad.dev/+place"
+       class="menu-link-test_link sprite icon" title="summary">text</a>
 
 
 And the url format is also available.
@@ -1264,7 +1221,7 @@ Foo Bar is an administrator so he can see all.
     >>> login('foo.bar@canonical.com')
     >>> myteam = getUtility(IPersonSet).getByName('myteam')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<a ...url(/@@/team)...>My Team</a>'
+    u'<a ...class="sprite team"...>My Team</a>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'My Team'
@@ -1276,7 +1233,7 @@ Owner is a member of myteam so he can see all.
 
     >>> login('owner@canonical.com')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<a ...url(/@@/team)...>My Team</a>'
+    u'<a ...class="sprite team"...>My Team</a>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'My Team'
@@ -1289,7 +1246,7 @@ information about myteam is hidden.
 
     >>> login('no-priv@canonical.com')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<span ...url(/@@/team)...>&lt;hidden&gt;</span>'
+    u'<span ...class="sprite team"...>&lt;hidden&gt;</span>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'<hidden>'
@@ -1301,7 +1258,7 @@ The anonymous user is not allowed to see private team details.
 
     >>> login(ANONYMOUS)
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<span ...url(/@@/team)...>&lt;hidden&gt;</span>'
+    u'<span ...class="sprite team"...>&lt;hidden&gt;</span>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'<hidden>'
