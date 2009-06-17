@@ -41,7 +41,7 @@ Answers page and goes there to check.
 He sees a listing of the current questions posted on Ubuntu:
 
     >>> soup = find_main_content(browser.contents)
-    >>> for question in soup.fetch('td', 'question'):
+    >>> for question in soup.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
@@ -57,7 +57,7 @@ results. There, he finds only one other question:
     >>> browser.title
     'Questions for Ubuntu'
     >>> soup = find_main_content(browser.contents)
-    >>> for question in soup.fetch('td', 'question'):
+    >>> for question in soup.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Installation failed
 
@@ -209,7 +209,7 @@ selected. He adds 'Invalid' to the selection, and run his search again.
 This time, the search returns one item.
 
     >>> soup = find_main_content(browser.contents)
-    >>> for question in soup.fetch('td', 'question'):
+    >>> for question in soup.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Firefox is slow and consumes too much RAM
 
@@ -284,7 +284,7 @@ recent questions on Mozilla Firefox.
     >>> print browser.title
     Open questions for Mozilla Firefox
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Firefox loses focus and gets stuck
     Problem showing the SVG demo on W3C site
@@ -304,7 +304,7 @@ problems:
     >>> browser.getControl(name='field.search_text').value = 'plug-in'
     >>> browser.getControl('Search', index=0).click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Problem showing the SVG demo on W3C site
 
@@ -324,7 +324,7 @@ questions.)
     >>> [strip_label(status) for status in statuses]
     ['Answered', 'Solved']
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Play DVDs in Totem
     mailto: problem in webpage
@@ -369,7 +369,7 @@ He needs to login to access that page:
     Questions you asked about mozilla-firefox in ubuntu
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
@@ -391,7 +391,7 @@ The exact question he was searching for is displayed!
 
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     mailto: problem in webpage
 
@@ -429,7 +429,7 @@ He needs to login to access that page:
     Questions needing your attention for Ubuntu
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Play DVDs in Totem
     Installation of Java Runtime Environment for Mozilla
@@ -474,7 +474,7 @@ commented on.
     Questions involving Foo Bar
 
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
@@ -514,7 +514,7 @@ questions to a particular status:
     ...     'Solved', 'Invalid']
     >>> browser.getControl('Search', index=0).click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Firefox is slow and consumes too much RAM
     mailto: problem in webpage
@@ -544,7 +544,7 @@ answerer.
     >>> print browser.title
     Questions answered by Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     mailto: problem in webpage
 
@@ -558,7 +558,7 @@ questions commented on by the person.
     >>> print browser.title
     Questions commented on by Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
@@ -576,7 +576,7 @@ asked by the person.
     >>> print browser.title
     Questions asked by Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Slow system
     Firefox loses focus and gets stuck
@@ -591,7 +591,7 @@ the attention of that person.
     >>> print browser.title
     Questions needing Foo Bar's attention
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Continue playing after shutdown
     Slow system
@@ -606,7 +606,7 @@ visiting the 'Subscribed' link in the 'Answers' facet.
     >>> print browser.title
     Questions Foo Bar is subscribed to
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Slow system
 
@@ -628,7 +628,7 @@ there is an 'In' column displaying where the questions were filed.
     ...     questions = find_tag_by_id(contents, 'question-listing')
     ...     for question in questions.tbody.fetch('tr'):
     ...         question_title = question.first(
-    ...             'td', 'question').first('a').renderContents()
+    ...             'td', 'questionTITLE').first('a').renderContents()
     ...         question_target = question.first(
     ...             'td', 'question-target').first('a').renderContents()
     ...         print question_title, question_target
@@ -644,7 +644,7 @@ That listing is searchable:
     >>> browser.getControl('Search', index=0).click()
 
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'question'):
+    >>> for question in questions.fetch('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Problem showing the SVG demo on W3C site
 

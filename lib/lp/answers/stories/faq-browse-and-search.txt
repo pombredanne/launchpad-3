@@ -126,7 +126,7 @@ Following the link will show the questions results:
     Questions matching "plugin" for Ubuntu
 
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.findAll('td', 'question'):
+    >>> for question in questions.findAll('td', 'questionTITLE'):
     ...     print question.first('a').renderContents()
     Installation of Java Runtime Environment for Mozilla
 

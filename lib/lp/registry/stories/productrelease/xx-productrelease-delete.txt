@@ -58,6 +58,7 @@ but it is gone now that the release is deactivated.
 
     >>> print extract_text(
     ...     find_tag_by_id(salgados_browser.contents, 'series_trunk'))
-    Version "Codename"         Expected   Released                     Summary
-    Mozilla Firefox 0.9.1 ...  Set        2004-10-15 ...
+    Version "Codename"        Expected              Released      Summary
+    Mozilla Firefox 0.9.1...  Set  Change details   2004-10-15
+    ...
 

@@ -340,10 +340,10 @@ We'll also create a new test milestone within the "trunk" series:
     Mozilla Firefox Series: trunk
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'series_trunk'))
-    Version "Codename"               Expected     Released      Summary
-    Mozilla Firefox 0.9.2 ...        Set          2004-10-16    ...
-    Mozilla Firefox test-milestone   2100-08-08   Release now
-    ...
+    Version "Codename"              Expected        Released                    Summary
+    Mozilla Firefox 0.9.2...        Set             Change details 2004-10-16   This was a...
+    Mozilla Firefox...              Set             Change details 2004-10-16   Release...
+    Mozilla Firefox test-milestone  2100-08-08      Create release Release now  ...
 
     >>> browser.getLink('test-milestone').click()
     >>> print browser.title
@@ -420,8 +420,7 @@ Observe that both bug tasks are now listed in the test milestone listing:
 Each bugtask has one or more badges.
 
     >>> print bug_table.findAll('tr')[1]
-    <tr>...Test Bug 1...<img ... alt="milestone test-milestone"
-                             ... src="/@@/milestone" />...
+    <tr>...Test Bug 1...<a...alt="milestone test-milestone"...class="sprite milestone">...
 
 
 === Bugs targeted to development focus series ===

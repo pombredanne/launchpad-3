@@ -42,11 +42,11 @@ The page states that the team is private.
 A team member will be able to see these parts of the team page.
 
     >>> find_tag_by_id(browser.contents, 'recently-approved')
-    <...<a href="/~member">Gold Member (member)</a>...
+    <...<a href=".../~member" class="sprite person">Gold Member</a>...
 
 
     >>> find_tag_by_id(browser.contents, 'recently-applied')
-    <...<a href="/~no-priv">No Privileges Person (no-priv)</a>...
+    <...<a href=".../~no-priv" class="sprite person">No Privileges Person</a>...
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))

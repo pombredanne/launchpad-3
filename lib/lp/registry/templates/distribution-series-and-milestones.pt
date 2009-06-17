@@ -6,11 +6,11 @@
   tal:condition="context/serieses">
   <div id="sandm" class="portletBody portletContent">
     <h2>Series and milestones</h2>
-    <ul class="distroseries" tal:condition="context/serieses">
+    <ul tal:condition="context/serieses">
       <tal:per_series repeat="series context/serieses">
         <li tal:condition="series/active">
           <strong>
-          <a tal:attributes="href series/fmt:url">
+          <a tal:attributes="href series/fmt:url" class="sprite distribution">
             <tal:version replace="series/version">3.0</tal:version>
             &#8220;<tal:codename replace="series/displayname" />&#8221; series
           </a>

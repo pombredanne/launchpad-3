@@ -12,8 +12,8 @@
     <div class="portletContent">
         <div tal:repeat="dupe view/duplicates">
           <a tal:attributes="href dupe/url;
-                             title dupe/title">
-            <tal:icon replace="structure context/image:icon" />
+                             title dupe/title;
+                             class context/image:sprite_css">
              Bug #<span tal:replace="dupe/id">3445</span>
           </a>
         </div>
