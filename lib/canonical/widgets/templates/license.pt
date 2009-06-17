@@ -27,6 +27,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
             var table_name = '#' + cfg.which;
             var target_name = table_name + '-expand';
             var arrow_name = target_name + '-arrow';
+            var target = Y.get(target_name);
 
             // Initialize the slider state.
             var table = Y.get(table_name);
@@ -38,7 +39,6 @@ YUI().use('node', 'lazr.effects', function(Y) {
 
                 // The table starts either collapsed or expanded.  The
                 // animation lives on the link target.
-                var target = Y.get(target_name);
                 if (cfg.in) {
                     target.slide = Y.lazr.effects.slide_in(table_name);
                 }
@@ -68,10 +68,9 @@ YUI().use('node', 'lazr.effects', function(Y) {
             // reverse.
             Y.on('click', function(e) {
                 e.preventDefault();
-                var slide = e.target.slide;
-                slide.set('reverse', !slide.get('reverse'));
-                slide.stop();
-                slide.run();
+                target.slide.set('reverse', !target.slide.get('reverse'));
+                target.slide.stop();
+                target.slide.run();
             }, target_name);
         }
         make_slider({which: 'recommended'});
@@ -86,13 +85,14 @@ YUI().use('node', 'lazr.effects', function(Y) {
         // that the pending-div only shows up if the project has never
         // selected a license.  In other cases, there's an "I don't know yet"
         // choice in the "Other choices" license section.
-        var div = Y.get('#pending-div');
-        if (Y.Lang.isValue(div)) {
-            div.setAttribute('onclick', 'license_chosen()');
-        }
         var license_pending = Y.get('#license_pending');
         if (Y.Lang.isValue(license_pending)) {
             license_pending.on('click', reveal_details);
+
+            var div = Y.get('#pending-div');
+            if (Y.Lang.isValue(div)) {
+                div.setAttribute('onclick', 'license_chosen()');
+            }
         }
 
         // When Other/Proprietary or Other/Open Source is chosen, the
