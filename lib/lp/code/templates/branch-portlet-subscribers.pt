@@ -77,7 +77,7 @@
     string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
     <!--
 
-    YUI().use('io-base', 'node', function(Y) {
+    YUI().use('io-base', 'node', 'code.branchsubscription', function(Y) {
 
     if(Y.UA.ie) {
         Y.get('#subscriber-list').set('innerHTML',

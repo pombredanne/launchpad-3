@@ -10,14 +10,20 @@
   i18n:domain="launchpad"
 >
 
-<style type="text/css" metal:fill-slot="head_epilogue">
-  .logtail {
-    padding-left: 2em;
-  }
-  #merge-summary {
-    margin: 1em 0;
-  }
-</style>
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    .logtail {
+      padding-left: 2em;
+    }
+    #merge-summary {
+      margin: 1em 0;
+    }
+  </style>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/branchsubscription.js">
+  </script>
+</metal:block>
 
 <body>
 
