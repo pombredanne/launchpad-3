@@ -10,10 +10,10 @@ __all__ = [
     'VPOExport'
     ]
 
+from storm.locals import Or
 from zope.interface import implements
 
-from canonical.database.sqlbase import quote, sqlvalues, cursor
-from lp.registry.model.distroseries import DistroSeries
+from canonical.database.sqlbase import sqlvalues, cursor
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
