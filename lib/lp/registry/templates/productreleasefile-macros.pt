@@ -18,9 +18,6 @@
     <td>
       <tal:link replace="structure file/fmt:link" />
     </td>
-    <td tal:condition="show_release|nothing">
-      <tal:version content="release/version">version</tal:version>
-    </td>
     <td tal:content="file/description">
       Installer for i386
     </td>
