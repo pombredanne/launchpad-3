@@ -46,7 +46,7 @@
                tal:attributes="
                  title string:Unsubscribe ${subscription/person/fmt:displayname};
                  id string:unsubscribe-${subscription/person/name};
-                 class view/subscription_class
+                 class python: view.subscription_class(subscription.person)
                "
                style="float:left;"
             >
