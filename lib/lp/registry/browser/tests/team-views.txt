@@ -7,17 +7,12 @@
     >>> from zope.component import getMultiAdapter
     >>> from zope.publisher.browser import TestRequest
     >>> person_set = getUtility(IPersonSet)
-    >>> def create_view(context, name, form=None):
-    ...     view = getMultiAdapter(
-    ...         (context, TestRequest(form=form)), name=name)
-    ...     view.initialize()
-    ...     return view
 
 On a team home page, we show up to the latest five members who were approved
 as well as the up to five latest members who proposed themselves.
 
     >>> ubuntu_team = person_set.getByName('name18')
-    >>> team_home = create_view(ubuntu_team, '+index')
+    >>> team_home = create_initialized_view(ubuntu_team, '+index')
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> for member in team_home.recently_approved_members:
     ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
@@ -41,7 +36,7 @@ If new members are added/proposed, they'll show up at the top of the lists.
     >>> login('foo.bar@canonical.com')
     >>> ubuntu_team.addMember(salgado, reviewer=sabdfl)
 
-    >>> team_home = create_view(ubuntu_team, '+index')
+    >>> team_home = create_initialized_view(ubuntu_team, '+index')
     >>> for member in team_home.recently_approved_members:
     ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
     ...     print "%s: %s" % (member.name, membership.status.title)
@@ -162,7 +157,7 @@ twice, for obvious reasons.
     >>> context.addMember(london_member2, sabdfl)
     >>> context.mapped_participants_count
     3
-    >>> view = create_view(context, '+map')
+    >>> view = create_initialized_view(context, '+map')
     >>> len(view.times)
     2
 
@@ -178,7 +173,7 @@ limit.
 When the preview parameter is sent to the view, the number of
 mapped_participants is limited to 24.
 
-    >>> view = create_view(context, '+map', form={'preview': 'anything'})
+    >>> view = create_initialized_view(context, '+map', form={'preview': 'anything'})
     >>> view.limit
     24
 
@@ -190,7 +185,7 @@ mapped_participants is limited to 24.
 The view provides the count of mapped and unmapped members. The counts
 are cached to improve performance.
 
-    >>> view = create_view(context, '+map')
+    >>> view = create_initialized_view(context, '+map')
     >>> view.mapped_participants_count
     3
     >>> view.unmapped_participants_count

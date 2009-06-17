@@ -29,7 +29,7 @@ listed.
     >>> series_trunk = find_tag_by_id(content, 'series-trunk')
     >>> print extract_text(series_trunk)
     trunk series focus of development
-    Milestones 1.0 , Releases 0.9.2, 0.9.1, 0.9
+    Milestones: 1.0    Releases: 0.9.2, 0.9.1, 0.9
     Bugs targeted: None
     Blueprints targeted: 1 Unknown
     The "trunk" series represents the primary line of development rather ...
@@ -46,7 +46,7 @@ highlighted.
     >>> series_1_0 = find_tag_by_id(content, 'series-1-0')
     >>> print extract_text(series_1_0)
     1.0 series Active Development
-    Releases 1.0.0
+    Releases: 1.0.0
     Bugs targeted: 1 New
     Blueprints targeted: None
     The 1.0 branch of the Mozilla web browser. Currently, this is the ...
@@ -59,7 +59,6 @@ Any user can see that obsolete series are dimmed.
     >>> series_xxx = find_tag_by_id(content, 'series-xxx')
     >>> print extract_text(series_xxx)
     xxx series Obsolete
-    Releases
     Bugs targeted: None
     Blueprints targeted: None
     Use true GTK UI.

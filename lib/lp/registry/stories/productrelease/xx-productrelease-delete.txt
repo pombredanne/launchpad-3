@@ -5,7 +5,7 @@ The 0.9.2 milestone has a release.
 
     >>> user_browser.open('http://launchpad.dev/firefox/trunk')
     >>> print user_browser.title
-    Overview of Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'series_trunk'))
     Version "Codename"         Expected   Released     Summary
@@ -48,7 +48,7 @@ Salgado chooses the delete button, then reads that the action is successful.
 
     >>> salgados_browser.getControl('Delete this Release').click()
     >>> print salgados_browser.title
-    Overview of Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
     >>> for message in get_feedback_messages(salgados_browser.contents):
     ...     print message
     Release 0.9.2 deleted.
@@ -58,6 +58,7 @@ but it is gone now that the release is deactivated.
 
     >>> print extract_text(
     ...     find_tag_by_id(salgados_browser.contents, 'series_trunk'))
-    Version "Codename"         Expected   Released                     Summary
-    Mozilla Firefox 0.9.1 ...  Set        2004-10-15 ...
+    Version "Codename"        Expected              Released      Summary
+    Mozilla Firefox 0.9.1...  Set  Change details   2004-10-15
+    ...
 

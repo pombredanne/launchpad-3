@@ -189,10 +189,12 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         """Return a link to set the bazaar branch for this series."""
         if self.context.branch is None:
             text = 'Link to branch'
+            icon = 'add'
         else:
             text = "Change branch"
+            icon = 'edit'
         summary = 'The code branch that for this series.'
-        return Link('+linkbranch', text, summary, icon='add')
+        return Link('+linkbranch', text, summary, icon=icon)
 
     def ubuntupkg(self):
         """Return a link to link this series to an ubuntu sourcepackage."""
@@ -225,7 +227,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def subscribe(self):
         """Return a link to subscribe to bug mail."""
         text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='add')
+        return Link('+subscribe', text, icon='edit')
 
 
 class ProductSeriesBugsMenu(ApplicationMenu):

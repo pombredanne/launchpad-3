@@ -19,11 +19,13 @@ from zope.component import getUtility
 from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
-    IAuthServerApplication, ICodeImportSchedulerApplication, ILaunchBag,
+    IAuthServerApplication, ILaunchBag,
     IMailingListApplication, IPrivateApplication,
     IPrivateMaloneApplication)
 from lp.code.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
+from lp.code.interfaces.codeimportscheduler import (
+    ICodeImportSchedulerApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 

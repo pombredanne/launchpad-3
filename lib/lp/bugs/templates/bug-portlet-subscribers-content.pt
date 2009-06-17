@@ -26,14 +26,16 @@
                  title subscription/display_subscribed_by;
                  name subscription/person/fmt:displayname
                "
+               style="float:left;"
             >
-              <tal:block replace="structure subscription/person/image:icon" />
+              <tal:block replace="structure subscription/person/fmt:icon" />
               <tal:block replace="subscription/person/fmt:displayname/fmt:shorten/20" />
             </a>
             <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
                href="+subscribe"
                tal:attributes="title string:Unsubscribe ${subscription/person/fmt:displayname};
-                               id string:unsubscribe-${subscription/person/name}">
+                               id string:unsubscribe-${subscription/person/name}"
+                style="float:left;">
               <img class="unsub-icon" src="/@@/remove"
                 tal:attributes="id string:unsubscribe-icon-${subscription/person/name}" />
             </a>
@@ -41,6 +43,7 @@
         </metal:subscriber>
       </div>
       </div>
+      <br /><br />
       <div id="none-subscribers"
         tal:condition="not:direct_subscriptions">None</div>
   </div>
