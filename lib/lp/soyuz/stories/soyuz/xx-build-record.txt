@@ -44,8 +44,12 @@ For successful builds, files are listed and linked to the librarian:
     Files produced from build
     commercialpackage_1.0-1_i386.deb  (652 bytes)
 
+File links are `ProxiedLibrarianFile`s (via +files on the context build)
+so that if coming from the restricted librarian, they will be streamed via
+the appserver.
+
     >>> print anon_browser.getLink("commercialpackage_1.0-1_i386.deb").url
-    http://.../commercialpackage_1.0-1_i386.deb
+    http://.../+files/commercialpackage_1.0-1_i386.deb
 
 'Upload log' is only mentioned when it contains a reference to a
 library file and it only happens for FAILEDTOUPLOAD builds.
