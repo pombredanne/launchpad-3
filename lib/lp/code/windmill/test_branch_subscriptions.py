@@ -43,6 +43,7 @@ def test_branch_subscription_ajax_load():
     client.asserts.assertText(id=u'none-subscribers',
         validator=u'No subscribers.')
 
+
 def test_team_edit_subscription_ajax_load():
     """Test that team subscriptions are editable through the ajax portlet."""
     client = WindmillTestClient("Branch Subscription Ajax Load Test")
@@ -64,4 +65,3 @@ def test_team_edit_subscription_ajax_load():
     client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
     client.asserts.assertText(id=u'none-subscribers',
         validator=u'No subscribers.')
-
