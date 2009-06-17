@@ -174,6 +174,9 @@ class Archive(SQLBase):
     signing_key = ForeignKey(
         foreignKey='GPGKey', dbName='signing_key', notNull=False)
 
+    relative_build_score = IntCol(
+        dbName='relative_build_score', notNull=True, default=0)
+
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
