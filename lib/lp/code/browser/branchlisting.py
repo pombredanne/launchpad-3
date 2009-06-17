@@ -59,13 +59,15 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
 
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchLifecycleStatusFilter,
+    BranchMergeProposalStatus, BranchType)
 from lp.code.interfaces.branch import (
-    bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    bazaar_identity,  DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchBatchNavigator)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
+    IBranchMergeProposalGetter)
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet

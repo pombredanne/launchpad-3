@@ -25,8 +25,8 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import DatabaseFunctionalLayer
 
+from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.interfaces.branch import BranchLifecycleStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.revision import RevisionCache, RevisionSet
 from lp.registry.model.karma import Karma

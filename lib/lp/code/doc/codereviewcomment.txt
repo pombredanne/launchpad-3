@@ -36,7 +36,7 @@ conversation, and is available as BranchMergeProposal.root_comment.
 Subsequent comments are marked as replies to the root_comment, by
 default.
 
-    >>> from canonical.launchpad.interfaces import CodeReviewVote
+    >>> from lp.code.enums import CodeReviewVote
     >>> comment2 = merge_proposal.createComment(
     ...     sender, 'No!', 'You are ugly and stupid',
     ...     CodeReviewVote.DISAPPROVE)
@@ -54,7 +54,7 @@ Comments can be marked as replies to particular comments.
 If there is a subscriber to any of the branches involved in the merge,
 a notification is produced when the comment is created.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
     >>> source_subscriber = factory.makePerson(email='subscriber@example.com',
@@ -95,6 +95,6 @@ a notification is produced when the comment is created.
 The CodeReviewComment must implement the ICodeReviewComment interface.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ICodeReviewComment
+    >>> from lp.code.interfaces.codereviewcomment import ICodeReviewComment
     >>> verifyObject(ICodeReviewComment, comment)
     True

@@ -50,6 +50,8 @@ Then, post the changes to the summary. Also add a trailing
 slash to the URL.
 
     >>> browser.getControl('Branch URL').value += '/'
+    >>> browser.getControl('Description').value = (
+    ...     'Klingon support for Gnome Terminal')
     >>> browser.getControl('Change Branch').click()
 
 We should be redirected to the branch page, check that our changes were taken
@@ -71,6 +73,10 @@ are no subscribers so there whould be no emails.
     Status: Experimental
     Location: http://trekkies.example.com/gnome-terminal/klingon
     Last mirrored: ...
+
+    >>> print extract_text(find_tag_by_id(browser.contents,
+    ...     'branch-description').p)
+    Klingon support for Gnome Terminal
 
 
 == Editing the Lifecycle Status ==
@@ -202,7 +208,7 @@ by any user.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from lp.code.interfaces.branchsubscription import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     ...     CodeReviewNotificationLevel)
     >>> login('foo.bar@canonical.com')

@@ -6,8 +6,9 @@ Imports used later in the document:
     >>> from datetime import datetime
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, BranchFormat, RepositoryFormat, IPersonSet)
+    >>> from lp.code.enums import BranchType
+    >>> from lp.code.bzr import BranchFormat, RepositoryFormat
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
 
 Modifying/creating test data for this test case.
@@ -237,6 +238,16 @@ been mirrored:
     Last mirrored: 2007-10-01
     Next mirror: Disabled
 
+The branch description should not be shown if there is none.
+
+    >>> def get_branch_description(browser):
+    ...     return extract_text(find_tag_by_id(
+    ...         browser.contents, 'branch-description').p)
+    >>> print get_branch_description(browser)
+    Traceback (most recent call last):
+    ...
+    AttributeError: 'NoneType' object has no attribute 'p'
+
 Branches that have never been mirrored don't have a 'Last mirrored' field.
 
     >>> browser.open(
@@ -247,6 +258,10 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     Location: http://example.com/gnome-terminal/main
     Last mirrored: Not mirrored yet
     Next mirror: Disabled
+
+    >>> print get_branch_description(browser)
+    Main branch of development for GNOME Terminal.
+    Stable branches are based on that one.
 
 If next_mirror_time is NULL, then mirroring of the branch is disabled.
 

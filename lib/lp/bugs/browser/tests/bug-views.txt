@@ -273,7 +273,7 @@ If the user isn't subscribed to the bug , 'Subscribe' is shown.
     >>> bug_one.isSubscribed(foo_bar)
     False
 
-    >>> from canonical.launchpad.browser import BugContextMenu
+    >>> from lp.bugs.browser.bug import BugContextMenu
     >>> bug_one_bugtask = bug_one.bugtasks[0]
     >>> getUtility(IOpenLaunchBag).clear()
     >>> getUtility(IOpenLaunchBag).add(bug_one_bugtask)
@@ -534,7 +534,7 @@ automatically rendered by the form template. In order to show how it
 works, let's override the edit page, making it a bit shorter, and
 initialize the test harness.
 
-    >>> from canonical.launchpad.browser import BugEditView
+    >>> from lp.bugs.browser.bug import BugEditView
     >>> class BugEditViewTest(BugEditView):
     ...     def index(self):
     ...         print 'EDIT BUG'
@@ -663,7 +663,7 @@ standard BugTaskView for bug 15, which has a debian bug watch and
 imported comments.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.browser import BugTaskView
+    >>> from lp.bugs.browser.bugtask import BugTaskView
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.servers import (
     ...     LaunchpadTestRequest)

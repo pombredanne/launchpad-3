@@ -13,7 +13,6 @@
     <include file="bounty.zcml" />
     <include file="crowd.zcml" />
     <include file="customlanguagecode.zcml" />
-    <include file="diff.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
     <include file="distroserieslanguage.zcml" />
@@ -25,6 +24,7 @@
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
+    <include file="lifecycle.zcml" />
     <include file="logintoken.zcml" />
     <include file="marketing.zcml" />
     <include file="message.zcml" />
@@ -42,6 +42,7 @@
     <include file="potemplate.zcml" />
     <include file="potmsgset.zcml" />
     <include file="potranslation.zcml" />
+    <include file="productserieslanguage.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="structuralsubscription.zcml" />
     <include file="temporaryblobstorage.zcml" />

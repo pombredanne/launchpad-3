@@ -33,7 +33,7 @@ class IBranchJob(Interface):
     """A job related to a branch."""
 
     branch = Object(
-        title=_('Branch to use for this diff'), required=True,
+        title=_('Branch to use for this job.'), required=False,
         schema=IBranch)
 
     job = Object(schema=IJob, required=True)
@@ -160,4 +160,27 @@ class IRosettaUploadJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IRosettaUploadJobs."""
+
+
+class IReclaimBranchSpaceJob(Interface):
+    """A job to delete a branch from disk after its been deleted from the db.
+    """
+
+    branch_id = Int(
+        title=_('The id of the now-deleted branch.'))
+
+    def run():
+        """Delete the branch from the filesystem."""
+
+
+class IReclaimBranchSpaceJobSource(Interface):
+
+    def create(branch_id):
+        """Construct a new object that implements IReclaimBranchSpaceJob.
+
+        :param branch_id: The id of the branch to remove from disk.
+        """
+
+    def iterReady():
+        """Iterate through ready IReclaimBranchSpaceJobs."""
 

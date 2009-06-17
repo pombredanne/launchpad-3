@@ -176,6 +176,15 @@
       </tr>
       </tbody>
   </table>
+
+  <div id="branch-description" tal:condition="context/description">
+    <fieldset>
+      <legend>Description</legend>
+      <tal:branch-description
+         replace="structure context/description/fmt:text-to-html" />
+    </fieldset>
+  </div>
+
   <tal:branch-errors tal:replace="structure context/@@+messages" />
 
   <tal:imported-branch tal:condition="context/branch_type/enumvalue:IMPORTED">

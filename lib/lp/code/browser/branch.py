@@ -67,9 +67,9 @@ from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
 from lp.code.browser.branchref import BranchRef
+from lp.code.enums import BranchType, UICreatableBranchType
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, BranchType, IBranch,
-    IBranchNavigationMenu, UICreatableBranchType)
+    BranchCreationForbidden, BranchExists, IBranch, IBranchNavigationMenu)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -78,8 +78,7 @@ from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespacePolicy)
+from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -387,6 +386,9 @@ class BranchView(LaunchpadView, FeedsMixin):
         targets = []
         targets_added = set()
         for proposal in self.context.landing_targets:
+            # Don't show the proposal if the user can't see it.
+            if not check_permission('launchpad.View', proposal):
+                continue
             # Only show the must recent proposal for any given target.
             target_id = proposal.target_branch.id
             if target_id in targets_added:
@@ -405,7 +407,8 @@ class BranchView(LaunchpadView, FeedsMixin):
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
-        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+        return [DecoratedMergeProposal(proposal) for proposal in candidates
+                if check_permission('launchpad.View', proposal)]
 
     def _getBranchCountText(self, count):
         """Help to show user friendly text."""
@@ -418,17 +421,18 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     @cachedproperty
     def dependent_branch_count_text(self):
-        branch_count = self.context.dependent_branches.count()
+        branch_count = len(self.dependent_branches)
         return self._getBranchCountText(branch_count)
 
     @cachedproperty
     def landing_candidate_count_text(self):
-        branch_count = self.context.landing_candidates.count()
+        branch_count = len(self.landing_candidates)
         return self._getBranchCountText(branch_count)
 
     @cachedproperty
     def dependent_branches(self):
-        return list(self.context.dependent_branches)
+        return [branch for branch in self.context.dependent_branches
+                if check_permission('launchpad.View', branch)]
 
     @cachedproperty
     def no_merges(self):
@@ -541,6 +545,7 @@ class BranchEditSchema(Interface):
         'owner',
         'name',
         'url',
+        'description',
         'lifecycle_status',
         'whiteboard',
         ])
@@ -764,7 +769,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'name', 'private', 'url', 'lifecycle_status']
+        'owner', 'name', 'private', 'url', 'description', 'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 

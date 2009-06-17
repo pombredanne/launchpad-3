@@ -28,7 +28,7 @@ unsubscribe or edit their email notification settings.  The function
 also sends the email to the list of recipients.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     ...     CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
@@ -94,7 +94,8 @@ previous one.  The size limit is one of the following:
   * 5000 lines
   * Send the entire diff
 
-    >>> from canonical.launchpad.interfaces import IBranch, IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.code.interfaces.branch import IBranch, IBranchSet
     >>> personset = getUtility(IPersonSet)
 
     >>> branch.subscribe(
@@ -478,7 +479,7 @@ something like this:
     ...  'with a really long line that should invoke the splitting ' \
     ...  'algorithm in the mail wrapper to make sure that the line ' \
     ...  'is not too long'
-    >>> from lp.code.interfaces.branch import BranchLifecycleStatus
+    >>> from lp.code.enums import BranchLifecycleStatus
     >>> branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
     >>> updated_fields = ['name','title','summary','url','whiteboard','lifecycle_status']
     >>> notify(ObjectModifiedEvent(

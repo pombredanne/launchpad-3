@@ -24,6 +24,7 @@
                tal:attributes="
                  href subscription/person/fmt:url;
                  title subscription/display_subscribed_by;
+                 name subscription/person/fmt:displayname
                "
             >
               <tal:block replace="structure subscription/person/image:icon" />

@@ -39,6 +39,12 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
+from lp.code.bzr import (
+    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchMergeControlStatus,
+    BranchMergeProposalStatus, BranchType)
 from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal, BranchMergeProposalGetter)
@@ -48,15 +54,13 @@ from lp.code.model.revision import Revision
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, BranchLifecycleStatus,
-    BranchMergeControlStatus, BranchType, BranchTypeError, CannotDeleteBranch,
-    ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchNavigationMenu, IBranchSet, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+    BranchTypeError, CannotDeleteBranch,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchNavigationMenu, IBranchSet)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
-     BranchMergeProposalStatus, InvalidBranchMergeProposal)
+     InvalidBranchMergeProposal)
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -76,6 +80,7 @@ class Branch(SQLBase):
 
     name = StringCol(notNull=False)
     url = StringCol(dbName='url')
+    description = StringCol(dbName='summary')
     branch_format = EnumCol(enum=BranchFormat)
     repository_format = EnumCol(enum=RepositoryFormat)
     # XXX: Aaron Bentley 2008-06-13
@@ -781,6 +786,7 @@ class Branch(SQLBase):
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
         from lp.code.model.branchjob import BranchJob
+        from lp.code.interfaces.branchjob import IReclaimBranchSpaceJobSource
         if break_references:
             self._breakReferences()
         if not self.canBeDeleted():
@@ -803,7 +809,10 @@ class Branch(SQLBase):
                                     BranchJob.branch == self))))
         jobs.remove()
         # Now destroy the branch.
+        branch_id = self.id
         SQLBase.destroySelf(self)
+        # And now create a job to remove the branch from disk when it's done.
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
 
     def commitsForDays(self, since):
         """See `IBranch`."""

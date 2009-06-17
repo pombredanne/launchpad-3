@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0222,W0231
 
 __metaclass__ = type
@@ -26,7 +26,7 @@ from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing.factory import ObjectFactory
 from canonical.launchpad.webapp import errorlog
@@ -975,7 +975,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         lower_timeout_script = """
         from bzrlib import lockdir
         lockdir._DEFAULT_TIMEOUT_SECONDS = 2.0
-        from canonical.launchpad.interfaces import BranchType
+        from lp.code.enums import BranchType
         from lp.codehosting.puller.worker import (
             PullerWorker, install_worker_ui_factory)
         branch_type = BranchType.items[branch_type_name]

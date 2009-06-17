@@ -472,6 +472,12 @@ form.primary.search {
 .highlighted {padding: 0.5em;}
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
+.dimmed {
+  padding: 0 0.5em;
+  opacity: .5;
+  filter: alpha(opacity=50);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+}
 
 strong em {
   font-style: normal;
@@ -1430,14 +1436,19 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background: none;
   color: #83ad23;
 }
-body.tab-overview #description {
+body.tab-overview #description, div#branch-description {
     width: 50em;
 }
-body.tab-overview #description fieldset {
+body.tab-overview #description fieldset, div#branch-description fieldset {
     border: 1px solid gray;
     padding: 0 1em;
     margin:0 1em 1em 0;
 }
+
+div#branch-description {
+    margin-top: 1em;
+}
+
 /* The top-most Person portlet, Contact Details, is allowed to float up and
 beside the mugshot. */
 #contact-details {clear: none;}
