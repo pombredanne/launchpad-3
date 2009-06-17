@@ -15,11 +15,13 @@ import tempfile
 import unittest
 
 import canonical.config
+import lp.testing
 
 from canonical.config import config
 from canonical.launchpad.scripts.runlaunchpad import (
     get_services_to_run, SERVICES, process_config_file_argument, 
     split_out_runlaunchpad_arguments)
+
 
 
 class CommandLineArgumentProcessing(unittest.TestCase):
@@ -67,7 +69,7 @@ class CommandLineArgumentProcessing(unittest.TestCase):
 
 
 
-class TestDefaultConfigArgument(unittest.TestCase):
+class TestDefaultConfigArgument(lp.testing.TestCase):
     """Tests for the processing of the -C argument."""
 
     def setUp(self):
@@ -75,8 +77,9 @@ class TestDefaultConfigArgument(unittest.TestCase):
         self.saved_instance = config.instance_name
         self.saved_config_roots = canonical.config.CONFIG_ROOT_DIRS
         canonical.config.CONFIG_ROOT_DIRS = [self.config_root]
+        self.addCleanup(self.cleanUp)
 
-    def tearDown(self):
+    def cleanUp(self):
         shutil.rmtree(self.config_root)
         canonical.config.CONFIG_ROOT_DIRS = self.saved_config_roots
         config.setInstance(self.saved_instance)
