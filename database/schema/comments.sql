@@ -1904,6 +1904,7 @@ COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at p
 COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
 COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days before superseded or deleted binary files are expired in the librarian, or zero for never.';
 COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
+COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 
 -- ArchiveAuthToken
 
