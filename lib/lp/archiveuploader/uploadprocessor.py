@@ -319,7 +319,7 @@ class UploadProcessor:
                      extra_info=(
                          "Please check the documentation at "
                          "https://help.launchpad.net/Packaging/PPA#Uploading "
-                         "and update our configuration.")))
+                         "and update your configuration.")))
         self.log.debug("Finding fresh policy")
         self.options.distro = distribution.name
         policy = findPolicyByOptions(self.options)

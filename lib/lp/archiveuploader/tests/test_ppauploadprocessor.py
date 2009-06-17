@@ -833,7 +833,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
                  'dput/dupload.',
              'Please check the documentation at '
                  'https://help.launchpad.net/Packaging/PPA#Uploading '
-                 'and update our configuration.',
+                 'and update your configuration.',
              '',
              'Further error processing not possible because of a critical '
                  'previous error.',
