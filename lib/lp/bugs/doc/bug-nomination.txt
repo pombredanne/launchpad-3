@@ -54,7 +54,7 @@ Let's create another nomination, this time on a product series.
     no-priv
 
     >>> print firefox_ms_nomination.productseries.title
-    Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
 
 The target of a nomination can also be accessed through its target
 attribute.
