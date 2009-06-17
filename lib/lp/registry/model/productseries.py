@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import datetime
-import operator
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
@@ -47,6 +46,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from lp.blueprints.interfaces.specification import (
@@ -179,7 +179,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     @property
     def title(self):
-        return self.product.displayname + ' Series: ' + self.displayname
+        return '%s %s series' % (self.product.displayname, self.displayname)
 
     @property
     def bug_reporting_guidelines(self):
@@ -467,6 +467,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `IProductSeries`."""
         store = Store.of(self)
 
+        english = getUtility(ILaunchpadCelebrities).english
+
         results = []
         if self.potemplate_count == 1:
             # If there is only one POTemplate in a ProductSeries, fetch
@@ -481,7 +483,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 Language.visible==True,
                 POFile.potemplate==POTemplate.id,
                 POTemplate.productseries==self,
-                POTemplate.iscurrent==True)
+                POTemplate.iscurrent==True,
+                Language.id!=english.id)
 
             for language, pofile in query.order_by(['Language.englishname']):
                 psl = ProductSeriesLanguage(self, language, pofile=pofile)
@@ -513,7 +516,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 Language.visible==True,
                 POFile.potemplate==POTemplate.id,
                 POTemplate.productseries==self,
-                POTemplate.iscurrent==True).group_by(Language)
+                POTemplate.iscurrent==True,
+                Language.id!=english.id).group_by(Language)
 
             for (language, imported, changed, new, unreviewed) in (
                 query.order_by(['Language.englishname'])):
