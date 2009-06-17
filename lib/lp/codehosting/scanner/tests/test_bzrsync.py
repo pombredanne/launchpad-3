@@ -551,6 +551,8 @@ class TestScanStackedBranches(BzrSyncTestCase):
             db_stacked_branch, format='1.6')
         stacked_tree.branch.set_stacked_on_url(
             'lp-mirrored:///%s' % db_stacked_on_branch.unique_name)
+        # Scanner begins a new transactions, rolling back uncommitted changes.
+        transaction.commit()
         scanner = self.makeBzrSync(db_stacked_branch)
         # This does not raise an exception.
         scanner.syncBranchAndClose()
