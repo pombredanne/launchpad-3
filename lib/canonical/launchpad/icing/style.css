@@ -1689,11 +1689,6 @@ beside the mugshot. */
   float: left; /* So the border doesn't use 100% of the page */
 }
 
-#package_counters {
-    clear: both;
-    float: left;
-}
-
 div#build-status-summary {
     clear:right;
     float:right;
