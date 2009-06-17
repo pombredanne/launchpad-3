@@ -19,7 +19,7 @@
       2005-10-18
     </span>
   </div>
-  <img src="/@@/branch" alt="" /> Branch
+  <span class="sprite branch"> Branch</span>
   <tt tal:content="context/bzr_identity" />
 
 </div>
