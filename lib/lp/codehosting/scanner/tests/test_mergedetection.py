@@ -95,14 +95,6 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
 
         proposal.rejectBranch(db_trunk.owner, 'branch')
 
-        # Need to commit, as the scanner begins a new transaction rolling
-        # back our changes.
-        transaction.commit()
-
-        self.assertEqual(
-            BranchMergeProposalStatus.REJECTED,
-            proposal.queue_status)
-
         self._scanTheBranches(db_branch, db_trunk)
 
         # The proposal should stay rejected..
@@ -119,14 +111,6 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
             self._createBranchesAndProposal())
 
         proposal.rejectBranch(db_trunk.owner, 'branch')
-
-        self.assertEqual(
-            BranchMergeProposalStatus.REJECTED,
-            proposal.queue_status)
-
-        # Need to commit, as the scanner begins a new transaction rolling
-        # back our changes.
-        transaction.commit()
 
         self._scanTheBranches(db_trunk, db_branch)
 

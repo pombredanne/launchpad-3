@@ -112,7 +112,11 @@ class BzrSync:
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
-        self.trans_manager.begin()
+
+        # Why explicitly start a transaction? It just rolls back anything you
+        # did earlier, such as the test setup.
+        ## self.trans_manager.begin()
+
         self.setFormats(bzr_branch)
         db_ancestry, db_history, db_branch_revision_map = (
             self.retrieveDatabaseAncestry())
