@@ -822,21 +822,27 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # recipients.
         upload_dir = self.queueUpload("bar_1.0-1", "~boing/ppa")
         self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            "Failed to process the upload path '~boing/ppa': "
-                "Could not find person 'boing'\n"
-            "Your dput/dupload is not configured properly, please "
-                "check the documentation in "
-                "https://help.launchpad.net/Packaging/PPA#Uploading "
-                "and update it accordingly.\n"
-            "Further error processing not possible because of a "
-                "critical previous error.",
+        rejection_message = (
             self.uploadprocessor.last_processed_upload.rejection_message)
+        self.assertEqual(
+            ["Launchpad failed to process the upload path '~boing/ppa':",
+             '',
+             "Could not find person or team named 'boing'.",
+             '',
+             'It is likely that you have a configuration problem with '
+                 'dput/dupload.',
+             'Please check the documentation at '
+                 'https://help.launchpad.net/Packaging/PPA#Uploading '
+                 'and update our configuration.',
+             '',
+             'Further error processing not possible because of a critical '
+                 'previous error.',
+             ],
+            rejection_message.splitlines())
 
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "Could not find person 'boing'",
+            "Could not find person or team named 'boing'",
             "https://help.launchpad.net/Packaging/PPA#Uploading",
             "If you don't understand why your files were rejected please "
                 "send an email",

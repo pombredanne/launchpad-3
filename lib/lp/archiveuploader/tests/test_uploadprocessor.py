@@ -1358,15 +1358,22 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         upload_dir = self.queueUpload("bar_1.0-1", "boing")
         self.processUpload(uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            "Failed to process the upload path 'boing': "
-                "Could not find distribution 'boing'\n"
-            "Please update your dput/dupload configuration and "
-                "re-upload.\n"
-            "Further error processing not possible because of a "
-                "critical previous error.",
+        rejection_message = (
             uploadprocessor.last_processed_upload.rejection_message)
+        self.assertEqual(
+            ["Launchpad failed to process the upload path 'boing':",
+             '',
+             "Could not find distribution 'boing'.",
+             '',
+             'It is likely that you have a configuration problem with '
+                'dput/dupload.',
+             'Please update your dput/dupload configuration and then '
+                're-upload.',
+             '',
+             'Further error processing not possible because of a critical '
+                'previous error.',
+             ],
+            rejection_message.splitlines())
 
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
