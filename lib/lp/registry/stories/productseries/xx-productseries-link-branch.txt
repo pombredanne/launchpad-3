@@ -23,14 +23,14 @@ product series.
 The only field shown is the branch field.
 
     >>> print sample_browser.title
-    Link an existing branch to Mozilla Firefox Series: trunk
+    Link an existing branch to Mozilla Firefox trunk series
     >>> sample_browser.getControl('Branch').value = '~name12/firefox/main'
     >>> sample_browser.getControl('Update').click()
 
 Updating the branch takes the user back to the product series page.
 
     >>> print sample_browser.title
-    Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
     >>> branch = find_tag_by_id(sample_browser.contents, 'branch-details')
     >>> print extract_text(branch)
     lp://dev/firefox - Sample Person

@@ -37,11 +37,29 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.database.message import (
+    Message, MessageChunk, MessageSet)
+from canonical.launchpad.fields import DuplicateBug
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.message import (
+    IMessage, IndexedMessage)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    BugNotificationLevel, IStructuralSubscriptionTarget)
+from canonical.launchpad.mailnotification import BugNotificationRecipients
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
+
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
     BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
-from canonical.launchpad.fields import DuplicateBug
-from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue,
     UserCannotUnsubscribePerson)
@@ -49,60 +67,38 @@ from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.bugmessage import IBugMessageSet
+from lp.bugs.interfaces.bugnomination import (
+    NominationError, NominationSeriesObsoleteError)
+from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
-from lp.bugs.interfaces.bugnomination import (
-    NominationError, NominationSeriesObsoleteError)
-from lp.bugs.interfaces.bugnotification import (
-    IBugNotificationSet)
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.model.bugbranch import BugBranch
+from lp.bugs.model.bugcve import BugCve
+from lp.bugs.model.bugmessage import BugMessage
+from lp.bugs.model.bugnomination import BugNomination
+from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.model.bugsubscription import BugSubscription
+from lp.bugs.model.bugtask import (
+    BugTask, BugTaskSet, NullBugTask, bugtask_sort_key,
+    get_bug_privacy_filter)
+from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from lp.bugs.interfaces.bugmessage import IBugMessageSet
-from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.message import (
-    IMessage, IndexedMessage)
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from canonical.launchpad.interfaces.structuralsubscription import (
-    BugNotificationLevel, IStructuralSubscriptionTarget)
-from canonical.launchpad.helpers import shortlist
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from lp.bugs.model.bugbranch import BugBranch
-from lp.bugs.model.bugcve import BugCve
-from lp.bugs.model.bugnomination import BugNomination
-from lp.bugs.model.bugnotification import BugNotification
-from canonical.launchpad.database.message import (
-    MessageSet, Message, MessageChunk)
-from lp.bugs.model.bugmessage import BugMessage
-from lp.bugs.model.bugtask import (
-    BugTask,
-    BugTaskSet,
-    bugtask_sort_key,
-    get_bug_privacy_filter,
-    NullBugTask,
-    )
-from lp.bugs.model.bugwatch import BugWatch
-from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.person import Person, ValidPersonCache
 from lp.registry.model.pillar import pillar_sort_key
-from canonical.launchpad.validators import LaunchpadValidationError
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.mailnotification import BugNotificationRecipients
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 
 # XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
@@ -472,7 +468,8 @@ class Bug(SQLBase):
         # join). However, this ran slowly (far from optimal query
         # plan), so we're doing it as two queries now.
         valid_persons = Store.of(self).find(
-            ValidPersonCache,
+            (Person, ValidPersonCache),
+            Person.id == ValidPersonCache.id,
             ValidPersonCache.id == BugSubscription.personID,
             BugSubscription.bug == self)
         # Suck in all the records so that they're actually cached.
@@ -869,7 +866,7 @@ class Bug(SQLBase):
             branch=branch, bug=self, registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
-        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch))
+        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch, self))
         notify(ObjectCreatedEvent(bug_branch))
 
         return bug_branch
@@ -878,7 +875,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
         if bug_branch is not None:
-            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch))
+            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch, self))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
 

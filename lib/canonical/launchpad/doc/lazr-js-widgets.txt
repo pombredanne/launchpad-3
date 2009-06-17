@@ -38,8 +38,8 @@ link into an AJAX control when JS is available:
     <h1 id="..."><span class="yui-editable_text-text">My bug is &gt;
         important</span>
         <a href="http://bugs.launchpad.dev/.../+edit"
-           class="yui-editable_text-trigger"
-        ><img src="/@@/edit" alt="[edit]" title="Edit" /></a>
+           class="yui-editable_text-trigger sprite edit"
+        ></a>
     </h1>
     <script>
     ...
@@ -53,7 +53,7 @@ constructor:
     ...     id="bug-title", title="Edit this summary")
     >>> print widget()
     <h1 id="bug-title">...
-        ><img src="/@@/edit" alt="[edit]" title="Edit this summary" />...
+        ...class="yui-editable_text-trigger sprite edit"...
 
 
 InlineEditPickerWidget

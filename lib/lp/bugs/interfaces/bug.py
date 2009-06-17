@@ -336,6 +336,8 @@ class IBug(ICanBeMentored):
     def unsubscribe(person, unsubscribed_by):
         """Remove this person's subscription to this bug."""
 
+    @call_with(person=REQUEST_USER)
+    @export_write_operation()
     def unsubscribeFromDupes(person):
         """Remove this person's subscription from all dupes of this bug."""
 

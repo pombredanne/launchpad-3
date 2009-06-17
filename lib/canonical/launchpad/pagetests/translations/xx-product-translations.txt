@@ -161,7 +161,7 @@ them anymore.
     ...     find_tag_by_id(admin_browser.contents,
     ...                    'portlet-obsolete-translatable-series'))
     All product series with obsolete templates
-    NetApplet Series: trunk
+    NetApplet trunk series
 
 While we can see that anonymous people are not getting such information:
 

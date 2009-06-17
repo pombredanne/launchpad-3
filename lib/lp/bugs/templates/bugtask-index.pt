@@ -47,8 +47,8 @@
       </p>
       <div class="object identifier">
 
-          <a tal:attributes="href context/bug/fmt:url">
-            <tal:icon replace="structure context/image:icon" />
+          <a tal:attributes="href context/bug/fmt:url;
+                             class string: ${context/image:sprite_css}">
             Bug #<span tal:content="context/bug/id"
             >12345</span><tal:nickname
                           condition="context/bug/name">
@@ -101,8 +101,7 @@
             >
             <a
               tal:attributes="href link/url"
-              class="menu-link-mark-dupe">
-              <img src="/@@/bug-dupe-icon" /> Mark as duplicate</a>
+              class="menu-link-mark-dupe sprite bug-dupe">Mark as duplicate</a>
             </span>
             <tal:block
               tal:condition="context/bug/duplicates"
@@ -134,8 +133,8 @@
               tal:condition="python: link.enabled"
               id="change_duplicate_bug"
               title="Edit or remove linked duplicate bug"
+              class="sprite edit"
               tal:attributes="href link/url">
-              <img src="/@@/edit" />
             </a>
             </span>
             </tal:block>
@@ -183,7 +182,7 @@
             <form id="tags-form" style="display: inline">
                 <input type="text" id="tag-input" style="display: none; width: 15em;" />
                 <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
-                <a href="+edit" title="Edit tags" id="edit-tags-trigger"><img src="/@@/edit" /></a>
+                <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
               <script type="text/javascript">
                   YUI().use('event', 'node', 'bugs.bug_tags_entry', function(Y) {
                       // XXX intellectronica 2009-04-16 bug #362309:
@@ -218,8 +217,7 @@
                tal:attributes="class python: ('tags-container ' +
                                               (not(context.bug.tags) and
                                               'tags-show' or 'tags-hide'))">
-            <a href="+edit" title="Add tags" id="add-tags-trigger">
-              <img src="/@@/add" />
+            <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
           </div>
@@ -227,7 +225,7 @@
             <tal:editdescription
                 define="link context_menu/editdescription"
                 condition="link/enabled"
-                replace="structure link/render" />
+                replace="structure link/@@+inline-suffix" />
             <span tal:condition="view/wasDescriptionModified" class="discreet"
             >(see <a href="comments/0">original description</a>)</span>
           </div>
@@ -355,7 +353,7 @@
           </p>
           <tal:block condition="not: context/bug/is_complete">
             <div tal:condition="view/userIsMentor" class="actions">
-              <img class="inlineLinkIcon" src="/@@/remove" alt=""/><a href="+retractmentoring">Retract my offer of mentorship</a>
+              <img class="inlineLinkIcon sprite remove" alt=""/><a href="+retractmentoring">Retract my offer of mentorship</a>
             </div>
           </tal:block>
         </tal:mentors>

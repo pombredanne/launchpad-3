@@ -117,7 +117,7 @@ created, instead the old one will be used.
 
     >>> bugwatch_portlet = find_portlet(browser.contents, 'Remote bug watches')
     >>> for li_tag in bugwatch_portlet.fetch('li'):
-    ...     print li_tag.findAll('a')[1].string
+    ...     print li_tag.findAll('a')[0].string
     mozilla.org #123543
     mozilla.org #2000
     mozilla.org #42

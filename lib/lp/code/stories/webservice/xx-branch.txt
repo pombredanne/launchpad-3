@@ -1,4 +1,5 @@
-= Introduction =
+Introduction
+============
 
 Launchpad provides two ways to programmatically interact with your
 branches. You can either interact with the branches themselves using
@@ -25,7 +26,8 @@ helpers. This one turns a JSON date/time response into a Python
     ...     return marshaller.marshall_from_json_data(returned_time)
 
 
-== Requesting a mirror ==
+Requesting a mirror
+===================
 
 Many of the branches on Launchpad are mirrored branches: branches that
 are hosted on other servers and then mirrored regularly by Launchpad's
@@ -64,7 +66,8 @@ request for a mirror:
     True
 
 
-== Basic branch attributes ==
+Basic branch attributes
+=======================
 
 Not everything about a branch is exposed.  Hopefully most of what users
 really care about is exposed, and we will undoubtedly expand this as
@@ -240,38 +243,8 @@ in its landing_targets.
     http://.../~eric/fooix/trunk
 
 
-== Branch subscriptions ==
-
-A user can subscribe to a branch through the API.
-
-    >>> marley = webservice.get('/~marley').jsonBody()
-    >>> subscription = webservice.named_post(
-    ...     fooix_trunk['self_link'], 'subscribe', person=marley['self_link'],
-    ...     notification_level=u'Branch attribute notifications only',
-    ...     max_diff_lines=u'Don\'t send diffs',
-    ...     code_review_level=u'No email')
-
-    >>> pprint_entry(subscription.jsonBody())
-    branch_link: u'http://.../~eric/fooix/trunk'
-    max_diff_lines: u"Don't send diffs"
-    notification_level: u'Branch attribute notifications only'
-    person_link: u'http://.../~marley'
-    resource_type_link: u'http://.../#branch_subscription'
-    review_level: u'No email'
-    self_link: u'http://.../~eric/fooix/trunk/+subscription/marley'
-
-
-    >>> subscribers = webservice.get(
-    ...     fooix_trunk['subscribers_collection_link']).jsonBody()
-    >>> print len(subscribers['entries'])
-    2
-    >>> for subscriber in subscribers['entries']:
-    ...     print subscriber['display_name']
-    Eric
-    Marley
-
-
-== Project branches ==
+Project branches
+================
 
 The branches of a project are also available.
 
@@ -293,7 +266,8 @@ A list of lifecycle statuses can be provided for filtering.
     >>> print_branches(webservice, '/fooix', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
 
-== Branches for people ==
+Branches for people
+===================
 
 The branches owned by a person are available from the person object.
 
@@ -306,7 +280,8 @@ As with projects, these can be filtered by the branch status.
     >>> print_branches(webservice, '/~eric', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
 
-== Project group branches ==
+Project group branches
+======================
 
 Branches are also accessible for a project group.
 

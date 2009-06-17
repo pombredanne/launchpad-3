@@ -32,7 +32,6 @@ from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
-from canonical.librarian.interfaces import ILibrarianClient
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -1236,14 +1235,19 @@ class LaunchpadObjectFactory(ObjectFactory):
         syncUpdate(series)
         return series
 
-    def makeLibraryFileAlias(self, log_data=None):
+    def makeLibraryFileAlias(self, filename=None, content=None,
+                             content_type='text/plain', restricted=False,
+                             expires=None):
         """Make a library file, and return the alias."""
-        if log_data is None:
-            log_data = self.getUniqueString()
-        filename = self.getUniqueString('filename')
-        log_alias_id = getUtility(ILibrarianClient).addFile(
-            filename, len(log_data), StringIO(log_data), 'text/plain')
-        return getUtility(ILibraryFileAliasSet)[log_alias_id]
+        if filename is None:
+            filename = self.getUniqueString('filename')
+        if content is None:
+            content = self.getUniqueString()
+        library_file_alias_set = getUtility(ILibraryFileAliasSet)
+        library_file_alias = library_file_alias_set.create(
+            filename, len(content), StringIO(content), content_type,
+            expires=expires, restricted=restricted)
+        return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None):
         """Make a new distribution."""

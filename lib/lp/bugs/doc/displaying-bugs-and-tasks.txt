@@ -7,7 +7,8 @@ display bug and bug task information.
 
 == Displaying an Icon with image:icon ==
 
-image:icon is a TALES adapter that renders an icon for a bugtask.
+image:sprite_css is a TALES adapter that returns the CSS class for
+an icon for a bugtask.
 The icon is dependent on the importance of the IBugTask object.
 
 Let's use a few examples to demonstrate:
@@ -24,33 +25,33 @@ Let's use a few examples to demonstrate:
 
   >>> test_task.transitionToImportance(
   ...   BugTaskImportance.CRITICAL, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:icon", bugtask=test_task)
-  '<img height="14" width="14" alt="(critical)" title="Critical importance" src="/@@/bug-critical" />'
+  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+  'sprite bug-critical'
 
   >>> test_task.transitionToImportance(
   ...   BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:icon", bugtask=test_task)
-  '<img height="14" width="14" alt="(high)" title="High importance" src="/@@/bug-high" />'
+  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+  'sprite bug-high'
 
   >>> test_task.transitionToImportance(
   ...   BugTaskImportance.MEDIUM, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:icon", bugtask=test_task)
-  '<img height="14" width="14" alt="(medium)" title="Medium importance" src="/@@/bug-medium" />'
+  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+  'sprite bug-medium'
 
   >>> test_task.transitionToImportance(
   ...   BugTaskImportance.LOW, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:icon", bugtask=test_task)
-  '<img height="14" width="14" alt="(low)" title="Low importance" src="/@@/bug-low" />'
+  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+  'sprite bug-low'
 
   >>> test_task.transitionToImportance(
   ...   BugTaskImportance.WISHLIST, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:icon", bugtask=test_task)
-  '<img height="14" width="14" alt="(wishlist)" title="Wishlist" src="/@@/bug-wishlist" />'
+  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+  'sprite bug-wishlist'
 
   >>> test_task.transitionToImportance(
   ...   BugTaskImportance.UNDECIDED, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:icon", bugtask=test_task)
-  '<img height="14" width="14" alt="(undecided)" title="Undecided" src="/@@/bug-undecided" />'
+  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+  'sprite bug-undecided'
 
   >>> test_task.transitionToImportance(
   ...   ORIGINAL_IMPORTANCE, getUtility(ILaunchBag).user)
