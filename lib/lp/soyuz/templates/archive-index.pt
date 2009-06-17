@@ -197,7 +197,7 @@ tr#package-counters p{
                  define="link context/menu:context/edit_dependencies"
                  condition="link/enabled"
                  replace="structure link/fmt:icon-link" />
-             <div>
+             </div>
             </td>
           </tr>
           <tr id="signing-key"
