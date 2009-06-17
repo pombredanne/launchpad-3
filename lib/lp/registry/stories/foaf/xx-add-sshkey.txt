@@ -127,8 +127,10 @@ to edit his keys is on the page.
     Guilherme Salgado in Launchpad
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'sshkeys'))
-    SSH Keys: salgado@canario
-              salgado@canario
+    SSH Keys: 
+    salgado@canario
+    Update SSH keys
+    salgado@canario
     >>> browser.getLink('Update SSH keys').click()
     >>> print browser.title
     Guilherme Salgado's SSH keys

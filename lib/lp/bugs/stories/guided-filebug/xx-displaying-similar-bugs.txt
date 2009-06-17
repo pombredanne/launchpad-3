@@ -9,17 +9,16 @@ duplicates.
     >>> def print_similar_bugs(content):
     ...     bugs_list = find_tags_by_class(content, 'similar-bug')
     ...     for node in bugs_list:
-    ...         icon = node.findAll('img')[1]
-    ...         icon_alt = icon['alt'].lstrip('(').rstrip(')') or '-'
-    ...         icon_src = icon['src']
+    ...         label = node.findAll('label')[0]
+    ...         label_class = label['class']
     ...         text_lines = [line.strip() for line in
     ...                       extract_text(node).splitlines()]
     ...         summary = ' '.join(text_lines[:2])
     ...         status = ' '.join(text_lines[2:])
     ...         # All this trouble is worth it when you see ndiff output
     ...         # from a failing test, and it *makes sense* :)
-    ...         print '(icon %s src=%s)\n  %s\n  %s' % (
-    ...             icon_alt, icon_src, summary, status)
+    ...         print '(icon class=%s)\n  %s\n  %s' % (
+    ...             label_class, summary, status)
 
 
 == Products ==
@@ -35,15 +34,15 @@ the summary entered (assuming some are found).
 All of the similar bugs have relevant bugtasks:
 
     >>> print_similar_bugs(user_browser.contents)
-    (icon low src=/@@/bug-low)
+    (icon class=sprite bug-low)
       #1 Firefox does not support SVG
       New (1 comment) last updated 2006-05-19
       Firefox needs to support embedded SVG...
-    (icon medium src=/@@/bug-medium)
+    (icon class=sprite bug-medium)
       #4 Reflow problems with complex page layouts
       New (0 comments) last updated 2006-07-14
       Malone pages that use more complex layouts...
-    (icon critical src=/@@/bug-critical)
+    (icon class=sprite bug-critical)
       #5 Firefox install instructions should be complete
       New (0 comments) last updated 2006-07-14
       All ways of downloading firefox should provide complete...
@@ -76,7 +75,7 @@ Then, if we match bug 1, only basic details of bug 8 are displayed:
     >>> user_browser.getControl("Continue").click()
 
     >>> print_similar_bugs(user_browser.contents)
-    (icon - src=/@@/bug)
+    (icon class=sprite bug)
       #8 Printing doesn't work
       Closed (0 comments) last updated 2006-05-19
       When I press print in Firefox...
@@ -93,7 +92,7 @@ filing a bug against a project:
     >>> user_browser.getControl("Continue").click()
 
     >>> print_similar_bugs(user_browser.contents)
-    (icon medium src=/@@/bug-medium)
+    (icon class=sprite bug-medium)
       #7 A test bug
       New (0 comments) last updated 2006-05-19
       A test description
@@ -112,7 +111,7 @@ filing a bug against a project:
         >>> user_browser.getControl("Continue").click()
 
         >>> print_similar_bugs(user_browser.contents)
-        (icon - src=/@@/bug)
+        (icon class=sprite bug)
           #8 Printing doesn't work
           Closed (0 comments) last updated 2006-05-19
           When I press print in Firefox...
@@ -128,7 +127,7 @@ filing a bug against a project:
         >>> user_browser.getControl("Continue").click()
 
         >>> print_similar_bugs(user_browser.contents)
-        (icon medium src=/@@/bug-medium)
+        (icon class=sprite bug-medium)
           #9 Thunderbird crashes
           Confirmed (0 comments) last updated 2006-07-14
           Every time I start Thunderbird...
@@ -146,7 +145,7 @@ filing a bug against a project:
         >>> user_browser.getControl("Continue").click()
 
         >>> print_similar_bugs(user_browser.contents)
-        (icon - src=/@@/bug)
+        (icon class=sprite bug)
           #8 Printing doesn't work
           Closed (0 comments) last updated 2006-05-19
           When I press print in Firefox...
@@ -165,7 +164,7 @@ filing a bug against a project:
         >>> user_browser.getControl("Continue").click()
 
         >>> print_similar_bugs(user_browser.contents)
-        (icon medium src=/@@/bug-medium)
+        (icon class=sprite bug-medium)
           #1 Firefox does not support SVG
           New (1 comment) last updated 2006-05-19
           Firefox needs to support embedded SVG...
@@ -184,7 +183,7 @@ filing a bug against a project:
         >>> user_browser.getControl("Continue").click()
 
         >>> print_similar_bugs(user_browser.contents)
-        (icon - src=/@@/bug)
+        (icon class=sprite bug)
           #8 Printing doesn't work
           Closed (0 comments) last updated 2006-05-19
           When I press print in Firefox...
