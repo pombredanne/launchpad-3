@@ -102,6 +102,6 @@ class BugBranchSet:
         if not bug_ids:
             return []
         bugbranches = BugBranch.select(IN(BugBranch.q.bugID, bug_ids),
-                                       orderBy=['status', 'branch'])
+                                       orderBy=['branch'])
         return bugbranches.prejoin(
             ['branch', 'branch.owner', 'branch.product'])

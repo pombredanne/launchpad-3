@@ -126,7 +126,7 @@ class TestBugLinking(BzrSyncTestCase):
         """
         return 'https://launchpad.net/bugs/%s' % bug.id
 
-    def assertBugBranchLinked(self, bug, branch, status):
+    def assertBugBranchLinked(self, bug, branch):
         """Assert that the BugBranch for `bug` and `branch` exists.
 
         Raises an assertion error if there's no such bug.

@@ -248,7 +248,8 @@
               (<span tal:content="bug_branch/branch/lifecycle_status/title"
               tal:attributes="class string:branchstatus${bug_branch/branch/lifecycle_status/name}"
               >Experimental</span>)
-              <a tal:condition="show_edit"
+              <a title="Remove link"
+                 tal:condition="show_edit"
                  tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+delete;">
                 <img src="/@@/remove"/>
               </a>

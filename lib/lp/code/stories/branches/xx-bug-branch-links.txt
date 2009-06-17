@@ -191,6 +191,6 @@ the bug from the branch.
 
     >>> browser.open('http://bugs.launchpad.dev/thunderbird/+bug/15')
 
-    >>> browser.getControl('Delete').click()
+    >>> browser.getLink(url="+delete").click()
     >>> printBugBranchLinks(browser)
     No bug branch links

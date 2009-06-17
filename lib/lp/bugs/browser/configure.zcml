@@ -615,6 +615,13 @@
     <browser:defaultView
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
         name="+edit"/>
+    <browser:page
+        name="+delete"
+        for="lp.bugs.interfaces.bugbranch.IBugBranch"
+        class="lp.bugs.browser.bugbranch.BugBranchDeleteView"
+        facet="branches"
+        permission="launchpad.Edit"
+        template="../templates/bugbranch-delete.pt"/>
     <facet
         facet="bugs">
         <browser:menus

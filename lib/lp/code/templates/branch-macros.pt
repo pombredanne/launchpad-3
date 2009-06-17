@@ -123,7 +123,8 @@
          Confirmed
        </span>)
        <tal:show-edit condition="show_edit|nothing">
-         <a tal:condition="bug_branch/required:launchpad.Edit"
+         <a title="Remove link"
+            tal:condition="bug_branch/required:launchpad.Edit"
             tal:attributes="href string:+bug/${bug_branch/bug/id}/+delete;">
            <img src="/@@/remove"/>
          </a>
@@ -165,7 +166,6 @@
             style="display: none"
             >
          <dl><dd>
-         <tal:edit-form replace="structure spec_branch/@@+branch-edit"/>
        </dd></dl>
        </div>
     </div>
