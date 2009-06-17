@@ -153,7 +153,8 @@
             <tal:languages content="view/languages">
               English
             </tal:languages>
-            <a tal:replace="structure overview_menu/editlanguages/fmt:icon"/>
+            <a tal:attributes="href overview_menu/editlanguages/fmt:url" class="sprite edit">
+            <span class="invisible-link">Set preferred languages</span></a>
           </td>
         </tr>
       </tbody>

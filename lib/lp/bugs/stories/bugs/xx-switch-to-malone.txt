@@ -14,7 +14,7 @@ possible for its bugs to have an Unknown importance.
     ...     'http://launchpad.dev/debian'
     ...     '/+source/evolution/+bug/7/+editstatus')
     >>> main = find_main_content(user_browser.contents)
-    >>> read_only_icon = main.find('img', {'src': '/@@/read-only'})
+    >>> read_only_icon = main.find('span', {'class': 'sprite read-only'})
     >>> print extract_text(read_only_icon.parent)
     Unknown
 
@@ -32,6 +32,6 @@ importance will still have an Unknown value.
     ...     'http://launchpad.dev'
     ...     '/debian/+source/evolution/+bug/7/+editstatus')
     >>> main = find_main_content(user_browser.contents)
-    >>> read_only_icon = main.find('img', {'src': '/@@/read-only'})
+    >>> read_only_icon = main.find('span', {'class': 'sprite read-only'})
     >>> print extract_text(read_only_icon.parent)
     Unknown

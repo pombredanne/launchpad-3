@@ -4,10 +4,9 @@
   <div class="portletBody portletContent">
 
     <ul>
-      <li class="question" tal:repeat="question view/getLatestQuestions">
-           [<span tal:attributes="
-                    class string:questionstatus${question/status/name}"
-                  tal:content="question/status/title" />]
+      <li tal:repeat="question view/getLatestQuestions">
+           <span tal:attributes="class string:questionstatus${question/status/name} ${question/image:sprite_css}"
+           >[<tal:block tal:replace="structure question/status/title" />]</span>
         <a tal:content="question/title/fmt:shorten/80"
            tal:attributes="href question/fmt:url">question title</a>
       </li>

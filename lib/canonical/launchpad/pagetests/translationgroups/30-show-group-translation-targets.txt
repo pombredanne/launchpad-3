@@ -16,7 +16,7 @@ group has been assigned as the translator for.
     >>> for link in portlet.findAll('a'):
     ...     print '%s: %s' % (link.find(text=True), link['href'])
     Ubuntu: /ubuntu
-    &nbsp;NetApplet: /netapplet
+    NetApplet: /netapplet
     GNOME: /gnome
 
 If we disable some of these projects...

@@ -37,11 +37,11 @@ being set up for translation.
 
     >>> anon_browser.open(frobnicator_trunk_url)
     >>> print anon_browser.title
-    Translations overview for Frobnicator Series: trunk
+    Translations overview for Frobnicator trunk series
 
     >>> main_content = find_main_content(anon_browser.contents)
     >>> print extract_text(main_content.findAll('h1')[0])
-    Translations for Frobnicator Series: trunk
+    Translations for Frobnicator trunk series
 
     >>> print_language_stats(anon_browser)
     No translations.

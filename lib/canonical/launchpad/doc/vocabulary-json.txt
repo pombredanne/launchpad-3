@@ -51,7 +51,7 @@ A successful search.
         "entries": [
             {
                 "api_uri": "/~guadamen",
-                "image": "/@@/team",
+                "css": "sprite team",
                 "title": "GuadaMen",
                 "value": "guadamen"
             }
@@ -79,7 +79,7 @@ Size and offset parameters can be passed in to switch between batches.
         "entries": [
             {
                 "api_uri": "/~commercial-admins",
-                "image": "/@@/team",
+                "css": "sprite team",
                 "title": "Commercial Subscription Admins",
                 "value": "commercial-admins"
             }
@@ -95,8 +95,8 @@ Size and offset parameters can be passed in to switch between batches.
         "entries": [
             {
                 "api_uri": "/~name16",
+                "css": "sprite person",
                 "description": "foo.bar@canonical.com",
-                "image": "/@@/person",
                 "title": "Foo Bar",
                 "value": "name16"
             }
@@ -113,9 +113,9 @@ Long descriptions will be truncated.
         "entries": [
             {
                 "api_uri": "/apache",
+                "css": "sprite project",
                 "description": "The Apache projects are characterized by a
                                 collaborative, consensus based dev...",
-                "image": "/@@/project",
                 "title": "Apache",
                 "value": "apache"
             }

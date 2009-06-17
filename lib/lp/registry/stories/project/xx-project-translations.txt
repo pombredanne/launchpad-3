@@ -63,7 +63,7 @@ but administrators see translations disabled.
   ...     admin_browser.contents,
   ...     'portlet-obsolete-translatable-series'))
   All product series with obsolete templates
-  NetApplet Series: trunk
+  NetApplet trunk series
 
 alsa-utils is a product that doesn't belong to GNOME project. It has
 translations and is using Launchpad Translations officially, and it
