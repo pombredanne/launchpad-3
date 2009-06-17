@@ -649,7 +649,8 @@ class POTemplate(SQLBase, RosettaStats):
             template._cached_pofiles_by_language[language_code,
                                                  variant] = pofile
 
-    def newPOFile(self, language_code, variant=None, requester=None):
+    def newPOFile(self, language_code, variant=None, requester=None,
+                  create_sharing=True):
         """See `IPOTemplate`."""
         # Make sure we don't already have a PO file for this language.
         existingpo = self.getPOFileByLang(language_code, variant)
@@ -700,7 +701,8 @@ class POTemplate(SQLBase, RosettaStats):
         # Update cache to reflect the change.
         self._cached_pofiles_by_language[language_code, variant] = pofile
 
-        self._createPOFilesInSharingPOTemplates(pofile)
+        if create_sharing:
+            self._createPOFilesInSharingPOTemplates(pofile)
         # Store the changes.
         flush_database_updates()
 
@@ -965,7 +967,7 @@ class POTemplateSubset:
                 continue
             for pofile in shared_template.pofiles:
                 template.newPOFile(pofile.language.code,
-                                   pofile.variant, pofile.owner)
+                                   pofile.variant, pofile.owner, False)
 
     def new(self, name, translation_domain, path, owner):
         """See `IPOTemplateSubset`."""

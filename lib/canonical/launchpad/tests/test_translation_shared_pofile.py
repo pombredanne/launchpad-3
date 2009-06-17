@@ -809,7 +809,7 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
             name='stable', product=self.foo)
         self.foo.official_rosetta = True
 
-    def test_on_pofile_creation_shared(self):
+    def test_pofile_creation_shared(self):
         # When a pofile is created in a POTemplate it is also created in
         # all shared templates.
         # POTemplate is 'shared' if it has the same name ('messages').
@@ -825,7 +825,7 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         self.assertEqual(pofile_devel.language.code,
                          pofile_stable.language.code)
 
-    def test_on_pofile_creation_not_shared(self):
+    def test_pofile_creation_not_shared(self):
         # When a pofile is created in a POTemplate it is not created in
         # other templates that are not shared.
         potemplate_devel_1 = self.factory.makePOTemplate(
@@ -837,7 +837,7 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         pofile_devel = potemplate_devel_1.newPOFile('eo')
         self.assertEqual(None, potemplate_stable_2.getPOFileByLang('eo'))
 
-    def test_on_potemplate_creation(self):
+    def test_potemplate_creation(self):
         # When a potemplate is created it receives a copy of all pofiles in
         # all shared potemplates.
         devel_potemplate = self.factory.makePOTemplate(
