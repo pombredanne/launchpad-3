@@ -9,11 +9,17 @@ __all__ = [
     ]
 
 
+import os
+import shutil
+import tempfile
 import unittest
+
+import canonical.config
 
 from canonical.config import config
 from canonical.launchpad.scripts.runlaunchpad import (
-    get_services_to_run, SERVICES, split_out_runlaunchpad_arguments)
+    get_services_to_run, SERVICES, process_config_file_argument, 
+    split_out_runlaunchpad_arguments)
 
 
 class CommandLineArgumentProcessing(unittest.TestCase):
@@ -58,6 +64,43 @@ class CommandLineArgumentProcessing(unittest.TestCase):
         self.assertEqual(
             ([], ['-o', 'foo', '--bar=baz']),
             split_out_runlaunchpad_arguments(['-o', 'foo', '--bar=baz']))
+
+
+
+class TestDefaultConfigArgument(unittest.TestCase):
+    """Tests for the processing of the -C argument."""
+
+    def setUp(self):
+        self.config_root = tempfile.mkdtemp('configs')
+        self.saved_instance = config.instance_name
+        self.saved_config_roots = canonical.config.CONFIG_ROOT_DIRS
+        canonical.config.CONFIG_ROOT_DIRS = [self.config_root]
+
+    def tearDown(self):
+        shutil.rmtree(self.config_root)
+        canonical.config.CONFIG_ROOT_DIRS = self.saved_config_roots
+        config.setInstance(self.saved_instance)
+
+    def test_keep_argument(self):
+        """Make sure that a -C is processed unchanged."""
+        self.assertEqual(
+            ['-v', '-C', 'a_file.conf', '-h'],
+            process_config_file_argument(['-v', '-C', 'a_file.conf', '-h']))
+
+    def test_default_config(self):
+        """Make sure that the -C option is set to the correct instance."""
+        instance_config_dir = os.path.join(self.config_root, 'instance1')
+        os.mkdir(instance_config_dir)
+        file(os.path.join(instance_config_dir, 'launchpad.conf'), 'w').close()
+        config.setInstance('instance1')
+        self.assertEqual(
+            ['-a_flag', '-C', '%s/launchpad.conf' % instance_config_dir],
+            process_config_file_argument(['-a_flag']))
+
+    def test_instance_not_found_raises_ValueError(self):
+        """Make sure that an unknown instance fails."""
+        config.setInstance('unknown')
+        self.assertRaises(ValueError, process_config_file_argument, [])
 
 
 class ServersToStart(unittest.TestCase):
