@@ -840,9 +840,14 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
     def test_potemplate_creation(self):
         # When a potemplate is created it receives a copy of all pofiles in
         # all shared potemplates.
+        foo_other = self.factory.makeProductSeries(
+            name='other', product=self.foo)
+        other_potemplate = self.factory.makePOTemplate(
+            productseries=foo_other, name="messages")
         devel_potemplate = self.factory.makePOTemplate(
             productseries=self.foo_devel, name="messages")
         # These will automatically be shared across all sharing templates.
+        # They will also be created in the 'other' series.
         pofile_devel_eo = devel_potemplate.newPOFile('eo')
         pofile_devel_de = devel_potemplate.newPOFile('de')
 

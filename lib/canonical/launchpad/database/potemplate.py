@@ -968,6 +968,8 @@ class POTemplateSubset:
             for pofile in shared_template.pofiles:
                 template.newPOFile(pofile.language.code,
                                    pofile.variant, pofile.owner, False)
+            # Do not continue, else it would trigger an existingpo assertion.
+            return
 
     def new(self, name, translation_domain, path, owner):
         """See `IPOTemplateSubset`."""
