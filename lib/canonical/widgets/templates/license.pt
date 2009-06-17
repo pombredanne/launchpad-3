@@ -38,8 +38,12 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 table.setStyle('display', 'block');
 
                 // The table starts either collapsed or expanded.  The
-                // animation lives on the link target.
-                if (cfg.in) {
+                // animation lives on the link target.  The initial state of
+                // the slider depends on whether there are any checked
+                // licenses in that category.  A '0' means 'no'.
+                var arrow = Y.get(arrow_name);
+                Y.log('count: ' + arrow.getAttribute('count'));
+                if (arrow.getAttribute('count') == '0') {                
                     target.slide = Y.lazr.effects.slide_in(table_name);
                 }
                 else {
@@ -47,7 +51,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 }
                 target.slide.stop();
                 target.slide.run();
-                
+
                 // This event handler toggles the arrow state once the
                 // animation is complete.  drawer_closed is an undocumented
                 // attribute used by lazr-js, and recommended by mars.
@@ -74,9 +78,9 @@ YUI().use('node', 'lazr.effects', function(Y) {
             }, target_name);
         }
         make_slider({which: 'recommended'});
-        make_slider({which: 'more', in: true});
-        make_slider({which: 'deprecated', in: true});
-        make_slider({which: 'special', in: true});
+        make_slider({which: 'more'});
+        make_slider({which: 'deprecated'});
+        make_slider({which: 'special'});
 
         // Set a click event handler for the div containing all the
         // license checkbox.  When any license checkbox is selected, the
@@ -103,7 +107,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
 
         function reveal_details(e) {
             if (other_com.get('checked') || other_os.get('checked')) {
-                if (!details.hasClass('lazr-opened')) {      
+                if (!details.hasClass('lazr-opened')) {
                     Y.lazr.effects.slide_out(details).run();
                 }
             }
@@ -145,7 +149,8 @@ YUI().use('node', 'lazr.effects', function(Y) {
       <img id="recommended-expand-arrow"
            src="/@@/treeExpanded"
            title="Recommended open source licenses"
-           alt="Recommended open source licenses"/>
+           alt="Recommended open source licenses"
+           tal:attributes="count view/recommended_count"/>
       Recommended open source licenses
     </a>
     <input tal:replace="structure view/recommended" />
@@ -153,16 +158,18 @@ YUI().use('node', 'lazr.effects', function(Y) {
       <img id="more-expand-arrow"
            src="/@@/treeCollapsed"
            title="More open source licenses"
-           alt="More open source licenses"/>
+           alt="More open source licenses"
+           tal:attributes="count view/more_count"/>
       More open source licenses
     </a>
     <input tal:replace="structure view/more" />
-    <div tal:condition="view/show_deprecated">
+    <div tal:condition="view/deprecated_count">
       <a href="" id="deprecated-expand" class="js-action">
         <img id="deprecated-expand-arrow"
              src="/@@/treeCollapsed"
              title="Deprecated licenses"
-             alt="Deprecated licenses"/>
+             alt="Deprecated licenses"
+             tal:attributes="count view/deprecated_count"/>
         Deprecated licenses
       </a>
       <input tal:replace="structure view/deprecated" />
@@ -171,7 +178,8 @@ YUI().use('node', 'lazr.effects', function(Y) {
       <img id="special-expand-arrow"
            src="/@@/treeCollapsed"
            title="Other choices"
-           alt="Other choices"/>
+           alt="Other choices"
+           tal:attributes="count view/special_count"/>
       Other choices
     </a>
     <input tal:replace="structure view/special" />

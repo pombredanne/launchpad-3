@@ -266,7 +266,6 @@ class LicenseWidget(CheckBoxMatrixWidget):
         }
 
     categories = None
-    show_deprecated = False
 
     def __init__(self, field, vocabulary, request):
         # pylint: disable-msg=E1002
@@ -289,6 +288,15 @@ class LicenseWidget(CheckBoxMatrixWidget):
             self, 'license_info', self.license_info, IInputWidget,
             prefix='field', value=initial_value,
             context=field.context)
+        # These will get filled in by _categorize().  They are the number of
+        # selected licenses in the category.  The actual count doesn't matter,
+        # since if it's greater than 0 it will start opened.  NOte that we
+        # always want the recommended licenses to be opened, so we initialize
+        # its value to 1.
+        self.recommended_count = 1
+        self.more_count = 0
+        self.deprecated_count = 0
+        self.special_count = 0
 
     def textForValue(self, term):
         """See `ItemsWidgetBase`."""
@@ -316,8 +324,10 @@ class LicenseWidget(CheckBoxMatrixWidget):
         rendered = super(LicenseWidget, self).renderSelectedItem(
             index, text, value, name, cssClass)
         category = self._categorize(value, rendered)
-        if category == 'deprecated':
-            show_deprecated = True
+        # Increment the category counter.  This is used by the template to
+        # determine whether a category should start opened or not.
+        attribute_name = category + '_count'
+        setattr(self, attribute_name, getattr(self, attribute_name) + 1)
         return rendered
 
     def _categorize(self, value, rendered):

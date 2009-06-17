@@ -1137,7 +1137,9 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         # license_info widget.  It's the last piece of the puzzle for
         # manipulating the license_info widget into the table for the
         # LicenseWidget instead of the enclosing form.
-        return field_name != 'license_info'
+        if field_name == 'license_info':
+            return False
+        return super(ProductEditView, self).showOptionalMarker(field_name)
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
