@@ -543,8 +543,9 @@ class POTMsgSet(SQLBase):
             # if there is no existing current message
             # or if there was no previous imported message
             # or if the current message came from import
-            # or if current message is empty (deactivated translation).
-            # Or, if we are forcing a diverged imported translation.
+            # or if current message is empty (deactivated translation),
+            # or if current message is the same as new message,
+            # or, if we are forcing a diverged imported translation.
             # Empty imported translations should not replace
             # non-empty imported translations.
             if (current_message is None or
@@ -552,6 +553,7 @@ class POTMsgSet(SQLBase):
                 (current_message.is_imported and
                  (current_message.is_empty or not new_message.is_empty)) or
                 current_message.is_empty or
+                (current_message == new_message) or
                 (force_diverged and not new_message.is_empty)):
                 make_current = True
                 # Don't update the submitter and date changed
@@ -563,16 +565,26 @@ class POTMsgSet(SQLBase):
                     pofile.date_changed = UTC_NOW
 
                 if imported_message is not None:
-                    if not (force_diverged or force_shared):
-                        # If there was an imported message, keep the same
-                        # divergence/shared state unless something was forced.
-                        new_message.potemplate = imported_message.potemplate
-
-                    # Unmark diverged imported translation as 'imported'.
-                    if imported_message.potemplate is not None:
+                    # Unmark previous imported translation as 'imported'.
+                    was_diverged_to = imported_message.potemplate
+                    if (was_diverged_to is not None or
+                        (was_diverged_to is None and
+                         new_message == current_message and
+                         new_message.potemplate is not None)):
                         imported_message.is_imported = False
                         imported_message.is_current = False
                         imported_message.potemplate = None
+                    if not (force_diverged or force_shared):
+                        # If there was an imported message, keep the same
+                        # divergence/shared state unless something was forced.
+                        if (new_message.is_imported and
+                            new_message.potemplate is None):
+                            # If we are reverting imported message to
+                            # a shared imported message, do not
+                            # set it as diverged anymore.
+                            was_diverged_to = None
+                        new_message.potemplate = was_diverged_to
+
         else:
             # Non-imported translations.
             make_current = True
