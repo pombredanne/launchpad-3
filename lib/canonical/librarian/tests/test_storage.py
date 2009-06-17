@@ -33,7 +33,6 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.orig_commit = self.store.commit
         self.orig_rollback = self.store.rollback
         def commit():
-            print 'Commit detected'
             self.committed = True
             self.orig_commit()
         self.store.commit = commit
