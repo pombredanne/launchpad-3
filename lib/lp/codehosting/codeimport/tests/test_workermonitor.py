@@ -23,7 +23,17 @@ from twisted.trial.unittest import TestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
+from canonical.testing.layers import (
+    TwistedLayer, TwistedLaunchpadZopelessLayer)
+from canonical.twistedsupport.tests.test_processmonitor import (
+    makeFailure, ProcessTestsMixin)
 from lp.code.enums import CodeImportResultStatus, CodeImportReviewStatus
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.codeimportjob import (
+    ICodeImportJobSet, ICodeImportJobWorkflow)
+from lp.code.model.codeimport import CodeImport
+from lp.code.model.codeimportjob import CodeImportJob
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     CodeImportSourceDetails, get_default_bazaar_branch_store)
@@ -34,18 +44,8 @@ from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, SubversionServer, _make_silent_logger)
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
-from canonical.config import config
-from lp.code.model.codeimport import CodeImport
-from lp.code.model.codeimportjob import CodeImportJob
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.interfaces import (
-    ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportSet)
+from lp.testing import login, logout
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing.layers import (
-    TwistedLayer, TwistedLaunchpadZopelessLayer)
-from canonical.twistedsupport.tests.test_processmonitor import (
-    makeFailure, ProcessTestsMixin)
 
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
@@ -209,7 +209,7 @@ class TestWorkerMonitorUnit(TestCase):
         return self.worker_monitor.getSourceDetails().addCallback(
             check_source_details)
 
-    def disabled_test_updateHeartbeat(self):
+    def test_updateHeartbeat(self):
         # The worker monitor's updateHeartbeat method calls the
         # updateHeartbeat job workflow method.
         @read_only_transaction
@@ -219,7 +219,7 @@ class TestWorkerMonitorUnit(TestCase):
         return self.worker_monitor.updateHeartbeat('log tail').addCallback(
             check_updated_details)
 
-    def disabled_test_finishJobCallsFinishJob(self):
+    def test_finishJobCallsFinishJob(self):
         # The worker monitor's finishJob method calls the
         # finishJob job workflow method.
         @read_only_transaction
@@ -232,7 +232,7 @@ class TestWorkerMonitorUnit(TestCase):
             CodeImportResultStatus.SUCCESS).addCallback(
             check_finishJob_called)
 
-    def disabled_test_finishJobDoesntUploadEmptyFileToLibrarian(self):
+    def test_finishJobDoesntUploadEmptyFileToLibrarian(self):
         # The worker monitor's finishJob method does not try to upload an
         # empty log file to the librarian.
         self.assertEqual(self.worker_monitor._log_file.tell(), 0)
@@ -244,7 +244,7 @@ class TestWorkerMonitorUnit(TestCase):
             CodeImportResultStatus.SUCCESS).addCallback(
             check_no_file_uploaded)
 
-    def disabled_test_finishJobUploadsNonEmptyFileToLibrarian(self):
+    def test_finishJobUploadsNonEmptyFileToLibrarian(self):
         # The worker monitor's finishJob method uploads the log file to the
         # librarian.
         self.worker_monitor._log_file.write('some text')
@@ -257,7 +257,7 @@ class TestWorkerMonitorUnit(TestCase):
             CodeImportResultStatus.SUCCESS).addCallback(
             check_file_uploaded)
 
-    def disabled_test_finishJobStillCreatesResultWhenLibrarianUploadFails(self):
+    def test_finishJobStillCreatesResultWhenLibrarianUploadFails(self):
         # If the upload to the librarian fails for any reason, the
         # worker monitor still calls the finishJob workflow method,
         # but an OOPS is logged to indicate there was a problem.
@@ -299,7 +299,7 @@ class TestWorkerMonitorUnit(TestCase):
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
 
-    def disabled_test_callFinishJobLogsTracebackOnFailure(self):
+    def test_callFinishJobLogsTracebackOnFailure(self):
         # When callFinishJob is called with a failure, it dumps the traceback
         # of the failure into the log file.
         ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
@@ -550,7 +550,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
             return result
         return deferred.addBoth(save_protocol_object)
 
-    def test_import_cvs(self):
+    def DISABLEDtest_import_cvs(self):
         # Create a CVS CodeImport and import it.
         job = self.getStartedJobForImport(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
@@ -559,9 +559,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX flacoste 2008/12/04 bug=305314
-    # spurious-test-failure
-    def disabled_test_import_subversion(self):
+    def DISABLEDtest_import_subversion(self):
         # Create a Subversion CodeImport and import it.
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
         code_import_id = job.code_import.id
@@ -570,7 +568,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    def disabled_test_import_git(self):
+    def test_import_git(self):
         # Create a Git CodeImport and import it.
         job = self.getStartedJobForImport(self.makeGitCodeImport())
         code_import_id = job.code_import.id

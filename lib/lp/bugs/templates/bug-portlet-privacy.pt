@@ -12,9 +12,7 @@
     <a
       tal:condition="link/enabled"
       tal:attributes="href link/url; title link/text"
-      style="
-        padding-right: 18px; background: url(/@@/edit) center right no-repeat;
-      "
+      class="sprite edit"
       id="privacy-link"
     >This report is public</a>
     <tal:unchangeable condition="not:link/enabled"
@@ -24,9 +22,7 @@
     <a
       tal:condition="link/enabled"
       tal:attributes="href link/url; title link/text"
-      style="
-        padding-right: 18px; background: url(/@@/edit) center right no-repeat;
-      "
+      class="sprite edit"
       id="privacy-link"
     >This report is <strong>private</strong></a>
     <tal:unchangeable condition="not:link/enabled"
@@ -34,11 +30,7 @@
   </div>
   <div
     tal:condition="context/security_related"
-    style="
-      margin-top: 0.5em;
-      padding-right: 18px;
-      background:url(/@@/security) center right no-repeat;
-    "
+    class="sprite security"
     id="security-message"
   >Security vulnerability</div>
 </div>

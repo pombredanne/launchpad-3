@@ -414,6 +414,17 @@ class BugWatchUpdater(object):
         :param now: The current time (used for testing)
         :return: A list of remote bug IDs to be updated.
         """
+        # Check that the remote server's notion of time agrees with
+        # ours. If not, raise a TooMuchTimeSkew error, since if the
+        # server's wrong about the time it'll mess up all our times when
+        # we import things.
+        if now is None:
+            now = datetime.now(pytz.timezone('UTC'))
+
+        if (server_time is not None and
+            abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
+            raise TooMuchTimeSkew(abs(server_time - now))
+
         old_bug_watches = [
             bug_watch for bug_watch in bug_watches
             if bug_watch.lastchecked is not None]
@@ -429,17 +440,10 @@ class BugWatchUpdater(object):
             set(bug_watch.remotebug for bug_watch in bug_watches
                 if bug_watch not in old_bug_watches))
 
-        if now is None:
-            now = datetime.now(pytz.timezone('UTC'))
-
-        if (server_time is not None and
-            abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
-            raise TooMuchTimeSkew(abs(server_time - now))
-
         # We only make the call to getModifiedRemoteBugs() if there
         # are actually some bugs that we're interested in so as to
         # avoid unnecessary network traffic.
-        elif server_time is not None and len(remote_old_ids) > 0:
+        if server_time is not None and len(remote_old_ids) > 0:
             old_ids_to_check = remotesystem.getModifiedRemoteBugs(
                 remote_old_ids, oldest_lastchecked)
         else:

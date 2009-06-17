@@ -139,8 +139,8 @@ class TestPerson(TestCaseWithFactory):
         except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
-                'This team cannot be made private since it is referenced by'
-                ' an announcement.')
+                'This team cannot be converted to Private Membership since '
+                'it is referenced by an announcement.')
 
     def test_visibility_validator_answer_contact(self):
         answer_contact = AnswerContact(
@@ -153,7 +153,7 @@ class TestPerson(TestCaseWithFactory):
         except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
-                'This team cannot be made private since it is referenced by'
+                'This team cannot be converted to Private Membership since it is referenced by'
                 ' an answercontact.')
 
     def test_visibility_validator_archive(self):
@@ -166,7 +166,7 @@ class TestPerson(TestCaseWithFactory):
         except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
-                'This team cannot be made private since it is referenced by'
+                'This team cannot be converted to Private Membership since it is referenced by'
                 ' an archive.')
 
     def test_visibility_validator_branch(self):
@@ -179,7 +179,7 @@ class TestPerson(TestCaseWithFactory):
         except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
-                'This team cannot be made private since it is referenced by a'
+                'This team cannot be converted to Private Membership since it is referenced by a'
                 ' branch and a branchsubscription.')
 
     def test_visibility_validator_bug(self):
@@ -197,7 +197,7 @@ class TestPerson(TestCaseWithFactory):
         except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
-                'This team cannot be made private since it is referenced by a'
+                'This team cannot be converted to Private Membership since it is referenced by a'
                 ' bug, a bugaffectsperson, a bugnotificationrecipient, a'
                 ' bugsubscription, a bugtask and a message.')
 
@@ -208,7 +208,7 @@ class TestPerson(TestCaseWithFactory):
         except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
-                'This team cannot be made private since it is referenced by'
+                'This team cannot be converted to Private Membership since it is referenced by'
                 ' a project subscriber.')
 
     def test_visibility_validator_specification_subscriber(self):
@@ -222,7 +222,7 @@ class TestPerson(TestCaseWithFactory):
         except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
-                'This team cannot be made private since it is referenced by a'
+                'This team cannot be converted to Private Membership since it is referenced by a'
                 ' specificationsubscription.')
 
     def test_visibility_validator_team_member(self):
@@ -232,7 +232,7 @@ class TestPerson(TestCaseWithFactory):
         except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
-                'This team cannot be made private since it is referenced by a'
+                'This team cannot be converted to Private Membership since it is referenced by a'
                 ' teammembership.')
 
     def test_visibility_validator_team_mailinglist_public(self):
@@ -276,7 +276,7 @@ class TestPerson(TestCaseWithFactory):
         except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
-                'This team cannot be made private since it '
+                'This team cannot be converted to Private Membership since it '
                 'is referenced by a mailing list.')
 
     def test_visibility_validator_team_mailinglist_private_view(self):
@@ -292,7 +292,7 @@ class TestPerson(TestCaseWithFactory):
             })
         self.assertEqual(len(view.errors), 1)
         self.assertEqual(view.errors[0],
-                         'This team cannot be made private since it '
+                         'This team cannot be converted to Private Membership since it '
                          'is referenced by a mailing list.')
 
     def test_visibility_validator_team_mailinglist_private_purged(self):

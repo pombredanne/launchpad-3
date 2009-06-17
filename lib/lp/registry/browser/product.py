@@ -421,7 +421,7 @@ class ProductOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Commercial')
     def review_license(self):
-        text = 'Review license'
+        text = 'Review project'
         return Link('+review-license', text, icon='edit')
 
 
@@ -597,7 +597,7 @@ class ProductSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Commercial')
     def review_licenses(self):
-        return Link('+review-licenses', 'Review licenses')
+        return Link('+review-licenses', 'Review projects')
 
 
 class SortSeriesMixin:
@@ -1236,12 +1236,12 @@ class ProductAdminView(ProductEditView):
 
 
 class ProductReviewLicenseView(ProductEditView):
-    label = "Review project licensing"
+    label = "Review project"
     field_names = [
-        "active",
-        "private_bugs",
         "license_reviewed",
         "license_approved",
+        "active",
+        "private_bugs",
         "reviewer_whiteboard",
         ]
 
@@ -1406,6 +1406,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         'search_text',
         'active',
         'license_reviewed',
+        'license_approved',
         'license_info_is_empty',
         'licenses',
         'has_zero_licenses',
@@ -1423,6 +1424,8 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget('active', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('license_reviewed', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('license_approved', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('license_info_is_empty', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")

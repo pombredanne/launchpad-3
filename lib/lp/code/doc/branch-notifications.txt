@@ -94,7 +94,8 @@ previous one.  The size limit is one of the following:
   * 5000 lines
   * Send the entire diff
 
-    >>> from canonical.launchpad.interfaces import IBranch, IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.code.interfaces.branch import IBranch, IBranchSet
     >>> personset = getUtility(IPersonSet)
 
     >>> branch.subscribe(

@@ -69,13 +69,13 @@ There are two entries in the list.
     >>> first_entry = import_list.findNext('tr')
     >>> print extract_text(first_entry)
     po/evolution-2.2-test.pot in
-    Evolution Series: trunk
+    Evolution trunk series
     Imported
     >>> second_entry = first_entry.findNext(
     ...     'tr').findNext('tr').findNext('tr')
     >>> print extract_text(second_entry)
     po/pt_BR.po in
-    Evolution Series: trunk
+    Evolution trunk series
     Imported
 
 
@@ -103,13 +103,13 @@ Evolution product are for this trunk series.
     >>> first_entry = import_list.findNext('tr')
     >>> print extract_text(first_entry)
     po/evolution-2.2-test.pot in
-    Evolution Series: trunk
+    Evolution trunk series
     Imported
     >>> second_entry = first_entry.findNext(
     ...     'tr').findNext('tr').findNext('tr')
     >>> print extract_text(second_entry)
     po/pt_BR.po in
-    Evolution Series: trunk
+    Evolution trunk series
     Imported
 
 
@@ -118,7 +118,7 @@ Evolution product are for this trunk series.
 The import queue is linked from the translations page for persons.
 
     >>> user_browser.open('http://translations.launchpad.dev/~name16')
-    >>> user_browser.getLink('See import queue').click()
+    >>> user_browser.getLink('Import queue').click()
 
 This time, we do have content for this product:
 
@@ -137,7 +137,7 @@ it here too.
     >>> first_entry = import_list.findNext('tr')
     >>> print extract_text(first_entry)
     po/evolution-2.2-test.pot in
-    Evolution Series: trunk
+    Evolution trunk series
     Imported
     >>> first_entry_importer = first_entry.findNext('tr')
     >>> print extract_text(first_entry_importer)
@@ -148,7 +148,7 @@ it here too.
     ...     'tr').findNext('tr')
     >>> print extract_text(second_entry)
     po/pt_BR.po in
-    Evolution Series: trunk
+    Evolution trunk series
     Imported
     >>> second_entry_importer = second_entry.findNext('tr')
     >>> print extract_text(second_entry_importer)

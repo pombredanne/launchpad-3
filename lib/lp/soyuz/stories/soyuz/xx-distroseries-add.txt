@@ -8,8 +8,8 @@ when we are not logged in.
   >>> anon_browser.getLink("Add series")
   Traceback (most recent call last):
   ...
-  LinkNotFoundError 
-  
+  LinkNotFoundError
+
 and that going directly to the page redirects to login
 
   >>> anon_browser.open("http://localhost/ubuntu/+addseries")
@@ -25,7 +25,7 @@ This time we expect to be able to see the link and the page.
   >>> browser.getLink("All series").click()
   >>> browser.getLink("Add series").click()
   >>> browser.url
-  'http://localhost/debian/+addseries'  
+  'http://localhost/debian/+addseries'
 
 OK, let's test as Foo Bar, who is an administrator.
 
@@ -33,7 +33,7 @@ OK, let's test as Foo Bar, who is an administrator.
   >>> admin_browser.getLink("All series").click()
   >>> admin_browser.getLink("Add series").click()
   >>> admin_browser.url
-  'http://localhost/ubuntu/+addseries'  
+  'http://localhost/ubuntu/+addseries'
 
 Now, lets fill out this form and add a series.
 
@@ -44,7 +44,7 @@ Now, lets fill out this form and add a series.
   >>> admin_browser.getControl("Description").value = 'Fidgety Fairy desc'
   >>> admin_browser.getControl("Version").value = '5.12'
   >>> admin_browser.getControl("Parent series").value = ['ubuntu/hoary']
-  >>> admin_browser.getControl("Add").click()
+  >>> admin_browser.getControl("Create Series").click()
   >>> admin_browser.url
   'http://localhost/ubuntu/fidgety'
 

@@ -8,7 +8,7 @@
   <div class="portletBody portletContent">
     <table class="summary">
       <tbody>
-        <tr>
+        <tr tal:condition="context/required:launchpad.Admin">
           <th>Project group status:</th>
           <td>
             <tal:block condition="context/active">Active</tal:block>

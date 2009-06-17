@@ -19,7 +19,7 @@ from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
-    Description, PublicPersonChoice, Summary, Title)
+    ContentNameField, Description, PublicPersonChoice, Summary, Title)
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
@@ -31,6 +31,7 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
@@ -108,6 +109,27 @@ class DistroSeriesStatus(DBEnumeratedType):
         """)
 
 
+class DistroSeriesNameField(ContentNameField):
+    """A class to ensure `IDistroSeries` has unique names."""
+    errormessage = _("%s is already in use by another series.")
+
+    @property
+    def _content_iface(self):
+        """See `IField`."""
+        return IDistroSeries
+
+    def _getByName(self, name):
+        """See `IField`."""
+        try:
+            if self._content_iface.providedBy(self.context):
+                return self.context.distribution.getSeries(name)
+            else:
+                return self.context.getSeries(name)
+        except NoSuchDistroSeries:
+            # The name is available for the new series.
+            return None
+
+
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
 
@@ -122,9 +144,10 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     id = Attribute("The distroseries's unique number.")
     name = exported(
-        TextLine(
+        DistroSeriesNameField(
             title=_("Name"), required=True,
-            description=_("The name of this series.")))
+            description=_("The name of this series."),
+            constraint=name_validator))
     displayname = exported(
         TextLine(
             title=_("Display name"), required=True,
