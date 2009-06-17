@@ -109,7 +109,9 @@
       <a tal:replace="structure overview_menu/editemail/fmt:icon" />
       <br /><strong>Languages:</strong>
       <tal:languages content="view/languages">English</tal:languages>
-      <a tal:replace="structure overview_menu/editlanguages/fmt:icon"/>
+      <a tal:attributes="href overview_menu/editlanguages/fmt:url" class="sprite edit">
+      <span class="invisible-link">Set preferred languages</span></a>
+
     </div>
   </div>
 
@@ -270,14 +272,9 @@
         <td style="padding: 0px 3em 0px 0px" id="recently-approved"
           tal:condition="view/recently_approved_members">
         <h3 style="color:black; font-weight:bold; margin: 0px">Recently approved</h3>
-        <ul style="margin: 0px"
-          tal:condition="view/recently_approved_members">
-          <li class="person"
-              tal:repeat="person view/recently_approved_members">
-            <a tal:attributes="href person/fmt:url"
-              tal:content="person/fmt:unique_displayname"
-              >Foo Bar (name16)</a>
-          </li>
+        <ul tal:condition="view/recently_approved_members">
+          <li tal:repeat="person view/recently_approved_members"
+              tal:content="structure person/fmt:link" />
         </ul>
         <div style="margin-top: 3px;">
           <tal:mentorships
@@ -287,13 +284,9 @@
         <td style="padding: 0px;" id="recently-applied"
           tal:condition="view/recently_proposed_members">
         <h3 style="color:black; font-weight:bold; margin: 0px">Recently applied</h3>
-        <ul style="margin: 0px;">
-          <li class="person"
-              tal:repeat="person view/recently_proposed_members">
-            <a tal:attributes="href person/fmt:url"
-              tal:content="person/fmt:unique_displayname"
-              >Foo Bar (name16)</a>
-          </li>
+        <ul>
+          <li tal:repeat="person view/recently_proposed_members"
+              tal:content="structure person/fmt:link" />
         </ul>
         <div style="margin-top: 3px;"
           tal:condition="overview_menu/proposed_members/enabled"

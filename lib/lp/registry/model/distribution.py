@@ -1028,7 +1028,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         result_set = store.find(
             *(select_spec + find_spec + match_clause)).config(distinct=True)
 
-        return result_set
+        return result_set.order_by(DistributionSourcePackageCache.name)
 
     def searchBinaryPackagesFTI(self, package_name):
         """See `IDistribution`."""

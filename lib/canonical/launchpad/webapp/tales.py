@@ -480,28 +480,31 @@ class ObjectImageDisplayAPI:
     def __init__(self, context):
         self._context = context
 
-    def default_icon_resource(self, context):
+    #def default_icon_resource(self, context):
+    def sprite_css(self):
+        """Return the CSS class for the sprite"""
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
+        context = self._context
         if IProduct.providedBy(context):
-            return '/@@/product'
+            return 'sprite product'
         elif IProject.providedBy(context):
-            return '/@@/project'
+            return 'sprite project'
         elif IPerson.providedBy(context):
             if context.isTeam():
-                return '/@@/team'
+                return 'sprite team'
             else:
                 if context.is_valid_person:
-                    return '/@@/person'
+                    return 'sprite person'
                 else:
-                    return '/@@/person-inactive'
+                    return 'sprite person-inactive'
         elif IDistribution.providedBy(context):
-            return '/@@/distribution'
+            return 'sprite distribution'
         elif ISprint.providedBy(context):
-            return '/@@/meeting'
+            return 'sprite meeting'
         elif IBug.providedBy(context):
-            return '/@@/bug'
+            return 'sprite bug'
         return None
 
     def default_logo_resource(self, context):
@@ -548,45 +551,20 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return None
 
-    def _default_icon_url(self, rootsite):
-        """Get the default icon URL."""
-        if rootsite is None:
-            root_url = ''
-        else:
-            root_url = allvhosts.configs[rootsite].rooturl[:-1]
-
-        default_icon = self.default_icon_resource(self._context)
-        if default_icon is None:
-            # We want to indicate that this object doesn't have an
-            # icon.
-            return None
-        url = root_url + default_icon
-        return url
-
-    def icon_url(self, rootsite):
+    def _get_custom_icon(self):
         """Return the URL for this object's icon."""
         context = self._context
-        if context is None:
-            # We handle None specially and return an empty string.
-            return ''
-
         if IHasIcon.providedBy(context) and context.icon is not None:
-            url = context.icon.getURL()
+            icon_url = context.icon.getURL()
+            icon = '<img alt="" width="14" height="14" src="%s" />' % icon_url
+        elif context is None:
+            return ''
         else:
-            url = self._default_icon_url(rootsite)
-        return url
+            return None
 
-    def icon(self, rootsite=None):
-        """Return the appropriate <img> tag for this object's icon.
-
-        :return: A string, or None if the context object doesn't have
-            an icon.
-        """
-        url = self.icon_url(rootsite)
-        if url is None or url == '':
-            return url
-        icon = '<img alt="" width="14" height="14" src="%s" />'
-        return icon % url
+    def icon(self):
+        #XXX: this should go away as soon as all image:icon where replaced
+        return None
 
     def logo(self):
         """Return the appropriate <img> tag for this object's logo.
@@ -651,31 +629,32 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         'logo',
         'mugshot',
         'badges',
+        'sprite_css',
         ])
 
     icon_template = (
-        '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
+        '<span alt="%s" title="%s" class="%s" />')
 
     linked_icon_template = (
-        '<a href="%s"><img height="14" width="14"'
-        ' alt="%s" title="%s" src="%s" /></a>')
+        '<a href="%s" alt="%s" title="%s" class="%s"></a>')
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
         if name in self.allowed_names:
             return getattr(self, name)()
-        elif name.startswith('icon:'):
-            rootsite = name.split(':', 1)[1]
-            return self.icon(rootsite=rootsite)
         else:
             raise TraversalError, name
 
-    def icon(self, rootsite=None):
-        """Display the icon dependent on the IBugTask.importance."""
-        if rootsite is not None:
-            root_url = allvhosts.configs[rootsite].rooturl[:-1]
+    def sprite_css(self):
+        """Return the CSS class for the sprite"""
+        if self._context.importance:
+            importance = self._context.importance.title.lower()
+            return "sprite bug-%s" % importance
         else:
-            root_url = ''
+            return "sprite bug"
+
+    def icon(self):
+        """Display the icon dependent on the IBugTask.importance."""
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -684,13 +663,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
-            src = "%s/@@/bug-%s" % (root_url, importance)
+            css = "sprite bug-%s" % importance
         else:
             alt = ""
             title = ""
-            src = "%s/@@/bug" % root_url
+            css = self.sprite_css()
 
-        return self.icon_template % (alt, title, src)
+        return self.icon_template % (alt, title, css)
 
     def _hasMentoringOffer(self):
         """Return whether the bug has a mentoring offer."""
@@ -709,26 +688,26 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         badges = []
         if self._context.bug.private:
             badges.append(self.icon_template % (
-                "private", "Private","/@@/private"))
+                "private", "Private","sprite private"))
 
         if self._hasMentoringOffer():
             badges.append(self.icon_template % (
-                "mentoring", "Mentoring offered", "/@@/mentoring"))
+                "mentoring", "Mentoring offered", "sprite mentoring"))
 
         if self._hasBugBranch():
             badges.append(self.icon_template % (
-                "branch", "Branch exists", "/@@/branch"))
+                "branch", "Branch exists", "sprite branch"))
 
         if self._hasSpecification():
             badges.append(self.icon_template % (
-                "blueprint", "Related to a blueprint", "/@@/blueprint"))
+                "blueprint", "Related to a blueprint", "sprite blueprint"))
 
         if self._context.milestone:
             milestone_text = "milestone %s" % self._context.milestone.name
             badges.append(self.linked_icon_template % (
                 canonical_url(self._context.milestone),
                 milestone_text , "Linked to %s" % milestone_text,
-                "/@@/milestone"))
+                "sprite milestone"))
 
         # Join with spaces to avoid the icons smashing into each other
         # when multiple ones are presented.
@@ -759,8 +738,8 @@ class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
 class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IQuestion to a formatted string. Used for image:icon."""
 
-    def icon(self):
-        return '<img alt="" height="14" width="14" src="/@@/question" />'
+    def sprite_css(self):
+        return "sprite question"
 
 
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
@@ -771,45 +750,32 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     Used for image:icon.
     """
 
-    icon_template = """
-        <img height="14" width="14" alt="%s" title="%s" src="%s" />"""
+    icon_template = (
+        '<span alt="%s" title="%s" class="%s" />')
 
-    def icon(self):
-        # The icon displayed is dependent on the IBugTask.importance.
+    def sprite_css(self):
+        """Return the CSS class for the sprite"""
         if self._context.priority:
             priority = self._context.priority.title.lower()
-            alt = "(%s)" % priority
-            title = priority.capitalize()
-            if priority != 'not':
-                # The other status names do not make a lot of sense on
-                # their own, so tack on a noun here.
-                title += " priority"
-            else:
-                title += " a priority"
-            src = "/@@/blueprint-%s" % priority
+            return "sprite blueprint-%s" % priority
         else:
-            alt = ""
-            title = ""
-            src = "/@@/blueprint"
-
-        return self.icon_template % (alt, title, src)
-
+            return "sprite blueprint"
 
     def badges(self):
 
         badges = ''
         if self._context.mentoring_offers.count() > 0:
             badges += self.icon_template % (
-                "mentoring", "Mentoring offered", "/@@/mentoring")
+                "mentoring", "Mentoring offered", "sprite mentoring")
 
         if self._context.branch_links.count() > 0:
             badges += self.icon_template % (
-                "branch", "Branch is available", "/@@/branch")
+                "branch", "Branch is available", "sprite branch")
 
         if self._context.informational:
             badges += self.icon_template % (
                 "informational", "Blueprint is purely informational",
-                "/@@/info")
+                "sprite info")
 
         return badges
 
@@ -935,7 +901,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url',
-                         'icon_url': 'icon_url',
+                         'icon': 'icon',
                          'displayname': 'displayname',
                          'unique_displayname': 'unique_displayname',
                          }
@@ -972,25 +938,35 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         """
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
-        image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
-        return (u'<a href="%s" class="bg-image" '
-                 'style="background-image: url(%s)">%s</a>') % (
-            url, image_url, cgi.escape(person.browsername))
+        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon()
+        if custom_icon is None:
+            css_class= ObjectImageDisplayAPI(person).sprite_css()
+            return (u'<a href="%s" class="%s">%s</a>') % (
+                url, css_class, cgi.escape(person.browsername))
+        else:
+            return (u'<a href="%s" class="bg-image" '
+                     'style="background-image: url(%s)">%s</a>') % (
+                url, custom_icon, cgi.escape(person.browsername))
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
         person = self._context
         return person.displayname
 
-    def unique_displayname(self, view_name, rootsite=None):
+    def unique_displayname(self, view_name):
         """Return the unique_displayname as a string."""
         person = self._context
         return person.unique_displayname
 
-    def icon_url(self, view_name, rootsite=None):
+    def icon(self, view_name):
         """Return the URL for the person's icon."""
-        return ObjectImageDisplayAPI(self._context).icon_url(
-            rootsite=rootsite)
+        custom_icon = ObjectImageDisplayAPI(self._context)._get_custom_icon()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(self._context).sprite_css()
+            return '<span class="' + css_class + '"></span>'
+        else:
+            return custom_icon
+
 
 class TeamFormatterAPI(PersonFormatterAPI):
     """Adapter for `ITeam` objects to a formatted string."""
@@ -1016,11 +992,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            image_url = ObjectImageDisplayAPI(person)._default_icon_url(
-                rootsite=rootsite)
-            return ('<span style="padding-left: 18px; background: url(%s)'
-                    'center left no-repeat;">%s</span>') % (
-                image_url, cgi.escape(self.hidden))
+            return '<span class="sprite team">%s</span>' % cgi.escape(self.hidden)
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
 
     def displayname(self, view_name, rootsite=None):
@@ -1031,27 +1003,13 @@ class TeamFormatterAPI(PersonFormatterAPI):
             return self.hidden
         return super(TeamFormatterAPI, self).displayname(view_name, rootsite)
 
-    def unique_displayname(self, view_name, rootsite=None):
+    def unique_displayname(self, view_name):
         """See `PersonFormatterAPI`."""
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
             return self.hidden
-        return super(TeamFormatterAPI, self).unique_displayname(view_name,
-                                                                rootsite)
-    def icon_url(self, view_name, rootsite=None):
-        """Return the URL for the team's icon.
-
-        If the team is private use the default team icon url.
-        """
-        person = self._context
-        if not check_permission('launchpad.View', person):
-            image_url = ObjectImageDisplayAPI(person)._default_icon_url(
-                rootsite=rootsite)
-            return image_url
-
-        return ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
-
+        return super(TeamFormatterAPI, self).unique_displayname(view_name)
 
 class CustomizableFormatter(ObjectFormatterAPI):
     """A ObjectFormatterAPI that is easy to customize.
@@ -1071,9 +1029,6 @@ class CustomizableFormatter(ObjectFormatterAPI):
 
     For greater control over the summary, overrride
     _make_link_summary.
-
-    If image:icon does not provide a suitable icon, override
-    _get_icon.
 
     If a different permission is required, override _link_permission.
     """
@@ -1102,12 +1057,12 @@ class CustomizableFormatter(ObjectFormatterAPI):
                 values[key] = cgi.escape(value)
         return self._link_summary_template % values
 
-    def _get_icon(self):
+    def sprite_css(self):
         """Retrieve the icon for the _context, if any.
 
-        :return: The icon HTML or None if no icon is available.
+        :return: The icon css or None if no icon is available.
         """
-        return queryAdapter(self._context, IPathAdapter, 'image').icon()
+        return queryAdapter(self._context, IPathAdapter, 'image').sprite_css()
 
     def link(self, view_name):
         """Return html including a link, description and icon.
@@ -1117,19 +1072,21 @@ class CustomizableFormatter(ObjectFormatterAPI):
         for the icon, self._should_link to determine whether to link, and
         self.url() to generate the url.
         """
-        html = self._get_icon()
-        if html is None:
-            html = ''
+        sprite = self.sprite_css()
+        if sprite is None:
+            css = ''
         else:
-            html += '&nbsp;'
-        html += self._make_link_summary()
+            css = ' class="' + sprite + '"'
+
+        summary = self._make_link_summary()
         if check_permission(self._link_permission, self._context):
             url = self.url(view_name)
         else:
             url = ''
         if url:
-            html = '<a href="%s">%s</a>' % (url, html)
-        return html
+            return '<a href="%s"%s>%s</a>' % (url, css, summary)
+        else:
+            return summary
 
 
 class PillarFormatterAPI(CustomizableFormatter):
@@ -1237,9 +1194,8 @@ class BranchFormatterAPI(ObjectFormatterAPI):
     def link(self, view_name):
         """A hyperlinked branch icon with the displayname."""
         return (
-            '<a href="%(url)s">'
-            '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(display_name)s</a>' % self._args(view_name))
+            '<a href="%(url)s" class="sprite branch">'
+            '%(display_name)s</a>' % self._args(view_name))
 
     def bzrLink(self, view_name):
         """A hyperlinked branch icon with the bazaar identity."""
@@ -1445,7 +1401,7 @@ class ProductReleaseFormatterAPI(CustomizableFormatter):
 class ProductSeriesFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for ProductSeries objects"""
 
-    _link_summary_template = _('%(product)s Series: %(series)s')
+    _link_summary_template = _('%(product)s %(series)s series')
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1498,6 +1454,9 @@ class SpecificationBranchFormatterAPI(CustomizableFormatter):
         """Provide the icon of the linked spec"""
         formatter = SpecificationFormatterAPI(self._context.specification)
         return formatter._get_icon()
+
+    def sprite_css(self):
+        return queryAdapter(self._context.specification, IPathAdapter, 'image').sprite_css()
 
 
 class BugTrackerFormatterAPI(ObjectFormatterAPI):
@@ -2707,9 +2666,9 @@ class FormattersAPI:
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
                 person_formatter = PersonFormatterAPI(person)
-                image_html = ObjectImageDisplayAPI(person).icon()
-                text = text.replace(address, '<a href="%s">%s&nbsp;%s</a>' % (
-                    canonical_url(person), image_html, address))
+                css_sprite = ObjectImageDisplayAPI(person).sprite_css()
+                text = text.replace(address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
+                    canonical_url(person), css_sprite, address))
         return text
 
     def lower(self):

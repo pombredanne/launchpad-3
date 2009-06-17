@@ -72,7 +72,6 @@
       </style>
     </noscript>
 
-
     <metal:load-javascript
       use-macro="context/@@+main-template-macros/load-javascript" />
 
@@ -130,9 +129,8 @@
         method="get"
         accept-charset="UTF-8"
         tal:attributes="action string:${rooturl}+search"
+        class="sprite search-icon"
       >
-        <img src="/@@/search.png" style="margin-bottom: -4px"
-             alt="Search launchpad:" />
         <input type="search" id="search-text" name="field.text" />
       </form>
       <tal:hierarchy replace="structure context/@@+hierarchy" />

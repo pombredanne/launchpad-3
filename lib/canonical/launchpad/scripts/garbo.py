@@ -19,7 +19,7 @@ from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.hwdb import HWSubmission
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces import IMasterStore, IRevisionSet
+from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from lp.services.scripts.base import (
@@ -27,6 +27,7 @@ from lp.services.scripts.base import (
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
+from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
 from lp.registry.model.mailinglist import MailingListSubscription
@@ -308,6 +309,8 @@ class HWSubmissionEmailLinker(TunableLoop):
     def __init__(self, log):
         super(HWSubmissionEmailLinker, self).__init__(log)
         self.submission_store = IMasterStore(HWSubmission)
+        self.submission_store.execute(
+            "DROP TABLE IF EXISTS NewlyMatchedSubmission")
         self.submission_store.execute("""
             CREATE TEMPORARY TABLE NewlyMatchedSubmission AS
             SELECT

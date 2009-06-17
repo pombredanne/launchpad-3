@@ -1762,6 +1762,10 @@
             facet="overview"
             template="../templates/product-index.pt"/>
         <browser:page
+            name="+timeline-graph"
+            facet="overview"
+            template="../templates/product-timeline-graph.pt"/>
+        <browser:page
             name="+packages"
             facet="overview"
             template="../templates/product-packages.pt"/>
@@ -2462,21 +2466,14 @@
             name="+reassign"
             template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
     </browser:pages>
-    <browser:addform
+    <browser:page
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistroSeries"
-        label="Register a new series"
-        fields="name displayname title summary description version parent_series"
-        content_factory="canonical.launchpad.database.DistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../../../canonical/launchpad/templates/launchpad-addform.pt">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget"/>
-    </browser:addform>
+        template="../templates/distroseries-add.pt">
+    </browser:page>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"

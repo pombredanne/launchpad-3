@@ -137,6 +137,60 @@ initial value remains.
     True
 
 
+== Creating distroseries ==
+
+The distroseries name is unique and it cannot contain spaces
+
+    >>> view = create_view(ubuntu, '+addseries')
+    >>> print view.page_title
+    Register a series in Ubuntu
+    >>> print view.label
+    Register a new series
+
+    >>> print view.cancel_url
+    http://launchpad.dev/ubuntu
+    >>> print view.next_url
+    None
+
+    >>> view.field_names
+    ['name', 'displayname', 'title', 'summary', 'description', 'version',
+     'parent_series']
+
+A distroseries is created whent the required field are submitted.
+
+    >>> form = {
+    ...     'field.name': 'sane',
+    ...     'field.displayname': 'Sane Name',
+    ...     'field.title': 'Ubuntu Sane Name',
+    ...     'field.summary': 'A stable series to introduce fnord.',
+    ...     'field.description': 'I am board filling this out',
+    ...     'field.version': '2009.06',
+    ...     'field.parent_series': 'ubuntu/hoary',
+    ...     'field.actions.create': 'Create Series',
+    ...     }
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> view.errors
+    []
+    >>> sane_distroseries = ubuntu.getSeries('sane')
+    >>> print sane_distroseries.name
+    sane
+
+The distroseries name is unique.
+
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    sane is already in use by another series.
+
+The distroseries name cannot contain spaces.
+
+    >>> form['field.name'] = 'insane name'
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    Invalid name 'insane name'...
+
+
 == Hiding translations ==
 
 Each distroseries has a switch that allows administrators to either

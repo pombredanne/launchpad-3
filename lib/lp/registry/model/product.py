@@ -90,6 +90,7 @@ from lp.blueprints.interfaces.specification import (
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
+from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
 
@@ -956,8 +957,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getTimeline(self, include_inactive=False):
         """See `IProduct`."""
+        series_list = sorted_version_numbers(self.serieses,
+                                             key=operator.attrgetter('name'))
+        if self.development_focus in series_list:
+            series_list.remove(self.development_focus)
+        series_list.insert(0, self.development_focus)
+        series_list.reverse()
         return [series.getTimeline(include_inactive=include_inactive)
-                for series in self.serieses]
+                for series in series_list]
 
 
 class ProductSet:
@@ -1060,7 +1067,7 @@ class ProductSet:
         return product
 
     def forReview(self, search_text=None, active=None,
-                  license_reviewed=None, licenses=None,
+                  license_reviewed=None, license_approved=None, licenses=None,
                   license_info_is_empty=None,
                   has_zero_licenses=None,
                   created_after=None, created_before=None,
@@ -1075,6 +1082,9 @@ class ProductSet:
         if license_reviewed is not None:
             conditions.append('Product.reviewed = %s'
                               % sqlvalues(license_reviewed))
+        if license_approved is not None:
+            conditions.append('Product.license_approved = %s'
+                              % sqlvalues(license_approved))
 
         if active is not None:
             conditions.append('Product.active = %s' % sqlvalues(active))

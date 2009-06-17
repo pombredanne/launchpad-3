@@ -128,9 +128,13 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/lp.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/lp/dragscroll.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/picker.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/milestoneoverlay.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/timeline.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
     <script type="text/javascript"

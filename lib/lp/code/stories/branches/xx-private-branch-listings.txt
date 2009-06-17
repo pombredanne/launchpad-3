@@ -259,4 +259,4 @@ But normal people can't.
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'branch-details'))
     No revision control details recorded for
-    The Landscape Project Series: trunk.
+    The Landscape Project trunk series.

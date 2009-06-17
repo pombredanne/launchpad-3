@@ -15,7 +15,7 @@ instance here:
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
 
     >>> from lp.bugs.tests.externalbugtracker import TestIssuezilla
-    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')

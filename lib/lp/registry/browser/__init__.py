@@ -43,7 +43,7 @@ def get_status_counts(workitems, status_attr):
         statuses[status] += 1
     return [
         StatusCount(status, statuses[status])
-        for status in sorted(statuses, key=attrgetter('name'))]
+        for status in sorted(statuses, key=attrgetter('sortkey'))]
 
 
 class MilestoneOverlayMixin:

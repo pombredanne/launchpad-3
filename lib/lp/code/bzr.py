@@ -24,11 +24,11 @@ from bzrlib.plugins.loom.branch import (
 from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
     RepositoryFormatKnit3, RepositoryFormatKnit4)
 try:
-    from bzrlib.repofmt.groupcompress_repo import RepositoryFormatCHK2
+    from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
     # Shut up, pyflakes.
-    RepositoryFormatCHK2
+    RepositoryFormat2a
 except ImportError:
-    RepositoryFormatCHK2 = None
+    RepositoryFormat2a = None
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4, RepositoryFormatKnitPack5,
@@ -189,9 +189,15 @@ class RepositoryFormat(DBEnumeratedType):
         " and chk inventories\n",
         )
 
-    BZR_CHK2 = DBItem(405,
+    BZR_CHK2 = DBItem(410,
         "Bazaar development format - chk repository with bencode revision"
-        " serialization (needs bzr.dev from 1.15)\n",
+        " serialization (needs bzr.dev from 1.16)\n",
+        "Development repository format - rich roots, group compression"
+        " and chk inventories\n",
+        )
+
+    BZR_CHK_2A = DBItem(415,
+        "Bazaar repository format 2a (needs bzr 1.16 or later)\n",
         "Development repository format - rich roots, group compression"
         " and chk inventories\n",
         )
@@ -253,8 +259,10 @@ REPOSITORY_FORMAT_UPGRADE_PATH = {
     RepositoryFormat.BZR_DEV_2: None,
     RepositoryFormat.BZR_DEV_2_SUBTREE: None,
     RepositoryFormat.BZR_CHK1: None,
-    RepositoryFormat.BZR_CHK2: None}
+    RepositoryFormat.BZR_CHK2: None,
+    RepositoryFormat.BZR_CHK_2A: None
+    }
 
-if RepositoryFormatCHK2 is not None:
-    REPOSITORY_FORMAT_UPGRADE_PATH[RepositoryFormat.BZR_CHK1] = (
-        RepositoryFormatCHK2)
+if RepositoryFormat2a is not None:
+    for k in [RepositoryFormat.BZR_CHK1, RepositoryFormat.BZR_CHK2]:
+        REPOSITORY_FORMAT_UPGRADE_PATH[k] = RepositoryFormat2a
