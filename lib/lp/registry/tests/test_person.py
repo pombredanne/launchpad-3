@@ -295,6 +295,78 @@ class TestPerson(TestCaseWithFactory):
                          'This team cannot be converted to Private Membership since it '
                          'is referenced by a mailing list.')
 
+    def test_visibility_validator_team_mailinglist_pmt_to_private(self):
+        # A PRIVATE_MEMBERSHIP team with a mailing list may convert to a PRIVATE.
+        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        self.otherteam.visibility = PersonVisibility.PRIVATE
+
+    def test_visibility_validator_team_mailinglist_pmt_to_private_view(self):
+        # A PRIVATE_MEMBERSHIP team with a mailing list may convert to a PRIVATE.
+        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        view = create_initialized_view(self.otherteam, '+edit', {
+            'field.name': 'otherteam',
+            'field.displayname': 'Other Team',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.renewal_policy': 'NONE',
+            'field.visibility': 'PRIVATE',
+            'field.actions.save': 'Save',
+            })
+        self.assertEqual(len(view.errors), 0)
+
+    def test_visibility_validator_team_private_to_pmt(self):
+        # A PRIVATE team cannot convert to PRIVATE_MEMBERSHIP.
+        self.otherteam.visibility = PersonVisibility.PRIVATE
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except ImmutableVisibilityError, exc:
+            self.assertEqual(
+                str(exc),
+                'A private team cannot change visibility.')
+
+    def test_visibility_validator_team_private_to_pmt_view(self):
+        # A PRIVATE team cannot convert to PRIVATE_MEMBERSHIP.
+        self.otherteam.visibility = PersonVisibility.PRIVATE
+        view = create_initialized_view(self.otherteam, '+edit', {
+            'field.name': 'otherteam',
+            'field.displayname': 'Other Team',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.renewal_policy': 'NONE',
+            'field.visibility': 'PRIVATE_MEMBERSHIP',
+            'field.actions.save': 'Save',
+            })
+        self.assertEqual(len(view.errors), 0)
+        self.assertEqual(len(view.request.notifications), 1)
+        self.assertEqual(view.request.notifications[0].message,
+                         'A private team cannot change visibility.')
+
+    def test_visibility_validator_team_private_to_public(self):
+        # A PRIVATE team cannot convert to PUBLIC.
+        self.otherteam.visibility = PersonVisibility.PRIVATE
+        try:
+            self.otherteam.visibility = PersonVisibility.PUBLIC
+        except ImmutableVisibilityError, exc:
+            self.assertEqual(
+                str(exc),
+                'A private team cannot change visibility.')
+
+    def test_visibility_validator_team_private_to_public_view(self):
+        # A PRIVATE team cannot convert to PUBLIC.
+        self.otherteam.visibility = PersonVisibility.PRIVATE
+        view = create_initialized_view(self.otherteam, '+edit', {
+            'field.name': 'otherteam',
+            'field.displayname': 'Other Team',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.renewal_policy': 'NONE',
+            'field.visibility': 'PUBLIC',
+            'field.actions.save': 'Save',
+            })
+        self.assertEqual(len(view.errors), 0)
+        self.assertEqual(len(view.request.notifications), 1)
+        self.assertEqual(view.request.notifications[0].message,
+                         'A private team cannot change visibility.')
+
     def test_visibility_validator_team_mailinglist_private_purged(self):
         mailinglist = getUtility(IMailingListSet).new(self.otherteam)
         mailinglist.purge()
