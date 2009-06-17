@@ -19,6 +19,11 @@
       >
         <metal:subscriber  metal:define-macro="subscriber-row">
 
+            <tal:XXX condition="nothing">
+              # XXX: deryck 2009-06-17 bug=388394
+              # The float here breaks the green flash
+              # and really should be removed.
+            </tal:XXX>
             <a
                tal:condition="subscription/person/name|nothing"
                tal:attributes="
@@ -31,6 +36,11 @@
               <tal:block replace="structure subscription/person/fmt:icon" />
               <tal:block replace="subscription/person/fmt:displayname/fmt:shorten/20" />
             </a>
+            <tal:XXX condition="nothing">
+              # XXX: deryck 2009-06-17 bug=388394
+              # The float here breaks the green flash
+              # and really should be removed.
+            </tal:XXX>
             <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
                href="+subscribe"
                tal:attributes="
