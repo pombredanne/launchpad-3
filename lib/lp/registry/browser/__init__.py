@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_status_count',
+    'MilestoneOverlayMixin',
     'RegistryDeleteViewMixin',
     'StatusCount',
     ]
@@ -43,6 +44,20 @@ def get_status_counts(workitems, status_attr):
     return [
         StatusCount(status, statuses[status])
         for status in sorted(statuses, key=attrgetter('name'))]
+
+
+class MilestoneOverlayMixin:
+    """A mixin that provides the data for the milestoneoverlay script."""
+
+    @property
+    def milestone_form_uri(self):
+        """URI for form displayed by the formoverlay widget."""
+        return canonical_url(self.context) + '/+addmilestone/++form++'
+
+    @property
+    def series_api_uri(self):
+        """The series URL for API access."""
+        return canonical_url(self.context, path_only_if_possible=True)
 
 
 class RegistryDeleteViewMixin:
