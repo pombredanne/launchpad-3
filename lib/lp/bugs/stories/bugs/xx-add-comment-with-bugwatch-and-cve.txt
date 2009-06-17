@@ -22,7 +22,7 @@ added to the bugwatches resp CVEs related to this bug
 
   >>> bugwatch_portlet = find_portlet(user_browser.contents,
   ...    'Remote bug watches')
-  >>> added_bugwatch_link = bugwatch_portlet('a')[-1]
+  >>> added_bugwatch_link = bugwatch_portlet('a')[-2]
   >>> print added_bugwatch_link['href']
   http://some.bugzilla/show_bug.cgi?id=9876
 
@@ -46,7 +46,7 @@ url of a remote bug.
 
   >>> bugwatch_portlet = find_portlet(user_browser.contents, 
   ...    'Remote bug watches')
-  >>> added_bugwatch_link = bugwatch_portlet('a')[-1]
+  >>> added_bugwatch_link = bugwatch_portlet('a')[-2]
   >>> print extract_text(added_bugwatch_link)
   auto-bugzilla.example.org #1235555
   >>> 'answers.launchpad.net' in extract_text(bugwatch_portlet)

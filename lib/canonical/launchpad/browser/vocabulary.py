@@ -57,7 +57,7 @@ def default_pickerentry_adapter(obj):
     if hasattr(obj, 'summary'):
         extra.description = obj.summary
     display_api = ObjectImageDisplayAPI(obj)
-    extra.image = display_api.default_icon_resource(obj)
+    extra.css = display_api.sprite_css()
     return extra
 
 @implementer(IPickerEntry)
