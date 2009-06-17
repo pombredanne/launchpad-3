@@ -42,7 +42,6 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 // the slider depends on whether there are any checked
                 // licenses in that category.  A '0' means 'no'.
                 var arrow = Y.get(arrow_name);
-                Y.log('count: ' + arrow.getAttribute('count'));
                 if (arrow.getAttribute('count') == '0') {                
                     target.slide = Y.lazr.effects.slide_in(table_name);
                 }
