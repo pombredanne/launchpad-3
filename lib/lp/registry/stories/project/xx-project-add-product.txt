@@ -1,4 +1,3 @@
-
 Adding a Product to a Project
 -----------------------------
 
@@ -51,4 +50,4 @@ product:
 
     >>> anon_browser.open('http://launchpad.dev/eog/trunk')
     >>> print anon_browser.title
-    Eye of GNOME Series: trunk
+    Eye of GNOME trunk series
