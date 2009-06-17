@@ -12,7 +12,8 @@
 
 <body>
   <div metal:fill-slot="main"
-    tal:define="overview_menu context/menu:overview">
+    tal:define="overview_menu context/menu:overview;
+                sourcepackages context/sourcepackages">
 
     <h1>
       <tal:title content="context/title">Release series details</tal:title>
@@ -85,18 +86,29 @@
     <div tal:replace="structure context/@@+code-summary" />
 
     <div>
-      <a tal:replace="structure overview_menu/link_branch/fmt:icon-link" />
+      <a
+        tal:condition="not: context/branch"
+        tal:replace="structure overview_menu/link_branch/fmt:icon-link" />
+      <a
+        tal:condition="context/branch"
+        tal:replace="structure overview_menu/link_branch/fmt:link-icon" />
     </div>
 
     <h2 style="margin-top: 2em;">Distribution packaging</h2>
 
-    <p>
-      This series is packaged in the following places:
+    <p id="distribution-packaging-explanation">
+      <tal:distro condition="sourcepackages">
+      This series is packaged in the following distribution series:
+      </tal:distro>
+      <tal:no-distro condition="not: sourcepackages">
+      This series is not packaged in the following distribution series.
+      </tal:no-distro>
     </p>
 
-    <ul id="distribution-packaging" class="source package">
+    <ul id="distribution-packaging" class="source package"
+      tal:condition="sourcepackages">
       <li class="packages"
-        tal:repeat="package context/sourcepackages">
+        tal:repeat="package sourcepackages">
         <a tal:attributes="href package/fmt:url"><tal:distro
           tal:content="package/distroseries/distribution/displayname">
           Ubuntu</tal:distro>
@@ -112,7 +124,7 @@
       <a tal:replace="structure overview_menu/add_package/fmt:icon-link" />
     </div>
 
-    <h2 style="margin-top: 2em;">Related series</h2>
+    <h2 style="margin-top: 2em;">Related series, milestones, and releases</h2>
 
     <ul id="related-series">
       <li>
@@ -123,6 +135,11 @@
       <li>
         <a tal:attributes="href context/product/fmt:url/+milestones">All
           milestones for the
+          <tal:project replace="context/product/displayname" /> project</a>
+      </li>
+      <li>
+        <a tal:attributes="href context/product/fmt:url/+download">All
+          downloads for the
           <tal:project replace="context/product/displayname" /> project</a>
       </li>
     </ul>

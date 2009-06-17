@@ -99,7 +99,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
 
     def test_oops(self):
         """A bogus request should cause an oops, not an exception."""
-        file_alias = self.factory.makeLibraryFileAlias('bogus')
+        file_alias = self.factory.makeLibraryFileAlias(content='bogus')
         CreateMergeProposalJob.create(file_alias)
         transaction.commit()
         retcode, stdout, stderr = run_script(

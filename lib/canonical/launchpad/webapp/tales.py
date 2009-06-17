@@ -1401,7 +1401,7 @@ class ProductReleaseFormatterAPI(CustomizableFormatter):
 class ProductSeriesFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for ProductSeries objects"""
 
-    _link_summary_template = _('%(product)s Series: %(series)s')
+    _link_summary_template = _('%(product)s %(series)s series')
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""

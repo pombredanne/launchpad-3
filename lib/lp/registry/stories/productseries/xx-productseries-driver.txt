@@ -19,7 +19,7 @@ by appointing someone else as the driver.
     >>> browser.url
     'http://launchpad.dev/firefox/1.0/+driver'
     >>> browser.title
-    'Appoint the release manager for Mozilla Firefox Series: 1.0'
+    'Appoint the release manager for Mozilla Firefox 1.0 series'
     >>> browser.getControl('Release manager').value
     ''
 
