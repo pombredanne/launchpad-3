@@ -141,7 +141,6 @@ class BzrSync:
         self.insertBranchRevisions(bzr_branch, revids_to_insert)
         self.trans_manager.commit()
         # Synchronize the RevisionCache for this branch.
-        self.trans_manager.begin()
         getUtility(IRevisionSet).updateRevisionCacheForBranch(self.db_branch)
         self.trans_manager.commit()
 
@@ -157,7 +156,6 @@ class BzrSync:
         # not been updated. Since this has no ill-effect, and can only err on
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
-        self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
         notify(
             events.ScanCompleted(
