@@ -72,6 +72,9 @@ check_sourcecode_merge: build check
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
+check_config: build
+	bin/test -m canonical.config.tests -vvt test_config
+
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
@@ -311,4 +314,4 @@ ID: compile
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge check_mailman
+	reload-apache hosted_branches check_db_merge check_mailman check_config
