@@ -52,19 +52,6 @@ When the user clicks continue, the import branch is created
     <Link text='http://svn.example.com/firefox/trunk'
            url='http://svn.example.com/firefox/trunk'>
 
-The user is also subscribed to the branch to get notifications.
-
-    >>> def print_subscribers(contents):
-    ...     subscriptions = find_tag_by_id(contents, 'subscriptions')
-    ...     if subscriptions == None:
-    ...         print subscriptions
-    ...         return
-    ...     for subscriber in subscriptions.fetch('dt'):
-    ...         print extract_text(subscriber.renderContents())
-    >>> print_subscribers(browser.contents)
-    No Privileges Person
-    VCS imports
-
 
 == Requesting a Git import ==
 
@@ -92,19 +79,6 @@ When the user clicks continue, the import branch is created
     Import Status: Pending Review
     This branch is an import of the MASTER branch from the Git repo at
     git://example.com/firefox.git.
-
-The user is also subscribed to the branch to get notifications.
-
-    >>> def print_subscribers(contents):
-    ...     subscriptions = find_tag_by_id(contents, 'subscriptions')
-    ...     if subscriptions == None:
-    ...         print subscriptions
-    ...         return
-    ...     for subscriber in subscriptions.fetch('dt'):
-    ...         print extract_text(subscriber.renderContents())
-    >>> print_subscribers(browser.contents)
-    No Privileges Person
-    VCS imports
 
 
 == Requesting a CVS import ==
