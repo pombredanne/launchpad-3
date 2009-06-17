@@ -18,23 +18,21 @@
     <td>
       <tal:link replace="structure file/fmt:link" />
     </td>
-    <td tal:condition="show_release|nothing">
-      <tal:version content="release/version">version</tal:version>
-    </td>
     <td tal:content="file/description">
       Installer for i386
     </td>
     <td style="text-align: center;">
-      <tal:downloaded condition="lfa/hits">
+      <tal:downloaded condition="lfa/hits"
+                      define="last_downloaded lfa/last_downloaded">
         <span tal:replace="lfa/hits/fmt:intcomma">10</span>
         <br />
         <span style="font-size: 75%; color: grey;">
           last downloaded
-          <strong tal:condition="not:lfa/last_downloaded/days">
+          <strong tal:condition="not:last_downloaded/days">
             today
           </strong>
-          <strong tal:condition="lfa/last_downloaded/days">
-            <span tal:replace="lfa/last_downloaded/fmt:approximateduration" />
+          <strong tal:condition="last_downloaded/days">
+            <span tal:replace="last_downloaded/fmt:approximateduration" />
             ago
           </strong>
         </span>

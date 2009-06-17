@@ -514,5 +514,5 @@ Finally, change the visibility to Private Membership which will fail.
     >>> for message in get_feedback_messages(admin_browser.contents):
     ...     print message
     There is 1 error.
-    This team cannot be made private since it is referenced by a
-    bugsubscription and an answercontact.
+    This team cannot be converted to Private Membership since it is
+    referenced by a bugsubscription and an answercontact.
