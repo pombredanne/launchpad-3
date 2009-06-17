@@ -192,15 +192,15 @@
         <h2>Files produced from build</h2>
         <ul class="download" tal:condition="view/files">
           <li tal:repeat="file view/files">
-            <a tal:content="file/libraryfile/filename"
-               tal:attributes="href file/libraryfile/http_url"></a>
-            (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
+            <a tal:content="file/filename"
+               tal:attributes="href file/http_url"></a>
+            (<span tal:replace="file/content/filesize/fmt:bytes" />)
           </li>
         </ul>
+        <span tal:condition="not: view/files">
+           No files produced
+        </span>
       </tal:built>
-      <span tal:condition="not: view/files">
-         No files produced
-      </span>
       </div>
 
     </div>

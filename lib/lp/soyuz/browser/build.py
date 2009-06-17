@@ -177,7 +177,8 @@ class BuildView(LaunchpadView):
         files = []
         for package in self.context.binarypackages:
             for file in package.files:
-                files.append(file)
+                files.append(
+                    ProxiedLibraryFileAlias(file.libraryfile, self.context))
 
         return files
 
