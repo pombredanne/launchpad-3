@@ -19,7 +19,7 @@ from zope.event import notify
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, ISlaveStore)
+    ILanguageSet, ILanguage)
 from canonical.launchpad.interfaces.translationsperson import (
     ITranslationsPerson)
 from canonical.launchpad.browser.translations import TranslationsMixin
