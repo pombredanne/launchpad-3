@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
+import windmill
 from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing import lpuser
@@ -21,7 +22,7 @@ def test_branch_subscription_ajax_load():
     lpuser.FOO_BAR.ensure_login(client)
 
     client.open(
-        url='http://code.launchpad.dev:8085/~sabdfl/firefox/release--0.9.1')
+        url=windmill.settings['TEST_URL'] + '/~sabdfl/firefox/release--0.9.1')
     client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
     client.asserts.assertText(id=u'none-subscribers',
         validator=u'No subscribers.')
@@ -51,7 +52,8 @@ def test_team_edit_subscription_ajax_load():
     lpuser.SAMPLE_PERSON.ensure_login(client)
 
     client.open(
-        url='http://code.launchpad.dev:8085/~name12/landscape/feature-x/')
+        url=windmill.settings['TEST_URL'] + '/~name12/landscape/feature-x/')
+    client.waits.forPageLoad(timeout=u'10000')
 
     client.waits.forElement(id=u'editsubscription-icon-landscape-developers',
         timeout=u'10000')
