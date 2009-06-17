@@ -105,7 +105,7 @@ from canonical.widgets.itemswidgets import (
 from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import (
-    LicenseWidget, ProductBugTrackerWidget, ProductNameWidget)
+    LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -1138,10 +1138,10 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "development_focus",
         "licenses",
         "license_info",
-    ]
-    custom_widget(
-        'licenses', LicenseWidget, column_count=3, orientation='vertical')
+        ]
+    custom_widget('licenses', LicenseWidget)
     custom_widget('bugtracker', ProductBugTrackerWidget)
+    custom_widget('license_info', GhostWidget)
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1152,6 +1152,14 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         if (len(self.context.licenses) == 0 and
             self.widgets.get('licenses') is not None):
             self.widgets['licenses'].allow_pending_license = True
+
+    def showOptionalMarker(self, field_name):
+        """See `LaunchpadFormView`."""
+        # This has the effect of suppressing the ": (Optional)" stuff for the
+        # license_info widget.  It's the last piece of the puzzle for
+        # manipulating the license_info widget into the table for the
+        # LicenseWidget instead of the enclosing form.
+        return field_name != 'license_info'
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""

@@ -63,6 +63,9 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 });
             }
 
+            // This is the event handler for clicking on the link or arrow.
+            // It runs the slide animation, toggling between forward and
+            // reverse.
             Y.on('click', function(e) {
                 e.preventDefault();
                 var slide = e.target.slide;
@@ -76,10 +79,45 @@ YUI().use('node', 'lazr.effects', function(Y) {
         make_slider({which: 'deprecated', in: true});
         make_slider({which: 'special', in: true});
 
+        // Set a click event handler for the div containing all the
+        // license checkbox.  When any license checkbox is selected, the
+        // "I haven't specified the license yet" radio button is set to
+        // "This project consists of code licensed under:".  However note
+        // that the pending-div only shows up if the project has never
+        // selected a license.  In other cases, there's an "I don't know yet"
+        // choice in the "Other choices" license section.
         var div = Y.get('#pending-div');
         if (Y.Lang.isValue(div)) {
             div.setAttribute('onclick', 'license_chosen()');
         }
+        var license_pending = Y.get('#license_pending');
+        if (Y.Lang.isValue(license_pending)) {
+            license_pending.on('click', reveal_details);
+        }
+
+        // When Other/Proprietary or Other/Open Source is chosen, the
+        // license_info widget is displayed.
+        var other_com = Y.get(Y.DOM.byId('field.licenses.25'));
+        var other_os = Y.get(Y.DOM.byId('field.licenses.26'));
+        var details = Y.get('#license-details');
+
+        function reveal_details(e) {
+            if (other_com.get('checked') || other_os.get('checked')) {
+                if (!details.hasClass('lazr-opened')) {      
+                    Y.lazr.effects.slide_out(details).run();
+                }
+            }
+            else {
+                if (!details.hasClass('lazr-closed')) {
+                    Y.lazr.effects.slide_in(details).run();
+                }
+            }
+        }
+        other_com.on('click', reveal_details);
+        other_os.on('click', reveal_details);
+
+        // Pre-reveal license_info widget.
+        reveal_details(true);
     });
 });
 //]]>
@@ -137,6 +175,13 @@ YUI().use('node', 'lazr.effects', function(Y) {
       Other choices
     </a>
     <input tal:replace="structure view/special" />
+    <div id="license-details" style="margin-top: 10px">
+      <label for="field.license_info">License details:</label>
+      <input tal:replace="structure view/license_info_widget" />
+      <p class="formHelp">Additional license details are required.
+      Please include the URL to the license, its text, or other
+      detailed information.</p>
+   </div>
   </div>
   <p>
     Launchpad.net is free to use for software projects that share

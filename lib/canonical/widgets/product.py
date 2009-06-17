@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'GhostWidget',
     'LicenseWidget',
     'ProductBugTrackerWidget',
     'ProductNameWidget',
@@ -13,14 +14,15 @@ import cgi
 import math
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.widget import renderElement
+from zope.app.form.browser.widget import renderElement, SimpleInputWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
-from zope.schema import Choice
+from zope.schema import Choice, Text
 
 from z3c.ptcompat import ViewPageTemplateFile
 
+from canonical.launchpad.browser.widgets import DescriptionWidget
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag)
@@ -264,6 +266,22 @@ class LicenseWidget(CheckBoxMatrixWidget):
     categories = None
     show_deprecated = False
 
+    def __init__(self, field, vocabulary, request):
+        super(LicenseWidget, self).__init__(field, vocabulary, request)
+        # We want to put the license_info widget inside the licenses widget's
+        # HTML, for better alignment and JavaScript dynamism.  This is
+        # accomplished by ghosting the form's license_info widget (see
+        # lp/registry/browser/product.py and the GhostWidget implementation
+        # below) and creating a custom widget here.  It's a pretty simple text
+        # widget so create that now.  The fun part is that it's all within the
+        # same form, so posts work correctly.
+        self.license_info = Text(__name__='license_info')
+        self.license_info_widget = CustomWidgetFactory(DescriptionWidget)
+        setUpWidget(
+            self, 'license_info', self.license_info, IInputWidget,
+            prefix='field', value=field.context.license_info,
+            context=field.context)
+
     def textForValue(self, term):
         """See `ItemsWidgetBase`."""
         # This will return just the DBItem's text.  We want to wrap that text
@@ -357,3 +375,17 @@ class ProductNameWidget(LowerCaseTextWidget):
             return 'hidden'
         else:
             return 'text'
+
+
+class GhostWidget(SimpleInputWidget):
+    """A simple widget that has no HTML."""
+
+    # This suppresses the stuff above the widget.
+    display_label = False
+    # This suppresses the stuff underneath the widget.
+    hint = ''
+
+    # This suppresses all of the widget's HTML.
+    def __call__(self):
+        """See `SimpleInputWidget`."""
+        return ''
