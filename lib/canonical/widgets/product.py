@@ -280,9 +280,14 @@ class LicenseWidget(CheckBoxMatrixWidget):
         # same form, so posts work correctly.
         self.license_info = Text(__name__='license_info')
         self.license_info_widget = CustomWidgetFactory(DescriptionWidget)
+        # The initial value of the license_info widget will be taken from the
+        # field's context when available.  This will be the IProduct when
+        # we're editing an existing project, but when we're creating a new
+        # one, it'll be an IProductSet, which does not have license_info.
+        initial_value = getattr(field.context, 'license_info', None)
         setUpWidget(
             self, 'license_info', self.license_info, IInputWidget,
-            prefix='field', value=field.context.license_info,
+            prefix='field', value=initial_value,
             context=field.context)
 
     def textForValue(self, term):

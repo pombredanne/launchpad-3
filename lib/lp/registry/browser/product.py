@@ -1548,8 +1548,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     custom_widget('project', VocabularyPickerWidget,
                   header="Select a project group")
-    custom_widget('licenses', LicenseWidget, column_count=3,
-                  orientation='vertical')
+    custom_widget('licenses', LicenseWidget)
+    custom_widget('license_info', GhostWidget)
 
     @property
     def step_description(self):
