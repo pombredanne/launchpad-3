@@ -1092,13 +1092,13 @@ class ProductSet:
                 'Product.fti @@ ftq(%s)' % sqlvalues(search_text)))
 
         if created_after is not None:
-            if isinstance(created_after, datetime.date):
+            if not isinstance(created_after, datetime.datetime):
                 created_after = datetime.datetime(
                     created_after.year, created_after.month,
                     created_after.day, tzinfo=pytz.utc)
             conditions.append(Product.datecreated >= created_after)
         if created_before is not None:
-            if isinstance(created_before, datetime.date):
+            if not isinstance(created_before, datetime.datetime):
                 created_before = datetime.datetime(
                     created_before.year, created_before.month,
                     created_before.day, tzinfo=pytz.utc)
