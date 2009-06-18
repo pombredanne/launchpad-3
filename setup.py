@@ -30,7 +30,7 @@ setup(
         'pytz',
         'setuptools',
         'sourcecodegen',
-        'storm',
+        #'storm',
         'chameleon.core',
         'chameleon.zpt',
         'z3c.pt',
