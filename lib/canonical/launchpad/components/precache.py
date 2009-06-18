@@ -1,6 +1,10 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""precache for Storm."""
+"""precache for Storm.
+
+XXX stub 2009-06-18 bug=388798: This feature may be misnamed, should be
+moved to a better location, and needs tests.
+"""
 
 __metaclass__ = type
 __all__ = ['precache']
