@@ -6,46 +6,49 @@
               python: comment.show_for_admin and 'adminHiddenComment' or ''"
   tal:attributes="class string:boardComment ${remote_bug_comment_class}
                  ${admin_comment_hidden_class}">
-  <div class="boardCommentDetails" tal:condition="not: comment/bugwatch">
-    <a tal:attributes="href comment/fmt:url"
-       tal:content="comment/index" class="bug-comment-index">
-      34
-    </a>
 
-    <tal:comment_has_owner>
-      <tal:comment_owner replace="structure comment/owner/fmt:link" />
-    </tal:comment_has_owner>
-    wrote
-    <span
-      tal:attributes="title comment/datecreated/fmt:datetime"
-      tal:content="comment/datecreated/fmt:displaydate">
-      7 minutes ago
-    </span>:
-    <a tal:attributes="href comment/fmt:url"
-       tal:condition="comment/display_title">
-      <strong tal:content="comment/title" />
-    </a>
-  </div>
-
-  <div class="boardCommentDetails" tal:condition="comment/bugwatch">
-    <img width="14" height="14" src="/@@/bug-remote" alt=""/>
-    In
-    <a tal:attributes="href comment/bugwatch/url"
-       tal:content="comment/bugwatch/title" />,
-    <tal:comment_has_owner>
-      <tal:comment_owner replace="structure comment/owner/fmt:link" />
-    </tal:comment_has_owner>
-    wrote
-    <span
-      tal:attributes="title comment/datecreated/fmt:datetime"
-      tal:content="comment/datecreated/fmt:displaydate">
-      7 minutes ago
-    </span>:
-    <a tal:attributes="href comment/fmt:url">
-      <strong tal:condition="comment/display_title"
-              tal:content="comment/title" />
-      (permalink)
-    </a>
+  <div class="boardCommentDetails">
+    <table>
+      <tbody>
+        <tr>
+          <td class="bug-comment-index">
+            <a tal:attributes="href comment/fmt:url"
+               tal:content="comment/index" />
+          </td>
+          <td tal:condition="not: comment/bugwatch">
+            <tal:comment_owner
+                replace="structure comment/owner/fmt:link" />
+            wrote
+            <span tal:attributes="title comment/datecreated/fmt:datetime"
+                  tal:content="comment/datecreated/fmt:displaydate">
+              7 minutes ago
+              </span>:
+              <a tal:attributes="href comment/fmt:url"
+                 tal:condition="comment/display_title">
+                <strong tal:content="comment/title" />
+              </a>
+          </td>
+          <td tal:condition="comment/bugwatch">
+            <img width="14" height="14" src="/@@/bug-remote" alt=""/>
+            In
+            <a tal:attributes="href comment/bugwatch/url"
+               tal:content="comment/bugwatch/title" />,
+            <tal:comment_owner
+                replace="structure comment/owner/fmt:link" />
+            wrote
+            <span tal:attributes="title comment/datecreated/fmt:datetime"
+                  tal:content="comment/datecreated/fmt:displaydate">
+              7 minutes ago
+              </span>:
+              <a tal:attributes="href comment/fmt:url">
+                <strong tal:condition="comment/display_title"
+                        tal:content="comment/title" />
+                (permalink)
+              </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <div class="boardCommentBody">
