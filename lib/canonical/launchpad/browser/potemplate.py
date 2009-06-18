@@ -501,7 +501,7 @@ class POTemplateExportView(BaseExportView):
             return pofile.language.englishname
 
         for pofile in sorted(self.context.pofiles, key=pofile_sort_key):
-            value = pofile.getFullLanguageCode().encode('UTF-8')
+            value = pofile.getFullLanguageCode()
             browsername = pofile.getFullLanguageName()
 
             yield BrowserPOFile(value, browsername)
