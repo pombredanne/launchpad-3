@@ -4,14 +4,9 @@
 
 __metaclass__ = type
 
-import os.path
 from unittest import TestLoader
 
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-
 from bzrlib.branch import Branch as BzrBranch
-from bzrlib.revision import NULL_REVISION
 
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError, DirectBranchCommit)
