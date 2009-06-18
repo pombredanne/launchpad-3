@@ -151,6 +151,33 @@ is created that has force_translations_upload set to true.
     True
 
 
+== ProductSeries view ==
+
+The default view for the productseries includes a script that augments the
+'Create milestone' link to show a formoverlay to create a milestone and
+update the milestones and releases table.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> product = factory.makeProduct(name='app')
+    >>> series = factory.makeSeries(name='simple', product=product)
+    >>> view = create_view(series, '+index', principal=product.owner)
+    >>> script = find_tag_by_id(view.render(), 'milestone-script')
+    >>> print script
+    <script id="milestone-script" type="text/javascript">
+        YUI().use(... 'lp.milestoneoverlay', 'lp.milestonetable'...
+            var series_uri = '/app/simple';
+            var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
+            var milestone_row_uri_template =
+                '/app/+milestone/{name}/+productseries-table-row';
+            var milestone_rows_id = '#milestone-rows';...
+            Y.on('domready', function () {
+                var create_milestone_link = Y.get('.menu-link-create_milestone');
+                create_milestone_link.addClass('js-action');...
+                Y.lp.milestoneoverlay.attach_widget(config);...
+                Y.lp.milestonetable.setup(table_config);...
+
+
 == Delete ProductSeries ==
 
 Users with edit permission may delete a project's series. This person is

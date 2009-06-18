@@ -11,6 +11,41 @@
 >
 
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/registry/milestone_table.js"></script>
+    <tal:script
+      replace="structure
+      string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
+    YUI().use(
+        'node', 'lp.milestoneoverlay', 'lp.milestonetable', function (Y) {
+
+        var series_uri = '<tal:x replace="view/series_api_uri"/>';
+        var milestone_form_uri = '<tal:x replace="view/milestone_form_uri"/>';
+        var milestone_row_uri_template = '<tal:x replace="view/milestone_row_uri_template"/>';
+        var milestone_rows_id = '#milestone-rows';
+
+        Y.on('domready', function () {
+            var create_milestone_link = Y.get('.menu-link-create_milestone');
+            create_milestone_link.addClass('js-action');
+            var config = {
+                milestone_form_uri: milestone_form_uri,
+                series_uri: series_uri,
+                next_step: Y.lp.milestonetable.get_milestone_row,
+                activate_node: create_milestone_link
+                };
+            Y.lp.milestoneoverlay.attach_widget(config);
+            var table_config = {
+                milestone_row_uri_template: milestone_row_uri_template,
+                milestone_rows_id: milestone_rows_id
+                }
+            Y.lp.milestonetable.setup(table_config);
+        });
+    });
+    <tal:script replace="structure string:&lt;/script&gt;" />
+  </metal:block>
+
   <div metal:fill-slot="main"
     tal:define="overview_menu context/menu:overview;
                 sourcepackages context/sourcepackages">
