@@ -99,18 +99,19 @@ Launchpad Beta Testers team such as sabdfl:
     <p>but wanted it in the debian bug database for user and maintainer
     reference.</p>...
 
-The title bar of the comments will contain a link to the profile of the
-author of the comment, a link to the to the remote bug from which the
-comment was imported and a permalink to the comment itself within
-Launchpad.
+The title bar of the comments will contain the comment number (which
+is also a permalink to the comment itself within Launchpad), a to the
+profile of the author of the comment, and a link to the to the remote
+bug from which the comment was imported.
 
     >>> header = first_tag_by_class(sabdfl_browser.contents,
     ...     'boardCommentDetails')
     >>> for link in header.findAll('a'):
     ...     print "%s: %s" % (extract_text(link), link.get('href'))
+    1: /redfish/+bug/15/comments/1
     Debian Bug tracker #308994: http://bugs.debian.org/...?bug=308994
     josh: http://launchpad.dev/~jbuhl-nospam
-    gnome-volume-manager... (permalink): /redfish/+bug/15/comments/1
+    gnome-volume-manager...: /redfish/+bug/15/comments/1
 
 If sabdfl leaves the Launchpad Beta Testers team the comment will no longer
 be visible to him:

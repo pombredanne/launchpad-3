@@ -46,7 +46,6 @@
               <a tal:attributes="href comment/fmt:url">
                 <strong tal:condition="comment/display_title"
                         tal:content="comment/title" />
-                (permalink)
               </a>
           </td>
         </tr>

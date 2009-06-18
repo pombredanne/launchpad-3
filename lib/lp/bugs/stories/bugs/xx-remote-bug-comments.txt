@@ -17,9 +17,9 @@ entered within Launchpad itself.
     ...     user_browser.contents, 'remoteBugComment', only_first=True)
     >>> details = remote_bug_comment.find(attrs={'class': 'boardCommentDetails'})
     >>> print extract_text(details)
-    In Debian Bug tracker #308994, josh wrote on 2005-05-13:
+    1 In Debian Bug tracker #308994, josh wrote on 2005-05-13:
     gnome-volume-manager: dvd+rw unreadable when automounted
-    in burner because mounted read/write (permalink)
+    in burner because mounted read/write
 
 Remote comments are decorated with the bug watch icon, to distinguish
 them from comments posted directly by Launchpad users.
@@ -58,7 +58,7 @@ The new comment appears, formatted as a remote bug comment.
     >>> new_bug_comment = find_tags_by_class(
     ...     user_browser.contents, 'remoteBugComment')[-1]
     >>> print extract_text(new_bug_comment)
-    In Debian Bug tracker #308994, No Privileges Person wrote...
+    7 In Debian Bug tracker #308994, No Privileges Person wrote...
     A reply comment.
     ...
 
@@ -91,7 +91,7 @@ the 'awaiting synchronization' mark goes away.
     >>> last_bug_comment = find_tags_by_class(
     ...     user_browser.contents, 'remoteBugComment')[-1]
     >>> print extract_text(last_bug_comment)
-    In Debian Bug tracker #308994, No Privileges Person wrote...
+    7 In Debian Bug tracker #308994, No Privileges Person wrote...
     A reply comment.
     ...
     >>> footer = last_bug_comment.find(attrs={'class': 'boardCommentFooter'})
