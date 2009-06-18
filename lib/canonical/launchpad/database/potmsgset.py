@@ -556,6 +556,7 @@ class POTMsgSet(SQLBase):
                 (current_message == new_message) or
                 (force_diverged and not new_message.is_empty)):
                 make_current = True
+
                 # Don't update the submitter and date changed
                 # if there was no current message and an empty
                 # message is submitted.
@@ -571,6 +572,12 @@ class POTMsgSet(SQLBase):
                         (was_diverged_to is None and
                          new_message == current_message and
                          new_message.potemplate is not None)):
+                        # If imported message was diverged,
+                        # or if it was shared, but there was
+                        # a diverged current message that is
+                        # now being imported, previous imported
+                        # message is neither imported nor current
+                        # anymore.
                         imported_message.is_imported = False
                         imported_message.is_current = False
                         imported_message.potemplate = None
