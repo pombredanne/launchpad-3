@@ -308,6 +308,7 @@ ul {
 
 .exception {color: #cc0000;}
 .discreet, .lesser, .duplicate-details {font-size: 90%;}
+.extra-discreet {font-size: 75%;}
 .offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
@@ -1745,7 +1746,7 @@ table#package-requests td {
 form.package-search-filter {
     clear: both;
 }
-h1.disabled {
+h1.disabled, .greyed-out {
     color: grey;
 }
 table#packages_list {

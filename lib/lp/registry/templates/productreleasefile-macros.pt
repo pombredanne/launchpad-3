@@ -28,7 +28,7 @@
       <tal:downloaded condition="lfa/hits">
         <span tal:replace="lfa/hits/fmt:intcomma">10</span>
         <br />
-        <span style="font-size: 75%; color: grey;">
+        <span class="extra-discreet greyed-out">
           last downloaded
           <strong tal:condition="not:lfa/last_downloaded/days">
             today
