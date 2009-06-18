@@ -407,18 +407,6 @@ class RevisionsAddedJob(BranchJobDerived):
                  verbose=True)
         return outf.getvalue()
 
-    @staticmethod
-    def findUnfinishedJobs(branch):
-        """See `IRosettaUploadJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.using(BranchJob, Job).find((BranchJob), And(
-            Job.id == BranchJob.id,
-            BranchJob.branch == branch,
-            BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
-            Job._status != JobStatus.COMPLETED,
-            Job._status != JobStatus.FAILED))
-        return jobs
-
 
 class RosettaUploadJob(BranchJobDerived):
     """A Job that uploads translation files to Rosetta."""
@@ -658,3 +646,15 @@ class RosettaUploadJob(BranchJobDerived):
                 Branch.last_mirrored_id == Branch.last_scanned_id,
                 Job.id.is_in(Job.ready_jobs)))
         return (RosettaUploadJob(job) for job in jobs)
+
+    @staticmethod
+    def findUnfinishedJobs(branch):
+        """See `IRosettaUploadJobSource`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        jobs = store.using(BranchJob, Job).find((BranchJob), And(
+            Job.id == BranchJob.id,
+            BranchJob.branch == branch,
+            BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
+            Job._status != JobStatus.COMPLETED,
+            Job._status != JobStatus.FAILED))
+        return jobs
