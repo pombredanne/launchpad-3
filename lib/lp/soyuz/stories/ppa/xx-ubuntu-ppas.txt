@@ -125,11 +125,11 @@ PENDING or PUBLISHED source record) PPAs.
     >>> for ppa_row in find_tags_by_class(
     ...     anon_browser.contents, 'ppa_batch_row'):
     ...     print extract_text(ppa_row)
-    Celso Providelo
+    PPA for Celso Providelo
     packages to help my friends.
     3
     3
-    Mark Shuttleworth
+    PPA for Mark Shuttleworth
     packages to help the humanity (you know, ubuntu)
     1
     1
@@ -181,15 +181,15 @@ to allow inactive PPA results.
     >>> for ppa_row in find_tags_by_class(anon_browser.contents,
     ...                                   'ppa_batch_row'):
     ...    print extract_text(ppa_row)
-    Celso Providelo
+    PPA for Celso Providelo
     packages to help my friends.
     3
     3
-    No Privileges Person
+    PPA for No Privileges Person
     I am not allowed to say, I have no privs.
     0
     0
-    Mark Shuttleworth
+    PPA for Mark Shuttleworth
     packages to help the humanity (you know, ubuntu)
     1
     1

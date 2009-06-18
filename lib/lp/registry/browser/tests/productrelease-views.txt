@@ -111,15 +111,15 @@ show a formoverlay that updates the milestone_for_release field.
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        YUI().use(... 'lazr.formoverlay'...
+        YUI().use(... 'lp.milestoneoverlay'...
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
             var series_uri = '/app/simple';
             ...
             Y.on('domready', function () {
                 var select_menu = get_by_id('field.milestone_for_release');
                 var create_milestone_link = Y.Node.create(
-                    '<a href="+addmilestone"
-                      id="create-milestone-link">Create milestone</a>'); ...
+                    '<a href="+addmilestone" id="create-milestone-link" ' +
+                    'class="add js-action">Create milestone</a>'); ...
 
 
 == Editing a a product release ==

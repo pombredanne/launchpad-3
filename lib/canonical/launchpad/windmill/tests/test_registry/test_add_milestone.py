@@ -93,10 +93,7 @@ class InlineAddMilestoneForReleaseTest:
         self.client.asserts.assertText(
             xpath=milestone_xpath, validator=milestone_name.lower())
         self.client.asserts.assertText(
-            xpath="//table[@id='series_trunk']"
-                  "//a[@href='/bzr/+milestone/%s']"
-                  % milestone_name.lower(),
-            validator=code_name)
+            xpath=milestone_xpath, validator=code_name)
 
 
 test_inline_add_milestone_for_release = InlineAddMilestoneForReleaseTest(
