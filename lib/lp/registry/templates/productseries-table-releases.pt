@@ -5,7 +5,8 @@
   omit-tag="">
 
 <table class="listing"
-  tal:attributes="id string:series_${context/name}">
+  tal:attributes="id string:series_${context/name};
+                  class view/milestone_table_class">
   <thead>
     <tr>
       <th>Version "Codename"</th>

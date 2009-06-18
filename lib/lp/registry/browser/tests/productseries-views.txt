@@ -177,6 +177,20 @@ update the milestones and releases table.
                 Y.lp.milestoneoverlay.attach_widget(config);...
                 Y.lp.milestonetable.setup(table_config);...
 
+The view also sets teh class of the milestone and releases table which can
+be removed by the in-page script. If the product series has no milestones,
+the class table is 'listing unseen'.
+
+    >>> print view.milestone_table_class
+    listing unseen
+
+When the product series has milestones, the class is just 'listing'.
+
+    >>> milestone = series.newMilestone('12', code_name='twelve')
+    >>> view = create_view(series, '+index')
+    >>> print view.milestone_table_class
+    listing
+
 
 == Delete ProductSeries ==
 

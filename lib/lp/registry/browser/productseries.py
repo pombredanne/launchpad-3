@@ -751,6 +751,16 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin,
         return get_status_counts(all_specifications, 'implementation_status')
 
     @property
+    def milestone_table_class(self):
+        """The milestoen table will be unseen if there are no milestones."""
+        if len(self.released_and_active_milestones) > 0:
+            return 'listing'
+        else:
+            # The page can remove the 'unseen' class to make the table
+            # visible.
+            return 'listing unseen'
+
+    @property
     def milestone_row_uri_template(self):
         return (
             '%s/+milestone/{name}/+productseries-table-row' %
