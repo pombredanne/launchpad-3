@@ -377,17 +377,27 @@ class MaloneView(LaunchpadFormView):
 class BugViewMixin:
     """Mix-in class to share methods between bug and portlet views."""
 
+    @cachedproperty
+    def direct_subscribers(self):
+        """Caches the list of direct subscribers."""
+        return frozenset(self.context.getDirectSubscribers())
+
+    @cachedproperty
+    def duplicate_subscribers(self):
+        """Caches the list of subscribers from duplicates."""
+        return frozenset(self.context.getSubscribersFromDuplicates())
+
     def subscription_class(self, subscribed_person):
         """Returns a set of CSS class names based on subscription status.
 
         For example, "subscribed-false dup-subscribed-true".
         """
-        if self.context.isSubscribedToDupes(subscribed_person):
+        if subscribed_person in self.duplicate_subscribers:
             dup_class = 'dup-subscribed-true'
         else:
             dup_class = 'dup-subscribed-false'
 
-        if self.context.isSubscribed(subscribed_person):
+        if subscribed_person in self.direct_subscribers:
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class

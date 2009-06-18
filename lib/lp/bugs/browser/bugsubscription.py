@@ -14,6 +14,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -56,13 +57,23 @@ class BugSubscriptionAddView(LaunchpadFormView):
 class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
 
+    @cachedproperty
+    def direct_subscriptions(self):
+        """Caches the list of direct subscriptions."""
+        return set(self.context.getDirectSubscriptions())
+
+    @cachedproperty
+    def duplicate_subscriptions(self):
+        """Caches the list of duplicate subscriptions."""
+        return set(self.context.getSubscriptionsFromDuplicates())
+
     def getSortedDirectSubscriptions(self):
         """Get the list of direct subscriptions to the bug.
 
         The list is sorted such that subscriptions you can unsubscribe appear
         before all other subscriptions.
         """
-        direct_subscriptions = self.context.getDirectSubscriptions()
+        direct_subscriptions = self.direct_subscriptions
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:
@@ -78,4 +89,4 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
 
     def getSortedSubscriptionsFromDuplicates(self):
         """Get the list of subscriptions to duplicates of this bug."""
-        return self.context.getSubscriptionsFromDuplicates()
+        return self.duplicate_subscriptions
