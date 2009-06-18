@@ -247,8 +247,8 @@ class BugImporter:
             except (SystemExit, KeyboardInterrupt):
                 raise
             except:
-                self.logger.exception('Could not import bug #%s',
-                                 bugnode.get('id'))
+                self.logger.exception(
+                    'Could not import bug #%s', bugnode.get('id'))
                 ztm.abort()
             else:
                 ztm.commit()
@@ -326,7 +326,8 @@ class BugImporter:
                 bugtracker, remotebug = bugwatchset.extractBugTrackerAndBug(
                     watchnode.get('href'))
             except NoBugTrackerFound, exc:
-                self.logger.debug('Registering bug tracker for %s', exc.base_url)
+                self.logger.debug(
+                    'Registering bug tracker for %s', exc.base_url)
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     exc.base_url, self.bug_importer, exc.bugtracker_type)
                 remotebug = exc.remote_bug
@@ -434,8 +435,9 @@ class BugImporter:
         if bug_id in self.pending_duplicates:
             for other_bug_id in self.pending_duplicates[bug_id]:
                 other_bug = getUtility(IBugSet).get(other_bug_id)
-                self.logger.info('Marking bug %d as duplicate of bug %d',
-                            other_bug.id, bug.id)
+                self.logger.info(
+                    'Marking bug %d as duplicate of bug %d',
+                    other_bug.id, bug.id)
                 other_bug.duplicateof = bug
             del self.pending_duplicates[bug_id]
         # Process this bug as a duplicate
@@ -445,8 +447,9 @@ class BugImporter:
             if duplicateof in self.bug_id_map:
                 other_bug = getUtility(IBugSet).get(
                     self.bug_id_map[duplicateof])
-                self.logger.info('Marking bug %d as duplicate of bug %d',
-                            bug.id, other_bug.id)
+                self.logger.info(
+                    'Marking bug %d as duplicate of bug %d',
+                    bug.id, other_bug.id)
                 bug.duplicateof = other_bug
             else:
                 self.pending_duplicates.setdefault(
