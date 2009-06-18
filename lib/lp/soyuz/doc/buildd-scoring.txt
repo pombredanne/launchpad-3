@@ -108,6 +108,7 @@ The delta can also be negative.
     >>> bq0.lastscore
     12415
 
+    >>> bq0.build.archive.relative_build_score = 0
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
 
