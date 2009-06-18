@@ -265,7 +265,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         'DONT_KNOW'     : 'special',
         }
 
-    categories = None
+    items_by_category = None
 
     def __init__(self, field, vocabulary, request):
         # pylint: disable-msg=E1002
@@ -308,7 +308,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         if term.value.url is None:
             return value
         else:
-            return ('%s <a href="%s" class="sprite external-link">'
+            return ('%s&nbsp;<a href="%s" class="sprite external-link">'
                     '<span class="invisible-link">view license</span></a>'
                     % (value, term.value.url))
 
@@ -334,8 +334,8 @@ class LicenseWidget(CheckBoxMatrixWidget):
 
     def _categorize(self, value, rendered):
         # Place the value in the proper category.
-        if self.categories is None:
-            self.categories = {}
+        if self.items_by_category is None:
+            self.items_by_category = {}
         # When allow_pending_license is set, we'll see a radio button labeled
         # "I haven't specified the license yet".  In that case, do not show
         # the "I don't know" option.
@@ -343,7 +343,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
             return
         category = self.CATEGORIES.get(value)
         assert category is not None, 'Uncategorized value: %s' % value
-        self.categories.setdefault(category, []).append(rendered)
+        self.items_by_category.setdefault(category, []).append(rendered)
         return category
 
     def __call__(self):
@@ -361,7 +361,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
 
     def _renderTable(self, category, column_count=1):
         html = ['<table id="%s">' % category]
-        rendered_items = self.categories[category]
+        rendered_items = self.items_by_category[category]
         row_count = int(math.ceil(len(rendered_items) / float(column_count)))
         for i in range(0, row_count):
             html.append('<tr>')

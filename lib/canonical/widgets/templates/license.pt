@@ -94,7 +94,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
 
             var div = Y.get('#pending-div');
             if (Y.Lang.isValue(div)) {
-                div.setAttribute('onclick', 'license_chosen()');
+                div.on('click', license_chosen);
             }
         }
 
