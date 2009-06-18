@@ -791,7 +791,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             self.branch))
         self.assertEqual([job.context], unfinished_jobs)
 
-    def test_findUnfinishedJobsDoesNotFindFinishedJobs(self):
+    def test_findUnfinishedJobs_does_not_find_finished_jobs(self):
         # findUnfinishedJobs ignores completed jobs.
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(
@@ -804,7 +804,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             self.branch))
         self.assertEqual([], unfinished_jobs)
 
-    def test_findUnfinishedJobsDoesNotFindFailedJobs(self):
+    def test_findUnfinishedJobs_does_not_find_failed_jobs(self):
         # findUnfinishedJobs ignores failed jobs.
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(

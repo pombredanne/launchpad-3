@@ -107,6 +107,7 @@ have Dutch translations.
 When the translations-export-to-branch script runs, it feeds the
 translations to the DirectBranchCommit.
 
+    >>> transaction.commit()
     >>> script = MockExportTranslationsToBranch(
     ...     'export-to-branch', test_args=['-vv'])
     >>> script.main()
