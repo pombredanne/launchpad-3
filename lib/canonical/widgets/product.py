@@ -308,7 +308,9 @@ class LicenseWidget(CheckBoxMatrixWidget):
         if term.value.url is None:
             return value
         else:
-            return '<a href="%s">%s</a>' % (term.value.url, value)
+            return ('%s <a href="%s" class="sprite external-link">'
+                    '<span class="invisible-link">view license</span></a>'
+                    % (value, term.value.url))
 
     def renderItem(self, index, text, value, name, cssClass):
         """See `ItemsEditWidgetBase`."""
