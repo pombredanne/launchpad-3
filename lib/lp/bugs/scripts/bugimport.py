@@ -49,7 +49,7 @@ from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.bugs.scripts.bugexport import BUGS_XMLNS
 
 
-logger = logging.getLogger('lp.bugs.scripts.bugimport')
+DEFAULT_LOGGER = logging.getLogger('lp.bugs.scripts.bugimport')
 
 UTC = pytz.timezone('UTC')
 
@@ -114,13 +114,18 @@ class BugImporter:
     """Import bugs into Launchpad"""
 
     def __init__(self, product, bugs_filename, cache_filename,
-                 verify_users=False):
+                 verify_users=False, logger=None):
         self.product = product
         self.bugs_filename = bugs_filename
         self.cache_filename = cache_filename
         self.verify_users = verify_users
         self.person_id_cache = {}
         self.bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+
+        if logger is None:
+            self.logger = DEFAULT_LOGGER
+        else:
+            self.logger = logger
 
         # A mapping of old bug IDs to new Launchpad Bug IDs
         self.bug_id_map = {}
@@ -160,7 +165,7 @@ class BugImporter:
         if person is None:
             person = getUtility(IPersonSet).getByEmail(email)
             if person is None:
-                logger.debug('creating person for %s' % email)
+                self.logger.debug('creating person for %s' % email)
                 # has the short name been taken?
                 if name is not None:
                     person = getUtility(IPersonSet).getByName(name)
@@ -242,7 +247,7 @@ class BugImporter:
             except (SystemExit, KeyboardInterrupt):
                 raise
             except:
-                logger.exception('Could not import bug #%s',
+                self.logger.exception('Could not import bug #%s',
                                  bugnode.get('id'))
                 ztm.abort()
             else:
@@ -252,7 +257,8 @@ class BugImporter:
         assert not self.haveImportedBug(bugnode), (
             'the bug has already been imported')
         bug_id = int(bugnode.get('id'))
-        logger.info('Handling bug %d', bug_id)
+
+        self.logger.info('Handling bug %d', bug_id)
 
         comments = get_all(bugnode, 'comment')
 
@@ -279,7 +285,7 @@ class BugImporter:
         # correctly after creation.
         bug.setPrivate(private, owner)
         bugtask = bug.bugtasks[0]
-        logger.info('Creating Launchpad bug #%d', bug.id)
+        self.logger.info('Creating Launchpad bug #%d', bug.id)
 
         # Remaining setup for first comment
         self.createAttachments(bug, msg, commentnode)
@@ -320,7 +326,7 @@ class BugImporter:
                 bugtracker, remotebug = bugwatchset.extractBugTrackerAndBug(
                     watchnode.get('href'))
             except NoBugTrackerFound, exc:
-                logger.debug('Registering bug tracker for %s', exc.base_url)
+                self.logger.debug('Registering bug tracker for %s', exc.base_url)
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     exc.base_url, self.bug_importer, exc.bugtracker_type)
                 remotebug = exc.remote_bug
@@ -428,7 +434,7 @@ class BugImporter:
         if bug_id in self.pending_duplicates:
             for other_bug_id in self.pending_duplicates[bug_id]:
                 other_bug = getUtility(IBugSet).get(other_bug_id)
-                logger.info('Marking bug %d as duplicate of bug %d',
+                self.logger.info('Marking bug %d as duplicate of bug %d',
                             other_bug.id, bug.id)
                 other_bug.duplicateof = bug
             del self.pending_duplicates[bug_id]
@@ -439,7 +445,7 @@ class BugImporter:
             if duplicateof in self.bug_id_map:
                 other_bug = getUtility(IBugSet).get(
                     self.bug_id_map[duplicateof])
-                logger.info('Marking bug %d as duplicate of bug %d',
+                self.logger.info('Marking bug %d as duplicate of bug %d',
                             bug.id, other_bug.id)
                 bug.duplicateof = other_bug
             else:

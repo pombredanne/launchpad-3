@@ -56,9 +56,9 @@ class BugImportScript(LaunchpadScript):
             self.parser.error('Product %s does not exist'
                               % self.options.product)
 
-        importer = BugImporter(product, bugs_filename,
-                               self.options.cache_filename,
-                               verify_users=self.options.verify_users)
+        importer = BugImporter(
+            product, bugs_filename, self.options.cache_filename,
+            verify_users=self.options.verify_users, logger=self.logger)
         importer.importBugs(self.txn)
         config.pop('send_email_data')
 
