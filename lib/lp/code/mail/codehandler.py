@@ -541,6 +541,9 @@ class CodeHandler:
             payload = part.get_payload(decode=True)
             if part['Content-type'].startswith('text/plain'):
                 body = payload
+                charset = part.get_param('charset')
+                if charset is not None:
+                    body = body.decode(charset)
             try:
                 md = MergeDirective.from_lines(payload.splitlines(True))
             except NotAMergeDirective:

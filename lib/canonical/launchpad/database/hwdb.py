@@ -179,6 +179,7 @@ class HWSubmissionSet:
                          (SELECT 1
                              FROM HWSubmission as HWAccess, TeamParticipation
                              WHERE HWAccess.id=HWSubmission.id
+                                 AND HWAccess.private
                                  AND HWAccess.owner=TeamParticipation.team
                                  AND TeamParticipation.person=%i
                                  ))
@@ -1173,7 +1174,7 @@ def make_submission_device_statistics_clause(
     device_ids_required):
     """Create a where expression and a table list for selecting devices.
     """
-    tables = [HWSubmissionDevice, HWDeviceDriverLink, HWVendorID, HWDevice]
+    tables = [HWSubmissionDevice, HWDeviceDriverLink]
     where_clauses = [
         HWSubmissionDevice.device_driver_link == HWDeviceDriverLink.id,
         ]
@@ -1195,6 +1196,7 @@ def make_submission_device_statistics_clause(
             raise ParameterError(
                 'Specify (bus, vendor_id, product_id) or driver_name.')
     if bus is not None:
+        tables.extend([HWVendorID, HWDevice])
         where_clauses.extend([
             HWVendorID.bus == bus,
             HWVendorID.vendor_id_for_bus == vendor_id,
@@ -1268,7 +1270,8 @@ def _userCanAccessSubmissionStormClause(user):
         subselect = Select(
             TeamParticipation.teamID,
             And(HWSubmission.ownerID == TeamParticipation.teamID,
-                TeamParticipation.personID == user.id))
+                TeamParticipation.personID == user.id,
+                HWSubmission.private))
         has_access = HWSubmission.ownerID.is_in(subselect)
         return Or(public, has_access)
 

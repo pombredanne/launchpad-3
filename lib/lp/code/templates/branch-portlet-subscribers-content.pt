@@ -18,9 +18,10 @@
           <tal:block replace="subscription/person/fmt:displayname/fmt:shorten/20" />
         </a>
 
-        <a href="+edit-subscription"
+        <a
           tal:condition="subscription/editable"
           tal:attributes="
+            href subscription/fmt:url;
             title string:Edit subscription ${subscription/person/fmt:displayname};
             id string:editsubscription-${subscription/person/name}">
           <img class="editsub-icon" src="/@@/edit"
