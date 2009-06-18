@@ -1764,7 +1764,7 @@
         <browser:page
             name="+timeline-graph"
             facet="overview"
-            template="../templates/product-timeline-graph.pt"/>
+            template="../templates/object-timeline-graph.pt"/>
         <browser:page
             name="+packages"
             facet="overview"
@@ -2024,6 +2024,9 @@
         <browser:page
             name="+index"
             template="../templates/productseries-index.pt"/>
+        <browser:page
+            name="+timeline-graph"
+            template="../templates/object-timeline-graph.pt"/>
         <browser:page
             name="+macros"
             template="../templates/productseries-macros.pt"/>
@@ -2883,4 +2886,10 @@
         for="lp.registry.interfaces.productrelease.IProductReleaseFile"
         permission="zope.Public"
         template="../templates/productreleasefile-macros.pt" />
+    <browser:page
+        for="*"
+        name="+timeline-macros"
+        template="../templates/timeline-macros.pt"
+        permission="zope.Public"
+        />
 </configure>

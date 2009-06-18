@@ -38,6 +38,11 @@
 
           var display_graph = function(result) {
               var timeline = result;
+              // The timeline for a productseries needs to be wrapped
+              // in an array.
+              if (!Y.Lang.isArray(timeline)) {
+                  timeline = [timeline];
+              }
               // Don't display graph if there are zero milestones or releases.
               var container = Y.get('#timeline-container');
               container.setStyle('display', 'block');
