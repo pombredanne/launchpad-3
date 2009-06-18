@@ -27,6 +27,7 @@ setup(
         'lazr.uri',
         'oauth',
         'python-openid',
+        'pytz',
         'setuptools',
         'sourcecodegen',
         'storm',
