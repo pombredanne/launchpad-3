@@ -1,1 +1,22 @@
-<strong>A comment</strong>
+<tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   xmlns:metal="http://xml.zope.org/namespaces/metal"
+   omit-tag="">
+
+  <div class="boardComment">
+    <div class="boardCommentDetails"
+         tal:content="structure context/header/@@+comment-header">
+      Details - everyone has details.
+    </div>
+    <div class="boardCommentBody"
+         tal:condition="context/body"
+         tal:content="structure context/body/@@+comment-body">
+      The comment body
+    </div>
+    <div class="boardCommentFooter"
+         tal:condition="context/footer"
+         tal:content="structure context/footer/@@+comment-footer">
+      Activity or other footer details.
+    </div>
+  </div>
+</tal:root>

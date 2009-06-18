@@ -54,6 +54,8 @@ from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.comments.interfaces.conversation import (
+    IComment, IConversation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
@@ -313,6 +315,71 @@ class BranchMergeProposalNavigation(Navigation):
         except WrongBranchMergeProposal:
             return None
 
+
+class CodeReviewDisplayComment:
+    """A code review comment or activity or both."""
+
+    implements(IComment)
+
+    delegates(ICodeReviewComment, 'comment')
+
+    body = None
+    footer = None
+
+    def __init__(self, comment):
+        self.comment = comment
+        self.header = self
+        if self.comment.message_body:
+            self.body = self.comment
+        if self.comment.vote is not None:
+            self.footer = self.comment
+        self.date = self.comment.message.datecreated
+
+class ICodeReviewActivity(Interface):
+    pass
+
+class ICodeReviewStatusChange(Interface):
+    pass
+
+class ICodeReviewReviewerRequested(Interface):
+    pass
+
+class ICodeReviewReviewerReviewed(Interface):
+    pass
+
+
+class CodeReviewStatusChange:
+
+    def __init__(self, who, when, what, revid):
+        self.who = who
+        self.when = when
+        self.what = what
+        self.revid = revid
+
+class CodeReviewActivity:
+    """Some activity."""
+
+    implements(IComment, ICodeReviewActivity)
+
+    body = None
+
+    def __init__(self, person, date):
+        self.comment_author = person
+        self.date = date
+        # This object is rendered for both the header and footer.
+        self.header = self.footer = self
+
+    
+
+class CodeReviewConversation:
+    """A code review conversation."""
+
+    implements(IConversation)
+
+    def __init__(self, comments):
+        self.comments = comments
+
+
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
@@ -324,6 +391,16 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     def comment_location(self):
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
+
+    @cachedproperty
+    def conversation(self):
+        """Return a conversation that is to be rendered."""
+        # Sort the comments by date order.
+        comments = [
+            CodeReviewDisplayComment(comment)
+            for comment in self.context.all_comments]
+        comments = sorted(comments, key=operator.attrgetter('date'))
+        return CodeReviewConversation(comments)
 
     @property
     def comments(self):

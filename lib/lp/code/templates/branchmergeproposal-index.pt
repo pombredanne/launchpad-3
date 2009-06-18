@@ -80,6 +80,9 @@
          tal:attributes="style row/style" />
   </tal:comments>
 
+  <tal:comments condition="view/conversation"
+                replace="structure view/conversation/@@+render"/>
+
   <div tal:define="link context/menu:context/add_comment"
        tal:condition="link/enabled"
        tal:content="structure link/render">

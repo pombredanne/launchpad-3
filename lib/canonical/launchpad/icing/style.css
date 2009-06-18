@@ -1395,6 +1395,7 @@ a.add {
 .boardCommentContent { line-height: 1.5em;}
 .boardCommentFooter {
   background-color: #eee;
+  color: #555;
   padding: 0.5em 12px;
   border-top: 1px solid #ddd;
 }
@@ -1734,6 +1735,9 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 }
 .commentVote {
   float: right;
+}
+.replyLink {
+  text-align: right;
 }
 .codereviewcomment {font: 120% monospace;}
 .codereviewcomment .attachment, #review-diff .attachment {

@@ -537,13 +537,19 @@
         <browser:page
             name="+index"
             template="../templates/codereviewcomment-index.pt"/>
+        <browser:page
+            name="+fragment"
+            template="../templates/codereviewcomment-fragment.pt"/>
+        <browser:page
+            name="+comment-header"
+            template="../templates/codereviewcomment-header.pt"/>
+        <browser:page
+            name="+comment-body"
+            template="../templates/codereviewcomment-body.pt"/>
+        <browser:page
+            name="+comment-footer"
+            template="../templates/codereviewcomment-footer.pt"/>
     </browser:pages>
-    <browser:page
-        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-        class="lp.code.browser.codereviewcomment.CodeReviewCommentView"
-        name="+fragment"
-        permission="zope.Public"
-        template="../templates/codereviewcomment-fragment.pt"/>
     <browser:page
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
         class="lp.code.browser.codereviewcomment.CodeReviewCommentSummary"
