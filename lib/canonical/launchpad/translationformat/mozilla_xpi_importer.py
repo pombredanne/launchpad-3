@@ -208,6 +208,7 @@ class MozillaDtdConsumer(xmldtd.WFCDTD):
 
 
 class DtdErrorHandler(utils.ErrorCounter):
+    """Error handler for the DTD parser."""
     filename = None
 
     def error(self, msg):
@@ -217,6 +218,34 @@ class DtdErrorHandler(utils.ErrorCounter):
     def fatal(self, msg):
         raise TranslationFormatInvalidInputError(
             filename=self.filename, message=msg)
+
+
+class DummyDtdFile:
+    """"File" returned when DTD SYSTEM entity tries to include a file."""
+    done = False
+
+    def read(self, *args, **kwargs):
+        """Minimally satisfy attempt to read an included DTD file."""
+        if self.done:
+            return ''
+        else:
+            self.done = True
+            return '<!-- SYSTEM entities not supported. -->'
+
+    def close(self):
+        """Satisfy attempt to close file."""
+        pass
+
+
+class DtdInputSourceFactoryStub:
+    """Replace the class the DTD parser uses to include other DTD files."""
+
+    def create_input_source(self, sysid):
+        """Minimally satisfy attempt to open an included DTD file.
+
+        This is called when the DTD parser hits a SYSTEM entity.
+        """
+        return DummyDtdFile()
 
 
 class DtdFile:
@@ -242,6 +271,7 @@ class DtdFile:
 
         parser = dtdparser.DTDParser()
         parser.set_error_handler(error_handler)
+        parser.set_inputsource_factory(DtdInputSourceFactoryStub())
         dtd = MozillaDtdConsumer(parser, filename, chrome_path, self.messages)
         parser.set_dtd_consumer(dtd)
         parser.parse_string(content)

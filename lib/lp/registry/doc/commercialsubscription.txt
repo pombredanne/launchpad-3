@@ -421,6 +421,17 @@ This OR the licenses search field must match.
     mega-money-maker
     obsolete-junk
 
+It is possible to search for problem project that have been reviewed, but
+not approved
+
+    >>> for product in product_set.forReview(
+    ...     license_reviewed=True, license_approved=False):
+    ...     print product.name
+    rosetta
+    alsa-utils
+    python-gnome2-dev
+    unassigned
+
 You can search for products based on a date range in which the product
 was created.
 

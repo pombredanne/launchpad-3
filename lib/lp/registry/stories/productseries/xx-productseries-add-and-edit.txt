@@ -96,11 +96,11 @@ of firefox:
 The new values are then shown in the series' page.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'series-details'))
-    Project: Mozilla Firefox ...
+    Project: Mozilla Firefox...
     Series: unstable
     Status: Experimental
     Project drivers: Sample Person
-    Release manager: None
+    Release manager: None Appoint release manager
 
     >>> content = find_main_content(browser.contents)
     >>> print content.find('ul', 'branch').find('a')
@@ -132,4 +132,4 @@ we can create structural bug subscriptions.
     >>> print browser.url
     http://launchpad.dev/firefox/unstable/+subscribe
     >>> print browser.title
-    Bug subscriptions for Mozilla Firefox Series: unstable
+    Bug subscriptions for Mozilla Firefox unstable series

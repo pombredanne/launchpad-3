@@ -44,8 +44,8 @@ from zope.schema import (
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_write_operation, exported,
-    operation_parameters, operation_returns_entry)
+    export_as_webservice_entry, export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_entry)
 
 from canonical.config import config
 
@@ -339,6 +339,12 @@ class IBranch(IHasOwner, IHasBranchTarget):
             description=_(
                 "This is the external location where the Bazaar "
                 "branch is hosted.")))
+
+    description = exported(
+        Text(
+            title=_('Description'), required=False,
+            description=_(
+                'A short description of the changes in this branch.')))
 
     branch_format = exported(
         Choice(
@@ -754,12 +760,23 @@ class IBranch(IHasOwner, IHasBranchTarget):
             notification.
         :return: new or existing BranchSubscription."""
 
+    @operation_parameters(
+        person=Reference(
+            title=_("The person to unsubscribe"),
+            schema=IPerson))
+    @operation_returns_entry(Interface) # Really IBranchSubscription
+    @export_read_operation()
     def getSubscription(person):
         """Return the BranchSubscription for this person."""
 
     def hasSubscription(person):
         """Is this person subscribed to the branch?"""
 
+    @operation_parameters(
+        person=Reference(
+            title=_("The person to unsubscribe"),
+            schema=IPerson))
+    @export_write_operation()
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
 

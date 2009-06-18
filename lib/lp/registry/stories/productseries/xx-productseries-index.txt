@@ -5,11 +5,11 @@ The product series overview page summarises the series.
 
     >>> anon_browser.open('http://launchpad.dev/firefox/trunk')
     >>> print extract_text(anon_browser.title)
-    Overview of Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(content.h1)
-    Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
 
     >>> print extract_text(find_tag_by_id(content, 'series-details'))
     Project: Mozilla Firefox ...
@@ -58,8 +58,8 @@ The driver can see a link to set the expected date.
     ...     driver_content, 'series_trunk').findAll('tr')
     >>> for row in driver_rows[0:2]:
     ...     print extract_text(row)
-    Version "Codename"               Expected   Released     Summary
-    Mozilla Firefox 0.9.2 "One ...   Set        2004-10-16   This was a ...
+    Version "Codename"               Expected              Released     Summary
+    Mozilla Firefox 0.9.2 "One ...   Set Change details    2004-10-16   This was a ...
 
     >>> driver_browser.getLink('Set', index=0)
     <Link ... url='http://launchpad.dev/firefox/+milestone/0.9.2/+edit'>
@@ -74,8 +74,7 @@ the status of the bugs and blueprints.
 The driver can see a link to create a release for the milestone.
 
     >>> print extract_text(driver_rows[-1])
-    Mozilla Firefox 1.0  2056-10-16   Release now
-    Blueprints targeted: 1 Unknown
+    Mozilla Firefox 1.0   2056-10-16  Create release Release now   Blueprints targeted: 1 Unknown
 
     >>> driver_browser.getLink('Release now')
     <Link ... url='http://launchpad.dev/firefox/+milestone/1.0/+addrelease'>
@@ -93,7 +92,7 @@ is set. Otherwise, there is a message explaining that the information has
 not been set.
 
     >>> print extract_text(find_tag_by_id(content, 'branch-details'))
-    No revision control details recorded for Mozilla Firefox Series: trunk.
+    No revision control details recorded for Mozilla Firefox trunk series.
 
 The driver sees that he can link a branch to this series, and there is
 an explanation where he can push the branch.
@@ -108,11 +107,25 @@ an explanation where he can push the branch.
 Distribution packaging is listed too. There is a link to the source package
 in each Ubuntu series.
 
+   >>> print extract_text(find_tag_by_id(
+   ...     content, 'distribution-packaging-explanation'))
+   This series is packaged in the following distribution series:
+
     >>> print extract_text(find_tag_by_id(content, 'distribution-packaging'))
     Ubuntu Warty mozilla-firefox
 
-    >>> anon_browser.getLink('mozilla-firefox')
+    >>> anon_browser.getLink('Ubuntu Warty mozilla-firefox')
     <Link ... url='http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox'>
+
+If there are no sourcepackages, any user can see there are none:
+
+    >>> anon_2_browser = setupBrowser()
+    >>> anon_2_browser.open('http://launchpad.dev/thunderbird/trunk')
+    >>> thunderbird_content = find_main_content(anon_2_browser.contents)
+   >>> print extract_text(find_tag_by_id(
+   ...     thunderbird_content, 'distribution-packaging-explanation'))
+   This series is not packaged in the following distribution series.
+
 
 The driver sees two packaging links near the distribution packaging.
 
@@ -128,4 +141,5 @@ There is a section that lists related links to this series
     <Link ... url='http://launchpad.dev/firefox/+series'>
     >>> anon_browser.getLink('All milestones for the Mozilla Firefox project')
     <Link ... url='http://launchpad.dev/firefox/+milestones'>
-
+    >>> anon_browser.getLink('All downloads for the Mozilla Firefox project')
+    <Link ... url='http://launchpad.dev/firefox/+download'>

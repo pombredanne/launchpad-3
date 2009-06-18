@@ -439,7 +439,7 @@ any other state can't though.
 Permissions on a team's mailing list are not tracked separately from
 permissions on the team.
 
-You cannot turn a team with a mailing list into a private team.
+You cannot turn a team with a mailing list into a private membership team.
 
     >>> from zope.component import queryAdapter
     >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
@@ -450,10 +450,10 @@ You cannot turn a team with a mailing list into a private team.
     >>> team_one.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     Traceback (most recent call last):
     ...
-    ImmutableVisibilityError: This team cannot be made private since it is
-    referenced by a mailing list.
+    ImmutableVisibilityError: This team cannot be converted to
+    Private Membership since it is referenced by a mailing list.
 
-However, you can give a private team a mailing list.
+However, you can give a private membership team a mailing list.
 
     >>> thereminists = new_team('thereminists')
     >>> queryAdapter(thereminists, IObjectPrivacy).is_private
