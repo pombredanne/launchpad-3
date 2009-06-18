@@ -89,7 +89,7 @@ class TestInstanceConfigDirLookup(TestCase):
         cfg = config.CanonicalConfig('an_instance')
 
         # We don't care about ZConfig...
-        cfg._setZConfig = lambda config_dir: None
+        cfg._setZConfig = lambda: None
         self.assertEquals(2323, cfg.launchpad.default_batch_size)
 
 
