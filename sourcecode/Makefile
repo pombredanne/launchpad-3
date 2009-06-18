@@ -4,7 +4,7 @@ PYTHON=python${PYTHON_VERSION}
 # the ones we test.  If we fix them all to have EITHER a good makefile
 # (build and check targets work), or no makefile we can reenable auto
 # detection.
-build_dirs:=bzr cscvs dulwich lazr-js lsprof pygettextpo pygpgme storm storm-0.14 twisted zope
+build_dirs:=bzr cscvs dulwich lazr-js lsprof pygettextpo pygpgme storm twisted zope
 test_dirs:=bzr cscvs pygettextpo storm twisted zope
 
 STORM_TESTDB = storm_test
