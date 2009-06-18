@@ -187,6 +187,22 @@
       </table>
       </div>
 
+      <div id="files">
+      <tal:built condition="context/was_built">
+        <h2>Files produced from build</h2>
+        <ul class="download" tal:condition="view/files">
+          <li tal:repeat="file view/files">
+            <a tal:content="file/filename"
+               tal:attributes="href file/http_url"></a>
+            (<span tal:replace="file/content/filesize/fmt:bytes" />)
+          </li>
+        </ul>
+        <span tal:condition="not: view/files">
+           No files produced
+        </span>
+      </tal:built>
+      </div>
+
     </div>
   </body>
 </html>

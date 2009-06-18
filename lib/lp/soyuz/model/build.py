@@ -56,6 +56,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.builder import Builder
 from lp.soyuz.model.buildqueue import BuildQueue
+from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
@@ -753,6 +754,17 @@ class Build(SQLBase):
             restricted=restricted)
         self.upload_log = library_file
 
+    def _getDebByFileName(self, filename):
+        """Helper function to get a .deb LFA in the context of this build."""
+        store = Store.of(self)
+        return store.find(
+            LibraryFileAlias,
+            BinaryPackageRelease.build == self.id,
+            BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            LibraryFileAlias.filename == filename
+            ).one()
+
     def getFileByName(self, filename):
         """See `IBuild`."""
         if filename.endswith('.changes'):
@@ -761,6 +773,8 @@ class Build(SQLBase):
             file_object = self.buildlog
         elif filename.endswith('_log.txt'):
             file_object = self.upload_log
+        elif filename.endswith('deb'):
+            file_object = self._getDebByFileName(filename)
         else:
             raise NotFoundError(filename)
 
