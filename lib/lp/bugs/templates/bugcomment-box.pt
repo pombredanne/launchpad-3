@@ -7,6 +7,11 @@
   tal:attributes="class string:boardComment ${remote_bug_comment_class}
                  ${admin_comment_hidden_class}">
   <div class="boardCommentDetails" tal:condition="not: comment/bugwatch">
+    <a tal:attributes="href comment/fmt:url"
+       tal:content="comment/index" class="bug-comment-index">
+      34
+    </a>
+
     <tal:comment_has_owner>
       <tal:comment_owner replace="structure comment/owner/fmt:link" />
     </tal:comment_has_owner>
@@ -16,10 +21,9 @@
       tal:content="comment/datecreated/fmt:displaydate">
       7 minutes ago
     </span>:
-    <a tal:attributes="href comment/fmt:url">
-      <strong tal:condition="comment/display_title"
-              tal:content="comment/title" />
-      (permalink)
+    <a tal:attributes="href comment/fmt:url"
+       tal:condition="comment/display_title">
+      <strong tal:content="comment/title" />
     </a>
   </div>
 
