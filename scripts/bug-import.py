@@ -10,8 +10,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces import IProductSet
 
-from lp.bugs.scripts.bugimport import BugImporter
 from lp.services.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.bugimport import BugImporter
 
 
 class BugImportScript(LaunchpadScript):
