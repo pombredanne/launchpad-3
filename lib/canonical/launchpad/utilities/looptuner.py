@@ -229,11 +229,6 @@ class DBLoopTuner(LoopTuner):
             if not results:
                 break
             for runtime, procpid, usename, datname, query in results:
-                if query is None:
-                    # Query details are hidden to avoid exposing
-                    # sensitive data in log files.  This does not happen
-                    # if the transaction is idle.
-                    query = "<Busy>"
                 self.log.info(
                     "Blocked on %s old xact %s@%s/%d - %s."
                     % (runtime, usename, datname, procpid, query))
