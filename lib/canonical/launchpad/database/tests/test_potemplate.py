@@ -137,6 +137,18 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
         expected = { ('foo', None): [template2] }
         self._compareResult(expected, classes)
 
+    def test_GetSharingPOTemplates(self):
+        # getSharingTemplates simply returns a list of sharing templates.
+        trunk_template = self.factory.makePOTemplate(
+            productseries=self.trunk, name='foo')
+        stable_template = self.factory.makePOTemplate(
+            productseries=self.stable, name='foo')
+        other_stable_template = self.factory.makePOTemplate(
+            productseries=self.stable, name='foo-other')
+
+        templates = set(list(self.subset.getSharingPOTemplates('foo')))
+        self.assertEqual(set([trunk_template, stable_template]), templates)
+
 
 class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
                                            EquivalenceClassTestMixin):
@@ -230,6 +242,30 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
             (unique_name, self.package.name): [bangkok_template],
         }
         self._compareResult(expected, classes)
+
+    def test_GetSharingPOTemplates(self):
+        # getSharingTemplates simply returns a list of sharing templates.
+        warty_template = self.factory.makePOTemplate(
+            distroseries=self.hoary, sourcepackagename=self.package,
+            name='foo')
+        hoary_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=self.package,
+            name='foo')
+        other_hoary_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=self.package,
+            name='foo-other')
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=self.ubuntu, sourcepackagename=self.package)
+
+        templates = set(list(subset.getSharingPOTemplates('foo')))
+        self.assertEqual(set([warty_template, hoary_template]), templates)
+
+    def test_GetSharingPOTemplates_NoSourcepackagename(self):
+        # getSharingPOTemplates needs a sourcepackagename to be set.
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=self.ubuntu)
+
+        self.assertRaises(AssertionError, subset.getSharingPOTemplates, 'foo')
 
 
 class TestTemplatePrecedence(TestCaseWithFactory):

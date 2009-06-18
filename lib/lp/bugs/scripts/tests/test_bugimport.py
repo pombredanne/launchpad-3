@@ -694,10 +694,12 @@ class BugImportScriptTestCase(unittest.TestCase):
             stderr=subprocess.PIPE)
         output, error = proc.communicate()
         self.assertEqual(proc.returncode, 0)
+
         # Find the imported bug number:
         match = re.search(r'Creating Launchpad bug #(\d+)', error)
         self.assertNotEqual(match, None)
         bug_id = int(match.group(1))
+
         # Abort transaction so we can see the result:
         self.layer.txn.abort()
         bug = getUtility(IBugSet).get(bug_id)
