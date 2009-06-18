@@ -227,6 +227,17 @@ def split_out_runlaunchpad_arguments(args):
         return args[1].split(','), args[2:]
     return [], args
 
+def process_config_file_argument(args):
+    """Add the default -C argument based on the value of LPCONFIG."""
+    if '-C' not in args:
+        zope_config_file = config.zope_config_file
+        if not os.path.isfile(zope_config_file):
+            raise ValueError(
+                "Cannot find ZConfig file for instance %s: %s" % (
+                    config.instance_name, zope_config_file))
+        args.extend(['-C', zope_config_file])
+    return args
+
 
 def start_launchpad(argv=list(sys.argv)):
     global TWISTD_SCRIPT
@@ -235,6 +246,7 @@ def start_launchpad(argv=list(sys.argv)):
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
+    argv = process_config_file_argument(argv)
     services = get_services_to_run(services)
     for service in services:
         service.launch()
