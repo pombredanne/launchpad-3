@@ -15,9 +15,7 @@
     <div tal:condition="subscriptions">
       <ul class="person">
         <li tal:repeat="subscription subscriptions">
-          <a href="#"
-             tal:content="subscription/subscriber/browsername"
-             tal:attributes="href subscription/subscriber/fmt:url">Ubuntu Team</a>
+          <a tal:replace="structure subscription/subscriber/fmt:link">Ubuntu Team</a>
         </li>
       </ul>
       <br />
@@ -35,9 +33,7 @@
       <div tal:condition="parent_target/bug_subscriptions">
         <ul class="person">
           <li tal:repeat="subscription parent_target/bug_subscriptions">
-            <a href="#"
-               tal:content="subscription/subscriber/browsername"
-               tal:attributes="href subscription/subscriber/fmt:url">Ubuntu Team</a>
+            <a tal:replace="structure subscription/subscriber/fmt:link">Ubuntu Team</a>
           </li>
         </ul>
       </div>
