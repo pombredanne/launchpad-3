@@ -98,8 +98,8 @@ specifications and bugtasks.
     >>> status = spec.updateLifecycleStatus(person)
     >>> for status_count in view.specification_status_counts:
     ...     print '%s: %s' % (status_count.status.title, status_count.count)
-    Good progress: 1
     Unknown: 1
+    Good progress: 1
 
     >>> for status_count in view.bugtask_status_counts:
     ...     print '%s: %s' % (status_count.status.title, status_count.count)

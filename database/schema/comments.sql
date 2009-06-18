@@ -157,7 +157,6 @@ COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch f
 COMMENT ON COLUMN BugBranch.bug IS 'The bug associated with this branch.';
 COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
-COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
 
@@ -1904,6 +1903,7 @@ COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at p
 COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
 COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days before superseded or deleted binary files are expired in the librarian, or zero for never.';
 COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
+COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 
 -- ArchiveAuthToken
 

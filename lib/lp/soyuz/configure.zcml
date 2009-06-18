@@ -385,7 +385,9 @@
             set_attributes="description displayname"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="authorized_size buildd_secret distribution enabled                                                                                         private name require_virtualized signing_key"/>
+            set_attributes="authorized_size buildd_secret distribution
+                            enabled private name require_virtualized
+                            signing_key relative_build_score"/>
     </class>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"

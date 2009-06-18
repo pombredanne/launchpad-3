@@ -716,14 +716,6 @@ class SeriesWithReleases:
         else:
             return 'unhighlighted'
 
-    @cachedproperty
-    def total_downloads(self):
-        """Total downloads of files associated with this series."""
-        total = 0
-        for release in self.releases:
-            total += sum(file.libraryfile.hits for file in release.files)
-        return total
-
 
 class ReleaseWithFiles:
     """A decorated release that includes product release files.
@@ -744,6 +736,11 @@ class ReleaseWithFiles:
 
     def addFile(self, file):
         self.files.append(file)
+
+    @cachedproperty
+    def total_downloads(self):
+        """Total downloads of files associated with this release."""
+        return sum(file.libraryfile.hits for file in self.files)
 
 
 class ProductDownloadFileMixin:

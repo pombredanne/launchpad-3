@@ -16,7 +16,7 @@ identical are not repeated.
     >>> print extract_text(find_tag_by_id(content, 'packaging'))
     Ubuntu version                                 Upstream version
     hoary development main release 1.0.9a-4ubuntu1 None defined
-    warty current     main release 1.0.9a-4        alsa-utils Series: trunk
+    warty current     main release 1.0.9a-4        alsa-utils trunk series
                       main         1.0.8-1ubuntu1
 
 
@@ -82,7 +82,7 @@ displayed:
     ...     'http://launchpad.dev/ubuntu/+source/evolution')
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'packaging'))
     Ubuntu version                     Upstream version
-    hoary development main release 1.0 Evolution Series: no-crashes
+    hoary development main release 1.0 Evolution no-crashes series
 
 Once he deletes the link, the older link shows:
 
@@ -94,4 +94,4 @@ Once he deletes the link, the older link shows:
 
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'packaging'))
     Ubuntu version                     Upstream version
-    hoary development main release 1.0 Evolution Series: trunk
+    hoary development main release 1.0 Evolution trunk series

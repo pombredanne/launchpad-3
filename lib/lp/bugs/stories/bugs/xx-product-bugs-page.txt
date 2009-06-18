@@ -144,7 +144,7 @@ series has the link because Jokosher has enabled bug expiration.
 
     >>> expirable_bugs_link.click()
     >>> anon_browser.title
-    'Bugs that can expire in Jokosher Series: trunk'
+    'Bugs that can expire in Jokosher trunk series'
 
 Thunderbird has not enabled bug expiration; the anonymous user
 cannot see any link reporting that bugs can expire.

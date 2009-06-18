@@ -124,7 +124,7 @@ conf file is loaded.
     >>> config.filename
     '.../configs/development/launchpad-lazr.conf'
     >>> config.extends.filename
-    '.../configs/canonical-lazr.conf'
+    '.../config/schema-lazr.conf'
 
     >>> config.answertracker.days_before_expiration
     15
