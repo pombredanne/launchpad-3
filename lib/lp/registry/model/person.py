@@ -1782,6 +1782,7 @@ class Person(
                          ('branchvisibilitypolicy', 'team'),
                          ('archive', 'owner'),
                          ('archivesubscriber', 'subscriber'),
+                         ('structuralsubscription', 'subscriber'),
                          ])
 
         warnings = set()
