@@ -16,7 +16,7 @@
         <tr>
           <td class="bug-comment-index">
             <a tal:attributes="href comment/fmt:url"
-               tal:content="comment/index" />
+               tal:content="string: #${comment/index}" />
           </td>
           <td tal:condition="not: comment/bugwatch">
             <tal:comment_owner

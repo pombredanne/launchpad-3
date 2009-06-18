@@ -11,7 +11,7 @@ of bug #11 is:
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> comment_1 = find_tags_by_class(browser.contents, 'boardComment')[0]
     >>> print extract_text(comment_1)
-    1 Valentina Commissari wrote on 2007-03-15:
+    #1 Valentina Commissari wrote on 2007-03-15:
     The solution to this is to make Jokosher use autoaudiosink...
 
 If we add an attachment to the bug report...
@@ -39,7 +39,7 @@ displayed as the bug report).
     >>> last_comment = find_tags_by_class(
     ...     browser.contents, 'boardComment')[-1]
     >>> print extract_text(last_comment)
-    6 Dave Miller wrote on 2007-03-15: sample data (8 bytes, text/plain)
+    #6 Dave Miller wrote on 2007-03-15: sample data (8 bytes, text/plain)
     This title, however, is the same as the bug title and so it will
     be suppressed in the UI.
     >>> link = browser.getLink('sample data')

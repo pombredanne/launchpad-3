@@ -108,7 +108,7 @@ bug from which the comment was imported.
     ...     'boardCommentDetails')
     >>> for link in header.findAll('a'):
     ...     print "%s: %s" % (extract_text(link), link.get('href'))
-    1: /redfish/+bug/15/comments/1
+    #1: /redfish/+bug/15/comments/1
     Debian Bug tracker #308994: http://bugs.debian.org/...?bug=308994
     josh: http://launchpad.dev/~jbuhl-nospam
     gnome-volume-manager...: /redfish/+bug/15/comments/1
