@@ -336,9 +336,11 @@ class IBug(ICanBeMentored):
     def unsubscribe(person, unsubscribed_by):
         """Remove this person's subscription to this bug."""
 
-    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
-    def unsubscribeFromDupes(person):
+    def unsubscribeFromDupes(person, unsubscribed_by):
         """Remove this person's subscription from all dupes of this bug."""
 
     def isSubscribed(person):
