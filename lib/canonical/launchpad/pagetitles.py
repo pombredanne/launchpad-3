@@ -729,7 +729,10 @@ logintoken_claimprofile = 'Claim Launchpad profile'
 
 logintoken_claimteam = 'Claim Launchpad team'
 
-logintoken_index = 'Launchpad: redirect to the logintoken page'
+# This page will always redirect the user to another page specific to the
+# login token in question, except when the token has been consumed already, in
+# which case the user will see the title.
+logintoken_index = 'You have already done this'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
 
