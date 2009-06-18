@@ -363,7 +363,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         row_count = int(math.ceil(len(rendered_items) / float(column_count)))
         for i in range(0, row_count):
             html.append('<tr>')
-            for j in range(0, self.column_count):
+            for j in range(0, column_count):
                 index = i + (j * row_count)
                 if index >= len(rendered_items):
                     break
