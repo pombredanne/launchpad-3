@@ -224,6 +224,7 @@ class DBLoopTuner(LoopTuner):
                     current_query
                 FROM activity()
                 WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
+                    AND datname = current_database()
                 """ % self.long_running_transaction).get_all())
             if not results:
                 break
