@@ -89,7 +89,6 @@
         Y.code.branchsubscription.update_subscriber_list();
     });
 
-
     });
     -->
   <tal:script replace="structure string:&lt;/script&gt;" />
