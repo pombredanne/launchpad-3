@@ -475,9 +475,8 @@ class BranchMergeProposalVoteView(LaunchpadView):
                       reverse=True)
 
     @cachedproperty
-    def unsolicited_reviews(self):
-        solicited_reviewers = set(review.reviewer for review in self.reviews)
-        unsolicited_reviews = []
+    def latest_reviews(self):
+        latest_reviews = []
         seen_reviewers = set()
         for comment in sorted(self.context.all_comments,
             key=lambda x: x.message.datecreated, reverse=True):
@@ -485,28 +484,21 @@ class BranchMergeProposalVoteView(LaunchpadView):
                 continue
             if comment.message.owner in seen_reviewers:
                 continue
-            if comment.message.owner in solicited_reviewers:
-                continue
-            unsolicited_reviews.append(comment)
+            latest_reviews.append(comment)
             seen_reviewers.add(comment.message.owner)
-        return unsolicited_reviews
+        return latest_reviews
 
-    @cachedproperty
-    def categorized_reviews(self):
-        reviewers = []
-        community = []
+    @property
+    def review_info(self):
+        info = []
+        requests = dict((reference.comment, reference) for reference
+                        in self.context.votes)
         review_team = self.context.target_branch.reviewer
-        for review in self.unsolicited_reviews:
-            if review.message.owner.inTeam(review_team):
-                reviewers.append(review)
-            else:
-                community.append(review)
-        categories = []
-        if len(reviewers) > 0:
-            categories.append({'title': 'Reviewers', 'votes': reviewers,})
-        if len(community) > 0:
-            categories.append({'title': 'Community', 'votes': community,})
-        return categories
+        for review in self.latest_reviews:
+            trusted = review.message.owner.inTeam(review_team)
+            info.append({'review': review, 'request': requests.get(review),
+                         'trusted': trusted})
+        return info
 
     @cachedproperty
     def show_user_review_link(self):

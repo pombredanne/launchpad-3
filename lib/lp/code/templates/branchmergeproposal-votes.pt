@@ -15,49 +15,27 @@
   </thead>
   <tbody>
     <!-- Current reviews -->
-    <tr tal:repeat="review view/current_reviews">
-      <td>
-        <tal:reviewer replace="structure review/reviewer/fmt:link:mainsite">
-        Eric the Reviewer</tal:reviewer>
-      </td>
-      <td tal:content="review/review_type" />
-      <td>
-        <tal:date-requested condition="review/show_date_requested">
-          <span tal:attributes="title string:Requested by ${review/registrant/displayname}">
-            <tal:date replace="review/date_requested/fmt:approximatedate"/>
-          </span>
-        </tal:date-requested>
-      </td>
-      <td>
-        <span tal:attributes="class string:vote${review/comment/vote/name}"
-              tal:content="review/status_text">
-          Approved
-        </span>
-        <tal:date replace="review/date_of_comment/fmt:displaydate" />
-        <a tal:condition="review/can_change_review" href="+review">
-          <img src="/@@/edit" title="Vote again" alt="vote"/>
-        </a>
-      </td>
-    </tr>
-    <tal:categorized tal:repeat="category view/categorized_reviews">
-    <tr><th tal:content="category/title">Category</th></tr>
-    <tr tal:repeat="vote category/votes">
+    <tr tal:repeat="info view/review_info">
       <td>
         <tal:reviewer
-         replace="structure vote/message/owner/fmt:link:mainsite">
+         replace="structure info/review/message/owner/fmt:link:mainsite">
         Eric the Reviewer</tal:reviewer>
+        <tal:untrusted condition="not: info/trusted">
+            (community)
+        </tal:untrusted>
       </td>
-      <td tal:content="vote/vote_tag" />
-      <td></td>
+      <td tal:content="info/review/vote_tag" />
+      <td><tal:req condition="info/request">
+          <tal:date replace="info/request/date_created/fmt:approximatedate"/>
+      </tal:req></td>
       <td>
-        <span tal:attributes="class string:vote${vote/vote/name}"
-              tal:content="vote/vote/title">
+        <span tal:attributes="class string:vote${info/review/vote/name}"
+              tal:content="info/review/vote/title">
           Approved
         </span>
-        <tal:date replace="vote/message/datecreated/fmt:displaydate" />
+        <tal:date replace="info/review/message/datecreated/fmt:displaydate" />
       </td>
     </tr>
-    </tal:categorized>
     <!-- Pending reviews -->
     <tr tal:repeat="review view/requested_reviews">
       <td tal:content="structure review/reviewer/fmt:link:mainsite" />
