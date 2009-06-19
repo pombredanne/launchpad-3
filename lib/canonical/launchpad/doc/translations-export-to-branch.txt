@@ -112,7 +112,7 @@ translations to the DirectBranchCommit.
     ...     'export-to-branch', test_args=['-vv'])
     >>> script.main()
     INFO Exporting to translations branches.
-    INFO Exporting Gazblachko Series: trunk.
+    INFO Exporting Gazblachko trunk series.
     INFO Writing file 'po/main/nl.po':
     INFO # ...
     msgid ""
@@ -168,7 +168,7 @@ refuse to commit to the branch.
     >>> script.simulate_race = True
     >>> script.main()
     INFO Exporting to translations branches.
-    INFO Exporting Gazblachko Series: trunk.
+    INFO Exporting Gazblachko trunk series.
     INFO Writing file 'po/main/nl.po':
     ...
     msgstr "gazmod msgstr"
@@ -192,8 +192,8 @@ pending translations BranchJobs on the branch.
     >>> transaction.commit()
     >>> script.main()
     INFO Exporting to translations branches.
-    INFO Exporting Gazblachko Series: trunk.
-    WARNING Failure: Translations branch for Gazblachko Series: trunk
+    INFO Exporting Gazblachko trunk series.
+    WARNING Failure: Translations branch for Gazblachko trunk series
     has pending translations changes.  Not committing.
     INFO Processed 1 item(s); 1 failure(s).
 
