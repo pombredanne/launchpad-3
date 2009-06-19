@@ -571,7 +571,8 @@ bug #5.
 The return value of unsubscribeFromDupes() is a list of bugs from which
 the user was unsubscribed.
 
-    >>> [bug.id for bug in bug_five.unsubscribeFromDupes(sample_person)]
+    >>> [bug.id for bug in bug_five.unsubscribeFromDupes(
+    ...     sample_person, sample_person)]
     [6]
 
     >>> bug_six.isSubscribed(sample_person)

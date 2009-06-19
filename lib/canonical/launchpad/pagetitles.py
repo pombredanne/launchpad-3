@@ -729,7 +729,10 @@ logintoken_claimprofile = 'Claim Launchpad profile'
 
 logintoken_claimteam = 'Claim Launchpad team'
 
-logintoken_index = 'Launchpad: redirect to the logintoken page'
+# This page will always redirect the user to another page specific to the
+# login token in question, except when the token has been consumed already, in
+# which case the user will see the title.
+logintoken_index = 'You have already done this'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
 
@@ -897,6 +900,8 @@ people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
+active_reviews = ContextDisplayName('Pending proposals for %s')
+
 person_archive_subscription = ContextDisplayName('%s')
 
 person_archive_subscriptions = ContextDisplayName(
@@ -1051,8 +1056,6 @@ potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
-
-product_active_reviews = ContextDisplayName('Pending proposals for %s')
 
 product_add_from_project = 'Register a project in your project group'
 

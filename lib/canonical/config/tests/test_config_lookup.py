@@ -6,7 +6,8 @@ __metaclass__ = type
 __all__ = []
 
 import os
-from tempfile import NamedTemporaryFile
+import shutil
+from tempfile import mkdtemp, NamedTemporaryFile
 from unittest import makeSuite, TestCase, TestSuite
 
 from canonical import config
@@ -55,7 +56,45 @@ class TestConfigLookup(TestCase):
             config.find_instance_name(), config.DEFAULT_CONFIG)
 
 
+class TestInstanceConfigDirLookup(TestCase):
+    """Test where instance config directories are looked up."""
+
+    def setUp(self):
+        self.temp_config_root_dir = mkdtemp('configs')
+        self.instance_config_dir = os.path.join(
+            self.temp_config_root_dir, 'an_instance')
+        os.mkdir(self.instance_config_dir)
+        self.original_root_dirs = config.CONFIG_ROOT_DIRS
+        config.CONFIG_ROOT_DIRS = [self.temp_config_root_dir]
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_config_root_dir)
+        config.CONFIG_ROOT_DIRS = self.original_root_dirs
+
+    def test_find_config_dir_raises_ValueError(self):
+        self.assertRaises(
+            ValueError, config.find_config_dir, 'no_instance')
+
+    def test_find_config_dir(self):
+        self.assertEquals(
+            self.instance_config_dir, config.find_config_dir('an_instance'))
+
+    def test_Config_uses_find_config_dir(self):
+        # Create a very simple config file.
+        config_file = open(
+            os.path.join(self.instance_config_dir, 'launchpad-lazr.conf'),
+            'w')
+        config_file.write('[launchpad]\ndefault_batch_size=2323')
+        config_file.close()
+        cfg = config.CanonicalConfig('an_instance')
+
+        # We don't care about ZConfig...
+        cfg._setZConfig = lambda: None
+        self.assertEquals(2323, cfg.launchpad.default_batch_size)
+
+
 def test_suite():
     suite = TestSuite()
     suite.addTest(makeSuite(TestConfigLookup))
+    suite.addTest(makeSuite(TestInstanceConfigDirLookup))
     return suite

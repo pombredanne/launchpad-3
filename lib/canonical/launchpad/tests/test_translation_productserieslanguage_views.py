@@ -92,6 +92,23 @@ class TestProductSeries(TestCaseWithFactory):
             [u'Serbian', u'Spanish'])
 
 
+    def test_productserieslanguages_english(self):
+        # Even if there's an English POFile, it's not listed
+        # among translated languages.
+        potemplate = self.factory.makePOTemplate(
+            productseries=self.productseries)
+        pofile = self.factory.makePOFile('en', potemplate)
+        self.assertEquals(self.view.productserieslanguages,
+                          [])
+
+        # It's not shown even with more than one POTemplate
+        # (different code paths).
+        potemplate2 = self.factory.makePOTemplate(
+            productseries=self.productseries)
+        self.assertEquals(self.view.productserieslanguages,
+                          [])
+
+
 class TestProductSeriesLanguage(TestCaseWithFactory):
     """Test ProductSeriesLanguage view."""
 

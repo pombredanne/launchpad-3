@@ -64,7 +64,7 @@
               <a tal:attributes="href context/product/translationgroup/fmt:url"
                  tal:content="context/product/translationgroup/title">translators</a>
             </tal:hasgroup>
-            with <a href="https://help.launchpad.net/Translations/YourProject#Choosing%20a%20permissions%20policy"
+            with <a target="help" href="/+help/permissions-policies.html"
               tal:content="context/product/translationpermission/title">certain</a>
             permissions.
             <tal:permissions condition="context/product/required:launchpad.Edit">

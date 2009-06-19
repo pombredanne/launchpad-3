@@ -88,7 +88,8 @@ No Privileges Person looks at the page heading and sees that Foo Bar
 is the bug owner. He sees the link to the question in the 'Related
 questions' portlet, and uses it to go to the question page.
 
-    >>> print extract_text(content(['img'], src='/@@/bug-medium')[0].parent)
+    >>> print extract_text(
+    ...     find_tags_by_class(str(content), 'sprite bug-medium')[-1])
     Bug #10:
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
