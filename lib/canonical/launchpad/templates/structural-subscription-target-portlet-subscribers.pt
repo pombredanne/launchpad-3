@@ -15,7 +15,7 @@
     <div tal:condition="subscriptions">
       <ul>
         <li tal:repeat="subscription subscriptions">
-            <a tal:replace="structure subscription/subscriber/fmt:link">Ubuntu Team</a>
+          <a tal:replace="structure subscription/subscriber/fmt:link">Ubuntu Team</a>
         </li>
       </ul>
       <br />
