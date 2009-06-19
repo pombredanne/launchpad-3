@@ -227,8 +227,21 @@ def split_out_runlaunchpad_arguments(args):
         return args[1].split(','), args[2:]
     return [], args
 
-def process_config_file_argument(args):
-    """Add the default -C argument based on the value of LPCONFIG."""
+
+def process_config_arguments(args):
+    """Process the arguments related to the config.
+
+    -i  Will set the instance name aka LPCONFIG env.
+
+    If there is no ZConfig file passed, one will add to the argument
+    based on the selected instance.
+    """
+    try:
+        idx = args.index('-i')
+        config.setInstance(args.pop(idx+1))
+        del args[idx]
+    except ValueError:
+        pass
     if '-C' not in args:
         zope_config_file = config.zope_config_file
         if not os.path.isfile(zope_config_file):
@@ -246,7 +259,7 @@ def start_launchpad(argv=list(sys.argv)):
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
-    argv = process_config_file_argument(argv)
+    argv = process_config_arguments(argv)
     services = get_services_to_run(services)
     for service in services:
         service.launch()

@@ -19,12 +19,12 @@ import lp.testing
 
 from canonical.config import config
 from canonical.launchpad.scripts.runlaunchpad import (
-    get_services_to_run, SERVICES, process_config_file_argument, 
+    get_services_to_run, SERVICES, process_config_arguments,
     split_out_runlaunchpad_arguments)
 
 
 
-class CommandLineArgumentProcessing(unittest.TestCase):
+class CommandLineArgumentProcessing(lp.testing.TestCase):
     """runlaunchpad.py's command line arguments fall into two parts. The first
     part specifies which services to run, then second part is passed directly
     on to the Zope webserver start up.
@@ -88,7 +88,7 @@ class TestDefaultConfigArgument(lp.testing.TestCase):
         """Make sure that a -C is processed unchanged."""
         self.assertEqual(
             ['-v', '-C', 'a_file.conf', '-h'],
-            process_config_file_argument(['-v', '-C', 'a_file.conf', '-h']))
+            process_config_arguments(['-v', '-C', 'a_file.conf', '-h']))
 
     def test_default_config(self):
         """Make sure that the -C option is set to the correct instance."""
@@ -98,12 +98,23 @@ class TestDefaultConfigArgument(lp.testing.TestCase):
         config.setInstance('instance1')
         self.assertEqual(
             ['-a_flag', '-C', '%s/launchpad.conf' % instance_config_dir],
-            process_config_file_argument(['-a_flag']))
+            process_config_arguments(['-a_flag']))
 
     def test_instance_not_found_raises_ValueError(self):
         """Make sure that an unknown instance fails."""
         config.setInstance('unknown')
-        self.assertRaises(ValueError, process_config_file_argument, [])
+        self.assertRaises(ValueError, process_config_arguments, [])
+
+    def test_i_sets_the_instance(self):
+        """The -i parameter will set the config instance name."""
+        instance_config_dir = os.path.join(self.config_root, 'test')
+        os.mkdir(instance_config_dir)
+        file(os.path.join(instance_config_dir, 'launchpad.conf'), 'w').close()
+        self.assertEquals(
+            ['-o', 'foo', '-C', '%s/launchpad.conf' % instance_config_dir],
+            process_config_arguments(
+                ['-i', 'test', '-o', 'foo']))
+        self.assertEquals('test', config.instance_name)
 
 
 class ServersToStart(unittest.TestCase):
