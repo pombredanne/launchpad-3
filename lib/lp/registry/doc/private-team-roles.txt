@@ -250,10 +250,8 @@ Structural Subscription to Products
 
 Private teams can have structural subscriptions to products.
 
-    >>> from canonical.launchpad.database.structuralsubscription import (
-    ...    StructuralSubscription)
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> sub = StructuralSubscription(product=firefox,
+    >>> sub = firefox.addSubscription(
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
     <Product at ...>
@@ -262,7 +260,7 @@ Private teams can have structural subscriptions to products.
 
 Private membership teams cannot.
 
-    >>> sub = StructuralSubscription(product=firefox,
+    >>> sub = firefox.addSubscription(
     ...     subscriber=pm_team, subscribed_by=team_owner)
     Traceback (most recent call last):
     ...
@@ -277,7 +275,7 @@ Structural Subscription to Distributions
 Private teams can have structural subscriptions to distros.
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> sub = StructuralSubscription(distribution=ubuntu,
+    >>> sub = ubuntu.addSubscription(
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
     <Distribution at ...>
@@ -286,7 +284,7 @@ Private teams can have structural subscriptions to distros.
 
 Private membership teams cannot.
 
-    >>> sub = StructuralSubscription(distribution=ubuntu,
+    >>> sub = ubuntu.addSubscription(
     ...     subscriber=pm_team, subscribed_by=team_owner)
     Traceback (most recent call last):
     ...
