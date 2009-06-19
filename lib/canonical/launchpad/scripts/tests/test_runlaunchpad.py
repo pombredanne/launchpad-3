@@ -94,7 +94,7 @@ class TestDefaultConfigArgument(lp.testing.TestCase):
         """Make sure that the -C option is set to the correct instance."""
         instance_config_dir = os.path.join(self.config_root, 'instance1')
         os.mkdir(instance_config_dir)
-        file(os.path.join(instance_config_dir, 'launchpad.conf'), 'w').close()
+        open(os.path.join(instance_config_dir, 'launchpad.conf'), 'w').close()
         config.setInstance('instance1')
         self.assertEqual(
             ['-a_flag', '-C', '%s/launchpad.conf' % instance_config_dir],
@@ -109,7 +109,7 @@ class TestDefaultConfigArgument(lp.testing.TestCase):
         """The -i parameter will set the config instance name."""
         instance_config_dir = os.path.join(self.config_root, 'test')
         os.mkdir(instance_config_dir)
-        file(os.path.join(instance_config_dir, 'launchpad.conf'), 'w').close()
+        open(os.path.join(instance_config_dir, 'launchpad.conf'), 'w').close()
         self.assertEquals(
             ['-o', 'foo', '-C', '%s/launchpad.conf' % instance_config_dir],
             process_config_arguments(

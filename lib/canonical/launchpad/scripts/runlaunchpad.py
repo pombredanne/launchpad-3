@@ -236,12 +236,11 @@ def process_config_arguments(args):
     If there is no ZConfig file passed, one will add to the argument
     based on the selected instance.
     """
-    try:
-        idx = args.index('-i')
-        config.setInstance(args.pop(idx+1))
-        del args[idx]
-    except ValueError:
-        pass
+    if '-i' in args:
+        index = args.index('-i')
+        config.setInstance(args[index+1])
+        del args[index:index+2]
+
     if '-C' not in args:
         zope_config_file = config.zope_config_file
         if not os.path.isfile(zope_config_file):
