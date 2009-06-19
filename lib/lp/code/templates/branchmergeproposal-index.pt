@@ -75,11 +75,6 @@
 
   <tal:votes replace="structure context/@@+votes"/>
 
-  <tal:comments repeat="row view/comments" >
-    <div tal:content="structure row/comment/@@+fragment"
-         tal:attributes="style row/style" />
-  </tal:comments>
-
   <tal:comments condition="view/conversation"
                 replace="structure view/conversation/@@+render"/>
 

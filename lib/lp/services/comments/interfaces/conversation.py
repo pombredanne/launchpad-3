@@ -9,7 +9,8 @@ __all__ = [
     ]
 
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
+from zope.schema import Bool
 
 from canonical.launchpad import _
 from lazr.restful.fields import CollectionField, Reference
@@ -18,9 +19,13 @@ from lazr.restful.fields import CollectionField, Reference
 class IComment(Interface):
     """A comment which may have a body or activity."""
 
-    header = Attribute('The comment header.')
-    body = Attribute('The comment body.')
-    activity = Attribute('The comment activity.')
+    has_body = Bool(
+        description=_("Does the comment have body text?"),
+        readonly=True)
+
+    has_footer = Bool(
+        description=_("Does the comment have a footer?"),
+        readonly=True)
 
 
 class IConversation(Interface):

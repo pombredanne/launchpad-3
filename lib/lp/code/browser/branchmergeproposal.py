@@ -323,53 +323,12 @@ class CodeReviewDisplayComment:
 
     delegates(ICodeReviewComment, 'comment')
 
-    body = None
-    footer = None
-
     def __init__(self, comment):
         self.comment = comment
-        self.header = self
-        if self.comment.message_body:
-            self.body = self.comment
-        if self.comment.vote is not None:
-            self.footer = self.comment
+        self.has_body = bool(self.comment.message_body)
+        self.has_footer = self.comment.vote is not None
         self.date = self.comment.message.datecreated
 
-class ICodeReviewActivity(Interface):
-    pass
-
-class ICodeReviewStatusChange(Interface):
-    pass
-
-class ICodeReviewReviewerRequested(Interface):
-    pass
-
-class ICodeReviewReviewerReviewed(Interface):
-    pass
-
-
-class CodeReviewStatusChange:
-
-    def __init__(self, who, when, what, revid):
-        self.who = who
-        self.when = when
-        self.what = what
-        self.revid = revid
-
-class CodeReviewActivity:
-    """Some activity."""
-
-    implements(IComment, ICodeReviewActivity)
-
-    body = None
-
-    def __init__(self, person, date):
-        self.comment_author = person
-        self.date = date
-        # This object is rendered for both the header and footer.
-        self.header = self.footer = self
-
-    
 
 class CodeReviewConversation:
     """A code review conversation."""
