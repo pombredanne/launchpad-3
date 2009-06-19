@@ -144,3 +144,9 @@ class IRosettaUploadJobSource(Interface):
     def iterReady():
         """Iterate through ready IRosettaUploadJobs."""
 
+    def findUnfinishedJobs(branch):
+        """Find any `IRosettaUploadJob`s for `branch` that haven't run yet.
+
+        Returns ready jobs, but also ones in any other state except
+        "complete" or "failed."
+        """

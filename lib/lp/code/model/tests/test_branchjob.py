@@ -26,6 +26,7 @@ from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
 
+from lp.services.job.interfaces.job import JobStatus
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
@@ -777,6 +778,45 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         job.context.sync()
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([job], ready_jobs)
+
+    def test_findUnfinishedJobs(self):
+        # findUnfinishedJobs returns jobs that haven't finished yet.
+        self._makeBranchWithTreeAndFiles([])
+        self._makeProductSeries(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job.job.sync()
+        job.context.sync()
+        unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
+            self.branch))
+        self.assertEqual([job.context], unfinished_jobs)
+
+    def test_findUnfinishedJobs_does_not_find_finished_jobs(self):
+        # findUnfinishedJobs ignores completed jobs.
+        self._makeBranchWithTreeAndFiles([])
+        self._makeProductSeries(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job.job.sync()
+        job.job.start()
+        job.job.complete()
+        unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
+            self.branch))
+        self.assertEqual([], unfinished_jobs)
+
+    def test_findUnfinishedJobs_does_not_find_failed_jobs(self):
+        # findUnfinishedJobs ignores failed jobs.
+        self._makeBranchWithTreeAndFiles([])
+        self._makeProductSeries(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job.job.sync()
+        job.job.start()
+        job.job.complete()
+        job.job._status = JobStatus.FAILED
+        unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
+            self.branch))
+        self.assertEqual([], unfinished_jobs)
 
 
 def test_suite():
