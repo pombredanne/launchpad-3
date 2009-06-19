@@ -35,7 +35,6 @@
 /* == Sprites == */
 
 #subscribers-direct a, #portlet-subscribers a, #subscribers-indirect a, .bug-branch-summary {
-   display: block;
    line-height: 1.4em;
 }
 #lp-hierarchy a.bzr-favicon, #lp-hierarchy a.person-tabs {
