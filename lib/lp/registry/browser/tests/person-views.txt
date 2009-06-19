@@ -412,14 +412,16 @@ But duplicate bugs are never displayed.
 
 == Person Packages ==
 
-The page at ~user/+packages contains three sections,
-"Maintained Packages", "Uploaded Packages" and "PPA Packages".
+The page at ~user/+related-software contains 4 sections,
+"Maintained Packages", "Uploaded Packages", "PPA Packages" and "Related
+projects".
 
-Each section is limited to displaying at most 30 packages so that
-the page does not time out before Zope can render it.
+Each section is limited to displaying at most N packages, where N is the value
+of config.launchpad.default_batch_size, so that the page does not time out
+before Zope can render it.
 
 Before continuing, create lots of packages that will appear in each
-section of Foo Bar's +packages page, such that there's more available
+section of Foo Bar's +related-software page, such that there's more available
 than we're willing to display.
 
     >>> login("admin@canonical.com")
@@ -437,7 +439,8 @@ than we're willing to display.
     >>> test_pub.person = name16
 
     >>> view = create_initialized_view(name16, '+related-software')
-    >>> for count in range(0, view.SUMMARY_PAGE_PACKAGE_LIMIT + 3):
+    >>> max_results = view.max_results_to_display
+    >>> for count in range(0, max_results + 3):
     ...     source_name = "foo" + str(count)
     ...     # Add the PPA packages.
     ...     discard = test_pub.getPubSource(
@@ -461,34 +464,36 @@ than we're willing to display.
 
 There are many more new packages to be displayed on the page now:
 
-    >>> name16.getLatestUploadedPPAPackages().count() > 30
+    >>> name16.getLatestUploadedPPAPackages().count() > max_results
     True
 
-    >>> name16.getLatestMaintainedPackages().count() > 30
+    >>> name16.getLatestMaintainedPackages().count() > max_results
     True
 
-    >>> name16.getLatestUploadedButNotMaintainedPackages().count() > 30
+    >>> (name16.getLatestUploadedButNotMaintainedPackages().count() >
+    ...     max_results)
     True
 
 The view enforces the limit.
 
-    >>> len(view.get_latest_uploaded_ppa_packages_with_stats)
-    30
+    >>> len(view.get_latest_uploaded_ppa_packages_with_stats) == max_results
+    True
 
-    >>> len(view.get_latest_maintained_packages_with_stats)
-    30
+    >>> len(view.get_latest_maintained_packages_with_stats) == max_results
+    True
 
-    >>> len(view.get_latest_uploaded_but_not_maintained_packages_with_stats)
-    30
+    >>> (len(view.get_latest_uploaded_but_not_maintained_packages_with_stats)
+    ...     == max_results)
+    True
 
 The view has a helper method that returns a message that can be used
 at the head of each table.
 
     >>> view._tableHeaderMessage(100)
-    'Displaying first 30 packages out of 100 total'
+    'Displaying first ... packages out of 100 total'
 
-    >>> view._tableHeaderMessage(30)
-    '30 packages'
+    >>> view._tableHeaderMessage(max_results)
+    '... packages'
 
     >>> view._tableHeaderMessage(1)
     '1 package'
