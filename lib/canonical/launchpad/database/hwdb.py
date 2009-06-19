@@ -957,6 +957,8 @@ class HWDriverSet:
     def all_package_names(self):
         """See `IHWDriverSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        # XXX Abel Deuring 2009-06-19 The clause package_name != None
+        # can be removed once bug #306265 is fixed.
         result = store.find(HWDriverPackageName,
                             HWDriverPackageName.package_name != None)
         result.order_by(HWDriverPackageName.package_name)
