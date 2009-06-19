@@ -138,9 +138,9 @@ class SourcePackageTranslationsExportView(BaseExportView):
     def processForm(self):
         """Process form submission requesting translations export."""
         templates = self.context.getCurrentTranslationTemplates()
-        pofiles = []
-        for template in templates:
-            pofiles += list(template.pofiles)
+        pofiles = self.context.getCurrentTranslationFiles()
+        if not bool(pofiles):
+            pofiles = None
         return (templates, pofiles)
 
     def getDefaultFormat(self):

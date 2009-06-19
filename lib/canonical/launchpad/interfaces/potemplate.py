@@ -86,6 +86,14 @@ class IHasTranslationTemplates(Interface):
         are set to True.
         """
 
+    def getCurrentTranslationFiles():
+        """Return a Storm ResultSet for all active PO files.
+
+        A translation (PO) file is active if it's attached to a template
+        where both `IPOTemplate`.iscurrent and
+        `IDistribution`.official_rosetta flags are True.
+        """
+
     def getObsoleteTranslationTemplates():
         """Return an iterator over its not active translation templates.
 

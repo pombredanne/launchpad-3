@@ -1695,6 +1695,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=['-priority', 'name'])
         return shortlist(result, 2000)
 
+    def getCurrentTranslationFiles(self):
+        """See `IHasTranslationTemplates`."""
+        store = Store.of(self)
+        result = store.find(
+            POFile,
+            POFile.potemplate == POTemplate.id,
+            POTemplate.iscurrent == True,
+            POTemplate.distroseries == self,
+            DistroSeries.distribution == Distribution.id,
+            Distribution.official_rosetta == True)
+        return result
+
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''

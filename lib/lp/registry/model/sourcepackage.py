@@ -590,6 +590,22 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             clauseTables = ['DistroSeries', 'Distribution'])
         return shortlist(result.orderBy(['-priority', 'name']), 300)
 
+    def getCurrentTranslationFiles(self):
+        """See `IHasTranslationTemplates`."""
+        store = Store.of(self.sourcepackagename)
+        from canonical.launchpad.database.pofile import POFile
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.distribution import Distribution
+        result = store.find(
+            POFile,
+            POFile.potemplate == POTemplate.id,
+            POTemplate.iscurrent == True,
+            POTemplate.distroseries == self.distroseries,
+            POTemplate.sourcepackagename == self.sourcepackagename,
+            DistroSeries.distribution == Distribution.id,
+            Distribution.official_rosetta == True)
+        return result
+
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''

@@ -445,6 +445,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `IHasTranslationTemplates`."""
         return shortlist(self._getCurrentTranslationTemplates(), 300)
 
+    def getCurrentTranslationFiles(self):
+        """See `IHasTranslationTemplates`."""
+        from lp.registry.model.product import Product
+        store = Store.of(self)
+        result = store.find(
+            POFile,
+            POFile.potemplate == POTemplate.id,
+            POTemplate.iscurrent == True,
+            POTemplate.productseries == self,
+            ProductSeries.product == Product.id,
+            Product.official_rosetta == True)
+        return result
+
     @property
     def potemplate_count(self):
         """See `IProductSeries`."""
