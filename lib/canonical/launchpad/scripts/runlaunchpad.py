@@ -253,7 +253,7 @@ def process_config_arguments(args):
 
 def start_launchpad(argv=list(sys.argv)):
     global TWISTD_SCRIPT
-    TWISTD_SCRIPT = make_abspath('sourcecode/twisted/bin/twistd')
+    TWISTD_SCRIPT = make_abspath('bin/twistd')
 
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
