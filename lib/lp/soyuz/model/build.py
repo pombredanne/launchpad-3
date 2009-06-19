@@ -44,15 +44,13 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
-from lp.soyuz.adapters.archivedependencies import (
-    get_components_for_building)
+from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.builder import Builder
 from lp.soyuz.model.buildqueue import BuildQueue

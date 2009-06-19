@@ -40,9 +40,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
