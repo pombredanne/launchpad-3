@@ -485,13 +485,13 @@ Such feature is visible when anonymous user access the
     >>> anon_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/testing/1.0")
 
-    >>> print_tag_with_id(anon_browser.contents,"portlet-builds")
+    >>> print_tag_with_id(anon_browser.contents, 'portlet-builds')
     Builds
     warty    i386  Successfully built  (DONE)
     warty    hppa  Successfully built  (DONE)
 
 More important than seeing '(DONE)' for builds with published
-binaries, the build upload status is useful to spot build which have
+binaries, the build upload status is useful to spot buildd which have
 binaries waiting for manual approval in the distroseries queue.
 
 We can simulate this scenario for the current build, so when the page
@@ -507,7 +507,7 @@ is reloaded the user can see that the 'i386' build marked as
     >>> logout()
 
     >>> anon_browser.reload()
-    >>> print_tag_with_id(anon_browser.contents,"portlet-builds")
+    >>> print_tag_with_id(anon_browser.contents, 'portlet-builds')
     Builds
     warty    i386  Successfully built  (UNAPPROVED)
     warty    hppa  Successfully built  (DONE)

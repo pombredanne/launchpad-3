@@ -166,8 +166,12 @@ class Build(SQLBase):
     def package_upload(self):
         """See `IBuild`."""
         store = Store.of(self)
-        # The join on 'changesfile' will implicitly exclude PackageUpload
-        # records for delayed-copies.
+        # This query will always converge to the PackageUpload record
+        # corresponding to the instant when the binaries for this Build
+        # were originally uploaded, independently of the context where
+        # they are published. Even subsequent delayed-copies attempts in
+        # the same context will be excluded because we join the
+        # 'changesfile' and delayed copies have no 'changesfile'.
         origin = [
             PackageUploadBuild,
             Join(PackageUpload,
