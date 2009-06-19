@@ -30,23 +30,25 @@ from storm.store import Store
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, flush_database_updates
 
-from lp.bugs.model.bugtrackerperson import BugTrackerPerson
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import sanitize_name
+from canonical.launchpad.webapp.interfaces import NotFoundError
+
+from lazr.uri import URI
+
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
+    IBugTrackerSet, SINGLE_PRODUCT_BUGTRACKERTYPES)
 from lp.bugs.interfaces.bugtrackerperson import (
     BugTrackerPersonAlreadyExists)
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugmessage import BugMessage
+from lp.bugs.model.bugtrackerperson import BugTrackerPerson
 from lp.bugs.model.bugwatch import BugWatch
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.bugs.interfaces.bugtracker import (
-    BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
-    IBugTrackerSet, SINGLE_PRODUCT_BUGTRACKERTYPES)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import sanitize_name
-from lazr.uri import URI
+from lp.registry.interfaces.person import validate_public_person
 
 
 def normalise_leading_slashes(rest):
@@ -166,8 +168,9 @@ class BugTracker(SQLBase):
         'Project', joinColumn='bugtracker', orderBy='name')
     products = SQLMultipleJoin(
         'Product', joinColumn='bugtracker', orderBy='name')
-    watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
-                              orderBy='-datecreated', prejoins=['bug'])
+    watches = SQLMultipleJoin(
+        'BugWatch', joinColumn='bugtracker', orderBy='-datecreated',
+        prejoins=['bug'])
 
     _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (
