@@ -353,7 +353,7 @@ class UnsubscribeEmailCommand(EmailCommand):
                         'user-cannot-unsubscribe.txt',
                         person=person.displayname))
         if bug.isSubscribedToDupes(person):
-            bug.unsubscribeFromDupes(person)
+            bug.unsubscribeFromDupes(person, person)
 
         return bug, current_event
 

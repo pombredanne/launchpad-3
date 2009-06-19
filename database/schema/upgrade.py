@@ -1,12 +1,12 @@
 #!/usr/bin/python2.4
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0403
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """
 Apply all outstanding schema patches to an existing launchpad database
 """
 
 __metaclass__ = type
 
+# pylint: disable-msg=W0403
 import _pythonpath # Sort PYTHONPATH
 
 from cStringIO import StringIO
