@@ -116,7 +116,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
     def _nominateReviewer(self, reviewer, registrant):
         """Nominate a reviewer for the merge proposal."""
-        self.bmp.nominateReviewer(
+        return self.bmp.nominateReviewer(
             reviewer=reviewer, registrant=registrant,
             _date_created=self.date_generator.next())
 
@@ -125,7 +125,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
         self.assertEqual([], view.current_reviews)
         self.assertEqual([], view.requested_reviews)
-        self.assertEqual([], view.unsolicited_reviews)
+        self.assertEqual([], view.latest_reviews)
 
     def testRequestedOrdering(self):
         # No votes should return empty lists
@@ -170,7 +170,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             [charles, bob, albert],
             [review.reviewer for review in view.current_reviews])
 
-    def testUnsolicitedReviewOrdering(self):
+    def test_latest_reviews_ordering(self):
         # Most recent first.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
@@ -183,24 +183,47 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
         self.assertEqual(
             [charles, bob, albert],
-            [review.message.owner for review in view.unsolicited_reviews])
+            [review.message.owner for review in view.latest_reviews])
         self.assertEqual([], view.current_reviews)
 
-    def testUnsolicitedReviewDuplicates(self):
+    def test_latest_reviews_with_duplicates(self):
         # When the same reviewer votes twice, the second vote is used.
         albert = self.factory.makePerson(name='albert')
         self._createComment(albert, CodeReviewVote.APPROVE)
         review = self._createComment(albert, CodeReviewVote.APPROVE)
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-        self.assertEqual([review], view.unsolicited_reviews)
+        self.assertEqual([review], view.latest_reviews)
 
-    def testUnsolicitedReviewVoteAndComment(self):
+    def test_latest_reviews_with_vote_and_comment(self):
         # If a reviewer comments after a vote, the vote is still shown.
         albert = self.factory.makePerson(name='albert')
         review = self._createComment(albert, CodeReviewVote.APPROVE)
         self._createComment(albert)
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-        self.assertEqual([review], view.unsolicited_reviews)
+        self.assertEqual([review], view.latest_reviews)
+
+    def bob_vote_info(self, requested=False, reviewer=False):
+        bob = self.factory.makePerson(name='bob')
+        if requested:
+            self._nominateReviewer(bob, self.bmp.registrant)
+        if reviewer:
+            self.bmp.target_branch.reviewer = self.factory.makeTeam()
+            bob.join(self.bmp.target_branch.reviewer)
+        self._createComment(bob, CodeReviewVote.APPROVE)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        return view.review_info[0]
+
+    def test_review_info_with_requested(self):
+        self.assertIsNot(None, self.bob_vote_info(True)['request'])
+
+    def test_review_info_with_no_requested(self):
+        self.assertIs(None, self.bob_vote_info()['request'])
+
+    def test_review_info_reviewer(self):
+        self.assertTrue(self.bob_vote_info(reviewer=True)['trusted'])
+
+    def test_review_info_community(self):
+        self.assertFalse(self.bob_vote_info()['trusted'])
 
     def testChangeOfVoteBringsToTop(self):
         # Changing the vote changes the vote date, so it comes to the top.
@@ -236,30 +259,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             "BranchMergeProposalVoteView")
         # We just test that rendering does not raise.
         view.render()
-
-    def test_categorized_reviews_no_reviews(self):
-        # We show only those categories that have reviews
-        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-        self.assertEqual([], view.categorized_reviews)
-
-    def test_categorized_reviews_community_review(self):
-        # By default, unsolicited reviews are 'Community'
-        albert = self.factory.makePerson(name='albert')
-        self._createComment(albert, CodeReviewVote.APPROVE)
-        review = self._createComment(albert, CodeReviewVote.APPROVE)
-        expected = [{'title': 'Community', 'votes': [review]}]
-        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-        self.assertEqual(expected, view.categorized_reviews)
-
-    def test_categorized_reviews_reviewer_review(self):
-        # Reviews from people in the review team are 'Reviewers'
-        bob = self.factory.makePerson(name='bob')
-        review = self._createComment(bob, CodeReviewVote.APPROVE)
-        self.bmp.target_branch.reviewer = self.factory.makeTeam()
-        bob.join(self.bmp.target_branch.reviewer)
-        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-        expected = [{'title': 'Reviewers', 'votes': [review]}]
-        self.assertEqual(expected, view.categorized_reviews)
 
 
 class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
