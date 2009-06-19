@@ -485,8 +485,29 @@ Such feature is visible when anonymous user access the
     >>> anon_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/testing/1.0")
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents,"portlet-builds"))
+    >>> print_tag_with_id(anon_browser.contents,"portlet-builds")
     Builds
     warty    i386  Successfully built  (DONE)
+    warty    hppa  Successfully built  (DONE)
+
+More important than seeing '(DONE)' for builds with published
+binaries, the build upload status is useful to spot build which have
+binaries waiting for manual approval in the distroseries queue.
+
+We can simulate this scenario for the current build, so when the page
+is reloaded the user can see that the 'i386' build marked as
+'UNAPPROVED'.
+
+    # Update the upload record for the i386 build so it looks like
+    # it is pending approval.
+    >>> login('foo.bar@canonical.com')
+    >>> [build_hppa, build_i386] = source.getBuilds()
+    >>> build_i386.package_upload.setUnapproved()
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> anon_browser.reload()
+    >>> print_tag_with_id(anon_browser.contents,"portlet-builds")
+    Builds
+    warty    i386  Successfully built  (UNAPPROVED)
     warty    hppa  Successfully built  (DONE)

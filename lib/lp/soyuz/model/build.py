@@ -168,6 +168,8 @@ class Build(SQLBase):
     def package_upload(self):
         """See `IBuild`."""
         store = Store.of(self)
+        # The join on 'changesfile' will implicitly exclude PackageUpload
+        # records for delayed-copies.
         origin = [
             PackageUploadBuild,
             Join(PackageUpload,
@@ -180,7 +182,6 @@ class Build(SQLBase):
         results = store.using(*origin).find(
             (PackageUpload, LibraryFileAlias, LibraryFileContent),
             PackageUploadBuild.build == self,
-            PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.archive == self.archive,
             PackageUpload.distroseries == self.distroseries)
 

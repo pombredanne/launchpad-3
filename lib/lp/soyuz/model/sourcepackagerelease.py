@@ -528,6 +528,8 @@ class SourcePackageRelease(SQLBase):
     def package_upload(self):
         """See `ISourcepackageRelease`."""
         store = Store.of(self)
+        # The join on 'changesfile' will implicitly exclude PackageUpload
+        # records for delayed-copies.
         origin = [
             PackageUploadSource,
             Join(PackageUpload,
@@ -540,7 +542,6 @@ class SourcePackageRelease(SQLBase):
         results = store.using(*origin).find(
             (PackageUpload, LibraryFileAlias, LibraryFileContent),
             PackageUploadSource.sourcepackagerelease == self,
-            PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.archive == self.upload_archive,
             PackageUpload.distroseries == self.upload_distroseries)
 
