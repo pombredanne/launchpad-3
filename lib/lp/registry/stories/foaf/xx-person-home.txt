@@ -211,12 +211,12 @@ and also the areas in which (s)he worked on each project.
     ...         img = td.find('img')
     ...         if img is not None:
     ...             print "\t", img['title']
-    The Evolution Groupware ...
+    Evolution
        Bug Management
        Translations in Rosetta
-    Ubuntu Linux
+    Ubuntu
        Bug Management
-    Gnome Baker
+    gnomebaker
        Bug Management
     Mozilla Thunderbird
        Bug Management
