@@ -74,13 +74,13 @@ class ConfigTestCase(lp.testing.TestCase):
         self.addCleanup(self.tearDownConfigRoots)
 
     def tearDownConfigRoots(self):
-        """Remove the work down by setUpConfigRoots()"""
+        """Remove the work down by setUpConfigRoots()."""
         shutil.rmtree(self.temp_config_root_dir)
         config.CONFIG_ROOT_DIRS = self.original_root_dirs
 
 
     def setUpInstanceConfig(self, instance_name):
-        """Create an instance directory with empty config files
+        """Create an instance directory with empty config files.
 
         The path to the instance config directory is returned.
         """
