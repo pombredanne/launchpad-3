@@ -13,17 +13,15 @@
     <b>For <tal:target-title replace="context/title" />:</b>
     <br />
     <div tal:condition="subscriptions">
-      <ul class="person">
+      <ul>
         <li tal:repeat="subscription subscriptions">
-          <a href="#"
-             tal:content="subscription/subscriber/browsername"
-             tal:attributes="href subscription/subscriber/fmt:url">Ubuntu Team</a>
+            <a tal:replace="structure subscription/subscriber/fmt:link">Ubuntu Team</a>
         </li>
       </ul>
       <br />
     </div>
     <div tal:condition="not:subscriptions">
-      <i class="info">No people or teams are
+      <i class="sprite info">No people or teams are
         subscribed to bugmail for this
         <tal:target replace="target_type" />.
       </i>
@@ -33,11 +31,9 @@
       <b tal:content="string:For ${parent_target/title}:">For Ubuntu:</b>
       <br />
       <div tal:condition="parent_target/bug_subscriptions">
-        <ul class="person">
+        <ul>
           <li tal:repeat="subscription parent_target/bug_subscriptions">
-            <a href="#"
-               tal:content="subscription/subscriber/browsername"
-               tal:attributes="href subscription/subscriber/fmt:url">Ubuntu Team</a>
+            <a tal:replace="structure subscription/subscriber/fmt:link">Ubuntu Team</a>
           </li>
         </ul>
       </div>
