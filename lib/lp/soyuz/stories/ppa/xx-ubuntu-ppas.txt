@@ -640,7 +640,7 @@ help wiki are presented in the PPA index page.
     ...     anon_browser.contents, 'signing-key')
 
     >>> print extract_text(signing_key_section)
-    Signing key 1024D/12345678 (What is this?)
+    Signing key: 1024D/12345678 (What is this?)
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
@@ -710,7 +710,7 @@ javascript.
 
     >>> results = find_tag_by_id(anon_browser.contents, 'package-counters')
     >>> print extract_text(results)
-    Repository disk usage
+    Repository disk usage:
     Package counters and estimated archive size temporarily unavailable.
 
     >>> anon_browser.open(
