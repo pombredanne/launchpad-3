@@ -752,7 +752,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin,
 
     @property
     def milestone_table_class(self):
-        """The milestoen table will be unseen if there are no milestones."""
+        """The milestone table will be unseen if there are no milestones."""
         if len(self.released_and_active_milestones) > 0:
             return 'listing'
         else:
