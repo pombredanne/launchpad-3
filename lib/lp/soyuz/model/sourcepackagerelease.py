@@ -526,12 +526,11 @@ class SourcePackageRelease(SQLBase):
     def package_upload(self):
         """See `ISourcepackageRelease`."""
         store = Store.of(self)
-        # This query will always converge to the PackageUpload record
-        # corresponding to the instant when this SourcePackageRelease
-        # was originally uploaded, independently of the context where
-        # it is published. Even subsequent delayed-copies attempts in
-        # the same context will be excluded because we join the
-        # 'changesfile' and delayed copies have no 'changesfile'.
+        # The join on 'changesfile' is not only used only for
+        # pre-fetching the corresponding library file, so callsites
+        # don't have to issue an extra query. It is also important
+        # for excluding delayed-copies, because they might match
+        # the publication context but will not contain as changesfile.
         origin = [
             PackageUploadSource,
             Join(PackageUpload,
