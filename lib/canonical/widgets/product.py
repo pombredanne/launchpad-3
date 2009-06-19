@@ -4,22 +4,25 @@
 
 __metaclass__ = type
 __all__ = [
+    'GhostWidget',
     'LicenseWidget',
     'ProductBugTrackerWidget',
     'ProductNameWidget',
     ]
 
 import cgi
+import math
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.widget import renderElement
+from zope.app.form.browser.widget import renderElement, SimpleInputWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
-from zope.schema import Choice
+from zope.schema import Choice, Text
 
 from z3c.ptcompat import ViewPageTemplateFile
 
+from canonical.launchpad.browser.widgets import DescriptionWidget
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag)
@@ -40,6 +43,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
     _joinButtonToMessageTemplate = u'%s&nbsp;%s'
 
     def __init__(self, field, vocabulary, request):
+        # pylint: disable-msg=W0233
         LaunchpadRadioWidget.__init__(self, field, vocabulary, request)
 
         # Bug tracker widget.
@@ -128,6 +132,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
 
     def error(self):
         """Concatenate errors from this widget and sub-widgets."""
+        # pylint: disable-msg=E1002
         errors = [super(ProductBugTrackerWidget, self).error(),
                   self.upstream_email_address_widget.error()]
         return '; '.join(err for err in errors if len(err) > 0)
@@ -230,21 +235,144 @@ class LicenseWidget(CheckBoxMatrixWidget):
     template = ViewPageTemplateFile('templates/license.pt')
     allow_pending_license = False
 
+    CATEGORIES = {
+        'AFFERO'        : 'recommended',
+        'APACHE'        : 'recommended',
+        'BSD'           : 'recommended',
+        'GNU_GPL_V2'    : 'recommended',
+        'GNU_GPL_V3'    : 'recommended',
+        'GNU_LGPL_V2_1' : 'recommended',
+        'GNU_LGPL_V3'   : 'recommended',
+        'MIT'           : 'recommended',
+        'CC_0'          : 'recommended',
+        'ACADEMIC'      : 'more',
+        'ARTISTIC'      : 'more',
+        'ARTISTIC_2_0'  : 'more',
+        'COMMON_PUBLIC' : 'more',
+        'ECLIPSE'       : 'more',
+        'EDUCATIONAL_COMMUNITY': 'more',
+        'MPL'           : 'more',
+        'OPEN_SOFTWARE' : 'more',
+        'PHP'           : 'more',
+        'PUBLIC_DOMAIN' : 'more',
+        'PYTHON'        : 'more',
+        'ZPL'           : 'more',
+        'CC_BY'         : 'more',
+        'CC_BY_SA'      : 'more',
+        'PERL'          : 'deprecated',
+        'OTHER_PROPRIETARY' : 'special',
+        'OTHER_OPEN_SOURCE' : 'special',
+        'DONT_KNOW'     : 'special',
+        }
+
+    items_by_category = None
+
+    def __init__(self, field, vocabulary, request):
+        # pylint: disable-msg=E1002
+        super(LicenseWidget, self).__init__(field, vocabulary, request)
+        # We want to put the license_info widget inside the licenses widget's
+        # HTML, for better alignment and JavaScript dynamism.  This is
+        # accomplished by ghosting the form's license_info widget (see
+        # lp/registry/browser/product.py and the GhostWidget implementation
+        # below) and creating a custom widget here.  It's a pretty simple text
+        # widget so create that now.  The fun part is that it's all within the
+        # same form, so posts work correctly.
+        self.license_info = Text(__name__='license_info')
+        self.license_info_widget = CustomWidgetFactory(DescriptionWidget)
+        # The initial value of the license_info widget will be taken from the
+        # field's context when available.  This will be the IProduct when
+        # we're editing an existing project, but when we're creating a new
+        # one, it'll be an IProductSet, which does not have license_info.
+        initial_value = getattr(field.context, 'license_info', None)
+        setUpWidget(
+            self, 'license_info', self.license_info, IInputWidget,
+            prefix='field', value=initial_value,
+            context=field.context)
+        # These will get filled in by _categorize().  They are the number of
+        # selected licenses in the category.  The actual count doesn't matter,
+        # since if it's greater than 0 it will start opened.  NOte that we
+        # always want the recommended licenses to be opened, so we initialize
+        # its value to 1.
+        self.recommended_count = 1
+        self.more_count = 0
+        self.deprecated_count = 0
+        self.special_count = 0
+
     def textForValue(self, term):
         """See `ItemsWidgetBase`."""
         # This will return just the DBItem's text.  We want to wrap that text
         # in the URL to the license, which is stored in the DBItem's
         # description.
+        # pylint: disable-msg=E1002
         value = super(LicenseWidget, self).textForValue(term)
         if term.value.url is None:
-            # There's no link.
             return value
         else:
-            return '<a href="%s">%s</a>' % (term.value.url, value)
+            return ('%s&nbsp;<a href="%s" class="sprite external-link">'
+                    '<span class="invisible-link">view license</span></a>'
+                    % (value, term.value.url))
+
+    def renderItem(self, index, text, value, name, cssClass):
+        """See `ItemsEditWidgetBase`."""
+        # pylint: disable-msg=E1002
+        rendered = super(LicenseWidget, self).renderItem(
+            index, text, value, name, cssClass)
+        self._categorize(value, rendered)
+        return rendered
+
+    def renderSelectedItem(self, index, text, value, name, cssClass):
+        """See `ItemsEditWidgetBase`."""
+        # pylint: disable-msg=E1002
+        rendered = super(LicenseWidget, self).renderSelectedItem(
+            index, text, value, name, cssClass)
+        category = self._categorize(value, rendered)
+        # Increment the category counter.  This is used by the template to
+        # determine whether a category should start opened or not.
+        attribute_name = category + '_count'
+        setattr(self, attribute_name, getattr(self, attribute_name) + 1)
+        return rendered
+
+    def _categorize(self, value, rendered):
+        # Place the value in the proper category.
+        if self.items_by_category is None:
+            self.items_by_category = {}
+        # When allow_pending_license is set, we'll see a radio button labeled
+        # "I haven't specified the license yet".  In that case, do not show
+        # the "I don't know" option.
+        if self.allow_pending_license and value == 'DONT_KNOW':
+            return
+        category = self.CATEGORIES.get(value)
+        assert category is not None, 'Uncategorized value: %s' % value
+        self.items_by_category.setdefault(category, []).append(rendered)
+        return category
 
     def __call__(self):
-        self.checkbox_matrix = super(LicenseWidget, self).__call__()
+        # Trigger textForValue() which does the categorization of the
+        # individual checkbox items.  We don't actually care about the return
+        # value though since we'll be building up our checkbox tables
+        # manually.
+        # pylint: disable-msg=E1002
+        super(LicenseWidget, self).__call__()
+        self.recommended = self._renderTable('recommended', 3)
+        self.more = self._renderTable('more', 3)
+        self.deprecated = self._renderTable('deprecated')
+        self.special = self._renderTable('special')
         return self.template()
+
+    def _renderTable(self, category, column_count=1):
+        html = ['<table id="%s">' % category]
+        rendered_items = self.items_by_category[category]
+        row_count = int(math.ceil(len(rendered_items) / float(column_count)))
+        for i in range(0, row_count):
+            html.append('<tr>')
+            for j in range(0, column_count):
+                index = i + (j * row_count)
+                if index >= len(rendered_items):
+                    break
+                html.append('<td>%s</td>' % rendered_items[index])
+            html.append('</tr>')
+        html.append('</table>')
+        return '\n'.join(html)
 
 
 class ProductNameWidget(LowerCaseTextWidget):
@@ -255,6 +383,7 @@ class ProductNameWidget(LowerCaseTextWidget):
     template = ViewPageTemplateFile('templates/project-url.pt')
 
     def __init__(self, *args):
+        # pylint: disable-msg=E1002
         self.read_only = False
         super(ProductNameWidget, self).__init__(*args)
 
@@ -271,3 +400,17 @@ class ProductNameWidget(LowerCaseTextWidget):
             return 'hidden'
         else:
             return 'text'
+
+
+class GhostWidget(SimpleInputWidget):
+    """A simple widget that has no HTML."""
+
+    # This suppresses the stuff above the widget.
+    display_label = False
+    # This suppresses the stuff underneath the widget.
+    hint = ''
+
+    # This suppresses all of the widget's HTML.
+    def __call__(self):
+        """See `SimpleInputWidget`."""
+        return ''
