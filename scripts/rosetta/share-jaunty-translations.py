@@ -116,9 +116,8 @@ class ShareJauntyTranslationMessages:
 class ShareJauntyTranslationsScript(LaunchpadScript):
 
     def main(self):
-        self.logger.info("Making Jaunty TranslationMessages shared.")
-
         series = 'jaunty'
+        self.logger.info("Making '%s' TranslationMessages shared." % series)
 
         for flag in ('is_current', 'is_imported'):
             self.logger.info("Sharing %s messages." % flag)
