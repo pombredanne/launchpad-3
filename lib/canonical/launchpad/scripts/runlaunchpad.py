@@ -268,4 +268,8 @@ def start_launchpad(argv=list(sys.argv)):
 
     # Create a new compressed +style-slimmer.css from style.css in +icing.
     make_css_slimmer()
+
+    # Create the ZCML override file based on the instance.
+    config.generate_overrides()
+
     main(argv)
