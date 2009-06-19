@@ -136,7 +136,7 @@
       This series is packaged in the following distribution series:
       </tal:distro>
       <tal:no-distro condition="not: sourcepackages">
-      This series is not packaged in the following distribution series.
+      This series is not packaged in any distribution series.
       </tal:no-distro>
     </p>
 
