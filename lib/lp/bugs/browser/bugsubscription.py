@@ -57,23 +57,13 @@ class BugSubscriptionAddView(LaunchpadFormView):
 class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
 
-    @cachedproperty
-    def direct_subscriptions(self):
-        """Caches the list of direct subscriptions."""
-        return set(self.context.getDirectSubscriptions())
-
-    @cachedproperty
-    def duplicate_subscriptions(self):
-        """Caches the list of duplicate subscriptions."""
-        return set(self.context.getSubscriptionsFromDuplicates())
-
     def getSortedDirectSubscriptions(self):
         """Get the list of direct subscriptions to the bug.
 
         The list is sorted such that subscriptions you can unsubscribe appear
         before all other subscriptions.
         """
-        direct_subscriptions = self.direct_subscriptions
+        direct_subscriptions = self.context.getDirectSubscriptions()
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:
@@ -89,4 +79,4 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
 
     def getSortedSubscriptionsFromDuplicates(self):
         """Get the list of subscriptions to duplicates of this bug."""
-        return self.duplicate_subscriptions
+        return self.context.getSubscriptionsFromDuplicates()
