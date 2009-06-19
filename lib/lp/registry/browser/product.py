@@ -105,6 +105,7 @@ from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import (
     LicenseWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.registry.model.productseries import ProductSeries
 
 
 OR = '|'
@@ -918,7 +919,8 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         """
         translatable = self.context.primary_translatable
 
-        if translatable is None:
+        if (translatable is None or
+            not isinstance(translatable, ProductSeries)):
             return {}
 
         return {
