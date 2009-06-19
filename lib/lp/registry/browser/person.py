@@ -2884,6 +2884,29 @@ class PersonView(LaunchpadView, FeedsMixin):
         else:
             return 'aside public'
 
+    @property
+    def should_show_ppa_section(self):
+        """Return True if "Personal package archives" is to be shown.
+
+        We display it if:
+        person has viewable ppa or current_user has lp.edit
+        """
+        # Avoid circular import.
+        from lp.soyuz.interfaces.archive import IArchiveSet
+
+        # If the current user has edit permission, show the section.
+        if check_permission('launchpad.Edit', self.context):
+            return True
+
+        # If the current user is allowed to see any PPAs, show the
+        # section.
+        ppas = getUtility(IArchiveSet).getPPAsForUser(self.context)
+        for ppa in ppas:
+            if check_permission('launchpad.View', ppa):
+                return True
+
+        return False
+
 
 class EmailAddressVisibleState:
     """The state of a person's email addresses w.r.t. the logged in user.
