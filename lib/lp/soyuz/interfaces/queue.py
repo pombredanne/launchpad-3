@@ -22,7 +22,7 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
-from zope.schema import Int, TextLine
+from zope.schema import Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
@@ -95,6 +95,10 @@ class IPackageUpload(Interface):
             title=_("The pocket"), required=True, readonly=False,
             )
 
+    date_created = Datetime(
+        title=_('Date created'),
+        description=_("The date this package upload was done."))
+
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
 
@@ -105,7 +109,6 @@ class IPackageUpload(Interface):
     customfiles = Attribute("Custom upload files associated with this "
                             "queue item")
 
-    datecreated = Attribute("The date on which this queue was created.")
     displayname = TextLine(
         title=_("Generic displayname for a queue item"), readonly=True)
     displayversion = TextLine(
@@ -512,6 +515,17 @@ class IPackageUploadSet(Interface):
         If status is ommitted return the number of all entries.
         'distroseries' is optional and restrict the results in given
         distroseries, same for pocket.
+        """
+
+    def createDelayedCopy(archive, distroseries, pocket, signing_key):
+        """Return a `PackageUpload` record for a delayed-copy operation.
+
+        :param archive: target `IArchive`,
+        :param distroseries: target `IDistroSeries`,
+        :param pocket: target `PackagePublishingPocket`,
+        :param signing_key: `IGPGKey` of the user requesting this copy.
+
+        :return: an `IPackageUpload` record in NEW state.
         """
 
     def getBuildByBuildIDs(build_ids):
