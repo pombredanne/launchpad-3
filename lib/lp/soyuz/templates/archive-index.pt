@@ -173,7 +173,7 @@ tr#package-counters p{
             </td>
           </tr>
           <tr id="package-counters" tal:condition="view/archive_url">
-            <th>Repository disk usage</th>
+            <th>Repository disk usage:</th>
             <td>
                 <p class="discreet">
                   Package counters and estimated archive size temporarily
@@ -182,7 +182,7 @@ tr#package-counters p{
             </td>
           </tr>
           <tr id="archive-dependencies" tal:condition="archive_active">
-            <th>Build dependencies</th>
+            <th>Build dependencies:</th>
             <td>
               <ul>
                 <li tal:repeat="dependency context/dependencies">
@@ -196,14 +196,14 @@ tr#package-counters p{
                <tal:edit-dependencies
                  define="link context/menu:context/edit_dependencies"
                  condition="link/enabled"
-                 replace="structure link/fmt:icon-link" />
+                 replace="structure link/fmt:link-icon" />
              </div>
             </td>
           </tr>
           <tr id="signing-key"
               tal:define="signing_key context/signing_key"
               tal:condition="signing_key">
-            <th>Signing key</th>
+            <th>Signing key:</th>
             <td>
               <a tal:attributes="href signing_key/keyserverURL">
                 <code tal:content="signing_key/displayname"
@@ -214,7 +214,7 @@ tr#package-counters p{
             </td>
           </tr>
           <tr id="install-hint" tal:condition="view/archive_url">
-            <th>Install packages</th>
+            <th>Install packages:</th>
             <td>
               <p>Copy the lines below and add them to your system's software
                  sources. (<a href="/+help/soyuz/ppa-sources-list.html"
