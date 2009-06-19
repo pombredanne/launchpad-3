@@ -922,7 +922,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         naked_translatable = removeSecurityProxy(translatable)
 
         if (translatable is None or
-            type(naked_translatable) != ProductSeries):
+            not isinstance(naked_translatable, ProductSeries)):
             return {}
 
         return {
