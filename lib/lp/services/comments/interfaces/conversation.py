@@ -17,7 +17,7 @@ from lazr.restful.fields import CollectionField, Reference
 
 
 class IComment(Interface):
-    """A comment which may have a body or activity."""
+    """A comment which may have a body or footer."""
 
     has_body = Bool(
         description=_("Does the comment have body text?"),
