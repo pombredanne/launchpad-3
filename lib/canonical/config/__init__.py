@@ -120,6 +120,11 @@ class CanonicalConfig:
         """
         return self._instance_name
 
+    @property
+    def config_dir(self):
+        """Return the directory containing this instance configuration."""
+        return find_config_dir(self._instance_name)
+
     def setInstance(self, instance_name):
         """Set the instance name where the conf files are stored.
 
@@ -165,7 +170,7 @@ class CanonicalConfig:
             return
 
         schema_file = os.path.join(PACKAGE_DIR, 'schema-lazr.conf')
-        config_dir = find_config_dir(self.instance_name)
+        config_dir = self.config_dir
         config_file = os.path.join(
             config_dir, '%s-lazr.conf' % self.process_name)
         if not os.path.isfile(config_file):
@@ -177,17 +182,22 @@ class CanonicalConfig:
         except ConfigErrors, error:
             message = '\n'.join([str(e) for e in error.errors])
             raise ConfigErrors(message)
-        self._setZConfig(config_dir)
+        self._setZConfig()
 
-    def _setZConfig(self, config_dir):
+    @property
+    def zope_config_file(self):
+        """Return the path to the ZConfig file for this instance."""
+        return os.path.join(self.config_dir, 'launchpad.conf')
+
+    def _setZConfig(self):
         """Modify the config, adding automatically generated settings"""
         self.root = TREE_ROOT
 
         schemafile = os.path.join(
             self.root, 'lib/zope/app/server/schema.xml')
-        configfile = os.path.join(config_dir, 'launchpad.conf')
         schema = ZConfig.loadSchema(schemafile)
-        root_options, handlers = ZConfig.loadConfig(schema, configfile)
+        root_options, handlers = ZConfig.loadConfig(
+            schema, self.zope_config_file)
 
         # Devmode from the zope.app.server.main config, copied here for
         # ease of access.
