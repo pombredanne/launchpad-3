@@ -957,7 +957,8 @@ class HWDriverSet:
     def all_package_names(self):
         """See `IHWDriverSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(HWDriverPackageName)
+        result = store.find(HWDriverPackageName,
+                            HWDriverPackageName.package_name != None)
         result.order_by(HWDriverPackageName.package_name)
         return result
 
