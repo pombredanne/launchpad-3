@@ -14,38 +14,35 @@ from canonical.launchpad.interfaces import TranslationValidationStatus
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.testing import TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestTranslationSharedPOFile(unittest.TestCase):
+class TestTranslationSharedPOFile(TestCaseWithFactory):
     """Test behaviour of PO files with shared POTMsgSets."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        """Set up context to test in."""
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
-        factory = LaunchpadObjectFactory()
-        self.factory = factory
-        self.foo = factory.makeProduct()
-        self.foo_devel = factory.makeProductSeries(
+        super(TestTranslationSharedPOFile, self).setUp()
+        self.foo = self.factory.makeProduct()
+        self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
-        self.foo_stable = factory.makeProductSeries(
+        self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
         self.foo.official_rosetta = True
 
         # POTemplate is 'shared' if it has the same name ('messages').
-        self.devel_potemplate = factory.makePOTemplate(
+        self.devel_potemplate = self.factory.makePOTemplate(
             productseries=self.foo_devel, name="messages")
-        self.stable_potemplate = factory.makePOTemplate(self.foo_stable,
+        self.stable_potemplate = self.factory.makePOTemplate(self.foo_stable,
                                                         name="messages")
 
         # We'll use two PO files, one for each series.
-        self.devel_sr_pofile = factory.makePOFile(
+        self.devel_sr_pofile = self.factory.makePOFile(
             'sr', self.devel_potemplate)
-        self.stable_sr_pofile = factory.makePOFile(
+        self.stable_sr_pofile = self.factory.makePOFile(
             'sr', self.stable_potemplate)
 
         # Create a single POTMsgSet that is used across all tests,
@@ -796,16 +793,81 @@ class TestTranslationSharedPOFile(unittest.TestCase):
                             "Diverged translation")])
 
 
+class TestSharedPOFileCreation(TestCaseWithFactory):
+    """Test that POFiles are created in shared POTemplates."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        # Create a product with two series and a shared POTemplate
+        # in different series ('devel' and 'stable').
+        super(TestSharedPOFileCreation, self).setUp()
+        self.foo = self.factory.makeProduct()
+        self.foo_devel = self.factory.makeProductSeries(
+            name='devel', product=self.foo)
+        self.foo_stable = self.factory.makeProductSeries(
+            name='stable', product=self.foo)
+        self.foo.official_rosetta = True
+
+    def test_pofile_creation_shared(self):
+        # When a pofile is created in a POTemplate it is also created in
+        # all shared templates.
+        # POTemplate is 'shared' if it has the same name ('messages').
+        devel_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_devel, name="messages")
+        stable_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="messages")
+
+        self.assertEqual(None, stable_potemplate.getPOFileByLang('eo'))
+        pofile_devel = devel_potemplate.newPOFile('eo')
+        pofile_stable = stable_potemplate.getPOFileByLang('eo')
+        self.assertNotEqual(None, pofile_stable)
+        self.assertEqual(pofile_devel.language.code,
+                         pofile_stable.language.code)
+
+    def test_pofile_creation_not_shared(self):
+        # When a pofile is created in a POTemplate it is not created in
+        # other templates that are not shared.
+        potemplate_devel_1 = self.factory.makePOTemplate(
+            productseries=self.foo_devel, name="template-1")
+        potemplate_stable_2 = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="template-2")
+
+        self.assertEqual(None, potemplate_devel_1.getPOFileByLang('eo'))
+        pofile_devel = potemplate_devel_1.newPOFile('eo')
+        self.assertEqual(None, potemplate_stable_2.getPOFileByLang('eo'))
+
+    def test_potemplate_creation(self):
+        # When a potemplate is created it receives a copy of all pofiles in
+        # all shared potemplates.
+        foo_other = self.factory.makeProductSeries(
+            name='other', product=self.foo)
+        other_potemplate = self.factory.makePOTemplate(
+            productseries=foo_other, name="messages")
+        devel_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_devel, name="messages")
+        # These will automatically be shared across all sharing templates.
+        # They will also be created in the 'other' series.
+        pofile_devel_eo = devel_potemplate.newPOFile('eo')
+        pofile_devel_de = devel_potemplate.newPOFile('de')
+
+        stable_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="messages")
+
+        self.assertEqual(2, len(list(stable_potemplate.pofiles)))
+        self.assertNotEqual(None, stable_potemplate.getPOFileByLang('eo'))
+        self.assertNotEqual(None, stable_potemplate.getPOFileByLang('de'))
+
+
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
     """Test ordering of POTMsgSets as returned by PO file methods."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        """Set up context to test in."""
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
-        TestCaseWithFactory.setUp(self)
+        super(TestTranslationPOFilePOTMsgSetOrdering, self).setUp()
         self.foo = self.factory.makeProduct()
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
@@ -1008,9 +1070,8 @@ class TestPOFileStatistics(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        """Set up context to test in."""
         # Create a POFile to calculate statistics on.
-        TestCaseWithFactory.setUp(self)
+        super(TestPOFileStatistics, self).setUp()
         self.pofile = self.factory.makePOFile('sr')
         self.potemplate = self.pofile.potemplate
 

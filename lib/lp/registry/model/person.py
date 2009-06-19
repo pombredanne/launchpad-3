@@ -1824,11 +1824,12 @@ class Person(
             if count > 0:
                 warnings.add(warning)
 
-        # Non-purged mailing list check.
-        mailing_list = getUtility(IMailingListSet).get(self.name)
-        if (mailing_list is not None and
-            mailing_list.status != MailingListStatus.PURGED):
-            warnings.add('a mailing list')
+        # Non-purged mailing list check for transitioning to or from PUBLIC.
+        if PersonVisibility.PUBLIC in [self.visibility, new_value]:
+            mailing_list = getUtility(IMailingListSet).get(self.name)
+            if (mailing_list is not None and
+                mailing_list.status != MailingListStatus.PURGED):
+                warnings.add('a mailing list')
 
         # Compose warning string.
         warnings = sorted(warnings)

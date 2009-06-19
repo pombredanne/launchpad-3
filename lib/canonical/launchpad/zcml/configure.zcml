@@ -42,6 +42,7 @@
     <include file="potemplate.zcml" />
     <include file="potmsgset.zcml" />
     <include file="potranslation.zcml" />
+    <include file="precache.zcml" />
     <include file="productserieslanguage.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="structuralsubscription.zcml" />
