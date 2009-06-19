@@ -61,7 +61,7 @@ span.invisible {left:-9999em;display:block;}
 .remove {background:url(icon-sprites) 0 -64px no-repeat;}
 .info {background:url(icon-sprites) 0 -96px no-repeat;}
 .question {background:url(icon-sprites) 0 -128px no-repeat;}
-.download {background:url(icon-sprites) 0 -160px no-repeat;}
+.download-icon {background:url(icon-sprites) 0 -160px no-repeat;}
 .search-icon {background:url(icon-sprites) 0 -187px no-repeat;}
 .no {background:url(icon-sprites) 0 -224px no-repeat;}
 .yes {background:url(icon-sprites) 0 -256px no-repeat;}

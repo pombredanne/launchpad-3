@@ -13,11 +13,11 @@
   <div class="portletBody">
     <div class="portletContent">
       <ul>
-        <li
+        <li class="download"
             tal:repeat="attachment context/attachments">
           <a tal:attributes="href attachment/libraryfile/http_url"
              tal:content="attachment/title"
-             class="sprite download">
+             class="sprite download-icon">
             Attachment Title
           </a>
           <small>
