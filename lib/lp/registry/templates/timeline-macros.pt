@@ -10,13 +10,25 @@
 >
 
 <metal:timeline-iframe define-macro="timeline-iframe">
+  <tal:comment replace="nothing">
+    The timeline-iframe macro has an optional auto_resize boolean parameter
+    that causes the TimelineGraph to adjust the height of the iframe to
+    show the full height of the graph as it is zoomed in and out.
+  </tal:comment>
   <div id="timeline-loading" style="display: none">
     <img src="/@@/spinner" /> Loading graph...
   </div>
-  <iframe id="timeline-iframe" name='timeline-iframe'
-          style="display: none; overflow: hidden"
+
+  <iframe tal:condition="auto_resize | nothing"
           src="+timeline-graph?resize_frame=timeline-iframe"
-          width="100%" height="0px"></iframe>
+          id="timeline-iframe" name='timeline-iframe'
+          style="display: none; overflow: hidden"
+          width="100%" height="170px"></iframe>
+  <iframe tal:condition="not: auto_resize | nothing"
+          src="+timeline-graph"
+          id="timeline-iframe" name='timeline-iframe'
+          style="display: none; overflow: hidden"
+          width="100%" height="170px"></iframe>
   <script>
     YUI().use('node', function(Y) {
         if (Y.UA.ie) {

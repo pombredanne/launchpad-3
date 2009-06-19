@@ -70,7 +70,7 @@
       <a tal:replace="structure overview_menu/subscribe/fmt:link-icon" />
     </div>
 
-    <div style="padding-top: 2em">
+    <div style="padding-top: 2em" tal:define="auto_resize python:True">
       <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
     </div>
 
