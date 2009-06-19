@@ -96,6 +96,19 @@ class TestDirectBranchCommit(TestCaseWithFactory):
         self.committer.commit('')
         self.assertEqual({'a/b/c.txt': 'ctext'}, self._getContents())
 
+    def test_DirectBranchCommit_adds_directories(self):
+        # Creating a subdirectory of an existing directory also works.
+        self.committer.writeFile('a/n.txt', 'aa')
+        self.committer.commit('')
+        self._setUpCommitter()
+        self.committer.writeFile('a/b/m.txt', 'aa/bb')
+        self.committer.commit('')
+        expected = {
+            'a/n.txt': 'aa',
+            'a/b/m.txt': 'aa/bb',
+        }
+        self.assertEqual(expected, self._getContents())
+
     def test_DirectBranchCommit_writes_new_file_twice(self):
         # If you write the same new file multiple times before
         # committing, the original wins.

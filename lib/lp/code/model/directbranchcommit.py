@@ -75,7 +75,7 @@ class DirectBranchCommit:
         """Get trans_id for directory "path."  Create if necessary."""
         dir = self.revision_tree.path2id(path)
         if dir:
-            return dir
+            return self.transform_preview.trans_id_tree_path(path)
 
         parent_dir, dirname = os.path.split(path)
         if dirname:
