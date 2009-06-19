@@ -98,7 +98,7 @@ comment' link.
     >>> eric_browser.getLink('Add a review or comment').click()
     >>> eric_browser.getControl('Reviewer says').displayValue = ['Abstain']
     >>> eric_browser.getControl('Review type').value = 'timeless'
-    >>> eric_browser.getControl(name='field.actions.add').click()
+    >>> eric_browser.getControl('Save Comment').click()
 
     >>> print_comments('boardCommentDetails', eric_browser, index=2)
     timeless Abstain   Eric the Viking voted ...second...ago
@@ -112,6 +112,7 @@ in a table at the top of the page.
 
     >>> print extract_text(find_tag_by_id(
     ...     eric_browser.contents, 'code-review-votes'))
-    Reviewer         Review Type    Date Requested    Status
-    Eric the Viking  timeless       ...               Abstain ...second...ago
+    Reviewer                     Review Type    Date Requested    Status
+    Eric the Viking (community)  timeless       ...               Abstain...
+    second...ago
     Review via email: mp+1@code.launchpad.dev
