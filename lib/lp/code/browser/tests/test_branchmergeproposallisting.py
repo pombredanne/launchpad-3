@@ -9,8 +9,8 @@ from unittest import TestLoader
 import transaction
 
 from lp.code.browser.branchmergeproposallisting import (
-    ActiveReviewsView, BranchMergeProposalListingView, PersonActiveReviewsView,
-    ProductActiveReviewsView)
+    ActiveReviewsView, BranchMergeProposalListingView,
+    PersonActiveReviewsView, ProductActiveReviewsView)
 from lp.code.enums import CodeReviewVote
 from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
