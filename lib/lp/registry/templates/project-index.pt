@@ -61,6 +61,7 @@
       <ul tal:condition="context/homepageurl">
         <li>
           <a tal:attributes="href context/homepageurl;
+                             rel string:nofollow;
                              class string:sprite external-link">
             <strong>Visit the <tal:name replace="context/title" />
             home page &raquo;</strong>
