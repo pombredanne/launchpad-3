@@ -46,6 +46,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
+from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -103,8 +104,9 @@ from canonical.widgets.itemswidgets import (
 from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import (
-    LicenseWidget, ProductBugTrackerWidget, ProductNameWidget)
+    LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.registry.model.productseries import ProductSeries
 
 
 OR = '|'
@@ -917,8 +919,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
          * 'base_url': The base URL to reach the base URL for this object.
         """
         translatable = self.context.primary_translatable
+        naked_translatable = removeSecurityProxy(translatable)
 
-        if translatable is None:
+        if (translatable is None or
+            not isinstance(naked_translatable, ProductSeries)):
             return {}
 
         return {
@@ -1113,10 +1117,10 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "development_focus",
         "licenses",
         "license_info",
-    ]
-    custom_widget(
-        'licenses', LicenseWidget, column_count=3, orientation='vertical')
+        ]
+    custom_widget('licenses', LicenseWidget)
     custom_widget('bugtracker', ProductBugTrackerWidget)
+    custom_widget('license_info', GhostWidget)
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1127,6 +1131,16 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         if (len(self.context.licenses) == 0 and
             self.widgets.get('licenses') is not None):
             self.widgets['licenses'].allow_pending_license = True
+
+    def showOptionalMarker(self, field_name):
+        """See `LaunchpadFormView`."""
+        # This has the effect of suppressing the ": (Optional)" stuff for the
+        # license_info widget.  It's the last piece of the puzzle for
+        # manipulating the license_info widget into the table for the
+        # LicenseWidget instead of the enclosing form.
+        if field_name == 'license_info':
+            return False
+        return super(ProductEditView, self).showOptionalMarker(field_name)
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
@@ -1537,8 +1551,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     custom_widget('project', VocabularyPickerWidget,
                   header="Select a project group")
-    custom_widget('licenses', LicenseWidget, column_count=3,
-                  orientation='vertical')
+    custom_widget('licenses', LicenseWidget)
+    custom_widget('license_info', GhostWidget)
 
     @property
     def step_description(self):

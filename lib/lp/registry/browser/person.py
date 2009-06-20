@@ -4774,9 +4774,6 @@ class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-software."""
     implements(IPersonRelatedSoftwareMenu)
 
-    SUMMARY_PAGE_PACKAGE_LIMIT = 30
-    # Safety net for the Registry Admins case which is the owner/driver of
-    # lots of projects.
     max_results_to_display = config.launchpad.default_batch_size
 
     @cachedproperty
@@ -4827,26 +4824,26 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return self.related_projects_count > 5
 
     @cachedproperty
-    def too_many_related_projects_found(self):
-        """Does the user have more related projects than can be displayed?"""
-        return self.related_projects_count > self.max_results_to_display
+    def projects_header_message(self):
+        return self._tableHeaderMessage(
+            self.related_projects_count, label='project')
 
     def _related_projects(self):
         """Return all projects owned or driven by this person."""
         return self.context.getOwnedOrDrivenPillars()
 
-    def _tableHeaderMessage(self, count):
+    def _tableHeaderMessage(self, count, label='package'):
         """Format a header message for the tables on the summary page."""
-        if count > self.SUMMARY_PAGE_PACKAGE_LIMIT:
-            packages_header_message = (
-                "Displaying first %d packages out of %d total" % (
-                    self.SUMMARY_PAGE_PACKAGE_LIMIT, count))
+        if count > 1:
+            label += 's'
+        if count > self.max_results_to_display:
+            header_message = (
+                "Displaying first %d %s out of %d total" % (
+                    self.max_results_to_display, label, count))
         else:
-            packages_header_message = "%d package" % count
-            if count > 1:
-                packages_header_message += "s"
+            header_message = "%d %s" % (count, label)
 
-        return packages_header_message
+        return header_message
 
     def filterPPAPackageList(self, packages):
         """Remove packages that the user is not allowed to see.
@@ -4880,14 +4877,14 @@ class PersonRelatedSoftwareView(LaunchpadView):
         :param packages: A SelectResults that contains the query
         :return: A tuple of (packages, header_message).
 
-        The packages returned are limited to self.SUMMARY_PAGE_PACKAGE_LIMIT
+        The packages returned are limited to self.max_results_to_display
         and decorated with the stats required in the page template.
         The header_message is the text to be displayed at the top of the
         results table in the template.
         """
         # This code causes two SQL queries to be generated.
         results = self._addStatsToPackages(
-            packages[:self.SUMMARY_PAGE_PACKAGE_LIMIT])
+            packages[:self.max_results_to_display])
         header_message = self._tableHeaderMessage(packages.count())
         return results, header_message
 

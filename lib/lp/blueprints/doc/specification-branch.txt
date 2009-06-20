@@ -20,27 +20,12 @@ the Ubuntu media-integrity-check specifcation has a branch link:
     ...     print branchlink.branch.unique_name
     ~name12/+junk/junk.dev
 
-A spec link has a summary attached to it:
-
-    >>> branchlink = spec.branch_links[0]
-    >>> branchlink.summary
-    u'This branch should fix the issue'
-
-The summary can only be changed by non-anonymous users:
-
-    >>> branchlink.summary = 'New summary'
-    Traceback (most recent call last):
-      ...
-    Unauthorized: (... 'launchpad.AnyPerson')
-    >>> login('test@canonical.com')
-    >>> branchlink.summary = 'New summary'
-
 We can create a new branch link with the linkBranch() method:
 
     >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/+junk/junk.contrib')
     >>> user = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> branchlink = spec.linkBranch(branch, user, 'A summary')
+    >>> branchlink = spec.linkBranch(branch, user)
 
 The branch link records the person who created the link as the registrant.
 
@@ -67,8 +52,6 @@ We can also look up a branch link with the getBranchLink() method:
     True
     >>> branchlink.branch == branch
     True
-    >>> branchlink.summary
-    u'A summary'
 
 Finally, the branch link can be removed using its destroySelf()
 method:

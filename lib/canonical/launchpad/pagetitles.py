@@ -281,6 +281,8 @@ bug_create_question = LaunchbagBugID(
 bug_remove_question = LaunchbagBugID(
     'Bug #%d - Convert this question back to a bug')
 
+bugbranch_delete = 'Delete bug branch link'
+
 bugbranch_edit = "Edit branch fix status"
 
 def bugcomment_index(context, view):
@@ -729,7 +731,10 @@ logintoken_claimprofile = 'Claim Launchpad profile'
 
 logintoken_claimteam = 'Claim Launchpad team'
 
-logintoken_index = 'Launchpad: redirect to the logintoken page'
+# This page will always redirect the user to another page specific to the
+# login token in question, except when the token has been consumed already, in
+# which case the user will see the title.
+logintoken_index = 'You have already done this'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
 

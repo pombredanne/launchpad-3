@@ -36,6 +36,7 @@ from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
@@ -140,15 +141,16 @@ class PackageUpload(SQLBase):
                      schema=PackageUploadStatus,
                      storm_validator=validate_status)
 
+    date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+
     distroseries = ForeignKey(dbName="distroseries",
                                foreignKey='DistroSeries')
 
     pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
                      schema=PackagePublishingPocket)
 
-    # XXX: kiko 2007-02-10: This is NULLable. Fix sampledata?
-    changesfile = ForeignKey(dbName='changesfile',
-                             foreignKey="LibraryFileAlias")
+    changesfile = ForeignKey(
+        dbName='changesfile', foreignKey="LibraryFileAlias", notNull=False)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
@@ -156,8 +158,8 @@ class PackageUpload(SQLBase):
                              notNull=False)
 
     # XXX julian 2007-05-06:
-    # Sources and builds should not be SQLMultipleJoin, there is only
-    # ever one of each at most.
+    # Sources should not be SQLMultipleJoin, there is only ever one
+    # of each at most.
 
     # Join this table to the PackageUploadBuild and the
     # PackageUploadSource objects which are related.
@@ -412,11 +414,6 @@ class PackageUpload(SQLBase):
                 in self._customFormats)
 
     @cachedproperty
-    def datecreated(self):
-        """See `IPackageUpload`."""
-        return self.changesfile.content.datecreated
-
-    @cachedproperty
     def displayname(self):
         """See `IPackageUpload`"""
         names = []
@@ -458,11 +455,12 @@ class PackageUpload(SQLBase):
 
         This is currently heuristic but may be more easily calculated later.
         """
-        assert self.sources or self.builds, ('No source available.')
         if self.sources:
             return self.sources[0].sourcepackagerelease
-        if self.builds:
+        elif self.builds:
             return self.builds[0].build.sourcepackagerelease
+        else:
+            return None
 
     def realiseUpload(self, logger=None):
         """See `IPackageUpload`."""
@@ -1632,6 +1630,12 @@ class PackageUploadSet:
             return PackageUpload.get(queue_id)
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
+
+    def createDelayedCopy(self, archive, distroseries, pocket,
+                          signing_key):
+        return PackageUpload(
+            archive=archive, distroseries=distroseries, pocket=pocket,
+            status=PackageUploadStatus.NEW, signing_key=signing_key)
 
     def count(self, status=None, distroseries=None, pocket=None):
         """See `IPackageUploadSet`."""
