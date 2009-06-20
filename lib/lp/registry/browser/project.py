@@ -60,6 +60,7 @@ from canonical.launchpad.webapp import (
     Navigation, StandardLaunchpadFacets, stepthrough, structured)
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.product import GhostWidget
 
 
 class ProjectNavigation(Navigation):
@@ -380,6 +381,7 @@ class ProjectAddProductView(ProductAddViewBase):
 
     label = "Register a new project that is part of this initiative"
     product = None
+    custom_widget('license_info', GhostWidget)
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
