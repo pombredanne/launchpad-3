@@ -885,12 +885,6 @@ class CommonMenuLinks:
         text = 'Change home page'
         return Link(target, text, icon='edit')
 
-    def common_packages(self):
-        target = '+related-software'
-        text = 'List assigned packages'
-        summary = 'Packages assigned to %s' % self.context.browsername
-        return Link(target, text, summary, icon='package-source')
-
     def related_projects(self):
         target = '+related-software#projects'
         text = 'List related projects'
@@ -914,7 +908,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
-             'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
+             'mentoringoffers', 'codesofconduct', 'karma',
              'administer', 'related_projects', 'activate_ppa',
              'view_ppa_subscriptions']
 
@@ -1160,7 +1154,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
-             'reassign', 'common_packages', 'related_projects',
+             'reassign', 'related_projects',
              'activate_ppa']
 
     @enabled_with_permission('launchpad.Edit')
