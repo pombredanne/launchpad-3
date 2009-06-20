@@ -45,6 +45,7 @@ COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format';
 COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is stacked on (if any).';
 COMMENT ON COLUMN Branch.distroseries IS 'The distribution series that the branch belongs to.';
 COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a branch of.';
+COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in the mirrored area.';
 
 -- BranchJob
 
@@ -156,7 +157,6 @@ COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch f
 COMMENT ON COLUMN BugBranch.bug IS 'The bug associated with this branch.';
 COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
-COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
 
@@ -1030,7 +1030,7 @@ COMMENT ON COLUMN PackageUpload.distroseries IS 'This integer field refers to th
 
 COMMENT ON COLUMN PackageUpload.pocket IS 'This is the pocket the upload is targeted at.';
 
-COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload.';
+COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload. It is null for records refering to a delayed-copy.';
 
 COMMENT ON COLUMN PackageUpload.archive IS 'The archive to which this upload is targetted.';
 
@@ -1473,6 +1473,7 @@ COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
+COMMENT ON COLUMN LibraryFileContent.sha256 IS 'The SHA256 sum of the file''s contents';
 
 -- LibraryFileAlias
 
@@ -1902,6 +1903,7 @@ COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at p
 COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
 COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days before superseded or deleted binary files are expired in the librarian, or zero for never.';
 COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
+COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 
 -- ArchiveAuthToken
 

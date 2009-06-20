@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import SQL, Max, Min
 
+from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.hwdb import HWSubmission
@@ -187,7 +188,7 @@ class CodeImportResultPruner(TunableLoop):
     """A TunableLoop to prune unwanted CodeImportResult rows.
 
     Removes CodeImportResult rows if they are older than 30 days
-    and they are not one of the 4 most recent results for that
+    and they are not one of the most recent results for that
     CodeImport.
     """
     maximum_chunk_size = 1000
@@ -228,11 +229,12 @@ class CodeImportResultPruner(TunableLoop):
                         LatestResult.code_import
                             = CodeImportResult.code_import
                     ORDER BY LatestResult.date_created DESC
-                    LIMIT 4)
+                    LIMIT %s)
             """ % sqlvalues(
                 self.next_code_import_id,
                 self.next_code_import_id,
-                chunk_size))
+                chunk_size,
+                config.codeimport.consecutive_failure_limit - 1))
         self.next_code_import_id += chunk_size
         transaction.commit()
 
