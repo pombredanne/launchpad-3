@@ -4,17 +4,23 @@
 
 __metaclass__ = type
 
-import os.path
-
+import os
+import shutil
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
+from bzrlib.branch import (Branch, BzrBranchFormat5, BzrBranchFormat7,
+    BzrBranchFormat8)
+from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.interfaces.translations import (
@@ -25,18 +31,23 @@ from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
-
 from lp.services.job.interfaces.job import JobStatus
+from lp.code.bzr import (
+    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, RepositoryFormat,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IRevisionMailJob, IRosettaUploadJob)
+    IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
+    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
-    RevisionMailJob, RosettaUploadJob)
+    BranchDiffJob, BranchJob, BranchJobType, BranchUpgradeJob,
+    ReclaimBranchSpaceJob, RevisionMailJob, RevisionsAddedJob,
+    RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
+from lp.codehosting.vfs import branch_id_to_path
 
 
 class TestBranchJob(TestCaseWithFactory):
@@ -147,6 +158,105 @@ class TestBranchDiffJob(TestCaseWithFactory):
         """
         diff = self.create_rev1_diff()
         self.assertIsInstance(diff.diff.text, str)
+
+
+class TestBranchUpgradeJob(TestCaseWithFactory):
+    """Tests for `BranchUpgradeJob`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""
+        branch = self.factory.makeAnyBranch()
+        job = BranchUpgradeJob.create(branch)
+        verifyObject(IBranchUpgradeJob, job)
+
+    def test_upgrades_branch(self):
+        """Ensure that a branch with an outdated format is upgraded."""
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree(format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        self.assertEqual(
+            tree.branch.repository._format.get_format_string(),
+            'Bazaar-NG Knit Repository Format 1')
+
+        job = BranchUpgradeJob.create(db_branch)
+        job.run()
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n')
+
+    def test_upgrade_format_all_formats(self):
+        # getUpgradeFormat should return a BzrDirMetaFormat1 object with the
+        # most up to date branch and repository formats.
+        self.useBzrBranches()
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        job = BranchUpgradeJob.create(branch)
+
+        format = job.upgrade_format
+        self.assertIs(
+            type(format.get_branch_format()),
+            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_5))
+        self.assertIs(
+            type(format._repository_format),
+            REPOSITORY_FORMAT_UPGRADE_PATH.get(
+                RepositoryFormat.BZR_REPOSITORY_4))
+
+    def make_format(self, branch_format=None, repo_format=None):
+        # Return a Bzr MetaDir format with the provided branch and repository
+        # formats.
+        if branch_format is None:
+            branch_format = BzrBranchFormat7
+        if repo_format is None:
+            repo_format = RepositoryFormatKnitPack6
+        format = BzrDirMetaFormat1()
+        format.set_branch_format(branch_format())
+        format._set_repository_format(repo_format())
+        return format
+
+    def test_upgrade_format_no_branch_upgrade_needed(self):
+        # getUpgradeFormat should not downgrade the branch format when it is
+        # more up to date than the default formats provided.
+        self.useBzrBranches()
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_7,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
+        _format = self.make_format(repo_format=RepositoryFormatKnit1)
+        branch, _unused = self.create_branch_and_tree(db_branch=branch,
+            format=_format)
+        job = BranchUpgradeJob.create(branch)
+
+        format = job.upgrade_format
+        self.assertIs(
+            type(format.get_branch_format()),
+            BzrBranchFormat8)
+        self.assertIs(
+            type(format._repository_format),
+            REPOSITORY_FORMAT_UPGRADE_PATH.get(RepositoryFormat.BZR_KNIT_1))
+
+    def test_upgrade_format_no_repository_upgrade_needed(self):
+        # getUpgradeFormat should not downgrade the branch format when it is
+        # more up to date than the default formats provided.
+        self.useBzrBranches()
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_4,
+            repository_format=RepositoryFormat.BZR_KNITPACK_6)
+        _format = self.make_format(branch_format=BzrBranchFormat5)
+        branch, _unused = self.create_branch_and_tree(db_branch=branch,
+            format=_format)
+        job = BranchUpgradeJob.create(branch)
+
+        format = job.upgrade_format
+        self.assertIs(
+            type(format.get_branch_format()),
+            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_4))
+        self.assertIs(
+            type(format._repository_format),
+            RepositoryFormatKnitPack6)
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
@@ -817,6 +927,101 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
             self.branch))
         self.assertEqual([], unfinished_jobs)
+
+
+class TestReclaimBranchSpaceJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def cleanHostedAndMirroredAreas(self):
+        """Ensure that hosted and mirrored branch areas are present and empty.
+        """
+        hosted = config.codehosting.hosted_branches_root
+        shutil.rmtree(hosted, ignore_errors=True)
+        os.mkdir(hosted)
+        self.addCleanup(shutil.rmtree, hosted)
+        mirrored = config.codehosting.mirrored_branches_root
+        shutil.rmtree(mirrored, ignore_errors=True)
+        os.mkdir(mirrored)
+        self.addCleanup(shutil.rmtree, mirrored)
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.cleanHostedAndMirroredAreas()
+
+    def test_providesInterface(self):
+        # ReclaimBranchSpaceJob implements IReclaimBranchSpaceJob.
+        job = getUtility(IReclaimBranchSpaceJobSource).create(
+            self.factory.getUniqueInteger())
+        self.assertCorrectlyProvides(job, IReclaimBranchSpaceJob)
+
+    def test_stores_id(self):
+        # An instance of ReclaimBranchSpaceJob stores the ID of the branch
+        # that has been deleted.
+        branch_id = self.factory.getUniqueInteger()
+        job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        self.assertEqual(branch_id, job.branch_id)
+
+    def runReadyJobs(self):
+        """Run all ready `ReclaimBranchSpaceJob`s with the appropriate dbuser.
+        """
+        # switchDbUser aborts the current transaction, so we need to commit to
+        # make sure newly added jobs are still there after we call it.
+        self.layer.txn.commit()
+        self.layer.switchDbUser(config.reclaimbranchspace.dbuser)
+        for job in ReclaimBranchSpaceJob.iterReady():
+            job.run()
+
+    def test_run_branch_in_neither_area(self):
+        # Running a job to reclaim space for a branch that was never pushed to
+        # does nothing quietly.
+        branch_id = self.factory.getUniqueInteger()
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        # Just "assertNotRaises"
+        self.runReadyJobs()
+
+    def test_run_branch_in_hosted_area(self):
+        # Running a job to reclaim space for a branch that was pushed to
+        # but never mirrored removes the branch from the hosted area.
+        branch_id = self.factory.getUniqueInteger()
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        hosted_branch_path = os.path.join(
+            config.codehosting.hosted_branches_root,
+            branch_id_to_path(branch_id), '.bzr')
+        os.makedirs(hosted_branch_path)
+        self.runReadyJobs()
+        self.assertFalse(os.path.exists(hosted_branch_path))
+
+    def test_run_branch_in_mirrored_area(self):
+        # Running a job to reclaim space for a branch that only exists in the
+        # mirrored area (e.g. a MIRRORED branch) removes the branch from the
+        # mirrored area.
+        branch_id = self.factory.getUniqueInteger()
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        mirrored_branch_path = os.path.join(
+            config.codehosting.mirrored_branches_root,
+            branch_id_to_path(branch_id), '.bzr')
+        os.makedirs(mirrored_branch_path)
+        self.runReadyJobs()
+        self.assertFalse(os.path.exists(mirrored_branch_path))
+
+    def test_run_branch_in_both_areas(self):
+        # Running a job to reclaim space for a branch is present in both the
+        # mirrored and hosted area removes the branch from both areas.
+        branch_id = self.factory.getUniqueInteger()
+        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        hosted_branch_path = os.path.join(
+            config.codehosting.hosted_branches_root,
+            branch_id_to_path(branch_id), '.bzr')
+        mirrored_branch_path = os.path.join(
+            config.codehosting.mirrored_branches_root,
+            branch_id_to_path(branch_id), '.bzr')
+        os.makedirs(hosted_branch_path)
+        os.makedirs(mirrored_branch_path)
+        self.runReadyJobs()
+        self.assertFalse(
+            os.path.exists(hosted_branch_path)
+            or os.path.exists(mirrored_branch_path))
 
 
 def test_suite():

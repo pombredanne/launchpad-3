@@ -281,6 +281,8 @@ bug_create_question = LaunchbagBugID(
 bug_remove_question = LaunchbagBugID(
     'Bug #%d - Convert this question back to a bug')
 
+bugbranch_delete = 'Delete bug branch link'
+
 bugbranch_edit = "Edit branch fix status"
 
 def bugcomment_index(context, view):

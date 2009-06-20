@@ -121,10 +121,10 @@
                 </td>
                 <td style="padding-top: 5px">
                   <span class="sortkey"
-                    tal:content="packageupload/datecreated/fmt:datetime" />
+                    tal:content="packageupload/date_created/fmt:datetime" />
                   <span
-                    tal:attributes="title packageupload/datecreated/fmt:datetime"
-                    tal:content="packageupload/datecreated/fmt:approximatedate">
+                    tal:attributes="title packageupload/date_created/fmt:datetime"
+                    tal:content="packageupload/date_created/fmt:approximatedate">
                     2006-03-15
                   </span>
                 </td>
