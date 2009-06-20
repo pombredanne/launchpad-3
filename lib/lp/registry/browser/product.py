@@ -46,6 +46,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
+from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -918,9 +919,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
          * 'base_url': The base URL to reach the base URL for this object.
         """
         translatable = self.context.primary_translatable
+        naked_translatable = removeSecurityProxy(translatable)
 
         if (translatable is None or
-            not isinstance(translatable, ProductSeries)):
+            not isinstance(naked_translatable, ProductSeries)):
             return {}
 
         return {
