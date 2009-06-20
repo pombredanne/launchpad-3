@@ -14,7 +14,8 @@ import cgi
 import math
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.widget import renderElement, SimpleInputWidget
+from zope.app.form.browser.textwidgets import TextWidget
+from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
@@ -402,7 +403,7 @@ class ProductNameWidget(LowerCaseTextWidget):
             return 'text'
 
 
-class GhostWidget(SimpleInputWidget):
+class GhostWidget(TextWidget):
     """A simple widget that has no HTML."""
 
     # This suppresses the stuff above the widget.
