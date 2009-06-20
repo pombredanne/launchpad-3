@@ -902,8 +902,8 @@ class TeamMemberAddView(LaunchpadFormView):
                           " members.")
             elif newmember in self.context.activemembers:
                 error = _("%s (%s) is already a member of %s." % (
-                    newmember.browsername, newmember.name,
-                    self.context.browsername))
+                    newmember.displayname, newmember.name,
+                    self.context.displayname))
 
         if error:
             self.setFieldError("newmember", error)
