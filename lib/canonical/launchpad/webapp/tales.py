@@ -34,7 +34,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IDistribution, IFAQSet,
-    IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
+    IProduct, IProject, IDistributionSourcePackage, ISprint, LicenseStatus, NotFoundError)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
@@ -501,6 +501,8 @@ class ObjectImageDisplayAPI:
                     return 'sprite person-inactive'
         elif IDistribution.providedBy(context):
             return 'sprite distribution'
+        elif IDistributionSourcePackage.providedBy(context):
+            return 'sprite package-source'
         elif ISprint.providedBy(context):
             return 'sprite meeting'
         elif IBug.providedBy(context):

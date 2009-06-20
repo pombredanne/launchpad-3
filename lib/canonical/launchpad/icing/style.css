@@ -35,7 +35,6 @@
 /* == Sprites == */
 
 #subscribers-direct a, #portlet-subscribers a, #subscribers-indirect a, .bug-branch-summary {
-   display: block;
    line-height: 1.4em;
 }
 #lp-hierarchy a.bzr-favicon, #lp-hierarchy a.person-tabs {
@@ -61,7 +60,7 @@ span.invisible {left:-9999em;display:block;}
 .remove {background:url(icon-sprites) 0 -64px no-repeat;}
 .info {background:url(icon-sprites) 0 -96px no-repeat;}
 .question {background:url(icon-sprites) 0 -128px no-repeat;}
-.download {background:url(icon-sprites) 0 -160px no-repeat;}
+.download-icon {background:url(icon-sprites) 0 -160px no-repeat;}
 .search-icon {background:url(icon-sprites) 0 -187px no-repeat;}
 .no {background:url(icon-sprites) 0 -224px no-repeat;}
 .yes {background:url(icon-sprites) 0 -256px no-repeat;}
@@ -122,7 +121,7 @@ span.invisible {left:-9999em;display:block;}
 .warning, .security {background:url(icon-sprites-2) 0 -704px no-repeat;}
 .private {background:url(icon-sprites-2) 0 -736px no-repeat;}
 .meeting {background:url(icon-sprites-2) 0 -768px no-repeat;}
-.translate {background:url(icon-sprites-2) 0 -800px no-repeat;}
+.translate-icon {background:url(icon-sprites-2) 0 -800px no-repeat;}
 .translation-file {background:url(icon-sprites-2) 0 -832px no-repeat;}
 .translation-template {background:url(icon-sprites-2) 0 -864px no-repeat;}
 .trash {background:url(icon-sprites-2) 0 -896px no-repeat;}
