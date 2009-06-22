@@ -28,7 +28,8 @@ __all__ = [
     'HWVendorIDSet',
     'HWVendorName',
     'HWVendorNameSet',
-    'get_hardware_related_bugtask_search_clause',
+    'make_submission_device_statistics_clause',
+    '_userCanAccessSubmissionStormClause',
     ]
 
 import re
@@ -43,8 +44,7 @@ from storm.store import Store
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase, convert_storm_clause_to_string, sqlvalues)
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.bugs.model.bug import Bug, BugAffectsPerson, BugTag
 from lp.bugs.model.bugsubscription import BugSubscription
 from canonical.launchpad.validators.name import valid_name
@@ -1276,69 +1276,3 @@ def _userCanAccessSubmissionStormClause(user):
                 HWSubmission.private))
         has_access = HWSubmission.ownerID.is_in(subselect)
         return Or(public, has_access)
-
-def get_hardware_related_bugtask_search_clause(search_params):
-    """Hardware related SQL expressions and tables for bugtask searches.
-
-    :return: (tables, clauses) where clauses is a list of SQL expressions
-        which limit a bugtask search to bugs related to a device or
-        driver specified in search_params. If search_params contains no
-        hardware related data, empty lists are returned.
-    :param search_params: A `BugTaskSearchParams` instance.
-
-    Device related WHERE clauses are returned if searm_params.hardware_bus,
-    search_params.hardware_vendor_id, search_params.hardware_product_id
-    are all not None.
-    """
-    bus = search_params.hardware_bus
-    vendor_id = search_params.hardware_vendor_id
-    product_id = search_params.hardware_product_id
-    driver_name = search_params.hardware_driver_name
-    package_name = search_params.hardware_driver_package_name
-
-    if bus is not None and vendor_id is not None and product_id is not None:
-        tables, clauses = make_submission_device_statistics_clause(
-            bus, vendor_id, product_id, driver_name, package_name, False)
-    elif driver_name is not None or package_name is not None:
-        tables, clauses = make_submission_device_statistics_clause(
-            None, None, None, driver_name, package_name, False)
-    else:
-        # make_submission_device_statistics_clause assumes that at least
-        # a driver, a package or a device is specified and thus returns
-        # always at least two tables. Returning these tables without
-        # any associated WHERE clauses leads to a huge cross join.
-        return [], []
-
-    tables.append(HWSubmission)
-    clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
-    bug_link_clauses = []
-    if search_params.hardware_owner_is_bug_reporter:
-        bug_link_clauses.append(
-            HWSubmission.ownerID == Bug.ownerID)
-    if search_params.hardware_owner_is_affected_by_bug:
-        bug_link_clauses.append(
-            And(BugAffectsPerson.personID == HWSubmission.ownerID,
-                BugAffectsPerson.bug == Bug.id,
-                BugAffectsPerson.affected))
-        tables.append(BugAffectsPerson)
-    if search_params.hardware_owner_is_subscribed_to_bug:
-        bug_link_clauses.append(
-            And(BugSubscription.personID == HWSubmission.ownerID,
-                BugSubscription.bugID == Bug.id))
-        tables.append(BugSubscription)
-    if search_params.hardware_is_linked_to_bug:
-        bug_link_clauses.append(
-            And(HWSubmissionBug.bugID == Bug.id,
-                HWSubmissionBug.submissionID == HWSubmission.id))
-        tables.append(HWSubmissionBug)
-
-    if len(bug_link_clauses) == 0:
-        return [], []
-
-    clauses.append(Or(*bug_link_clauses))
-    clauses.append(_userCanAccessSubmissionStormClause(search_params.user))
-
-    tables = [convert_storm_clause_to_string(table) for table in tables]
-    clauses = ['(%s)' % convert_storm_clause_to_string(clause)
-               for clause in clauses]
-    return tables, clauses
