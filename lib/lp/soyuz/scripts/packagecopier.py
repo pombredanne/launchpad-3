@@ -8,8 +8,8 @@ __all__ = [
     'UnembargoSecurityPackage',
     'check_copy',
     'do_copy',
-    'do_delayed_copy',
-    'do_direct_copy',
+    '_do_delayed_copy',
+    '_do_direct_copy',
     'override_from_ancestry',
     're_upload_file',
     'update_files_privacy',
@@ -194,7 +194,7 @@ def is_completely_built(source):
 def compare_sources(source, ancestry):
     """Compare `ISourcePackagePublishingHistory` records versions.
 
-    :param source: context `ISourcePackagePublishingHistory`;
+    :param source: context `ISourcePackagePublishingHistory`.
     :param ancestry: ancestry `ISourcePackagePublishingHistory`.
 
     :return: `apt_pkg.VersionCompare(source_version, ancestry_version)`
@@ -214,9 +214,9 @@ def get_ancestry_candidate(source, archive, series, pocket):
     Look for the newest active source publication in the location (archive,
     series, pocket) with the same name as the given source.
 
-    :param source: context `ISourcePackagePublishingHistory`;
-    :param archive: destination `IArchive`;
-    :param series: destination `IDistroSeries`;
+    :param source: context `ISourcePackagePublishingHistory`.
+    :param archive: destination `IArchive`.
+    :param series: destination `IDistroSeries`.
     :param pocket: destination `PackagePublishingPocket`.
 
     :return: the corresponding `ISourcePackagePublishingHistory` record if
@@ -244,7 +244,7 @@ def check_archive_conflicts(source, archive, series, include_binaries):
     binaries that conflict with existing ones. Even when the binaries
     are included, they are checked for conflict.
 
-    :param source: context `ISourcePackagePublishingHistory`;
+    :param source: context `ISourcePackagePublishingHistory`.
     :param archive: destination `IArchive`.
     :param series: destination `IDistroSeries`.
     :param include_binaries: boolean indicating whether or not binaries
@@ -373,9 +373,9 @@ def check_copy(source, archive, series, pocket, include_binaries,
     than any version of the same source present in the destination suite
     (series + pocket).
 
-    :param source: context `ISourcePackagePublishingHistory`;
-    :param archive: destination `IArchive`;
-    :param series: destination `IDistroSeries`;
+    :param source: context `ISourcePackagePublishingHistory`.
+    :param archive: destination `IArchive`.
+    :param series: destination `IDistroSeries`.
     :param pocket: destination `PackagePublishingPocket`.
     :param include_binaries: boolean indicating whether or not binaries
         are considered in the copy.
@@ -422,14 +422,14 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
 
     Wrapper for `do_direct_copy`.
 
-    :param: sources: a list of `ISourcePackagePublishingHistory`;
-    :param: archive: the target `IArchive`;
+    :param: sources: a list of `ISourcePackagePublishingHistory`.
+    :param: archive: the target `IArchive`.
     :param: series: the target `IDistroSeries`, if None is given the same
-        current source distroseries will be used as destination;
-    :param: pocket: the target `PackagePublishingPocket`;
+        current source distroseries will be used as destination.
+    :param: pocket: the target `PackagePublishingPocket`.
     :param: include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
-        copied along with the source;
+        copied along with the source.
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
         publications.
@@ -441,7 +441,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
         else:
             destination_series = series
 
-        sub_copies = do_direct_copy(
+        sub_copies = _do_direct_copy(
             source, archive, destination_series, pocket, include_binaries)
 
         copies.extend(sub_copies)
@@ -449,7 +449,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
     return copies
 
 
-def do_direct_copy(source, archive, series, pocket, include_binaries):
+def _do_direct_copy(source, archive, series, pocket, include_binaries):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -459,14 +459,14 @@ def do_direct_copy(source, archive, series, pocket, include_binaries):
     Also copy published binaries for each source if requested to. Again,
     only copy binaries that were not yet copied before.
 
-    :param: source: an `ISourcePackagePublishingHistory`;
-    :param: archive: the target `IArchive`;
+    :param: source: an `ISourcePackagePublishingHistory`.
+    :param: archive: the target `IArchive`.
     :param: series: the target `IDistroSeries`, if None is given the same
-        current source distroseries will be used as destination;
-    :param: pocket: the target `PackagePublishingPocket`;
+        current source distroseries will be used as destination.
+    :param: pocket: the target `PackagePublishingPocket`.
     :param: include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
-        copied along with the source;
+        copied along with the source.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -493,7 +493,7 @@ def do_direct_copy(source, archive, series, pocket, include_binaries):
 
     # Copy missing binaries for the matching architectures in the
     # destination series. ISPPH.getBuiltBinaries() return only
-    # unique publication per binary package releases (i.e. excludes)
+    # unique publication per binary package releases (i.e. excludes
     # irrelevant arch-indep publications) and IBPPH.copy is prepared
     # to expand arch-indep publications.
     # For safety, we use the architecture the binary was built, and
@@ -526,29 +526,29 @@ def do_direct_copy(source, archive, series, pocket, include_binaries):
     return copies
 
 
-def do_delayed_copy(source, archive, series, pocket, include_binaries):
+def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     """Schedule the given source for copy.
 
-    Schedulle the copy of each item of the given list of
+    Schedule the copy of each item of the given list of
     `SourcePackagePublishingHistory` to the given destination.
 
     Also include published builds for each source if requested to.
 
-    :param: source: an `ISourcePackagePublishingHistory`;
-    :param: archive: the target `IArchive`;
-    :param: series: the target `IDistroSeries`
-    :param: pocket: the target `PackagePublishingPocket`;
+    :param: source: an `ISourcePackagePublishingHistory`.
+    :param: archive: the target `IArchive`.
+    :param: series: the target `IDistroSeries`.
+    :param: pocket: the target `PackagePublishingPocket`.
     :param: include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
-        copied along with the source;
+        copied along with the source.
 
     :return: a list of `IPackageUpload` corresponding to the publications
         scheduled for copy.
     """
-    # XXX cprov 2009-06-22: At some point we will change the copy
-    # signature to allow a user to be passed in, so will be able
-    # to annotate that information in delayed copied as well, by
-    # using the right key. For now it's undefined.
+    # XXX cprov 2009-06-22 bug=385503: At some point we will change
+    # the copy signature to allow a user to be passed in, so will
+    # be able to annotate that information in delayed copied as well,
+    # by using the right key. For now it's undefined.
     # See also the comment on acceptFromCopy()
     delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
         archive, series, pocket, None)
@@ -560,8 +560,7 @@ def do_delayed_copy(source, archive, series, pocket, include_binaries):
         delayed_copy.addCustom(
             custom.libraryfilealias, custom.customformat)
 
-    # If binaries are included in the copy we include binary custom
-    # files.
+    # If binaries are included in the copy we include binary custom files.
     if include_binaries:
         for build in source.getBuilds():
             delayed_copy.addBuild(build)
@@ -570,17 +569,19 @@ def do_delayed_copy(source, archive, series, pocket, include_binaries):
                 delayed_copy.addCustom(
                     custom.libraryfilealias, custom.customformat)
 
-    # Accept the delayed-copy, which inplicitly verifies if it fits
-    # the destination context.
-    # XXX cprov 2009-06-22: when we have a 'user' responsible for the
-    # copy we can also decide whether a copy should be immediately
-    # accepted or moved to the UNAPPROVED queue, based on the users
+    # XXX cprov 2009-06-22 bug=385503: when we have a 'user' responsible
+    # for the copy we can also decide whether a copy should be immediately
+    # accepted or moved to the UNAPPROVED queue, based on the user's
     # permission to the destination context.
+
+    # Accept the delayed-copy, which implicitly verifies if it fits
+    # the destination context.
     delayed_copy.acceptFromCopy()
 
-    # XXX cprov 2009-06-22: `IPackageUpload.displayname` is very poor,
-    # if we can't fix in place we should build a decorated object
-    # implemented a more complete 'displayname' property.
+    # XXX cprov 2009-06-22 bug=390845: `IPackageUpload.displayname`
+    # implementation is very poor, if we can't fix in place we should
+    # build a decorated object implemented a more complete 'displayname'
+    # property.
     return delayed_copy
 
 

@@ -362,8 +362,8 @@ class PackageUpload(SQLBase):
 
         self.setAccepted()
 
-        # XXX cprov 2009-06-22: self.sourcepackagerelease is cached,
-        # cannot rely on it.
+        # XXX cprov 2009-06-22 bug=390851: self.sourcepackagerelease
+        # is cached, we cannot rely on it.
         sourcepackagerelease = self.sources[0].sourcepackagerelease
 
         # Close bugs if possible, skip imported sources.

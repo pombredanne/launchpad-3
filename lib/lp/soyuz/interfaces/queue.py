@@ -172,8 +172,8 @@ class IPackageUpload(Interface):
     def acceptFromUploader(changesfile_path, logger=None):
         """Perform upload acceptance during upload-time.
 
-         * Move the upload to accepted queue in all cases;
-         * Publish and close bugs for 'single-source' uploads;
+         * Move the upload to accepted queue in all cases.
+         * Publish and close bugs for 'single-source' uploads.
          * Skip bug-closing for PPA uploads.
          * Grant karma to people involved with the upload.
         """
@@ -181,7 +181,7 @@ class IPackageUpload(Interface):
     def acceptFromCopy():
         """Perform upload acceptance for a delayed-copy record.
 
-         * Move the upload to accepted queue in all cases;
+         * Move the upload to accepted queue in all cases.
          * Close bugs for uploaded sources (skip imported ones).
         """
 
@@ -368,9 +368,9 @@ class IPackageUploadSource(Interface):
         that only PRIMARY archive allows post-RELEASE pockets are:
 
          1. original archive, original distroseries and pocket (old
-            DEVELOPMENT/SRU/PPA uploads);
+            DEVELOPMENT/SRU/PPA uploads).
          2. primary archive, original distroseries and release pocket (NEW
-            SRU/PPA uploads fallback);
+            SRU/PPA uploads fallback).
          3. primary_archive, any distroseries and release pocket (BACKPORTS)
 
         We lookup a source publication with the same name in those location

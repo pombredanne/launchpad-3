@@ -41,8 +41,8 @@ from lp.soyuz.model.publishing import (
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
-    PackageCopier, UnembargoSecurityPackage, check_copy, do_delayed_copy,
-    do_direct_copy, override_from_ancestry, re_upload_file,
+    check_copy, _do_delayed_copy, _do_direct_copy, override_from_ancestry,
+    PackageCopier, re_upload_file, UnembargoSecurityPackage,
     update_files_privacy)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -740,7 +740,7 @@ class TestDoDirectCopy(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
 
     def testCanCopyArchIndependentBinariesBuiltInAnUnsupportedArch(self):
-        # do_direct_copy() uses the binary candidate build architecture,
+        # _do_direct_copy() uses the binary candidate build architecture,
         # instead of the publish one, in other to check if it's
         # suitable for the destination. It avoids skipping the single
         # arch-indep publication returned by SPPH.getBuiltBinaries()
@@ -769,7 +769,7 @@ class TestDoDirectCopy(TestCaseWithFactory):
         self.layer.txn.commit()
 
         # Copy succeeds.
-        copies = do_direct_copy(
+        copies = _do_direct_copy(
             source, source.archive, hoary_test, source.pocket, True)
         self.assertEquals(
             ['foo 666 in hoary-test',
@@ -812,7 +812,7 @@ class TestDoDelayedCopy(TestCaseWithFactory):
         return source
 
     def test_do_delayed_copy_simple(self):
-        # do_delayed_copy() return an `IPackageUpload` record configured
+        # _do_delayed_copy() return an `IPackageUpload` record configured
         # as a delayed-copy and with the expected contents (source,
         # binaries and custom uploads) in ACCEPTED state.
 
@@ -831,7 +831,7 @@ class TestDoDelayedCopy(TestCaseWithFactory):
         copy_series = source.distroseries
         copy_pocket = PackagePublishingPocket.SECURITY
 
-        delayed_copy = do_delayed_copy(
+        delayed_copy = _do_delayed_copy(
             source, copy_archive, copy_series, copy_pocket, True)
 
         # A delayed-copy `IPackageUpload` record is returned.
