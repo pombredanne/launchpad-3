@@ -922,7 +922,7 @@ class BugTaskSearchParams:
 
     For a more thorough treatment, check out:
 
-        lib/canonical/launchpad/doc/bugtask.txt
+        lib/lp/bugs/doc/bugtask-search.txt
     """
 
     product = None
@@ -940,7 +940,15 @@ class BugTaskSearchParams:
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
                  bug_commenter=None, omit_targeted=False,
-                 date_closed=None, affected_user=None):
+                 date_closed=None, affected_user=None, bus=None,
+                 vendor_id=None, product_id=None, driver_name=None,
+                 driver_package_name=None,
+                 hardware_owner_is_bug_reporter=None,
+                 hardware_owner_is_affected_by_bug=False,
+                 hardware_owner_is_subscribed_to_bug=False,
+                 hardware_is_linked_to_bug=False
+                 ):
+
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -970,6 +978,17 @@ class BugTaskSearchParams:
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
         self.affected_user = affected_user
+        self.bus = bus
+        self.vendor_id = vendor_id
+        self.product_id = product_id
+        self.driver_name = driver_name
+        self.driver_package_name = driver_package_name
+        self.hardware_owner_is_bug_reporter = hardware_owner_is_bug_reporter
+        self.hardware_owner_is_affected_by_bug = (
+            hardware_owner_is_affected_by_bug)
+        self.hardware_owner_is_subscribed_to_bug = (
+            hardware_owner_is_subscribed_to_bug)
+        self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""

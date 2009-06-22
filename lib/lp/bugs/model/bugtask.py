@@ -1623,6 +1623,14 @@ class BugTaskSet:
         if clause:
             extra_clauses.append(clause)
 
+        # Avoid cyclic imports.
+        from canonical.launchpad.database.hwdb import (
+            get_hardware_related_bugtask_search_clause)
+        hw_tables, hw_clauses = get_hardware_related_bugtask_search_clause(
+            params)
+        extra_clauses.extend(hw_clauses)
+        clauseTables.extend(hw_tables)
+
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
