@@ -8,6 +8,8 @@ __all__ = [
     'UnembargoSecurityPackage',
     'check_copy',
     'do_copy',
+    'do_delayed_copy',
+    'do_direct_copy',
     'override_from_ancestry',
     're_upload_file',
     'update_files_privacy',
@@ -30,6 +32,7 @@ from lp.soyuz.interfaces.build import incomplete_building_status
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingStatus, active_publishing_status)
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from lp.soyuz.scripts.processaccepted import (
@@ -417,12 +420,7 @@ def check_copy(source, archive, series, pocket, include_binaries,
 def do_copy(sources, archive, series, pocket, include_binaries=False):
     """Perform the complete copy of the given sources incrementally.
 
-    Copy each item of the given list of `SourcePackagePublishingHistory`
-    to the given destination if they are not yet available (previously
-    copied).
-
-    Also copy published binaries for each source if requested to. Again,
-    only copy binaries that were not yet copied before.
+    Wrapper for `do_direct_copy`.
 
     :param: sources: a list of `ISourcePackagePublishingHistory`;
     :param: archive: the target `IArchive`;
@@ -443,57 +441,147 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
         else:
             destination_series = series
 
-        # Copy source if it's not yet copied.
-        source_in_destination = archive.getPublishedSources(
-            name=source.sourcepackagerelease.name, exact_match=True,
-            version=source.sourcepackagerelease.version,
-            status=active_publishing_status,
-            distroseries=destination_series, pocket=pocket)
-        if source_in_destination.count() == 0:
-            source_copy = source.copyTo(destination_series, pocket, archive)
-            close_bugs_for_sourcepublication(source_copy)
-            copies.append(source_copy)
-        else:
-            source_copy = source_in_destination[0]
+        sub_copies = do_direct_copy(
+            source, archive, destination_series, pocket, include_binaries)
 
-        if not include_binaries:
-            source_copy.createMissingBuilds()
-            continue
-
-        # Copy missing binaries for the matching architectures in the
-        # destination series. ISPPH.getBuiltBinaries() return only
-        # unique publication per binary package releases (i.e. excludes)
-        # irrelevant arch-indep publications) and IBPPH.copy is prepared
-        # to expand arch-indep publications.
-        # For safety, we use the architecture the binary was built, and
-        # not the one it is published, coping with single arch-indep
-        # publications for architectures that do not exist in the
-        # destination series. See #387589 for more information.
-        for binary in source.getBuiltBinaries():
-            binarypackagerelease = binary.binarypackagerelease
-            try:
-                target_distroarchseries = destination_series[
-                    binarypackagerelease.build.arch_tag]
-            except NotFoundError:
-                # It is not an error if the destination series doesn't
-                # support all the architectures originally built. We
-                # simply do not copy the binary and life goes on.
-                continue
-            binary_in_destination = archive.getAllPublishedBinaries(
-                name=binarypackagerelease.name, exact_match=True,
-                version=binarypackagerelease.version,
-                status=active_publishing_status, pocket=pocket,
-                distroarchseries=target_distroarchseries)
-            if binary_in_destination.count() == 0:
-                binary_copy = binary.copyTo(
-                    destination_series, pocket, archive)
-                copies.extend(binary_copy)
-
-        # Always ensure the needed builds exist in the copy destination
-        # after copying the binaries.
-        source_copy.createMissingBuilds()
+        copies.extend(sub_copies)
 
     return copies
+
+
+def do_direct_copy(source, archive, series, pocket, include_binaries):
+    """Copy publishing records to another location.
+
+    Copy each item of the given list of `SourcePackagePublishingHistory`
+    to the given destination if they are not yet available (previously
+    copied).
+
+    Also copy published binaries for each source if requested to. Again,
+    only copy binaries that were not yet copied before.
+
+    :param: source: an `ISourcePackagePublishingHistory`;
+    :param: archive: the target `IArchive`;
+    :param: series: the target `IDistroSeries`, if None is given the same
+        current source distroseries will be used as destination;
+    :param: pocket: the target `PackagePublishingPocket`;
+    :param: include_binaries: optional boolean, controls whether or
+        not the published binaries for each given source should be also
+        copied along with the source;
+
+    :return: a list of `ISourcePackagePublishingHistory` and
+        `BinaryPackagePublishingHistory` corresponding to the copied
+        publications.
+    """
+    copies = []
+
+    # Copy source if it's not yet copied.
+    source_in_destination = archive.getPublishedSources(
+        name=source.sourcepackagerelease.name, exact_match=True,
+        version=source.sourcepackagerelease.version,
+        status=active_publishing_status,
+        distroseries=series, pocket=pocket)
+    if source_in_destination.count() == 0:
+        source_copy = source.copyTo(series, pocket, archive)
+        close_bugs_for_sourcepublication(source_copy)
+        copies.append(source_copy)
+    else:
+        source_copy = source_in_destination[0]
+
+    if not include_binaries:
+        source_copy.createMissingBuilds()
+        return copies
+
+    # Copy missing binaries for the matching architectures in the
+    # destination series. ISPPH.getBuiltBinaries() return only
+    # unique publication per binary package releases (i.e. excludes)
+    # irrelevant arch-indep publications) and IBPPH.copy is prepared
+    # to expand arch-indep publications.
+    # For safety, we use the architecture the binary was built, and
+    # not the one it is published, coping with single arch-indep
+    # publications for architectures that do not exist in the
+    # destination series. See #387589 for more information.
+    for binary in source.getBuiltBinaries():
+        binarypackagerelease = binary.binarypackagerelease
+        try:
+            target_distroarchseries = series[
+                binarypackagerelease.build.arch_tag]
+        except NotFoundError:
+            # It is not an error if the destination series doesn't
+            # support all the architectures originally built. We
+            # simply do not copy the binary and life goes on.
+            continue
+        binary_in_destination = archive.getAllPublishedBinaries(
+            name=binarypackagerelease.name, exact_match=True,
+            version=binarypackagerelease.version,
+            status=active_publishing_status, pocket=pocket,
+            distroarchseries=target_distroarchseries)
+        if binary_in_destination.count() == 0:
+            binary_copy = binary.copyTo(series, pocket, archive)
+            copies.extend(binary_copy)
+
+    # Always ensure the needed builds exist in the copy destination
+    # after copying the binaries.
+    source_copy.createMissingBuilds()
+
+    return copies
+
+
+def do_delayed_copy(source, archive, series, pocket, include_binaries):
+    """Schedule the given source for copy.
+
+    Schedulle the copy of each item of the given list of
+    `SourcePackagePublishingHistory` to the given destination.
+
+    Also include published builds for each source if requested to.
+
+    :param: source: an `ISourcePackagePublishingHistory`;
+    :param: archive: the target `IArchive`;
+    :param: series: the target `IDistroSeries`
+    :param: pocket: the target `PackagePublishingPocket`;
+    :param: include_binaries: optional boolean, controls whether or
+        not the published binaries for each given source should be also
+        copied along with the source;
+
+    :return: a list of `IPackageUpload` corresponding to the publications
+        scheduled for copy.
+    """
+    # XXX cprov 2009-06-22: At some point we will change the copy
+    # signature to allow a user to be passed in, so will be able
+    # to annotate that information in delayed copied as well, by
+    # using the right key. For now it's undefined.
+    # See also the comment on acceptFromCopy()
+    delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+        archive, series, pocket, None)
+
+    # Include the source and any custom upload.
+    delayed_copy.addSource(source.sourcepackagerelease)
+    original_source_upload = source.sourcepackagerelease.package_upload
+    for custom in original_source_upload.customfiles:
+        delayed_copy.addCustom(
+            custom.libraryfilealias, custom.customformat)
+
+    # If binaries are included in the copy we include binary custom
+    # files.
+    if include_binaries:
+        for build in source.getBuilds():
+            delayed_copy.addBuild(build)
+            original_build_upload = build.package_upload
+            for custom in original_build_upload.customfiles:
+                delayed_copy.addCustom(
+                    custom.libraryfilealias, custom.customformat)
+
+    # Accept the delayed-copy, which inplicitly verifies if it fits
+    # the destination context.
+    # XXX cprov 2009-06-22: when we have a 'user' responsible for the
+    # copy we can also decide whether a copy should be immediately
+    # accepted or moved to the UNAPPROVED queue, based on the users
+    # permission to the destination context.
+    delayed_copy.acceptFromCopy()
+
+    # XXX cprov 2009-06-22: `IPackageUpload.displayname` is very poor,
+    # if we can't fix in place we should build a decorated object
+    # implemented a more complete 'displayname' property.
+    return delayed_copy
 
 
 class PackageCopier(SoyuzScript):
