@@ -5077,6 +5077,8 @@ class PersonOAuthTokensView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Couldn't find authorization given to %s. Maybe it has been "
                 "revoked already?" % consumer.key)
+        self.request.response.redirect(
+            canonical_url(self.context, view_name='+oauth-tokens'))
 
 
 class PersonLocationForm(Interface):
