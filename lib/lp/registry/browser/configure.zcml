@@ -2022,9 +2022,6 @@
         facet="overview"
         permission="zope.Public">
         <browser:page
-            name="+index"
-            template="../templates/productseries-index.pt"/>
-        <browser:page
             name="+macros"
             template="../templates/productseries-macros.pt"/>
         <browser:page
@@ -2051,6 +2048,9 @@
         class="lp.registry.browser.productseries.ProductSeriesView"
         facet="overview"
         permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/productseries-index.pt"/>
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"/>
