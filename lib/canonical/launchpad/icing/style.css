@@ -1466,8 +1466,6 @@ ul.news, li.news {
   list-style-type: none;
   margin-bottom: 1em;
 }
-ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
-ul.package.source, li.package.source {list-style-image: url(/@@/package-source);}
 ul.rss, li.rss                       {list-style-image: url(/@@/rss);}
 ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
