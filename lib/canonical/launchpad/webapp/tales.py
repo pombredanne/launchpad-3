@@ -558,7 +558,7 @@ class ObjectImageDisplayAPI:
         context = self._context
         if IHasIcon.providedBy(context) and context.icon is not None:
             icon_url = context.icon.getURL()
-            icon = '<img alt="" width="14" height="14" src="%s" />' % icon_url
+            return icon_url
         elif context is None:
             return ''
         else:
@@ -967,7 +967,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             css_class = ObjectImageDisplayAPI(self._context).sprite_css()
             return '<span class="' + css_class + '"></span>'
         else:
-            return custom_icon
+            return '<img src="%s" width="14" height="14" />' % custom_icon
 
 
 class TeamFormatterAPI(PersonFormatterAPI):
