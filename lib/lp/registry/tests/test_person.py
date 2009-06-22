@@ -23,12 +23,13 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import (
     AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscription)
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import create_initialized_view
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
-
 
 class TestPerson(TestCaseWithFactory):
 
@@ -344,6 +345,15 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(len(view.request.notifications), 1)
         self.assertEqual(view.request.notifications[0].message,
                          'A private team cannot change visibility.')
+
+    def test_visibility_validator_team_ss_prod_pub_to_private(self):
+        # A PUBLIC team with a structural subscription to a product can
+        # convert to a PRIVATE team.
+        foo_bar = Person.byName('name16')
+        sub = StructuralSubscription(
+            product=self.bzr, subscriber=self.otherteam,
+            subscribed_by=foo_bar)
+        self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_private_to_public(self):
         # A PRIVATE team cannot convert to PUBLIC.

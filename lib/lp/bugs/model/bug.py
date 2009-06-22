@@ -435,12 +435,15 @@ class Bug(SQLBase):
                 store.flush()
                 return
 
-    def unsubscribeFromDupes(self, person):
+    def unsubscribeFromDupes(self, person, unsubscribed_by):
         """See `IBug`."""
+        if person is None:
+            person = unsubscribed_by
+
         bugs_unsubscribed = []
         for dupe in self.duplicates:
             if dupe.isSubscribed(person):
-                dupe.unsubscribe(person, person)
+                dupe.unsubscribe(person, unsubscribed_by)
                 bugs_unsubscribed.append(dupe)
 
         return bugs_unsubscribed
