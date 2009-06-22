@@ -8,10 +8,11 @@
      tal:condition="context/sourcepackages">
   <h2>Packages</h2>
   <div class="portletBody portletContent">
-    <ul class="source package">
-      <li class="packages" tal:repeat="package context/sourcepackages">
+    <ul>
+      <li tal:repeat="package context/sourcepackages">
         <a tal:content="package/title"
-           tal:attributes="href package/fmt:url">
+           tal:attributes="href package/fmt:url"
+           class="sprite package-source">
              apache in ubuntu hoary
         </a>
       </li>

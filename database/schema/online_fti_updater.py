@@ -1,12 +1,15 @@
 #!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 """
 Rebuild the full text indexes in a more friendly fashion, enabling this to
 be done without downtime.
 """
 __metaclass__ = type
 
-from fti import ALL_FTI, quote_identifier
+# pylint: disable-msg=W0403
+import _pythonpath
+
+from fti import ALL_FTI
 import psycopg
 
 def main():

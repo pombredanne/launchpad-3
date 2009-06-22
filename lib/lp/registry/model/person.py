@@ -1797,38 +1797,42 @@ class Person(
                     article = 'a'
                 warnings.add('%s %s' % (article, src_tab))
 
-        # Add warnings for subscriptions in StructuralSubscription table
-        # describing which kind of object is being subscribed to.
-        cur.execute("""
-            SELECT
-                count(product) AS product_count,
-                count(productseries) AS productseries_count,
-                count(project) AS project_count,
-                count(milestone) AS milestone_count,
-                count(distribution) AS distribution_count,
-                count(distroseries) AS distroseries_count,
-                count(sourcepackagename) AS sourcepackagename_count
-            FROM StructuralSubscription
-            WHERE subscriber=%d LIMIT 1
-            """ % self.id)
+        # Private teams may have structural subscription, so the following
+        # test is not applied to them.
+        if new_value != PersonVisibility.PRIVATE:
+            # Add warnings for subscriptions in StructuralSubscription table
+            # describing which kind of object is being subscribed to.
+            cur.execute("""
+                SELECT
+                    count(product) AS product_count,
+                    count(productseries) AS productseries_count,
+                    count(project) AS project_count,
+                    count(milestone) AS milestone_count,
+                    count(distribution) AS distribution_count,
+                    count(distroseries) AS distroseries_count,
+                    count(sourcepackagename) AS sourcepackagename_count
+                FROM StructuralSubscription
+                WHERE subscriber=%d LIMIT 1
+                """ % self.id)
 
-        row = cur.fetchone()
-        for count, warning in zip(row, [
-                'a project subscriber',
-                'a project series subscriber',
-                'a project subscriber',
-                'a milestone subscriber',
-                'a distribution subscriber',
-                'a distroseries subscriber',
-                'a source package subscriber']):
-            if count > 0:
-                warnings.add(warning)
+            row = cur.fetchone()
+            for count, warning in zip(row, [
+                    'a project subscriber',
+                    'a project series subscriber',
+                    'a project subscriber',
+                    'a milestone subscriber',
+                    'a distribution subscriber',
+                    'a distroseries subscriber',
+                    'a source package subscriber']):
+                if count > 0:
+                    warnings.add(warning)
 
-        # Non-purged mailing list check.
-        mailing_list = getUtility(IMailingListSet).get(self.name)
-        if (mailing_list is not None and
-            mailing_list.status != MailingListStatus.PURGED):
-            warnings.add('a mailing list')
+        # Non-purged mailing list check for transitioning to or from PUBLIC.
+        if PersonVisibility.PUBLIC in [self.visibility, new_value]:
+            mailing_list = getUtility(IMailingListSet).get(self.name)
+            if (mailing_list is not None and
+                mailing_list.status != MailingListStatus.PURGED):
+                warnings.add('a mailing list')
 
         # Compose warning string.
         warnings = sorted(warnings)

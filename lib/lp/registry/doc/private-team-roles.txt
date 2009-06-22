@@ -239,3 +239,55 @@ Private Membership Teams cannot subscribe to private PPAs.
     PrivatePersonLinkageError: Cannot link person
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <...ArchiveSubscriber object at...
+    >>> import transaction
+    >>> transaction.abort()
+
+Structural Subscriptions
+========================
+
+Structural Subscription to Products
+-----------------------------------
+
+Private teams can have structural subscriptions to products.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> sub = firefox.addSubscription(
+    ...     subscriber=priv_team, subscribed_by=team_owner)
+    >>> sub.target
+    <Product at ...>
+    >>> sub.bug_notification_level
+    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
+
+Private membership teams cannot.
+
+    >>> sub = firefox.addSubscription(
+    ...     subscriber=pm_team, subscribed_by=team_owner)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <...StructuralSubscription at...
+
+
+Structural Subscription to Distributions
+----------------------------------------
+
+Private teams can have structural subscriptions to distros.
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> sub = ubuntu.addSubscription(
+    ...     subscriber=priv_team, subscribed_by=team_owner)
+    >>> sub.target
+    <Distribution at ...>
+    >>> sub.bug_notification_level
+    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
+
+Private membership teams cannot.
+
+    >>> sub = ubuntu.addSubscription(
+    ...     subscriber=pm_team, subscribed_by=team_owner)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <...StructuralSubscription at...
