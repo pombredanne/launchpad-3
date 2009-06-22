@@ -374,8 +374,6 @@ class PackageUpload(SQLBase):
             close_bugs_for_queue_item(
                 self, changesfile_object=changesfile_object)
 
-        self._giveKarma()
-
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()

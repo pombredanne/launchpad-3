@@ -183,7 +183,6 @@ class IPackageUpload(Interface):
 
          * Move the upload to accepted queue in all cases;
          * Close bugs for uploaded sources (skip imported ones).
-         * Grant karma to people involved with the delayed-copy.
         """
 
     def acceptFromQueue(announce_list, logger=None, dry_run=False):
