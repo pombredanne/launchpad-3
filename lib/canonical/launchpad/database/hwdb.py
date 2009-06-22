@@ -1286,14 +1286,15 @@ def get_hardware_related_bugtask_search_clause(search_params):
         hardware related data, empty lists are returned.
     :param search_params: A `BugTaskSearchParams` instance.
 
-    Device related WHERE clauses are returned if searm_params.bus,
-    search_params.vendor_id, search_params.product_id are all not None.
+    Device related WHERE clauses are returned if searm_params.hardware_bus,
+    search_params.hardware_vendor_id, search_params.hardware_product_id
+    are all not None.
     """
-    bus = search_params.bus
-    vendor_id = search_params.vendor_id
-    product_id = search_params.product_id
-    driver_name = search_params.driver_name
-    package_name = search_params.driver_package_name
+    bus = search_params.hardware_bus
+    vendor_id = search_params.hardware_vendor_id
+    product_id = search_params.hardware_product_id
+    driver_name = search_params.hardware_driver_name
+    package_name = search_params.hardware_driver_package_name
 
     if bus is not None and vendor_id is not None and product_id is not None:
         tables, clauses = make_submission_device_statistics_clause(
@@ -1337,8 +1338,7 @@ def get_hardware_related_bugtask_search_clause(search_params):
     clauses.append(Or(*bug_link_clauses))
     clauses.append(_userCanAccessSubmissionStormClause(search_params.user))
 
-    tables = [convert_storm_clause_to_string(table, False)
-              for table in tables]
-    clauses = [convert_storm_clause_to_string(clause, True)
+    tables = [convert_storm_clause_to_string(table) for table in tables]
+    clauses = ['(%s)' % convert_storm_clause_to_string(clause)
                for clause in clauses]
     return tables, clauses

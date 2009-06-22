@@ -788,8 +788,8 @@ reported by him will be returned.
 
     >>> from canonical.launchpad.interfaces.hwdb import HWBus
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, bus=HWBus.PCI, vendor_id='0x10de',
-    ...     product_id='0x0455', hardware_owner_is_bug_reporter=True)
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id, bugtask.bug.owner.displayname
     1 Sample Person
@@ -801,7 +801,7 @@ the same result as if we would not have specified any hardware
 related parameters.
 
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, bus=HWBus.PCI, vendor_id='0x10de',
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_owner_is_bug_reporter=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id, bugtask.bug.owner.displayname
@@ -815,7 +815,7 @@ Similary, we can search for device drivers appearing in HWDB submissions
 of a bug reporter.
 
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, driver_name='ehci_hcd',
+    ...     user=None, hardware_driver_name='ehci_hcd',
     ...     hardware_owner_is_bug_reporter=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id, bugtask.bug.owner.displayname
@@ -825,8 +825,8 @@ of a bug reporter.
 We can additionally specify a packge name.
 
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, driver_name='ehci_hcd',
-    ...     driver_package_name='linux-image-2.6.24-19-generic',
+    ...     user=None, hardware_driver_name='ehci_hcd',
+    ...     hardware_driver_package_name='linux-image-2.6.24-19-generic',
     ...     hardware_owner_is_bug_reporter=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id, bugtask.bug.owner.displayname
@@ -834,8 +834,8 @@ We can additionally specify a packge name.
     2 Sample Person
 
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, driver_name='ehci_hcd',
-    ...     driver_package_name='linux-image',
+    ...     user=None, hardware_driver_name='ehci_hcd',
+    ...     hardware_driver_package_name='linux-image',
     ...     hardware_owner_is_bug_reporter=True)
     >>> ubuntu.searchTasks(search_params).count()
     0
@@ -844,8 +844,8 @@ If we specify a driver and a device, we'll get those bugs whose owners
 use the given device together with the given driver.
 
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, bus=HWBus.PCI, vendor_id='0x10de',
-    ...     product_id='0x0455', driver_name='ehci_hcd',
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_driver_name='ehci_hcd',
     ...     hardware_owner_is_bug_reporter=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id, bugtask.bug.owner.displayname
@@ -856,8 +856,8 @@ The PCI device (0x10de, 0x0455) is not controlled in any HWDB submission
 by the sd driver, so we'll get an empty result set for this query.
 
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, bus=HWBus.PCI, vendor_id='0x10de',
-    ...     product_id='0x0455', driver_name='sd',
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_driver_name='sd',
     ...     hardware_owner_is_bug_reporter=True)
     >>> firefox.searchTasks(search_params).count()
     0
@@ -866,8 +866,8 @@ We can also search for device owners which are subscribed to a bug.
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, bus=HWBus.PCI, vendor_id='0x10de',
-    ...     product_id='0x0455',
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455',
     ...     hardware_owner_is_subscribed_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id, bugtask.bug.isSubscribed(sample_person)
@@ -879,8 +879,8 @@ And we can search for device owners who are affected by a bug.
     >>> bug_ten = getUtility(IBugSet).get(10)
     >>> bug_ten.markUserAffected(sample_person, affected=True)
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, bus=HWBus.PCI, vendor_id='0x10de',
-    ...     product_id='0x0455',
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455',
     ...     hardware_owner_is_affected_by_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id, bugtask.bug.isUserAffected(sample_person)
@@ -896,9 +896,8 @@ driver.
     >>> bug_19 = getUtility(IBugSet).get(19)
     >>> bug_19.linkHWSubmission(hw_submission)
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, bus=HWBus.PCI, vendor_id='0x10de',
-    ...     product_id='0x0455',
-    ...     hardware_is_linked_to_bug=True)
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id
     19
@@ -910,17 +909,16 @@ or an admin.
     >>> naked_hw_submission = removeSecurityProxy(hw_submission)
     >>> naked_hw_submission.private = True
     >>> search_params = BugTaskSearchParams(
-    ...     user=sample_person, bus=HWBus.PCI, vendor_id='0x10de',
-    ...     product_id='0x0455',
+    ...     user=sample_person, hardware_bus=HWBus.PCI,
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x0455',
     ...     hardware_is_linked_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id
     19
 
     >>> search_params = BugTaskSearchParams(
-    ...     user=foo_bar, bus=HWBus.PCI, vendor_id='0x10de',
-    ...     product_id='0x0455',
-    ...     hardware_is_linked_to_bug=True)
+    ...     user=foo_bar, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id
     19
@@ -929,18 +927,17 @@ Other users cannot see that a bug is related to a device from a
 private submission.
 
     >>> search_params = BugTaskSearchParams(
-    ...     user=no_priv, bus=HWBus.PCI, vendor_id='0x10de',
-    ...     product_id='0x0455',
-    ...     hardware_is_linked_to_bug=True)
+    ...     user=no_priv, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
     >>> ubuntu.searchTasks(search_params).count()
     0
 
     >>> search_params = BugTaskSearchParams(
-    ...     user=None, bus=HWBus.PCI, vendor_id='0x10de',
-    ...     product_id='0x0455',
-    ...     hardware_is_linked_to_bug=True)
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
     >>> ubuntu.searchTasks(search_params).count()
     0
+
 
 == Ordering search results ==
 

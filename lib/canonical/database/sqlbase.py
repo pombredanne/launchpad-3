@@ -608,12 +608,10 @@ def quote_identifier(identifier):
 quoteIdentifier = quote_identifier # Backwards compatibility for now.
 
 
-def convert_storm_clause_to_string(storm_clause, use_parentheses):
+def convert_storm_clause_to_string(storm_clause):
     """Convert a Storm expression into a plain string.
 
     :param storm_clause: A Storm expression
-    :param use_parentheses: If True, the result string is enclosed in
-        parentheses; otherwise, the plain result string is returned.
 
     A helper function allowing to use a Storm expressions in old-style
     code which builds for example WHERE expressions as plain strings.
@@ -623,40 +621,37 @@ def convert_storm_clause_to_string(storm_clause, use_parentheses):
     >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> from storm.expr import And, Or
 
-    >>> print convert_storm_clause_to_string(BugTask, False)
+    >>> print convert_storm_clause_to_string(BugTask)
     BugTask
 
-    >>> print convert_storm_clause_to_string(BugTask.id == 16, True)
-    (BugTask.id = 16)
+    >>> print convert_storm_clause_to_string(BugTask.id == 16)
+    BugTask.id = 16
 
     >>> print convert_storm_clause_to_string(
-    ...     BugTask.importance == BugTaskImportance.UNKNOWN, True)
-    (BugTask.importance = 999)
+    ...     BugTask.importance == BugTaskImportance.UNKNOWN)
+    BugTask.importance = 999
 
-    >>> print convert_storm_clause_to_string(Bug.title == "foo'bar'", True)
-    (Bug.title = 'foo''bar''')
+    >>> print convert_storm_clause_to_string(Bug.title == "foo'bar'")
+    Bug.title = 'foo''bar'''
 
     >>> print convert_storm_clause_to_string(
     ...     Or(BugTask.importance == BugTaskImportance.UNKNOWN,
-    ...        BugTask.importance == BugTaskImportance.HIGH), True)
-    (BugTask.importance = 999 OR BugTask.importance = 40)
+    ...        BugTask.importance == BugTaskImportance.HIGH))
+    BugTask.importance = 999 OR BugTask.importance = 40
 
     >>> print convert_storm_clause_to_string(
     ...    And(Bug.title == 'foo', BugTask.bug == Bug.id,
     ...        Or(BugTask.importance == BugTaskImportance.UNKNOWN,
-    ...           BugTask.importance == BugTaskImportance.HIGH)), True)
-    (Bug.title = 'foo' AND BugTask.bug = Bug.id AND
-    (BugTask.importance = 999 OR BugTask.importance = 40))
+    ...           BugTask.importance == BugTaskImportance.HIGH)))
+    Bug.title = 'foo' AND BugTask.bug = Bug.id AND
+    (BugTask.importance = 999 OR BugTask.importance = 40)
     """
     state = State()
     clause = storm_compile(storm_clause, state)
     if len(state.parameters):
         parameters = [param.get(to_db=True) for param in state.parameters]
         clause = clause.replace('?', '%s') % sqlvalues(*parameters)
-    if use_parentheses:
-        return '(%s)' % clause
-    else:
-        return clause
+    return clause
 
 def flush_database_updates():
     """Flushes all pending database updates.

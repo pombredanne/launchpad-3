@@ -940,9 +940,9 @@ class BugTaskSearchParams:
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
                  bug_commenter=None, omit_targeted=False,
-                 date_closed=None, affected_user=None, bus=None,
-                 vendor_id=None, product_id=None, driver_name=None,
-                 driver_package_name=None,
+                 date_closed=None, affected_user=None, hardware_bus=None,
+                 hardware_vendor_id=None, hardware_product_id=None,
+                 hardware_driver_name=None, hardware_driver_package_name=None,
                  hardware_owner_is_bug_reporter=None,
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
@@ -978,11 +978,11 @@ class BugTaskSearchParams:
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
         self.affected_user = affected_user
-        self.bus = bus
-        self.vendor_id = vendor_id
-        self.product_id = product_id
-        self.driver_name = driver_name
-        self.driver_package_name = driver_package_name
+        self.hardware_bus = hardware_bus
+        self.hardware_vendor_id = hardware_vendor_id
+        self.hardware_product_id = hardware_product_id
+        self.hardware_driver_name = hardware_driver_name
+        self.hardware_driver_package_name = hardware_driver_package_name
         self.hardware_owner_is_bug_reporter = hardware_owner_is_bug_reporter
         self.hardware_owner_is_affected_by_bug = (
             hardware_owner_is_affected_by_bug)
