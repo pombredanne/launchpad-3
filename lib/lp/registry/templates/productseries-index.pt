@@ -16,6 +16,7 @@
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/registry/milestone_table.js"></script>
     <tal:script
+      condition="context/menu:overview/create_milestone/enabled"
       replace="structure
       string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
     YUI().use(
@@ -28,9 +29,6 @@
 
         Y.on('domready', function () {
             var create_milestone_link = Y.get('.menu-link-create_milestone');
-            if (create_milestone_link === null) {
-                return;
-                }
             create_milestone_link.addClass('js-action');
             var config = {
                 milestone_form_uri: milestone_form_uri,

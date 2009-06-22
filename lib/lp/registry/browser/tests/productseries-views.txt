@@ -177,6 +177,14 @@ update the milestones and releases table.
                 Y.lp.milestoneoverlay.attach_widget(config);...
                 Y.lp.milestonetable.setup(table_config);...
 
+If the Create milestone link is not enabled, the script is not present.
+
+    >>> a_user = factory.makePerson(name="hedgehog")
+    >>> login_person(a_user)
+    >>> view = create_view(series, '+index', principal=a_user)
+    >>> print find_tag_by_id(view.render(), 'milestone-script')
+    None
+
 The view also sets the class of the milestone and releases table which can
 be removed by the in-page script. If the product series has no milestones,
 the class table is 'listing unseen'.
