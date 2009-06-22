@@ -16,7 +16,10 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import And, Desc, In
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
+from zope.component import getUtility
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -25,7 +28,7 @@ from canonical.database.sqlbase import sqlvalues
 from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
@@ -261,8 +264,6 @@ class DistributionSourcePackage(BugTargetBase,
         # result set is first iterated (ie. when we know the offset and
         # limit):
         publication_cache = {}
-        from lp.soyuz.interfaces.archive import IArchiveSet # TODO: move to top
-        from zope.component import getUtility
         archive_set = getUtility(IArchiveSet)
         def collect_publications(result_set):
             publications = archive_set.getPublicationsInArchives(
@@ -278,7 +279,6 @@ class DistributionSourcePackage(BugTargetBase,
             return (archive, publication_cache[archive])
 
         # Finally, return the decorated resultset:
-        from canonical.launchpad.components.decoratedresultset import DecoratedResultSet # TODO Move
         return DecoratedResultSet(
             archives,
             result_decorator=add_publications_to_archive,
