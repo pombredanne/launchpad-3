@@ -112,6 +112,15 @@ class WalkerBase:
                 self.log.exception('could not retrieve directory '
                                    'listing for %s', sub_dir)
                 continue
+            except UnicodeEncodeError:
+                # This page is unparsable.
+                # XXX sinzui 2009-06-22 bug=70524:
+                # This problem should be reported to the project drivers and
+                # so that they can attempt to get this fixed.
+                self.log.warning(
+                    "Unicode error parsing %s page '%s'" %
+                    (self.base, sub_dir))
+                continue
             yield (sub_dir, dirnames, filenames)
 
             for dirname in dirnames:
