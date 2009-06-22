@@ -42,7 +42,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 // the slider depends on whether there are any checked
                 // licenses in that category.  A '0' means 'no'.
                 var arrow = Y.get(arrow_name);
-                if (arrow.getAttribute('count') == '0') {                
+                if (arrow.getAttribute('count') == '0') {
                     target.slide = Y.lazr.effects.slide_in(table_name);
                 }
                 else {
@@ -103,6 +103,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
         var other_com = Y.get(Y.DOM.byId('field.licenses.25'));
         var other_os = Y.get(Y.DOM.byId('field.licenses.26'));
         var details = Y.get('#license-details');
+        var proprietary = Y.get('#proprietary');
 
         function reveal_details(e) {
             if (other_com.get('checked') || other_os.get('checked')) {
@@ -115,9 +116,20 @@ YUI().use('node', 'lazr.effects', function(Y) {
                     Y.lazr.effects.slide_in(details).run();
                 }
             }
+            if (other_com.get('checked')) {
+                if (!proprietary.hasClass('lazr-opened')) {
+                    Y.lazr.effects.slide_out(proprietary).run();
+                }
+            }
+            else {
+                if (!proprietary.hasClass('lazr-closed')) {
+                    Y.lazr.effects.slide_in(proprietary).run();
+                }
+            }
         }
         other_com.on('click', reveal_details);
         other_os.on('click', reveal_details);
+        proprietary.removeClass('unseen');
 
         // Pre-reveal license_info widget.
         reveal_details(true);
@@ -190,7 +202,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
       detailed information.</p>
    </div>
   </div>
-  <p>
+  <p/>
     Launchpad.net is free to use for software projects that share
     their source code and comply with these
     <a tal:define="config modules/canonical.config/config"
@@ -198,8 +210,27 @@ YUI().use('node', 'lazr.effects', function(Y) {
       licensing policies.
     </a>
     <br/>
-    <a href="mailto:feedback@launchpad.net">Contact us</a>
-    if your project uses a proprietary license.
-  </p>
+    <div id="proprietary" class="unseen">
+      Commercial and proprietary projects do not qualify for free hosting;
+      therefore a subscription needs to be purchased in order to continue
+      hosting this project on Launchpad.
+      <p>Here are the steps to obtain a commercial subscription:</p>
+      <ol>
+        <li>Purchase a Launchpad subscription in the
+          <a tal:define="config modules/canonical.config/config"
+             tal:attributes="href config/commercial/purchase_subscription_url">
+            Canonical Shop</a>.
+        </li>
+        <li>You will receive an email that your order has been processed.</li>
+        <li>Then you may apply the purchased subscription to this project
+            on your
+          <a href="/people/+me/+vouchers"
+             tal:attributes="href string:${request/lp:person/fmt:url}/+vouchers">
+            voucher management page</a>.
+        </li>
+      </ol>
+      <a href="mailto:feedback@launchpad.net">Contact us</a>
+      for more information regarding commercial subscriptions.
+    </div>
 </div>
 </tal:root>
