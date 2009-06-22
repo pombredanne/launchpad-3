@@ -1893,6 +1893,23 @@ be able to view the private team archive:
     there-we-go
     ultimate-copy
 
+
+== Getting publishing records across a set of Archives ==
+
+The IArchiveSet utility provides a getPublicationsInArchives() method
+that can be used to find the current publishing records for a source
+package in the provided list of archives.
+
+    >>> pubs = archive_set.getPublicationsInArchives(
+    ...     firefox_source_pub.sourcepackagerelease.sourcepackagename,
+    ...     [ubuntu.main_archive])
+    >>> for pub in pubs:
+    ...     print "%s - %s in %s" % (
+    ...         pub.source_package_name,
+    ...         pub.source_package_version,
+    ...         pub.archive.displayname)
+    mozilla-firefox - 0.9 in Primary Archive for Ubuntu Linux
+
 == Archive Permission Checking ==
 
 IArchive has two public methods, canUpload() and canAdministerQueue()

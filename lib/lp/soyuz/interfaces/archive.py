@@ -1066,6 +1066,17 @@ class IArchiveSet(Interface):
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
 
+    def getPublicationsInArchives(source_package_name, archive_list):
+        """Return a result set of publishing records for the source package.
+
+        :param source_package_name: an `ISourcePackageName` identifying the
+            source package for which the publishings will be returned.
+        :param archive_list: a list of at least one archive with which to
+            restrict the search.
+        :return: a resultset of the `ISourcePackagePublishingHistory` objects
+            that are currently published in the given archives.
+        """
+
 
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.

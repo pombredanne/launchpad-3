@@ -17,7 +17,6 @@ from storm.expr import And, Desc, In
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -26,6 +25,9 @@ from canonical.database.sqlbase import sqlvalues
 from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from lp.soyuz.model.publishing import (
@@ -214,6 +216,46 @@ class DistributionSourcePackage(BugTargetBase,
             if candidate.currentrelease is not None:
                 result.append(candidate)
         return result
+
+    def findRelatedArchives(self,
+                            exclude_archive=None,
+                            archive_purpose=ArchivePurpose.PPA):
+        """See `IDistributionSourcePackage`."""
+
+        extra_args = []
+
+        # Exclude the specified archive where appropriate
+        if exclude_archive is not None:
+            extra_args.append(Archive.id != exclude_archive.id)
+
+        # Filter by archive purpose where appropriate
+        if archive_purpose is not None:
+            extra_args.append(Archive.purpose == archive_purpose)
+
+        store = Store.of(self.distribution)
+        results = store.find(
+            Archive,
+            Archive.distribution == self.distribution,
+            Archive.private == False,
+            SourcePackagePublishingHistory.archive == Archive.id,
+            (SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED),
+            (SourcePackagePublishingHistory.sourcepackagerelease ==
+                SourcePackageRelease.id),
+            SourcePackageRelease.sourcepackagename == self.sourcepackagename,
+            *extra_args
+            )
+
+        results.order_by(Desc(SourcePackageRelease.dateuploaded))
+
+        return results
+
+    def findRelatedArchivePublications(self,
+                                       exclude_archive=None,
+                                       archive_purpose=ArchivePurpose.PPA):
+        """See `IDistributionSourcePackage`."""
+        from storm.store import EmptyResultSet
+        return EmptyResultSet()
 
     @property
     def publishing_history(self):
