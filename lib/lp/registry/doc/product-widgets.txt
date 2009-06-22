@@ -42,7 +42,7 @@ Firefox has not yet selected a bug tracker.
     >>> print firefox.project.bugtracker
     None
 
-    >>> from BeautifulSoup import BeautifulSoup
+    >>> from BeautifulSoup import BeautifulSoup, Tag
     >>> from canonical.launchpad.testing.pages import extract_text
     >>> def print_items(html):
     ...     soup = BeautifulSoup(html)
@@ -228,23 +228,56 @@ A custom widget is used to display a link to the license policy.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
 The widget has one checkbox for each license, and it also has a link to the
-license policy.
+license policy.  The licenses are split up into categories.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
     >>> html = license_widget()
-    >>> soup = BeautifulSoup(html)
-    >>> len(License)
-    27
-    >>> len(soup.table('input'))
-    27
-    >>> print soup.p.a['href']
-    https://help.launchpad.net/Legal/ProjectLicensing
+    >>> print extract_text(find_tag_by_id(html, 'recommended'))
+    Apache License view license
+    GNU Affero GPL v3 view license
+    GNU LGPL v2.1 view license
+    Simplified BSD License view license
+    GNU GPL v2 view license
+    GNU LGPL v3 view license
+    Creative Commons - No Rights Reserved view license
+    GNU GPL v3 view license
+    MIT / X / Expat License view license
 
-No licenses are selected.
+    >>> print extract_text(find_tag_by_id(html, 'more'))
+    Academic Free License view license
+    Creative Commons - Attribution Share Alike view license
+    PHP License view license
+    Artistic License 1.0 view license
+    Eclipse Public License view license
+    Public Domain view license
+    Artistic License 2.0 view license
+    Educational Community License view license
+    Python License view license
+    Common Public License view license
+    Mozilla Public License view license
+    Zope Public License view license
+    Creative Commons - Attribution view license
+    Open Software License v 3.0 view license
 
-    >>> license_widget.getInputValue()
-    Set([])
-    >>> soup.findAll('input', checked='checked')
-    []
+    >>> print extract_text(find_tag_by_id(html, 'special'))
+    I don't know yet
+    Other/Proprietary
+    Other/Open Source
+
+There is a deprecated section that is generally not visible...
+
+    >>> print find_tag_by_id(html, 'deprecated')
+    None
+
+...unless the old "Perl license" is selected.
+
+    >>> form['field.licenses'] = ['PERL']
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+    >>> html = license_widget()
+    >>> print extract_text(find_tag_by_id(html, 'deprecated'))
+    Perl License
 
 One license, the GNU GPL v2, is selected.
 
@@ -254,8 +287,9 @@ One license, the GNU GPL v2, is selected.
 
     >>> def print_checked_items(html, links=False):
     ...     soup = BeautifulSoup(html)
-    ...     labels = soup('label')
-    ...     for label in labels:
+    ...     for label in soup.findAll('label'):
+    ...         if not isinstance(label.next, Tag):
+    ...             continue
     ...         if label.next.get('checked'):
     ...             print '[X]',
     ...         else:
@@ -270,12 +304,14 @@ One license, the GNU GPL v2, is selected.
     Set([<DBItem License.GNU_GPL_V2, (130) ...>])
 
     >>> print_checked_items(license_widget())
-    [ ] Academic Free License
-    ...
-    [X] GNU GPL v2
-    [ ] GNU GPL v3
-    [ ] GNU LGPL v2.1
-    [ ] GNU LGPL v3
+    [ ] Apache License ...
+    [ ] GNU Affero GPL v3 view license
+    [ ] GNU LGPL v2.1 view license
+    [ ] Simplified BSD License view license
+    [X] GNU GPL v2 view license
+    [ ] GNU LGPL v3 view license
+    [ ] Creative Commons - No Rights Reserved view license
+    [ ] GNU GPL v3 view license
     ...
 
 A second license is selected.
@@ -289,12 +325,14 @@ A second license is selected.
      <DBItem License.GNU_LGPL_V2_1, (150) GNU LGPL v2.1>]
 
     >>> print_checked_items(license_widget())
-    [ ] Academic Free License
-    ...
-    [X] GNU GPL v2
-    [ ] GNU GPL v3
-    [X] GNU LGPL v2.1
-    [ ] GNU LGPL v3
+    [ ] Apache License ...
+    [ ] GNU Affero GPL v3 view license
+    [X] GNU LGPL v2.1 view license
+    [ ] Simplified BSD License view license
+    [X] GNU GPL v2 view license
+    [ ] GNU LGPL v3 view license
+    [ ] Creative Commons - No Rights Reserved view license
+    [ ] GNU GPL v3 view license
     ...
 
 There are three Creative Commons licenses.
@@ -304,11 +342,13 @@ There are three Creative Commons licenses.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
     >>> print_checked_items(license_widget())
-    [ ] Academic Free License
+    [ ] Apache License ...
     ...
-    [ ] Creative Commons - Attribution
-    [ ] Creative Commons - Attribution Share Alike
-    [ ] Creative Commons - No Rights Reserved
+    [ ] Creative Commons - No Rights Reserved ...
+    ...
+    [ ] Creative Commons - Attribution Share Alike ...
+    ...
+    [ ] Creative Commons - Attribution ...
     ...
 
 Any of the three Creative Commons licenses can be selected.
@@ -318,11 +358,13 @@ Any of the three Creative Commons licenses can be selected.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
     >>> print_checked_items(license_widget())
-    [ ] Academic Free License
+    [ ] Apache License ...
     ...
-    [X] Creative Commons - Attribution
-    [X] Creative Commons - Attribution Share Alike
-    [X] Creative Commons - No Rights Reserved
+    [X] Creative Commons - No Rights Reserved ...
+    ...
+    [X] Creative Commons - Attribution Share Alike ...
+    ...
+    [X] Creative Commons - Attribution ...
     ...
 
 The BSD License can be selected.
@@ -332,9 +374,9 @@ The BSD License can be selected.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
     >>> print_checked_items(license_widget())
-    [ ] Academic Free License
+    [ ] Apache License ...
     ...
-    [X] Simplified BSD License
+    [X] Simplified BSD License ...
     ...
 
 There's also a placeholder for when a user knows they want an open source
@@ -346,7 +388,7 @@ blocked from creating their project.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
     >>> print_checked_items(license_widget())
-    [ ] Academic Free License
+    [ ] Apache License ...
     ...
     [X] I don't know yet
     ...
@@ -360,27 +402,26 @@ that is used by newer project such as Parrot.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
     >>> print_checked_items(license_widget())
-    [ ] Academic Free License
+    [ ] Apache License ...
     ...
-    [X] Artistic License 1.0
-    [X] Artistic License 2.0
+    [X] Artistic License 1.0 ...
+    ...
+    [X] Artistic License 2.0 ...
     ...
 
 Many licenses have links to the official pages describing their licenses.
 
     >>> print_checked_items(license_widget(), links=True)
-    [ ] Academic Free License <http://www.opensource.org/licenses/afl-3.0.php>
-    ...
-    [X] Artistic License 1.0
-        <http://opensource.org/licenses/artistic-license-1.0.php>
-    [X] Artistic License 2.0
-        <http://www.opensource.org/licenses/artistic-license-2.0.php>
+    [ ] Apache License ... <http://www.opensource.org/licenses/apache2.0.php>
+    [ ] GNU LGPL v2.1 ... <http://www.opensource.org/licenses/lgpl-2.1.php>
+    [ ] GNU Affero GPL v3 ... <http://www.opensource.org/licenses/agpl-v3.html>
     ...
 
 But not all of them.
 
     >>> print_checked_items(license_widget(), links=True)
-    [ ] Academic Free License <http://www.opensource.org/licenses/afl-3.0.php>
+    [ ] Apache License ... <http://www.opensource.org/licenses/apache2.0.php>
     ...
-    [ ] Perl License
-    ...
+    [ ] I don't know yet
+    [ ] Other/Proprietary
+    [ ] Other/Open Source

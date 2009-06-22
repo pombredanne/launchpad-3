@@ -34,6 +34,7 @@ from lp.code.model.branch import Branch
 from lp.code.model.diff import StaticDiff
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
+from lp.services.job.interfaces.job import JobStatus
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.database.translationbranchapprover import (
     TranslationBranchApprover)
@@ -704,6 +705,18 @@ class RosettaUploadJob(BranchJobDerived):
                 Branch.last_mirrored_id == Branch.last_scanned_id,
                 Job.id.is_in(Job.ready_jobs)))
         return (RosettaUploadJob(job) for job in jobs)
+
+    @staticmethod
+    def findUnfinishedJobs(branch):
+        """See `IRosettaUploadJobSource`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        jobs = store.using(BranchJob, Job).find((BranchJob), And(
+            Job.id == BranchJob.id,
+            BranchJob.branch == branch,
+            BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
+            Job._status != JobStatus.COMPLETED,
+            Job._status != JobStatus.FAILED))
+        return jobs
 
 
 class ReclaimBranchSpaceJob(BranchJobDerived):

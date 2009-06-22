@@ -179,7 +179,7 @@
                 sources
                 builds
                 customfiles
-                datecreated
+                date_created
                 sourcepackagerelease
                 contains_source
                 contains_build
