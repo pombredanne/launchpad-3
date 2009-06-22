@@ -254,8 +254,35 @@ class DistributionSourcePackage(BugTargetBase,
                                        exclude_archive=None,
                                        archive_purpose=ArchivePurpose.PPA):
         """See `IDistributionSourcePackage`."""
-        from storm.store import EmptyResultSet
-        return EmptyResultSet()
+        archives = self.findRelatedArchives(exclude_archive, archive_purpose)
+
+        # Create a pre-iteration hook that will populate a cache of all
+        # the publications for the package in a related archive when the
+        # result set is first iterated (ie. when we know the offset and
+        # limit):
+        publication_cache = {}
+        from lp.soyuz.interfaces.archive import IArchiveSet # TODO: move to top
+        from zope.component import getUtility
+        archive_set = getUtility(IArchiveSet)
+        def collect_publications(result_set):
+            publications = archive_set.getPublicationsInArchives(
+                self.sourcepackagename, archives)
+
+            # Add each publication to the cache, keyed by archive.
+            for pub in publications:
+                publication_cache.setdefault(pub.archive, []).append(pub)
+
+        # Now create a function to decorate our result-set of archives
+        # with the corresponding publications:
+        def add_publications_to_archive(archive):
+            return (archive, publication_cache[archive])
+
+        # Finally, return the decorated resultset:
+        from canonical.launchpad.components.decoratedresultset import DecoratedResultSet # TODO Move
+        return DecoratedResultSet(
+            archives,
+            result_decorator=add_publications_to_archive,
+            pre_iter_hook=collect_publications)
 
     @property
     def publishing_history(self):

@@ -283,8 +283,8 @@ so that the corresponding publications for each archive are returned too:
     ...     for pub in pubs:
     ...         print " - %s in %s" % (
     ...             pub.source_package_version, pub.distroseries.displayname)
-    PPA named nightly for Person...
-     - 666 in Breezy Autotest
-    PPA named beta for Person...
-     - 666 in Breezy Autotest
+    PPA named nightly for Person-name2
+     - 666 in Breezy Badger Autotest
+    PPA named beta for Person-name5
+     - 666 in Breezy Badger Autotest
 
