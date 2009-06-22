@@ -81,7 +81,7 @@
                   class="sprite warning" />
           </tal:bugtracker-active>
           <span tal:condition="not:context/bugwatch/bugtracker/active"
-                class="sprite warning"></span>
+                class="sprite warning" />
           <a tal:replace="structure context/bugwatch/fmt:external-link" />
         </div>
       </tal:has_watch>
