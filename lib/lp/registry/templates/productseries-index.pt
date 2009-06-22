@@ -16,6 +16,7 @@
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/registry/milestone_table.js"></script>
     <tal:script
+      condition="context/menu:overview/create_milestone/enabled"
       replace="structure
       string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
     YUI().use(
