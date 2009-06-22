@@ -558,7 +558,7 @@ class ObjectImageDisplayAPI:
         context = self._context
         if IHasIcon.providedBy(context) and context.icon is not None:
             icon_url = context.icon.getURL()
-            icon = '<img alt="" width="14" height="14" src="%s" />' % icon_url
+            return '<img alt="" width="14" height="14" src="%s" />' % icon_url
         elif context is None:
             return ''
         else:
