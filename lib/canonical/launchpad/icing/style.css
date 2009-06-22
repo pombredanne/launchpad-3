@@ -270,8 +270,9 @@ code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
 /* Links that don't open separate pages are green to denote their behavior: */
-a[onclick], .collapsible legend a, a.js-action               {color: #063;}
+a[onclick], .collapsible legend a, a.js-action               {color: #093;}
 a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
+a.js-action:active {color: #093;}
 
 /* Help links */
 a.help {
@@ -1815,6 +1816,12 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .mergestatusMERGE_FAILED      {color: red;}
 .mergestatusQUEUED            {color: black;}
 .mergestatusSUPERSEDED        {color: grey;}
+
+.codeimportNEW       {color: #930;}
+.codeimportINVALID   {color: red;}
+.codeimportREVIEWED  {color: green;}
+.codeimportSUSPENDED {color: red;}
+.codeimportFAILING   {color: red;}
 
 .stale-diff { color: #f60; }
 .conflicts-diff { color: red; }

@@ -12,7 +12,6 @@ TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
 SHHH=${PY} utilities/shhh.py
-STARTSCRIPT=runlaunchpad.py
 HERE:=$(shell pwd)
 
 LPCONFIG=development
@@ -145,17 +144,18 @@ ftest_inplace: inplace
 
 run: inplace stop
 	$(RM) thread*.request
-	bin/run -r librarian,google-webservice
+	bin/run -r librarian,google-webservice -i $(LPCONFIG)
 
 start-gdb: inplace stop support_files
 	$(RM) thread*.request
-	nohup gdb -x run.gdb --args bin/run \
+	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: inplace stop hosted_branches
 	$(RM) thread*.request
-	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice 
+	bin/run -i $(LPCONFIG) \
+		-r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice 
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
@@ -187,7 +187,7 @@ support_files: $(WADL_FILE) $(BZR_VERSION_INFO)
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
 start: inplace stop support_files
-	nohup bin/run > ${LPCONFIG}-nohup.out 2>&1 &
+	nohup bin/run -i $(LPCONFIG) > ${LPCONFIG}-nohup.out 2>&1 &
 
 # This is a stripped down version of the "start" target for use on
 # production servers - removes running 'make build' because we already
@@ -196,7 +196,7 @@ start: inplace stop support_files
 # even if the service is already stopped, and bzr_version_info is not
 # needed either because it's run as part of 'make build'.
 initscript-start:
-	nohup bin/run > ${LPCONFIG}-nohup.out 2>&1 &
+	nohup bin/run -i $(LPCONFIG) > ${LPCONFIG}-nohup.out 2>&1 &
 
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition.

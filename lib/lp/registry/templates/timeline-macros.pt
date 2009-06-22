@@ -19,15 +19,18 @@
     <img src="/@@/spinner" /> Loading graph...
   </div>
 
+  <!-- Opera ignores overflow:hidden for iframe, so use scrolling=no. -->
   <iframe tal:condition="auto_resize | nothing"
           src="+timeline-graph?resize_frame=timeline-iframe"
           id="timeline-iframe" name='timeline-iframe'
-          style="display: none; overflow: hidden"
+          style="display: none"
+          scrolling="no"
           width="100%" height="170px"></iframe>
   <iframe tal:condition="not: auto_resize | nothing"
           src="+timeline-graph"
           id="timeline-iframe" name='timeline-iframe'
-          style="display: none; overflow: hidden"
+          style="display: none"
+          scrolling="no"
           width="100%" height="170px"></iframe>
   <script>
     YUI().use('node', function(Y) {
