@@ -553,7 +553,7 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return None
 
-    def _get_custom_icon(self):
+    def _get_custom_icon_url(self):
         """Return the URL for this object's icon."""
         context = self._context
         if IHasIcon.providedBy(context) and context.icon is not None:
@@ -940,7 +940,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         """
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
-        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon()
+        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
         if custom_icon is None:
             css_class= ObjectImageDisplayAPI(person).sprite_css()
             return (u'<a href="%s" class="%s">%s</a>') % (
@@ -962,7 +962,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     def icon(self, view_name):
         """Return the URL for the person's icon."""
-        custom_icon = ObjectImageDisplayAPI(self._context)._get_custom_icon()
+        custom_icon = ObjectImageDisplayAPI(self._context)._get_custom_icon_url()
         if custom_icon is None:
             css_class = ObjectImageDisplayAPI(self._context).sprite_css()
             return '<span class="' + css_class + '"></span>'
