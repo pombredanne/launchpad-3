@@ -39,10 +39,7 @@ may not contain any upper-case letters.
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
-    Invalid name 'PolYglot'. Names must start with a letter or
-    number and be lowercase. The characters <samp>+</samp>,
-    <samp>-</samp> and <samp>.</samp> are also allowed after the
-    first character.
+    Invalid name 'PolYglot'. Names must be at least two characters ...
 
 Neither we can use the name of an already existing group like testing-
 translation-team.

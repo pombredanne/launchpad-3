@@ -59,10 +59,11 @@ def name_validator(name):
     """
     if not valid_name(name):
         message = _(dedent("""
-            Invalid name '${name}'. Names must start with a letter or
-            number and be lowercase. The characters <samp>+</samp>,
-            <samp>-</samp> and <samp>.</samp> are also allowed after the
-            first character."""), mapping={'name': escape(name)})
+            Invalid name '${name}'. Names must be at least two characters
+            long, starting with a letter or number and be lowercase. The
+            characters <samp>+</samp>, <samp>-</samp> and <samp>.</samp> are
+            also allowed after the first character."""),
+            mapping={'name': escape(name)})
 
         raise LaunchpadValidationError(structured(message))
     return True
