@@ -97,6 +97,20 @@
     <a href="+publishinghistory">See full publishing history...</a>
   </p>
 
+  <div id="ppa_packaging">
+    <p>There are also some unsupported external versions of
+       '<span tal:replace="context/name" />' from the community in the
+       following PPAs:</p>
+    <table summary="" class="listing">
+      <thead>
+        <tr>
+          <th>Name</th><th>Owner</th><th>Description</th>
+          <th><span tal:replace="context/name" /> versions</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+
   <h2>Version history</h2>
 
   <tal:block

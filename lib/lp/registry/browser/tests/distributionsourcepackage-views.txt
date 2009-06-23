@@ -1,0 +1,49 @@
+DistributionSourcePackageView
+=============================
+
+The DistributionSourcePackageView is used to present a source
+package within a distribution.
+
+    # Setup the breezy autotest distroseries
+    >>> login("foo.bar@canonical.com")
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> publisher = SoyuzTestPublisher()
+    >>> publisher.prepareBreezyAutotest()
+    >>> ubuntutest = publisher.ubuntutest
+    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
+    >>> publisher.distroseries.status = DistroSeriesStatus.DEVELOPMENT
+
+    # Publish the source 'gedit' in the ubuntutest main archive.
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> gedit_main_src_hist = publisher.getPubSource(
+    ...     sourcename="gedit", archive=ubuntutest.main_archive,
+    ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+The DistributionSourcePackageView includes a helper property
+'all_published_in_active_distroseries' that returns a list of
+all the published versions of the source package within the distribution's
+serieses.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from zope.component import getMultiAdapter
+    >>> ubuntu_gedit = ubuntutest.getSourcePackage('gedit')
+    >>> ubuntu_gedit_view = getMultiAdapter(
+    ...     (ubuntu_gedit, LaunchpadTestRequest()), name="+index")
+    >>> for result in ubuntu_gedit_view.all_published_in_active_distroseries:
+    ...     print "%s - %s" % (
+    ...         result['suite'], result['description'])
+    Breezy-autotest - (666): main/base
+
+Latest published PPA versions
+-----------------------------
+
+The view includes a latest_published_ppa_versions property which returns
+a list of dictionaries describing the last three most-recently-uploaded
+ppa versions of the package.
+
+
+
+

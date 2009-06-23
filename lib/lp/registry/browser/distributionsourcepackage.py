@@ -155,6 +155,10 @@ class DistributionSourcePackageView(LaunchpadFormView):
                 results.append(entry)
         return results
 
+    @property
+    def latest_published_ppa_versions(self):
+        pass
+
     def _createPackagingField(self):
         """Create a field to specify a Packaging association.
 
