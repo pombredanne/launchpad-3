@@ -1851,7 +1851,7 @@ class Person(
                 message = '%s and %s' % (
                     ', '.join(warnings[:-1]),
                     warnings[-1])
-            self.visibility_warning_cache = (
+            self._visibility_warning_cache = (
                 'This team cannot be converted to %s since it is '
                 'referenced by %s.' % (new_value, message))
         return self._visibility_warning_cache
