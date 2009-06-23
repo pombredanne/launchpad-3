@@ -58,7 +58,7 @@ member.
     >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
     >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
 
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     3
 
@@ -169,7 +169,7 @@ One is sent to Anne and the other is sent to the archiver.
 
     >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
     >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     2
     >>> from operator import itemgetter
@@ -257,7 +257,7 @@ no-priv@canonical.com because he added the question.  The other goes to Anne
 as a member of the team, since the team's contact address is not set.  Nothing
 is sent to the archive because the mailing list was not used.
 
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     2
 
@@ -326,7 +326,7 @@ delivered since the mailing list is still active.
     ... """)
     >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
     >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
 
 Anne (as the only member of the mailing list) and the archive submission
 address both get copies of the message.

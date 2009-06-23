@@ -43,7 +43,7 @@ the MTA, but it's close enough in intent and exactly the same in
 implementation so we use the same terminology in Mailman.)
 
     >>> from operator import itemgetter
-    >>> messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
+    >>> messages = sorted(smtpd, key=itemgetter('sender'))
     >>> for message in messages:
     ...     print message['sender']
     ...     print message['errors-to']

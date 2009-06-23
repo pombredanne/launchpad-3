@@ -32,7 +32,7 @@ discarded immediately.
     ... Hi, I am not a member of Launchpad (yet).
     ... """)
     >>> vette_watcher.wait_for_discard('aardvark')
-    >>> len(smtpd.getMessages())
+    >>> len(list(smtpd))
     0
 
 
@@ -70,7 +70,7 @@ gets discarded.
     ... Hi, I am not a verified member of Launchpad (yet).
     ... """)
     >>> vette_watcher.wait_for_discard('beaver')
-    >>> len(smtpd.getMessages())
+    >>> len(list(smtpd))
     0
 
 
@@ -100,7 +100,7 @@ team's administrator.
 The team administrator will receive a notification of the held message.
 
     >>> smtpd_watcher.wait_for_personal_traffic('no-priv@canonical.com')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -165,7 +165,7 @@ rejection notice to Anne.
     0
 
     >>> smtpd_watcher.wait_for_personal_traffic('anne.person@example.com')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -209,7 +209,7 @@ discards it.  No rejection notice is sent to Anne.
     ... """)
 
     >>> vette_watcher.wait_for_hold('itest-one', 'donkey')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -240,7 +240,7 @@ discards it.  No rejection notice is sent to Anne.
     >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     0
-    >>> len(smtpd.getMessages())
+    >>> len(list(smtpd))
     0
 
 Now Anne posts another message to the mailing list she is not subscribed to.
@@ -256,7 +256,7 @@ This time, her message is on topic and is accepted.
     ... """)
 
     >>> vette_watcher.wait_for_hold('itest-one', 'elephant')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -303,7 +303,7 @@ This time, her message is on topic and is accepted.
 This message is delivered to the archive.
 
     >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -378,7 +378,7 @@ the mailing list, she will not get a copy of the message.
 
 Only the archiver gets the message delivery.
 
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -432,7 +432,7 @@ differing only in the headers used to do VERP bounce detection.
 
     >>> smtpd_watcher.wait_for_mbox_delivery('falcon')
     >>> smtpd_watcher.wait_for_mbox_delivery('falcon')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     2
     >>> from operator import itemgetter
@@ -498,7 +498,7 @@ validated yet.
     ... Hi, I am not a verified member of this team (yet).
     ... """)
     >>> vette_watcher.wait_for_discard('giraffe')
-    >>> len(smtpd.getMessages())
+    >>> len(list(smtpd))
     0
 
 However, once she validates this address, she can post from it.
@@ -520,7 +520,7 @@ However, once she validates this address, she can post from it.
 
     >>> smtpd_watcher.wait_for_mbox_delivery('gerbil')
     >>> smtpd_watcher.wait_for_mbox_delivery('gerbil')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     2
     >>> messages.sort(key=itemgetter('sender'))
@@ -592,7 +592,7 @@ Because she is not a team member, her message is held for moderation.
     ... Hi, I am not a team member.
     ... """)
     >>> vette_watcher.wait_for_hold('itest-one', 'horse')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -637,7 +637,7 @@ not need to re-subscribe to the mailing list.
     # Wait for mailing list deliveries to both recipients.
     >>> smtpd_watcher.wait_for_mbox_delivery('iguana')
     >>> smtpd_watcher.wait_for_mbox_delivery('iguana')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     2
     >>> messages.sort(key=itemgetter('sender'))
@@ -666,7 +666,7 @@ have their posts held for moderation.
     <DBItem PersonalStanding.UNKNOWN...
 
     >>> def print_message_summaries():
-    ...     messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
+    ...     messages = sorted(smtpd, key=itemgetter('sender'))
     ...     print 'Number of messages:', len(messages)
     ...     for message in messages:
     ...         print message['sender']
@@ -793,7 +793,7 @@ post to just that mailing list without further approval required.
     ... """)
     >>> smtpd_watcher.wait_for_mbox_delivery('otter')
     >>> smtpd_watcher.wait_for_mbox_delivery('otter')
-    >>> messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
+    >>> messages = sorted(smtpd, key=itemgetter('sender'))
     >>> len(messages)
     2
     >>> for message in messages:
@@ -829,7 +829,7 @@ messages to the list.
     ... """ % config.mailman.archive_address)
 
     >>> vette_watcher.wait_for_discard('narwhale')
-    >>> len(smtpd.getMessages())
+    >>> len(list(smtpd))
     0
 
 

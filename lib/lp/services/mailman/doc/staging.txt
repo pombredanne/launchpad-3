@@ -97,7 +97,7 @@ A bunch of messages are sent to the mailing lists.
     ...     smtpd_watcher.wait_for_mbox_delivery('fourth-injection')
 
     >>> from operator import itemgetter
-    >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
+    >>> for message in sorted(smtpd, key=itemgetter('sender')):
     ...     print message['sender']
     staging-one-bounces+anne.person=example.com@lists.launchpad.dev
     staging-one-bounces+anne.person=example.com@lists.launchpad.dev
