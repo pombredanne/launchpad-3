@@ -14,6 +14,7 @@ from storm.expr import Min
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
@@ -31,7 +32,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
-from lp.registry.interfaces.person import PersonCreationRationale
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 
 
 class TestGarboScript(TestCase):
@@ -357,6 +358,29 @@ class TestGarbo(TestCaseWithFactory):
         transaction.commit()
         self.runDaily()
         self.assertEqual(mailing_list.getSubscription(person), None)
+
+    def test_DeleteUnlinkedPersonEntries(self):
+        personset = getUtility(IPersonSet)
+        # Switch the DB user because the garbo_daily user isn't allowed to
+        # create person entries.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        # Create two new person entries, both not linked to anything. One of
+        # them will have the present day as its date created, and so will not
+        # be deleted, whereas the other will have a creation date far in the
+        # past, so it will be deleted.
+        person = self.factory.makePerson(name='test-unlinked-person-new')
+        person_old = self.factory.makePerson(name='test-unlinked-person-old')
+        removeSecurityProxy(person_old).datecreated = datetime(
+            2008, 01, 01, tzinfo=UTC)
+        transaction.commit()
+
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        self.runDaily()
+
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-new'), None)
+        self.assertIs(personset.getByName('test-unlinked-person-old'), None)
 
 
 def test_suite():

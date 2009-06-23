@@ -10,11 +10,13 @@ import time
 
 import pytz
 import transaction
+from psycopg2 import IntegrityError
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import SQL, Max, Min
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database import postgresql
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.hwdb import HWSubmission
 from canonical.launchpad.database.oauth import OAuthNonce
@@ -402,6 +404,101 @@ class MailingListSubscriptionPruner(TunableLoop):
         transaction.commit()
 
 
+class DeleteUnlinkedPersonEntries(TunableLoop):
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log):
+        super(DeleteUnlinkedPersonEntries, self).__init__(log)
+        self.offset = 0
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store.execute(
+            "CREATE TEMPORARY TABLE LinkedPeople(person integer primary key)")
+        # Prefill with recently created Person.
+        self.store.execute("""
+            INSERT INTO LinkedPeople
+            SELECT id FROM Person
+            WHERE datecreated >
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                    - interval '2 weeks'
+            """)
+        for (from_table, from_column, to_table, to_column, uflag, dflag) in (
+                postgresql.listReferences(cursor(), 'person', 'id')):
+            # Skip things that don't link to Person.id or that link to it from
+            # TeamParticipation or EmailAddress, as all Person entries will be
+            # linked to from these tables.
+            if (to_table != 'person' or to_column != 'id'
+                or from_table in ('teamparticipation', 'emailaddress')):
+                continue
+            self.store.execute("""
+                INSERT INTO LinkedPeople
+                SELECT %(from_column)s AS person
+                FROM %(from_table)s
+                WHERE %(from_column)s IS NOT NULL
+                EXCEPT
+                SELECT person FROM LinkedPeople
+                """ % dict(from_table=from_table, from_column=from_column))
+
+        self.store.execute("""
+            CREATE TEMPORARY TABLE UnlinkedPeople(
+                id serial primary key, person integer);
+            INSERT INTO UnlinkedPeople(person)
+                (SELECT id FROM Person
+                 WHERE teamowner IS NULL
+                    AND id NOT IN (SELECT person FROM LinkedPeople));
+            CREATE UNIQUE INDEX unlinkedpeople__person__idx ON
+                UnlinkedPeople(person);
+            ANALYZE UnlinkedPeople;
+            """)
+        self.max_offset = self.store.execute(
+            "SELECT MAX(id) FROM UnlinkedPeople").get_one()[0]
+        # Don't keep any locks open - we might block.
+        transaction.commit()
+
+    def isDone(self):
+        return self.offset > self.max_offset
+
+    def __call__(self, chunk_size):
+        subquery = """
+            SELECT person FROM UnlinkedPeople
+            WHERE id BETWEEN %d AND %d
+            """ % (self.offset, self.offset + chunk_size)
+        people_ids = ",".join(
+            str(item[0]) for item in self.store.execute(subquery).get_all())
+        self.offset += chunk_size
+        try:
+            # This would be dangerous if we were deleting a
+            # team, so join with Person to ensure it isn't one
+            # even in the rare case a person is converted to
+            # a team during this run.
+            self.store.execute("""
+                DELETE FROM TeamParticipation
+                USING Person
+                WHERE TeamParticipation.person = Person.id
+                    AND Person.teamowner IS NULL
+                    AND Person.id IN (%s)
+                """ % people_ids)
+            self.store.execute("""
+                UPDATE EmailAddress SET person=NULL
+                WHERE person IN (%s)
+                """ % people_ids)
+            self.store.execute("""
+                DELETE FROM Person
+                WHERE id IN (%s)
+                """ % people_ids)
+            transaction.commit()
+            self.log.debug(
+                "Deleted the following unlinked people: %s" % people_ids)
+        except IntegrityError:
+            # This case happens when a Person is linked to something
+            # during the run. It is unlikely to occur, so just ignore it again.
+            # Everything will clear up next run.
+            transaction.abort()
+            self.log.debug(
+                "Failed to delete %d unlinked people. Try again next time."
+                % chunk_size)
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -441,6 +538,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         if failure_count:
             raise SilentLaunchpadScriptFailure(failure_count)
 
+
 class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-hourly'
     tunable_loops = [
@@ -459,5 +557,5 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionAuthorEmailLinker,
         HWSubmissionEmailLinker,
         MailingListSubscriptionPruner,
+        DeleteUnlinkedPersonEntries,
         ]
-
