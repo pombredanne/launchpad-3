@@ -1346,6 +1346,10 @@ class LayerProcessController:
         # Ensure that the SMTP server does proper logging.
         log = logging.getLogger('lazr.smtptest')
         handler = logging.FileHandler('smtpd.log')
+        formatter = logging.Formatter(
+            fmt='%(asctime)s (%(process)d) %(message)s',
+            datefmt='%b %d %H:%M:%S %Y')
+        handler.setFormatter(formatter)
         log.setLevel(logging.DEBUG)
         log.addHandler(handler)
         cls.smtp_controller = SMTPController('localhost', 9025)

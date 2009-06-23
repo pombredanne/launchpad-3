@@ -1,4 +1,6 @@
-= Batching subscription updates =
+=============================
+Batching subscription updates
+=============================
 
 To reduce the possibility of timeouts, Mailman batches its requests for
 mailing list subscription information.  Normally the batch size is big enough
@@ -8,7 +10,7 @@ mailing lists are getting updated properly.
 
 Three mailing lists are created.
 
-    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from lp.services.mailman.testing import helpers
 
     >>> team_one = helpers.create_list('alpha')
     >>> team_two = helpers.create_list('bravo')
@@ -56,7 +58,8 @@ And indeed, she is now a member of all three mailing lists.
     1
 
 
-== Clean up ==
+Clean up
+========
 
     >>> runmailman.stop_mailman(
     ...     quiet=True, config=LayerProcessController.appserver_config)
