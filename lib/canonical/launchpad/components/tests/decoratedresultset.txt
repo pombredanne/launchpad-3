@@ -109,9 +109,7 @@ method and decorates the result:
 The decorated order_by() method calls the original result set's order_by()
 method and decorates the result:
 
-    >>> from storm.expr import Desc
-    >>> ordered_results = decorated_result_set.order_by(
-    ...     Desc(Distribution.name))
+    >>> ordered_results = decorated_result_set.order_by('name DESC')
     >>> for dist in ordered_results:
     ...     dist
     u'Dist name is: ubuntutest'
@@ -128,6 +126,17 @@ method and decorates the result:
 
     >>> result_decorator(decorated_result_set.result_set.one())
     u'Dist name is: redhat'
+
+
+== count() ==
+
+The decorated count() simply mimics the underlying result set.
+
+    >>> decorated_result_set.result_set.count()
+    7
+
+    >>> decorated_result_set.count()
+    7
 
 == splicing ==
 
