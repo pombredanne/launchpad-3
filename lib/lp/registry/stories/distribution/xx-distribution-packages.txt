@@ -123,6 +123,19 @@ and version.
     hoary development main release 1.0-1      NetApplet trunk series
     warty current     main release 0.99.6-1   NetApplet trunk series
 
+Directly after the distro releases, the three latest PPA uploads of
+this source package are displayed.
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'ppa_packaging'))
+    There are also some unsupported external versions of 'netapplet' from
+    the community in the following PPAs:
+    Name             Owner           Description     netapplet Versions
+    Official...      rabbitmq-team   This is the... .hoary (1.0-1-ppa0),
+                                                     warty (0.99.6-1-ppa0)
+    PPA of Joe...    Joe Blogs       My experiment...hoary (1.0-1_bad)
+
+You can view <link>all the unsupported external PPA versions of 'rabbitmq-server'</link>
+
 /$DISTRO/+source/$PACKAGE pages contain a version history that lists
 each published version of a package with its changelog entry for that
 version.
