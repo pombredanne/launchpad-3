@@ -562,7 +562,8 @@ class ValidPersonOrTeamVocabulary(
             private_result.order_by()
 
             combined_result = public_result.union(private_result)
-            combined_result.order_by()  # Eliminate default ordering.
+            # Eliminate default ordering.
+            combined_result.order_by()
             # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
             # is a work-around for .count() not working with the 'distinct'
             # option.
@@ -576,8 +577,8 @@ class ValidPersonOrTeamVocabulary(
         # effective.
         result.config(distinct=True)
         if exact_match is not None:
-            # A DISTINCT requires the sort parameters appear in the select,
-            # but it will break the vocabulary if it returns a list of
+            # A DISTINCT requires that the sort parameters appear in the
+            # select, but it will break the vocabulary if it returns a list of
             # tuples instead of a list of Person objects, so we create
             # another subselect to sort after the DISTINCT is done.
             distinct_subselect = Alias(result._get_select(), 'Person')
