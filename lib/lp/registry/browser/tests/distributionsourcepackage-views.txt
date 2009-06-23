@@ -37,6 +37,7 @@ serieses.
     ...         result['suite'], result['description'])
     Breezy-autotest - (666): main/base
 
+
 Latest published PPA versions
 -----------------------------
 
@@ -44,6 +45,38 @@ The view includes a latest_published_ppa_versions property which returns
 a list of dictionaries describing the last three most-recently-uploaded
 ppa versions of the package.
 
+    # Create two PPAs to which we can publish sources.
+    >>> ppa_nightly = factory.makeArchive(name="nightly",
+    ...                                   distribution=ubuntutest)
+    >>> ppa_beta = factory.makeArchive(name="beta",
+    ...                                distribution=ubuntutest)
 
+    # Publish gedit to both PPAs
+    >>> gedit_nightly_src_breezy = publisher.getPubSource(
+    ...     sourcename="gedit", archive=ppa_nightly,
+    ...     date_uploaded=datetime(2010, 12 ,1, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.2n3')
+    >>> gedit_beta_src_breezy = publisher.getPubSource(
+    ...     sourcename="gedit", archive=ppa_beta,
+    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.1')
+    >>> gedit_beta_src_hoary = publisher.getPubSource(
+    ...     sourcename="gedit", archive=ppa_beta,
+    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.0',
+    ...     distroseries=ubuntutest.serieses[0])
+
+    >>> for archive_pub in ubuntu_gedit_view.latest_published_ppa_versions:
+    ...     print "Archive: %s" % archive_pub['archive'].displayname
+    ...     for pub in archive_pub['publications']:
+    ...         print " - %s in %s" % (
+    ...             pub.sourcepackagerelease.version,
+    ...             pub.distroseries.displayname
+    ...             )
+    Archive: PPA named nightly for Person-name2
+     - 0.8.2n3 in Breezy Badger Autotest
+    Archive: PPA named beta for Person-name5
+     - 0.8.1 in Breezy Badger Autotest
+     - 0.8.0 in Hoary Mock
 
 

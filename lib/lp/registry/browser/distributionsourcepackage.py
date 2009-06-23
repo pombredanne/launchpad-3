@@ -157,7 +157,20 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
     @property
     def latest_published_ppa_versions(self):
-        pass
+        """Return a list of the latest related ppa publishings.
+
+        The list contains dictionaries each with a key of 'archive' and
+        'publications'.
+        """
+        # Grab the related archive publications and limit the result to
+        # the first 3.
+        latest_archive_pubs = self.context.findRelatedArchivePublications()
+        latest_archive_pubs.config(limit=3)
+
+        # Convert the result to a dict for easy use in the template.
+        return [
+            {'archive': archive, 'publications': publications}
+                for archive, publications in latest_archive_pubs]
 
     def _createPackagingField(self):
         """Create a field to specify a Packaging association.
