@@ -118,7 +118,7 @@ span.invisible {left:-9999em;display:block;}
 .product-badge {background:url(icon-sprites-2) 0 -608px no-repeat;}
 .product {background:url(icon-sprites-2) 0 -640px no-repeat;}
 .read-only {background:url(icon-sprites-2) 0 -672px no-repeat;}
-.warning, .security {background:url(icon-sprites-2) 0 -704px no-repeat;}
+.warning-icon, .security {background:url(icon-sprites-2) 0 -704px no-repeat;}
 .private {background:url(icon-sprites-2) 0 -736px no-repeat;}
 .meeting {background:url(icon-sprites-2) 0 -768px no-repeat;}
 .translate-icon {background:url(icon-sprites-2) 0 -800px no-repeat;}

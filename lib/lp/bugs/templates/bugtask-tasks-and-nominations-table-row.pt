@@ -78,10 +78,10 @@
             <span tal:condition="not:context/bugwatch/last_error_type"
                   class="sprite bug-remote"></span>
             <span tal:condition="context/bugwatch/last_error_type"
-                  class="sprite warning"></span>
+                  class="sprite warning-icon"></span>
           </tal:bugtracker-active>
           <span tal:condition="not:context/bugwatch/bugtracker/active"
-                class="sprite warning"></span>
+                class="sprite warning-icon"></span>
           <a tal:replace="structure context/bugwatch/fmt:external-link" />
         </div>
       </tal:has_watch>
