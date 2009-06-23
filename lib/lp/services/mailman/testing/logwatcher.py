@@ -193,7 +193,7 @@ class SMTPDWatcher(LogWatcher):
     FILENAME = 'smtpd'
 
     def wait_for_mbox_delivery(self, message_id):
-        return self.wait('delivered to mbox: <%s>' % message_id)
+        return self.wait('delivered to controller: <%s>' % message_id)
 
     def wait_for_list_traffic(self, team_name, personal=False):
         """Wait for list traffic through smtp2mbox.

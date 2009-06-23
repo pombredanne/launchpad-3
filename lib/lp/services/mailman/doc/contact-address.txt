@@ -1,4 +1,6 @@
-= Using a mailing list as a team's contact address =
+================================================
+Using a mailing list as a team's contact address
+================================================
 
 The contact address for any team can be set to the team's mailing list, in
 which case all notifications sent by Launchpad to the team will be sent to the

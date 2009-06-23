@@ -1345,7 +1345,8 @@ class LayerProcessController:
             raise LayerInvariantError('SMTP server already running')
         # Ensure that the SMTP server does proper logging.
         log = logging.getLogger('lazr.smtptest')
-        handler = logging.FileHandler('smtpd.log')
+        log_file = os.path.join(config.mailman.build_var_dir, 'logs', 'smtpd')
+        handler = logging.FileHandler(log_file)
         formatter = logging.Formatter(
             fmt='%(asctime)s (%(process)d) %(message)s',
             datefmt='%b %d %H:%M:%S %Y')

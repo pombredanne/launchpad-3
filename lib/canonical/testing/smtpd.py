@@ -29,8 +29,12 @@ class SMTPServer(QueueServer):
                   message_id, message['to'],
                   message['x-beenthere'],
                   message['x-mailfrom'], message['x-rcptto'])
+        from Mailman.Utils import list_names
+        listnames = list_names()
         try:
-            local, hostname = mesasge['to'].split('@', 1)
+            local, hostname = message['to'].split('@', 1)
+            log.debug('local: %s, hostname: %s, listnames: %s',
+                      local, hostname, listnames)
         except ValueError:
             # There was no '@' sign in the email message, so ignore it.
             log.debug('Bad To header: %s', message.get('to', 'n/a'))
@@ -39,12 +43,11 @@ class SMTPServer(QueueServer):
         # local part indicates that the message is destined for a Mailman
         # mailing list, deliver it to Mailman's incoming queue.
         # pylint: disable-msg=F0401
-        from Mailman.Utils import list_names
         if 'x-beenthere' in message:
             # It came from Mailman and goes in the queue.
             log.debug('delivered to controller: %s', message_id)
             self.queue.put(message)
-        elif local in list_names():
+        elif local in listnames:
             # It's destined for a mailing list.
             log.debug('delivered to Mailman: %s', message_id)
             from Mailman.Post import inject
@@ -79,5 +82,5 @@ class SMTPController(Controller):
         while True:
             try:
                 yield self.queue.get_nowait()
-            except Empty:
+            except queue.Empty:
                 raise StopIteration
