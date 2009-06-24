@@ -31,6 +31,7 @@ from canonical.launchpad.webapp.errorlog import (
     ErrorReport, ErrorReportingUtility, ScriptRequest, _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from lazr.restful.declarations import webservice_error
+from lp.testing import TestCase
 
 
 UTC = pytz.timezone('UTC')
@@ -710,6 +711,14 @@ class TestRequestWithPrincipal(TestRequest):
         @staticmethod
         def getLogin():
             return u'Login'
+
+
+class TestOopsLoggingHandler(TestCase):
+    """Tests for a Python logging handler that logs OOPSes."""
+
+    # XXX: Get a Python logger, with the OOPS logging handler registered. Call
+    # error() & exception() on that logger, and confirm that the OOPS error
+    # utility has logged an appropriate OOPS.
 
 
 def test_suite():
