@@ -94,18 +94,41 @@
     <a href="+publishinghistory">See full publishing history...</a>
   </p>
 
-  <div id="ppa_packaging">
+  <div tal:define="ppa_versions view/latest_published_ppa_versions"
+       tal:condition="ppa_versions">
     <p>There are also some unsupported external versions of
        '<span tal:replace="context/name" />' from the community in the
        following PPAs:</p>
-    <table summary="" class="listing">
+    <table class="listing" id="ppa_packaging"
+           summary="Related PPA versions from the community.">
       <thead>
         <tr>
-          <th>Name</th><th>Owner</th><th>Description</th>
+          <th>Name</th><th>Owner</th>
           <th><span tal:replace="context/name" /> versions</th>
         </tr>
       </thead>
+      <tbody>
+        <tr tal:repeat="ppa_version ppa_versions">
+          <td>
+            <a tal:attributes="href ppa_version/archive/fmt:url"
+               tal:content="ppa_version/archive/displayname">
+              Super trusted PPA
+            </a>
+          </td>
+          <td tal:content="ppa_version/archive/owner/displayname">
+            Joe Dodgy
+          </td>
+          <td tal:content="ppa_version/versions">
+            Hoary (1.0.1), Feisty (2.0.1)
+          </td>
+        </tr>
+      </tbody>
     </table>
+    <p>You can also search for
+       <a tal:attributes="href view/further_ppa_versions_url">
+         all unsupported external PPA versions of
+         '<span tal:replace="context/name" />'</a>.
+    </p>
   </div>
 
   <h2>Version history</h2>

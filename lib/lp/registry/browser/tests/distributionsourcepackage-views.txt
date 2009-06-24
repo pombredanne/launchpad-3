@@ -42,8 +42,8 @@ Latest published PPA versions
 -----------------------------
 
 The view includes a latest_published_ppa_versions property which returns
-a list of dictionaries describing the last three most-recently-uploaded
-ppa versions of the package.
+a list of dictionaries describing 3 PPAs with the most-recently-uploaded
+versions of the package.
 
     # Create two PPAs to which we can publish sources.
     >>> ppa_nightly = factory.makeArchive(name="nightly",
@@ -67,16 +67,16 @@ ppa versions of the package.
     ...     distroseries=ubuntutest.serieses[0])
 
     >>> for archive_pub in ubuntu_gedit_view.latest_published_ppa_versions:
-    ...     print "Archive: %s" % archive_pub['archive'].displayname
-    ...     for pub in archive_pub['publications']:
-    ...         print " - %s in %s" % (
-    ...             pub.sourcepackagerelease.version,
-    ...             pub.distroseries.displayname
-    ...             )
-    Archive: PPA named nightly for Person-name2
-     - 0.8.2n3 in Breezy Badger Autotest
-    Archive: PPA named beta for Person-name5
-     - 0.8.1 in Breezy Badger Autotest
-     - 0.8.0 in Hoary Mock
+    ...     print "%s - %s" % (
+    ...         archive_pub['archive'].displayname,
+    ...         archive_pub['versions']
+    ...         )
+    PPA named nightly for Person-name2 - Breezy Badger Autotest (0.8.2n3)
+    PPA named beta for Person-name5 - Breezy Badger Autotest (0.8.1),
+        Hoary Mock (0.8.0)
 
+The view also calculates the url for finding further PPA versions.
+
+    >>> print ubuntu_gedit_view.further_ppa_versions_url
+    http://launchpad.dev/ubuntutest/+ppas?name_filter=gedit
 

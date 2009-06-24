@@ -193,23 +193,37 @@ class DistributionSourcePackageView(LaunchpadFormView):
                 self.context.sourcepackagename, latest_three_archives)
 
         # Collect the publishings for each archive
-        archive_publishings_dict = {}
-        for archive in latest_three_archives:
-            for pub in publications:
-                if pub.archive == archive:
-                    archive_publishings_dict.setdefault(
-                        archive, []).append(pub)
+        archive_publishings = {}
+        for pub in publications:
+            archive_publishings.setdefault(pub.archive, []).append(pub)
 
         # Then construct a list of dicts with the results for easy use in
         # the template, preserving the order of the archives:
-        archive_publishings = []
+        archive_versions = []
         for archive in latest_three_archives:
-            archive_publishings.append({
+            versions = []
+            for pub in archive_publishings[archive]:
+                versions.append(
+                    "%s (%s)" % (
+                        pub.distroseries.displayname,
+                        pub.source_package_version
+                        )
+                    )
+            archive_versions.append({
                 'archive': archive,
-                'publications': archive_publishings_dict[archive]
+                'versions': ", ".join(versions)
                 })
 
-        return archive_publishings
+        return archive_versions
+
+    @property
+    def further_ppa_versions_url(self):
+        """Return the url used to find further PPA versions of this package.
+        """
+        return "%s/+ppas?name_filter=%s" % (
+            canonical_url(self.context.distribution),
+            self.context.name,
+            )
 
     def _createPackagingField(self):
         """Create a field to specify a Packaging association.
