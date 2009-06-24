@@ -187,7 +187,7 @@ Check the behaviour of @cachedproperty  attributes:
 
   >>> qitem = qset.get(1)
 
-  >>> qitem.datecreated
+  >>> qitem.date_created
   datetime.datetime(...)
 
   >>> print qitem.changesfile.filename
@@ -213,7 +213,7 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
 
   >>> custom_item = qset.get(5)
 
-  >>> custom_item.datecreated
+  >>> custom_item.date_created
   datetime.datetime(...)
 
   >>> print custom_item.changesfile.filename
@@ -228,11 +228,8 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
   >>> print custom_item.displayarchs
   raw-translations
 
-  >>> custom_item.sourcepackagerelease
-  Traceback (most recent call last):
-  ...
-  AssertionError: No source available.
-
+  >>> print custom_item.sourcepackagerelease
+  None
 
 The method getBuildByBuildIDs() will return all the PackageUploadBuild
 records that match the supplied build IDs.
@@ -947,4 +944,49 @@ Clean up the librarian files:
 
    >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
    >>> cleanupLibrarianFiles()
+
+
+== Delayed copies ==
+
+IPackageUploadSet allows call sites to create 'delayed-copy'
+PackageUpload records.
+
+   >>> from lp.registry.interfaces.gpg import IGPGKeySet
+   >>> testing_key = getUtility(IGPGKeySet).get(1)
+
+   >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+   ...     ubuntu.main_archive, breezy_autotest,
+   ...     PackagePublishingPocket.RELEASE, testing_key)
+
+A 'delayed-copy' is a PackageUpload record.
+
+   >>> verifyObject(IPackageUpload, delayed_copy)
+   True
+
+It is targeted to a publication context (archive, distroseries,
+pocket).
+
+   >>> print delayed_copy.archive.displayname
+   Primary Archive for Ubuntu Linux
+
+   >>> print delayed_copy.distroseries.displayname
+   Breezy Badger Autotest
+
+   >>> print delayed_copy.pocket.name
+   RELEASE
+
+And it is created in NEW state, so it has to pass through the upload
+state-machine.
+
+   >>> print delayed_copy.status.name
+   NEW
+
+However it has no 'changesfile', only a signing_key representing the
+requester of the copy.
+
+   >>> print delayed_copy.changesfile
+   None
+
+   >>> print delayed_copy.signing_key.owner.displayname
+   Foo Bar
 
