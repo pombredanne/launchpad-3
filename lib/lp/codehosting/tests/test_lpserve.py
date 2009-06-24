@@ -8,7 +8,7 @@ import os
 from subprocess import PIPE
 import unittest
 
-from bzrlib import osutils
+from bzrlib import errors, osutils
 from bzrlib.smart import medium
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import remote
@@ -149,6 +149,21 @@ class TestLaunchpadServe(TestCaseWithTransport):
         process, transport = self.start_server_inet()
         self.finish_lpserve_subprocess(process)
         self.assertIs(None, globalErrorUtility.getLastOopsReport())
+
+    def test_unexpected_error_logs_oops(self):
+        # If an unexpected error is raised in the plugin, then an OOPS is
+        # recorded.
+        process, transport = self.start_server_inet()
+        # This will trigger an error, because the XML-RPC server is not
+        # running, and any filesystem access tries to get at the XML-RPC
+        # server. If this *doesn'* raise, then the test is no longer valid and
+        # we need a new way of triggering errors in the smart server.
+        self.assertRaises(
+            errors.UnknownErrorFromSmartServer,
+            transport.list_dir, 'foo/bar/baz')
+        result = self.finish_lpserve_subprocess(process)
+        self.assertFinishedCleanly(result)
+        self.assertIsNot(None, globalErrorUtility.getLastOopsReport())
 
 
 def test_suite():
