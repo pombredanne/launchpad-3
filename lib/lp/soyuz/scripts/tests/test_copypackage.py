@@ -725,6 +725,30 @@ class TestCheckCopy(TestCaseWithFactory):
             'source has expired binaries',
             check_copy, source, archive, series, pocket, True)
 
+    def testCannotCopyFromOtherDistrotribution(self):
+        # We currently deny copies to series that are not for the Archive
+        # distribution, because they will never be published and while
+        # they exist they keep triggering the PPA publication spending
+        # resources.
+
+        # Create a testing source in ubuntu.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        source = self.test_publisher.getPubSource(distroseries=hoary)
+
+        # Create a fresh PPA which will be the destination copy.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        series = source.distroseries
+        pocket = source.pocket
+
+        # Copy of sources to series in another distribution.
+        self.assertRaisesWithContent(
+            CannotCopy,
+            'Cannot copy sources from other distributions.',
+            check_copy, source, archive, series, pocket, False)
+
 
 class TestDoCopy(TestCaseWithFactory):
 
