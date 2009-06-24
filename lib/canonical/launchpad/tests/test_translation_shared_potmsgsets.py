@@ -295,6 +295,18 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
                 self.devel_potemplate, serbian)),
             set([]))
 
+    def test_getLocalTranslationMessages_empty_message(self):
+        # An empty suggestion is never returned.
+        self.potmsgset.setSequence(self.stable_potemplate, 1)
+        pofile = self.factory.makePOFile('sr', self.stable_potemplate)
+        empty_suggestion = self.factory.makeSharedTranslationMessage(
+            pofile=pofile, potmsgset=self.potmsgset, suggestion=True,
+            translations=[""])
+        self.assertEquals(
+            set([]),
+            set(self.potmsgset.getLocalTranslationMessages(
+                self.stable_potemplate, pofile.language)))
+
     def test_getExternallyUsedTranslationMessages(self):
         """Test retrieval of externally used translations."""
 
