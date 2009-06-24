@@ -114,22 +114,8 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
             is called.
         :param archive_purpose: used to filter the results to certain
             archive purposes. Defaults to PPA.
-        :returns: A `ResultSet` of `IArchive` with the archive most recently
-            uploaded to first.
-        """
-
-    def findRelatedArchivePublications(exclude_archive=None,
-                                       archive_purpose=ArchivePurpose.PPA):
-        """Return archive publications for this source package.
-
-        :param exclude_archive: an archive to exclude from the results,
-            used to exclude the current context from which the method
-            is called.
-        :param archive_purpose: used to filter the results to certain
-            archive purposes. Defaults to PPA.
-        :returns: A `DecoratedResultSet` of tuples of `IArchive` and their
-            correspending `SourcePackagePublishingHistory`s, with the
-            archive most recently uploaded to first.
+        :returns: A `ResultSet` of non-unique `IArchive` with the archive
+            most recently uploaded to first.
         """
 
     latest_overall_publication = Attribute(
