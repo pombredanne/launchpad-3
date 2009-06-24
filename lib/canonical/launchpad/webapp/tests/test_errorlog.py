@@ -28,7 +28,7 @@ from canonical.testing import reset_logging
 from canonical.launchpad import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest, _is_sensitive)
+    ErrorReport, ErrorReportingUtility, ScriptRequest, _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from lazr.restful.declarations import webservice_error
 
@@ -45,12 +45,8 @@ class TestErrorReport(unittest.TestCase):
     def tearDown(self):
         reset_logging()
 
-    def test_import(self):
-        from canonical.launchpad.webapp.errorlog import ErrorReport
-
     def test___init__(self):
         """Test ErrorReport.__init__()"""
-        from canonical.launchpad.webapp.errorlog import ErrorReport
         entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
                             'pageid', 'traceback-text', 'username', 'url', 42,
                             [('name1', 'value1'), ('name2', 'value2'),
@@ -77,7 +73,6 @@ class TestErrorReport(unittest.TestCase):
 
     def test_write(self):
         """Test ErrorReport.write()"""
-        from canonical.launchpad.webapp.errorlog import ErrorReport
         entry = ErrorReport('OOPS-A0001', 'NotFound', 'error message',
                             datetime.datetime(2005, 04, 01, 00, 00, 00,
                                               tzinfo=UTC),
@@ -114,7 +109,6 @@ class TestErrorReport(unittest.TestCase):
 
     def test_read(self):
         """Test ErrorReport.read()"""
-        from canonical.launchpad.webapp.errorlog import ErrorReport
         fp = StringIO.StringIO(dedent("""\
             Oops-Id: OOPS-A0001
             Exception-Type: NotFound
