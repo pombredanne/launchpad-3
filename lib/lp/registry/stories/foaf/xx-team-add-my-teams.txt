@@ -34,7 +34,7 @@ We'll now propose Launchpad Administrators as a member of Ubuntu Team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
     Recently applied
-    Launchpad Administrators (admins)
+    Launchpad Administrators
     ...
 
 If it were an OPEN team, we'd be able to directly add any of our teams as
@@ -57,7 +57,7 @@ members.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
     Recently approved
-    Rosetta Administrators (rosetta-admins)
+    Rosetta Administrators
     ...
 
 In the case of restricted teams, though, there is no way to propose any of

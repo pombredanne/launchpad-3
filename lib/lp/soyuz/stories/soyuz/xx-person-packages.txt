@@ -30,10 +30,10 @@ packages are being displayed.
     >>> browser.open("http://launchpad.dev/~sabdfl/+related-software")
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
     Maintained packages
-    7 packages
+    Displaying first 5 packages out of 7 total
     ...
     Uploaded packages
-    6 packages
+    Displaying first 5 packages out of 6 total
     ...
     PPA packages
     1 package

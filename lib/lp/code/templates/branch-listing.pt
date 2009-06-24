@@ -51,7 +51,7 @@ function doUpdate(transaction_id, response, args) {
     // Logic has been inverted in the next line to avoid
     // breaking XHTML compliance of the template due to
     // ampersand usage.
-    if(!(json_values.commits || json_values.count > 0)) {
+    if(!(!json_values.commits || !json_values.count > 0)) {
         document.getElementById(args.container).innerHTML = '';
         sparkline(args.container, json_values);
     }

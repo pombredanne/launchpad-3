@@ -658,6 +658,78 @@ Salgado is the webservice user and cannot unsubscribe SteveA.
     False
 
 
+=== Unsubscribing From Duplicates ===
+
+If a user is subscribed via a duplicate, the user can unsubscribe from the
+main bug and be unsubscribed from the duplicate as well.
+
+bug_six is a duplicate of bug_five.
+
+    >>> bug_five = webservice.get('/bugs/5').jsonBody()
+    >>> bug_six['duplicate_of_link'] == bug_five['self_link']
+    True
+
+To demonstrate unsubscribing from duplicates, first subscribe the
+web service user himself (Salgado) so he has permission to unsubscribe
+himself.
+
+    >>> print webservice.named_post(
+    ...     bug_six['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~salgado'))
+    HTTP/1.1 200 Ok...
+
+bug_six now has one subscriber, Salgado.
+
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> for entry in bug_six_subscriptions['entries']:
+    ...     print entry['person_link']
+    http://.../~salgado
+
+Unsubscribe from bug_five, the primary bug, to unsubscribe from both
+it and its duplicate, bug_six.
+
+    >>> print webservice.named_post(
+    ...     bug_five['self_link'], 'unsubscribeFromDupes')
+    HTTP/1.1 200 Ok...
+
+Now bug_six has no subscibers.
+
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> print bug_six_subscriptions['total_size']
+    0
+
+Unsubscribing from duplicates is also supported for teams.
+To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
+
+    >>> print webservice.named_post(
+    ...     bug_six['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    HTTP/1.1 200 Ok...
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> for entry in bug_six_subscriptions['entries']:
+    ...     print entry['person_link']
+    http://.../~ubuntu-team
+
+Now, a team member can unsubscribe from bug_five to be unsubscribed
+from both it and the duplicate (bug_six).  Use the previously created
+member_webservice, which is for an Ubuntu Team member.
+
+    >>> print member_webservice.named_post(
+    ...     bug_five['self_link'], 'unsubscribeFromDupes',
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    HTTP/1.1 200 Ok...
+
+Now again, bug_six has no subscibers.
+
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> print bug_six_subscriptions['total_size']
+    0
+
+
 == Bug Watches ==
 
 Bugs can have bug watches associated with them. Each bugwatch can also

@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchPortletSubscribersContent',
     'BranchSubscriptionAddOtherView',
     'BranchSubscriptionAddView',
     'BranchSubscriptionEditOwnView',
@@ -10,6 +11,7 @@ __all__ = [
     'BranchSubscriptionPrimaryContext',
     ]
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -17,7 +19,8 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
 
@@ -29,6 +32,45 @@ class BranchSubscriptionPrimaryContext:
 
     def __init__(self, branch_subscription):
         self.context = IPrimaryContext(branch_subscription.branch).context
+
+
+class DecoratedSubscription:
+    """Adds the editable attribute to a `BranchSubscription`."""
+    delegates(IBranchSubscription, 'subscription')
+
+    def __init__(self, subscription, editable):
+        self.subscription = subscription
+        self.editable = editable
+
+
+class BranchPortletSubscribersContent(LaunchpadView):
+    """View for the contents for the subscribers portlet.
+
+    This view is strictly for use with ajax.
+    """
+
+    def isEditable(self, subscription):
+        """A subscription is editable by members of the subscribed team.
+
+        Launchpad Admins are special, and can edit anyone's subscription.
+        """
+        # We don't want to say editable if the logged in user
+        # is the same as the person of the subscription.
+        if self.user is None:
+            return False
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (self.user.inTeam(subscription.person) or
+                self.user.inTeam(celebs.admin) or
+                self.user.inTeam(celebs.bazaar_experts))
+
+    def subscriptions(self):
+        """Return a decorated list of branch subscriptions."""
+        sorted_subscriptions = sorted(
+            self.context.subscriptions,
+            key=lambda subscription: subscription.person.browsername)
+        return [DecoratedSubscription(
+                    subscription, self.isEditable(subscription))
+                for subscription in sorted_subscriptions]
 
 
 class _BranchSubscriptionView(LaunchpadFormView):

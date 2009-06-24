@@ -11,7 +11,7 @@ A helper function to print out the product series part of the portlet.
 A helper function to print out the product series on the main page.
 
    >>> def print_content_area_series(contents):
-   ...   series_divs = find_tags_by_class(contents, 'project series')
+   ...   series_divs = find_tags_by_class(contents, 'series')
    ...   for series in series_divs:
    ...     anchors = series.fetch('a')
    ...     # first anchor is the product series link

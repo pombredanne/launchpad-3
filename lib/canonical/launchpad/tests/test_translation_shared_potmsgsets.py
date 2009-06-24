@@ -787,5 +787,61 @@ class TestPOTMsgSetTranslationMessageConstraints(unittest.TestCase):
         self.assertTrue(tm1.potemplate is None)
         self.assertEquals(tm2.potemplate, self.potemplate)
 
+
+    def test_updateTranslation_DivergedImportedToSharedImported(self):
+        # Corner case for bug #381645:
+        # Adding a shared imported translation "tm1",
+        # then a diverged imported translation "tm2",
+        # making a shared one current.
+        # On importing "tm1" again, we need to remove
+        # is_imported flag from diverged message.
+        tm1 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=True, force_shared=True)
+        tm2 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
+            is_imported=True, force_diverged=True)
+        tm2.is_current = False
+        self.assertTrue(tm1.is_current)
+        self.assertFalse(tm2.is_current)
+
+        self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=True)
+
+        self.assertTrue(tm1.is_current)
+        self.assertTrue(tm1.is_imported)
+        self.assertFalse(tm2.is_current)
+        self.assertFalse(tm2.is_imported)
+        self.assertTrue(tm1.potemplate is None)
+
+    def test_updateTranslation_DivergedCurrentToSharedImported(self):
+        # Corner case for bug #381645:
+        # Adding a shared imported translation "tm1",
+        # then a diverged, non-imported current translation "tm2".
+        # On importing "tm2" again, we need to make it
+        # shared, and unmark existing imported message as
+        # being current.
+        tm1 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=True, force_shared=True)
+        tm2 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
+            is_imported=False, force_diverged=True)
+        self.assertTrue(tm1.is_current)
+        self.assertTrue(tm2.is_current)
+        self.assertTrue(tm1.is_imported)
+        self.assertFalse(tm2.is_imported)
+
+        self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
+            is_imported=True)
+
+        self.assertTrue(tm2.is_current)
+        self.assertTrue(tm2.is_imported)
+        self.assertTrue(tm2.potemplate is None)
+        self.assertFalse(tm1.is_current)
+        self.assertFalse(tm1.is_imported)
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -677,7 +677,7 @@ class BranchMergeProposalGetter:
 
         query = Store.of(participant).find(
             BranchMergeProposal,
-            BranchMergeProposal.queue_status in status,
+            BranchMergeProposal.queue_status.is_in(status),
             Or(BranchMergeProposal.id.is_in(registrant_select),
                 BranchMergeProposal.id.is_in(review_select)))
         return query

@@ -151,9 +151,8 @@ The dependencies are presented in a separated section (bellow the
 sources.list widget).
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'archive-dependencies'))
-    PPA dependencies
+    >>> print_tag_with_id(user_browser.contents, 'archive-dependencies')
+    Build dependencies:
     PPA for Mark Shuttleworth (included ... ago)
     PPA for No Privileges Person (included ... ago)
 
@@ -195,8 +194,9 @@ Once the dependencies are removed, the 'dependency-section' (including
 the warning message) are omitted from the PPA overview page
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
-    >>> print find_tag_by_id(user_browser.contents, 'archive-dependencies')
-    None
+    >>> print_tag_with_id(user_browser.contents, 'archive-dependencies')
+    Build dependencies:
+
 
 == Primary dependencies ==
 
@@ -424,13 +424,12 @@ index page (see `IArchivedependency.title`).
     >>> print admin_browser.title
     PPA for Celso Providelo
 
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
-    PPA dependencies
+    >>> print_tag_with_id(admin_browser.contents, 'archive-dependencies')
+    Build dependencies:
     PPA for Mark Shuttleworth (included ... ago)
     Primary Archive for Ubuntu Linux - RELEASE
     (main, restricted, universe, multiverse) (included ... ago)
-
+    Edit dependencies
 
 == Cancelling a form request ==
 
@@ -452,9 +451,9 @@ PPA context page and the action won't be executed.
 
 The dependencies were not modified.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'archive-dependencies'))
-    PPA dependencies
+    >>> print_tag_with_id(admin_browser.contents, 'archive-dependencies')
+    Build dependencies:
     PPA for Mark Shuttleworth (included ... ago)
     Primary Archive for Ubuntu Linux - RELEASE
     (main, restricted, universe, multiverse) (included ... ago)
+    Edit dependencies
