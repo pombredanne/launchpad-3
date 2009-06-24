@@ -3,8 +3,7 @@
 # Lists pages that are unregistered or missing titles
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3; see the file LICENSE for
-# details.
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 LPDIR=lib/canonical/launchpad
 REGISTRY="lib/canonical/launchpad/zcml/*.zcml lib/canonical/*.zcml
