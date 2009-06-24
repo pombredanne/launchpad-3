@@ -1472,31 +1472,17 @@ class BugTaskSet:
             tags.difference_update(tags_wildcards)
             tags_include = [tag for tag in tags if not tag.startswith('-')]
             tags_exclude = [tag[1:] for tag in tags if tag.startswith('-')]
-            tags_clauses = []
-
-            # Search for the *presence* of any tag.
-            if '*' in tags_wildcards:
-                tags_clauses.append(
-                    "BugTag.bug = BugTask.bug")
-                clauseTables.append('BugTag')
-
-            # Search for the *absence* of any tag.
-            if '-*' in tags_wildcards:
-                tags_clauses.append(
-                    "BugTask.bug NOT IN ("
-                    "    SELECT BugTag.bug FROM BugTag)")
 
             def tags_set_query(joiner, tags):
                 # Return an SQL snippet that identifies a set of bugs
                 # based on tags.
                 joiner = " %s " % joiner
-                return "(%s)" % joiner.join(
+                return joiner.join(
                     "SELECT BugTag.bug FROM BugTag"
                     " WHERE BugTag.tag = %s" % quote(tag)
                     for tag in tags)
 
             if zope_isinstance(params.tag, all):
-                tags_combinator = ' AND '
                 # The set of bugs that have *all* of the tags
                 # requested for *inclusion*.
                 tags_include_clause = tags_set_query(
@@ -1506,7 +1492,6 @@ class BugTaskSet:
                 tags_exclude_clause = tags_set_query(
                     "UNION", tags_exclude)
             else:
-                tags_combinator = ' OR '
                 # The set of bugs that have *any* of the tags
                 # requested for inclusion.
                 tags_include_clause = tags_set_query(
@@ -1516,27 +1501,30 @@ class BugTaskSet:
                 tags_exclude_clause = tags_set_query(
                     "INTERSECT", tags_exclude)
 
-            # Combine the include and exclude sets.
-            if len(tags_include) > 0 and len(tags_exclude) > 0:
-                tags_clauses.append(
-                    "BugTask.bug IN (%s EXCEPT %s)" % (
-                        tags_include_clause, tags_exclude_clause))
-            elif len(tags_include) > 0:
-                tags_clauses.append(
-                    "BugTask.bug IN %s" % tags_include_clause)
-            elif len(tags_exclude) > 0:
-                tags_clauses.append(
-                    "BugTask.bug NOT IN %s" % tags_exclude_clause)
-            else:
-                # This means that the query was only wildcards, or
-                # nothing at all (which is allowed, even if it's a
-                # bit weird).
-                pass
+            # Search for the *presence* of any tag.
+            if '*' in tags_wildcards:
+                tags_include_clause = "SELECT BugTag.bug FROM BugTag"
 
-            # Add any generated tag clauses to the main query.
-            if len(tags_clauses) > 0:
+            # Search for the *absence* of any tag.
+            if '-*' in tags_wildcards:
+                tags_exclude_clause = "SELECT BugTag.bug FROM BugTag"
+
+            # Combine the include and exclude sets.
+            if len(tags_include_clause) > 0 and len(tags_exclude_clause) > 0:
                 extra_clauses.append(
-                    '(%s)' % tags_combinator.join(tags_clauses))
+                    "BugTask.bug IN ((%s) EXCEPT (%s))" % (
+                        tags_include_clause, tags_exclude_clause))
+            elif len(tags_include_clause) > 0:
+                extra_clauses.append(
+                    "BugTask.bug IN (%s)" % tags_include_clause)
+            elif len(tags_exclude_clause) > 0:
+                extra_clauses.append(
+                    "BugTask.bug NOT IN (%s)" % tags_exclude_clause)
+            else:
+                # This means that a tags argument was given, but that
+                # it didn't contain any tags to search for (which is
+                # allowed, even if it's a bit weird).
+                pass
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine
