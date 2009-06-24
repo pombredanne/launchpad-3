@@ -389,10 +389,10 @@ def check_copy(source, archive, series, pocket, include_binaries,
     if deny_privacy_mismatch and check_privacy_mismatch(source, archive):
         raise CannotCopy("Cannot copy private source into public archives.")
 
-    # XXX cprov 2009-06-24 bug=188564: when we start supporting
-    # debian PPAs this restriction has to be adjusted.
     if source.distroseries.distribution != archive.distribution:
-        raise CannotCopy("Cannot copy sources from other distributions.")
+        raise CannotCopy(
+            "Cannot copy to an unsupported distribution: %s." %
+            source.distroseries.distribution.name)
 
     if include_binaries:
         built_binaries = source.getBuiltBinaries()
