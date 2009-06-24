@@ -124,7 +124,7 @@ If there are no sourcepackages, any user can see there are none:
     >>> thunderbird_content = find_main_content(anon_2_browser.contents)
    >>> print extract_text(find_tag_by_id(
    ...     thunderbird_content, 'distribution-packaging-explanation'))
-   This series is not packaged in the following distribution series.
+   This series is not packaged in any distribution series.
 
 
 The driver sees two packaging links near the distribution packaging.
