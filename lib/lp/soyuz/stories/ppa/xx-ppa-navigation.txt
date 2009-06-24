@@ -1,6 +1,14 @@
 == Navigating a PPA ==
 
-The PPA owned by a user are accessible from on the user page.
+If a user has PPAs, they are accessible from the user's page in a section
+titled "Personal package archives".  If the user doesn't have any PPAs
+then that section is not present.
+
+    >>> anon_browser.open('http://launchpad.dev/~matsubara')
+    >>> print find_tag_by_id(anon_browser.contents, 'ppas')
+    None
+
+Navigating to cprov's personal page:
 
     >>> anon_browser.open('http://launchpad.dev/~cprov')
 
