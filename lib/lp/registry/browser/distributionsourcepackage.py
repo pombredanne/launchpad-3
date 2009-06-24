@@ -165,14 +165,15 @@ class DistributionSourcePackageView(LaunchpadFormView):
         """
         # Grab the related archive publications and limit the result to
         # the first 3.
-        # Note: because the findRelatedArchives() method cannot return
-        # distinct archives (until we can order it by a relevant field
-        # on the Archive table itself, such as 'rank', rather than the
-        # current ordering on the joined SourcePackageRelease.dateuploaded
-        # column). We need to manually ensure we get the first three
-        # distinct archives. To ensure this only takes one query, we'll grab
-        # the first 20 results and iterate through to find three distinct
-        # archives (20 is a magic number being greater than
+        # XXX Michael Nelson 2009-06-24 bug=387020
+        # Currently we need to find distinct archives here manually because,
+        # without a concept of IArchive.rank or similar, the best ordering
+        # that orderDistributionSourcePackage.findRelatedArchives() method
+        # can provide is on a join (SourcePackageRelease.dateuploaded), but
+        # this prohibits a distinct clause.
+        # To ensure that we find distinct archives here with only one query,
+        # we grab the first 20 results and iterate through to find three
+        # distinct archives (20 is a magic number being greater than
         # 3 * number of distroseries).
         latest_related_archives = self.context.findRelatedArchives()
         latest_related_archives.config(limit=20)
@@ -202,6 +203,9 @@ class DistributionSourcePackageView(LaunchpadFormView):
         archive_versions = []
         for archive in latest_three_archives:
             versions = []
+
+            # For each publication, append something like:
+            # 'Jaunty (1.0.1b)' to the versions list.
             for pub in archive_publishings[archive]:
                 versions.append(
                     "%s (%s)" % (
