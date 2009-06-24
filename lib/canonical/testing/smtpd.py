@@ -12,7 +12,7 @@ __all__ = [
 import logging
 import Queue as queue
 
-from lazr.smtptest.controller import Controller
+from lazr.smtptest.controller import QueueController
 from lazr.smtptest.server import QueueServer
 
 
@@ -68,19 +68,9 @@ class SMTPServer(QueueServer):
                 break
 
 
-class SMTPController(Controller):
+class SMTPController(QueueController):
     """A controller for the `SMTPServer`."""
     
-    def __init__(self, host, port):
-        """See `Controller`."""
-        self.queue = queue.Queue()
+    def _make_server(self, host, port):
+        """See `QueueController`."""
         self.server = SMTPServer(host, port, self.queue)
-        super(SMTPController, self).__init__(self.server)
-
-    def __iter__(self):
-        """Iterate over all the messages in the queue."""
-        while True:
-            try:
-                yield self.queue.get_nowait()
-            except queue.Empty:
-                raise StopIteration
