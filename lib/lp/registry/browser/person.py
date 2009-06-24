@@ -112,7 +112,7 @@ from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
 from lazr.restful.interface import copy_field, use_template
-from canonical.lazr.utils import get_current_browser_request, safe_hasattr
+from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
@@ -1054,9 +1054,8 @@ class PPANavigationMenuMixIn:
     def ppas(self):
         target = '#ppas'
         text = 'Personal Package Archives'
-        request = get_current_browser_request()
         # I've no idea why removeSecurityProxy is needed here.
-        undressed_view = removeSecurityProxy(get_current_view(request))
+        undressed_view = removeSecurityProxy(get_current_view())
         enabled = undressed_view.should_show_ppa_section
         return Link(target, text, enabled=enabled)
 
@@ -2889,7 +2888,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         else:
             return 'aside public'
 
-    @property
+    @cachedproperty
     def should_show_ppa_section(self):
         """Return True if "Personal package archives" is to be shown.
 
