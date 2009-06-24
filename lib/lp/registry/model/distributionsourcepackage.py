@@ -16,10 +16,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import And, Desc, In
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
-from zope.component import getUtility
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -28,7 +25,7 @@ from canonical.database.sqlbase import sqlvalues
 from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
