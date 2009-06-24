@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
+
+"""Tests for error logging & OOPS reporting."""
 
 __metaclass__ = type
 
@@ -168,7 +170,7 @@ class TestErrorReportingUtility(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
-        test_config_data = config.pop('test_data')
+        config.pop('test_data')
         reset_logging()
 
     def test_configure(self):
@@ -717,11 +719,8 @@ class TestRequestWithPrincipal(TestRequest):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestErrorReport))
-    suite.addTest(unittest.makeSuite(TestErrorReportingUtility))
-    suite.addTest(unittest.makeSuite(TestSensitiveRequestVariables))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
+
 
 if __name__ == '__main__':
     unittest.main(defaultTest='test_suite')
