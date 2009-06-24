@@ -16,6 +16,8 @@ from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.launchpad import helpers
+from canonical.launchpad.database.translationmessage import (
+    make_plurals_sql_fragment)
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILaunchpadCelebrities, IPOTMsgSet, ITranslationImporter,
     POTMsgSetInIncompatibleTemplatesError, RosettaTranslationOrigin,
@@ -262,6 +264,8 @@ class POTMsgSet(SQLBase):
             potmsgset = %s AND
             language = %s
             """ % sqlvalues(self, language)
+        query += " AND (%s)" % make_plurals_sql_fragment(
+            "msgstr%(form)d IS NOT NULL", "OR")
         current = self.getCurrentTranslationMessage(potemplate, language)
         if current is not None:
             if current.date_reviewed is None:
