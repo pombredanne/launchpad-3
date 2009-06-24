@@ -2377,6 +2377,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (78, 'bac@canonical.com', 243623, 4, '2008-06-27 14:49:11.149508', 243623);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (79, 'admin@canonical.com', 16, 2, '2008-08-05 12:01:32.086327', 16);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (80, 'ubuntu-branches-owner@example.com', 243627, 4, '2009-03-17 07:28:15.948042', 243625);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (81, 'guadamen@lists.launchpad.dev', 32, 4, '2009-06-24 00:34:34.490304', NULL);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -3785,6 +3786,7 @@ ALTER TABLE logintoken ENABLE TRIGGER ALL;
 
 ALTER TABLE mailinglist DISABLE TRIGGER ALL;
 
+INSERT INTO mailinglist (id, team, registrant, date_registered, reviewer, date_reviewed, date_activated, status, welcome_message) VALUES (1, 32, 16, '2009-06-23 18:11:37.569761', 16, '2009-06-23 18:13:36.487715', '2009-06-24 00:33:53.018804', 5, NULL);
 
 
 ALTER TABLE mailinglist ENABLE TRIGGER ALL;
@@ -3799,6 +3801,12 @@ ALTER TABLE mailinglistban ENABLE TRIGGER ALL;
 
 ALTER TABLE mailinglistsubscription DISABLE TRIGGER ALL;
 
+INSERT INTO mailinglistsubscription (id, person, mailing_list, date_joined, email_address) VALUES (1, 29, 1, '2009-06-24 00:36:29.91428', NULL);
+INSERT INTO mailinglistsubscription (id, person, mailing_list, date_joined, email_address) VALUES (2, 28, 1, '2009-06-24 00:36:29.91428', NULL);
+INSERT INTO mailinglistsubscription (id, person, mailing_list, date_joined, email_address) VALUES (3, 10, 1, '2009-06-24 00:36:29.91428', NULL);
+INSERT INTO mailinglistsubscription (id, person, mailing_list, date_joined, email_address) VALUES (4, 4, 1, '2009-06-24 00:36:29.91428', NULL);
+INSERT INTO mailinglistsubscription (id, person, mailing_list, date_joined, email_address) VALUES (5, 16, 1, '2009-06-24 00:36:29.91428', NULL);
+INSERT INTO mailinglistsubscription (id, person, mailing_list, date_joined, email_address) VALUES (6, 26, 1, '2009-06-24 00:36:29.91428', NULL);
 
 
 ALTER TABLE mailinglistsubscription ENABLE TRIGGER ALL;

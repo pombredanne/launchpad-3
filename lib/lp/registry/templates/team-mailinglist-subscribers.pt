@@ -16,16 +16,18 @@
 
       <h1>Team Mailing List Subscribers</h1>
 
-      <tal:has_mailing_list condition="context/mailing_list">
-      <p>The following people are subscribed to the team mailing list and will
-      receive email messages sent to the list.</p>
-        <div style="max-width: 80em">
-          <span style="float: left; width: 15em"
-                tal:repeat="person context/mailing_list/getSubscribers">
-            <tal:person replace="structure person/fmt:link" />
+      <div id="subscribers" style="max-width: 80em"
+           tal:condition="context/mailing_list"
+           tal:define="batch view/subscribers">
+        <p>The following people are subscribed to the team mailing list and will
+        receive email messages sent to the list.</p>
+        <span style="float: left; width: 15em"
+              tal:repeat="person batch/currentBatch">
+          <tal:person replace="structure person/fmt:link" />
         </span>
-        </div>
-      </tal:has_mailing_list>
+        <br />
+        <tal:navigation replace="structure batch/@@+navigation-links-lower" />
+      </div>
       <tal:no_mailing_list condition="not: context/mailing_list">
         <p>This team does not have a mailing list.</p>
         <p><a href="+mailinglist">Configure</a> the team's mailing list.</p>

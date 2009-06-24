@@ -11,6 +11,7 @@ __all__ = [
     'TeamEditView',
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
+    'TeamMailingListSubscribersView',
     'TeamMapView',
     'TeamMapData',
     'TeamMemberAddView',
@@ -41,6 +42,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
 from canonical.launchpad.webapp.menu import structured
@@ -704,6 +706,15 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
              not requester.inTeam(celebrities.mailing_list_experts))):
             return False
         return self.getListInState(*PURGE_STATES) is not None
+
+
+class TeamMailingListSubscribersView(LaunchpadView):
+    """The list of people subscribed to a team's mailing list."""
+
+    @property
+    def subscribers(self):
+        return BatchNavigator(
+            self.context.mailing_list.getSubscribers(), self.request)
 
 
 class TeamMailingListModerationView(MailingListTeamBaseView):
