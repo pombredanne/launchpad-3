@@ -307,6 +307,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
                  canonical_url(branch, view_name='+spark'))
                 for count, branch
                 in enumerate(self._branches_for_current_batch)
+                if self.view.showSparkLineForBranch(branch)
                 ])
 
     @cachedproperty
@@ -492,6 +493,11 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         """All branches related to this target, sorted for display."""
         # Separate the public property from the underlying virtual method.
         return BranchListingBatchNavigator(self)
+
+    def showSparkLineForBranch(self, branch):
+        """Should the view render the code to generate the sparklines?"""
+        # Default to no for everything.
+        return False
 
     def getVisibleBranchesForUser(self):
         """Get branches visible to the user.
@@ -876,6 +882,11 @@ class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
         values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
         return values
 
+    def showSparkLineForBranch(self, branch):
+        """See `BranchListingView`."""
+        # Show the sparklines all branches on person views.
+        return True
+
     @property
     def user_in_context_team(self):
         if self.user is None:
@@ -1089,6 +1100,11 @@ class ProductBranchListingView(BranchListingView):
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context)
+
+    def showSparkLineForBranch(self, branch):
+        """See `BranchListingView`."""
+        # Show the sparklines for the development focus branch only.
+        return branch == self.development_focus_branch
 
     @cachedproperty
     def branch_count(self):
