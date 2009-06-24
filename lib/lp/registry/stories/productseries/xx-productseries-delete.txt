@@ -9,11 +9,11 @@ is really happening in the 1.0 series.
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> owner_browser.open('http://launchpad.dev/firefox/trunk')
     >>> print owner_browser.title
-    Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
 
     >>> owner_browser.getLink('Delete series').click()
     >>> print owner_browser.title
-    Delete Mozilla Firefox Series: trunk
+    Delete Mozilla Firefox trunk series
 
 The trunk series is the focus of development. It cannot be deleted.
 The owner learns that he must make another series the focus of development
@@ -48,7 +48,7 @@ milestones and releases are linked.
     >>> owner_browser.getLink('trunk').click()
     >>> owner_browser.getLink('Delete series').click()
     >>> print owner_browser.title
-    Delete Mozilla Firefox Series: trunk
+    Delete Mozilla Firefox trunk series
 
     >>> contents = find_main_content(owner_browser.contents)
     >>> print extract_text(find_tag_by_id(contents, 'milestones-and-files'))

@@ -62,15 +62,11 @@ def exit_with_atexit_handlers(*ignored):
     sys.exit(-1 * signal.SIGTERM)
 signal.signal(signal.SIGTERM, exit_with_atexit_handlers)
 
-# Ensure overrides are generated
-sys.path.insert(0, BUILD_DIR)
-from configs import generate_overrides
-generate_overrides()
-del sys.path[0]
 
 # Tell canonical.config to use the testrunner config instance.
 from canonical.config import config
 config.setInstance('testrunner')
+config.generate_overrides()
 
 # Remove this module's directory from path, so that zope.testbrowser
 # can import pystone from test:

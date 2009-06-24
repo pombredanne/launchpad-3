@@ -1346,6 +1346,50 @@ class TestUploadProcessor(TestUploadProcessorBase):
             status, PackageUploadStatus.DONE,
             "Expected DONE status, got %s" % status.value)
 
+    def testUploadPathErrorIntendedForHumans(self):
+        # Distribution upload path errors are augmented with a hint
+        # to fix the current dput/dupload configuration.
+        # This information gets included in the rejection email along
+        # with pointer to the Soyuz questions in Launchpad and the
+        # reason why the message was sent to the current recipients.
+        self.setupBreezy()
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        upload_dir = self.queueUpload("bar_1.0-1", "boing")
+        self.processUpload(uploadprocessor, upload_dir)
+        rejection_message = (
+            uploadprocessor.last_processed_upload.rejection_message)
+        self.assertEqual(
+            ["Launchpad failed to process the upload path 'boing':",
+             '',
+             "Could not find distribution 'boing'.",
+             '',
+             'It is likely that you have a configuration problem with '
+                'dput/dupload.',
+             'Please update your dput/dupload configuration and then '
+                're-upload.',
+             '',
+             'Further error processing not possible because of a critical '
+                'previous error.',
+             ],
+            rejection_message.splitlines())
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Could not find distribution 'boing'",
+            "If you don't understand why your files were rejected",
+            "http://answers.launchpad.net/soyuz",
+            "You are receiving this email because you are the "
+               "uploader, maintainer or",
+            "signer of the above package.",
+            ]
+        recipients = [
+            'Foo Bar <foo.bar@canonical.com>',
+            'Daniel Silverstone <daniel.silverstone@canonical.com>',
+            ]
+        self.assertEmail(contents, recipients=recipients)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

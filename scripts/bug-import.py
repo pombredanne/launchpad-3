@@ -10,8 +10,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces import IProductSet
 
+from lp.bugs.scripts.bugimport import BugImporter
 from lp.services.scripts.base import LaunchpadScript
-from canonical.launchpad.scripts.bugimport import BugImporter
 
 
 class BugImportScript(LaunchpadScript):
@@ -56,9 +56,9 @@ class BugImportScript(LaunchpadScript):
             self.parser.error('Product %s does not exist'
                               % self.options.product)
 
-        importer = BugImporter(product, bugs_filename,
-                               self.options.cache_filename,
-                               verify_users=self.options.verify_users)
+        importer = BugImporter(
+            product, bugs_filename, self.options.cache_filename,
+            verify_users=self.options.verify_users, logger=self.logger)
         importer.importBugs(self.txn)
         config.pop('send_email_data')
 

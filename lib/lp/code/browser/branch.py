@@ -989,15 +989,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         return canonical_url(self.context)
 
 
-class DecoratedSubscription:
-    """Adds the editable attribute to a `BranchSubscription`."""
-    delegates(IBranchSubscription, 'subscription')
-
-    def __init__(self, subscription, editable):
-        self.subscription = subscription
-        self.editable = editable
-
-
 class BranchSubscriptionsView(LaunchpadView):
     """The view for the branch subscriptions portlet.
 
@@ -1005,29 +996,6 @@ class BranchSubscriptionsView(LaunchpadView):
     in order to provide links to be able to edit the subscriptions
     based on whether or not the user is able to edit the subscription.
     """
-
-    def isEditable(self, subscription):
-        """A subscription is editable by members of the subscribed team.
-
-        Launchpad Admins are special, and can edit anyone's subscription.
-        """
-        # We don't want to say editable if the logged in user
-        # is the same as the person of the subscription.
-        if self.user is None or self.user == subscription.person:
-            return False
-        celebs = getUtility(ILaunchpadCelebrities)
-        return (self.user.inTeam(subscription.person) or
-                self.user.inTeam(celebs.admin) or
-                self.user.inTeam(celebs.bazaar_experts))
-
-    def subscriptions(self):
-        """Return a decorated list of branch subscriptions."""
-        sorted_subscriptions = sorted(
-            self.context.subscriptions,
-            key=lambda subscription: subscription.person.browsername)
-        return [DecoratedSubscription(
-                    subscription, self.isEditable(subscription))
-                for subscription in sorted_subscriptions]
 
     def owner_is_registrant(self):
         """Return whether or not owner is the same as the registrant"""
