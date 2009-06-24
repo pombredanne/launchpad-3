@@ -20,6 +20,7 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
@@ -157,20 +158,58 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
     @property
     def latest_published_ppa_versions(self):
-        """Return a list of the latest related ppa publishings.
+        """Return a list of the latest 3 ppas with related publishings.
 
         The list contains dictionaries each with a key of 'archive' and
         'publications'.
         """
         # Grab the related archive publications and limit the result to
         # the first 3.
-        latest_archive_pubs = self.context.findRelatedArchivePublications()
-        latest_archive_pubs.config(limit=3)
+        # Note: because the findRelatedArchives() method cannot return
+        # distinct archives (until we can order it by a relevant field
+        # on the Archive table itself, such as 'rank', rather than the
+        # current ordering on the joined SourcePackageRelease.dateuploaded
+        # column). We need to manually ensure we get the first three
+        # distinct archives. To ensure this only takes one query, we'll grab
+        # the first 20 results and iterate through to find three distinct
+        # archives (20 is a magic number being greater than
+        # 3 * number of distroseries).
+        latest_related_archives = self.context.findRelatedArchives()
+        latest_related_archives.config(limit=20)
+        latest_three_archives = []
+        for archive in latest_related_archives:
+            if archive in latest_three_archives:
+                continue
+            else:
+                latest_three_archives.append(archive)
 
-        # Convert the result to a dict for easy use in the template.
-        return [
-            {'archive': archive, 'publications': publications}
-                for archive, publications in latest_archive_pubs]
+            if len(latest_three_archives) == 3:
+                break
+
+        # Now we'll find the relevant publications for the latest
+        # three archives.
+        archive_set = getUtility(IArchiveSet)
+        publications = archive_set.getPublicationsInArchives(
+                self.context.sourcepackagename, latest_three_archives)
+
+        # Collect the publishings for each archive
+        archive_publishings_dict = {}
+        for archive in latest_three_archives:
+            for pub in publications:
+                if pub.archive == archive:
+                    archive_publishings_dict.setdefault(
+                        archive, []).append(pub)
+
+        # Then construct a list of dicts with the results for easy use in
+        # the template, preserving the order of the archives:
+        archive_publishings = []
+        for archive in latest_three_archives:
+            archive_publishings.append({
+                'archive': archive,
+                'publications': archive_publishings_dict[archive]
+                })
+
+        return archive_publishings
 
     def _createPackagingField(self):
         """Create a field to specify a Packaging association.
