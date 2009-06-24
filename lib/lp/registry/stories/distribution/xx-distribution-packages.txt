@@ -184,6 +184,12 @@ this source package are displayed.
 
 A link to further PPA searches is also included.
 
+    >>> link = browser.getLink(
+    ...     url='http://launchpad.dev/ubuntutest/+ppas?'
+    ...         'name_filter=netapplet')
+    >>> link.text
+    "...external PPA versions..."
+
 
 /$DISTRO/+source/$PACKAGE pages contain a version history that lists
 each published version of a package with its changelog entry for that
