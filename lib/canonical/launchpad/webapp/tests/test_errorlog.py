@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 import datetime
+import logging
 import os
 import shutil
 import StringIO
@@ -29,7 +30,8 @@ from canonical.testing import reset_logging
 from canonical.launchpad import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReport, ErrorReportingUtility, ScriptRequest, _is_sensitive)
+    ErrorReport, ErrorReportingUtility, OopsLoggingHandler, ScriptRequest,
+    _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from lazr.restful.declarations import webservice_error
 from lp.testing import TestCase
@@ -717,9 +719,39 @@ class TestRequestWithPrincipal(TestRequest):
 class TestOopsLoggingHandler(TestCase):
     """Tests for a Python logging handler that logs OOPSes."""
 
-    # XXX: Get a Python logger, with the OOPS logging handler registered. Call
-    # error() & exception() on that logger, and confirm that the OOPS error
-    # utility has logged an appropriate OOPS.
+    def assertOopsMatches(self, report, exc_type, exc_value):
+        """Assert that 'report' is an OOPS of a particular exception.
+
+        :param report: An `IErrorReport`.
+        :param exc_type: The string of an exception type.
+        :param exc_value: The string of an exception value.
+        """
+        self.assertEqual(exc_type, report.type)
+        self.assertEqual(exc_value, report.value)
+        self.assertTrue(
+            report.tb_text.startswith('Traceback (most recent call last):\n'),
+            report.tb_text)
+        self.assertEqual('', report.pageid)
+        self.assertEqual('None', report.username)
+        self.assertEqual('None', report.url)
+        self.assertEqual([], report.req_vars)
+        self.assertEqual([], report.db_statements)
+
+    def test_exception_records_oops(self):
+        # When OopsLoggingHandler is a handler for a logger, any exceptions
+        # logged will have OOPS reports generated for them.
+        logger = logging.getLogger(self.factory.getUniqueString())
+        error_utility = ErrorReportingUtility()
+        logger.addHandler(OopsLoggingHandler(error_utility=error_utility))
+        error_message = self.factory.getUniqueString()
+        try:
+            1/0
+        except ZeroDivisionError:
+            logger.exception(error_message)
+        oops_report = error_utility.getLastOopsReport()
+        self.assertOopsMatches(
+            oops_report, 'ZeroDivisionError',
+            'integer division or modulo by zero')
 
 
 def test_suite():
