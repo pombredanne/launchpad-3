@@ -737,6 +737,9 @@ class TestOopsLoggingHandler(TestCase):
         self.assertEqual([], report.req_vars)
         self.assertEqual([], report.db_statements)
 
+    # XXX: Move the set-up to setUp, add a cleanup that cleans out
+    # error_utility.error_dir.
+
     def test_exception_records_oops(self):
         # When OopsLoggingHandler is a handler for a logger, any exceptions
         # logged will have OOPS reports generated for them.
@@ -752,6 +755,14 @@ class TestOopsLoggingHandler(TestCase):
         self.assertOopsMatches(
             oops_report, 'ZeroDivisionError',
             'integer division or modulo by zero')
+
+    def test_warning_does_nothing(self):
+        # Logging a warning doesn't generate an OOPS.
+        logger = logging.getLogger(self.factory.getUniqueString())
+        error_utility = ErrorReportingUtility()
+        logger.addHandler(OopsLoggingHandler(error_utility=error_utility))
+        logger.warning("Cheeseburger")
+        self.assertIs(None, error_utility.getLastOopsReport())
 
 
 def test_suite():
