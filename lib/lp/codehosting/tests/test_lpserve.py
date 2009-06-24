@@ -20,13 +20,19 @@ from lp.codehosting import get_bzr_path, get_bzr_plugins_path
 
 
 class TestLaunchpadServe(TestCaseWithTransport):
-    """Tests for the lp-serve plugin."""
+    """Tests for the lp-serve plugin.
+
+    Most of the helper methods here are copied from bzrlib.tests and
+    bzrlib.tests.blackbox.test_serve in bzr.dev r4445. They have since been
+    modified for the Launchpad environment.
+    """
 
     def assertFinishedCleanly(self, result):
         """Assert that a server process finished cleanly."""
         self.assertEqual((0, '', ''), tuple(result))
 
     def get_python_path(self):
+        """Return the path to the Python interpreter."""
         return '%s/bin/py' % config.root
 
     def start_bzr_subprocess(self, process_args, env_changes=None,
@@ -34,20 +40,15 @@ class TestLaunchpadServe(TestCaseWithTransport):
         """Start bzr in a subprocess for testing.
 
         This starts a new Python interpreter and runs bzr in there.
-        This should only be used for tests that have a justifiable need for
-        this isolation: e.g. they are testing startup time, or signal
-        handling, or early startup code, etc.  Subprocess code can't be
-        profiled or debugged so easily.
 
-        :param process_args: a list of arguments to pass to the bzr executable,
-            for example ``['--version']``.
+        :param process_args: a list of arguments to pass to the bzr
+            executable, for example ``['--version']``.
         :param env_changes: A dictionary which lists changes to environment
             variables. A value of None will unset the env variable.
             The values must be strings. The change will only occur in the
             child, so you don't need to fix the environment after running.
-        :param allow_plugins: If False (default) pass --no-plugins to bzr.
 
-        :returns: Popen object for the started process.
+        :return: Popen object for the started process.
         """
         if env_changes is None:
             env_changes = {}
@@ -67,7 +68,11 @@ class TestLaunchpadServe(TestCaseWithTransport):
             cwd = osutils.getcwd()
             os.chdir(working_dir)
 
+        # Because of buildout, we need to get a custom Python binary, not
+        # sys.executable.
         python_path = self.get_python_path()
+        # We can't use self.get_bzr_path(), since it'll find lib/bzrlib,
+        # rather than the path to sourcecode/bzr/bzr.
         bzr_path = get_bzr_path()
         try:
             # win32 subprocess doesn't support preexec_fn
@@ -88,9 +93,6 @@ class TestLaunchpadServe(TestCaseWithTransport):
     def finish_lpserve_subprocess(self, process):
         """Shut down the server process.
 
-        Cribbed from `TestBzrServe.assertInetServerShutsdownCleanly` from
-        bzrlib.tests.blackbox.test_serve in bzr.dev r4445.
-
         :return: A tuple of (retcode, stdout, stderr).
         """
         # Shutdown the server: the server should shut down when it cannot read
@@ -107,17 +109,23 @@ class TestLaunchpadServe(TestCaseWithTransport):
             stdout_and_stderr[1],
             )
 
-    def start_server_inet(self):
+    def start_server_inet(self, user_id=None):
         """Start an lp-serve server subprocess.
+
+        :param user_id: The database id of the user to run as. If not
+            provided, defaults to 1.
 
         :return: a tuple with the bzr process handle for passing to
             finish_lpserve_subprocess, a client for the server, and a
             transport.
         """
         # Serve from the current directory
-        process = self.start_bzr_subprocess(['lp-serve', '--inet', '1'])
+        if user_id is None:
+            user_id = 1
+        process = self.start_bzr_subprocess(
+            ['lp-serve', '--inet', str(user_id)])
 
-        # Connect to the server
+        # Connect to the server.
         # We use this url because while this is no valid URL to connect to
         # this server instance, the transport needs a URL.
         url = 'bzr://localhost/'
