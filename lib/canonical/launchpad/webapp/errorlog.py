@@ -5,16 +5,17 @@
 
 __metaclass__ = type
 
-import threading
-import os
-import errno
-import re
 import datetime
-import pytz
-import rfc822
+import errno
 import logging
+import os
+import re
+import rfc822
+import threading
 import types
 import urllib
+
+import pytz
 
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest

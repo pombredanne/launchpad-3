@@ -4,16 +4,17 @@
 
 __metaclass__ = type
 
-import sys
-import os
 import datetime
-import pytz
-import unittest
+import os
 import shutil
 import StringIO
-from textwrap import dedent
+import sys
 import tempfile
+from textwrap import dedent
 import traceback
+import unittest
+
+import pytz
 
 from zope.app.publication.tests.test_zopepublication import (
     UnauthenticatedPrincipal)
