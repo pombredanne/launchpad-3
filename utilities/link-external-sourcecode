@@ -8,6 +8,8 @@ from sys import stderr, stdout
 from urllib import unquote
 from urlparse import urlparse
 
+from bzrlib.trace import enable_default_logging
+enable_default_logging()
 from bzrlib.branch import Branch
 from bzrlib.plugin import load_plugins
 
