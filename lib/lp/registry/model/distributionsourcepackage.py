@@ -249,40 +249,13 @@ class DistributionSourcePackage(BugTargetBase,
             *extra_args
             )
 
+        # Note: If and when we later have a field on IArchive to order by,
+        # such as IArchive.rank, we will then be able to return distinct
+        # results. As it is, we cannot return distinct results while ordering
+        # by SPR.dateuploaded.
         results.order_by(Desc(SourcePackageRelease.dateuploaded))
 
         return results
-
-    def findRelatedArchivePublications(self,
-                                       exclude_archive=None,
-                                       archive_purpose=ArchivePurpose.PPA):
-        """See `IDistributionSourcePackage`."""
-        archives = self.findRelatedArchives(exclude_archive, archive_purpose)
-
-        # Create a pre-iteration hook that will populate a cache of all
-        # the publications for the package in a related archive when the
-        # result set is first iterated (ie. when we know the offset and
-        # limit):
-        publication_cache = {}
-        archive_set = getUtility(IArchiveSet)
-        def collect_publications(result_set):
-            publications = archive_set.getPublicationsInArchives(
-                self.sourcepackagename, archives)
-
-            # Add each publication to the cache, keyed by archive.
-            for pub in publications:
-                publication_cache.setdefault(pub.archive, []).append(pub)
-
-        # Now create a function to decorate our result-set of archives
-        # with the corresponding publications:
-        def add_publications_to_archive(archive):
-            return (archive, publication_cache[archive])
-
-        # Finally, return the decorated resultset:
-        return DecoratedResultSet(
-            archives,
-            result_decorator=add_publications_to_archive,
-            pre_iter_hook=collect_publications)
 
     @property
     def publishing_history(self):

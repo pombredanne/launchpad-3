@@ -273,18 +273,3 @@ packages in other archives too:
     Primary Archive for Ubuntu Linux
     PPA named nightly for Person...
     PPA named beta for Person...
-
-The closely-related findRelatedArchivePublications() decorates the results
-so that the corresponding publications for each archive are returned too:
-
-    >>> archive_pubs = gedit_beta_src.findRelatedArchivePublications()
-    >>> for archive, pubs in archive_pubs:
-    ...     print archive.displayname
-    ...     for pub in pubs:
-    ...         print " - %s in %s" % (
-    ...             pub.source_package_version, pub.distroseries.displayname)
-    PPA named nightly for Person-name2
-     - 666 in Breezy Badger Autotest
-    PPA named beta for Person-name5
-     - 666 in Breezy Badger Autotest
-
