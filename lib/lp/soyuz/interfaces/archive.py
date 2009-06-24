@@ -240,6 +240,11 @@ class IArchivePublic(IHasOwner):
         title=_('Date created'), required=False, readonly=True,
         description=_("The time when the archive was created."))
 
+    relative_build_score = Int(
+        title=_("Relative Build Score"), required=True, readonly=False,
+        description=_(
+            "A delta to apply to all build scores for this archive."))
+
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
