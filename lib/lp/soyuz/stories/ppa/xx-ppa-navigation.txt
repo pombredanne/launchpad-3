@@ -2,9 +2,14 @@
 
 If a user has PPAs, they are accessible from the user's page in a section
 titled "Personal package archives".  If the user doesn't have any PPAs
-then that section is not present.
+then that section is not present and there is no link in the navigation menu.
 
     >>> anon_browser.open('http://launchpad.dev/~matsubara')
+    >>> print anon_browser.getLink('Personal Package Archives')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
     >>> print find_tag_by_id(anon_browser.contents, 'ppas')
     None
 
@@ -55,18 +60,6 @@ allows users with permission to create a PPA.
 
     >>> print cprov_browser.getLink('Create a new PPA').url
     http://launchpad.dev/~launchpad-buildd-admins/+activate-ppa
-
-If the user has no permission, the link to create a new PPA is not
-presented, but the navigation-menu artifact and the PPA section still
-present.
-
-    >>> browser.open('http://launchpad.dev/~launchpad-buildd-admins')
-
-    >>> print browser.getLink('Personal Package Archives').url
-    http://launchpad.dev/~launchpad-buildd-admins#ppas
-
-    >>> print_tag_with_id(browser.contents, 'ppas')
-    Personal package archives
 
 While navigating around the PPA the "structural location" includes a PPA:
 

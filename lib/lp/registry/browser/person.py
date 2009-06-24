@@ -112,7 +112,7 @@ from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
 from lazr.restful.interface import copy_field, use_template
-from canonical.lazr.utils import safe_hasattr
+from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
@@ -223,7 +223,8 @@ from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
-from canonical.launchpad.webapp.menu import structured, NavigationMenu
+from canonical.launchpad.webapp.menu import (
+    get_current_view, structured, NavigationMenu)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from lazr.uri import URI, InvalidURIError
@@ -1053,7 +1054,11 @@ class PPANavigationMenuMixIn:
     def ppas(self):
         target = '#ppas'
         text = 'Personal Package Archives'
-        return Link(target, text)
+        request = get_current_browser_request()
+        # I've no idea why removeSecurityProxy is needed here.
+        undressed_view = removeSecurityProxy(get_current_view(request))
+        enabled = undressed_view.should_show_ppa_section
+        return Link(target, text, enabled=enabled)
 
 
 class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
