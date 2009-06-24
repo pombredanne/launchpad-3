@@ -713,7 +713,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
 class TeamMailingListSubscribersView(LaunchpadView):
     """The list of people subscribed to a team's mailing list."""
 
-    columns = 4
+    max_columns = 4
 
     @cachedproperty
     def subscribers(self):
@@ -723,10 +723,11 @@ class TeamMailingListSubscribersView(LaunchpadView):
     def renderTable(self):
         html = ['<table id="subscribers" style="max-width: 80em">']
         items = self.subscribers.currentBatch()
-        rows = int(math.ceil(len(items) / float(self.columns)))
+        columns = min(int(math.ceil(len(items) / 10.0)), self.max_columns)
+        rows = int(math.ceil(len(items) / float(columns)))
         for i in range(0, rows):
             html.append('<tr>')
-            for j in range(0, self.columns):
+            for j in range(0, columns):
                 index = i + (j * rows)
                 if index >= len(items):
                     break
