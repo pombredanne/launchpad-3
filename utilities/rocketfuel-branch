@@ -1,5 +1,8 @@
 #! /bin/bash
-
+#
+# Copyright <YEARS> Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3; see the file LICENSE for
+#
 # Create a new branch of LP called "foo" in $LP_PROJECT_PATH/foo, with all the
 # source dependencies properly linked in.
 

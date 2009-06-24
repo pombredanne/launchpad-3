@@ -1,5 +1,8 @@
 #!/bin/bash
 #
+# Copyright <YEARS> Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3; see the file LICENSE for
+#
 # Runs xmlint, pyflakes and pylint on files changed from parent branch.
 # Use '-v' to run pylint under stricter conditions with additional messages.
 

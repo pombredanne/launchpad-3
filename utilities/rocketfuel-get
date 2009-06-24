@@ -1,5 +1,8 @@
 #! /bin/bash
-
+#
+# Copyright <YEARS> Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3; see the file LICENSE for
+#
 # Update your copy of trunk and the necessary source dependencies, and make
 # sure all source dependencies are properly linked in to all the branches you
 # are working on.

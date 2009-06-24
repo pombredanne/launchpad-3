@@ -1,4 +1,8 @@
 #!/usr/bin/python2.4
+#
+# Copyright <YEARS> Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3; see the file LICENSE for
+
 """
 FindImports is a script that processes Python module dependencies.  Currently
 it can be used for finding unused imports and graphing module dependencies
