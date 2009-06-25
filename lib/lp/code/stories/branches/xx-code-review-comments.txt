@@ -96,7 +96,7 @@ If the user wants to review the branch, they click on the 'Add a review or
 comment' link.
 
     >>> eric_browser.getLink('Add a review or comment').click()
-    >>> eric_browser.getControl('Reviewer says').displayValue = ['Abstain']
+    >>> eric_browser.getControl(name='field.vote').displayValue = ['Abstain']
     >>> eric_browser.getControl('Review type').value = 'timeless'
     >>> eric_browser.getControl('Save Comment').click()
 
