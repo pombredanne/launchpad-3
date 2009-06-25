@@ -743,7 +743,8 @@ class TestOopsLoggingHandler(TestCase):
         self.error_utility = ErrorReportingUtility()
         self.logger.addHandler(
             OopsLoggingHandler(error_utility=self.error_utility))
-        self.addCleanup(shutil.rmtree, self.error_utility.error_dir)
+        self.addCleanup(
+            shutil.rmtree, self.error_utility.error_dir, ignore_errors=True)
 
     def test_exception_records_oops(self):
         # When OopsLoggingHandler is a handler for a logger, any exceptions
@@ -761,6 +762,11 @@ class TestOopsLoggingHandler(TestCase):
     def test_warning_does_nothing(self):
         # Logging a warning doesn't generate an OOPS.
         self.logger.warning("Cheeseburger")
+        self.assertIs(None, self.error_utility.getLastOopsReport())
+
+    def test_error_does_nothing(self):
+        # Logging an error without an exception does nothing.
+        self.logger.error("Delicious ponies")
         self.assertIs(None, self.error_utility.getLastOopsReport())
 
 

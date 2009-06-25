@@ -576,7 +576,8 @@ class OopsLoggingHandler(logging.Handler):
     def emit(self, record):
         """See `logging.Handler.emit`."""
         info = record.exc_info
-        self._error_utility.raising(info, self._request)
+        if info is not None:
+            self._error_utility.raising(info, self._request)
 
 
 class SoftRequestTimeout(Exception):
