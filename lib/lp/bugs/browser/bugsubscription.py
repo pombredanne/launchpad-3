@@ -14,7 +14,6 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
