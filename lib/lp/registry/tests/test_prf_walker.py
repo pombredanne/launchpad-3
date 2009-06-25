@@ -176,7 +176,7 @@ class WalkerBase_walk(unittest.TestCase):
         class TestWalker(WalkerBase):
 
             def list(self, sub_dir):
-                # Force the walker to handle an exception
+                # Force the walker to handle an exception.
                 raise UnicodeEncodeError(
                     'utf-8', u'source text', 0, 1, 'reason')
 

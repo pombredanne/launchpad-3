@@ -115,7 +115,7 @@ class WalkerBase:
             except UnicodeEncodeError:
                 # This page is unparsable.
                 # XXX sinzui 2009-06-22 bug=70524:
-                # This problem should be reported to the project drivers and
+                # This problem should be reported to the project drivers
                 # so that they can attempt to get this fixed.
                 self.log.warning(
                     "Unicode error parsing %s page '%s'" %
