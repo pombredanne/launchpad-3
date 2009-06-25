@@ -31,7 +31,8 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.translationmessage import TranslationMessage
+from canonical.launchpad.database.translationmessage import (
+    TranslationMessage, make_plurals_sql_fragment)
 from canonical.launchpad.database.translationtemplateitem import (
     TranslationTemplateItem)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -579,6 +580,11 @@ class POFile(SQLBase, POFileMixIn):
                     variant=quote(self.variant))
         return clause
 
+    def _getAnyMsgstrNotNullClause(self, table='TranslationMessage'):
+        """Checks that at least one translation is not NULL."""
+        return "(%s)" % make_plurals_sql_fragment(
+            "%s.msgstr%%(form)d IS NOT NULL" % table, "OR")
+
     def _getClausesForPOFileMessages(self, current=True):
         """Get TranslationMessages for the POFile via TranslationTemplateItem.
 
@@ -711,6 +717,7 @@ class POFile(SQLBase, POFileMixIn):
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             'TranslationMessage.is_current IS NOT TRUE',
+            self._getAnyMsgstrNotNullClause()
             ])
 
         variant_clause = self._getLanguageVariantClause(table='diverged')
