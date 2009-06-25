@@ -141,3 +141,32 @@ class DecoratedResultSet(object):
         new_result_set = self.result_set.order_by(*args, **kwargs)
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook)
+
+    def count(self, *args, **kwargs):
+        """See `IResultSet`.
+
+        Decorated to fix bug 217644
+
+        Currently Storm.store.ResultSet has a bug where aggregate
+        methods do not respect the distinct config option. This
+        decorated version ensures that the count method *does* respect
+        the distinct config option when called without args/kwargs.
+        """
+        # Only override the method call if
+        #  1) The result set has the distinct config set
+        #  2) count was called without any args or kwargs
+        naked_result_set = removeSecurityProxy(self.result_set)
+        if (naked_result_set._distinct and
+            len(args) == 0 and
+            len(kwargs) == 0):
+            spec = naked_result_set._find_spec
+            columns, tables = spec.get_columns_and_tables()
+
+            # Note: The following looks a bit suspect because it will only
+            # work if the original result set includes an id column. But this
+            # should always be the case when using a DecoratedResultSet as
+            # we're decorating content classes.
+            main_id_column = Column('id', tables[0])
+            return self.result_set.count(expr=main_id_column, distinct=True)
+        else:
+            return self.result_set.count(*args, **kwargs)

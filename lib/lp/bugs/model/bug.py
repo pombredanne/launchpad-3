@@ -458,6 +458,9 @@ class Bug(SQLBase):
 
     def isSubscribedToDupes(self, person):
         """See `IBug`."""
+        if person is None:
+            return False
+
         return bool(
             BugSubscription.select("""
                 bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
