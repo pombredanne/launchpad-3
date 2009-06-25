@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Tests for canonical.launchpad.productreleasefinder.log."""
 
 __copyright__ = "Copyright © 2005 Canonical Ltd."
