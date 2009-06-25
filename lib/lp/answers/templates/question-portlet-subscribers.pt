@@ -11,11 +11,9 @@
        tal:define="subscribers context/getDirectSubscribers;
                    indirect_subscribers context/getIndirectSubscribers">
 
-    <ul class="person" tal:condition="subscribers">
+    <ul tal:condition="subscribers">
       <li tal:repeat="subscriber subscribers">
-        <a href="#"
-           tal:content="subscriber/displayname"
-           tal:attributes="href subscriber/fmt:url">Dafydd Harries</a>
+        <a tal:replace="structure subscriber/fmt:link">Dafydd Harries</a>
       </li>
     </ul>
     <p tal:condition="not: subscribers">
@@ -24,11 +22,9 @@
     <div style="margin-top: 1em;" tal:condition="indirect_subscribers">
 
       <b>Also notified:</b><br />
-      <ul class="person">
+      <ul>
         <li tal:repeat="subscriber indirect_subscribers">
-          <a href="#"
-             tal:content="subscriber/displayname"
-             tal:attributes="href subscriber/fmt:url">Dafydd Harries</a>
+          <a tal:replace="structure subscriber/fmt:link">Dafydd Harries</a>
         </li>
       </ul>
 
