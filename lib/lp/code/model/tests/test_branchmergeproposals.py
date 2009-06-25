@@ -859,13 +859,11 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         bmp1.nominateReviewer(beaver, wally)
         bmp2 = self._make_merge_proposal('beaver', 'gokart', 'brakes', True)
 
-        wally_proposals = \
-            BranchMergeProposalGetter.getProposalsForParticipant(
+        wally_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
             wally, [BranchMergeProposalStatus.NEEDS_REVIEW], wally)
         self.assertEqual(wally_proposals.count(), 1)
 
-        beave_proposals = \
-            BranchMergeProposalGetter.getProposalsForParticipant(
+        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
             beaver, [BranchMergeProposalStatus.NEEDS_REVIEW], beaver)
         self.assertEqual(beave_proposals.count(), 2)
 
@@ -1243,15 +1241,20 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         # Note we're using the reference from the first call
         self.assertEqual('specific', reference.review_type)
 
-    def test_comment_with_vote_does_not_create_reference(self):
-        """A comment with vote does not create a vote reference."""
+    def test_comment_with_vote_creates_reference(self):
+        """A comment with a vote creates a vote reference."""
         merge_proposal = self.factory.makeBranchMergeProposal()
         reviewer = self.factory.makePerson()
         comment = merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content',
             vote=CodeReviewVote.APPROVE)
         votes = list(merge_proposal.votes)
-        self.assertEqual(0, len(votes))
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(reviewer, vote_reference.registrant)
+        self.assertTrue(vote_reference.review_type is None)
+        self.assertEqual(comment, vote_reference.comment)
 
     def test_comment_without_a_vote_does_not_create_reference(self):
         """A comment with a vote creates a vote reference."""
@@ -1260,6 +1263,24 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         comment = merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content')
         self.assertEqual([], list(merge_proposal.votes))
+
+    def test_second_vote_by_person_just_alters_reference(self):
+        """A second vote changes the comment reference only."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        comment1 = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.DISAPPROVE)
+        comment2 = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE)
+        votes = list(merge_proposal.votes)
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(reviewer, vote_reference.registrant)
+        self.assertTrue(vote_reference.review_type is None)
+        self.assertEqual(comment2, vote_reference.comment)
 
     def test_vote_by_nominated_reuses_reference(self):
         """A comment with a vote for a nominated reviewer alters reference."""

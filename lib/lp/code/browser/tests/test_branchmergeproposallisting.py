@@ -9,8 +9,8 @@ from unittest import TestLoader
 import transaction
 
 from lp.code.browser.branchmergeproposallisting import (
-    ActiveReviewsView, BranchMergeProposalListingView,
-    PersonActiveReviewsView, ProductActiveReviewsView)
+    ActiveReviewsView, BranchMergeProposalListingView, PersonActiveReviewsView,
+    ProductActiveReviewsView)
 from lp.code.enums import CodeReviewVote
 from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -30,12 +30,10 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self, user="foo.bar@canonical.com")
 
     def _createComment(self, proposal, reviewer=None, vote=None,
-                       comment=_default, nominated=True):
+                       comment=_default):
         """Create a comment on the merge proposal."""
         if reviewer is None:
             reviewer = self.factory.makePerson()
-        if nominated:
-            proposal.nominateReviewer(reviewer, proposal.registrant)
         if comment is _default:
             comment = self.factory.getUniqueString()
         proposal.createComment(
@@ -235,7 +233,6 @@ class _ActiveReviewGroupsTest:
         # ARE_DOING.
         reviewer = self.bmp.target_branch.owner
         login_person(reviewer)
-        self.bmp.nominateReviewer(reviewer, reviewer)
         self.bmp.createComment(
             reviewer, 'subject', vote=CodeReviewVote.APPROVE)
         self.assertReviewGroupForUser(
