@@ -313,13 +313,17 @@ class HWSubmissionEmailLinker(TunableLoop):
         self.submission_store = IMasterStore(HWSubmission)
         self.submission_store.execute(
             "DROP TABLE IF EXISTS NewlyMatchedSubmission")
+        # The join with the Person table is to avoid any replication
+        # lag issues - EmailAddress.person might reference a Person
+        # that does not yet exist.
         self.submission_store.execute("""
             CREATE TEMPORARY TABLE NewlyMatchedSubmission AS
             SELECT
                 HWSubmission.id AS submission,
                 EmailAddress.person AS owner
-            FROM HWSubmission, EmailAddress
+            FROM HWSubmission, EmailAddress, Person
             WHERE HWSubmission.owner IS NULL
+                AND EmailAddress.person = Person.id
                 AND EmailAddress.status IN %s
                 AND lower(HWSubmission.raw_emailaddress)
                     = lower(EmailAddress.email)
