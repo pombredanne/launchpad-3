@@ -385,6 +385,7 @@ class DecoratedCodeReviewVoteReference:
         is_mergable = self.context.branch_merge_proposal.isMergable()
         self.can_change_review = (user == context.reviewer) and is_mergable
         branch = context.branch_merge_proposal.source_branch
+        self.trusted = (user is not None and user.inTeam(branch.reviewer))
         if user is None:
             self.user_can_review = False
         else:
@@ -473,32 +474,6 @@ class BranchMergeProposalVoteView(LaunchpadView):
         # Now sort so the most recently created is first.
         return sorted(reviews, key=operator.attrgetter('date_created'),
                       reverse=True)
-
-    @cachedproperty
-    def latest_reviews(self):
-        latest_reviews = []
-        seen_reviewers = set()
-        for comment in sorted(self.context.all_comments,
-            key=lambda x: x.message.datecreated, reverse=True):
-            if comment.vote is None:
-                continue
-            if comment.message.owner in seen_reviewers:
-                continue
-            latest_reviews.append(comment)
-            seen_reviewers.add(comment.message.owner)
-        return latest_reviews
-
-    @property
-    def review_info(self):
-        info = []
-        requests = dict((reference.comment, reference) for reference
-                        in self.context.votes)
-        review_team = self.context.target_branch.reviewer
-        for review in self.latest_reviews:
-            trusted = review.message.owner.inTeam(review_team)
-            info.append({'review': review, 'request': requests.get(review),
-                         'trusted': trusted})
-        return info
 
     @cachedproperty
     def show_user_review_link(self):

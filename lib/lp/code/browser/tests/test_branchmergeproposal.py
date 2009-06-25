@@ -106,9 +106,9 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.bmp = self.factory.makeBranchMergeProposal()
         self.date_generator = time_counter(delta=timedelta(days=1))
 
-    def _createComment(self, reviewer, vote=None):
+    def _createComment(self, reviewer, vote):
         """Create a comment on the merge proposal."""
-        return self.bmp.createComment(
+        self.bmp.createComment(
             owner=reviewer,
             subject=self.factory.getUniqueString('subject'),
             vote=vote,
@@ -116,7 +116,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
     def _nominateReviewer(self, reviewer, registrant):
         """Nominate a reviewer for the merge proposal."""
-        return self.bmp.nominateReviewer(
+        self.bmp.nominateReviewer(
             reviewer=reviewer, registrant=registrant,
             _date_created=self.date_generator.next())
 
@@ -125,7 +125,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
         self.assertEqual([], view.current_reviews)
         self.assertEqual([], view.requested_reviews)
-        self.assertEqual([], view.latest_reviews)
 
     def testRequestedOrdering(self):
         # No votes should return empty lists
@@ -157,9 +156,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
         owner = self.bmp.source_branch.owner
 
-        self._nominateReviewer(albert, owner)
-        self._nominateReviewer(bob, owner)
-        self._nominateReviewer(charles, owner)
         self._createComment(albert, CodeReviewVote.APPROVE)
         self._createComment(bob, CodeReviewVote.ABSTAIN)
         self._createComment(charles, CodeReviewVote.DISAPPROVE)
@@ -170,61 +166,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             [charles, bob, albert],
             [review.reviewer for review in view.current_reviews])
 
-    def test_latest_reviews_ordering(self):
-        # Most recent first.
-        albert = self.factory.makePerson(name='albert')
-        bob = self.factory.makePerson(name='bob')
-        charles = self.factory.makePerson(name='charles')
-        self._createComment(albert, CodeReviewVote.APPROVE)
-        self._createComment(bob, CodeReviewVote.ABSTAIN)
-        self._createComment(charles, CodeReviewVote.DISAPPROVE)
-
-        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-
-        self.assertEqual(
-            [charles, bob, albert],
-            [review.message.owner for review in view.latest_reviews])
-        self.assertEqual([], view.current_reviews)
-
-    def test_latest_reviews_with_duplicates(self):
-        # When the same reviewer votes twice, the second vote is used.
-        albert = self.factory.makePerson(name='albert')
-        self._createComment(albert, CodeReviewVote.APPROVE)
-        review = self._createComment(albert, CodeReviewVote.APPROVE)
-        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-        self.assertEqual([review], view.latest_reviews)
-
-    def test_latest_reviews_with_vote_and_comment(self):
-        # If a reviewer comments after a vote, the vote is still shown.
-        albert = self.factory.makePerson(name='albert')
-        review = self._createComment(albert, CodeReviewVote.APPROVE)
-        self._createComment(albert)
-        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-        self.assertEqual([review], view.latest_reviews)
-
-    def bob_vote_info(self, requested=False, reviewer=False):
-        bob = self.factory.makePerson(name='bob')
-        if requested:
-            self._nominateReviewer(bob, self.bmp.registrant)
-        if reviewer:
-            self.bmp.target_branch.reviewer = self.factory.makeTeam()
-            bob.join(self.bmp.target_branch.reviewer)
-        self._createComment(bob, CodeReviewVote.APPROVE)
-        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-        return view.review_info[0]
-
-    def test_review_info_with_requested(self):
-        self.assertIsNot(None, self.bob_vote_info(True)['request'])
-
-    def test_review_info_with_no_requested(self):
-        self.assertIs(None, self.bob_vote_info()['request'])
-
-    def test_review_info_reviewer(self):
-        self.assertTrue(self.bob_vote_info(reviewer=True)['trusted'])
-
-    def test_review_info_community(self):
-        self.assertFalse(self.bob_vote_info()['trusted'])
-
     def testChangeOfVoteBringsToTop(self):
         # Changing the vote changes the vote date, so it comes to the top.
         # Request three reviews.
@@ -233,8 +174,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
         owner = self.bmp.source_branch.owner
 
-        self._nominateReviewer(albert, owner)
-        self._nominateReviewer(bob, owner)
         self._createComment(albert, CodeReviewVote.ABSTAIN)
         self._createComment(bob, CodeReviewVote.APPROVE)
         self._createComment(albert, CodeReviewVote.APPROVE)

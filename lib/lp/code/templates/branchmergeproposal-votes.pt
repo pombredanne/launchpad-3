@@ -15,25 +15,29 @@
   </thead>
   <tbody>
     <!-- Current reviews -->
-    <tr tal:repeat="info view/review_info">
+    <tr tal:repeat="review view/current_reviews">
       <td>
-        <tal:reviewer
-         replace="structure info/review/message/owner/fmt:link:mainsite">
+        <tal:reviewer replace="structure review/reviewer/fmt:link:mainsite">
         Eric the Reviewer</tal:reviewer>
-        <tal:untrusted condition="not: info/trusted">
-            (community)
-        </tal:untrusted>
-      </td>
-      <td tal:content="info/review/vote_tag" />
-      <td><tal:req condition="info/request">
-          <tal:date replace="info/request/date_created/fmt:approximatedate"/>
-      </tal:req></td>
+        <tal:community condition="not: review/trusted">
+        (community)</tal:community></td>
+      <td tal:content="review/review_type" />
       <td>
-        <span tal:attributes="class string:vote${info/review/vote/name}"
-              tal:content="info/review/vote/title">
+        <tal:date-requested condition="review/show_date_requested">
+          <span tal:attributes="title string:Requested by ${review/registrant/displayname}">
+            <tal:date replace="review/date_requested/fmt:approximatedate"/>
+          </span>
+        </tal:date-requested>
+      </td>
+      <td>
+        <span tal:attributes="class string:vote${review/comment/vote/name}"
+              tal:content="review/status_text">
           Approved
         </span>
-        <tal:date replace="info/review/message/datecreated/fmt:displaydate" />
+        <tal:date replace="review/date_of_comment/fmt:displaydate" />
+        <a tal:condition="review/can_change_review" href="+review">
+          <img src="/@@/edit" title="Vote again" alt="vote"/>
+        </a>
       </td>
     </tr>
     <!-- Pending reviews -->
