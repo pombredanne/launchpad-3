@@ -580,11 +580,6 @@ class POFile(SQLBase, POFileMixIn):
                     variant=quote(self.variant))
         return clause
 
-    def _getAnyMsgstrNotNullClause(self, table='TranslationMessage'):
-        """Checks that at least one translation is not NULL."""
-        return "(%s)" % make_plurals_sql_fragment(
-            "%s.msgstr%%(form)d IS NOT NULL" % table, "OR")
-
     def _getClausesForPOFileMessages(self, current=True):
         """Get TranslationMessages for the POFile via TranslationTemplateItem.
 
@@ -714,10 +709,12 @@ class POFile(SQLBase, POFileMixIn):
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
         clauses = self._getClausesForPOFileMessages()
+        msgstr_clause =  make_plurals_sql_fragment(
+            "TranslationMessage.msgstr%(form)d IS NOT NULL", "OR")
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             'TranslationMessage.is_current IS NOT TRUE',
-            self._getAnyMsgstrNotNullClause()
+            "(%s)" % msgstr_clause
             ])
 
         variant_clause = self._getLanguageVariantClause(table='diverged')

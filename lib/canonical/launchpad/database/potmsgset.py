@@ -264,8 +264,9 @@ class POTMsgSet(SQLBase):
             potmsgset = %s AND
             language = %s
             """ % sqlvalues(self, language)
-        query += " AND (%s)" % make_plurals_sql_fragment(
+        msgstr_clause = make_plurals_sql_fragment(
             "msgstr%(form)d IS NOT NULL", "OR")
+        query += " AND (%s)" % msgstr_clause
         current = self.getCurrentTranslationMessage(potemplate, language)
         if current is not None:
             if current.date_reviewed is None:
