@@ -1054,7 +1054,10 @@ class PPANavigationMenuMixIn:
     def ppas(self):
         target = '#ppas'
         text = 'Personal Package Archives'
-        # I've no idea why removeSecurityProxy is needed here.
+        # removeSecurityProxy is needed here because get_current_view()
+        # returns a proxied object.  This is apparently desirable
+        # generally (says Curtis), but right here it's an exceptional
+        # case where we don't need it.
         undressed_view = removeSecurityProxy(get_current_view())
         enabled = undressed_view.should_show_ppa_section
         return Link(target, text, enabled=enabled)

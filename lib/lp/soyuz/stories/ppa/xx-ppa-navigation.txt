@@ -1,8 +1,9 @@
 == Navigating a PPA ==
 
-If a user has PPAs, they are accessible from the user's page in a section
-titled "Personal package archives".  If the user doesn't have any PPAs
-then that section is not present and there is no link in the navigation menu.
+If a user has lp.Edit or lp.View on any PPAs, they are accessible from the
+user's page in a section titled "Personal package archives".  If not, then
+that section is not present and there is no link in the navigation menu.
+(See registry/browser/tests/person-views.txt for more detail.)
 
     >>> anon_browser.open('http://launchpad.dev/~matsubara')
     >>> print anon_browser.getLink('Personal Package Archives')
