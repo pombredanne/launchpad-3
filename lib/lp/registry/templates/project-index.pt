@@ -60,9 +60,9 @@
 
       <ul tal:condition="context/homepageurl">
         <li>
-          <a tal:attributes="href context/homepageurl;
-                             rel string:nofollow;
-                             class string:sprite external-link">
+          <a rel="nofollow"
+            tal:attributes="href context/homepageurl;
+                            class string:sprite external-link">
             <strong>Visit the <tal:name replace="context/title" />
             home page &raquo;</strong>
           </a>
@@ -146,4 +146,4 @@
     </div>
   </body>
 </html>
-<!-- 1-0 inprogress bug 67920, bug 73875, bug 74321, bug 74322 -->
+

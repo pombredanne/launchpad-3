@@ -106,7 +106,7 @@ class AnnouncementAddView(LaunchpadFormView):
 
     @property
     def cancel_url(self):
-        """The projects URL."""
+        """The project's URL."""
         return canonical_url(self.context)
 
 
