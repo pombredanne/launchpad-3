@@ -1143,6 +1143,65 @@ def get_bug_privacy_filter(user):
                      """ % sqlvalues(personid=user.id)
 
 
+def build_tag_search_clauses(tags_spec):
+    """Build a tag search clause."""
+    tags = set(tags_spec.query_values)
+    tags_wildcards = [tag for tag in tags if tag in ('*', '-*')]
+    tags.difference_update(tags_wildcards)
+    tags_include = [tag for tag in tags if not tag.startswith('-')]
+    tags_exclude = [tag[1:] for tag in tags if tag.startswith('-')]
+
+    def tags_set_query(joiner, tags):
+        # Return an SQL snippet that identifies a set of bugs based on
+        # the given tags. The tags are sorted to make testing easier.
+        joiner = " %s " % joiner
+        return joiner.join(
+            "SELECT BugTag.bug FROM BugTag"
+            " WHERE BugTag.tag = %s" % quote(tag)
+            for tag in sorted(tags))
+
+    if zope_isinstance(tags_spec, all):
+        # The set of bugs that have *all* of the tags requested for
+        # *inclusion*.
+        tags_include_clause = tags_set_query(
+            "INTERSECT", tags_include)
+        # The set of bugs that have *any* of the tags requested for
+        # *exclusion*.
+        tags_exclude_clause = tags_set_query(
+            "UNION", tags_exclude)
+    else:
+        # The set of bugs that have *any* of the tags requested for
+        # inclusion.
+        tags_include_clause = tags_set_query(
+            "UNION", tags_include)
+        # The set of bugs that have *all* of the tags requested for
+        # exclusion.
+        tags_exclude_clause = tags_set_query(
+            "INTERSECT", tags_exclude)
+
+    # Search for the *presence* of any tag.
+    if '*' in tags_wildcards:
+        tags_include_clause = "SELECT BugTag.bug FROM BugTag"
+
+    # Search for the *absence* of any tag.
+    if '-*' in tags_wildcards:
+        tags_exclude_clause = "SELECT BugTag.bug FROM BugTag"
+
+    # Combine the include and exclude sets.
+    if len(tags_include_clause) > 0 and len(tags_exclude_clause) > 0:
+        yield "BugTask.bug IN ((%s) EXCEPT (%s))" % (
+            tags_include_clause, tags_exclude_clause)
+    elif len(tags_include_clause) > 0:
+        yield "BugTask.bug IN (%s)" % tags_include_clause
+    elif len(tags_exclude_clause) > 0:
+        yield "BugTask.bug NOT IN (%s)" % tags_exclude_clause
+    else:
+        # This means that a tags argument was given, but that it
+        # didn't contain any tags to search for (which is allowed,
+        # even if it's a bit weird).
+        pass
+
+
 class BugTaskSet:
     """See `IBugTaskSet`."""
     implements(IBugTaskSet)
@@ -1467,64 +1526,8 @@ class BugTaskSet:
             extra_clauses.append(upstream_clause)
 
         if params.tag:
-            tags = set(params.tag.query_values)
-            tags_wildcards = [tag for tag in tags if tag in ('*', '-*')]
-            tags.difference_update(tags_wildcards)
-            tags_include = [tag for tag in tags if not tag.startswith('-')]
-            tags_exclude = [tag[1:] for tag in tags if tag.startswith('-')]
-
-            def tags_set_query(joiner, tags):
-                # Return an SQL snippet that identifies a set of bugs
-                # based on tags.
-                joiner = " %s " % joiner
-                return joiner.join(
-                    "SELECT BugTag.bug FROM BugTag"
-                    " WHERE BugTag.tag = %s" % quote(tag)
-                    for tag in tags)
-
-            if zope_isinstance(params.tag, all):
-                # The set of bugs that have *all* of the tags
-                # requested for *inclusion*.
-                tags_include_clause = tags_set_query(
-                    "INTERSECT", tags_include)
-                # The set of bugs that have *any* of the tags
-                # requested for *exclusion*.
-                tags_exclude_clause = tags_set_query(
-                    "UNION", tags_exclude)
-            else:
-                # The set of bugs that have *any* of the tags
-                # requested for inclusion.
-                tags_include_clause = tags_set_query(
-                    "UNION", tags_include)
-                # The set of bugs that have *all* of the tags
-                # requested for exclusion.
-                tags_exclude_clause = tags_set_query(
-                    "INTERSECT", tags_exclude)
-
-            # Search for the *presence* of any tag.
-            if '*' in tags_wildcards:
-                tags_include_clause = "SELECT BugTag.bug FROM BugTag"
-
-            # Search for the *absence* of any tag.
-            if '-*' in tags_wildcards:
-                tags_exclude_clause = "SELECT BugTag.bug FROM BugTag"
-
-            # Combine the include and exclude sets.
-            if len(tags_include_clause) > 0 and len(tags_exclude_clause) > 0:
-                extra_clauses.append(
-                    "BugTask.bug IN ((%s) EXCEPT (%s))" % (
-                        tags_include_clause, tags_exclude_clause))
-            elif len(tags_include_clause) > 0:
-                extra_clauses.append(
-                    "BugTask.bug IN (%s)" % tags_include_clause)
-            elif len(tags_exclude_clause) > 0:
-                extra_clauses.append(
-                    "BugTask.bug NOT IN (%s)" % tags_exclude_clause)
-            else:
-                # This means that a tags argument was given, but that
-                # it didn't contain any tags to search for (which is
-                # allowed, even if it's a bit weird).
-                pass
+            extra_clauses.extend(
+                build_tag_search_clauses(params.tag))
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine
