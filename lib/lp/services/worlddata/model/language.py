@@ -7,10 +7,13 @@ __all__ = ['Language', 'LanguageSet']
 from zope.interface import implements
 
 from sqlobject import (
-    BoolCol, IntCol, SQLObjectNotFound, SQLRelatedJoin, StringCol)
+    BoolCol, CONTAINSSTRING, IntCol, SQLObjectNotFound,
+    SQLRelatedJoin, StringCol)
+from storm.locals import Or
 
 from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.interfaces import ISlaveStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.services.worlddata.interfaces.language import (
     ILanguageSet, ILanguage, TextDirection)
@@ -236,11 +239,11 @@ class LanguageSet:
     def search(self, text):
         """See `ILanguageSet`."""
         if text:
-            results = Language.select('''
-                code ILIKE '%%' || %(pattern)s || '%%' OR
-                englishname ILIKE '%%' || %(pattern)s || '%%'
-                ''' % { 'pattern': quote_like(text) },
-                orderBy='englishname')
+            results = ISlaveStore(Language).find(
+                Language, Or(
+                    CONTAINSSTRING(Language.code.lower(), text.lower()),
+                    CONTAINSSTRING(Language.englishname.lower(), text.lower())
+                    )).order_by(Language.englishname)
         else:
             results = None
 
