@@ -24,9 +24,19 @@ from canonical.launchpad.webapp.url import urlappend
 from lp.registry.scripts.productreleasefinder import log
 
 
-class WalkerError(Exception): pass
-class FTPWalkerError(WalkerError): pass
-class HTTPWalkerError(WalkerError): pass
+class WalkerError(Exception):
+    """An error in the base walker."""
+    pass
+
+
+class FTPWalkerError(WalkerError):
+    """An error in the ftp walker."""
+    pass
+
+
+class HTTPWalkerError(WalkerError):
+    """An error in the http walker."""
+    pass
 
 
 class Request(urllib2.Request):
@@ -35,6 +45,7 @@ class Request(urllib2.Request):
     method = None
 
     def get_method(self):
+        """See `urllib2.Request`."""
         if self.method is not None:
             return self.method
         else:
