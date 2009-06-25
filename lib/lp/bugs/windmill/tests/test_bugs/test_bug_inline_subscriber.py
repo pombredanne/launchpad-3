@@ -165,3 +165,53 @@ def test_inline_subscriber():
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
     client.asserts.assertNotNode(classname=FOO_BAR_CLASS)
+
+    # A bit of a corner case here, but make sure that when
+    # a user is subscribed to both the main bug and the dupe
+    # that the user is unsubscribed correctly.
+    client.open(url=BUG_URL % 5)
+    client.waits.forPageLoad(timeout=PAGE_LOAD)
+    client.waits.forElement(
+        id=u'subscribers-links', timeout=FOR_ELEMENT)
+    # Subscribe to the main bug, bug 5.
+    client.click(xpath=SUBSCRIPTION_LINK)
+    client.waits.sleep(milliseconds=SLEEP)
+    client.asserts.assertText(
+        xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
+    # Go to bug 6, the dupe, and subscribe.
+    client.open(url=BUG_URL % 6)
+    client.waits.forPageLoad(timeout=PAGE_LOAD)
+    client.waits.forElement(
+        id=u'subscribers-links', timeout=FOR_ELEMENT)
+    client.click(xpath=SUBSCRIPTION_LINK)
+    # Now back to bug 5.  The first unsubscribe should remove
+    # the current bug direct subscription.
+    client.open(url=BUG_URL % 5)
+    client.waits.forPageLoad(timeout=PAGE_LOAD)
+    client.waits.forElement(
+        id=u'subscribers-links', timeout=FOR_ELEMENT)
+    client.asserts.assertText(
+        xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
+    # Confirm there are 2 subscriber links: one in direct subscribers,
+    # and one in duplicate subscribers.
+    client.asserts.assertNode(
+        xpath=(u'//div[@id="subscribers-links"]'
+               '/div/a[@name="Foo Bar"]'))
+    client.asserts.assertNode(
+        xpath=(u'//div[@id="subscribers-from-duplicates"]'
+               '/div/a[@name="Foo Bar"]'))
+    # The first click unsubscribes the direct subscription, leaving the dupe.
+    client.click(xpath=SUBSCRIPTION_LINK)
+    client.waits.sleep(milliseconds=SLEEP)
+    client.asserts.assertNotNode(
+        xpath=(u'//div[@id="subscribers-links"]'
+               '/div/a[@name="Foo Bar"]'))
+    client.asserts.assertNode(
+        xpath=(u'//div[@id="subscribers-from-duplicates"]'
+               '/div/a[@name="Foo Bar"]'))
+    # The second unsubscribe removes the dupe/
+    client.click(xpath=SUBSCRIPTION_LINK)
+    client.waits.sleep(milliseconds=SLEEP)
+    client.asserts.assertNotNode(
+        xpath=(u'//div[@id="subscribers-from-duplicates"]'
+               '/div/a[@name="Foo Bar"]'))
