@@ -144,7 +144,7 @@ class ErrorReport:
         self.revno  = versioninfo.revno
 
     def __repr__(self):
-        return '<ErrorReport %s>' % self.id
+        return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
     def write(self, fp):
         fp.write('Oops-Id: %s\n' % _normalise_whitespace(self.id))
