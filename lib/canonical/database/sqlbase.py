@@ -106,11 +106,6 @@ class StupidCache:
         return self._cache.keys()
 
 
-# Monkey patch the cache into storm.store to override the standard
-# cache implementation for all stores.
-storm.store.Cache = StupidCache
-
-
 def _get_sqlobject_store():
     """Return the store used by the SQLObject compatibility layer."""
     # XXX: Stuart Bishop 20080725 bug=253542: The import is here to work
