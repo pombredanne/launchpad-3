@@ -252,7 +252,7 @@ class IProductCommercialRestricted(Interface):
             title=_("Project approved"),
             description=_(
                 "The project is legitimate and its license appears valid. "
-                "Not application to 'Other/Proprietary'.")))
+                "Not applicable to 'Other/Proprietary'.")))
 
 
 class IProductPublic(
