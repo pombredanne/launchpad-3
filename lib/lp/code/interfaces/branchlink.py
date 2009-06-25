@@ -10,24 +10,32 @@ __all__ = [
     "ISpecificationBranchSet",
     ]
 
-from lazr.restful.fields import CollectionField
-from lazr.restful.declarations import (export_as_webservice_entry, exported,
-    export_operation_as, export_write_operation)
+from zope.interface import Interface
+
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import (call_with, export_as_webservice_entry,
+    exported, export_operation_as, export_write_operation,
+    operation_parameters, operation_returns_entry, REQUEST_USER)
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchtarget import IHasBranchTarget
 
 
-class IHasLinkedBranches(IHasDateCreated):
+class IHasLinkedBranches(Interface):
     """A interface for handling branch linkages."""
 
     linked_branches = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
-            value_type=IBranch,
+            value_type=Reference(schema=IBranch),
             readonly=True))
 
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        branch=Reference(schema=IBranch))
+    @operation_returns_entry(IBranch)
+    @export_write_operation()
     def linkBranch(branch, registrant):
         """Associate a branch with this bug.
 
@@ -35,13 +43,14 @@ class IHasLinkedBranches(IHasDateCreated):
         :param registrant: The user linking the branch.
         """
 
+    @call_with(unregistrant=REQUEST_USER)
+    @operation_parameters(
+        branch=Reference(schema=IBranch))
+    @export_write_operation()
     def unlinkBranch(branch, unregistrant):
         """Unlink a branch from this bug.
 
         :param branch: The branch being unlinked from.
         :param unregistrant: The user unlinking the branch.
         """
-
-    def hasBranches():
-        """Return whether or not the item has linked_branches."""
 

@@ -644,6 +644,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
         notify(ObjectCreatedEvent(branch_link))
         return branch_link
 
+    def unlinkBranch(self, branch, unregistrant):
+        pass
+
 
 class HasSpecificationsMixin:
     """A mixin class that implements many of the common shortcut properties
