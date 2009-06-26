@@ -29,6 +29,13 @@
     string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
   var resize_frame =
       '<tal:x replace="request/form/resize_frame | nothing"/>';
+  var hide_zoom_buttons =
+      '<tal:x replace="request/form/hide_zoom_buttons | nothing"/>';
+  if (hide_zoom_buttons == 'true') {
+      hide_zoom_buttons = true;
+  } else {
+      hide_zoom_buttons = false;
+  }
   <!--
   YUI().use('registry.timeline', 'node', function(Y) {
       Y.on('domready', function(e) {
@@ -48,6 +55,7 @@
               container.setStyle('display', 'block');
               var config = {
                   timeline: timeline,
+                  hide_zoom_buttons: hide_zoom_buttons,
                   boundingBox: container
               };
               if (resize_frame !== '') {

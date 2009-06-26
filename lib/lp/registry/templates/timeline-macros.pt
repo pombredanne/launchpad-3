@@ -20,18 +20,23 @@
   </div>
 
   <!-- Opera ignores overflow:hidden for iframe, so use scrolling=no. -->
-  <iframe tal:condition="auto_resize | nothing"
-          src="+timeline-graph?resize_frame=timeline-iframe"
-          id="timeline-iframe" name='timeline-iframe'
-          style="display: none"
-          scrolling="no"
-          width="100%" height="170px"></iframe>
-  <iframe tal:condition="not: auto_resize | nothing"
-          src="+timeline-graph"
-          id="timeline-iframe" name='timeline-iframe'
-          style="display: none"
-          scrolling="no"
-          width="100%" height="170px"></iframe>
+  <tal:vars define="timeline_url timeline_url | string:+timeline-graph;
+                    hide_zoom_buttons hide_zoom_buttons | nothing">
+    <iframe tal:condition="auto_resize | nothing"
+            tal:attributes="
+              src string: ${timeline_url}?resize_frame=timeline-iframe&hide_zoom_buttons=${hide_zoom_buttons}"
+            id="timeline-iframe" name='timeline-iframe'
+            style="display: none; border: 0"
+            scrolling="no"
+            width="100%" height="170px"></iframe>
+    <iframe tal:condition="not: auto_resize | nothing"
+            tal:attributes="
+              src string: ${timeline_url}?hide_zoom_buttons=${hide_zoom_buttons}"
+            id="timeline-iframe" name='timeline-iframe'
+            style="display: none; border: 0"
+            scrolling="no"
+            width="100%" height="170px"></iframe>
+  </tal:vars>
   <script>
     YUI().use('node', function(Y) {
         if (Y.UA.ie) {

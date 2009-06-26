@@ -257,7 +257,10 @@
            tal:content="structure overview_menu/series_add/render"
         />
 
-        <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
+        <tal:vars define="hide_zoom_buttons string:true">
+          <iframe
+            metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
+        </tal:vars>
 
         <div style="float: right">
           <a href="+series">&#x00BB; Series timeline</a>
