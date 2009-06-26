@@ -1,0 +1,50 @@
+Raw Static Translations custom files
+====================================
+
+Raw Static Translations are Gnome help files tarballs that have been stripped
+out of a build and attached to the upload as a custom file.  The files
+use a special section, like other custom uploads, "raw-translations-static".
+
+When the CustomUploadFile object is created with the right section name,
+its custom_type property returns the right DBEnum,
+PackageUploadCustomFormat.STATIC_TRANSLATIONS.
+
+    >>> from lp.archiveuploader.nascentuploadfile import CustomUploadFile
+    >>> custom_upload_file = CustomUploadFile(
+    ...     filepath="", digest="", size=1, priority_name="", policy=None,
+    ...     component_and_section="main/raw-translations-static", logger=None)
+
+    >>> print custom_upload_file.custom_type.name
+    STATIC_TRANSLATIONS
+
+Static translations tarballs are not published.  We can demonstrate the
+behaviour using mock objects:
+
+    >>> from zope.interface import implements
+    >>> from lp.soyuz.model.queue import PackageUploadCustom
+    >>> from lp.soyuz.interfaces.queue import (
+    ...     IPackageUpload, IPackageUploadCustom, PackageUploadCustomFormat)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> class MockPackageUpload:
+    ...     implements(IPackageUpload)
+    ...
+    ...     def __init__(self):
+    ...         self.displayname = "mock package upload"
+    ...         self.distroseries = getUtility(
+    ...             IDistributionSet)['ubuntu']['breezy-autotest']
+    >>> class MockPackageUploadCustom(PackageUploadCustom):
+    ...     implements(IPackageUploadCustom)
+    ...     packageupload = None
+    ...
+    ...     def __init__(self):
+    ...         self.customformat = (
+    ...             PackageUploadCustomFormat.STATIC_TRANSLATIONS)
+
+    >>> custom_upload = MockPackageUploadCustom()
+    >>> custom_upload.packageupload = MockPackageUpload()
+
+    >>> from lp.archiveuploader.tests import mock_logger
+    >>> custom_upload.publish(logger=mock_logger)
+    DEBUG: Publishing custom mock package upload to ubuntu/breezy-autotest
+    DEBUG: Skipping publishing of static translations.
+
