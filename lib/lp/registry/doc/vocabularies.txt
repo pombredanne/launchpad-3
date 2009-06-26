@@ -871,10 +871,13 @@ displayname and the first set of those are the ones returned
 
     >>> login(ANONYMOUS)
     >>> vocab.LIMIT
-    500
+    100
     >>> vocab.LIMIT = 4
+
+    # The limit gets applied in multiple subselects, so the result
+    # can actually be less than the limit.
     >>> [person.displayname for person in vocab.search('team')]
-    [u'Hoary Gnome Team', u'No Team Memberships', u'Other Team', u'Simple Team']
+    [u'No Team Memberships', u'Simple Team', u'testing Spanish team']
 
 
 === ValidOwner ===

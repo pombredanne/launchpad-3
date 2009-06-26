@@ -164,8 +164,15 @@ class MailController(object):
     def makeMessage(self):
         # It's the caller's responsibility to either encode the address fields
         # to ASCII strings or pass in Unicode strings.
-        from_addr = Header(self.from_addr).encode()
-        to_addrs = [Header(address).encode()
+
+        # Using the maxlinelen for the Headers as we have paranoid checks to
+        # make sure that we have no carriage returns in the to or from email
+        # addresses.  We use nice email addresses like 'Launchpad Community
+        # Help Rotation team <long.email.address+devnull@example.com>' that
+        # get broken over two lines in the header.  RFC 5322 specified that
+        # the lines MUST be no more than 998, so we use that as our maximum.
+        from_addr = Header(self.from_addr, maxlinelen=998).encode()
+        to_addrs = [Header(address, maxlinelen=998).encode()
             for address in list(self.to_addrs)]
 
         for address in [from_addr] + to_addrs:
