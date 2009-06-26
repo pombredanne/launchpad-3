@@ -623,7 +623,7 @@
     </class>
     <adapter
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber"
-        provides="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriberUI"
+        provides="lp.soyuz.browser.archivesubscription.IArchiveSubscriberUI"
         factory="lp.soyuz.browser.archivesubscription.archive_subscription_ui_adapter"/>
     <subscriber
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber                                        lazr.lifecycle.interfaces.IObjectCreatedEvent"
