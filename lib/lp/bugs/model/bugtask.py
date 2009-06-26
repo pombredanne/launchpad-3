@@ -1161,6 +1161,9 @@ def build_tag_search_clauses(tags_spec):
             for tag in sorted(tags))
 
     if zope_isinstance(tags_spec, all):
+        # How to combine an include clause and an exclude clause when
+        # both are generated.
+        combine_with = 'AND'
         # The set of bugs that have *all* of the tags requested for
         # *inclusion*.
         tags_include_clause = tags_set_query(
@@ -1170,6 +1173,9 @@ def build_tag_search_clauses(tags_spec):
         tags_exclude_clause = tags_set_query(
             "UNION", tags_exclude)
     else:
+        # How to combine an include clause and an exclude clause when
+        # both are generated.
+        combine_with = 'OR'
         # The set of bugs that have *any* of the tags requested for
         # inclusion.
         tags_include_clause = tags_set_query(
@@ -1189,8 +1195,8 @@ def build_tag_search_clauses(tags_spec):
 
     # Combine the include and exclude sets.
     if len(tags_include_clause) > 0 and len(tags_exclude_clause) > 0:
-        yield "BugTask.bug IN ((%s) EXCEPT (%s))" % (
-            tags_include_clause, tags_exclude_clause)
+        yield "BugTask.bug IN (%s) %s BugTask.bug NOT IN (%s)" % (
+            tags_include_clause, combine_with, tags_exclude_clause)
     elif len(tags_include_clause) > 0:
         yield "BugTask.bug IN (%s)" % tags_include_clause
     elif len(tags_exclude_clause) > 0:
