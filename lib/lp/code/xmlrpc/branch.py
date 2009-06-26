@@ -57,7 +57,7 @@ class IBranchSetAPI(Interface):
                         owner_name=''):
         """Register a new branch in Launchpad."""
 
-    def link_branch_to_bug(branch_url, bug_id, whiteboard):
+    def link_branch_to_bug(branch_url, bug_id):
         """Link the branch to the bug."""
 
 
@@ -137,7 +137,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
         return canonical_url(branch)
 
-    def link_branch_to_bug(self, branch_url, bug_id, whiteboard):
+    def link_branch_to_bug(self, branch_url, bug_id):
         """See IBranchSetAPI."""
         branch = getUtility(IBranchLookup).getByUrl(url=branch_url)
         if branch is None:
@@ -146,13 +146,10 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             bug = getUtility(IBugSet).get(bug_id)
         except NotFoundError:
             return faults.NoSuchBug(bug_id)
-        if not whiteboard:
-            whiteboard = None
-
         # Since this API is controlled using launchpad.AnyPerson there must be
         # an authenticated person, so use this person as the registrant.
         registrant = getUtility(ILaunchBag).user
-        bug.addBranch(branch, registrant=registrant, whiteboard=whiteboard)
+        bug.addBranch(branch, registrant=registrant)
         return canonical_url(bug)
 
 

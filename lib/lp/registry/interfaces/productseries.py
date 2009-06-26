@@ -232,6 +232,15 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     productserieslanguages = Attribute(
         "The set of ProductSeriesLanguages for this series.")
 
+    translations_branch = ReferenceChoice(
+        title=_("Translations export branch"),
+        vocabulary='HostedBranchRestrictedOnOwner',
+        schema=IBranch,
+        required=False,
+        description=_(
+            "A Bazaar branch to commit translation snapshots to. "
+            "Leave blank to disable."))
+
     def getRelease(version):
         """Get the release in this series that has the specified version.
         Return None is there is no such release.

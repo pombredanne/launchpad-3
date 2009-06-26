@@ -11,6 +11,7 @@ __all__ = [
     'IBranchJob',
     'IBranchDiffJob',
     'IBranchDiffJobSource',
+    'IBranchUpgradeJob',
     'IRevisionMailJob',
     'IRevisionMailJobSource',
     'IRevisionsAddedJobSource',
@@ -32,7 +33,7 @@ class IBranchJob(Interface):
     """A job related to a branch."""
 
     branch = Object(
-        title=_('Branch to use for this diff'), required=True,
+        title=_('Branch to use for this job.'), required=False,
         schema=IBranch)
 
     job = Object(schema=IJob, required=True)
@@ -65,6 +66,22 @@ class IBranchDiffJobSource(Interface):
         :param branch: The database branch to diff.
         :param from_revision_spec: The revision spec to diff from.
         :param to_revision_spec: The revision spec to diff to.
+        """
+
+
+class IBranchUpgradeJob(Interface):
+    """A job to upgrade branches with out-of-date formats."""
+
+    def run():
+        """Upgrade the branch to the format specified."""
+
+
+class IBranchUpgradeJobSource(Interface):
+
+    def create(branch):
+        """Upgrade a branch to a more current format.
+
+        :param branch: The database branch to upgrade.
         """
 
 
@@ -143,4 +160,35 @@ class IRosettaUploadJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IRosettaUploadJobs."""
+
+
+    def findUnfinishedJobs(branch):
+        """Find any `IRosettaUploadJob`s for `branch` that haven't run yet.
+
+        Returns ready jobs, but also ones in any other state except
+        "complete" or "failed."
+        """
+
+
+class IReclaimBranchSpaceJob(Interface):
+    """A job to delete a branch from disk after its been deleted from the db.
+    """
+
+    branch_id = Int(
+        title=_('The id of the now-deleted branch.'))
+
+    def run():
+        """Delete the branch from the filesystem."""
+
+
+class IReclaimBranchSpaceJobSource(Interface):
+
+    def create(branch_id):
+        """Construct a new object that implements IReclaimBranchSpaceJob.
+
+        :param branch_id: The id of the branch to remove from disk.
+        """
+
+    def iterReady():
+        """Iterate through ready IReclaimBranchSpaceJobs."""
 
