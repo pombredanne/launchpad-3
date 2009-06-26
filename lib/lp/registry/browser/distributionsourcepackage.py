@@ -191,7 +191,8 @@ class DistributionSourcePackageView(LaunchpadFormView):
         # three archives.
         archive_set = getUtility(IArchiveSet)
         publications = archive_set.getPublicationsInArchives(
-                self.context.sourcepackagename, latest_three_archives)
+                self.context.sourcepackagename, latest_three_archives,
+                self.context.distribution)
 
         # Collect the publishings for each archive
         archive_publishings = {}
