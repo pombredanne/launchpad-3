@@ -1190,7 +1190,7 @@ def build_tag_search_clauses(tags_spec):
 
     # Combine the include and exclude sets.
     if len(include_clause) > 0 and len(exclude_clause) > 0:
-        yield "BugTask.bug IN (%s) %s BugTask.bug NOT IN (%s)" % (
+        yield "(BugTask.bug IN (%s) %s BugTask.bug NOT IN (%s))" % (
             include_clause, combine_with, exclude_clause)
     elif len(include_clause) > 0:
         yield "BugTask.bug IN (%s)" % include_clause
