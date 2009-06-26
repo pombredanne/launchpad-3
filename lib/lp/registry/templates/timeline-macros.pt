@@ -1,0 +1,51 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad"
+>
+
+<metal:timeline-iframe define-macro="timeline-iframe">
+  <tal:comment replace="nothing">
+    The timeline-iframe macro has an optional auto_resize boolean parameter
+    that causes the TimelineGraph to adjust the height of the iframe to
+    show the full height of the graph as it is zoomed in and out.
+  </tal:comment>
+  <div id="timeline-loading" style="display: none">
+    <img src="/@@/spinner" /> Loading graph...
+  </div>
+
+  <!-- Opera ignores overflow:hidden for iframe, so use scrolling=no. -->
+  <iframe tal:condition="auto_resize | nothing"
+          src="+timeline-graph?resize_frame=timeline-iframe"
+          id="timeline-iframe" name='timeline-iframe'
+          style="display: none"
+          scrolling="no"
+          width="100%" height="170px"></iframe>
+  <iframe tal:condition="not: auto_resize | nothing"
+          src="+timeline-graph"
+          id="timeline-iframe" name='timeline-iframe'
+          style="display: none"
+          scrolling="no"
+          width="100%" height="170px"></iframe>
+  <script>
+    YUI().use('node', function(Y) {
+        if (Y.UA.ie) {
+            return;
+        }
+        var loading_el = Y.get('#timeline-loading');
+        loading_el.setStyle('display', 'block');
+        var iframe = Y.get('#timeline-iframe');
+        Y.on('load', function(e) {
+            loading_el.setStyle('display', 'none');
+            iframe.setStyle('display', 'block');
+        }, iframe);
+    });
+  </script>
+</metal:timeline-iframe>
+
+</html>
