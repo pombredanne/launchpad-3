@@ -1490,11 +1490,25 @@ class ArchiveSet:
 
         return query
 
-    def getPublicationsInArchives(self, source_package_name, archive_list):
+    def getPublicationsInArchives(self, source_package_name, archive_list,
+                                  distribution=None):
         """See `IArchiveSet`."""
         archive_ids = [archive.id for archive in archive_list]
 
         store = Store.of(source_package_name)
+
+        # If the results are to be restricted to a distribution,
+        # then create the extra parameters for the query.
+        extra_params = []
+        if distribution is not None:
+            # Imported here to avoid circular imports.
+            from lp.registry.model.distroseries import DistroSeries
+
+            extra_params = [
+                (SourcePackagePublishingHistory.distroseries == 
+                    DistroSeries.id),
+                DistroSeries.distribution == distribution,
+                ]
 
         # Return all the published source pubs for the given name in the
         # given list of archives.
@@ -1507,6 +1521,7 @@ class ArchiveSet:
             (SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == source_package_name,
+            *extra_params
             )
 
         return results
