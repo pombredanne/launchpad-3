@@ -278,7 +278,7 @@ class TestBugTaskTagSearchClauses(TestCase):
                   (SELECT BugTag.bug FROM BugTag
                     WHERE BugTag.tag = 'bob'))""")
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'fred', u'-bob', u'eric', u'-harry')),
+            self.searchClause(all(u'fred', u'-bob', u'eric', u'-harry')),
             """BugTask.bug IN
                  ((SELECT BugTag.bug FROM BugTag
                     WHERE BugTag.tag = 'eric'
