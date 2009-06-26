@@ -175,6 +175,34 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         collection = self.all_branches.inSourcePackage(branch.sourcepackage)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_in_distribution_source_package(self):
+        # 'inDistributionSourcePackage' returns a new collection that only has
+        # branches for the source package across any distroseries of the
+        # distribution.
+        series_one = self.factory.makeDistroRelease()
+        series_two = self.factory.makeDistroRelease(
+            distribution=series_one.distribution)
+        package = self.factory.makeSourcePackageName()
+        sourcepackage_one = self.factory.makeSourcePackage(
+            sourcepackagename=package, distroseries=series_one)
+        sourcepackage_two = self.factory.makeSourcePackage(
+            sourcepackagename=package, distroseries=series_two)
+        sourcepackage_other_distro = self.factory.makeSourcePackage(
+            sourcepackagename=package)
+        branch = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage_one)
+        branch2 = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage_two)
+        branch3 = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage_other_distro)
+        branch4 = self.factory.makePackageBranch()
+        branch5 = self.factory.makeAnyBranch()
+        distro_source_package = self.factory.makeDistributionSourcePackage(
+            sourcepackagename=package, distribution=series_one.distribution)
+        collection = self.all_branches.inDistributionSourcePackage(
+            distro_source_package)
+        self.assertEqual([branch, branch2], list(collection.getBranches()))
+
     def test_withLifecycleStatus(self):
         # 'withLifecycleStatus' returns a new collection that only has
         # branches with the given lifecycle statuses.
