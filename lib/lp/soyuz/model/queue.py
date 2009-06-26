@@ -1610,6 +1610,14 @@ class PackageUploadCustom(SQLBase):
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %
                     self.libraryfilealias.http_url)
 
+    def publish_STATIC_TRANSLATIONS(self, logger=None):
+        """See `IPackageUploadCustom`."""
+        # Static translations are not published.  Currently, they're
+        # only exposed via webservice methods so that third parties can
+        # retrieve them from the librarian.
+        debug(logger, "Skipping publishing of static translations.")
+        return
+
 
 class PackageUploadSet:
     """See `IPackageUploadSet`"""

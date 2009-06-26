@@ -644,3 +644,9 @@ class PackageUploadCustomFormat(DBEnumeratedType):
         A raw-ddtp-tarball contains all the translated package description
         indexes for a component.
         """)
+
+    STATIC_TRANSLATIONS = DBItem(4, """
+        raw-translations-static
+
+        A tarball containing raw (Gnome) help file translations.
+        """)
