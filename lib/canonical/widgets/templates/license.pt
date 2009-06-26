@@ -110,8 +110,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 if (!details.hasClass('lazr-opened')) {
                     Y.lazr.effects.slide_out(details).run();
                 }
-            }
-            else {
+            } else {
                 if (!details.hasClass('lazr-closed')) {
                     Y.lazr.effects.slide_in(details).run();
                 }
@@ -120,8 +119,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 if (!proprietary.hasClass('lazr-opened')) {
                     Y.lazr.effects.slide_out(proprietary).run();
                 }
-            }
-            else {
+            } else {
                 if (!proprietary.hasClass('lazr-closed')) {
                     Y.lazr.effects.slide_in(proprietary).run();
                 }
@@ -212,8 +210,8 @@ YUI().use('node', 'lazr.effects', function(Y) {
     <br/>
     <div id="proprietary" class="unseen">
       Commercial and proprietary projects do not qualify for free hosting;
-      therefore a subscription needs to be purchased in order to continue
-      hosting this project on Launchpad.
+      therefore a subscription needs to be purchased in order to host this
+      project on Launchpad.
       <p>Here are the steps to obtain a commercial subscription:</p>
       <ol>
         <li>Purchase a Launchpad subscription in the
