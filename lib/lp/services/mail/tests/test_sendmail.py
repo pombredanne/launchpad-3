@@ -78,7 +78,9 @@ class TestMailController(TestCase):
         self.assertEqual('body', message.get_payload(decode=True))
 
     def test_MakeMessage_long_address(self):
-        """Long email addresses are not wrapped if very long."""
+        # Long email addresses are not wrapped if very long.  These are due to
+        # the paranoid checks that are in place to make sure that there are no
+        # carriage returns in the to or from email addresses.
         to_addr = (
             'Launchpad Community Help Rotation team '
             '<long.email.address+devnull@example.com>')
