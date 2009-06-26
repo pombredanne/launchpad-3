@@ -163,36 +163,62 @@ class TestBugTaskTagSearchClauses(TestCase):
             normalize_whitespace(observed))
 
     def test_single_tag_presence(self):
-        # The WHERE clause to test for the presence of a single tag.
+        # The WHERE clause to test for the presence of a single
+        # tag. Should be the same for an `any` query or an `all`
+        # query.
+        expected_query = (
+            """BugTask.bug IN
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'fred')""")
         self.assertEqualIgnoringWhitespace(
             self.searchClause(any(u'fred')),
-            """BugTask.bug IN
-                 (SELECT bug FROM BugTag
-                   WHERE tag = 'fred')""")
+            expected_query)
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(all(u'fred')),
+            expected_query)
 
     def test_single_tag_absence(self):
-        # The WHERE clause to test for the absence of a single tag.
-        self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'-fred')),
+        # The WHERE clause to test for the absence of a single
+        # tag. Should be the same for an `any` query or an `all`
+        # query.
+        expected_query = (
             """BugTask.bug NOT IN
                  (SELECT bug FROM BugTag
                    WHERE tag = 'fred')""")
-
-    def test_any_tag_presence(self):
-        # The WHERE clause to test for the presence of any tag.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'*')),
+            self.searchClause(any(u'-fred')),
+            expected_query)
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(all(u'-fred')),
+            expected_query)
+
+    def test_tag_presence(self):
+        # The WHERE clause to test for the presence of any tag. Should
+        # be the same for an `any` query or an `all` query.
+        expected_query = (
             """BugTask.bug IN
                  (SELECT bug FROM BugTag)""")
-
-    def test_any_tag_absence(self):
-        # The WHERE clause to test for the absence of any tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'-*')),
+            self.searchClause(any(u'*')),
+            expected_query)
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(all(u'*')),
+            expected_query)
+
+    def test_tag_absence(self):
+        # The WHERE clause to test for the absence of any tags. Should
+        # be the same for an `any` query or an `all` query.
+        expected_query = (
             """BugTask.bug NOT IN
                  (SELECT bug FROM BugTag)""")
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(any(u'-*')),
+            expected_query)
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(all(u'-*')),
+            expected_query)
 
-    def test_multiple_tag_presence(self):
+    def test_multiple_tag_presence_any(self):
         # The WHERE clause to test for the presence of any of several
         # tags.
         self.assertEqualIgnoringWhitespace(
@@ -204,7 +230,7 @@ class TestBugTaskTagSearchClauses(TestCase):
                   SELECT bug FROM BugTag
                    WHERE tag = 'fred')""")
 
-    def test_multiple_tag_absence(self):
+    def test_multiple_tag_absence_any(self):
         # The WHERE clause to test for the absence of any of several
         # tags.
         self.assertEqualIgnoringWhitespace(
@@ -240,7 +266,7 @@ class TestBugTaskTagSearchClauses(TestCase):
                   SELECT bug FROM BugTag
                    WHERE tag = 'fred')""")
 
-    def test_mixed_tags(self):
+    def test_mixed_tags_any(self):
         # The WHERE clause to test for the presence of one or more
         # tags or the absence of one or more other tags.
         self.assertEqualIgnoringWhitespace(
