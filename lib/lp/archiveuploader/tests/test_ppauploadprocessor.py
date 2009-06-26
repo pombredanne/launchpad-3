@@ -584,9 +584,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # We rely on the fact that the component on the source package
         # release is unmodified, only the publishing component is
         # changed to 'main'.  This allows the package to get copied to
-        # the main archive later, and would be published using the
-        # standard auto-overrides or fall back to the source's component
-        # if it's a new package.
+        # the main archive later where it would be published using the
+        # source's component if the standard auto-overrides don't match
+        # an existing publication.
         pub_sources = self.name16.archive.getPublishedSources(name='foocomm')
         [pub_foocomm] = pub_sources
         self.assertEqual(
