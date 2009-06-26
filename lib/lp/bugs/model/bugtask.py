@@ -1159,7 +1159,10 @@ def build_tag_search_clauses(tags_spec):
             "SELECT bug FROM BugTag WHERE tag = %s" % quote(tag)
             for tag in sorted(tags))
 
-    if zope_isinstance(tags_spec, all):
+    # Should we search for all specified tags or any of them?
+    find_all = zope_isinstance(tags_spec, all)
+
+    if find_all:
         # How to combine an include clause and an exclude clause when
         # both are generated.
         combine_with = 'AND'
@@ -1182,11 +1185,15 @@ def build_tag_search_clauses(tags_spec):
 
     # Search for the *presence* of any tag.
     if '*' in wildcards:
-        include_clause = "SELECT bug FROM BugTag"
+        # Only clobber the clause if not searching for all tags.
+        if len(include_clause) == 0 or not find_all:
+            include_clause = "SELECT bug FROM BugTag"
 
     # Search for the *absence* of any tag.
     if '-*' in wildcards:
-        exclude_clause = "SELECT bug FROM BugTag"
+        # Only clobber the clause if searching for all tags.
+        if len(exclude_clause) == 0 or find_all:
+            exclude_clause = "SELECT bug FROM BugTag"
 
     # Combine the include and exclude sets.
     if len(include_clause) > 0 and len(exclude_clause) > 0:
