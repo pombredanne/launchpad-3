@@ -15,7 +15,7 @@
 
     <h1><span tal:replace="context/displayname" /> Timeline</h1>
 
-    <tal:iframe define="auto_resize python:True">
+    <tal:iframe define="auto_resize string:true">
       <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
     </tal:iframe>
 

@@ -20,24 +20,25 @@
   </div>
 
   <!-- Opera ignores overflow:hidden for iframe, so use scrolling=no. -->
-  <tal:vars define="timeline_url timeline_url | string:+timeline-graph;
-                    hide_zoom_buttons hide_zoom_buttons | nothing">
-    <iframe tal:condition="auto_resize | nothing"
-            tal:attributes="
-              src string: ${timeline_url}?resize_frame=timeline-iframe&hide_zoom_buttons=${hide_zoom_buttons}"
-            id="timeline-iframe" name='timeline-iframe'
-            style="display: none; border: 0"
-            scrolling="no"
-            width="100%" height="170px"></iframe>
-    <iframe tal:condition="not: auto_resize | nothing"
-            tal:attributes="
-              src string: ${timeline_url}?hide_zoom_buttons=${hide_zoom_buttons}"
-            id="timeline-iframe" name='timeline-iframe'
-            style="display: none; border: 0"
-            scrolling="no"
-            width="100%" height="170px"></iframe>
+  <iframe id="timeline-iframe" name='timeline-iframe'
+          style="display: none; border: 0"
+          scrolling="no"
+          width="100%" height="170px"></iframe>
   </tal:vars>
-  <script>
+  <tal:script
+    replace="structure
+    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
+
+    var auto_resize = '<tal:x replace="auto_resize | nothing">';
+    var hide_zoom_buttons = '<tal:x replace="hide_zoom_buttons | nothing">';
+    <!--
+    var timeline_url = "+timeline-graph?";
+    if (auto_resize == 'true') {
+        timeline_url += 'resize_frame=timeline-iframe&';
+    }
+    if (hide_zoom_buttons == 'true') {
+        timeline_url += 'hide_zoom_buttons=true';
+    }
     YUI().use('node', function(Y) {
         if (Y.UA.ie) {
             return;
@@ -45,12 +46,14 @@
         var loading_el = Y.get('#timeline-loading');
         loading_el.setStyle('display', 'block');
         var iframe = Y.get('#timeline-iframe');
+        iframe.set('src', timeline_url);
         Y.on('load', function(e) {
             loading_el.setStyle('display', 'none');
             iframe.setStyle('display', 'block');
         }, iframe);
     });
-  </script>
+    -->
+  <tal:script replace="structure string:&lt;/script&gt;" />
 </metal:timeline-iframe>
 
 </html>
