@@ -421,16 +421,6 @@ class TestForeignTreeStore(WorkerTest):
         self.assertUpdated(foreign_tree2)
 
 
-class FakeForeignTreeStore(ForeignTreeStore):
-    """A ForeignTreeStore that always fetches fake foreign trees."""
-
-    def __init__(self):
-        ForeignTreeStore.__init__(self, None)
-
-    def fetch(self, source_details, target_path):
-        return MockForeignWorkingTree(target_path)
-
-
 class TestWorkerCore(WorkerTest):
     """Tests for the core (VCS-independent) part of the code import worker."""
 
@@ -445,8 +435,8 @@ class TestWorkerCore(WorkerTest):
     def makeImportWorker(self):
         """Make an ImportWorker that only uses fake branches."""
         return ImportWorker(
-            self.source_details, self.makeBazaarBranchStore(),
-            logging.getLogger("silent"))
+            self.source_details, self.get_transport('import_data'),
+            self.makeBazaarBranchStore(), logging.getLogger("silent"))
 
     def test_construct(self):
         # When we construct an ImportWorker, it has a CodeImportSourceDetails
@@ -481,13 +471,16 @@ class TestCSCVSWorker(WorkerTest):
     def makeImportWorker(self):
         """Make an ImportWorker that only uses fake foreign trees."""
         return CSCVSImportWorker(
-            self.source_details, FakeForeignTreeStore(),
-            None, logging.getLogger("silent"))
+            self.source_details, self.get_transport('import_data'), None,
+            logging.getLogger("silent"))
 
     def test_getForeignTree(self):
         # getForeignTree returns an object that represents the 'foreign'
         # branch (i.e. a CVS or Subversion branch).
         worker = self.makeImportWorker()
+        def _getForeignTree(source_details, target_path):
+            return MockForeignWorkingTree(target_path)
+        worker.foreign_tree_store._getForeignTree = _getForeignTree
         working_tree = worker.getForeignTree()
         self.assertIsSameRealPath(
             os.path.abspath(worker.FOREIGN_WORKING_TREE_PATH),
@@ -506,8 +499,8 @@ class TestGitImportWorker(WorkerTest):
     def makeImportWorker(self):
         """Make an ImportWorker that only uses fake branches."""
         return GitImportWorker(
-            self.source_details, self.makeBazaarBranchStore(),
-            logging.getLogger("silent"))
+            self.source_details, self.get_transport('import_data'),
+            self.makeBazaarBranchStore(), logging.getLogger("silent"))
 
 
 
@@ -665,14 +658,12 @@ class CSCVSActualImportMixin(TestActualImportMixin):
         TestActualImportMixin.setUpImport does.
         """
         TestActualImportMixin.setUpImport(self)
-        self.foreign_store = ForeignTreeStore(
-            self.get_transport('foreign_store'))
 
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
         return CSCVSImportWorker(
-            self.source_details, self.foreign_store, self.bazaar_store,
-            logging.getLogger())
+            self.source_details, self.get_transport('foreign_store'),
+            self.bazaar_store, logging.getLogger())
 
 
 class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
@@ -751,7 +742,8 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
         return GitImportWorker(
-            self.source_details, self.bazaar_store, logging.getLogger())
+            self.source_details, self.get_transport('import_data'),
+            self.bazaar_store, logging.getLogger())
 
     def commitInForeignTree(self, foreign_tree):
         """Change the foreign tree, generating exactly one commit."""

@@ -331,7 +331,8 @@ class ImportWorker:
 
     required_format = BzrDirFormat.get_default_format()
 
-    def __init__(self, source_details, bazaar_branch_store, logger):
+    def __init__(self, source_details, import_data_transport,
+                 bazaar_branch_store, logger):
         """Construct an `ImportWorker`.
 
         :param source_details: A `CodeImportSourceDetails` object.
@@ -342,6 +343,7 @@ class ImportWorker:
         """
         self.source_details = source_details
         self.bazaar_branch_store = bazaar_branch_store
+        self.import_data_transport = import_data_transport
         self._logger = logger
 
     def getBazaarWorkingTree(self):
@@ -404,7 +406,7 @@ class CSCVSImportWorker(ImportWorker):
     # Where the foreign working tree will be stored.
     FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
 
-    def __init__(self, source_details, foreign_tree_store,
+    def __init__(self, source_details, import_data_transport,
                  bazaar_branch_store, logger):
         """Construct a `CSCVSImportWorker`.
 
@@ -417,8 +419,9 @@ class CSCVSImportWorker(ImportWorker):
         :param logger: A `Logger` to pass to cscvs.
         """
         ImportWorker.__init__(
-            self, source_details, bazaar_branch_store, logger)
-        self.foreign_tree_store = foreign_tree_store
+            self, source_details, import_data_transport, bazaar_branch_store,
+            logger)
+        self.foreign_tree_store = ForeignTreeStore(import_data_transport)
 
 
     def getForeignTree(self):
@@ -511,13 +514,12 @@ class GitImportWorker(PullingImportWorker):
     def getBazaarWorkingTree(self):
         """XXX"""
         tree = PullingImportWorker.getBazaarWorkingTree(self)
-        # XXX next line is wrong!
-        store = ImportDataStore(get_transport(config.codeimport.foreign_tree_store), self.source_details)
+        store = ImportDataStore(self.import_data_transport, self.source_details)
         store.fetch('git.db', tree.branch.repository._transport)
         return tree
 
     def pushBazaarWorkingTree(self, bazaar_tree):
         """XXX"""
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
-        store = ImportDataStore(get_transport(config.codeimport.foreign_tree_store), self.source_details)
+        store = ImportDataStore(self.import_data_transport, self.source_details)
         store.put('git.db', bazaar_tree.branch.repository._transport)
