@@ -1146,12 +1146,12 @@ def get_bug_privacy_filter(user):
 def build_tag_search_clauses(tags_spec):
     """Build a tag search clause."""
     tags = set(tags_spec.query_values)
-    tags_wildcards = [tag for tag in tags if tag in ('*', '-*')]
-    tags.difference_update(tags_wildcards)
-    tags_include = [tag for tag in tags if not tag.startswith('-')]
-    tags_exclude = [tag[1:] for tag in tags if tag.startswith('-')]
+    wildcards = [tag for tag in tags if tag in ('*', '-*')]
+    tags.difference_update(wildcards)
+    include = [tag for tag in tags if not tag.startswith('-')]
+    exclude = [tag[1:] for tag in tags if tag.startswith('-')]
 
-    def tags_set_query(joiner, tags):
+    def build_set_query(joiner, tags):
         # Return an SQL snippet that identifies a set of bugs based on
         # the given tags. The tags are sorted to make testing easier.
         joiner = " %s " % joiner
@@ -1166,41 +1166,41 @@ def build_tag_search_clauses(tags_spec):
         combine_with = 'AND'
         # The set of bugs that have *all* of the tags requested for
         # *inclusion*.
-        tags_include_clause = tags_set_query(
-            "INTERSECT", tags_include)
+        include_clause = build_set_query(
+            "INTERSECT", include)
         # The set of bugs that have *any* of the tags requested for
         # *exclusion*.
-        tags_exclude_clause = tags_set_query(
-            "UNION", tags_exclude)
+        exclude_clause = build_set_query(
+            "UNION", exclude)
     else:
         # How to combine an include clause and an exclude clause when
         # both are generated.
         combine_with = 'OR'
         # The set of bugs that have *any* of the tags requested for
         # inclusion.
-        tags_include_clause = tags_set_query(
-            "UNION", tags_include)
+        include_clause = build_set_query(
+            "UNION", include)
         # The set of bugs that have *all* of the tags requested for
         # exclusion.
-        tags_exclude_clause = tags_set_query(
-            "INTERSECT", tags_exclude)
+        exclude_clause = build_set_query(
+            "INTERSECT", exclude)
 
     # Search for the *presence* of any tag.
-    if '*' in tags_wildcards:
-        tags_include_clause = "SELECT BugTag.bug FROM BugTag"
+    if '*' in wildcards:
+        include_clause = "SELECT BugTag.bug FROM BugTag"
 
     # Search for the *absence* of any tag.
-    if '-*' in tags_wildcards:
-        tags_exclude_clause = "SELECT BugTag.bug FROM BugTag"
+    if '-*' in wildcards:
+        exclude_clause = "SELECT BugTag.bug FROM BugTag"
 
     # Combine the include and exclude sets.
-    if len(tags_include_clause) > 0 and len(tags_exclude_clause) > 0:
+    if len(include_clause) > 0 and len(exclude_clause) > 0:
         yield "BugTask.bug IN (%s) %s BugTask.bug NOT IN (%s)" % (
-            tags_include_clause, combine_with, tags_exclude_clause)
-    elif len(tags_include_clause) > 0:
-        yield "BugTask.bug IN (%s)" % tags_include_clause
-    elif len(tags_exclude_clause) > 0:
-        yield "BugTask.bug NOT IN (%s)" % tags_exclude_clause
+            include_clause, combine_with, exclude_clause)
+    elif len(include_clause) > 0:
+        yield "BugTask.bug IN (%s)" % include_clause
+    elif len(exclude_clause) > 0:
+        yield "BugTask.bug NOT IN (%s)" % exclude_clause
     else:
         # This means that a tags argument was given, but that it
         # didn't contain any tags to search for (which is allowed,
