@@ -1156,8 +1156,7 @@ def build_tag_search_clauses(tags_spec):
         # the given tags. The tags are sorted to make testing easier.
         joiner = " %s " % joiner
         return joiner.join(
-            "SELECT BugTag.bug FROM BugTag"
-            " WHERE BugTag.tag = %s" % quote(tag)
+            "SELECT bug FROM BugTag WHERE tag = %s" % quote(tag)
             for tag in sorted(tags))
 
     if zope_isinstance(tags_spec, all):
@@ -1166,32 +1165,28 @@ def build_tag_search_clauses(tags_spec):
         combine_with = 'AND'
         # The set of bugs that have *all* of the tags requested for
         # *inclusion*.
-        include_clause = build_set_query(
-            "INTERSECT", include)
+        include_clause = build_set_query("INTERSECT", include)
         # The set of bugs that have *any* of the tags requested for
         # *exclusion*.
-        exclude_clause = build_set_query(
-            "UNION", exclude)
+        exclude_clause = build_set_query("UNION", exclude)
     else:
         # How to combine an include clause and an exclude clause when
         # both are generated.
         combine_with = 'OR'
         # The set of bugs that have *any* of the tags requested for
         # inclusion.
-        include_clause = build_set_query(
-            "UNION", include)
+        include_clause = build_set_query("UNION", include)
         # The set of bugs that have *all* of the tags requested for
         # exclusion.
-        exclude_clause = build_set_query(
-            "INTERSECT", exclude)
+        exclude_clause = build_set_query("INTERSECT", exclude)
 
     # Search for the *presence* of any tag.
     if '*' in wildcards:
-        include_clause = "SELECT BugTag.bug FROM BugTag"
+        include_clause = "SELECT bug FROM BugTag"
 
     # Search for the *absence* of any tag.
     if '-*' in wildcards:
-        exclude_clause = "SELECT BugTag.bug FROM BugTag"
+        exclude_clause = "SELECT bug FROM BugTag"
 
     # Combine the include and exclude sets.
     if len(include_clause) > 0 and len(exclude_clause) > 0:

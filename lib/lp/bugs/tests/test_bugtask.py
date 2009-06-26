@@ -167,30 +167,30 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqualIgnoringWhitespace(
             self.searchClause(any(u'fred')),
             """BugTask.bug IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'fred')""")
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'fred')""")
 
     def test_single_tag_absence(self):
         # The WHERE clause to test for the absence of a single tag.
         self.assertEqualIgnoringWhitespace(
             self.searchClause(any(u'-fred')),
             """BugTask.bug NOT IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'fred')""")
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'fred')""")
 
     def test_any_tag_presence(self):
         # The WHERE clause to test for the presence of any tag.
         self.assertEqualIgnoringWhitespace(
             self.searchClause(any(u'*')),
             """BugTask.bug IN
-                 (SELECT BugTag.bug FROM BugTag)""")
+                 (SELECT bug FROM BugTag)""")
 
     def test_any_tag_absence(self):
         # The WHERE clause to test for the absence of any tags.
         self.assertEqualIgnoringWhitespace(
             self.searchClause(any(u'-*')),
             """BugTask.bug NOT IN
-                 (SELECT BugTag.bug FROM BugTag)""")
+                 (SELECT bug FROM BugTag)""")
 
     def test_multiple_tag_presence(self):
         # The WHERE clause to test for the presence of any of several
@@ -198,11 +198,11 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqualIgnoringWhitespace(
             self.searchClause(any(u'fred', u'bob')),
             """BugTask.bug IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'bob'
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'bob'
                   UNION
-                  SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'fred')""")
+                  SELECT bug FROM BugTag
+                   WHERE tag = 'fred')""")
 
     def test_multiple_tag_absence(self):
         # The WHERE clause to test for the absence of any of several
@@ -210,11 +210,11 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqualIgnoringWhitespace(
             self.searchClause(any(u'-fred', u'-bob')),
             """BugTask.bug NOT IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'bob'
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'bob'
                   INTERSECT
-                  SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'fred')""")
+                  SELECT bug FROM BugTag
+                   WHERE tag = 'fred')""")
 
     def test_multiple_tag_presence_all(self):
         # The WHERE clause to test for the presence of all specified
@@ -222,11 +222,11 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqualIgnoringWhitespace(
             self.searchClause(all(u'fred', u'bob')),
             """BugTask.bug IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'bob'
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'bob'
                   INTERSECT
-                  SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'fred')""")
+                  SELECT bug FROM BugTag
+                   WHERE tag = 'fred')""")
 
     def test_multiple_tag_absence_all(self):
         # The WHERE clause to test for the absence of all specified
@@ -234,11 +234,11 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqualIgnoringWhitespace(
             self.searchClause(all(u'-fred', u'-bob')),
             """BugTask.bug NOT IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'bob'
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'bob'
                   UNION
-                  SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'fred')""")
+                  SELECT bug FROM BugTag
+                   WHERE tag = 'fred')""")
 
     def test_mixed_tags(self):
         # The WHERE clause to test for the presence of one or more
@@ -246,25 +246,25 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqualIgnoringWhitespace(
             self.searchClause(any(u'fred', u'-bob')),
             """BugTask.bug IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'fred')
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'fred')
                OR BugTask.bug NOT IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'bob')""")
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'bob')""")
         self.assertEqualIgnoringWhitespace(
             self.searchClause(any(u'fred', u'-bob', u'eric', u'-harry')),
             """BugTask.bug IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'eric'
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'eric'
                   UNION
-                  SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'fred')
+                  SELECT bug FROM BugTag
+                   WHERE tag = 'fred')
                OR BugTask.bug NOT IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'bob'
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'bob'
                   INTERSECT
-                  SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'harry')""")
+                  SELECT bug FROM BugTag
+                   WHERE tag = 'harry')""")
 
     def test_mixed_tags_all(self):
         # The WHERE clause to test for the presence of one or more
@@ -272,25 +272,25 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqualIgnoringWhitespace(
             self.searchClause(all(u'fred', u'-bob')),
             """BugTask.bug IN
-                 (SELECT BugTag.bug FROM BugTag
-                    WHERE BugTag.tag = 'fred')
+                 (SELECT bug FROM BugTag
+                    WHERE tag = 'fred')
                AND BugTask.bug NOT IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'bob')""")
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'bob')""")
         self.assertEqualIgnoringWhitespace(
             self.searchClause(all(u'fred', u'-bob', u'eric', u'-harry')),
             """BugTask.bug IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'eric'
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'eric'
                   INTERSECT
-                  SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'fred')
+                  SELECT bug FROM BugTag
+                   WHERE tag = 'fred')
                AND BugTask.bug NOT IN
-                 (SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'bob'
+                 (SELECT bug FROM BugTag
+                   WHERE tag = 'bob'
                   UNION
-                  SELECT BugTag.bug FROM BugTag
-                   WHERE BugTag.tag = 'harry')""")
+                  SELECT bug FROM BugTag
+                   WHERE tag = 'harry')""")
 
 
 
