@@ -1144,7 +1144,7 @@ def get_bug_privacy_filter(user):
 
 
 def build_tag_search_clauses(tags_spec):
-    """Build a tag search clause."""
+    """Yield tag search clauses."""
     tags = set(tags_spec.query_values)
     wildcards = [tag for tag in tags if tag in ('*', '-*')]
     tags.difference_update(wildcards)
