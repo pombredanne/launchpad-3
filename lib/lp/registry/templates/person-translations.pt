@@ -80,7 +80,7 @@
 
     <tal:block condition="not: history">
       <p><i>No translations recorded from
-      <span tal:replace="context/browsername">Foo Bar</span>.</i></p>
+      <span tal:replace="context/displayname">Foo Bar</span>.</i></p>
     </tal:block>
   </tal:block>
 
@@ -88,7 +88,7 @@
 
     <h2>Translation Groups</h2>
 
-    <span tal:replace="context/browsername">Mark Shuttleworth</span> is
+    <span tal:replace="context/displayname">Mark Shuttleworth</span> is
     a member of the following translation groups:
 
       <table class="listing">
