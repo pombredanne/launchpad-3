@@ -93,17 +93,6 @@ def get_default_bazaar_branch_store():
         get_transport(config.codeimport.bazaar_branch_store))
 
 
-def _download(transport, relpath, local_path):
-    """Download the file at `relpath` from `transport` to `local_path`."""
-    local_file = open(local_path, 'wb')
-    try:
-        remote_file = transport.get(relpath)
-        try:
-            pumpfile(remote_file, local_file)
-        finally:
-            remote_file.close()
-    finally:
-        local_file.close()
 
 
 class CodeImportSourceDetails:
@@ -233,19 +222,23 @@ class ImportDataStore:
         ext = local_name[dot_index:]
         return '%08x%s' % (self._branch_id, ext)
 
-    def fetch(self, local_path):
+    def fetch(self, relpath, dest_transport=None):
         """XXX."""
-        remote_name = self._getRemoteName(local_path)
+        if dest_transport is None:
+            dest_transport = get_transport('.')
+        remote_name = self._getRemoteName(relpath)
         if self._transport.has(remote_name):
-            _download(self._transport, remote_name, local_path)
+            dest_transport.put_file(relpath, self._transport.get(remote_name))
             return True
         else:
             return False
 
-    def put(self, local_path):
+    def put(self, relpath, source_transport=None):
         """XXX."""
-        remote_name = self._getRemoteName(local_path)
-        local_file = open(local_path, 'rb')
+        if source_transport is None:
+            source_transport = get_transport('.')
+        remote_name = self._getRemoteName(relpath)
+        local_file = source_transport.get(relpath)
         ensure_base(self._transport)
         try:
             self._transport.put_file(remote_name, local_file)
@@ -518,19 +511,13 @@ class GitImportWorker(PullingImportWorker):
     def getBazaarWorkingTree(self):
         """XXX"""
         tree = PullingImportWorker.getBazaarWorkingTree(self)
-        source_t = get_transport(config.codeimport.foreign_tree_store)
-        try:
-            o = source_t.get('%08x.db' % self.source_details.branch_id)
-        except NoSuchFile:
-            pass
-        else:
-            dest_t = tree.branch.repository._transport
-            dest_t.put_file('git.db', o)
+        # XXX next line is wrong!
+        store = ImportDataStore(get_transport(config.codeimport.foreign_tree_store), self.source_details)
+        store.fetch('git.db', tree.branch.repository._transport)
         return tree
 
     def pushBazaarWorkingTree(self, bazaar_tree):
         """XXX"""
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
-        source_t = bazaar_tree.branch.repository._transport
-        dest_t = get_transport(config.codeimport.foreign_tree_store)
-        dest_t.put_file('%08x.db' % self.source_details.branch_id, source_t.get('git.db'))
+        store = ImportDataStore(get_transport(config.codeimport.foreign_tree_store), self.source_details)
+        store.put('git.db', bazaar_tree.branch.repository._transport)
