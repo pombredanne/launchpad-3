@@ -7,9 +7,10 @@ from windmill.authoring import WindmillTestClient
 WAIT_PAGELOAD = u'30000'
 WAIT_ELEMENT_COMPLETE = u'30000'
 WAIT_CHECK_CHANGE = u'1000'
-BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/11'
+BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/%s'
 SUBSCRIPTION_LINK = u'//div[@id="portlet-subscribers"]/div/div/a'
 SAMPLE_PERSON_ID = u'subscriber-name12'
+FOO_BAR_ID = u'subscriber-name16'
 
 def test_inline_subscriber():
     """Test inline subscribing on bugs pages.
@@ -22,7 +23,7 @@ def test_inline_subscriber():
     lpuser.SAMPLE_PERSON.ensure_login(client)
 
     # Open a bug page and wait for it to finish loading.
-    client.open(url=BUG_URL)
+    client.open(url=BUG_URL % 11)
     client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
 
     # Ensure the subscriber's portlet has finished loading.
@@ -135,3 +136,33 @@ def test_inline_subscriber():
     client.click(id=u'unsubscribe-icon-ubuntu-team')
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertNotNode(id=u'subscriber-ubuntu-team')
+
+    # Test unsubscribing via the remove icon for duplicates.
+    # First, go to bug 6 and subscribe.
+    client.open(url=BUG_URL % 6)
+    client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+    client.waits.forElement(
+        id=u'subscribers-links', timeout=WAIT_ELEMENT_COMPLETE)
+    client.click(xpath=SUBSCRIPTION_LINK)
+    client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+    client.asserts.assertText(
+        xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
+    client.asserts.assertNode(id=FOO_BAR_ID)
+    # Bug 6 is a dupe of bug 5, so go to bug 5 to unsubscribe.
+    client.open(url=BUG_URL % 5)
+    client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+    client.waits.forElement(
+        id=u'subscribers-links', timeout=WAIT_ELEMENT_COMPLETE)
+    client.click(id=u'unsubscribe-icon-name16')
+    client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+    client.asserts.assertText(
+        xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
+    client.asserts.assertNotNode(id=FOO_BAR_ID)
+    # Then back to bug 6 to confirm the duplicate is also unsubscribed.
+    client.open(url=BUG_URL % 6)
+    client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+    client.waits.forElement(
+        id=u'subscribers-links', timeout=WAIT_ELEMENT_COMPLETE)
+    client.asserts.assertText(
+        xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
+    client.asserts.assertNotNode(id=FOO_BAR_ID)
