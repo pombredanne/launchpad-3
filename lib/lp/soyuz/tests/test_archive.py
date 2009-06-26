@@ -23,7 +23,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         """Use `SoyuzTestPublisher` to publish some sources in archives."""
         super(TestGetPublicationsInArchive, self).setUp()
 
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        ubuntu = getUtility(IDistributionSet)['ubuntutest']
 
         # Create two PPAs for gedit.
         self.archives = {}
@@ -56,6 +56,18 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         self.archive_set = getUtility(IArchiveSet)
         spr = self.gedit_main_src_hist.sourcepackagerelease
         self.gedit_name = spr.sourcepackagename
+
+    def addPublicationInUbuntuDistro(self):
+        """Adds a publication of gedit in the ubuntu distribution"""
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        warty = ubuntu['warty']
+        gedit_main_src_hist = self.publisher.getPubSource(
+            sourcename="gedit",
+            archive=self.archives['ubuntu-main'],
+            distroseries=warty,
+            date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
+            status=PackagePublishingStatus.PUBLISHED,
+            )
 
     def testReturnsAllPublishedPublications(self):
         # Returns all currently published publications for archives
@@ -96,6 +108,32 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
             self.gedit_name, [self.archives['gedit-beta']])
         num_results = results.count()
         self.assertEquals(0, num_results, "Expected 0 publication but "
+                                          "got %s" % num_results)
+
+    def testPubsFromAllDistros(self):
+        # By default, all publications of the source package are included.
+
+        self.addPublicationInUbuntuDistro()
+
+        results = self.archive_set.getPublicationsInArchives(
+            self.gedit_name, self.archives.values())
+        num_results = results.count()
+        self.assertEquals(4, num_results, "Expected 4 publications but "
+                                          "got %s" % num_results)
+
+    def testPubsForSpecificDistro(self):
+        # Results can be filtered for specific distributions.
+
+        self.addPublicationInUbuntuDistro()
+
+        # We'll exclude the publication in ubuntu by requiring that
+        # the distribution be ubuntutest (the distro of our test archives.)
+        results = self.archive_set.getPublicationsInArchives(
+            self.gedit_name, self.archives.values(),
+            distribution=self.archives['ubuntu-main'].distribution
+            )
+        num_results = results.count()
+        self.assertEquals(3, num_results, "Expected 3 publications but "
                                           "got %s" % num_results)
 
 def test_suite():
