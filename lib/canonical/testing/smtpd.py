@@ -45,7 +45,7 @@ class SMTPServer(QueueServer):
         # pylint: disable-msg=F0401
         if 'x-beenthere' in message:
             # It came from Mailman and goes in the queue.
-            log.debug('delivered to controller: %s', message_id)
+            log.debug('delivered to upstream: %s', message_id)
             self.queue.put(message)
         elif local in listnames:
             # It's destined for a mailing list.
@@ -54,7 +54,7 @@ class SMTPServer(QueueServer):
             inject(local, message)
         else:
             # It's destined for a 'normal' user.
-            log.debug('delivered to normal user: %s', message_id)
+            log.debug('delivered to upstream: %s', message_id)
             self.queue.put(message)
 
     def reset(self):

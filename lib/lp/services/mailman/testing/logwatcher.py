@@ -193,7 +193,7 @@ class SMTPDWatcher(LogWatcher):
     FILENAME = 'smtpd'
 
     def wait_for_mbox_delivery(self, message_id):
-        return self.wait('delivered to controller: <%s>' % message_id)
+        return self.wait('delivered to upstream: <%s>' % message_id)
 
     def wait_for_list_traffic(self, team_name, personal=False):
         """Wait for list traffic through smtp2mbox.
@@ -210,7 +210,7 @@ class SMTPDWatcher(LogWatcher):
             # the one we care about.  We could dig the message id out of the
             # last line that matched the above wait, but it's difficult to get
             # at that text and it's not really necessary.
-            wait = self.wait('delivered to mbox:')
+            wait = self.wait('delivered to upstream:')
         return wait
 
     def wait_for_personal_traffic(self, address):
@@ -221,7 +221,7 @@ class SMTPDWatcher(LogWatcher):
             # the one we care about.  We could dig the message id out of the
             # last line that matched the above wait, but it's difficult to get
             # at that text and it's not really necessary.
-            wait = self.wait('delivered to mbox:')
+            wait = self.wait('delivered to upstream:')
         return wait
 
 

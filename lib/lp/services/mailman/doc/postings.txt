@@ -85,7 +85,7 @@ team's administrator.
     >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
     >>> smtpd.reset()
-    >>> smtpd.getMailboxSize()
+    >>> len(list(smtpd))
     0
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
@@ -177,7 +177,9 @@ rejection notice to Anne.
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    X-RcptTo: anne.person@example.com
     <BLANKLINE>
     Your request to the Itest-one mailing list
     <BLANKLINE>
@@ -192,8 +194,6 @@ rejection notice to Anne.
     at:
     <BLANKLINE>
         itest-one-owner@lists.launchpad.dev
-    <BLANKLINE>
-    <BLANKLINE>
 
 Anne posts another message to the mailing list, but she is still not
 subscribed to it.  The team administrator deems this message to be spam and
@@ -323,7 +323,9 @@ This message is delivered to the archive.
     ...
     Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    X-RcptTo: archive@mail-archive.dev
     <BLANKLINE>
     Hi, I am still not yet a member of this team's list.
     _______________________________________________
@@ -331,8 +333,6 @@ This message is delivered to the archive.
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 
 Unsubscribed team member
@@ -448,7 +448,9 @@ Here's the copy sent to Anne...
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    X-RcptTo: anne.person@example.com
     <BLANKLINE>
     Hi, I am now a member of this team's list!
     _______________________________________________
@@ -456,8 +458,6 @@ Here's the copy sent to Anne...
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 ...and the copy sent to the archives.
 
@@ -469,7 +469,9 @@ Here's the copy sent to Anne...
     ...
     Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    X-RcptTo: archive@mail-archive.dev
     <BLANKLINE>
     Hi, I am now a member of this team's list!
     _______________________________________________
@@ -477,8 +479,6 @@ Here's the copy sent to Anne...
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 In addition, the in-house MHonArc archiver has archived this message.
 
@@ -533,7 +533,9 @@ However, once she validates this address, she can post from it.
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    X-RcptTo: anne.person@example.com
     <BLANKLINE>
     Hi, I am now a verified member of this team!
     _______________________________________________
@@ -541,8 +543,6 @@ However, once she validates this address, she can post from it.
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
     >>> print messages[1].as_string()
     From: aperson@example.org
@@ -552,7 +552,9 @@ However, once she validates this address, she can post from it.
     ...
     Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    X-RcptTo: archive@mail-archive.dev
     <BLANKLINE>
     Hi, I am now a verified member of this team!
     _______________________________________________
@@ -560,8 +562,6 @@ However, once she validates this address, she can post from it.
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 There should also be no held requests pending.
 
