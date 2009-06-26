@@ -392,6 +392,11 @@ def check_copy(source, archive, series, pocket, include_binaries,
     if deny_privacy_mismatch and check_privacy_mismatch(source, archive):
         raise CannotCopy("Cannot copy private source into public archives.")
 
+    if source.distroseries.distribution != archive.distribution:
+        raise CannotCopy(
+            "Cannot copy to an unsupported distribution: %s." %
+            source.distroseries.distribution.name)
+
     if include_binaries:
         built_binaries = source.getBuiltBinaries()
         if len(built_binaries) == 0:
