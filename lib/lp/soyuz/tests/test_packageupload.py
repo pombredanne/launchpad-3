@@ -179,11 +179,11 @@ class TestPackageUpload(TestCaseWithFactory):
         # librarian.
         self.assertEquals(3, len(pub_records))
         self.assertEquals(
-            ['foo 1.1 in breezy-autotest',
-             'foo-bin 1.1 in breezy-autotest hppa',
-             'foo-bin 1.1 in breezy-autotest i386',
-             ],
-            [pub.displayname for pub in pub_records])
+            set(['foo 1.1 in breezy-autotest',
+                 'foo-bin 1.1 in breezy-autotest hppa',
+                 'foo-bin 1.1 in breezy-autotest i386',
+                 ]),
+            set([pub.displayname for pub in pub_records]))
 
         for pub_record in pub_records:
             self.checkDelayedCopyPubRecord(
