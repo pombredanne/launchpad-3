@@ -17,21 +17,17 @@ PackageUploadCustomFormat.STATIC_TRANSLATIONS.
     >>> print custom_upload_file.custom_type.name
     STATIC_TRANSLATIONS
 
-Static translations tarballs are not published.  We can demonstrate the
-behaviour using mock objects:
+Static translations tarballs are not published, they only exist in the
+librarian and are retrieved using the webservice.  We can demonstrate the
+publishing behaviour using a mock PackageUploadCustom object:
 
     >>> from zope.interface import implements
-    >>> from lp.soyuz.model.queue import PackageUploadCustom
+    >>> from lp.archiveuploader.tests import mock_logger
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
     >>> from lp.soyuz.interfaces.queue import (
     ...     IPackageUpload, IPackageUploadCustom, PackageUploadCustomFormat)
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> class MockPackageUpload:
-    ...     implements(IPackageUpload)
-    ...
-    ...     def __init__(self):
-    ...         self.displayname = "mock package upload"
-    ...         self.distroseries = getUtility(
-    ...             IDistributionSet)['ubuntu']['breezy-autotest']
+    >>> from lp.soyuz.model.queue import PackageUploadCustom
     >>> class MockPackageUploadCustom(PackageUploadCustom):
     ...     implements(IPackageUploadCustom)
     ...     packageupload = None
@@ -40,11 +36,15 @@ behaviour using mock objects:
     ...         self.customformat = (
     ...             PackageUploadCustomFormat.STATIC_TRANSLATIONS)
 
-    >>> custom_upload = MockPackageUploadCustom()
-    >>> custom_upload.packageupload = MockPackageUpload()
 
-    >>> from lp.archiveuploader.tests import mock_logger
+    >>> bat = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
+    >>> package_upload = bat.createQueueEntry(
+    ...     pocket=PackagePublishingPocket.RELEASE, changesfilename="test",
+    ...     changesfilecontent="test",
+    ...     archive=bat.main_archive)
+    >>> custom_upload = MockPackageUploadCustom()
+    >>> custom_upload.packageupload = package_upload
     >>> custom_upload.publish(logger=mock_logger)
-    DEBUG: Publishing custom mock package upload to ubuntu/breezy-autotest
+    DEBUG: Publishing custom to ubuntu/breezy-autotest
     DEBUG: Skipping publishing of static translations.
 
