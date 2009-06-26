@@ -300,7 +300,8 @@ class TestBugTaskTagSearchClauses(TestCase):
 
     def test_mixed_tags_any(self):
         # The WHERE clause to test for the presence of one or more
-        # tags or the absence of one or more other tags.
+        # specific tags or the absence of one or more other specific
+        # tags.
         self.assertEqualIgnoringWhitespace(
             self.searchClause(any(u'fred', u'-bob')),
             """(BugTask.bug IN
@@ -323,10 +324,47 @@ class TestBugTaskTagSearchClauses(TestCase):
                    INTERSECT
                    SELECT bug FROM BugTag
                     WHERE tag = 'harry'))""")
+        # The positive wildcard is dominant over other positive tags.
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(any(u'fred', u'-bob', u'*', u'-harry')),
+            """(BugTask.bug IN
+                  (SELECT bug FROM BugTag)
+                OR BugTask.bug NOT IN
+                  (SELECT bug FROM BugTag
+                    WHERE tag = 'bob'
+                   INTERSECT
+                   SELECT bug FROM BugTag
+                    WHERE tag = 'harry'))""")
+        # The negative wildcard is superfluous in the presence of
+        # other negative tags.
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(any(u'fred', u'-bob', u'eric', u'-*')),
+            """(BugTask.bug IN
+                  (SELECT bug FROM BugTag
+                    WHERE tag = 'eric'
+                   UNION
+                   SELECT bug FROM BugTag
+                    WHERE tag = 'fred')
+                OR BugTask.bug NOT IN
+                  (SELECT bug FROM BugTag
+                    WHERE tag = 'bob'))""")
+        # The negative wildcard is not superfluous in the absence of
+        # other negative tags.
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(any(u'fred', u'-*', u'eric')),
+            """(BugTask.bug IN
+                  (SELECT bug FROM BugTag
+                    WHERE tag = 'eric'
+                   UNION
+                   SELECT bug FROM BugTag
+                    WHERE tag = 'fred')
+                OR BugTask.bug NOT IN
+                  (SELECT bug FROM BugTag))""")
 
     def test_mixed_tags_all(self):
         # The WHERE clause to test for the presence of one or more
-        # tags and the absence of one or more other tags.
+        # specific tags and the absence of one or more other specific
+        # tags.
         self.assertEqualIgnoringWhitespace(
             self.searchClause(all(u'fred', u'-bob')),
             """(BugTask.bug IN
@@ -349,8 +387,60 @@ class TestBugTaskTagSearchClauses(TestCase):
                    UNION
                    SELECT bug FROM BugTag
                     WHERE tag = 'harry'))""")
+        # The positive wildcard is superfluous in the presence of
+        # other positive tags.
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(all(u'fred', u'-bob', u'*', u'-harry')),
+            """(BugTask.bug IN
+                  (SELECT bug FROM BugTag
+                    WHERE tag = 'fred')
+                AND BugTask.bug NOT IN
+                  (SELECT bug FROM BugTag
+                    WHERE tag = 'bob'
+                   UNION
+                   SELECT bug FROM BugTag
+                    WHERE tag = 'harry'))""")
+        # The positive wildcard is not superfluous in the absence of
+        # other positive tags.
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(all(u'-bob', u'*', u'-harry')),
+            """(BugTask.bug IN
+                  (SELECT bug FROM BugTag)
+                AND BugTask.bug NOT IN
+                  (SELECT bug FROM BugTag
+                    WHERE tag = 'bob'
+                   UNION
+                   SELECT bug FROM BugTag
+                    WHERE tag = 'harry'))""")
+        # The negative wildcard is dominant over other negative tags.
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(all(u'fred', u'-bob', u'eric', u'-*')),
+            """(BugTask.bug IN
+                  (SELECT bug FROM BugTag
+                    WHERE tag = 'eric'
+                   INTERSECT
+                   SELECT bug FROM BugTag
+                    WHERE tag = 'fred')
+                AND BugTask.bug NOT IN
+                  (SELECT bug FROM BugTag))""")
 
-
+    def test_mixed_wildcards(self):
+        # The WHERE clause to test for the presence of tags or the
+        # absence of tags.
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(any(u'*', u'-*')),
+            """(BugTask.bug IN
+                  (SELECT bug FROM BugTag)
+                OR BugTask.bug NOT IN
+                  (SELECT bug FROM BugTag))""")
+        # The WHERE clause to test for the presence of tags and the
+        # absence of tags.
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(all(u'*', u'-*')),
+            """(BugTask.bug IN
+                  (SELECT bug FROM BugTag)
+                AND BugTask.bug NOT IN
+                  (SELECT bug FROM BugTag))""")
 
 
 
