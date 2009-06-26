@@ -201,7 +201,7 @@ def validate_new_team_email(email):
                     'associated with <a href="${url}">${team}</a>.',
                     mapping={'email': escape(email),
                              'url': canonical_url(person),
-                             'team': escape(person.browsername)})
+                             'team': escape(person.displayname)})
         raise LaunchpadValidationError(structured(message))
     return True
 
@@ -223,7 +223,7 @@ def validate_new_person_email(email):
         message = _("The profile you're trying to create already exists: "
                     '<a href="${url}">${owner}</a>.',
                     mapping={'url': canonical_url(owner),
-                             'owner': escape(owner.browsername)})
+                             'owner': escape(owner.displayname)})
         raise LaunchpadValidationError(structured(message))
     return True
 

@@ -59,7 +59,7 @@
   <tal:is-valid-person tal:condition="context/is_valid_person">
     <tal:mugshot replace="structure context/image:mugshot" />
 
-    <h1 tal:content="context/browsername">Some Person</h1>
+    <h1 tal:content="context/displayname">Some Person</h1>
 
     <div
       class="description"
@@ -82,10 +82,10 @@
 
     <tal:mugshot replace="structure context/image:mugshot" />
 
-    <h1 tal:content="context/browsername">Some Person</h1>
+    <h1 tal:content="context/displayname">Some Person</h1>
 
     <tal:noaccount tal:condition="context/account_status/enumvalue:NOACCOUNT">
-      <p><span tal:replace="context/browsername" /> does not use Launchpad.
+      <p><span tal:replace="context/displayname" /> does not use Launchpad.
         <tal:block condition="context/creation_comment">
           This page was created
           <span
@@ -94,7 +94,7 @@
           <tal:user-created
             condition="context/creation_rationale/enumvalue:USER_CREATED">
             by <a tal:attributes="href context/registrant/fmt:url">
-            <span tal:replace="context/registrant/browsername">Foo</span></a>,
+            <span tal:replace="context/registrant/displayname">Foo</span></a>,
             and the reason given by that user for its creation is:
             <em tal:content="structure context/creation_comment/fmt:text-to-html">
               reason</em>
@@ -132,7 +132,7 @@
           </tal:editable>
           <a tal:attributes="
             href string:/people/+requestmerge?field.dupeaccount=${context/name}"
-          >Are you <span tal:replace="context/browsername" />?</a>
+          >Are you <span tal:replace="context/displayname" />?</a>
         </tal:person>
         <tal:team condition="view/context_is_probably_a_team">
           <a href="+claimteam">Is this a team you run?</a>
@@ -140,14 +140,14 @@
       </tal:logged-in>
 
       <tal:not-logged-in condition="not: request/lp:person">
-        <a href="+claim">Are you <span tal:replace="context/browsername" />?</a>
+        <a href="+claim">Are you <span tal:replace="context/displayname" />?</a>
       </tal:not-logged-in>
     </tal:noaccount>
 
     <tal:deactivated-account
         condition="context/account_status/enumvalue:DEACTIVATED">
       <p>
-        <span tal:replace="context/browsername" /> does not use Launchpad.
+        <span tal:replace="context/displayname" /> does not use Launchpad.
       </p>
     </tal:deactivated-account>
   </div>

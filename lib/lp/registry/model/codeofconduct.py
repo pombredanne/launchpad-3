@@ -187,11 +187,11 @@ class SignedCodeOfConduct(SQLBase):
 
         if self.signingkey:
             displayname += (': digitally signed by %s (%s)'
-                            % (self.owner.browsername,
+                            % (self.owner.displayname,
                                self.signingkey.displayname))
         else:
             displayname += (': paper submission accepted by %s'
-                            % self.recipient.browsername)
+                            % self.recipient.displayname)
 
         return displayname
 
@@ -203,7 +203,7 @@ class SignedCodeOfConduct(SQLBase):
         fromaddress = format_address(
             "Launchpad Code Of Conduct System",
             config.canonical.noreply_from_address)
-        replacements = {'user': self.owner.browsername,
+        replacements = {'user': self.owner.displayname,
                         'content': content}
         message = template % replacements
         simple_sendmail(
@@ -353,7 +353,7 @@ class SignedCodeOfConductSet:
         content = ('State: %s\n'
                    'Comment: %s\n'
                    'Modified by %s'
-                    % (state, admincomment, recipient.browsername))
+                    % (state, admincomment, recipient.displayname))
 
         sign.sendAdvertisementEmail(subject, content)
 
@@ -366,7 +366,7 @@ class SignedCodeOfConductSet:
                                    active=active)
 
         subject = 'Launchpad: Code Of Conduct Signature Acknowledge'
-        content = 'Paper Submitted acknowledge by %s' % recipient.browsername
+        content = 'Paper Submitted acknowledge by %s' % recipient.displayname
 
         sign.sendAdvertisementEmail(subject, content)
 
