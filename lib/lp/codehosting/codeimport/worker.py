@@ -191,6 +191,59 @@ class CodeImportSourceDetails:
         return result
 
 
+class ImportDataStore:
+    """A store for data associated with an import."""
+
+    def __init__(self, transport, source_details):
+        """Initialize an `ImportDataStore`.
+
+        :param transport: The transport files will be stored on.
+        :param source_details: The `CodeImportSourceDetails` object, used to
+            know where to store files on the remote transport.
+        """
+        self._transport = transport
+        self._branch_id = source_details.branch_id
+
+    def _getRemoteName(self, local_name):
+        """Convert `local_name` to the name used to store a file.
+
+        The algorithm is a little stupid for historical reasons: we chop off
+        the extension and stick that on the end of the branch id from the
+        source_details we were constructed with, in hex padded to 8
+        characters.  For example 'tree.tar.gz' might become '0000a23d.tar.gz'
+        or 'git.db' might become '00003e4.db'.
+
+        :param local_name: The local name of the file to be stored.  :return:
+        The name to store the file as on the remote transport.
+        """
+        if '/' in local_name:
+            raise AssertionError("local_name must be a name, not a path")
+        dot_index = local_name.index('.')
+        if dot_index < 0:
+            raise AssertionError("local_name must have an extension.")
+        ext = local_name[dot_index:]
+        return '%08x%s' % (self._branch_id, ext)
+
+    def fetch(self, local_path):
+        """XXX."""
+        remote_name = self._getRemoteName(local_path)
+        if self._transport.has(remote_name):
+            _download(self._transport, remote_name, local_path)
+            return True
+        else:
+            return False
+
+    def put(self, local_path):
+        """XXX."""
+        remote_name = self._getRemoteName(local_path)
+        local_file = open(local_path, 'rb')
+        ensure_base(self._transport)
+        try:
+            self._transport.put_file(remote_name, local_file)
+        finally:
+            local_file.close()
+
+
 class ForeignTreeStore:
     """Manages retrieving and storing foreign working trees.
 
@@ -225,20 +278,12 @@ class ForeignTreeStore:
             raise AssertionError(
                 "unknown RCS type: %r" % source_details.rcstype)
 
-    def _getTarballName(self, branch_id):
-        """Return the name of the tarball for the code import."""
-        return '%08x.tar.gz' % branch_id
-
     def archive(self, source_details, foreign_tree):
         """Archive the foreign tree."""
-        tarball_name = self._getTarballName(source_details.branch_id)
-        create_tarball(foreign_tree.local_path, tarball_name)
-        tarball = open(tarball_name, 'rb')
-        ensure_base(self.transport)
-        try:
-            self.transport.put_file(tarball_name, tarball)
-        finally:
-            tarball.close()
+        store = ImportDataStore(self.transport, source_details)
+        local_name = 'foreign_tree.tar.gz'
+        create_tarball(foreign_tree.local_path, 'foreign_tree.tar.gz')
+        store.put(local_name)
 
     def fetch(self, source_details, target_path):
         """Fetch the foreign branch for `source_details` to `target_path`.
@@ -260,11 +305,11 @@ class ForeignTreeStore:
 
     def fetchFromArchive(self, source_details, target_path):
         """Fetch the foreign tree for `source_details` from the archive."""
-        tarball_name = self._getTarballName(source_details.branch_id)
-        if not self.transport.has(tarball_name):
-            raise NoSuchFile(tarball_name)
-        _download(self.transport, tarball_name, tarball_name)
-        extract_tarball(tarball_name, target_path)
+        store = ImportDataStore(self.transport, source_details)
+        local_name = 'foreign_tree.tar.gz'
+        if not store.fetch(local_name):
+            raise NoSuchFile(local_name)
+        extract_tarball(local_name, target_path)
         tree = self._getForeignTree(source_details, target_path)
         tree.update()
         return tree

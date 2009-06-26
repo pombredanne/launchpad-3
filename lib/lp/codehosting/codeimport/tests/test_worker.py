@@ -421,6 +421,23 @@ class TestCSCVSWorker(WorkerTest):
             working_tree.local_path)
 
 
+class TestGitImportWorker(WorkerTest):
+    """
+    Test for behaviour particular to `GitImportWorker`.
+    """
+
+    def makeBazaarBranchStore(self):
+        """Make a Bazaar branch store."""
+        return BazaarBranchStore(self.get_transport('bazaar_branches'))
+
+    def makeImportWorker(self):
+        """Make an ImportWorker that only uses fake branches."""
+        return GitImportWorker(
+            self.source_details, self.makeBazaarBranchStore(),
+            logging.getLogger("silent"))
+
+
+
 def clean_up_default_stores_for_import(source_details):
     """Clean up the default branch and foreign tree stores for an import.
 
@@ -434,9 +451,10 @@ def clean_up_default_stores_for_import(source_details):
 
     :source_details: A `CodeImportSourceDetails` describing the import.
     """
+    from lp.codehosting.codeimport.worker import ImportDataStore
     treestore = get_default_foreign_tree_store()
     tree_transport = treestore.transport
-    archive_name = treestore._getTarballName(source_details.branch_id)
+    archive_name = ImportDataStore(treestore.transport, source_details)._getRemoteName('a.tar.gz')
     if tree_transport.has(archive_name):
         tree_transport.delete(archive_name)
     branchstore = get_default_bazaar_branch_store()
