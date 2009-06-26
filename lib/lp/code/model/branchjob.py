@@ -6,14 +6,16 @@ __all__ = [
     'RosettaUploadJob',
 ]
 
+import os
+import shutil
 from StringIO import StringIO
 
+from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from bzrlib.upgrade import upgrade
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
 import simplejson
@@ -23,17 +25,26 @@ import transaction
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.config import config
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
+from lp.code.bzr import (
+    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
 from lp.code.model.diff import StaticDiff
+from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
+from lp.services.job.interfaces.job import JobStatus
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.database.translationbranchapprover import (
     TranslationBranchApprover)
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IRevisionMailJob,
-    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
+    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
+    IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
+    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRevisionMailJobSource,
+    IRosettaUploadJob, IRosettaUploadJobSource)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -74,6 +85,18 @@ class BranchJobType(DBEnumeratedType):
         This job runs against a branch to upload translation files to rosetta.
         """)
 
+    UPGRADE_BRANCH = DBItem(4, """
+        Upgrade Branch
+
+        This job upgrades the branch in the hosted area.
+        """)
+
+    RECLAIM_BRANCH_SPACE = DBItem(5, """
+        Reclaim Branch Space
+
+        This job removes a branch that have been deleted from the database
+        from disk.
+        """)
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
@@ -84,7 +107,7 @@ class BranchJob(SQLBase):
 
     job = ForeignKey(foreignKey='Job', notNull=True)
 
-    branch = ForeignKey(foreignKey='Branch', notNull=True)
+    branch = ForeignKey(foreignKey='Branch')
 
     job_type = EnumCol(enum=BranchJobType, notNull=True)
 
@@ -183,6 +206,43 @@ class BranchDiffJob(BranchJobDerived):
         static_diff = StaticDiff.acquire(
             from_revision_id, to_revision_id, bzr_branch.repository)
         return static_diff
+
+
+class BranchUpgradeJob(BranchJobDerived):
+    """A Job that upgrades branches to the current stable format."""
+
+    implements(IBranchUpgradeJob)
+
+    classProvides(IBranchUpgradeJobSource)
+    @classmethod
+    def create(cls, branch):
+        """See `IBranchUpgradeJobSource`."""
+        branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
+        return cls(branch_job)
+
+    def run(self):
+        """See `IBranchUpgradeJob`."""
+        branch = self.branch.getBzrBranch()
+        to_format = self.upgrade_format
+        upgrade(branch.base, to_format)
+
+    @property
+    def upgrade_format(self):
+        """See `IBranch`."""
+        format = BzrDirMetaFormat1()
+        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(
+            self.branch.branch_format)
+        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
+            self.branch.repository_format)
+        if branch_format is None or repository_format is None:
+            branch = self.branch.getBzrBranch()
+            if branch_format is None:
+                branch_format = type(branch._format)
+            if repository_format is None:
+                repository_format = type(branch.repository._format)
+        format.set_branch_format(branch_format())
+        format._set_repository_format(repository_format())
+        return format
 
 
 class RevisionMailJob(BranchDiffJob):
@@ -645,4 +705,51 @@ class RosettaUploadJob(BranchJobDerived):
                 Branch.last_mirrored_id == Branch.last_scanned_id,
                 Job.id.is_in(Job.ready_jobs)))
         return (RosettaUploadJob(job) for job in jobs)
+
+    @staticmethod
+    def findUnfinishedJobs(branch):
+        """See `IRosettaUploadJobSource`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        jobs = store.using(BranchJob, Job).find((BranchJob), And(
+            Job.id == BranchJob.id,
+            BranchJob.branch == branch,
+            BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
+            Job._status != JobStatus.COMPLETED,
+            Job._status != JobStatus.FAILED))
+        return jobs
+
+
+class ReclaimBranchSpaceJob(BranchJobDerived):
+    """Reclaim the disk space used by a branch that's deleted from the DB."""
+
+    implements(IReclaimBranchSpaceJob)
+
+    classProvides(IReclaimBranchSpaceJobSource)
+
+    class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
+
+    @classmethod
+    def create(cls, branch_id):
+        """See `IBranchDiffJobSource`."""
+        metadata = {'branch_id': branch_id}
+        # The branch_job has a branch of None, as there is no branch left in
+        # the database to refer to.
+        branch_job = BranchJob(None, cls.class_job_type, metadata)
+        return cls(branch_job)
+
+    @property
+    def branch_id(self):
+        return self.metadata['branch_id']
+
+    def run(self):
+        mirrored_path = os.path.join(
+            config.codehosting.mirrored_branches_root,
+            branch_id_to_path(self.branch_id))
+        hosted_path = os.path.join(
+            config.codehosting.hosted_branches_root,
+            branch_id_to_path(self.branch_id))
+        if os.path.exists(mirrored_path):
+            shutil.rmtree(mirrored_path)
+        if os.path.exists(hosted_path):
+            shutil.rmtree(hosted_path)
 
