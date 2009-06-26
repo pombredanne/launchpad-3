@@ -77,6 +77,19 @@ class TestMailController(TestCase):
         self.assertEqual('subject', message['Subject'])
         self.assertEqual('body', message.get_payload(decode=True))
 
+    def test_MakeMessage_long_address(self):
+        """Long email addresses are not wrapped if very long."""
+        to_addr = (
+            'Launchpad Community Help Rotation team '
+            '<long.email.address+devnull@example.com>')
+        from_addr = (
+            'Some Random User With Many Public Names '
+            '<some.random.user.with.many.public.names@example.com')
+        ctrl = MailController(from_addr, to_addr, 'subject', 'body')
+        message = ctrl.makeMessage()
+        self.assertEqual(from_addr, message['From'])
+        self.assertEqual(to_addr, message['To'])
+
     def test_MakeMessage_no_attachment(self):
         """A message without an attachment should have a single body."""
         ctrl = MailController(
