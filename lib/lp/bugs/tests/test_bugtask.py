@@ -360,6 +360,16 @@ class TestBugTaskTagSearchClauses(TestCase):
                     WHERE tag = 'fred')
                 OR BugTask.bug NOT IN
                   (SELECT bug FROM BugTag))""")
+        # The positive wildcard is dominant over other positive tags,
+        # and the negative wildcard is superfluous in the presence of
+        # other negative tags.
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(any(u'fred', u'-*', u'*', u'-harry')),
+            """(BugTask.bug IN
+                  (SELECT bug FROM BugTag)
+                OR BugTask.bug NOT IN
+                  (SELECT bug FROM BugTag
+                    WHERE tag = 'harry'))""")
 
     def test_mixed_tags_all(self):
         # The WHERE clause to test for the presence of one or more
@@ -420,6 +430,16 @@ class TestBugTaskTagSearchClauses(TestCase):
                     WHERE tag = 'eric'
                    INTERSECT
                    SELECT bug FROM BugTag
+                    WHERE tag = 'fred')
+                AND BugTask.bug NOT IN
+                  (SELECT bug FROM BugTag))""")
+        # The positive wildcard is superfluous in the presence of
+        # other positive tags, and the negative wildcard is dominant
+        # over other negative tags.
+        self.assertEqualIgnoringWhitespace(
+            self.searchClause(all(u'fred', u'-*', u'*', u'-harry')),
+            """(BugTask.bug IN
+                  (SELECT bug FROM BugTag
                     WHERE tag = 'fred')
                 AND BugTask.bug NOT IN
                   (SELECT bug FROM BugTag))""")
