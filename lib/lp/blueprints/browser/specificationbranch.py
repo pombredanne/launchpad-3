@@ -48,7 +48,7 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
     """Edit the summary of the SpecificationBranch link."""
 
     schema = ISpecificationBranch
-    field_names = ['summary']
+    field_names = []
     label = _('Edit specification branch summary')
 
     def initialize(self):
@@ -103,7 +103,7 @@ class BranchLinkToSpecificationView(LaunchpadFormView):
     # to get the read only fields rendered as input widgets.
     for_input = True
 
-    field_names = ['specification', 'summary']
+    field_names = ['specification']
 
     @property
     def next_url(self):
@@ -113,8 +113,7 @@ class BranchLinkToSpecificationView(LaunchpadFormView):
     def continue_action(self, action, data):
         spec = data['specification']
         spec_branch = spec.linkBranch(
-            branch=self.context, summary=data['summary'],
-            registrant=self.user)
+            branch=self.context, registrant=self.user)
 
     @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):

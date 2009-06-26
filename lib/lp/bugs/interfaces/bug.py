@@ -446,19 +446,17 @@ class IBug(ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    @call_with(registrant=REQUEST_USER, whiteboard=None, status=None)
+    @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         branch=Reference(schema=IBranch))
     @operation_returns_entry(Interface) # Really IBugBranch
     @export_operation_as('linkBranch')
     @export_write_operation()
-    def addBranch(branch, registrant, whiteboard=None, status=None):
+    def addBranch(branch, registrant):
         """Associate a branch with this bug.
 
         :param branch: The branch being linked to the bug
         :param registrant: The user making the link.
-        :param whiteboard: A space where people can write about the bug fix
-        :param status: The status of the fix in the branch
 
         Returns an IBugBranch.
         """

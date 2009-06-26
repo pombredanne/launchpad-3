@@ -85,8 +85,8 @@ just work like normally:
 
 == The patched count() method ==
 
-There was a bug in the Storm API whereby calling count (or other aggregates)
-on a storm ResultSet does not respect the distinct
+There is currently a bug in the Storm API whereby calling count (or
+other aggregates) on a storm ResultSet does not respect the distinct
 config option (https://bugs.edge.launchpad.net/storm/+bug/217644):
 
     >>> from canonical.launchpad.database import (BinaryPackageRelease,
@@ -97,11 +97,11 @@ config option (https://bugs.edge.launchpad.net/storm/+bug/217644):
     >>> results = results.config(distinct=True)
     >>> len(list(results))
     14
-
-But this bug appears to be fixed, so we no longer override count():
-
     >>> results.count()
-    14
+    26
+
+But the DecoratedResultSet works around this bug (until it is fixed in
+storm):
     >>> def dummy_result_decorator(result):
     ...     return result
     >>> decorated_results = DecoratedResultSet(results,
@@ -110,6 +110,11 @@ But this bug appears to be fixed, so we no longer override count():
     14
     >>> decorated_results.count()
     14
+
+The DecoratedResultSet's count method works as per normal if other 
+args/kwargs are passed:
+    >>> decorated_results.count(distinct=False)
+    26
 
 The pre_iter_hook() method is only called once when iteration begins.
 
