@@ -680,7 +680,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         queue_items = self.breezy.getQueueItems(
             name="debian-installer",
-            status=PackagePublishingStatus.PUBLISHED,
+            status=PackageUploadStatus.ACCEPTED,
             archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
