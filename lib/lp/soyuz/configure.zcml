@@ -626,7 +626,7 @@
         provides="lp.soyuz.browser.archivesubscription.IArchiveSubscriberUI"
         factory="lp.soyuz.browser.archivesubscription.archive_subscription_ui_adapter"/>
     <subscriber
-        for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber                                        lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.mailnotification.notify_new_ppa_subscription"/>
     
     <!-- DistributionSourcePackageRelease -->
