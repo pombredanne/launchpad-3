@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BranchBadges',
     'BranchListingView',
+    'DistributionSourcePackageBranchesView',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -1341,6 +1342,16 @@ class ProjectBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project group.')
         return message % self.context.displayname
+
+
+class DistributionSourcePackageBranchesView(BranchListingView):
+    """A general listing of all branches in the distro source package."""
+
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).inDistributionSourcePackage(
+            self.context)
 
 
 class SourcePackageBranchesView(BranchListingView):

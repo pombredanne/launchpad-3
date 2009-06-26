@@ -620,6 +620,13 @@
         name="+branches"
         template="../templates/sourcepackage-branches.pt"/>
     <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.code.browser.branchlisting.DistributionSourcePackageBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+branches"
+        template="../templates/distributionsourcepackage-branches.pt"/>
+    <browser:page
         for="lp.registry.interfaces.project.IProject"
         class="lp.code.browser.branchlisting.ProjectBranchesView"
         facet="branches"
