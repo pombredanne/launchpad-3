@@ -23,8 +23,8 @@ from bzrlib.urlutils import join as urljoin
 from canonical.cachedproperty import cachedproperty
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, ImportWorker,
-    GitImportWorker, get_default_bazaar_branch_store,
+    BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, GitImportWorker,
+    ImportDataStore, ImportWorker, get_default_bazaar_branch_store,
     get_default_foreign_tree_store)
 from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, SubversionServer)
@@ -212,6 +212,79 @@ class TestBazaarBranchStore(WorkerTest):
         self.assertEqual(
             store._getMirrorURL(self.arbitrary_branch_id),
             sftp_prefix_noslash + '/' + '%08x' % self.arbitrary_branch_id)
+
+
+class TestImportDataStore(WorkerTest):
+    """Tests for `ImportDataStore`."""
+
+    def test_fetch_returnsFalseIfNotFound(self):
+        # If the requested file does not exist on the transport, fetch returns
+        # False.
+        filename = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        source_details = self.factory.makeCodeImportSourceDetails()
+        store = ImportDataStore(self.get_transport(), source_details)
+        self.assertFalse(store.fetch(filename))
+
+    def test_fetch_doesntCreateFileIfNotFound(self):
+        # If the requested file does not exist on the transport, no local file
+        # is created.
+        filename = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        source_details = self.factory.makeCodeImportSourceDetails()
+        store = ImportDataStore(self.get_transport(), source_details)
+        self.assertFalse(os.path.exists(filename))
+
+    def test_fetch_returnsTrueIfFound(self):
+        # If the requested file exists on the transport, fetch returns True.
+        source_details = self.factory.makeCodeImportSourceDetails()
+        # That the remote name is like this is part of the interface of
+        # ImportDataStore.
+        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        transport = self.get_transport()
+        transport.put_bytes(remote_name, '')
+        store = ImportDataStore(transport, source_details)
+        self.assertTrue(store.fetch(local_name))
+
+    def test_fetch_retrievesFileIfFound(self):
+        # If the requested file exists on the transport, fetch copies its
+        # content to the filename given to fetch.
+        source_details = self.factory.makeCodeImportSourceDetails()
+        # That the remote name is like this is part of the interface of
+        # ImportDataStore.
+        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        content = self.factory.getUniqueString()
+        transport = self.get_transport()
+        transport.put_bytes(remote_name, content)
+        store = ImportDataStore(transport, source_details)
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        store.fetch(local_name)
+        self.assertEquals(content, open(local_name).read())
+
+    def test_put_copiesFileToTransport(self):
+        # Put copies the content of the passed filename to the remote
+        # transport.
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        source_details = self.factory.makeCodeImportSourceDetails()
+        content = self.factory.getUniqueString()
+        open(local_name, 'w').write(content)
+        transport = self.get_transport()
+        store = ImportDataStore(transport, source_details)
+        store.put(local_name)
+        # That the remote name is like this is part of the interface of
+        # ImportDataStore.
+        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        self.assertEquals(content, transport.get_bytes(remote_name))
+
+    def test_put_ensures_base(self):
+        # Put ensures that the directory pointed to by the transport exists.
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        subdir_name = self.factory.getUniqueString()
+        source_details = self.factory.makeCodeImportSourceDetails()
+        open(local_name, 'w').write('')
+        transport = self.get_transport()
+        store = ImportDataStore(transport.clone(subdir_name), source_details)
+        store.put(local_name)
+        self.assertTrue(transport.has(subdir_name))
 
 
 class MockForeignWorkingTree:
@@ -451,7 +524,6 @@ def clean_up_default_stores_for_import(source_details):
 
     :source_details: A `CodeImportSourceDetails` describing the import.
     """
-    from lp.codehosting.codeimport.worker import ImportDataStore
     treestore = get_default_foreign_tree_store()
     tree_transport = treestore.transport
     archive_name = ImportDataStore(treestore.transport, source_details)._getRemoteName('a.tar.gz')

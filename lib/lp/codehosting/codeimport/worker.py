@@ -192,7 +192,16 @@ class CodeImportSourceDetails:
 
 
 class ImportDataStore:
-    """A store for data associated with an import."""
+    """A store for data associated with an import.
+
+    Import workers can store and retreive files into and from the store using
+    `put()` and `fetch()`.
+
+    So this store can find files stored by previous versions of this code, the
+    files are stored at ``<BRANCH ID IN HEX>.<EXT>`` where BRANCH ID comes
+    from the CodeImportSourceDetails used to construct the instance and EXT
+    comes from the local name passed to `put` or `fetch`.
+    """
 
     def __init__(self, transport, source_details):
         """Initialize an `ImportDataStore`.
