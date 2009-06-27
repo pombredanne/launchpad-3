@@ -551,7 +551,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 drivers.add(self.project.owner)
             else:
                 drivers.add(self.owner)
-        return sorted(drivers, key=lambda driver: driver.browsername)
+        return sorted(drivers, key=lambda driver: driver.displayname)
 
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',

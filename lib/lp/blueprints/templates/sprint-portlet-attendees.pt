@@ -13,7 +13,7 @@
     <ul>
       <li class="person" tal:repeat="attendance context/attendances">
         <a tal:attributes="href attendance/attendee/fmt:url"
-           tal:content="attendance/attendee/browsername">Foo Bar</a><br />
+           tal:content="attendance/attendee/displayname">Foo Bar</a><br />
         <div class="discreet">
            <span tal:replace="python:view.formatDate(attendance.time_starts)">
              2005-08-05</span> till

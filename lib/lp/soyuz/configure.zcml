@@ -190,6 +190,7 @@
                 displayname
                 displayarchs
                 displayversion
+                is_delayed_copy
                 isPPA
                 components"/>
         <require
@@ -206,6 +207,7 @@
                 addCustom
                 syncUpdate
                 notify
+                acceptFromCopy
                 acceptFromUploader
                 acceptFromQueue
                 rejectFromQueue

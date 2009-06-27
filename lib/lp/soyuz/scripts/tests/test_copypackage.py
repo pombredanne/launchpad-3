@@ -22,6 +22,7 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet)
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.interfaces.archive import (
@@ -32,14 +33,17 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingPocket, PackagePublishingStatus,
     active_publishing_status)
+from lp.soyuz.interfaces.queue import (
+    PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.model.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
-    PackageCopier, UnembargoSecurityPackage, check_copy, do_copy,
-    override_from_ancestry, re_upload_file, update_files_privacy)
+    check_copy, _do_delayed_copy, _do_direct_copy, override_from_ancestry,
+    PackageCopier, re_upload_file, UnembargoSecurityPackage,
+    update_files_privacy)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     TestCase, TestCaseWithFactory)
@@ -726,17 +730,17 @@ class TestCheckCopy(TestCaseWithFactory):
             check_copy, source, archive, series, pocket, True)
 
 
-class TestDoCopy(TestCaseWithFactory):
+class TestDoDirectCopy(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestDoCopy, self).setUp()
+        super(TestDoDirectCopy, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
 
     def testCanCopyArchIndependentBinariesBuiltInAnUnsupportedArch(self):
-        # do_copy() uses the binary candidate build architecture,
+        # _do_direct_copy() uses the binary candidate build architecture,
         # instead of the publish one, in other to check if it's
         # suitable for the destination. It avoids skipping the single
         # arch-indep publication returned by SPPH.getBuiltBinaries()
@@ -765,14 +769,97 @@ class TestDoCopy(TestCaseWithFactory):
         self.layer.txn.commit()
 
         # Copy succeeds.
-        copies = do_copy(
-            [source], source.archive, hoary_test, source.pocket, True)
+        copies = _do_direct_copy(
+            source, source.archive, hoary_test, source.pocket, True)
         self.assertEquals(
             ['foo 666 in hoary-test',
              'foo-bin 666 in hoary-test amd64',
              'foo-bin 666 in hoary-test i386',
              ],
             [copy.displayname for copy in copies])
+
+
+class TestDoDelayedCopy(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestDoDelayedCopy, self).setUp()
+        self.test_publisher = SoyuzTestPublisher()
+
+    def createDelayedCopyContext(self):
+        """Create a context to allow delayed-copies test.
+
+        The returned source publication in a private archive with
+        binaries and a custom upload.
+        """
+        self.test_publisher.prepareBreezyAutotest()
+
+        ppa = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        ppa.buildd_secret = 'x'
+        ppa.private = True
+
+        source = self.test_publisher.getPubSource(archive=ppa)
+        self.test_publisher.getPubBinaries(pub_source=source)
+
+        [build] = source.getBuilds()
+        custom_file = self.factory.makeLibraryFileAlias(restricted=True)
+        build.package_upload.addCustom(
+            custom_file, PackageUploadCustomFormat.DIST_UPGRADER)
+
+        return source
+
+    def test_do_delayed_copy_simple(self):
+        # _do_delayed_copy() return an `IPackageUpload` record configured
+        # as a delayed-copy and with the expected contents (source,
+        # binaries and custom uploads) in ACCEPTED state.
+
+        source = self.createDelayedCopyContext()
+
+        # Make ubuntutest/breezy-autotest CURRENT so uploads to SECURITY
+        # pocket can be accepted.
+        self.test_publisher.breezy_autotest.status = (
+            DistroSeriesStatus.CURRENT)
+
+        # Commit for making the just-create library files available.
+        self.layer.txn.commit()
+
+        # Setup and execute the delayed copy procedure.
+        copy_archive = self.test_publisher.ubuntutest.main_archive
+        copy_series = source.distroseries
+        copy_pocket = PackagePublishingPocket.SECURITY
+
+        delayed_copy = _do_delayed_copy(
+            source, copy_archive, copy_series, copy_pocket, True)
+
+        # A delayed-copy `IPackageUpload` record is returned.
+        self.assertTrue(delayed_copy.is_delayed_copy)
+        self.assertEquals(
+            PackageUploadStatus.ACCEPTED, delayed_copy.status)
+
+        # It is targeted to the right publishing context.
+        self.assertEquals(copy_archive, delayed_copy.archive)
+        self.assertEquals(copy_series, delayed_copy.distroseries)
+        self.assertEquals(copy_pocket, delayed_copy.pocket)
+
+        # And it contains the source, build and custom files.
+        self.assertEquals(
+            [source.sourcepackagerelease],
+            [pus.sourcepackagerelease for pus in delayed_copy.sources])
+
+        [build] = source.getBuilds()
+        self.assertEquals(
+            [build],
+            [pub.build for pub in delayed_copy.builds])
+
+        [custom_file] = [
+            custom.libraryfilealias
+            for custom in build.package_upload.customfiles]
+        self.assertEquals(
+            [custom_file],
+            [custom.libraryfilealias for custom in delayed_copy.customfiles])
 
 
 class TestCopyPackageScript(unittest.TestCase):
