@@ -9,8 +9,7 @@ __all__ = [
     'CodeImportSourceDetails',
     'ForeignTreeStore',
     'ImportWorker',
-    'get_default_bazaar_branch_store',
-    'get_default_foreign_tree_store']
+    'get_default_bazaar_branch_store']
 
 
 import os
@@ -311,12 +310,6 @@ class ForeignTreeStore:
         tree = self._getForeignTree(source_details, target_path)
         tree.update()
         return tree
-
-
-def get_default_foreign_tree_store():
-    """Get the default `ForeignTreeStore`."""
-    return ForeignTreeStore(
-        get_transport(config.codeimport.foreign_tree_store))
 
 
 class ImportWorker:

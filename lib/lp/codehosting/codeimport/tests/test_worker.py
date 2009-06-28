@@ -24,8 +24,7 @@ from canonical.cachedproperty import cachedproperty
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, GitImportWorker,
-    ImportDataStore, ImportWorker, get_default_bazaar_branch_store,
-    get_default_foreign_tree_store)
+    ImportDataStore, ImportWorker, get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, SubversionServer)
 from lp.codehosting.tests.helpers import (
@@ -351,13 +350,6 @@ class TestForeignTreeStore(WorkerTest):
         self.assertEqual(working_tree.root, source_details.cvs_root)
         self.assertEqual(working_tree.module, source_details.cvs_module)
 
-    def test_defaultStore(self):
-        # The default store is at config.codeimport.foreign_tree_store.
-        store = get_default_foreign_tree_store()
-        self.assertEqual(
-            store.transport.base.rstrip('/'),
-            config.codeimport.foreign_tree_store.rstrip('/'))
-
     def test_getNewWorkingTree(self):
         # If the foreign tree store doesn't have an archive of the foreign
         # tree, then fetching the tree actually pulls in from the original
@@ -517,11 +509,11 @@ def clean_up_default_stores_for_import(source_details):
 
     :source_details: A `CodeImportSourceDetails` describing the import.
     """
-    treestore = get_default_foreign_tree_store()
-    tree_transport = treestore.transport
-    archive_name = ImportDataStore(treestore.transport, source_details)._getRemoteName('a.tar.gz')
-    if tree_transport.has(archive_name):
-        tree_transport.delete(archive_name)
+    tree_transport = get_transport(config.codeimport.foreign_tree_store)
+    prefix = '%08x' % source_details.branch_id
+    for filename in tree_transport.list_dir('.'):
+        if filename.startswith(prefix):
+            tree_transport.delete(filename)
     branchstore = get_default_bazaar_branch_store()
     branch_transport = branchstore.transport
     branch_name = '%08x' % source_details.branch_id
