@@ -731,6 +731,11 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
         load_optional_plugin('git')
         self.setUpImport()
 
+    def tearDown(self):
+        from bzrlib.plugins.git.shamap import mapdbs
+        mapdbs().clear()
+        WorkerTest.tearDown(self)
+
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
         return GitImportWorker(
