@@ -65,9 +65,8 @@ from lp.code.enums import (
 from lp.code.interfaces.branch import (
     bazaar_identity,  DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchBatchNavigator)
-from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalGetter)
+from lp.code.interfaces.branchcollection import (
+    IAllBranches, IBranchCollection)
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
@@ -1013,24 +1012,20 @@ class PersonProductCodeSummaryView(PersonCodeSummaryView):
 class ProductReviewCountMixin:
     """A mixin used by the menu and the code index view."""
 
+    def _getProposalCount(self, status):
+        """Return a count of proposals with the specified status."""
+        collection = IBranchCollection(self.context).visibleByUser(self.user)
+        return collection.getMergeProposals([status]).count()
+
     @cachedproperty
     def active_review_count(self):
         """Return the number of active reviews for the user."""
-        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
-        # IBranchCollection supports getMergeProposals.
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
-        return query.count()
+        return self._getProposalCount(BranchMergeProposalStatus.NEEDS_REVIEW)
 
     @cachedproperty
     def approved_merge_count(self):
         """Return the number of active reviews for the user."""
-        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
-        # IBranchCollection supports getMergeProposals.
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
-            self.user)
-        return query.count()
+        return self._getProposalCount(BranchMergeProposalStatus.CODE_APPROVED)
 
 
 class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
