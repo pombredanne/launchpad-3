@@ -20,7 +20,6 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
-from bzrlib.osutils import pumpfile
 import bzrlib.ui
 from bzrlib.urlutils import join as urljoin
 from bzrlib.upgrade import upgrade
@@ -42,9 +41,6 @@ import SCM
 
 class BazaarBranchStore:
     """A place where Bazaar branches of code imports are kept."""
-
-    # This code is intended to replace c.codehosting.codeimport.publish and
-    # canonical.codeimport.codeimport.gettarget.
 
     def __init__(self, transport):
         """Construct a Bazaar branch store based at `transport`."""
