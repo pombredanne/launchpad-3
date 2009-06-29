@@ -105,6 +105,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         notNull=True,
         schema=TranslationsBranchImportMode,
         default=TranslationsBranchImportMode.NO_IMPORT)
+    translations_branch = ForeignKey(
+        dbName='translations_branch', foreignKey='Branch', notNull=False,
+        default=None)
     # where are the tarballs released from this branch placed?
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
@@ -160,7 +163,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
-        return sorted(drivers, key=lambda x: x.browsername)
+        return sorted(drivers, key=lambda x: x.displayname)
 
     @property
     def bug_supervisor(self):

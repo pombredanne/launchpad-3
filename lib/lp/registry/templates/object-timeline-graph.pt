@@ -24,7 +24,12 @@
       <img src="/@@/spinner" /> Loading...
     </div>
   </div>
-  <script type="text/javascript">
+  <tal:script
+    replace="structure
+    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
+  var resize_frame =
+      '<tal:x replace="request/form/resize_frame | nothing"/>';
+  <!--
   YUI().use('registry.timeline', 'node', function(Y) {
       Y.on('domready', function(e) {
           if (Y.UA.ie) {
@@ -33,13 +38,22 @@
 
           var display_graph = function(result) {
               var timeline = result;
+              // The timeline for a productseries needs to be wrapped
+              // in an array.
+              if (!Y.Lang.isArray(timeline)) {
+                  timeline = [timeline];
+              }
               // Don't display graph if there are zero milestones or releases.
               var container = Y.get('#timeline-container');
               container.setStyle('display', 'block');
-              var graph = new Y.registry.timeline.TimelineGraph({
+              var config = {
                   timeline: timeline,
                   boundingBox: container
-              });
+              };
+              if (resize_frame !== '') {
+                  config.resize_frame = resize_frame;
+              }
+              var graph = new Y.registry.timeline.TimelineGraph(config);
               graph.render();
               Y.get('#spinner').setStyle('display', 'none');
               // Scroll to the most recent milestones or
@@ -67,7 +81,8 @@
           drag_scroll_handler.activate();
       });
   });
-  </script>
+  -->
+  <tal:script replace="structure string:&lt;/script&gt;" />
 
 </body>
 </html>

@@ -11,6 +11,40 @@
 >
 
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/registry/milestone_table.js"></script>
+    <script id='milestone-script' type='text/javascript'
+      tal:condition="context/menu:overview/create_milestone/enabled"
+      tal:content="structure string:
+      YUI().use(
+        'node', 'lp.milestoneoverlay', 'lp.milestonetable', function (Y) {
+
+        var series_uri = '${view/series_api_uri}';
+        var milestone_form_uri = '${view/milestone_form_uri}';
+        var milestone_row_uri_template = '${view/milestone_row_uri_template}';
+        var milestone_rows_id = '#milestone-rows';
+
+        Y.on('domready', function () {
+            var create_milestone_link = Y.get('.menu-link-create_milestone');
+            create_milestone_link.addClass('js-action');
+            var config = {
+                milestone_form_uri: milestone_form_uri,
+                series_uri: series_uri,
+                next_step: Y.lp.milestonetable.get_milestone_row,
+                activate_node: create_milestone_link
+                };
+            Y.lp.milestoneoverlay.attach_widget(config);
+            var table_config = {
+                milestone_row_uri_template: milestone_row_uri_template,
+                milestone_rows_id: milestone_rows_id
+                }
+            Y.lp.milestonetable.setup(table_config);
+        });
+    });" />
+  </metal:block>
+
   <div metal:fill-slot="main"
     tal:define="overview_menu context/menu:overview;
                 sourcepackages context/sourcepackages">
@@ -20,7 +54,6 @@
       <a tal:replace="structure overview_menu/delete/fmt:icon" />
       <a tal:replace="structure overview_menu/edit/fmt:icon" />
     </h1>
-
     <table id="series-details" style="margin-bottom: 1em;">
       <tr>
         <th>Project:</th>
@@ -71,6 +104,10 @@
       <a tal:replace="structure overview_menu/subscribe/fmt:link-icon" />
     </div>
 
+    <div style="padding-top: 2em" tal:define="auto_resize python:True">
+      <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
+    </div>
+
     <h2 style="margin-top: 2em;">Milestones and releases</h2>
 
     <table tal:replace="structure context/@@+table-releases" />
@@ -101,7 +138,7 @@
       This series is packaged in the following distribution series:
       </tal:distro>
       <tal:no-distro condition="not: sourcepackages">
-      This series is not packaged in the following distribution series.
+      This series is not packaged in any distribution series.
       </tal:no-distro>
     </p>
 

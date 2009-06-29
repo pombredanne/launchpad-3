@@ -619,7 +619,38 @@ class POTemplate(SQLBase, RosettaStats):
 
         return os.path.join(potemplate_dir, path)
 
-    def newPOFile(self, language_code, variant=None, requester=None):
+    def _createPOFilesInSharingPOTemplates(self, pofile):
+        """Create copies of the given pofile in all sharing potemplates."""
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            product=self.product)
+        for template in subset.getSharingPOTemplates(self.name):
+            template = removeSecurityProxy(template)
+            if template is self:
+                continue
+            language_code = pofile.language.code
+            variant = pofile.variant
+            existingpo = template.getPOFileByLang(language_code, variant)
+            if existingpo is not None:
+                continue
+            newpopath = template._composePOFilePath(pofile.language, variant)
+            pofile = POFile(
+                potemplate=template,
+                language=pofile.language,
+                topcomment=pofile.topcomment,
+                header=pofile.header,
+                fuzzyheader=pofile.fuzzyheader,
+                owner=pofile.owner,
+                variant=pofile.variant,
+                path=newpopath)
+
+            # Update cache to reflect the change.
+            template._cached_pofiles_by_language[language_code,
+                                                 variant] = pofile
+
+    def newPOFile(self, language_code, variant=None, requester=None,
+                  create_sharing=True):
         """See `IPOTemplate`."""
         # Make sure we don't already have a PO file for this language.
         existingpo = self.getPOFileByLang(language_code, variant)
@@ -670,6 +701,8 @@ class POTemplate(SQLBase, RosettaStats):
         # Update cache to reflect the change.
         self._cached_pofiles_by_language[language_code, variant] = pofile
 
+        if create_sharing:
+            self._createPOFilesInSharingPOTemplates(pofile)
         # Store the changes.
         flush_database_updates()
 
@@ -923,6 +956,21 @@ class POTemplateSubset:
             titlestr += self.productseries.displayname
         return titlestr
 
+    def _copyPOFilesFromSharingTemplates(self, template):
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=template.distribution,
+            sourcepackagename=template.sourcepackagename,
+            product=template.product)
+        for shared_template in subset.getSharingPOTemplates(template.name):
+            shared_template = removeSecurityProxy(shared_template)
+            if shared_template is template:
+                continue
+            for pofile in shared_template.pofiles:
+                template.newPOFile(pofile.language.code,
+                                   pofile.variant, pofile.owner, False)
+            # Do not continue, else it would trigger an existingpo assertion.
+            return
+
     def new(self, name, translation_domain, path, owner):
         """See `IPOTemplateSubset`."""
         header_params = {
@@ -931,7 +979,7 @@ class POTemplateSubset:
             'languagename': 'LANGUAGE',
             'languagecode': 'LL',
             }
-        return POTemplate(name=name,
+        template = POTemplate(name=name,
                           translation_domain=translation_domain,
                           sourcepackagename=self.sourcepackagename,
                           distroseries=self.distroseries,
@@ -939,6 +987,8 @@ class POTemplateSubset:
                           path=path,
                           owner=owner,
                           header=standardTemplateHeader % header_params)
+        self._copyPOFilesFromSharingTemplates(template)
+        return template
 
     def getPOTemplateByName(self, name):
         """See `IPOTemplateSubset`."""
@@ -1206,6 +1256,14 @@ class POTemplateSharingSubset(object):
                 if name_pattern is None or re.match(name_pattern,
                                                     template.name):
                     yield template
+
+    def getSharingPOTemplates(self, potemplate_name):
+        """See IPOTemplateSharingSubset."""
+        if self.distribution is not None:
+            assert self.sourcepackagename is not None, (
+                   "Need sourcepackagename to select from distribution.")
+
+        return self._iterate_potemplates("^%s$" % potemplate_name)
 
     def groupEquivalentPOTemplates(self, name_pattern=None):
         """See IPOTemplateSharingSubset."""

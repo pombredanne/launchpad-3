@@ -1,0 +1,199 @@
+= Exporting translations to a bzr branch =
+
+The translations-export-to-branch script visits all ProductSeries with a
+translations_branch set, and for each, exports the series' translations
+to that branch.
+
+    >>> from canonical.launchpad.scripts.translations_to_branch import (
+    ...     ExportTranslationsToBranch)
+
+The script uses the DirectBranchCommit mechanism to write translation
+files into the branches.  We mock it up here.
+
+    >>> from lp.code.model.directbranchcommit import ConcurrentUpdateError
+
+    >>> class MockDirectBranchCommit:
+    ...     """Mock DirectBranchCommit.  Prints actions."""
+    ...
+    ...     simulate_race = False
+    ...
+    ...     def __init__(self, logger):
+    ...         self.logger = logger
+    ...
+    ...     def writeFile(self, path, contents):
+    ...         self.logger.info("Writing file '%s':" % path)
+    ...         self.logger.info(contents)
+    ...
+    ...     def lockForCommit(self):
+    ...         pass
+    ...
+    ...     def _checkForRace(self):
+    ...         if self.simulate_race:
+    ...             raise ConcurrentUpdateError("Simulated race condition.")
+    ...
+    ...     def commit(self, message=None):
+    ...         self._checkForRace()
+    ...         self.logger.info("Commit.")
+    ...
+    ...     def unlock(self):
+    ...         self.logger.info("Unlock.")
+
+    >>> from canonical.launchpad.scripts.logger import FakeLogger
+
+    >>> class MockExportTranslationsToBranch(ExportTranslationsToBranch):
+    ...
+    ...     simulate_race = False
+    ...
+    ...     def __init__(self, *args, **kwargs):
+    ...         super(MockExportTranslationsToBranch, self).__init__(
+    ...             *args, **kwargs)
+    ...         self.logger = FakeLogger()
+    ...
+    ...     def _makeDirectBranchCommit(self, bzrbranch):
+    ...         committer = MockDirectBranchCommit(self.logger)
+    ...         committer.simulate_race = self.simulate_race
+    ...         return committer
+
+The Gazblachko project is set up to export its trunk translations to a
+branch.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> gazblachko = removeSecurityProxy(factory.makeProduct(
+    ...     name='gazblachko', displayname='Gazblachko'))
+    >>> gazblachko.official_rosetta = True
+
+    >>> branch = removeSecurityProxy(factory.makeBranch(
+    ...     name='gazpo', owner=gazblachko.owner, product=gazblachko))
+
+    >>> trunk = removeSecurityProxy(gazblachko).getSeries('trunk')
+    >>> trunk.translations_branch = branch
+
+    >>> import transaction
+    >>> transaction.commit()
+
+Gazblachko trunk has two active templates, plus a deactivated one.  All
+have Dutch translations.
+
+    >>> def setup_template_and_translations(path, name, iscurrent=True):
+    ...     """Set up template, Dutch translations for Gazblachko."""
+    ...     template = removeSecurityProxy(factory.makePOTemplate(
+    ...         productseries=trunk, owner=gazblachko.owner, name=name,
+    ...         path=path))
+    ...
+    ...     potmsgset = factory.makePOTMsgSet(
+    ...         template, singular='%s msgid' % name, sequence=1)
+    ...
+    ...     pofile = factory.makePOFile(
+    ...         'nl', potemplate=template, owner=gazblachko.owner)
+    ...
+    ...     factory.makeTranslationMessage(
+    ...         pofile=pofile, potmsgset=potmsgset,
+    ...         translator=gazblachko.owner, reviewer=gazblachko.owner,
+    ...         translations=['%s msgstr' % name])
+    ...
+    ...     if not iscurrent:
+    ...         removeSecurityProxy(template).iscurrent = False
+
+    >>> main_template = setup_template_and_translations(
+    ...     'po/main/gazpot.pot', 'maingazpot')
+
+    >>> module_template = setup_template_and_translations(
+    ...     'po/module/module.pot', 'gazmod')
+
+    >>> old_template = setup_template_and_translations(
+    ...     'po/gazpot.pot', 'oldgazpot', iscurrent=False)
+
+When the translations-export-to-branch script runs, it feeds the
+translations to the DirectBranchCommit.
+
+    >>> transaction.commit()
+    >>> script = MockExportTranslationsToBranch(
+    ...     'export-to-branch', test_args=['-vv'])
+    >>> script.main()
+    INFO Exporting to translations branches.
+    INFO Exporting Gazblachko trunk series.
+    INFO Writing file 'po/main/nl.po':
+    INFO # ...
+    msgid ""
+    msgstr ""
+    "..."
+    <BLANKLINE>
+    msgid "maingazpot msgid"
+    msgstr "maingazpot msgstr"
+    <BLANKLINE>
+    INFO Writing file 'po/module/nl.po':
+    INFO # ...
+    msgid ""
+    msgstr ""
+    "..."
+    ...
+    <BLANKLINE>
+    msgid "gazmod msgid"
+    msgstr "gazmod msgstr"
+    INFO Commit.
+    INFO Unlock.
+    INFO Processed 1 item(s); 0 failure(s).
+
+When Gazblachko stops using Launchpad for Translations, the exports stop
+also.
+
+    >>> gazblachko.official_rosetta = False
+    >>> transaction.commit()
+    >>> script.main()
+    INFO Exporting to translations branches.
+    INFO Processed 0 item(s); 0 failure(s).
+
+
+== Race conditions ==
+
+The script checks for possible race conditions.  Otherwise it might
+overwrite translations committed to the branch that hadn't been
+collected for import yet.
+
+
+=== Branch races ===
+
+Any translations coming in through a branch push are safe once they're
+in the translations import queue.  So the race window spans from the
+moment an update is pushed to the moment any translation import branch
+jobs have completed.
+
+If the DirectBranchCommit detects a concurrent update, the script will
+refuse to commit to the branch.
+
+    >>> gazblachko.official_rosetta = True
+    >>> transaction.commit()
+
+    >>> script.simulate_race = True
+    >>> script.main()
+    INFO Exporting to translations branches.
+    INFO Exporting Gazblachko trunk series.
+    INFO Writing file 'po/main/nl.po':
+    ...
+    msgstr "gazmod msgstr"
+    <BLANKLINE>
+    INFO Unlock.
+    WARNING Failure: Simulated race condition.
+    INFO Processed 1 item(s); 1 failure(s).
+
+
+=== Pending imports from same branch ===
+
+Another race condition is detected by the script itself: there may be
+pending translations BranchJobs on the branch.
+
+    >>> from lp.code.model.branchjob import RosettaUploadJob
+    >>> trunk.branch = branch
+    >>> script.simulate_race = False
+    >>> job = RosettaUploadJob.create(branch, None, True)
+    >>> job is None
+    False
+    >>> transaction.commit()
+    >>> script.main()
+    INFO Exporting to translations branches.
+    INFO Exporting Gazblachko trunk series.
+    WARNING Failure: Translations branch for Gazblachko trunk series
+    has pending translations changes.  Not committing.
+    INFO Processed 1 item(s); 1 failure(s).
+
