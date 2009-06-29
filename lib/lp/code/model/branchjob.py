@@ -55,8 +55,11 @@ from canonical.launchpad.translationformat.translation_import import (
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-# Use at most the first 100 characters of the commit message.
+
+# Use at most the first 100 characters of the commit message for the subject
+# the mail describing the revision.
 SUBJECT_COMMIT_MESSAGE_LENGTH = 100
+
 
 class BranchJobType(DBEnumeratedType):
     """Values that ICodeImportJob.state can take."""
@@ -97,6 +100,7 @@ class BranchJobType(DBEnumeratedType):
         This job removes a branch that have been deleted from the database
         from disk.
         """)
+
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
