@@ -36,6 +36,13 @@
   } else {
       hide_zoom_buttons = false;
   }
+  var include_inactive =
+      '<tal:x replace="request/form/include_inactive | nothing"/>';
+  if (include_inactive == 'true') {
+      include_inactive = true;
+  } else {
+      include_inactive = false;
+  }
   <!--
   YUI().use('registry.timeline', 'node', function(Y) {
       Y.on('domready', function(e) {
@@ -73,7 +80,7 @@
           var timeline = client.named_get(
               LP.client.cache['context']['self_link'],
               'get_timeline', {
-                  parameters: {},
+                  parameters: {include_inactive: include_inactive},
                   on: {
                       success: display_graph,
                       failure: function(ignore, response, args) {

@@ -15,9 +15,9 @@
 
     <h1><span tal:replace="context/displayname" /> Timeline</h1>
 
-    <tal:iframe define="auto_resize string:true">
+    <tal:vars define="auto_resize string:true; include_inactive string:true">
       <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
-    </tal:iframe>
+    </tal:vars>
 
     <div tal:repeat="series view/sorted_series_list">
       <div style="margin-top: 1em;

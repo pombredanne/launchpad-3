@@ -30,13 +30,11 @@
 
     var auto_resize = '<tal:x replace="auto_resize | nothing"/>';
     var hide_zoom_buttons = '<tal:x replace="hide_zoom_buttons | nothing"/>';
-    var development_focus = '<tal:x replace="development_focus | nothing"/>';
+    var include_inactive = '<tal:x replace="include_inactive | nothing"/>';
     <!--
-    var timeline_url = "";
-    if (development_focus == '') {
-        timeline_url += "+timeline-graph?";
-    } else {
-        timeline_url += development_focus + '/+timeline-graph?';
+    var timeline_url = "+timeline-graph?";
+    if (include_inactive == 'true') {
+        timeline_url += "include_inactive=true&";
     }
 
     if (auto_resize == 'true') {
