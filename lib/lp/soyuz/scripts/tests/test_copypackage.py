@@ -564,18 +564,18 @@ class TestCheckCopyHarness:
             CannotCopy, msg, check_copy, self.source, self.archive,
             self.series, self.pocket, True)
 
-    def testCannotCopyBinariesFromBuilding(self):
+    def test_cannot_copy_binaries_from_building(self):
         [build] = self.source.createMissingBuilds()
         self.assertCannotCopyBinaries(
             'source has no binaries to be copied')
 
-    def testCannotCopyBinariesFromFTBFS(self):
+    def test_cannot_copy_binaries_from_FTBFS(self):
         [build] = self.source.createMissingBuilds()
         build.buildstate = BuildStatus.FAILEDTOBUILD
         self.assertCannotCopyBinaries(
             'source has no binaries to be copied')
 
-    def testCanCopyOnlySourceFromFTBFS(self):
+    def test_can_copy_only_source_from_FTBFS(self):
         # XXX cprov 2009-06-16: This is not ideal for PPA, since
         # they contain 'rolling' series, any previous build can be
         # retried anytime, but they will fail-to-upload if a copy
@@ -584,17 +584,16 @@ class TestCheckCopyHarness:
         build.buildstate = BuildStatus.FAILEDTOBUILD
         self.assertCanCopySourceOnly()
 
-    def testCannotCopyBinariesFromBinariesPendingPublication(self):
+    def test_cannot_copy_binaries_from_binaries_pending_publication(self):
         [build] = self.source.createMissingBuilds()
         self.test_publisher.uploadBinaryForBuild(build, 'lazy-bin')
         self.assertCannotCopyBinaries(
             'source has no binaries to be copied')
 
-    def testCanCopyBinariesFromFullyBuiltAndPublishedSources(self):
+    def test_can_copy_binaries_from_fullybuilt_and_published(self):
         self.test_publisher.getPubBinaries(
             pub_source=self.source,
             status=PackagePublishingStatus.PUBLISHED)
-        self.layer.txn.commit()
         self.assertCanCopyBinaries()
 
 
@@ -614,13 +613,13 @@ class TestCheckCopyHarnessSameArchive(TestCaseWithFactory,
         self.series = self.test_publisher.ubuntutest.getSeries('hoary-test')
         self.pocket = PackagePublishingPocket.RELEASE
 
-    def testCannotCopyOnlySourcesFromBuilding(self):
+    def test_cannot_copy_only_source_from_building(self):
         [build] = self.source.createMissingBuilds()
         self.assertCannotCopySourceOnly(
             'same version already building in the destination archive '
             'for Breezy Badger Autotest')
 
-    def testCannotCopyOnlySourceFromBinariesPendingPublication(self):
+    def test_cannot_copy_only_source_from_binaries_pending_publication(self):
         [build] = self.source.createMissingBuilds()
         self.test_publisher.uploadBinaryForBuild(build, 'lazy-bin')
         self.assertCannotCopySourceOnly(
@@ -628,14 +627,14 @@ class TestCheckCopyHarnessSameArchive(TestCaseWithFactory,
             'archive for Breezy Badger Autotest, please wait for them '
             'to be published before copying')
 
-    def testCannotCopyBinariesFromBinariesPublishedAsPending(self):
+    def test_cannot_copy_binaries_from_binaries_published_as_pending(self):
         self.test_publisher.getPubBinaries(pub_source=self.source)
         self.assertCannotCopyBinaries(
             'same version has unpublished binaries in the destination '
             'archive for Breezy Badger Autotest, please wait for them '
             'to be published before copying')
 
-    def testCannotCopyOnlySourceFromFullyBuiltAndPublishedSources(self):
+    def test_cannot_copy_only_source_from_fullybuilt_and_published(self):
         self.test_publisher.getPubBinaries(
             pub_source=self.source,
             status=PackagePublishingStatus.PUBLISHED)
@@ -643,7 +642,7 @@ class TestCheckCopyHarnessSameArchive(TestCaseWithFactory,
             'same version already has published binaries in the '
             'destination archive')
 
-    def test_cannot_copy_only_source_from_deleted_sources(self):
+    def test_cannot_copy_only_source_from_deleted(self):
         self.test_publisher.getPubBinaries(pub_source=self.source)
 
         self.source.requestDeletion(self.test_publisher.person, 'Go!')
@@ -675,20 +674,20 @@ class TestCheckCopyHarnessDifferentArchive(TestCaseWithFactory,
         self.series = self.source.distroseries
         self.pocket = PackagePublishingPocket.RELEASE
 
-    def testCanCopyOnlySourcesFromBuilding(self):
+    def test_can_copy_only_source_from_building(self):
         [build] = self.source.createMissingBuilds()
         self.assertCanCopySourceOnly()
 
-    def testCanCopyOnlySourceFromBinariesPendingPublication(self):
+    def test_can_copy_only_source_from_binaries_pending_publication(self):
         [build] = self.source.createMissingBuilds()
         self.test_publisher.uploadBinaryForBuild(build, 'lazy-bin')
         self.assertCanCopySourceOnly()
 
-    def testCanCopyBinariesFromBinariesPublishedAsPending(self):
+    def test_can_copy_binaries_from_binaries_published_as_pending(self):
         self.test_publisher.getPubBinaries(pub_source=self.source)
         self.assertCanCopyBinaries()
 
-    def testCanCopyOnlySourceFromFullyBuiltAndPublishedSources(self):
+    def test_can_copy_only_source_from_fullybuilt_and_published(self):
         self.test_publisher.getPubBinaries(
             pub_source=self.source,
             status=PackagePublishingStatus.PUBLISHED)
