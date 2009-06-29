@@ -259,6 +259,24 @@ class TestImportDataStore(WorkerTest):
         store.fetch(local_name)
         self.assertEquals(content, open(local_name).read())
 
+    def test_fetch_with_dest_transport(self):
+        # The second, optional, argument to fetch is the transport in which to
+        # place the retrieved file.
+        source_details = self.factory.makeCodeImportSourceDetails()
+        # That the remote name is like this is part of the interface of
+        # ImportDataStore.
+        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        content = self.factory.getUniqueString()
+        transport = self.get_transport()
+        transport.put_bytes(remote_name, content)
+        store = ImportDataStore(transport, source_details)
+        local_prefix = self.factory.getUniqueString()
+        self.get_transport(local_prefix).ensure_base()
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        store.fetch(local_name, self.get_transport(local_prefix))
+        self.assertEquals(
+            content, open(os.path.join(local_prefix, local_name)).read())
+
     def test_put_copiesFileToTransport(self):
         # Put copies the content of the passed filename to the remote
         # transport.
@@ -284,6 +302,24 @@ class TestImportDataStore(WorkerTest):
         store = ImportDataStore(transport.clone(subdir_name), source_details)
         store.put(local_name)
         self.assertTrue(transport.has(subdir_name))
+
+    def test_put_with_source_transport(self):
+        # The second, optional, argument to put is the transport from which to
+        # read the retrieved file.
+        local_prefix = self.factory.getUniqueString()
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        source_details = self.factory.makeCodeImportSourceDetails()
+        content = self.factory.getUniqueString()
+        os.mkdir(local_prefix)
+        open(os.path.join(local_prefix, local_name), 'w').write(content)
+        transport = self.get_transport()
+        store = ImportDataStore(transport, source_details)
+        store.put(local_name, self.get_transport(local_prefix))
+        # That the remote name is like this is part of the interface of
+        # ImportDataStore.
+        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        self.assertEquals(content, transport.get_bytes(remote_name))
+
 
 
 class MockForeignWorkingTree:
