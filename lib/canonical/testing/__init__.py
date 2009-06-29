@@ -61,6 +61,8 @@ def reset_logging():
     import zope.testing.testrunner
     zope.testing.testrunner.configure_logging()
 
+# This import registered the 'doctest' Unicode codec.
+import canonical.testing.doctestcodec
 
 # Imported here to avoid circular import issues
 # pylint: disable-msg=W0401
