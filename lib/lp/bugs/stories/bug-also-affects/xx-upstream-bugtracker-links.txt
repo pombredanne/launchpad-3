@@ -72,11 +72,11 @@ will be displayed.
 The description given in the link to the bug filing form contains a
 link back to bug 13, the place where it was originally filed.
 
-    >>> url = user_browser.getLink(text=u'bug filing form').url
-
-    >>> from urlparse import urlparse
-    >>> scheme, netloc, path, params, query, fragment = urlparse(url)
     >>> from cgi import parse_qs
+    >>> from urlparse import urlparse
+
+    >>> url = user_browser.getLink(text=u'bug filing form').url
+    >>> scheme, netloc, path, params, query, fragment = urlparse(url)
     >>> [long_desc] = parse_qs(query)['long_desc']
 
     >>> print long_desc
