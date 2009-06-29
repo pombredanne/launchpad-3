@@ -23,6 +23,7 @@ import bzrlib.ui
 from bzrlib.urlutils import join as urljoin
 from bzrlib.upgrade import upgrade
 
+from canonical.cachedproperty import cachedproperty
 from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
@@ -409,7 +410,7 @@ class CSCVSImportWorker(ImportWorker):
     # Where the foreign working tree will be stored.
     FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
 
-    @property
+    @cachedproperty
     def foreign_tree_store(self):
         return ForeignTreeStore(self.import_data_store)
 
