@@ -571,14 +571,27 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.rejection_message,
             "Signer has no upload rights to this PPA.")
 
-    def testPPAPartnerUploadFails(self):
-        """Upload a partner package to a PPA and ensure it's rejected."""
+    def testPPAPartnerUpload(self):
+        """Upload a partner package to a PPA and ensure it's not rejected."""
         upload_dir = self.queueUpload("foocomm_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
+        # Check it's been successfully accepted.
         self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA does not support partner uploads.")
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
+
+        # We rely on the fact that the component on the source package
+        # release is unmodified, only the publishing component is
+        # changed to 'main'.  This allows the package to get copied to
+        # the main archive later where it would be published using the
+        # source's component if the standard auto-overrides don't match
+        # an existing publication.
+        pub_sources = self.name16.archive.getPublishedSources(name='foocomm')
+        [pub_foocomm] = pub_sources
+        self.assertEqual(
+            pub_foocomm.sourcepackagerelease.component.name, 'partner')
+        self.assertEqual(pub_foocomm.component.name, 'main')
 
     def testUploadSignedByNonUbuntero(self):
         """Check if a non-ubuntero can upload to his PPA."""
@@ -667,7 +680,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         queue_items = self.breezy.getQueueItems(
             name="debian-installer",
-            status=PackagePublishingStatus.PUBLISHED,
+            status=PackageUploadStatus.ACCEPTED,
             archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 

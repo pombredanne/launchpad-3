@@ -26,6 +26,7 @@ setup(
         'launchpadlib',
         'lazr.smtptest',
         'lazr.uri',
+        'mocker',
         'oauth',
         'python-openid',
         'pytz',

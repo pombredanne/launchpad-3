@@ -80,6 +80,27 @@ class CodeReviewCommentView(LaunchpadView):
     """Standard view of a CodeReviewComment"""
     __used_for__ = ICodeReviewComment
 
+
+    @cachedproperty
+    def comment_author(self):
+        """The author of the comment."""
+        return self.context.message.owner
+
+    @cachedproperty
+    def has_body(self):
+        """Is there body text?"""
+        return bool(self.body_text)
+
+    @cachedproperty
+    def body_text(self):
+        """Get the body text for the message."""
+        return self.context.message_body
+
+    @cachedproperty
+    def comment_date(self):
+        """The date of the comment."""
+        return self.context.message.datecreated
+
     # Should the comment be shown in full?
     full_comment = True
     # Show comment expanders?

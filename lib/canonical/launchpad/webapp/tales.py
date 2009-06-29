@@ -944,11 +944,11 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         if custom_icon is None:
             css_class= ObjectImageDisplayAPI(person).sprite_css()
             return (u'<a href="%s" class="%s">%s</a>') % (
-                url, css_class, cgi.escape(person.browsername))
+                url, css_class, cgi.escape(person.displayname))
         else:
             return (u'<a href="%s" class="bg-image" '
                      'style="background-image: url(%s)">%s</a>') % (
-                url, custom_icon, cgi.escape(person.browsername))
+                url, custom_icon, cgi.escape(person.displayname))
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
