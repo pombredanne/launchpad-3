@@ -511,14 +511,43 @@ class TestGitImportWorker(WorkerTest):
 
     def makeBazaarBranchStore(self):
         """Make a Bazaar branch store."""
+        t = self.get_transport('bazaar_branches')
+        t.ensure_base()
         return BazaarBranchStore(self.get_transport('bazaar_branches'))
 
     def makeImportWorker(self):
         """Make an ImportWorker that only uses fake branches."""
+        source_details = self.factory.makeCodeImportSourceDetails()
         return GitImportWorker(
-            self.source_details, self.get_transport('import_data'),
+            source_details, self.get_transport('import_data'),
             self.makeBazaarBranchStore(), logging.getLogger("silent"))
 
+    def test_pushBazaarWorkingTree_saves_git_db(self):
+        # GitImportWorker.pushBazaarWorkingTree saves the git.db file from the
+        # tree's repository in the worker's ImportDataStore.
+        content = self.factory.getUniqueString()
+        tree = self.make_branch_and_tree('.')
+        tree.branch.repository._transport.put_bytes('git.db', content)
+        import_worker = self.makeImportWorker()
+        import_worker.pushBazaarWorkingTree(tree)
+        import_worker.import_data_store.fetch('git.db')
+        self.assertEqual(content, open('git.db').read())
+
+    def test_getBazaarWorkingTree_fetches_git_db(self):
+        # GitImportWorker.getBazaarWorkingTree fetches the git.db file from
+        # the worker's ImportDataStore into the tree's repository.
+        import_worker = self.makeImportWorker()
+        # Store the git.db file in the store.
+        content = self.factory.getUniqueString()
+        open('git.db', 'w').write(content)
+        import_worker.import_data_store.put('git.db')
+        # Make sure there's a Bazaar branch in the branch store.
+        tree = self.make_branch_and_tree('tree')
+        ImportWorker.pushBazaarWorkingTree(import_worker, tree)
+        # Finally, fetching the tree gets the git.db file too.
+        tree = import_worker.getBazaarWorkingTree()
+        self.assertEqual(
+            content, tree.branch.repository._transport.get('git.db').read())
 
 
 def clean_up_default_stores_for_import(source_details):
