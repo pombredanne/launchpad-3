@@ -643,6 +643,11 @@ class TestCheckCopyHarnessSameArchive(TestCaseWithFactory,
             'destination archive')
 
     def test_cannot_copy_only_source_from_deleted(self):
+        # Deleted sources cannot be resurrected (copied to the same
+        # archive/series) without their binaries. Their binaries will
+        # be presented in the UI as pending publication but would never
+        # be published in the repository, since they remained in DELETED
+        # state.
         self.test_publisher.getPubBinaries(pub_source=self.source)
 
         self.source.requestDeletion(self.test_publisher.person, 'Go!')
