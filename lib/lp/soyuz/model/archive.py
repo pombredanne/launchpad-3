@@ -838,11 +838,25 @@ class Archive(SQLBase):
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."
+        # PPA access is immediately granted if the user is in the PPA
+        # team.
         if self.is_ppa:
-            return user.inTeam(self.owner)
-        else:
-            return self._authenticate(
-                user, component_or_package, ArchivePermissionType.UPLOAD)
+            if user.inTeam(self.owner):
+                return True
+            else:
+                # If the user is not in the PPA team, default to using
+                # the main component for further ACL checks.  This is
+                # not ideal since PPAs don't use components, but when
+                # packagesets replace them for main archive uploads this
+                # interface will no longer require them because we can
+                # then relax the database constraint on
+                # ArchivePermission.
+                component_or_package = getUtility(IComponentSet)['main']
+
+        # Otherwise any archive, including PPAs, uses the standard
+        # ArchivePermission entries.
+        return self._authenticate(
+            user, component_or_package, ArchivePermissionType.UPLOAD)
 
     def canAdministerQueue(self, user, component):
         """See `IArchive`."""

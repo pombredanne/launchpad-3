@@ -1930,6 +1930,28 @@ Cprov does not have permission, however.
     >>> ubuntu.main_archive.canUpload(cprov, mozilla)
     False
 
+canUpload() also works in the same way for PPAs.  By default, it allows
+anyone in the PPA owning team to upload.
+
+    >>> cprov_archive.canUpload(cprov)
+    True
+
+    >>> cprov_archive.canUpload(carlos)
+    False
+
+We can also create an ArchivePermission entry for carlos to be able to upload
+to cprov's PPA, even though he is not the owner.
+
+    >>> from lp.soyuz.interfaces.archivepermission import (
+    ...     IArchivePermissionSet)
+    >>> discard = getUtility(IArchivePermissionSet).newComponentUploader(
+    ...     cprov_archive, carlos, "main")
+
+Carlos can now upload to cprov's PPA:
+
+    >>> cprov_archive.canUpload(carlos)
+    True
+
 
 == Rebuild archives ==
 
