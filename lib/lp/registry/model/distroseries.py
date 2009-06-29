@@ -129,7 +129,7 @@ class SeriesMixin:
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasMilestonesMixin,
-                   StructuralSubscriptionTargetMixin):
+                   StructuralSubscriptionTargetMixin, SeriesMixin):
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,

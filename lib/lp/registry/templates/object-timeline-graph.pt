@@ -26,7 +26,7 @@
   </div>
   <tal:script
     replace="structure
-    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
+    string:&lt;script type='text/javascript'&gt;" />
   var resize_frame =
       '<tal:x replace="request/form/resize_frame | nothing"/>';
   var hide_zoom_buttons =
