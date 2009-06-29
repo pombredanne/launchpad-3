@@ -16,7 +16,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.model.bugtask import build_tag_search_clause
-from lp.testing import TestCase
+from lp.testing import TestCase, normalize_whitespace
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -145,11 +145,6 @@ class TestBugTaskDelta(unittest.TestCase):
             bug_task_before_modification, bug_task,
             importance=dict(old=bug_task_before_modification.importance,
                             new=bug_task.importance))
-
-
-def normalize_whitespace(string):
-    """Replace all sequences of whitespace with a single space."""
-    return re.sub(r'\s+', ' ', string)
 
 
 class TestBugTaskTagSearchClauses(TestCase):
