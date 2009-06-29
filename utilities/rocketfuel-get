@@ -7,6 +7,12 @@
 # Stop if there's an error, and treat unset variables as errors.
 set -eu
 
+# Helper function to run a child process, indenting stdout to aid
+# readability.
+run-child() {
+    "$@" | sed -e "s/^/        /"
+}
+
 # Load local settings.
 if [ -e "$HOME/.rocketfuel-env.sh" ]
 then
@@ -54,11 +60,9 @@ do
     echo "    Checking $package_path"
     if [ -d "$package_path" ]
     then
-        bzr pull --remember "$branch" --directory "$package_path" \
-            | sed -e 's/^/        /'
+        run-child bzr pull --remember "$branch" --directory "$package_path"
     else
-        bzr branch --standalone "$branch" "$package_path" \
-            | sed -e 's/^/        /'
+        run-child bzr branch --standalone "$branch" "$package_path"
     fi
 done < "$sourcedeps_conf"
 
@@ -69,9 +73,8 @@ do
     if [ -d "$branch/sourcecode" ]
     then
         echo "    ${branch}"
-        "$LP_TRUNK_PATH/utilities/link-external-sourcecode" \
-            --parent="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR" \
-            --target="$branch" | sed -e 's/^/        /'
+        run-child "$LP_TRUNK_PATH/utilities/link-external-sourcecode" \
+            --parent="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR" --target="$branch"
     fi
 done
 
