@@ -1942,15 +1942,34 @@ anyone in the PPA owning team to upload.
 We can also create an ArchivePermission entry for carlos to be able to upload
 to cprov's PPA, even though he is not the owner.
 
-    >>> from lp.soyuz.interfaces.archivepermission import (
-    ...     IArchivePermissionSet)
-    >>> discard = getUtility(IArchivePermissionSet).newComponentUploader(
-    ...     cprov_archive, carlos, "main")
+    >>> discard = cprov_archive.newComponentUploader(
+    ...     carlos, "main")
 
 Carlos can now upload to cprov's PPA:
 
     >>> cprov_archive.canUpload(carlos)
     True
+
+Note that when creating a new permission, trying to specify a component other
+than 'main' results in an exception being raised, because components are not
+really applicable for PPAs.  'main' is used because *something* needs to be
+specified to satisfy database constraints, and it makes the most sense since
+that's the component that PPA packages are published in.
+
+    >>> cprov_archive.newComponentUploader(
+    ...     carlos, "universe")
+    Traceback (most recent call last):
+    ...
+    InvalidComponent: Component for PPAs should be 'main'
+
+You'll get the same error if you use a component object that's not main.
+
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> cprov_archive.newComponentUploader(
+    ...     carlos, universe)
+    Traceback (most recent call last):
+    ...
+    InvalidComponent: Component for PPAs should be 'main'
 
 
 == Rebuild archives ==

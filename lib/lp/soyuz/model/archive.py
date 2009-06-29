@@ -55,8 +55,8 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
-    IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES, PocketNotFound,
-    SourceNotFound, default_name_by_purpose)
+    IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
+    PocketNotFound, SourceNotFound, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivepermission import (
@@ -66,7 +66,7 @@ from lp.soyuz.interfaces.archivesubscriber import (
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.interfaces.launchpad import (
@@ -876,6 +876,14 @@ class Archive(SQLBase):
 
     def newComponentUploader(self, person, component_name):
         """See `IArchive`."""
+        if self.is_ppa:
+            if ((isinstance(component_name, str) and component_name != 'main')
+                or
+                (IComponent.providedBy(component_name) and
+                    component_name.name != 'main')):
+                # Component should be main.
+                raise InvalidComponent("Component for PPAs should be 'main'")
+
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.newComponentUploader(
             self, person, component_name)
