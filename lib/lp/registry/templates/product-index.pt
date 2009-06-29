@@ -246,23 +246,11 @@
           <iframe
             metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
         </tal:vars>
-        <a id="series-timeline-link" href="+series"
-          >&#x00BB; Series timeline</a>
-        <script>
-        YUI().use('node', function(Y) {
-            Y.on('domready', function(e) {
-                if (Y.UA.ie) {
-                    return;
-                }
-                Y.get('#series-timeline-link').setStyle('display', 'none');
-            });
-        });
-        </script>
-
         <div
            class="actions"
            tal:content="structure overview_menu/series_add/render"
         />
+        <a href="+series">&#x00BB; View full history</a>
       </div>
 
       <tal:contrib replace="structure context/@@+portlet-top-contributors" />
