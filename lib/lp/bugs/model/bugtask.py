@@ -1155,7 +1155,7 @@ def build_tag_set_query(joiner, tags):
         for tag in sorted(tags))
 
 
-def build_tag_search_clauses(tags_spec):
+def build_tag_search_clause(tags_spec):
     """Yield tag search clauses."""
     tags = set(tags_spec.query_values)
     wildcards = [tag for tag in tags if tag in ('*', '-*')]
@@ -1201,17 +1201,17 @@ def build_tag_search_clauses(tags_spec):
 
     # Combine the include and exclude sets.
     if len(include_clause) > 0 and len(exclude_clause) > 0:
-        yield "(BugTask.bug IN (%s) %s BugTask.bug NOT IN (%s))" % (
+        return "(BugTask.bug IN (%s) %s BugTask.bug NOT IN (%s))" % (
             include_clause, combine_with, exclude_clause)
     elif len(include_clause) > 0:
-        yield "BugTask.bug IN (%s)" % include_clause
+        return "BugTask.bug IN (%s)" % include_clause
     elif len(exclude_clause) > 0:
-        yield "BugTask.bug NOT IN (%s)" % exclude_clause
+        return "BugTask.bug NOT IN (%s)" % exclude_clause
     else:
         # This means that a tags argument was given, but that it
         # didn't contain any tags to search for (which is allowed,
         # even if it's a bit weird).
-        pass
+        return None
 
 
 class BugTaskSet:
@@ -1538,8 +1538,9 @@ class BugTaskSet:
             extra_clauses.append(upstream_clause)
 
         if params.tag:
-            extra_clauses.extend(
-                build_tag_search_clauses(params.tag))
+            tag_clause = build_tag_search_clause(params.tag)
+            if tag_clause is not None:
+                extra_clauses.append(tag_clause)
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine

@@ -15,7 +15,7 @@ from canonical.launchpad.searchbuilder import all, any
 from canonical.testing import LaunchpadFunctionalLayer
 
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.model.bugtask import build_tag_search_clauses
+from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
 
@@ -155,7 +155,7 @@ def normalize_whitespace(string):
 class TestBugTaskTagSearchClauses(TestCase):
 
     def searchClause(self, tag_spec):
-        return " ".join(build_tag_search_clauses(tag_spec))
+        return build_tag_search_clause(tag_spec)
 
     def assertEqualIgnoringWhitespace(self, expected, observed):
         return self.assertEqual(
