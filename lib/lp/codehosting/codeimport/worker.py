@@ -88,8 +88,6 @@ def get_default_bazaar_branch_store():
         get_transport(config.codeimport.bazaar_branch_store))
 
 
-
-
 class CodeImportSourceDetails:
     """The information needed to process an import.
 
@@ -223,7 +221,7 @@ class ImportDataStore:
 
         :param filename: The name of the file to retrieve (must be a filename,
             not a path).
-        :param dest_transport: The transport retrieve the the file to,
+        :param dest_transport: The transport to retrieve the file to,
             defaulting to ``get_transport('.')``.
         :return: A boolean, true if the file was found and retrieved, false
             otherwise.
@@ -507,7 +505,8 @@ class GitImportWorker(PullingImportWorker):
         """See `ImportWorker.getBazaarWorkingTree`.
 
         In addition to the superclass' behaviour, we retrieve the 'git.db'
-        shamap from the import data store.
+        shamap from the import data store and put it where bzr-git will find
+        it in the Bazaar tree, that is at '.bzr/repository/git.db'.
         """
         tree = PullingImportWorker.getBazaarWorkingTree(self)
         self.import_data_store.fetch(
@@ -518,7 +517,8 @@ class GitImportWorker(PullingImportWorker):
         """See `ImportWorker.pushBazaarWorkingTree`.
 
         In addition to the superclass' behaviour, we store the 'git.db' shamap
-        in the import data store.
+        that bzr-git will have created at .bzr/repository/bzr.git into the
+        import data store.
         """
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
         self.import_data_store.put(

@@ -222,7 +222,8 @@ class TestImportDataStore(WorkerTest):
         filename = '%s.tar.gz' % (self.factory.getUniqueString(),)
         source_details = self.factory.makeCodeImportSourceDetails()
         store = ImportDataStore(self.get_transport(), source_details)
-        self.assertFalse(store.fetch(filename))
+        ret = store.fetch(filename)
+        self.assertFalse(ret)
 
     def test_fetch_doesntCreateFileIfNotFound(self):
         # If the requested file does not exist on the transport, no local file
@@ -230,6 +231,7 @@ class TestImportDataStore(WorkerTest):
         filename = '%s.tar.gz' % (self.factory.getUniqueString(),)
         source_details = self.factory.makeCodeImportSourceDetails()
         store = ImportDataStore(self.get_transport(), source_details)
+        store.fetch(filename)
         self.assertFalse(os.path.exists(filename))
 
     def test_fetch_returnsTrueIfFound(self):
@@ -242,7 +244,8 @@ class TestImportDataStore(WorkerTest):
         transport = self.get_transport()
         transport.put_bytes(remote_name, '')
         store = ImportDataStore(transport, source_details)
-        self.assertTrue(store.fetch(local_name))
+        ret = store.fetch(local_name)
+        self.assertTrue(ret)
 
     def test_fetch_retrievesFileIfFound(self):
         # If the requested file exists on the transport, fetch copies its
@@ -283,7 +286,7 @@ class TestImportDataStore(WorkerTest):
         local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
         source_details = self.factory.makeCodeImportSourceDetails()
         content = self.factory.getUniqueString()
-        open(local_name, 'w').write(content)
+        get_transport('.').put_bytes(local_name, content)
         transport = self.get_transport()
         store = ImportDataStore(transport, source_details)
         store.put(local_name)
@@ -297,7 +300,7 @@ class TestImportDataStore(WorkerTest):
         local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
         subdir_name = self.factory.getUniqueString()
         source_details = self.factory.makeCodeImportSourceDetails()
-        open(local_name, 'w').write('')
+        get_transport('.').put_bytes(local_name, '')
         transport = self.get_transport()
         store = ImportDataStore(transport.clone(subdir_name), source_details)
         store.put(local_name)
@@ -311,7 +314,7 @@ class TestImportDataStore(WorkerTest):
         source_details = self.factory.makeCodeImportSourceDetails()
         content = self.factory.getUniqueString()
         os.mkdir(local_prefix)
-        open(os.path.join(local_prefix, local_name), 'w').write(content)
+        get_transport(local_prefix).put_bytes(local_name, content)
         transport = self.get_transport()
         store = ImportDataStore(transport, source_details)
         store.put(local_name, self.get_transport(local_prefix))
@@ -505,8 +508,7 @@ class TestCSCVSWorker(WorkerTest):
 
 
 class TestGitImportWorker(WorkerTest):
-    """Test for behaviour particular to `GitImportWorker`.
-    """
+    """Test for behaviour particular to `GitImportWorker`."""
 
     def makeBazaarBranchStore(self):
         """Make a Bazaar branch store."""
