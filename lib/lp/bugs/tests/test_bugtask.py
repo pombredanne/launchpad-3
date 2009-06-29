@@ -162,6 +162,11 @@ class TestBugTaskTagSearchClauses(TestCase):
             normalize_whitespace(expected),
             normalize_whitespace(observed))
 
+    def test_empty(self):
+        # Specifying no tags is valid.
+        self.assertEqual(self.searchClause(any()), None)
+        self.assertEqual(self.searchClause(all()), None)
+
     def test_single_tag_presence(self):
         # The WHERE clause to test for the presence of a single
         # tag. Should be the same for an `any` query or an `all`

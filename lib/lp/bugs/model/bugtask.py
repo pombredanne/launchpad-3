@@ -1208,9 +1208,8 @@ def build_tag_search_clause(tags_spec):
     elif len(exclude_clause) > 0:
         return "BugTask.bug NOT IN (%s)" % exclude_clause
     else:
-        # This means that a tags argument was given, but that it
-        # didn't contain any tags to search for (which is allowed,
-        # even if it's a bit weird).
+        # This means that there were no tags (wildcard or specific) to
+        # search for (which is allowed, even if it's a bit weird).
         return None
 
 
