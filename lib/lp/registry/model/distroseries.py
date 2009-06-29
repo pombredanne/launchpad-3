@@ -60,14 +60,12 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.distroseries_translations_copy import (
     copy_active_translations)
-from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.soyuz.model.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.person import Person
-from canonical.launchpad.database.potemplate import POTemplate
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.soyuz.model.queue import (
@@ -220,9 +218,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def enabled_architectures(self):
-        # Avoiding circular imports.
-        from canonical.launchpad.database.librarian import (
-            LibraryFileAlias)
         store = Store.of(self)
         origin = [
             DistroArchSeries,
@@ -623,7 +618,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Language.id,
             Language.visible == True,
             Language.id == POFile.languageID,
-            Language.code <> 'en',
+            Language.code != 'en',
             POFile.potemplateID == POTemplate.id,
             POTemplate.distroseries == self,
             POTemplate.iscurrent == True).config(distinct=True))
