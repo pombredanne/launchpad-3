@@ -218,23 +218,37 @@ class ImportDataStore:
         ext = local_name[dot_index:]
         return '%08x%s' % (self._branch_id, ext)
 
-    def fetch(self, relpath, dest_transport=None):
-        """XXX."""
+    def fetch(self, filename, dest_transport=None):
+        """Retrieve `filename` from the store.
+
+        :param filename: The name of the file to retrieve (must be a filename,
+            not a path).
+        :param dest_transport: The transport retrieve the the file to,
+            defaulting to ``get_transport('.')``.
+        :return: A boolean, true if the file was found and retrieved, false
+            otherwise.
+        """
         if dest_transport is None:
             dest_transport = get_transport('.')
-        remote_name = self._getRemoteName(relpath)
+        remote_name = self._getRemoteName(filename)
         if self._transport.has(remote_name):
-            dest_transport.put_file(relpath, self._transport.get(remote_name))
+            dest_transport.put_file(filename, self._transport.get(remote_name))
             return True
         else:
             return False
 
-    def put(self, relpath, source_transport=None):
-        """XXX."""
+    def put(self, filename, source_transport=None):
+        """Put `filename` into the store.
+
+        :param filename: The name of the file to store (must be a filename,
+            not a path).
+        :param source_transport: The transport to look for the file on,
+            defaulting to ``get_transport('.')``.
+        """
         if source_transport is None:
             source_transport = get_transport('.')
-        remote_name = self._getRemoteName(relpath)
-        local_file = source_transport.get(relpath)
+        remote_name = self._getRemoteName(filename)
+        local_file = source_transport.get(filename)
         ensure_base(self._transport)
         try:
             self._transport.put_file(remote_name, local_file)
