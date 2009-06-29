@@ -23,16 +23,22 @@
   <iframe id="timeline-iframe" name='timeline-iframe'
           style="display: none; border: 0"
           scrolling="no"
-          width="100%" height="170px"></iframe>
-  </tal:vars>
+          width="100%" height="100px"></iframe>
   <tal:script
     replace="structure
     string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
 
-    var auto_resize = '<tal:x replace="auto_resize | nothing">';
-    var hide_zoom_buttons = '<tal:x replace="hide_zoom_buttons | nothing">';
+    var auto_resize = '<tal:x replace="auto_resize | nothing"/>';
+    var hide_zoom_buttons = '<tal:x replace="hide_zoom_buttons | nothing"/>';
+    var development_focus = '<tal:x replace="development_focus | nothing"/>';
     <!--
-    var timeline_url = "+timeline-graph?";
+    var timeline_url = "";
+    if (development_focus == '') {
+        timeline_url += "+timeline-graph?";
+    } else {
+        timeline_url += development_focus + '/+timeline-graph?';
+    }
+
     if (auto_resize == 'true') {
         timeline_url += 'resize_frame=timeline-iframe&';
     }

@@ -242,7 +242,9 @@
       <div class="portlet">
         <h2>Series and milestones</h2>
 
-        <tal:vars define="hide_zoom_buttons string:true">
+        <tal:vars define="
+          hide_zoom_buttons string:true;
+          development_focus context/development_focus/name | nothing">
           <iframe
             metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
         </tal:vars>

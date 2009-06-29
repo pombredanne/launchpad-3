@@ -46,6 +46,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
@@ -77,7 +78,7 @@ def landmark_key(landmark):
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
-                    StructuralSubscriptionTargetMixin):
+                    StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
     implements(
         IProductSeries, IHasTranslationTemplates,
