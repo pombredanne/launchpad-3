@@ -1757,6 +1757,23 @@ p.update-failure-message {
 a.update-retry {
     padding-left: 1em;
 }
+
+/* Information about related PPAs presented in a box */
+.informational.ppa {
+    background: #FAFAFA;
+    border: solid #666;
+    border-width: 1px 2px 2px 1px;
+    color: black;
+    margin: 0 auto 10px auto;
+    padding: 0 10px 10px 20px;
+    width: 80%;
+}
+.informational.ppa::before {
+    content: url(/@@/ppa-large);
+    display: block;
+    margin: -15px 0 -6px -35px;
+}
+
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}

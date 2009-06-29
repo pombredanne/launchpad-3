@@ -95,8 +95,9 @@
   </p>
 
   <div tal:define="ppa_versions view/latest_published_ppa_versions"
-       tal:condition="ppa_versions">
-    <p>The following <strong>unsupported</strong> external PPAs also provide
+       tal:condition="ppa_versions" class="informational ppa">
+    <p>The following <strong>unsupported</strong> and 
+       <strong>untrusted</strong> PPAs also provide
        '<span tal:replace="context/name" />':</p>
     <ul id="ppa_packaging">
       <li tal:repeat="ppa_version ppa_versions">
@@ -115,7 +116,7 @@
 
     <p>You can also search for
        <a tal:attributes="href view/further_ppa_versions_url">
-         all unsupported external versions of
+         all unsupported and untrusted versions of
          '<span tal:replace="context/name" />'</a>.
     </p>
   </div>

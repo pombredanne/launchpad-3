@@ -188,7 +188,7 @@ A link to further PPA searches is also included.
     ...     url='http://launchpad.dev/ubuntutest/+ppas?'
     ...         'name_filter=netapplet')
     >>> link.text
-    "...external versions of..."
+    "...unsupported and untrusted versions of..."
 
 /$DISTRO/+source/$PACKAGE pages contain a version history that lists
 each published version of a package with its changelog entry for that
