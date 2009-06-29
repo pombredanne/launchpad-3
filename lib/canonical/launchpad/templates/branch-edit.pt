@@ -44,9 +44,7 @@
     rename a branch and create a new one in its place.</p>
 
   <p>The title and the summary appear in listing and on the branch page, they
-    should describe the branch contents and purpose. The whiteboard appears on
-    the branch page, and is a good place to write more detailed comments on the
-    status of the branch.</p>
+    should describe the branch contents and purpose.</p>
 
   <p>The author allows you to give credit for the branch to another Launchpad
     person. It should usually be set to the registrant of the branch. If it is

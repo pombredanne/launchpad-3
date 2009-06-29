@@ -38,7 +38,7 @@ class TestLoginAndLogout(TestCaseWithFactory):
         person = self.factory.makePerson('foo.bar@example.com')
         self.failIfEqual(person.id, person.account.id)
         self.principal = LaunchpadPrincipal(
-            person.account.id, person.browsername,
+            person.account.id, person.displayname,
             person.displayname, person)
 
     def test_logging_in_and_logging_out(self):

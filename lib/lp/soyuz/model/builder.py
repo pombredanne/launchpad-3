@@ -401,6 +401,10 @@ class Builder(SQLBase):
         build_queue_item.markAsBuilding(self)
         self._dispatchBuildToSlave(build_queue_item, args, buildid, logger)
 
+    # XXX cprov 2009-06-24: This code does not belong to the content
+    # class domain. Here we cannot make sensible decisions about what
+    # we are allowed to present according to the request user. Then
+    # bad things happens, see bug #391721.
     @property
     def status(self):
         """See IBuilder"""
@@ -416,12 +420,8 @@ class Builder(SQLBase):
 
         msg = 'Building %s' % currentjob.build.title
         archive = currentjob.build.archive
-        if archive.is_ppa or archive.is_copy:
-            return '%s [%s/%s]' % (
-                msg,
-                currentjob.build.archive.owner.name,
-                currentjob.build.archive.name,
-                )
+        if not archive.owner.private and (archive.is_ppa or archive.is_copy):
+            return '%s [%s/%s]' % (msg, archive.owner.name, archive.name)
         else:
             return msg
 

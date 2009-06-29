@@ -553,12 +553,12 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return None
 
-    def _get_custom_icon(self):
+    def _get_custom_icon_url(self):
         """Return the URL for this object's icon."""
         context = self._context
         if IHasIcon.providedBy(context) and context.icon is not None:
             icon_url = context.icon.getURL()
-            icon = '<img alt="" width="14" height="14" src="%s" />' % icon_url
+            return icon_url
         elif context is None:
             return ''
         else:
@@ -940,15 +940,15 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         """
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
-        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon()
+        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
         if custom_icon is None:
             css_class= ObjectImageDisplayAPI(person).sprite_css()
             return (u'<a href="%s" class="%s">%s</a>') % (
-                url, css_class, cgi.escape(person.browsername))
+                url, css_class, cgi.escape(person.displayname))
         else:
             return (u'<a href="%s" class="bg-image" '
                      'style="background-image: url(%s)">%s</a>') % (
-                url, custom_icon, cgi.escape(person.browsername))
+                url, custom_icon, cgi.escape(person.displayname))
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
@@ -962,12 +962,12 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     def icon(self, view_name):
         """Return the URL for the person's icon."""
-        custom_icon = ObjectImageDisplayAPI(self._context)._get_custom_icon()
+        custom_icon = ObjectImageDisplayAPI(self._context)._get_custom_icon_url()
         if custom_icon is None:
             css_class = ObjectImageDisplayAPI(self._context).sprite_css()
             return '<span class="' + css_class + '"></span>'
         else:
-            return custom_icon
+            return '<img src="%s" width="14" height="14" />' % custom_icon
 
 
 class TeamFormatterAPI(PersonFormatterAPI):

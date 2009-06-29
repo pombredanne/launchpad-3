@@ -12,7 +12,9 @@ from zope.event import notify
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 
+from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -52,7 +54,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
         super(BugSubscriptionAddView, self).validate_widgets(data, names)
 
 
-class BugPortletSubcribersContents(LaunchpadView):
+class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
 
     def getSortedDirectSubscriptions(self):

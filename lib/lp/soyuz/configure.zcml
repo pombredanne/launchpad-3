@@ -179,7 +179,7 @@
                 sources
                 builds
                 customfiles
-                datecreated
+                date_created
                 sourcepackagerelease
                 contains_source
                 contains_build
@@ -190,6 +190,7 @@
                 displayname
                 displayarchs
                 displayversion
+                is_delayed_copy
                 isPPA
                 components"/>
         <require
@@ -206,6 +207,7 @@
                 addCustom
                 syncUpdate
                 notify
+                acceptFromCopy
                 acceptFromUploader
                 acceptFromQueue
                 rejectFromQueue
@@ -385,7 +387,9 @@
             set_attributes="description displayname"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="authorized_size buildd_secret distribution enabled                                                                                         private name require_virtualized signing_key"/>
+            set_attributes="authorized_size buildd_secret distribution
+                            enabled private name require_virtualized
+                            signing_key relative_build_score"/>
     </class>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
@@ -621,10 +625,11 @@
     </class>
     <adapter
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber"
-        provides="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriberUI"
+        provides="lp.soyuz.browser.archivesubscription.IArchiveSubscriberUI"
         factory="lp.soyuz.browser.archivesubscription.archive_subscription_ui_adapter"/>
     <subscriber
-        for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber                                        lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber
+             lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.mailnotification.notify_new_ppa_subscription"/>
     
     <!-- DistributionSourcePackageRelease -->

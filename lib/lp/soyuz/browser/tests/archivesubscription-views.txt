@@ -80,6 +80,8 @@ After adding a subscriber, the view includes a relevant notification:
     >>> for notification in view.request.notifications:
     ...     print notification.message
     You have subscribed Andrew Bennetts to PPA for Celso Providelo.
+    If not already subscribed, Andrew Bennetts will be notified of
+    the subscription via email.
 
 The view includes a subscribers property that returns all the current
 subscribers:
