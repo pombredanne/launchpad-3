@@ -66,6 +66,8 @@ from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_queue_item)
+from lp.soyuz.scripts.packagecopier import (
+    override_from_ancestry, update_files_privacy)
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp import canonical_url
@@ -302,6 +304,8 @@ class PackageUpload(SQLBase):
 
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
+        assert not self.is_delayed_copy, 'Cannot process delayed copies.'
+
         debug(logger, "Setting it to ACCEPTED")
         self.setAccepted()
 
@@ -324,6 +328,8 @@ class PackageUpload(SQLBase):
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
+        assert not self.is_delayed_copy, 'Cannot process delayed copies.'
+
         self.setAccepted()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
         self.notify(
@@ -348,6 +354,26 @@ class PackageUpload(SQLBase):
         # Give some karma!
         self._giveKarma()
 
+    def acceptFromCopy(self):
+        """See `IPackageUpload`."""
+        assert self.is_delayed_copy, 'Can only process delayed-copies.'
+        assert self.sources.count() == 1, (
+            'Source is mandatory for delayed copies.')
+
+        self.setAccepted()
+
+        # XXX cprov 2009-06-22 bug=390851: self.sourcepackagerelease
+        # is cached, we cannot rely on it.
+        sourcepackagerelease = self.sources[0].sourcepackagerelease
+
+        # Close bugs if possible, skip imported sources.
+        original_changesfile = sourcepackagerelease.upload_changesfile
+        if original_changesfile is not None:
+            changesfile_object = StringIO.StringIO(
+                original_changesfile.read())
+            close_bugs_for_queue_item(
+                self, changesfile_object=changesfile_object)
+
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()
@@ -356,6 +382,11 @@ class PackageUpload(SQLBase):
             logger=logger, dry_run=dry_run,
             changes_file_object=changes_file_object)
         self.syncUpdate()
+
+    @property
+    def is_delayed_copy(self):
+        """See `IPackageUpload`."""
+        return self.changesfile is None
 
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
@@ -489,7 +520,15 @@ class PackageUpload(SQLBase):
             except CustomUploadError, e:
                 if logger is not None:
                     logger.error("Queue item ignored: %s" % e)
-                return
+                    return []
+
+        # Adjust component and file privacy of delayed_copies.
+        if self.is_delayed_copy:
+            for pub_record in publishing_records:
+                override_from_ancestry(pub_record)
+                for new_file in update_files_privacy(pub_record):
+                    debug(logger,
+                          "Re-uploaded %s to librarian" % new_file.filename)
 
         self.setDone()
 

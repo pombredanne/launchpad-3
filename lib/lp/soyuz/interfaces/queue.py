@@ -131,6 +131,8 @@ class IPackageUpload(Interface):
         "wheter or not this upload contains DDTP images")
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
+    is_delayed_copy = Attribute(
+        "Whether or not this PackageUpload record is a delayed-copy.")
 
     components = Attribute(
         """The set of components used in this upload.
@@ -170,13 +172,24 @@ class IPackageUpload(Interface):
     def acceptFromUploader(changesfile_path, logger=None):
         """Perform upload acceptance during upload-time.
 
-         * Move the upload to accepted queue in all cases;
-         * Publish and close bugs for 'single-source' uploads;
+         * Move the upload to accepted queue in all cases.
+         * Publish and close bugs for 'single-source' uploads.
          * Skip bug-closing for PPA uploads.
+         * Grant karma to people involved with the upload.
+        """
+
+    def acceptFromCopy():
+        """Perform upload acceptance for a delayed-copy record.
+
+         * Move the upload to accepted queue in all cases.
+         * Close bugs for uploaded sources (skip imported ones).
         """
 
     def acceptFromQueue(announce_list, logger=None, dry_run=False):
-        """Call setAccepted, do a syncUpdate, and send notification email."""
+        """Call setAccepted, do a syncUpdate, and send notification email.
+
+         * Grant karma to people involved with the upload.
+        """
 
     def rejectFromQueue(logger=None, dry_run=False):
         """Call setRejected, do a syncUpdate, and send notification email."""
@@ -355,9 +368,9 @@ class IPackageUploadSource(Interface):
         that only PRIMARY archive allows post-RELEASE pockets are:
 
          1. original archive, original distroseries and pocket (old
-            DEVELOPMENT/SRU/PPA uploads);
+            DEVELOPMENT/SRU/PPA uploads).
          2. primary archive, original distroseries and release pocket (NEW
-            SRU/PPA uploads fallback);
+            SRU/PPA uploads fallback).
          3. primary_archive, any distroseries and release pocket (BACKPORTS)
 
         We lookup a source publication with the same name in those location
