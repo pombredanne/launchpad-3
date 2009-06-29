@@ -194,6 +194,7 @@ class ImportDataStore:
         :param source_details: The `CodeImportSourceDetails` object, used to
             know where to store files on the remote transport.
         """
+        self.source_details = source_details
         self._transport = transport
         self._branch_id = source_details.branch_id
 
@@ -253,17 +254,18 @@ class ForeignTreeStore:
     in hex.
     """
 
-    def __init__(self, transport):
+    def __init__(self, import_data_store):
         """Construct a `ForeignTreeStore`.
 
         :param transport: A writable transport that points to the base
             directory where the tarballs are stored.
         :ptype transport: `bzrlib.transport.Transport`.
         """
-        self.transport = transport
+        self.import_data_store = import_data_store
 
-    def _getForeignTree(self, source_details, target_path):
-        """Return a foreign tree object for `source_details`."""
+    def _getForeignTree(self, target_path):
+        """Return a foreign tree object for `target_path`."""
+        source_details = self.import_data_store.source_details
         if source_details.rcstype == 'svn':
             return SubversionWorkingTree(
                 source_details.svn_branch_url, str(target_path))
@@ -275,14 +277,13 @@ class ForeignTreeStore:
             raise AssertionError(
                 "unknown RCS type: %r" % source_details.rcstype)
 
-    def archive(self, source_details, foreign_tree):
+    def archive(self, foreign_tree):
         """Archive the foreign tree."""
-        store = ImportDataStore(self.transport, source_details)
         local_name = 'foreign_tree.tar.gz'
         create_tarball(foreign_tree.local_path, 'foreign_tree.tar.gz')
-        store.put(local_name)
+        self.import_data_store.put(local_name)
 
-    def fetch(self, source_details, target_path):
+    def fetch(self, target_path):
         """Fetch the foreign branch for `source_details` to `target_path`.
 
         If there is no tarball archived for `source_details`, then try to
@@ -290,24 +291,23 @@ class ForeignTreeStore:
         generally on a third party server.
         """
         try:
-            return self.fetchFromArchive(source_details, target_path)
+            return self.fetchFromArchive(target_path)
         except NoSuchFile:
-            return self.fetchFromSource(source_details, target_path)
+            return self.fetchFromSource(target_path)
 
-    def fetchFromSource(self, source_details, target_path):
+    def fetchFromSource(self, target_path):
         """Fetch the foreign tree for `source_details` to `target_path`."""
-        branch = self._getForeignTree(source_details, target_path)
+        branch = self._getForeignTree(target_path)
         branch.checkout()
         return branch
 
-    def fetchFromArchive(self, source_details, target_path):
+    def fetchFromArchive(self, target_path):
         """Fetch the foreign tree for `source_details` from the archive."""
-        store = ImportDataStore(self.transport, source_details)
         local_name = 'foreign_tree.tar.gz'
-        if not store.fetch(local_name):
+        if not self.import_data_store.fetch(local_name):
             raise NoSuchFile(local_name)
         extract_tarball(local_name, target_path)
-        tree = self._getForeignTree(source_details, target_path)
+        tree = self._getForeignTree(target_path)
         tree.update()
         return tree
 
@@ -332,7 +332,8 @@ class ImportWorker:
         """
         self.source_details = source_details
         self.bazaar_branch_store = bazaar_branch_store
-        self.import_data_transport = import_data_transport
+        self.import_data_store = ImportDataStore(
+            import_data_transport, self.source_details)
         self._logger = logger
 
     def getBazaarWorkingTree(self):
@@ -410,7 +411,7 @@ class CSCVSImportWorker(ImportWorker):
         ImportWorker.__init__(
             self, source_details, import_data_transport, bazaar_branch_store,
             logger)
-        self.foreign_tree_store = ForeignTreeStore(import_data_transport)
+        self.foreign_tree_store = ForeignTreeStore(self.import_data_store)
 
 
     def getForeignTree(self):
@@ -421,8 +422,7 @@ class CSCVSImportWorker(ImportWorker):
         if os.path.isdir(self.FOREIGN_WORKING_TREE_PATH):
             shutil.rmtree(self.FOREIGN_WORKING_TREE_PATH)
         os.mkdir(self.FOREIGN_WORKING_TREE_PATH)
-        return self.foreign_tree_store.fetch(
-            self.source_details, self.FOREIGN_WORKING_TREE_PATH)
+        return self.foreign_tree_store.fetch(self.FOREIGN_WORKING_TREE_PATH)
 
     def importToBazaar(self, foreign_tree, bazaar_tree):
         """Actually import `foreign_tree` into `bazaar_tree`.
@@ -472,8 +472,7 @@ class CSCVSImportWorker(ImportWorker):
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
         self.pushBazaarWorkingTree(bazaar_tree)
-        self.foreign_tree_store.archive(
-            self.source_details, foreign_tree)
+        self.foreign_tree_store.archive(foreign_tree)
 
 
 class PullingImportWorker(ImportWorker):
@@ -503,12 +502,12 @@ class GitImportWorker(PullingImportWorker):
     def getBazaarWorkingTree(self):
         """XXX"""
         tree = PullingImportWorker.getBazaarWorkingTree(self)
-        store = ImportDataStore(self.import_data_transport, self.source_details)
-        store.fetch('git.db', tree.branch.repository._transport)
+        self.import_data_store.fetch(
+            'git.db', tree.branch.repository._transport)
         return tree
 
     def pushBazaarWorkingTree(self, bazaar_tree):
         """XXX"""
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
-        store = ImportDataStore(self.import_data_transport, self.source_details)
-        store.put('git.db', bazaar_tree.branch.repository._transport)
+        self.import_data_store.put(
+            'git.db', bazaar_tree.branch.repository._transport)

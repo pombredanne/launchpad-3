@@ -312,40 +312,42 @@ class TestForeignTreeStore(WorkerTest):
     def setUp(self):
         """Set up a code import for an SVN working tree."""
         super(TestForeignTreeStore, self).setUp()
-        self.source_details = self.factory.makeCodeImportSourceDetails()
         self.temp_dir = self.makeTemporaryDirectory()
 
-    def makeForeignTreeStore(self, transport=None):
+    def makeForeignTreeStore(self, source_details=None):
         """Make a foreign tree store.
 
         The store is in a different directory to the local working directory.
         """
-        def _getForeignTree(source_details, target_path):
+        def _getForeignTree(target_path):
             return MockForeignWorkingTree(target_path)
-        if transport is None:
-            transport = self.get_transport('remote')
-        store = ForeignTreeStore(transport)
-        store._getForeignTree = _getForeignTree
+        fake_it = False
+        if source_details is None:
+            fake_it = True
+            source_details = self.factory.makeCodeImportSourceDetails()
+        transport = self.get_transport('remote')
+        store = ForeignTreeStore(ImportDataStore(transport, source_details))
+        if fake_it:
+            store._getForeignTree = _getForeignTree
         return store
 
     def test_getForeignTreeSubversion(self):
         # _getForeignTree() returns a Subversion working tree for Subversion
         # code imports.
-        store = ForeignTreeStore(None)
-        svn_branch_url = self.factory.getUniqueURL()
         source_details = self.factory.makeCodeImportSourceDetails(
             rcstype='svn')
-        working_tree = store._getForeignTree(source_details, 'path')
+        store = self.makeForeignTreeStore(source_details)
+        working_tree = store._getForeignTree('path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(
             working_tree.remote_url, source_details.svn_branch_url)
 
     def test_getForeignTreeCVS(self):
         # _getForeignTree() returns a CVS working tree for CVS code imports.
-        store = ForeignTreeStore(None)
         source_details = self.factory.makeCodeImportSourceDetails(
             rcstype='cvs')
-        working_tree = store._getForeignTree(source_details, 'path')
+        store = self.makeForeignTreeStore(source_details)
+        working_tree = store._getForeignTree('path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(working_tree.root, source_details.cvs_root)
         self.assertEqual(working_tree.module, source_details.cvs_module)
@@ -355,29 +357,20 @@ class TestForeignTreeStore(WorkerTest):
         # tree, then fetching the tree actually pulls in from the original
         # site.
         store = self.makeForeignTreeStore()
-        tree = store.fetchFromSource(self.source_details, self.temp_dir)
+        tree = store.fetchFromSource(self.temp_dir)
         self.assertCheckedOut(tree)
 
     def test_archiveTree(self):
         # Once we have a foreign working tree, we can archive it so that we
         # can retrieve it more reliably in the future.
         store = self.makeForeignTreeStore()
-        foreign_tree = store.fetchFromSource(
-            self.source_details, self.temp_dir)
-        store.archive(self.source_details, foreign_tree)
+        foreign_tree = store.fetchFromSource(self.temp_dir)
+        store.archive(foreign_tree)
+        transport = store.import_data_store._transport
+        source_details = store.import_data_store.source_details
         self.assertTrue(
-            store.transport.has(
-                '%08x.tar.gz' % self.source_details.branch_id),
-            "Couldn't find '%08x.tar.gz'" % self.source_details.branch_id)
-
-    def test_makeDirectories(self):
-        # archive() tries to create the base directory of the foreign tree
-        # store if it doesn't already exist.
-        store = self.makeForeignTreeStore(self.get_transport('doesntexist'))
-        foreign_tree = store.fetchFromSource(
-            self.source_details, self.temp_dir)
-        store.archive(self.source_details, foreign_tree)
-        self.assertIsDirectory('doesntexist', self.get_transport())
+            transport.has('%08x.tar.gz' % source_details.branch_id),
+            "Couldn't find '%08x.tar.gz'" % source_details.branch_id)
 
     def test_fetchFromArchiveFailure(self):
         # If a tree has not been archived yet, but we try to retrieve it from
@@ -385,18 +378,16 @@ class TestForeignTreeStore(WorkerTest):
         store = self.makeForeignTreeStore()
         self.assertRaises(
             NoSuchFile,
-            store.fetchFromArchive, self.source_details, self.temp_dir)
+            store.fetchFromArchive, self.temp_dir)
 
     def test_fetchFromArchive(self):
         # After archiving a tree, we can retrieve it from the store -- the
         # tarball gets downloaded and extracted.
         store = self.makeForeignTreeStore()
-        foreign_tree = store.fetchFromSource(
-            self.source_details, self.temp_dir)
-        store.archive(self.source_details, foreign_tree)
+        foreign_tree = store.fetchFromSource(self.temp_dir)
+        store.archive(foreign_tree)
         new_temp_dir = self.makeTemporaryDirectory()
-        foreign_tree2 = store.fetchFromArchive(
-            self.source_details, new_temp_dir)
+        foreign_tree2 = store.fetchFromArchive(new_temp_dir)
         self.assertEqual(new_temp_dir, foreign_tree2.local_path)
         self.assertDirectoryTreesEqual(self.temp_dir, new_temp_dir)
 
@@ -404,12 +395,10 @@ class TestForeignTreeStore(WorkerTest):
         # The local working tree is updated with changes from the remote
         # branch after it has been fetched from the archive.
         store = self.makeForeignTreeStore()
-        foreign_tree = store.fetchFromSource(
-            self.source_details, self.temp_dir)
-        store.archive(self.source_details, foreign_tree)
+        foreign_tree = store.fetchFromSource(self.temp_dir)
+        store.archive(foreign_tree)
         new_temp_dir = self.makeTemporaryDirectory()
-        foreign_tree2 = store.fetchFromArchive(
-            self.source_details, new_temp_dir)
+        foreign_tree2 = store.fetchFromArchive(new_temp_dir)
         self.assertUpdated(foreign_tree2)
 
 
@@ -470,7 +459,7 @@ class TestCSCVSWorker(WorkerTest):
         # getForeignTree returns an object that represents the 'foreign'
         # branch (i.e. a CVS or Subversion branch).
         worker = self.makeImportWorker()
-        def _getForeignTree(source_details, target_path):
+        def _getForeignTree(target_path):
             return MockForeignWorkingTree(target_path)
         worker.foreign_tree_store._getForeignTree = _getForeignTree
         working_tree = worker.getForeignTree()
@@ -592,8 +581,7 @@ class TestActualImportMixin:
         # restored at the end of the test.
         os.chdir(tree_dir)
         if isinstance(worker, CSCVSImportWorker):
-            foreign_tree = worker.foreign_tree_store.fetch(
-                worker.source_details, tree_dir)
+            foreign_tree = worker.foreign_tree_store.fetch(tree_dir)
         else:
             foreign_tree = None
         self.commitInForeignTree(foreign_tree)
