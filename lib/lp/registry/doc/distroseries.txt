@@ -964,3 +964,63 @@ earlier development state of a distroseries) are possible:
 
     >>> len(latest_uploads)
     0
+
+
+== Static Translations Files ==
+
+Static translation files are Gnome help files that are stripped from built
+packages and uploaded with the binary as a custom file.  They can be
+retrieved on a per-distroseries basis using the getStaticTranslationFiles()
+method.
+
+    >>> print breezy_autotest.getStaticTranslationFiles().count()
+    0
+
+If we add some custom uploads of the right type the change will be reflected
+in the results.
+
+    >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+    >>> upload = breezy_autotest.createQueueEntry(
+    ...     pocket=PackagePublishingPocket.RELEASE, changesfilename="test",
+    ...     changesfilecontent="test", archive=breezy_autotest.main_archive)
+
+    >>> arbitrary_file = factory.makeLibraryFileAlias()
+    >>> custom = upload.addCustom(
+    ...     arbitrary_file, PackageUploadCustomFormat.STATIC_TRANSLATIONS)
+    >>> print breezy_autotest.getStaticTranslationFiles().count()
+    1
+
+    >>> arbitrary_file = factory.makeLibraryFileAlias()
+    >>> custom = upload.addCustom(
+    ...     arbitrary_file, PackageUploadCustomFormat.STATIC_TRANSLATIONS)
+    >>> files = breezy_autotest.getStaticTranslationFiles()
+    >>> print files.count()
+    2
+
+`getStaticTranslationFiles` also takes a since_timestamp parmaeter so only
+files created since that time are returned.  Providing the timestamp of the
+last one returned in the previous call is a convenient way to continue from
+where the caller left off.
+
+First, commit a transaction to ensure new DB objects get a later timestamp.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> last_custom_time = files[1].date_created
+    >>> arbitrary_file = factory.makeLibraryFileAlias()
+    >>> custom = upload.addCustom(
+    ...     arbitrary_file, PackageUploadCustomFormat.STATIC_TRANSLATIONS)
+    >>> files = breezy_autotest.getStaticTranslationFiles(
+    ...     since_timestamp=last_custom_time)
+
+Only the just-created file is returned:
+
+    >>> files.count()
+    1
+
+    >>> files[0].id == custom.libraryfilealias.id
+    True
+
+    >>> files[0].date_created > last_custom_time
+    True

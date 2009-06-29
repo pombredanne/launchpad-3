@@ -33,6 +33,7 @@ from canonical.database.sqlbase import (
     quote, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.pofiletranslator import (
     POFileTranslator)
 from canonical.launchpad.database.pofile import POFile
@@ -70,7 +71,7 @@ from canonical.launchpad.database.potemplate import POTemplate
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadQueue)
+    PackageUpload, PackageUploadCustom, PackageUploadQueue)
 from lp.soyuz.model.section import Section
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -93,7 +94,8 @@ from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.interfaces.queue import (
+    PackageUploadCustomFormat, PackageUploadStatus)
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -753,6 +755,25 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result = unlinked.union(linked_but_no_productseries)
         return [SourcePackage(sourcepackagename=spn, distroseries=self) for
             spn in result]
+
+    def getStaticTranslationFiles(self, since_timestamp=None):
+        """See `IDistroSeries`."""
+        store = Store.of(self)
+
+        extra_query_clause = ()
+        if since_timestamp is not None:
+            extra_query_clause = (
+                LibraryFileAlias.date_created > since_timestamp,)
+
+        return store.find(
+            LibraryFileAlias,
+            LibraryFileAlias.id == PackageUploadCustom.libraryfilealiasID,
+            PackageUploadCustom.customformat ==
+                PackageUploadCustomFormat.STATIC_TRANSLATIONS,
+            PackageUpload.id == PackageUploadCustom.packageuploadID,
+            PackageUpload.archive == self.main_archive,
+            PackageUpload.distroseries == self,
+            *extra_query_clause)
 
     def getPublishedReleases(self, sourcepackage_or_name, version=None,
                              pocket=None, include_pending=False,
