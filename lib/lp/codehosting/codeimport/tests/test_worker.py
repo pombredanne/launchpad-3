@@ -450,7 +450,7 @@ class TestWorkerCore(WorkerTest):
         return BazaarBranchStore(self.get_transport('bazaar_branches'))
 
     def makeImportWorker(self):
-        """Make an ImportWorker that only uses fake branches."""
+        """Make an ImportWorker."""
         return ImportWorker(
             self.source_details, self.get_transport('import_data'),
             self.makeBazaarBranchStore(), logging.getLogger("silent"))
@@ -486,7 +486,7 @@ class TestCSCVSWorker(WorkerTest):
         self.source_details = self.factory.makeCodeImportSourceDetails()
 
     def makeImportWorker(self):
-        """Make an ImportWorker that only uses fake foreign trees."""
+        """Make a CSCVSImportWorker."""
         return CSCVSImportWorker(
             self.source_details, self.get_transport('import_data'), None,
             logging.getLogger("silent"))
@@ -505,8 +505,7 @@ class TestCSCVSWorker(WorkerTest):
 
 
 class TestGitImportWorker(WorkerTest):
-    """
-    Test for behaviour particular to `GitImportWorker`.
+    """Test for behaviour particular to `GitImportWorker`.
     """
 
     def makeBazaarBranchStore(self):
@@ -516,7 +515,7 @@ class TestGitImportWorker(WorkerTest):
         return BazaarBranchStore(self.get_transport('bazaar_branches'))
 
     def makeImportWorker(self):
-        """Make an ImportWorker that only uses fake branches."""
+        """Make an GitImportWorker."""
         source_details = self.factory.makeCodeImportSourceDetails()
         return GitImportWorker(
             source_details, self.get_transport('import_data'),
