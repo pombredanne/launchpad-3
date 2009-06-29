@@ -38,11 +38,11 @@
           <tal:block tal:define="team membership/team">
           <td>
             <a tal:attributes="href membership/proposed_by/fmt:url"
-               tal:content="membership/proposed_by/browsername">Proponent</a>
+               tal:content="membership/proposed_by/displayname">Proponent</a>
           </td>
           <td>
             <a tal:attributes="href team/fmt:url"
-               tal:content="team/browsername">Team</a>
+               tal:content="team/displayname">Team</a>
           </td>
           <td>
             <a tal:attributes="
