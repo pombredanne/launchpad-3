@@ -49,4 +49,3 @@ dist
 ./download-cache
 ./_pythonpath.py
 ./production-configs
-smtpd.log
