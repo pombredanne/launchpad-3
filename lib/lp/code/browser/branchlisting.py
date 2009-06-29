@@ -1353,6 +1353,11 @@ class DistributionSourcePackageBranchesView(BranchListingView):
         return getUtility(IAllBranches).inDistributionSourcePackage(
             self.context)
 
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return self._getCollection().visibleByUser(self.user).count()
+
 
 class SourcePackageBranchesView(BranchListingView):
 
