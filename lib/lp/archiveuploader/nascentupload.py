@@ -1049,22 +1049,21 @@ class NascentUpload:
         includes decisions such as moving the package to the partner
         archive if the package's component is 'partner'.
 
-        PPA uploads with partner files and normal uploads with a mixture
-        of partner and non-partner files will be rejected.
+        Uploads with a mixture of partner and non-partner files will be
+        rejected.
         """
 
         # Get a set of the components used in this upload:
         components = self.getComponents()
 
         if PARTNER_COMPONENT_NAME in components:
-            # Reject partner uploads to PPAs.
-            if self.is_ppa:
-                self.reject("PPA does not support partner uploads.")
-                return
-
             # All files in the upload must be partner if any one of them is.
             if len(components) != 1:
                 self.reject("Cannot mix partner files with non-partner.")
+                return
+
+            # Partner uploads to PPAs do not need an override.
+            if self.is_ppa:
                 return
 
             # See if there is an archive to override with.

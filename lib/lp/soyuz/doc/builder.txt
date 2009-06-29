@@ -59,9 +59,30 @@ archive name:
     >>> print builder.status
     Building ... mozilla-firefox 0.9 in ubuntu ... [ubuntu-team/primary]
 
-Restore the original archive purpose.
+The name of a PRIVATE team cannot be displayed publicly, so it is we
+simply don't bother in adding the PPA information in the content
+class domain.
+
+    # Create a new PRIVATE team and reassign the building PPA to it.
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet, PersonVisibility)
+    >>> login('foo.bar@canonical.com')
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> private_team = factory.makeTeam(
+    ...     salgado, name='private-team',
+    ...     displayname='Private Team',
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> saved_owner = builder_archive.owner
+    >>> builder_archive.owner = private_team
+    >>> login(ANONYMOUS)
+
+    >>> print builder.status
+    Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
+
+Restore the original archive purpose and owner.
 
     >>> builder_archive.purpose = saved_purpose
+    >>> builder_archive.owner = saved_owner
 
 Confirm we can get the slave xmlrpc interface
 

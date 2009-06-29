@@ -19,6 +19,11 @@
       >
         <metal:subscriber  metal:define-macro="subscriber-row">
 
+            <tal:XXX condition="nothing">
+              # XXX: deryck 2009-06-17 bug=388394
+              # The float here breaks the green flash
+              # and really should be removed.
+            </tal:XXX>
             <a
                tal:condition="subscription/person/name|nothing"
                tal:attributes="
@@ -26,16 +31,23 @@
                  title subscription/display_subscribed_by;
                  name subscription/person/fmt:displayname
                "
-               style="float:left;"
             >
               <tal:block replace="structure subscription/person/fmt:icon" />
               <tal:block replace="subscription/person/fmt:displayname/fmt:shorten/20" />
             </a>
+            <tal:XXX condition="nothing">
+              # XXX: deryck 2009-06-17 bug=388394
+              # The float here breaks the green flash
+              # and really should be removed.
+            </tal:XXX>
             <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
                href="+subscribe"
-               tal:attributes="title string:Unsubscribe ${subscription/person/fmt:displayname};
-                               id string:unsubscribe-${subscription/person/name}"
-                style="float:left;">
+               tal:attributes="
+                 title string:Unsubscribe ${subscription/person/fmt:displayname};
+                 id string:unsubscribe-${subscription/person/name};
+                 class python: view.subscription_class(subscription.person)
+               "
+            >
               <img class="unsub-icon" src="/@@/remove"
                 tal:attributes="id string:unsubscribe-icon-${subscription/person/name}" />
             </a>
@@ -43,7 +55,6 @@
         </metal:subscriber>
       </div>
       </div>
-      <br /><br />
       <div id="none-subscribers"
         tal:condition="not:direct_subscriptions">None</div>
   </div>
@@ -53,7 +64,10 @@
     class="section"
   >
     <h2>From duplicates</h2>
-    <div tal:repeat="subscription from_dupes_subscriptions">
+    <div
+      tal:repeat="subscription from_dupes_subscriptions"
+      tal:attributes="id string:subscriber-${subscription/person/name}"
+    >
       <metal:subscriber metal:use-macro="template/macros/subscriber-row" />
     </div>
   </div>

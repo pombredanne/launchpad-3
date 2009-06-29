@@ -30,10 +30,9 @@ name appears in the 'Subscribers' portlet:
     >>> portlet.first('h2')
     <h2>Subscribers</h2>
     >>> portlet.first('ul')
-    <ul class="person">
-      <li>
-        <a href="/~no-priv">No Privileges
-            Person</a>
+    <ul>
+    <li>
+        <a href="...~no-priv" class="sprite person">No Privileges Person</a>
       </li>
     </ul>
 

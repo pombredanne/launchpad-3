@@ -305,9 +305,6 @@ anonymous can read the attachment's attributes, but he can't set them:
     ...
     Unauthorized: (..., 'title',...
 
-    >>> import transaction
-    >>> transaction.abort()
-
 Both Sample Person and Foo Bar can access and set the attributes, though:
 
     >>> login('test@canonical.com')
