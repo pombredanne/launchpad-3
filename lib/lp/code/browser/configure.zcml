@@ -778,6 +778,11 @@
         layer="canonical.launchpad.layers.CodeLayer"
         name="+branches"/>
 
+    <browser:defaultView
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        layer="canonical.launchpad.layers.CodeLayer"
+        name="+branches"/>
+
     <browser:url
         for="lp.code.interfaces.diff.IPreviewDiff"
         path_expression="string:+preview-diff"
