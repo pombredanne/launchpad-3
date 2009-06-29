@@ -906,8 +906,7 @@ active_reviews = ContextDisplayName('Pending proposals for %s')
 
 person_archive_subscription = ContextDisplayName('%s')
 
-person_archive_subscriptions = ContextDisplayName(
-    '%s\'s private archive subscriptions')
+person_archive_subscriptions = 'Private PPA subscriptions'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')

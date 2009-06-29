@@ -77,7 +77,7 @@ Y.on('domready', function() {
   <div metal:fill-slot="main">
 
     <h1 tal:content="CONTEXTS/fmt:pagetitle">
-      Private archive subscriptions for Joe Smith
+      Private PPA subscriptions
     </h1>
   <tal:has_subscriptions condition="view/subscriptions_with_tokens">
     <div id="current_subscriptions">
