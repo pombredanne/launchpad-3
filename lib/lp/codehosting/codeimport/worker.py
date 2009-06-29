@@ -359,7 +359,7 @@ class ImportWorker:
             self.required_format)
 
     def pushBazaarWorkingTree(self, bazaar_tree):
-        """XXX."""
+        """Push the updated Bazaar working tree to the server."""
         self.bazaar_branch_store.push(
             self.source_details.branch_id, bazaar_tree, self.required_format)
 
@@ -410,23 +410,9 @@ class CSCVSImportWorker(ImportWorker):
     # Where the foreign working tree will be stored.
     FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
 
-    def __init__(self, source_details, import_data_transport,
-                 bazaar_branch_store, logger):
-        """Construct a `CSCVSImportWorker`.
-
-        :param source_details: A `CodeImportSourceDetails` object.
-        :param foreign_tree_store: A `ForeignTreeStore`. The import worker
-            uses this to fetch and store foreign branches.
-        :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
-            uses this to fetch and store the Bazaar branches that are created
-            and updated during the import process.
-        :param logger: A `Logger` to pass to cscvs.
-        """
-        ImportWorker.__init__(
-            self, source_details, import_data_transport, bazaar_branch_store,
-            logger)
-        self.foreign_tree_store = ForeignTreeStore(self.import_data_store)
-
+    @property
+    def foreign_tree_store(self):
+        return ForeignTreeStore(self.import_data_store)
 
     def getForeignTree(self):
         """Return the foreign branch object that we are importing from.
@@ -511,17 +497,28 @@ class PullingImportWorker(ImportWorker):
 
 
 class GitImportWorker(PullingImportWorker):
-    """An import worker for imports that can be done by a bzr plugin."""
+    """An import worker for Git imports.
+
+    The only behaviour we add is preserving the 'git.db' shamap between runs.
+    """
 
     def getBazaarWorkingTree(self):
-        """XXX"""
+        """See `ImportWorker.getBazaarWorkingTree`.
+
+        In addition to the superclass' behaviour, we retrieve the 'git.db'
+        shamap from the import data store.
+        """
         tree = PullingImportWorker.getBazaarWorkingTree(self)
         self.import_data_store.fetch(
             'git.db', tree.branch.repository._transport)
         return tree
 
     def pushBazaarWorkingTree(self, bazaar_tree):
-        """XXX"""
+        """See `ImportWorker.pushBazaarWorkingTree`.
+
+        In addition to the superclass' behaviour, we store the 'git.db' shamap
+        in the import data store.
+        """
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
         self.import_data_store.put(
             'git.db', bazaar_tree.branch.repository._transport)

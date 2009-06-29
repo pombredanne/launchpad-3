@@ -756,6 +756,13 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
         self.setUpImport()
 
     def tearDown(self):
+        """Clear bzr-git's cache of sqlite connections.
+
+        This is rather obscure: different test runs tend to re-use the same
+        paths on disk, which confuses bzr-git as it keeps a cache that maps
+        paths to database connections, which happily returns the connection
+        that corresponds to a path that no longer exists.
+        """
         from bzrlib.plugins.git.shamap import mapdbs
         mapdbs().clear()
         WorkerTest.tearDown(self)
