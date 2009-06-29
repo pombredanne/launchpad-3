@@ -84,7 +84,7 @@ link back to bug 13, the place where it was originally filed.
       http://bugs.launchpad.dev/bugs/13
     <BLANKLINE>
     The messages placed on this bug are for eyeball viewing of JS and
-    CSS behaviour
+    CSS behaviour.
 
 If the remote bug tracker is one for which Launchpad doesn't offer a bug
 filing link, such as Debbugs, only a search link will be displayed.

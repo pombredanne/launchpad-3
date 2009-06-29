@@ -622,9 +622,12 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         if not target.bugtracker:
             return None
         else:
+            bug = self.context.bug
+            title = bug.title
+            description = u"Originally reported at:\n  %s\n\n%s" % (
+                canonical_url(bug), bug.description)
             return target.bugtracker.getBugFilingAndSearchLinks(
-                target.remote_product, self.context.bug.title,
-                self.context.bug.description)
+                target.remote_product, title, description)
 
 
 class BugTrackerCreationStep(AlsoAffectsStep):
