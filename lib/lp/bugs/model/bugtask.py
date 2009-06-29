@@ -1148,6 +1148,11 @@ def build_tag_set_query(joiner, tags):
 
     The tags are sorted so that testing the generated queries is
     easier and more reliable.
+
+    :param joiner: The SQL set term used to join the individual tag
+        clauses, typically "INTERSECT" or "UNION".
+    :param tags: An iterable of valid tag names (not prefixed minus
+        signs, not wildcards).
     """
     joiner = " %s " % joiner
     return joiner.join(
@@ -1156,7 +1161,14 @@ def build_tag_set_query(joiner, tags):
 
 
 def build_tag_search_clause(tags_spec):
-    """Yield tag search clauses."""
+    """Return a tag search clause.
+
+    :param tags_spec: An instance of `any` or `all` containing tag
+        "specifications". A tag specification is a valid tag name
+        optionally prefixed by a minus sign (denoting "not"), or an
+        asterisk (denoting "any tag"), again optionally prefixed by a
+        minus sign (and thus denoting "not any tag").
+    """
     tags = set(tags_spec.query_values)
     wildcards = [tag for tag in tags if tag in ('*', '-*')]
     tags.difference_update(wildcards)
