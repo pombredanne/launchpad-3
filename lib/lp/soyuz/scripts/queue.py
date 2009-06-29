@@ -243,7 +243,7 @@ class QueueAction:
         version = queue_item.displayversion
         age = DurationFormatterAPI(
             datetime.now(pytz.timezone('UTC')) -
-            queue_item.datecreated).approximateduration()
+            queue_item.date_created).approximateduration()
 
         # XXX cprov 2006-07-31: source_tag and build_tag ('S' & 'B')
         # are necessary simply to keep the format legaxy.

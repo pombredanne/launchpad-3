@@ -277,6 +277,12 @@ class CodeImportJobWorkflow:
         machine = import_job.machine
         result = self._makeResultAndDeleteJob(
             import_job, status, logfile_alias)
+        # If the import has failed too many times in a row, mark it as
+        # FAILING.
+        failure_limit = config.codeimport.consecutive_failure_limit
+        if code_import.consecutive_failure_count >= failure_limit:
+            code_import.updateFromData(
+                dict(review_status=CodeImportReviewStatus.FAILING), None)
         # Only start a new one if the import is still in the REVIEWED state.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
             self.newJob(code_import)

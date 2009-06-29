@@ -57,7 +57,7 @@
     </div>
 
     <h1 tal:condition="view/person">Contributions by
-      <tal:contributor content="view/person/browsername"/>
+      <tal:contributor content="view/person/displayname"/>
     </h1>
 
     <tal:block define="messages view/translations">
@@ -68,7 +68,7 @@
 
     <tal:translations condition="messages">
       <p tal:condition="view/person">
-        <tal:contributor content="view/person/browsername"/> has
+        <tal:contributor content="view/person/displayname"/> has
         submitted following translations.
       </p>
 

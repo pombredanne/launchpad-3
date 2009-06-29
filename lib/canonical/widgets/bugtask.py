@@ -498,7 +498,7 @@ class AssigneeDisplayWidget(BrowserWidget):
                 'img', style="padding-bottom: 2px", src="/@@/person", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
-                contents="%s %s" % (person_img, escape(assignee.browsername)))
+                contents="%s %s" % (person_img, escape(assignee.displayname)))
         else:
             if bugtask.target_uses_malone:
                 return renderElement('i', contents='not assigned')

@@ -246,6 +246,8 @@ class XMLRPCRunner(Runner):
             return
         try:
             # Handle additions first.
+            if len(additions) > 0:
+                syslog('xmlrpc', 'Adding to %s: %s', list_name, additions)
             for address in additions:
                 # When adding the new member, be sure to use the
                 # case-preserved email address.
@@ -254,11 +256,13 @@ class XMLRPCRunner(Runner):
                 mlist.addNewMember(original_address, realname=realname)
                 mlist.setDeliveryStatus(original_address, status)
             # Handle deletions next.
+            if len(deletions) > 0:
+                syslog('xmlrpc', 'Removing from %s: %s', list_name, deletions)
             for address in deletions:
                 mlist.removeMember(address)
             # Updates can be either a settings update, a change in the
             # case of the subscribed address, or both.
-            found_updates = False
+            found_updates = []
             for address in updates:
                 # See if the case is changing.
                 current_address = mlist.getMemberCPAddress(address)
@@ -266,19 +270,23 @@ class XMLRPCRunner(Runner):
                 # pylint: disable-msg=W0331
                 if current_address <> future_address:
                     mlist.changeMemberAddress(address, future_address)
-                    found_updates = True
+                    found_updates.append('%s -> %s' %
+                                         (address, future_address))
                 # flags are ignored for now.
                 realname, flags, status = member_map[future_address]
                 # pylint: disable-msg=W0331
                 if realname <> mlist.getMemberName(address):
                     mlist.setMemberName(address, realname)
-                    found_updates = True
+                    found_updates.append('%s new name: %s' %
+                                         (address, realname))
                 # pylint: disable-msg=W0331
                 if status <> mlist.getDeliveryStatus(address):
                     mlist.setDeliveryStatus(address, status)
-                    found_updates = True
-            if found_updates:
-                syslog('xmlrpc', 'Membership updates for: %s', list_name)
+                    found_updates.append('%s new status: %s' %
+                                         (address, status))
+            if len(found_updates) > 0:
+                syslog('xmlrpc', 'Membership updates for %s: %s',
+                       list_name, found_updates)
             # We're done, so flush the changes for this mailing list.
             mlist.Save()
         finally:

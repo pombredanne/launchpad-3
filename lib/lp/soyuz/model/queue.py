@@ -36,6 +36,7 @@ from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
@@ -65,6 +66,8 @@ from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_queue_item)
+from lp.soyuz.scripts.packagecopier import (
+    override_from_ancestry, update_files_privacy)
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp import canonical_url
@@ -140,15 +143,16 @@ class PackageUpload(SQLBase):
                      schema=PackageUploadStatus,
                      storm_validator=validate_status)
 
+    date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+
     distroseries = ForeignKey(dbName="distroseries",
                                foreignKey='DistroSeries')
 
     pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
                      schema=PackagePublishingPocket)
 
-    # XXX: kiko 2007-02-10: This is NULLable. Fix sampledata?
-    changesfile = ForeignKey(dbName='changesfile',
-                             foreignKey="LibraryFileAlias")
+    changesfile = ForeignKey(
+        dbName='changesfile', foreignKey="LibraryFileAlias", notNull=False)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
@@ -156,8 +160,8 @@ class PackageUpload(SQLBase):
                              notNull=False)
 
     # XXX julian 2007-05-06:
-    # Sources and builds should not be SQLMultipleJoin, there is only
-    # ever one of each at most.
+    # Sources should not be SQLMultipleJoin, there is only ever one
+    # of each at most.
 
     # Join this table to the PackageUploadBuild and the
     # PackageUploadSource objects which are related.
@@ -300,6 +304,8 @@ class PackageUpload(SQLBase):
 
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
+        assert not self.is_delayed_copy, 'Cannot process delayed copies.'
+
         debug(logger, "Setting it to ACCEPTED")
         self.setAccepted()
 
@@ -322,6 +328,8 @@ class PackageUpload(SQLBase):
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
+        assert not self.is_delayed_copy, 'Cannot process delayed copies.'
+
         self.setAccepted()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
         self.notify(
@@ -346,6 +354,26 @@ class PackageUpload(SQLBase):
         # Give some karma!
         self._giveKarma()
 
+    def acceptFromCopy(self):
+        """See `IPackageUpload`."""
+        assert self.is_delayed_copy, 'Can only process delayed-copies.'
+        assert self.sources.count() == 1, (
+            'Source is mandatory for delayed copies.')
+
+        self.setAccepted()
+
+        # XXX cprov 2009-06-22 bug=390851: self.sourcepackagerelease
+        # is cached, we cannot rely on it.
+        sourcepackagerelease = self.sources[0].sourcepackagerelease
+
+        # Close bugs if possible, skip imported sources.
+        original_changesfile = sourcepackagerelease.upload_changesfile
+        if original_changesfile is not None:
+            changesfile_object = StringIO.StringIO(
+                original_changesfile.read())
+            close_bugs_for_queue_item(
+                self, changesfile_object=changesfile_object)
+
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()
@@ -354,6 +382,11 @@ class PackageUpload(SQLBase):
             logger=logger, dry_run=dry_run,
             changes_file_object=changes_file_object)
         self.syncUpdate()
+
+    @property
+    def is_delayed_copy(self):
+        """See `IPackageUpload`."""
+        return self.changesfile is None
 
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
@@ -412,11 +445,6 @@ class PackageUpload(SQLBase):
                 in self._customFormats)
 
     @cachedproperty
-    def datecreated(self):
-        """See `IPackageUpload`."""
-        return self.changesfile.content.datecreated
-
-    @cachedproperty
     def displayname(self):
         """See `IPackageUpload`"""
         names = []
@@ -458,11 +486,12 @@ class PackageUpload(SQLBase):
 
         This is currently heuristic but may be more easily calculated later.
         """
-        assert self.sources or self.builds, ('No source available.')
         if self.sources:
             return self.sources[0].sourcepackagerelease
-        if self.builds:
+        elif self.builds:
             return self.builds[0].build.sourcepackagerelease
+        else:
+            return None
 
     def realiseUpload(self, logger=None):
         """See `IPackageUpload`."""
@@ -491,7 +520,15 @@ class PackageUpload(SQLBase):
             except CustomUploadError, e:
                 if logger is not None:
                     logger.error("Queue item ignored: %s" % e)
-                return
+                    return []
+
+        # Adjust component and file privacy of delayed_copies.
+        if self.is_delayed_copy:
+            for pub_record in publishing_records:
+                override_from_ancestry(pub_record)
+                for new_file in update_files_privacy(pub_record):
+                    debug(logger,
+                          "Re-uploaded %s to librarian" % new_file.filename)
 
         self.setDone()
 
@@ -1632,6 +1669,12 @@ class PackageUploadSet:
             return PackageUpload.get(queue_id)
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
+
+    def createDelayedCopy(self, archive, distroseries, pocket,
+                          signing_key):
+        return PackageUpload(
+            archive=archive, distroseries=distroseries, pocket=pocket,
+            status=PackageUploadStatus.NEW, signing_key=signing_key)
 
     def count(self, status=None, distroseries=None, pocket=None):
         """See `IPackageUploadSet`."""

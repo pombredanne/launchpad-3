@@ -567,10 +567,10 @@ class Person(
             mail_text = get_email_template('person-location-modified.txt')
             mail_text = mail_text % {
                 'actor': user.name,
-                'actor_browsername': user.browsername,
+                'actor_browsername': user.displayname,
                 'person': self.name}
             subject = '%s updated your location and time zone' % (
-                user.browsername)
+                user.displayname)
             getUtility(IPersonNotificationSet).addNotification(
                 self, subject, mail_text)
 
@@ -643,11 +643,6 @@ class Person(
     def unique_displayname(self):
         """See `IPerson`."""
         return "%s (%s)" % (self.displayname, self.name)
-
-    @property
-    def browsername(self):
-        """See `IPersonPublic`."""
-        return self.displayname
 
     @property
     def has_any_specifications(self):
@@ -1402,7 +1397,7 @@ class Person(
     @property
     def title(self):
         """See `IPerson`."""
-        return self.browsername
+        return self.displayname
 
     @property
     def allmembers(self):
