@@ -510,6 +510,14 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
+    def publish_STATIC_TRANSLATIONS(logger):
+        """Publish this custom item as a static translations tarball.
+
+        This is currently a no-op as we don't publish these files, they only
+        reside in the librarian for later retrieval using the webservice.
+        """
+
+
 class IPackageUploadSet(Interface):
     """Represents a set of IPackageUploads"""
 
@@ -670,4 +678,10 @@ class PackageUploadCustomFormat(DBEnumeratedType):
 
         A raw-ddtp-tarball contains all the translated package description
         indexes for a component.
+        """)
+
+    STATIC_TRANSLATIONS = DBItem(4, """
+        raw-translations-static
+
+        A tarball containing raw (Gnome) help file translations.
         """)
