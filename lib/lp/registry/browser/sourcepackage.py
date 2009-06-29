@@ -137,9 +137,12 @@ class SourcePackageTranslationsExportView(BaseExportView):
 
     def processForm(self):
         """Process form submission requesting translations export."""
-        templates = self.context.getCurrentTranslationTemplates(just_ids=True)
-        pofiles = self.context.getCurrentTranslationFiles(just_ids=True)
-        if not bool(pofiles.any()):
+        from canonical.launchpad.database.potemplate import POTemplate
+        from canonical.launchpad.database.pofile import POFile
+        templates = list(
+            self.context.getCurrentTranslationTemplates().values(POTemplate.id))
+        pofiles = list(self.context.getCurrentTranslationFiles().values(POFile.id))
+        if len(pofiles) > 0:
             pofiles = None
         return (templates, pofiles)
 

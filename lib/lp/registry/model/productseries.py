@@ -34,7 +34,9 @@ from lp.registry.model.milestone import (
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.potemplate import (
+    HasTranslationTemplatesMixin,
+    POTemplate)
 from lp.registry.model.productrelease import ProductRelease
 from canonical.launchpad.database.productserieslanguage import (
     ProductSeriesLanguage)
@@ -77,7 +79,7 @@ def landmark_key(landmark):
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
-                    StructuralSubscriptionTargetMixin):
+                    HasTranslationTemplatesMixin, StructuralSubscriptionTargetMixin):
     """A series of product releases."""
     implements(
         IProductSeries, IHasTranslationTemplates,
@@ -431,46 +433,20 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                                      orderBy=['-priority','name'])
         return shortlist(result, 300)
 
-    def getCurrentTranslationTemplates(self, just_ids=False):
+    def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         # Avoid circular imports.
         from lp.registry.model.product import Product
 
         store = Store.of(self)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
         result = store.find(
-            looking_for,
+            POTemplate,
             POTemplate.iscurrent == True,
             POTemplate.productseries == self,
             ProductSeries.id == self.id,
             ProductSeries.product == Product.id,
             Product.official_rosetta == True)
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
-
-    def getCurrentTranslationFiles(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        # Avoid circular imports.
-        from lp.registry.model.product import Product
-
-        store = Store.of(self)
-        if just_ids:
-            looking_for = POFile.id
-        else:
-            looking_for = POFile
-
-        result = store.find(
-            looking_for,
-            POFile.potemplate == POTemplate.id,
-            POTemplate.iscurrent == True,
-            POTemplate.productseries == self,
-            ProductSeries.id == self.id,
-            ProductSeries.product == Product.id,
-            Product.official_rosetta == True)
-        return result
 
     @property
     def potemplate_count(self):

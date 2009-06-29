@@ -30,7 +30,9 @@ from lp.soyuz.model.distributionsourcepackagerelease import (
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.potemplate import (
+    HasTranslationTemplatesMixin,
+    POTemplate)
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.answers.model.question import (
@@ -45,7 +47,6 @@ from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.packaging import PackagingType
-from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
@@ -149,7 +150,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
-                    HasTranslationImportsMixin):
+                    HasTranslationImportsMixin, HasTranslationTemplatesMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -582,20 +583,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             sourcepackagename=self.sourcepackagename)
         return shortlist(result.orderBy(['-priority', 'name']), 300)
 
-    def getCurrentTranslationTemplates(self, just_ids=False):
+    def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         # Avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.distribution import Distribution
 
         store = Store.of(self.sourcepackagename)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
         result = store.find(
-            looking_for,
+            POTemplate,
             POTemplate.iscurrent == True,
             POTemplate.distroseries == self.distroseries,
             POTemplate.sourcepackagename == self.sourcepackagename,
@@ -603,29 +599,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             DistroSeries.distribution == Distribution.id,
             Distribution.official_rosetta == True)
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
-
-    def getCurrentTranslationFiles(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        # Avoid circular imports.
-        from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.distribution import Distribution
-
-        store = Store.of(self.sourcepackagename)
-        if just_ids:
-            looking_for = POFile.id
-        else:
-            looking_for = POFile
-
-        result = store.find(
-            looking_for,
-            POFile.potemplate == POTemplate.id,
-            POTemplate.iscurrent == True,
-            POTemplate.distroseries == self.distroseries,
-            POTemplate.sourcepackagename == self.sourcepackagename,
-            DistroSeries.id == self.distroseries.id,
-            DistroSeries.distribution == Distribution.id,
-            Distribution.official_rosetta == True)
-        return result
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

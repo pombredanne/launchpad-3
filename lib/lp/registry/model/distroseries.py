@@ -61,8 +61,9 @@ from lp.registry.model.milestone import (
 from lp.soyuz.model.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.person import Person
-from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.potemplate import (
+    HasTranslationTemplatesMixin,
+    POTemplate)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.soyuz.model.queue import (
@@ -114,8 +115,8 @@ from canonical.launchpad.webapp.interfaces import (
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasTranslationImportsMixin, HasMilestonesMixin,
-                   StructuralSubscriptionTargetMixin):
+                   HasTranslationImportsMixin, HasTranslationTemplatesMixin,
+                   HasMilestonesMixin, StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,
@@ -1692,46 +1693,20 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                      orderBy=['-priority', 'name'])
         return shortlist(result, 2000)
 
-    def getCurrentTranslationTemplates(self, just_ids=False):
+    def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         # Avoid circular imports.
         from lp.registry.model.distribution import Distribution
 
         store = Store.of(self)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
         result = store.find(
-            looking_for,
+            POTemplate,
             POTemplate.iscurrent == True,
             POTemplate.distroseries == self,
             DistroSeries.id == self.id,
             DistroSeries.distribution == Distribution.id,
             Distribution.official_rosetta == True)
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
-
-    def getCurrentTranslationFiles(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        # Avoid circular imports.
-        from lp.registry.model.distribution import Distribution
-
-        store = Store.of(self)
-        if just_ids:
-            looking_for = POFile.id
-        else:
-            looking_for = POFile
-
-        result = store.find(
-            looking_for,
-            POFile.potemplate == POTemplate.id,
-            POTemplate.iscurrent == True,
-            POTemplate.distroseries == self,
-            DistroSeries.id == self.id,
-            DistroSeries.distribution == Distribution.id,
-            Distribution.official_rosetta == True)
-        return result
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
