@@ -12,7 +12,7 @@
 <metal:heading fill-slot="pageheading">
   <h1>
     Projects for which 
-    <span tal:replace="context/browsername">Person Name</span> 
+    <span tal:replace="context/displayname">Person Name</span> 
     is an answer contact
   </h1>
 </metal:heading>
@@ -57,7 +57,7 @@
   </div>
     
   <p tal:condition="not: view/team_question_targets | view/direct_question_targets">
-    <span tal:replace="context/browsername">Person Name</span> 
+    <span tal:replace="context/displayname">Person Name</span> 
     is not an answer contact for any project.
   </p>
 </div>

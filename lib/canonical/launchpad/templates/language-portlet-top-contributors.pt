@@ -15,7 +15,7 @@
     </p>
     <ul class="person">
       <li tal:repeat="contributor view/getTopContributors">
-        <a tal:content="contributor/browsername"
+        <a tal:content="contributor/displayname"
            tal:attributes="href contributor/fmt:url">Guilherme Salgado</a>
       </li>
     </ul>

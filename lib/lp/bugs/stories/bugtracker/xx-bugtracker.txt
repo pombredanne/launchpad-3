@@ -52,10 +52,7 @@ aren't allowed.
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
   There is 1 error.
-  Invalid name 'testmantis!'. Names must start with a letter or
-  number and be lowercase. The characters +,
-  - and . are also allowed after the
-  first character.
+  Invalid name 'testmantis!'.  Names must be at least two characters ...
 
 If a bug tracker is already registered with the same location, the
 user is informed about it.
