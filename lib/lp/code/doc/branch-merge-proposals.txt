@@ -400,7 +400,7 @@ The user that marked the branch as merged can also be recorded.
     >>> merge_proposal.markAsMerged(1234, now.next(), reporter)
     >>> merge_proposal.merged_revno
     1234
-    >>> print merge_proposal.merge_reporter.browsername
+    >>> print merge_proposal.merge_reporter.displayname
     Mark Shuttleworth
     >>> print merge_proposal.queue_status.title
     Merged
@@ -443,7 +443,7 @@ that revision.
     >>> merge_proposal.markAsMerged(1, now.next(), reporter)
     >>> print merge_proposal.date_merged
     2005-03-09 15:40:00+00:00
-    >>> print merge_proposal.merge_reporter.browsername
+    >>> print merge_proposal.merge_reporter.displayname
     Mark Shuttleworth
 
 

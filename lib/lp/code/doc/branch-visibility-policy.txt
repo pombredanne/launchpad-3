@@ -316,7 +316,7 @@ and are subscribed to by the Ubuntu Gnome Team.
     ...     name="testing-2", owner=stevea, product=evolution)
     >>> branch.private
     True
-    >>> for name in sorted([subscriber.browsername for subscriber
+    >>> for name in sorted([subscriber.displayname for subscriber
     ...                     in branch.subscribers]):
     ...     print name
     Steve Alexander

@@ -74,7 +74,7 @@
     <td style="overflow: auto;"
         tal:condition="python:context.isFromSamePOFile(submission)">
       Suggested by
-      <a tal:content="submission/person/browsername"
+      <a tal:content="submission/person/displayname"
          tal:attributes="href submission/person/fmt:url">Foo Bar</a>
       <span
         tal:attributes="title submission/date_created/fmt:datetime"
@@ -89,7 +89,7 @@
          tal:attributes="href string:${submission/translationmessage/fmt:url}/+translate">
         Spanish translation for evolution
       </a> by
-      <a tal:content="submission/person/browsername"
+      <a tal:content="submission/person/displayname"
          tal:attributes="href submission/person/fmt:url">Foo Bar</a>
       <span
         tal:attributes="title submission/date_created/fmt:datetime"

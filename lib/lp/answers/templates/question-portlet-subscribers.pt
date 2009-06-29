@@ -24,7 +24,7 @@
       <b>Also notified:</b><br />
       <ul>
         <li tal:repeat="subscriber indirect_subscribers">
-        <a tal:replace="structure subscriber/fmt:link">Dafydd Harries</a>
+          <a tal:replace="structure subscriber/fmt:link">Dafydd Harries</a>
         </li>
       </ul>
 

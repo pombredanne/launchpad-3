@@ -223,7 +223,7 @@ class ProductLicenseMixin:
 
             template = helpers.get_email_template('product-license.txt')
             message = template % dict(
-                user_browsername=user.browsername,
+                user_browsername=user.displayname,
                 user_name=user.name,
                 product_name=self.product.name,
                 product_url=canonical_url(self.product),

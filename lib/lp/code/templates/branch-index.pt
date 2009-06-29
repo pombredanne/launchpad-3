@@ -103,15 +103,15 @@
             <td id="upload-directions" tal:condition="not:context/owner/isTeam">
               Only
               <a tal:attributes="href context/owner/fmt:url"
-                 tal:content="context/owner/browsername">Person</a>
+                 tal:content="context/owner/displayname">Person</a>
               can upload to this branch. If you are
-              <tal:branch-owner replace="context/owner/browsername"/>
+              <tal:branch-owner replace="context/owner/displayname"/>
               please <a href="+login">log in</a> for upload directions.
             </td>
             <td id="upload-directions" tal:condition="context/owner/isTeam">
               Members of
               <a tal:attributes="href context/owner/fmt:url"
-                 tal:content="context/owner/browsername">Team</a>
+                 tal:content="context/owner/displayname">Team</a>
               can upload to this branch. <a href="+login">Log in</a> for directions.
             </td>
           </tr>
@@ -127,13 +127,13 @@
               <td id="upload-directions" tal:condition="not:context/owner/isTeam">
                 You cannot upload to this branch. Only
                 <a tal:attributes="href context/owner/fmt:url"
-                   tal:content="context/owner/browsername">Person</a>
+                   tal:content="context/owner/displayname">Person</a>
                 can upload to this branch.
               </td>
               <td id="upload-directions" tal:condition="context/owner/isTeam">
                 You cannot upload to this branch. Members of
                 <a tal:attributes="href context/owner/fmt:url"
-                   tal:content="context/owner/browsername">Team</a>
+                   tal:content="context/owner/displayname">Team</a>
                 can upload to this branch.
               </td>
             </tr>

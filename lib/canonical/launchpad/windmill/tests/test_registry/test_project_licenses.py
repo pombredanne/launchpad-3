@@ -58,13 +58,22 @@ def test_project_licenses():
         id=u'license-details',
         validator='className|lazr-opened')
 
-    # Only when all Other/* items are unchecked does the details box get
-    # hidden.
+    # Clicking on Other/Proprietary exposes the additional commercial
+    # licensing details.
+    client.asserts.assertProperty(
+        id=u'proprietary',
+        validator='className|lazr-closed')
+
     client.click(id='field.licenses.25')
     client.asserts.assertProperty(
         id=u'license-details',
         validator='className|lazr-opened')
+    client.asserts.assertProperty(
+        id=u'proprietary',
+        validator='className|lazr-opened')
 
+    # Only when all Other/* items are unchecked does the details box get
+    # hidden.
     client.click(id='field.licenses.26')
     client.asserts.assertProperty(
         id=u'license-details',
@@ -73,6 +82,9 @@ def test_project_licenses():
     client.click(id='field.licenses.25')
     client.asserts.assertProperty(
         id=u'license-details',
+        validator='className|lazr-closed')
+    client.asserts.assertProperty(
+        id=u'proprietary',
         validator='className|lazr-closed')
 
     # Clicking on "I haven't specified..." unchecks everything and closes the

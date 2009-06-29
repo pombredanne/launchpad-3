@@ -389,7 +389,7 @@ class AccountEditEmailsView(LaunchpadFormView):
                             "The email address '%s' is already registered "
                             'to the Launchpad team <a href="%s">%s</a>.',
                             newemail, canonical_url(owner),
-                            owner.browsername))
+                            owner.displayname))
                 else:
                     self.addError(
                         structured(
@@ -397,7 +397,7 @@ class AccountEditEmailsView(LaunchpadFormView):
                             'to <a href="%s">%s</a>. If you think that is a '
                             'duplicated account, you can <a href="%s">merge '
                             "it </a> into your account.",
-                            newemail, canonical_url(owner), owner.browsername,
+                            newemail, canonical_url(owner), owner.displayname,
                             merge_url))
             else:
                 # There is no way to merge accounts that don't use
