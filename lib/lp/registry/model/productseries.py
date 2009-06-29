@@ -431,14 +431,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                                      orderBy=['-priority','name'])
         return shortlist(result, 300)
 
-    def _getCurrentTranslationTemplates(self, just_ids=False):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
+        # Avoid circular imports.
         from lp.registry.model.product import Product
-        store = Store.of(self)
 
-        looking_for = POTemplate
+        store = Store.of(self)
         if just_ids:
             looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
 
         result = store.find(
             looking_for,
@@ -447,20 +449,18 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             ProductSeries.id == self.id,
             ProductSeries.product == Product.id,
             Product.official_rosetta == True)
-        return result.order_by(['-priority', 'name'])
-
-    def getCurrentTranslationTemplates(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        return shortlist(self._getCurrentTranslationTemplates(), 300)
+        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
+        # Avoid circular imports.
         from lp.registry.model.product import Product
-        store = Store.of(self)
 
-        looking_for = POFile
+        store = Store.of(self)
         if just_ids:
             looking_for = POFile.id
+        else:
+            looking_for = POFile
 
         result = store.find(
             looking_for,
@@ -475,7 +475,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     @property
     def potemplate_count(self):
         """See `IProductSeries`."""
-        return self._getCurrentTranslationTemplates().count()
+        return self.getCurrentTranslationTemplates().count()
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

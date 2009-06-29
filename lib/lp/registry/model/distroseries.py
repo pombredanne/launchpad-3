@@ -1694,12 +1694,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
+        # Avoid circular imports.
         from lp.registry.model.distribution import Distribution
-        store = Store.of(self)
 
-        looking_for = POTemplate
+        store = Store.of(self)
         if just_ids:
             looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
 
         result = store.find(
             looking_for,
@@ -1712,12 +1714,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
+        # Avoid circular imports.
         from lp.registry.model.distribution import Distribution
-        store = Store.of(self)
 
-        looking_for = POFile
+        store = Store.of(self)
         if just_ids:
             looking_for = POFile.id
+        else:
+            looking_for = POFile
 
         result = store.find(
             looking_for,

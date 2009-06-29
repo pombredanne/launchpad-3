@@ -28,12 +28,11 @@ class POExportRequestSet:
     def addRequest(self, person, potemplates=None, pofiles=None,
             format=TranslationFileFormat.PO):
         """See `IPOExportRequestSet`."""
-
         if potemplates is None:
             potemplates = []
         elif IPOTemplate.providedBy(potemplates):
             # Allow single POTemplate as well as list of POTemplates
-            potemplates = [potemplates.id]
+            potemplates = [potemplates]
         if pofiles is None:
             pofiles = []
 
@@ -41,7 +40,8 @@ class POExportRequestSet:
             raise AssertionError(
                 "Can't add a request with no PO templates and no PO files.")
 
-        potemplate_ids = ", ".join([quote(potemplate) for potemplate in potemplates])
+        potemplate_ids = ", ".join(
+            [quote(template) for template in potemplates])
         # A null pofile stands for the template itself.  We represent it in
         # SQL as -1, because that's how it's indexed in the request table.
         pofile_ids = ", ".join([quote(pofile) for pofile in pofiles] + ["-1"])

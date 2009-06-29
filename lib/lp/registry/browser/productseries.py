@@ -415,8 +415,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin,
         self.has_errors = False
 
         # Whether there is more than one PO template.
-        self.has_multiple_templates = len(
-            self.context.getCurrentTranslationTemplates()[:2]) > 1
+        self.has_multiple_templates = (
+            self.context.getCurrentTranslationTemplates().count() > 1)
 
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu

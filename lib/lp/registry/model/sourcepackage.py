@@ -45,6 +45,7 @@ from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.packaging import PackagingType
+from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
@@ -583,13 +584,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        store = Store.of(self.sourcepackagename)
+        # Avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.distribution import Distribution
 
-        looking_for = POTemplate
+        store = Store.of(self.sourcepackagename)
         if just_ids:
             looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
 
         result = store.find(
             looking_for,
@@ -603,14 +606,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        store = Store.of(self.sourcepackagename)
-        from canonical.launchpad.database.pofile import POFile
+        # Avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.distribution import Distribution
 
-        looking_for = POFile
+        store = Store.of(self.sourcepackagename)
         if just_ids:
             looking_for = POFile.id
+        else:
+            looking_for = POFile
 
         result = store.find(
             looking_for,
