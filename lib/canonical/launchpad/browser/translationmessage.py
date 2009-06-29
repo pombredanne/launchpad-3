@@ -1127,6 +1127,36 @@ class CurrentTranslationMessageView(LaunchpadView):
         # HTML id for singular form of this message
         self.html_id_singular = self.context.makeHTMLID('translation_0')
 
+    def _set_dismiss_flags(self, local_suggestions, imported):
+        """Set dismissal flags.
+
+        The flags are all initialized as False."""
+        if not self.user_is_official_translator:
+            return
+
+        has_local_suggestions = len(local_suggestions) > 0
+        if imported is not None:
+            date_reviewed = self.context.date_reviewed
+            if date_reviewed is None:
+                has_new_imported = True
+            else:
+                has_new_imported = imported.date_created > date_reviewed
+        else:
+            has_new_imported = False
+
+        if not (has_local_suggestions or has_new_imported):
+            return
+
+        # OK, let's set some flags.
+        if self.is_plural:
+            self.can_dismiss_on_plural = True
+        else:
+            if self.getCurrentTranslation(0) is None:
+                self.can_dismiss_on_empty = True
+            else:
+                self.can_confirm_and_dismiss = True
+
+
     def _buildAllSuggestions(self):
         """Builds all suggestions and puts them into suggestions_block.
 
@@ -1157,6 +1187,11 @@ class CurrentTranslationMessageView(LaunchpadView):
         language = self.pofile.language
         potmsgset = self.context.potmsgset
 
+        if not self.context.is_imported:
+            imported = self.imported_translationmessage
+        else:
+            imported = None
+
         # Show suggestions only when you can actually do something with them
         # (i.e. you are logged in and have access to at least submit
         # suggestions).
@@ -1171,14 +1206,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 key=operator.attrgetter("date_created"),
                 reverse=True)
 
-            if len(local) > 0 and self.user_is_official_translator:
-                self.can_confirm_and_dismiss = (
-                    not self.is_plural and
-                    self.getCurrentTranslation(0) is not None)
-                self.can_dismiss_on_empty = (
-                    not self.is_plural and
-                    self.getCurrentTranslation(0) is None)
-                self.can_dismiss_on_plural = self.is_plural
+            self._set_dismiss_flags(local, imported)
 
             for suggestion in local:
                 suggestion.setPOFile(self.pofile)
@@ -1237,11 +1265,8 @@ class CurrentTranslationMessageView(LaunchpadView):
         # suggestion per plural form.
         for index in self.pluralform_indices:
             self.seen_translations = set([self.context.translations[index]])
-            if not self.context.is_imported:
-                imported = potmsgset.getImportedTranslationMessage(
-                    self.pofile.potemplate, language)
-                if imported:
-                    self.seen_translations.add(imported.translations[index])
+            if imported:
+                self.seen_translations.add(imported.translations[index])
             local_suggestions = (
                 self._buildTranslationMessageSuggestions(
                     'Suggestions', local, index))

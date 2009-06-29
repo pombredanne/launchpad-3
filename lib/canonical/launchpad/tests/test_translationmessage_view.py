@@ -134,6 +134,13 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         self._createView(message)
         self._assertConfirmEmptyPlural(False, False, True)
 
+    def test_imported_suggestion_old(self):
+        # If there is an older imported suggestion, it cannot be dismissed.
+        packaged = self._makeTranslation(is_imported=True)
+        message = self._makeTranslation()
+        self._createView(message)
+        self._assertConfirmEmptyPlural(False, False, False)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
