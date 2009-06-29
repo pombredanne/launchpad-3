@@ -250,7 +250,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         drivers.add(self.driver)
         drivers = drivers.union(self.distribution.drivers)
         drivers.discard(None)
-        return sorted(drivers, key=lambda driver: driver.browsername)
+        return sorted(drivers, key=lambda driver: driver.displayname)
 
     @property
     def bug_supervisor(self):

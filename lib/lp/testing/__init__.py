@@ -614,3 +614,12 @@ def run_script(cmd_line):
         stderr=subprocess.PIPE, env=env)
     (out, err) = process.communicate()
     return out, err, process.returncode
+
+
+def normalize_whitespace(string):
+    """Replace all sequences of whitespace with a single space."""
+    # In Python 2.4, splitting and joining a string to normalize
+    # whitespace is roughly 6 times faster than using an uncompiled
+    # regex (for the expression \s+), and 4 times faster than a
+    # compiled regex.
+    return " ".join(string.split())
