@@ -232,7 +232,8 @@ class ImportDataStore:
             dest_transport = get_transport('.')
         remote_name = self._getRemoteName(filename)
         if self._transport.has(remote_name):
-            dest_transport.put_file(filename, self._transport.get(remote_name))
+            dest_transport.put_file(
+                filename, self._transport.get(remote_name))
             return True
         else:
             return False
