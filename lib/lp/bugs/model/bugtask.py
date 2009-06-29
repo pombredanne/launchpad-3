@@ -1143,6 +1143,18 @@ def get_bug_privacy_filter(user):
                      """ % sqlvalues(personid=user.id)
 
 
+def build_tag_set_query(joiner, tags):
+    """Return an SQL snippet to find bugs matching the given tags.
+
+    The tags are sorted so that testing the generated queries is
+    easier and more reliable.
+    """
+    joiner = " %s " % joiner
+    return joiner.join(
+        "SELECT bug FROM BugTag WHERE tag = %s" % quote(tag)
+        for tag in sorted(tags))
+
+
 def build_tag_search_clauses(tags_spec):
     """Yield tag search clauses."""
     tags = set(tags_spec.query_values)
@@ -1150,14 +1162,6 @@ def build_tag_search_clauses(tags_spec):
     tags.difference_update(wildcards)
     include = [tag for tag in tags if not tag.startswith('-')]
     exclude = [tag[1:] for tag in tags if tag.startswith('-')]
-
-    def build_set_query(joiner, tags):
-        # Return an SQL snippet that identifies a set of bugs based on
-        # the given tags. The tags are sorted to make testing easier.
-        joiner = " %s " % joiner
-        return joiner.join(
-            "SELECT bug FROM BugTag WHERE tag = %s" % quote(tag)
-            for tag in sorted(tags))
 
     # Should we search for all specified tags or any of them?
     find_all = zope_isinstance(tags_spec, all)
@@ -1168,20 +1172,20 @@ def build_tag_search_clauses(tags_spec):
         combine_with = 'AND'
         # The set of bugs that have *all* of the tags requested for
         # *inclusion*.
-        include_clause = build_set_query("INTERSECT", include)
+        include_clause = build_tag_set_query("INTERSECT", include)
         # The set of bugs that have *any* of the tags requested for
         # *exclusion*.
-        exclude_clause = build_set_query("UNION", exclude)
+        exclude_clause = build_tag_set_query("UNION", exclude)
     else:
         # How to combine an include clause and an exclude clause when
         # both are generated.
         combine_with = 'OR'
         # The set of bugs that have *any* of the tags requested for
         # inclusion.
-        include_clause = build_set_query("UNION", include)
+        include_clause = build_tag_set_query("UNION", include)
         # The set of bugs that have *all* of the tags requested for
         # exclusion.
-        exclude_clause = build_set_query("INTERSECT", exclude)
+        exclude_clause = build_tag_set_query("INTERSECT", exclude)
 
     # Search for the *presence* of any tag.
     if '*' in wildcards:
