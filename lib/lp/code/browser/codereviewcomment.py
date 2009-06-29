@@ -9,7 +9,7 @@ __all__ = [
     ]
 from textwrap import TextWrapper
 
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, DropdownWidget
 from zope.interface import Interface, implements
 from zope.schema import Text
 
@@ -148,9 +148,15 @@ class IEditCodeReviewComment(Interface):
 class CodeReviewCommentAddView(LaunchpadFormView):
     """View for adding a CodeReviewComment."""
 
+    class MyDropWidget(DropdownWidget):
+        "Override the default no-value display name to -Select-."
+        _messageNoValue = '-Select-'
+
     schema = IEditCodeReviewComment
 
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+    custom_widget('vote', MyDropWidget)
+
 
     @property
     def initial_values(self):
