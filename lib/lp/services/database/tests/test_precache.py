@@ -9,9 +9,7 @@ import unittest
 
 from storm.expr import And, Join, LeftJoin
 
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces import IMasterStore
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
@@ -31,13 +29,9 @@ class PrecacheTestCase(unittest.TestCase):
         # Note that because some Product owners have multiple email
         # addresses, this query returns more results. precache needs
         # to hide this from callsites.
-        self.unwrapped_result = self.store.using(
-                Product,
-                Join(Person, Product.ownerID == Person.id),
-                LeftJoin(EmailAddress, And(
-                    Person.id == EmailAddress.personID,
-                    EmailAddress.status == EmailAddressStatus.PREFERRED))
-            ).find((Product, Person, EmailAddress)).order_by(Product.name)
+        self.unwrapped_result = self.store.find(
+            (Product, Person),
+            Product.ownerID == Person.id).order_by(Product.name)
         self.precache_result = precache(self.unwrapped_result)
 
     def verify(self, precached, normal):
@@ -88,13 +82,23 @@ class PrecacheTestCase(unittest.TestCase):
             self.precache_result.first(), self.standard_result.first())
 
     def test_one(self):
-        standard_result = self.store.find(Person, Person.name == 'name12')
+        standard_result = self.store.find(Product, Product.name == 'firefox')
         precache_result = precache(self.store.find(
-            (Person,EmailAddress),
-            Person.id == EmailAddress.personID,
-            Person.name == 'name12',
-            EmailAddress.status == EmailAddressStatus.PREFERRED))
+            (Product, Person),
+            Person.id == Product.ownerID,
+            Product.name == 'firefox'))
         self.failUnlessEqual(standard_result.one(), precache_result.one())
+
+    def test_cache_populated(self):
+        # Load a row.
+        product = self.precache_result.first()
+
+        # Destroy our data, without telling Storm. This way we can
+        # tell if we are accessing an object from the cache, or if it
+        # was retrieved from the database.
+        self.store.execute("UPDATE Person SET displayname='foo'")
+
+        self.failIfEqual(product.owner.displayname, 'foo')
 
 
 def test_suite():
