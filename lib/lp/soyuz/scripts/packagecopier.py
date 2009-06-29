@@ -285,12 +285,13 @@ def check_archive_conflicts(source, archive, series, include_binaries):
 
         # If the conflicting candidate (which we already know refer to the
         # same sourcepackagerelease) was found in the copy destination
-        # series we don't have to check its building status, because it's
-        # not going to change in terms of new builds and the resulting
-        # binaries will match. See more details in
+        # series we don't have to check its building status if binaries
+        # are included. It's not going to change in terms of new builds
+        # and the resulting binaries will match. See more details in
         # `ISourcePackageRelease.getBuildsByArch`.
         if (candidate.distroseries.id == series.id and
-            archive.id == source.archive.id):
+            archive.id == source.archive.id and
+            include_binaries):
             continue
 
         # Conflicting candidates building in a different series are a

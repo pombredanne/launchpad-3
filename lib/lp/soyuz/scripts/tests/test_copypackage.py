@@ -643,6 +643,20 @@ class TestCheckCopyHarnessSameArchive(TestCaseWithFactory,
             'same version already has published binaries in the '
             'destination archive')
 
+    def test_cannot_copy_only_source_from_deleted_sources(self):
+        self.test_publisher.getPubBinaries(pub_source=self.source)
+
+        self.source.requestDeletion(self.test_publisher.person, 'Go!')
+        for binary in self.source.getPublishedBinaries():
+            binary.requestDeletion(self.test_publisher.person, 'Go!')
+
+        self.series = self.source.distroseries
+        self.layer.txn.commit()
+
+        self.assertCannotCopySourceOnly(
+            'same version already has published binaries in the '
+            'destination archive')
+
 
 class TestCheckCopyHarnessDifferentArchive(TestCaseWithFactory,
                                            TestCheckCopyHarness):
