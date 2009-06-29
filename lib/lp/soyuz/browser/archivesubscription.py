@@ -50,7 +50,6 @@ def archive_subscription_ui_adapter(archive_subscription):
     return archive_subscription
 
 
-
 class PersonalArchiveSubscription:
     """See `IPersonalArchiveSubscription`."""
 
@@ -193,8 +192,8 @@ class ArchiveSubscribersView(LaunchpadFormView):
             ) % {
                 'subscriber': data['subscriber'].displayname,
                 'archive': self.context.displayname,
-                'subscriber_individuals': subscriber_individuals
-            }
+                'subscriber_individuals': subscriber_individuals,
+                }
 
         self.request.response.addNotification(structured(notification))
 
