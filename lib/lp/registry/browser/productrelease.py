@@ -40,7 +40,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import DateTimeWidget
 
-from lp.registry.browser import RegistryDeleteViewMixin
+from lp.registry.browser import MilestoneOverlayMixin, RegistryDeleteViewMixin
 
 
 class ProductReleaseNavigation(Navigation):
@@ -125,7 +125,7 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
                 _("The %s for this project release was deactivated "
                   "so that bugs and blueprints cannot be associated with "
                   "this release." % milestone_link)))
-        self.next_url = canonical_url(newrelease.milestone.productseries)
+        self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
 
     @property
@@ -170,7 +170,8 @@ class ProductReleaseAddView(ProductReleaseAddViewBase):
         self._createRelease(self.context, data)
 
 
-class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase):
+class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
+                                      MilestoneOverlayMixin):
     """Create a product release from an existing or new milestone.
 
     Also, deactivate the milestone it is attached to.
@@ -206,15 +207,6 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase):
                 __name__='milestone_for_release',
                 vocabulary=SimpleVocabulary(terms)))
         self.form_fields = milestone_field + self.form_fields
-
-    @property
-    def milestone_form_uri(self):
-        """URI for form displayed by the formoverlay widget."""
-        return canonical_url(self.context) + '/+addmilestone/++form++'
-
-    @property
-    def series_api_uri(self):
-        return canonical_url(self.context, path_only_if_possible=True)
 
     @action(_('Create release'), name='create')
     def createRelease(self, action, data):

@@ -1007,6 +1007,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             msgid = self.makeUniqueRFC822MsgId()
         if body is None:
             body = self.getUniqueString('body')
+        charset = 'ascii'
+        try:
+            body = body.encode(charset)
+        except UnicodeEncodeError:
+            charset = 'utf-8'
+            body = body.encode(charset)
         mail['Message-Id'] = msgid
         mail['Date'] = formatdate()
         if signing_context is not None:
@@ -1032,6 +1038,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         body_part['Content-type'] = 'text/plain'
         if force_transfer_encoding:
             encode_base64(body_part)
+        body_part.set_charset(charset)
         mail.parsed_string = mail.as_string()
         return mail
 
@@ -1373,12 +1380,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code, potemplate=None, owner=None,
-                   variant=None):
+                   variant=None, create_sharing=False):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
         return potemplate.newPOFile(language_code, variant,
-                                    requester=potemplate.owner)
+                                    requester=potemplate.owner,
+                                    create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       context=None, sequence=None):

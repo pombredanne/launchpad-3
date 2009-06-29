@@ -18,7 +18,9 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSourcePackage, IDistroSeries, IMilestone,
     IProduct, IProductSeries, IProject, IStructuralSubscription,
     IStructuralSubscriptionTarget)
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_public_person, validate_person_not_private_membership)
+
 
 class StructuralSubscription(SQLBase):
     """A subscription to a Launchpad structure."""
@@ -48,7 +50,7 @@ class StructuralSubscription(SQLBase):
         notNull=False, default=None)
     subscriber = ForeignKey(
         dbName='subscriber', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership, notNull=True)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)

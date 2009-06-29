@@ -44,18 +44,17 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
-from lp.soyuz.adapters.archivedependencies import (
-    get_components_for_building)
+from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.builder import Builder
 from lp.soyuz.model.buildqueue import BuildQueue
+from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
@@ -167,6 +166,11 @@ class Build(SQLBase):
     def package_upload(self):
         """See `IBuild`."""
         store = Store.of(self)
+        # The join on 'changesfile' is not only used only for
+        # pre-fetching the corresponding library file, so callsites
+        # don't have to issue an extra query. It is also important
+        # for excluding delayed-copies, because they might match
+        # the publication context but will not contain as changesfile.
         origin = [
             PackageUploadBuild,
             Join(PackageUpload,
@@ -179,7 +183,6 @@ class Build(SQLBase):
         results = store.using(*origin).find(
             (PackageUpload, LibraryFileAlias, LibraryFileContent),
             PackageUploadBuild.build == self,
-            PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.archive == self.archive,
             PackageUpload.distroseries == self.distroseries)
 
@@ -753,6 +756,17 @@ class Build(SQLBase):
             restricted=restricted)
         self.upload_log = library_file
 
+    def _getDebByFileName(self, filename):
+        """Helper function to get a .deb LFA in the context of this build."""
+        store = Store.of(self)
+        return store.find(
+            LibraryFileAlias,
+            BinaryPackageRelease.build == self.id,
+            BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            LibraryFileAlias.filename == filename
+            ).one()
+
     def getFileByName(self, filename):
         """See `IBuild`."""
         if filename.endswith('.changes'):
@@ -761,6 +775,8 @@ class Build(SQLBase):
             file_object = self.buildlog
         elif filename.endswith('_log.txt'):
             file_object = self.upload_log
+        elif filename.endswith('deb'):
+            file_object = self._getDebByFileName(filename)
         else:
             raise NotFoundError(filename)
 

@@ -59,7 +59,7 @@
                   <tr tal:repeat="translator view/translator_list">
                     <td tal:content="translator/lang" />
                     <td class="translator_info">
-                        <a tal:content="translator/person/browsername"
+                        <a tal:content="translator/person/displayname"
                             tal:attributes="href translator/person/fmt:url" />
                         <a tal:condition="translator/style_guide_url"
                             tal:attributes="href translator/style_guide_url"

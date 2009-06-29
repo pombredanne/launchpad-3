@@ -435,12 +435,15 @@ class Bug(SQLBase):
                 store.flush()
                 return
 
-    def unsubscribeFromDupes(self, person):
+    def unsubscribeFromDupes(self, person, unsubscribed_by):
         """See `IBug`."""
+        if person is None:
+            person = unsubscribed_by
+
         bugs_unsubscribed = []
         for dupe in self.duplicates:
             if dupe.isSubscribed(person):
-                dupe.unsubscribe(person, person)
+                dupe.unsubscribe(person, unsubscribed_by)
                 bugs_unsubscribed.append(dupe)
 
         return bugs_unsubscribed
@@ -455,6 +458,9 @@ class Bug(SQLBase):
 
     def isSubscribedToDupes(self, person):
         """See `IBug`."""
+        if person is None:
+            return False
+
         return bool(
             BugSubscription.select("""
                 bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
@@ -856,17 +862,14 @@ class Bug(SQLBase):
 
         return branch is not None
 
-    def addBranch(self, branch, registrant, whiteboard=None, status=None):
+    def addBranch(self, branch, registrant):
         """See `IBug`."""
         for bug_branch in shortlist(self.bug_branches):
             if bug_branch.branch == branch:
                 return bug_branch
-        if status is None:
-            status = IBugBranch['status'].default
 
         bug_branch = BugBranch(
-            branch=branch, bug=self, whiteboard=whiteboard, status=status,
-            registrant=registrant)
+            branch=branch, bug=self, registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
         self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch, self))
