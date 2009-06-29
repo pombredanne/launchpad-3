@@ -55,6 +55,7 @@ __all__ = [
     'reset_store',
     'rollback',
     'SQLBase',
+    'StupidCache',
     'sqlvalues',
     'ZopelessTransactionManager',]
 
