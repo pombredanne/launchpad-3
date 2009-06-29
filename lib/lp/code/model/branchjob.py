@@ -449,6 +449,20 @@ class RevisionsAddedJob(BranchJobDerived):
             self.branch, revno, self.from_address, message, diff_text,
             subject)
 
+    def getMergeAuthors(self, revision_id):
+        graph = self.bzr_branch.repository.get_graph()
+        parents = graph.get_parent_map([revision_id])[revision_id]
+        merged_revision_ids = set()
+        for merge_parent in parents[1:]:
+            merged = graph.find_difference(parents[0], merge_parent)[1]
+            merged_revision_ids.update(merged)
+        merged_revisions = self.bzr_branch.repository.get_revisions(
+            merged_revision_ids)
+        authors = set()
+        for revision in merged_revisions:
+            authors.update(revision.get_apparent_authors())
+        return authors
+
     def getRevisionMessage(self, revision_id, revno):
         """Return the log message for a revision.
 

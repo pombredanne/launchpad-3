@@ -480,6 +480,24 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             committer='J. Random Hacker <jrandom@example.org>')
         return branch, tree
 
+    def test_getMergeAuthors(self):
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('rev1')
+        tree2 = tree.bzrdir.sprout('tree2').open_workingtree()
+        tree2.commit('rev2a', committer='foo@')
+        tree2.commit('rev3', authors=['bar@', 'baz@'])
+        tree.merge_from_branch(tree2.branch)
+        tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
+        tree3.commit('rev2c', committer='qux@')
+        tree.merge_from_branch(tree3.branch)
+        tree.commit('rev2b', rev_id='rev2b')
+        job = RevisionsAddedJob.create(branch, 'rev2b', 'rev2b', '')
+        job.bzr_branch.lock_write()
+        self.addCleanup(job.bzr_branch.unlock)
+        self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
+                         job.getMergeAuthors('rev2b'))
+
     def test_getRevisionMessage(self):
         """getRevisionMessage provides a correctly-formatted message."""
         self.useBzrBranches()
