@@ -297,9 +297,9 @@ class XMLRPCRunner(Runner):
         """Get the latest subscription information."""
         # First, calculate the names of the active mailing lists.
         # pylint: disable-msg=W0331
-        lists = [list_name
-                 for list_name in Utils.list_names()
-                 if list_name <> mm_cfg.MAILMAN_SITE_LIST]
+        lists = sorted(list_name
+                       for list_name in Utils.list_names()
+                       if list_name <> mm_cfg.MAILMAN_SITE_LIST)
         # Batch the subscription requests in order to reduce the possibility
         # of timeouts in the XMLRPC server.
         while lists:
