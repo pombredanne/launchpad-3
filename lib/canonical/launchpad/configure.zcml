@@ -23,6 +23,7 @@
 
   <include package="lp.soyuz" />
   <include package="lp.blueprints" />
+  <include package="lp.services.comments" />
 
   <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"

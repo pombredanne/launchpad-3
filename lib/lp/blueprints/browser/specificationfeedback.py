@@ -120,7 +120,7 @@ class SpecificationFeedbackClearingView:
                 self.context.unqueue(self.user, requester)
                 if number_cleared > 0:
                     msg += ', '
-                msg += requester.browsername
+                msg += requester.displayname
                 number_cleared += 1
 
         self.process_status = msg

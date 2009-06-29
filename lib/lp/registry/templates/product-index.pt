@@ -69,6 +69,7 @@
           <li tal:condition="view/should_display_homepage">
             <a id="homepageurl-link"
                class="sprite external-link"
+               rel="nofollow"
                tal:attributes="href context/homepageurl">
               <strong>Home page</strong>
             </a>

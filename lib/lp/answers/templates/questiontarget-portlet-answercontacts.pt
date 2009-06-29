@@ -14,7 +14,7 @@
     <ul class="person" tal:condition="answer_contacts">
       <li tal:repeat="answer_contact answer_contacts">
         <a href="#"
-           tal:content="answer_contact/browsername"
+           tal:content="answer_contact/displayname"
            tal:attributes="href answer_contact/fmt:url">Ubuntu Team</a>
       </li>
     </ul>

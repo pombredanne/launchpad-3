@@ -164,7 +164,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
-        return sorted(drivers, key=lambda x: x.browsername)
+        return sorted(drivers, key=lambda x: x.displayname)
 
     @property
     def bug_supervisor(self):
