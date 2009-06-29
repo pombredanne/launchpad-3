@@ -387,7 +387,8 @@ class TestCaseWithFactory(TestCase):
         return browser
 
     def create_branch_and_tree(self, tree_location='.', product=None,
-                               hosted=False, db_branch=None, format=None):
+                               hosted=False, db_branch=None, format=None,
+                               **kwargs):
         """Create a database branch, bzr branch and bzr checkout.
 
         :param tree_location: The path on disk to create the tree at.
@@ -403,9 +404,9 @@ class TestCaseWithFactory(TestCase):
             format = format_registry.get(format)()
         if db_branch is None:
             if product is None:
-                db_branch = self.factory.makeAnyBranch()
+                db_branch = self.factory.makeAnyBranch(**kwargs)
             else:
-                db_branch = self.factory.makeProductBranch(product)
+                db_branch = self.factory.makeProductBranch(product, **kwargs)
         if hosted:
             branch_url = db_branch.getPullURL()
         else:
@@ -423,13 +424,12 @@ class TestCaseWithFactory(TestCase):
             tree_location, lightweight=True)
 
     @staticmethod
-    def getMirroredPath(branch):
+    def getBranchPath(branch, base):
         """Return the path of the branch in the mirrored area.
 
         This always uses the configured mirrored area, ignoring whatever
         server might be providing lp-mirrored: urls.
         """
-        base = config.codehosting.internal_branch_by_id_root
         # XXX gary 2009-5-28 bug 381325
         # This is a work-around for some failures on PQM, arguably caused by
         # relying on test set-up that is happening in the Makefile rather than
@@ -452,9 +452,10 @@ class TestCaseWithFactory(TestCase):
         :return: a `Branch` and a workingtree.
         """
         from bzrlib.bzrdir import BzrDir
-        from bzrlib.transport import get_transport
         db_branch = self.factory.makeAnyBranch()
-        transport = get_transport(self.getMirroredPath(db_branch))
+        transport = get_transport(
+            self.getBranchPath(
+                db_branch, config.codehosting.internal_branch_by_id_root))
         # Ensure the parent directories exist so that we can stick a branch
         # in them.
         transport.clone('../../..').ensure_base()
@@ -488,7 +489,6 @@ class TestCaseWithFactory(TestCase):
         """
         from lp.codehosting.scanner.tests.test_bzrsync import (
             FakeTransportServer)
-        from bzrlib.transport import get_transport
         self.useTempBzrHome()
         self.real_bzr_server = real_server
         if real_server:
@@ -614,3 +614,12 @@ def run_script(cmd_line):
         stderr=subprocess.PIPE, env=env)
     (out, err) = process.communicate()
     return out, err, process.returncode
+
+
+def normalize_whitespace(string):
+    """Replace all sequences of whitespace with a single space."""
+    # In Python 2.4, splitting and joining a string to normalize
+    # whitespace is roughly 6 times faster than using an uncompiled
+    # regex (for the expression \s+), and 4 times faster than a
+    # compiled regex.
+    return " ".join(string.split())

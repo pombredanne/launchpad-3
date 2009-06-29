@@ -53,7 +53,7 @@ class ExportResult:
             Launchpad encountered problems exporting the files you requested.
             The Launchpad Translations team has been notified of this problem.
             Please reply to this email for further assistance.
-            ''' % person.browsername)
+            ''' % person.displayname)
 
     def _getSuccessEmailBody(self, person):
         """Send an email notification about the export working."""
@@ -63,7 +63,7 @@ class ExportResult:
             The translation files you requested from Launchpad are ready for
             download from the following location:
 
-            \t%s''' % (person.browsername, self.url)
+            \t%s''' % (person.displayname, self.url)
             )
 
     def notify(self, person):
@@ -117,7 +117,7 @@ class ExportResult:
                 files and the error we got:
 
                 %s%s''') % (
-                    person.browsername, self.failure, template_sentence)
+                    person.displayname, self.failure, template_sentence)
         except UnicodeDecodeError:
             # Unfortunately this happens sometimes: invalidly-encoded data
             # makes it into the exception description, possibly from error
@@ -128,7 +128,7 @@ class ExportResult:
 
                 A UnicodeDecodeError occurred while trying to notify you of a
                 failure during a translation export requested by %s.
-                %s''') % (person.browsername, template_sentence)
+                %s''') % (person.displayname, template_sentence)
 
         simple_sendmail(
             from_addr=config.rosetta.admin_email,

@@ -27,7 +27,7 @@
     <td style="padding: 0.3em 0em 0.3em 1.5em"
         tal:condition="indent_task"
         tal:define="series_targetname view/getSeriesTargetName">
-      <span class="sprite milestone" />
+      <span class="sprite milestone"></span>
       <tal:not-conjoined-task condition="not: is_conjoined_slave">
         <a
           tal:attributes="href context/target/fmt:url"
@@ -76,12 +76,12 @@
           <tal:bugtracker-active
               condition="context/bugwatch/bugtracker/active">
             <span tal:condition="not:context/bugwatch/last_error_type"
-                  class="sprite bug-remote" />
+                  class="sprite bug-remote"></span>
             <span tal:condition="context/bugwatch/last_error_type"
-                  class="sprite warning" />
+                  class="sprite warning-icon"></span>
           </tal:bugtracker-active>
           <span tal:condition="not:context/bugwatch/bugtracker/active"
-                class="sprite warning" />
+                class="sprite warning-icon"></span>
           <a tal:replace="structure context/bugwatch/fmt:external-link" />
         </div>
       </tal:has_watch>
