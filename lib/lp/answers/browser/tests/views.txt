@@ -835,8 +835,9 @@ It works also with user submitted values:
 
 === Question listing table ===
 
-Thr SearchQuestionsView has two attributes that control the columns of
-the question listing table. Products do not display the extra columns.
+The SearchQuestionsView has two attributes that control the columns of
+the question listing table. Products display the default columns of
+Summary, Created, Submitter, Assignee, and Status.
 
     >>> from canonical.launchpad.layers import AnswersLayer
     >>> from canonical.launchpad.testing.pages import (
@@ -853,7 +854,7 @@ the question listing table. Products do not display the extra columns.
     >>> for row in table.findAll('tr'):
     ...     print extract_text(row)
     Summary                Created     Submitter      Assignee  Status
-    6 Newly installed...  2005-10-14  Sample Person  &mdash;   Answered ...
+    6 Newly installed...  2005-10-14   Sample Person  &mdash;   Answered ...
 
 Distribution display the "Source Package" column. The name of the source
 package is displayed if it exists.
