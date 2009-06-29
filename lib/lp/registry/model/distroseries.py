@@ -61,6 +61,7 @@ from lp.registry.model.milestone import (
 from lp.soyuz.model.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.person import Person
+from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.potemplate import POTemplate
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
@@ -1691,27 +1692,39 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                      orderBy=['-priority', 'name'])
         return shortlist(result, 2000)
 
-    def getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            iscurrent IS TRUE AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            Distribution.official_rosetta IS TRUE
-            ''' % sqlvalues(self),
-            clauseTables = ['DistroSeries', 'Distribution'],
-            orderBy=['-priority', 'name'])
-        return shortlist(result, 2000)
-
-    def getCurrentTranslationFiles(self):
-        """See `IHasTranslationTemplates`."""
+        from lp.registry.model.distribution import Distribution
         store = Store.of(self)
+
+        looking_for = POTemplate
+        if just_ids:
+            looking_for = POTemplate.id
+
         result = store.find(
-            POFile,
+            looking_for,
+            POTemplate.iscurrent == True,
+            POTemplate.distroseries == self,
+            DistroSeries.id == self.id,
+            DistroSeries.distribution == Distribution.id,
+            Distribution.official_rosetta == True)
+        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
+
+    def getCurrentTranslationFiles(self, just_ids=False):
+        """See `IHasTranslationTemplates`."""
+        from lp.registry.model.distribution import Distribution
+        store = Store.of(self)
+
+        looking_for = POFile
+        if just_ids:
+            looking_for = POFile.id
+
+        result = store.find(
+            looking_for,
             POFile.potemplate == POTemplate.id,
             POTemplate.iscurrent == True,
             POTemplate.distroseries == self,
+            DistroSeries.id == self.id,
             DistroSeries.distribution == Distribution.id,
             Distribution.official_rosetta == True)
         return result

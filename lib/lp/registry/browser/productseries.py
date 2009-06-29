@@ -372,14 +372,14 @@ class ProductSeriesTranslationsExportView(BaseExportView):
         pofiles = []
         translation_templates = self.context.getCurrentTranslationTemplates()
         pofiles = self.context.getCurrentTranslationFiles()
-        if not bool(pofiles):
+        if not bool(pofiles.any()):
             pofiles = None
         return (translation_templates, pofiles)
 
     def getDefaultFormat(self):
         """Return the default template format."""
         templates = self.context.getCurrentTranslationTemplates()
-        if len(templates) == 0:
+        if not bool(templates.any()):
             return None
         return templates[0].source_file_format
 
@@ -416,7 +416,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin,
 
         # Whether there is more than one PO template.
         self.has_multiple_templates = len(
-            self.context.getCurrentTranslationTemplates()) > 1
+            self.context.getCurrentTranslationTemplates()[:2]) > 1
 
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu

@@ -431,32 +431,43 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                                      orderBy=['-priority','name'])
         return shortlist(result, 300)
 
-    def _getCurrentTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            productseries = %s AND
-            productseries = ProductSeries.id AND
-            iscurrent IS TRUE AND
-            ProductSeries.product = Product.id AND
-            Product.official_rosetta IS TRUE
-            ''' % sqlvalues(self),
-            orderBy=['-priority','name'],
-            clauseTables = ['ProductSeries', 'Product'])
-        return result
-
-    def getCurrentTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        return shortlist(self._getCurrentTranslationTemplates(), 300)
-
-    def getCurrentTranslationFiles(self):
+    def _getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
         from lp.registry.model.product import Product
         store = Store.of(self)
+
+        looking_for = POTemplate
+        if just_ids:
+            looking_for = POTemplate.id
+
         result = store.find(
-            POFile,
+            looking_for,
+            POTemplate.iscurrent == True,
+            POTemplate.productseries == self,
+            ProductSeries.id == self.id,
+            ProductSeries.product == Product.id,
+            Product.official_rosetta == True)
+        return result.order_by(['-priority', 'name'])
+
+    def getCurrentTranslationTemplates(self, just_ids=False):
+        """See `IHasTranslationTemplates`."""
+        return shortlist(self._getCurrentTranslationTemplates(), 300)
+
+    def getCurrentTranslationFiles(self, just_ids=False):
+        """See `IHasTranslationTemplates`."""
+        from lp.registry.model.product import Product
+        store = Store.of(self)
+
+        looking_for = POFile
+        if just_ids:
+            looking_for = POFile.id
+
+        result = store.find(
+            looking_for,
             POFile.potemplate == POTemplate.id,
             POTemplate.iscurrent == True,
             POTemplate.productseries == self,
+            ProductSeries.id == self.id,
             ProductSeries.product == Product.id,
             Product.official_rosetta == True)
         return result

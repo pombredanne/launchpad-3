@@ -581,31 +581,44 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             sourcepackagename=self.sourcepackagename)
         return shortlist(result.orderBy(['-priority', 'name']), 300)
 
-    def getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            sourcepackagename = %s AND
-            iscurrent IS TRUE AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            Distribution.official_rosetta IS TRUE
-            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
-            clauseTables = ['DistroSeries', 'Distribution'])
-        return shortlist(result.orderBy(['-priority', 'name']), 300)
+        store = Store.of(self.sourcepackagename)
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.distribution import Distribution
 
-    def getCurrentTranslationFiles(self):
+        looking_for = POTemplate
+        if just_ids:
+            looking_for = POTemplate.id
+
+        result = store.find(
+            looking_for,
+            POTemplate.iscurrent == True,
+            POTemplate.distroseries == self.distroseries,
+            POTemplate.sourcepackagename == self.sourcepackagename,
+            DistroSeries.id == self.distroseries.id,
+            DistroSeries.distribution == Distribution.id,
+            Distribution.official_rosetta == True)
+        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
+
+    def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
         store = Store.of(self.sourcepackagename)
         from canonical.launchpad.database.pofile import POFile
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.distribution import Distribution
+
+        looking_for = POFile
+        if just_ids:
+            looking_for = POFile.id
+
         result = store.find(
-            POFile,
+            looking_for,
             POFile.potemplate == POTemplate.id,
             POTemplate.iscurrent == True,
             POTemplate.distroseries == self.distroseries,
             POTemplate.sourcepackagename == self.sourcepackagename,
+            DistroSeries.id == self.distroseries.id,
             DistroSeries.distribution == Distribution.id,
             Distribution.official_rosetta == True)
         return result
