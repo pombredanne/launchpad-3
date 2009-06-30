@@ -16,6 +16,7 @@ import traceback
 import xmlrpclib
 
 from cStringIO import StringIO
+from random import shuffle
 
 # pylint: disable-msg=F0401
 from Mailman import Errors
@@ -301,7 +302,12 @@ class XMLRPCRunner(Runner):
                        for list_name in Utils.list_names()
                        if list_name <> mm_cfg.MAILMAN_SITE_LIST)
         # Batch the subscription requests in order to reduce the possibility
-        # of timeouts in the XMLRPC server.
+        # of timeouts in the XMLRPC server.  Note that we cannot eliminate
+        # timeouts, which will cause an entire batch to fail.  To reduce the
+        # possibility that the same batch of teams will always fail, we
+        # shuffle the list of team names so the batches will always be
+        # different.
+        shuffle(lists)
         while lists:
             batch = lists[:mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE]
             lists = lists[mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE:]
@@ -312,9 +318,11 @@ class XMLRPCRunner(Runner):
                 info = self._proxy.getMembershipInformation(batch)
             except (xmlrpclib.ProtocolError, socket.error), error:
                 log_exception('Cannot talk to Launchpad: %s', error)
+                syslog('xmlrpc', 'batch: %s', batch)
                 continue
             except xmlrpclib.Fault, error:
                 log_exception('Launchpad exception: %s', error)
+                syslog('xmlrpc', 'batch: %s', batch)
                 continue
             for list_name in info:
                 subscription_info = info[list_name]
