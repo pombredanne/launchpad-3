@@ -53,7 +53,7 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
                                       StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
-    enable_only = ['overview', 'bugs', 'answers']
+    enable_only = ['overview', 'bugs', 'answers', 'branches']
 
 
 class DistributionSourcePackageOverviewMenu(ApplicationMenu):
