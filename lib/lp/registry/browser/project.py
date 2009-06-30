@@ -35,7 +35,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
-from zope.security.interfaces import Unauthorized
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -47,7 +46,7 @@ from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.product import (
-    ProductAddView, ProductAddViewBase, ProjectAddStepOne, ProjectAddStepTwo)
+    ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.answers.browser.question import QuestionAddView
@@ -62,7 +61,6 @@ from canonical.launchpad.webapp import (
     Navigation, StandardLaunchpadFacets, stepthrough, structured)
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets.popup import SinglePopupWidget
-from canonical.widgets.product import GhostWidget
 
 
 class ProjectNavigation(Navigation):

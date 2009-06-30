@@ -1738,7 +1738,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         by oldOwner of the product.
 
         """
-        from zope.security.proxy import removeSecurityProxy
         import_queue = getUtility(ITranslationImportQueue)
         for entry in import_queue.getAllEntries(target=product):
             if entry.importer == oldOwner:
