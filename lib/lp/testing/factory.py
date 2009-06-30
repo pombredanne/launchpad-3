@@ -1316,7 +1316,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
-        
+
         :param distribution: Supply IDistribution, defaults to a new one
             made with makeDistribution().
         :param owner: Supper IPerson, defaults to a new one made with
