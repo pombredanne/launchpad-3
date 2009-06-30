@@ -924,7 +924,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         linked_branches = []
         for linked_branch in self.context.bug.linked_branches:
             if check_permission('launchpad.View', linked_branch.branch):
-                linked_branches.append(bug_branch)
+                linked_branches.append(linked_branch)
         return linked_branches
 
     @property

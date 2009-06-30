@@ -248,7 +248,7 @@
               >Experimental</span>)
               <a title="Remove link"
                  tal:condition="show_edit"
-                 tal:attributes="href string:${linked_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+delete;">
+                 tal:attributes="href string:${linked_branch/branch/fmt:url}/+bug/${linked_branch/bug/id}/+delete;">
                 <img src="/@@/remove"/>
               </a>
             </div>

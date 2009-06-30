@@ -751,7 +751,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         "All the dependencies, including dependencies of dependencies.")
     all_blocked = Attribute(
         "All specs blocked on this, and those blocked on the blocked ones.")
-    branch_links = Attribute('The entries that link the branches to the spec')
+    linked_branches = Attribute(
+        'The entries that link the branches to the spec')
 
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '
