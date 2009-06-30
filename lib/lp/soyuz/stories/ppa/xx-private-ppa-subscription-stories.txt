@@ -75,6 +75,9 @@ Create a helper function to print subscriptions:
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
     You have subscribed Joe Smith to PPA for Celso Providelo.
+    If not already subscribed, Joe Smith will be notified of the
+    subscription via email.
+
 
 === Scenario 2: A team is added as a subscriber ===
 
@@ -105,7 +108,8 @@ new subscriber.
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
     You have subscribed Launchpad Developers to PPA for Celso
-    Providelo.
+    Providelo. If not already subscribed, members of Launchpad Developers
+    will be notified of the subscription via email.
 
 == Story 2: An owner edits a subscription for his private archive ==
 

@@ -1509,8 +1509,13 @@ a.info {
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
 .boardCommentDetails {
   background-color: #eee;
-  padding: 0.5em 12px;
   border-bottom: 1px solid #ddd
+}
+.boardCommentDetails td {
+    padding: 0.5em 12px;
+}
+.boardCommentDetails td.bug-comment-index {
+    border-right: 1px solid #ddd;
 }
 .boardCommentBody {padding: 0.5em 12px 0;}
 .boardBugActivityBody {
@@ -1759,9 +1764,27 @@ a.update-retry {
     padding-left: 1em;
 }
 
+/* Information about related PPAs presented in a box */
+.informational.ppa {
+    background: #FAFAFA;
+    border: solid #666;
+    border-width: 1px 2px 2px 1px;
+    color: black;
+    margin: 0 auto 10px auto;
+    padding: 0 10px 10px 20px;
+    width: 80%;
+}
+.informational.ppa::before {
+    content: url(/@@/ppa-large);
+    display: block;
+    margin: -15px 0 -6px -35px;
+}
+
+/* Archive subscription confirmation should be transparent
+ * to users, hence the button styled as a link. */
 form.archive-subscription-activation button {
     border: none;
-    float:left; /* See http://is.gd/1i7TB */
+    float:left; /* Enables underline on hover below. See http://is.gd/1i7TB */
     color: #0033AA;
     background:transparent url(/@@/info) no-repeat scroll left center;
     padding: 0 0 0 15px;
@@ -1769,10 +1792,10 @@ form.archive-subscription-activation button {
     cursor: pointer;
     font-size: 100%;
 }
-
 form.archive-subscription-activation button:hover {
     text-decoration: underline;
 }
+
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}

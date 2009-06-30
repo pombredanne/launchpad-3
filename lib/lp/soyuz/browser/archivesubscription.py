@@ -19,17 +19,19 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import implements
+from zope.interface import Interface, implements
+from zope.schema import Date, Text
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad import _
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IArchiveSubscriberUI,
-    IPersonalArchiveSubscription)
+    IArchiveSubscriberSet, IPersonalArchiveSubscription)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -75,6 +77,28 @@ def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
         return None
     else:
         return PersonalArchiveSubscription(subscriber, archive)
+
+
+class IArchiveSubscriberUI(Interface):
+    """A custom interface for user interaction with archive subscriptions.
+
+    IArchiveSubscriber uses a datetime field for date_expires, whereas
+    we simply want to use a date field when users create or edit new
+    subscriptions.
+    """
+    subscriber = ParticipatingPersonChoice(
+        title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
+        description=_("The person or team to subscribe."))
+
+    date_expires = Date(
+        title=_("Date of Expiration"), required=False,
+        description=_("The date when the subscription will expire. "
+                      "Leave this blank for subscriptions that should "
+                      "never expire."))
+
+    description = Text(
+        title=_("Description"), required=False,
+        description=_("Optional notes about this subscription."))
 
 
 class ArchiveSubscribersView(LaunchpadFormView):
@@ -157,8 +181,20 @@ class ArchiveSubscribersView(LaunchpadFormView):
             description=data['description'],
             date_expires=date_expires)
 
-        notification = "You have subscribed %s to %s." % (
-            data['subscriber'].displayname, self.context.displayname)
+        subscriber_individuals = data['subscriber'].displayname
+        if data['subscriber'].is_team:
+            subscriber_individuals = "members of " + subscriber_individuals
+
+        notification = (
+            "You have subscribed %(subscriber)s to %(archive)s. "
+            "If not already subscribed, %(subscriber_individuals)s "
+            "will be notified of the subscription via email."
+            ) % {
+                'subscriber': data['subscriber'].displayname,
+                'archive': self.context.displayname,
+                'subscriber_individuals': subscriber_individuals,
+                }
+
         self.request.response.addNotification(structured(notification))
 
         # Just ensure a redirect happens (back to ourselves).
