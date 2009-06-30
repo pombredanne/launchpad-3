@@ -480,9 +480,10 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             committer='J. Random Hacker <jrandom@example.org>')
         return branch, tree
 
-    def test_getMergeAuthors(self):
+    def makeRevisionsAddedWithMergeCommit(self):
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
+        tree.branch.nick = 'nicholas'
         tree.commit('rev1')
         tree2 = tree.bzrdir.sprout('tree2').open_workingtree()
         tree2.commit('rev2a', committer='foo@')
@@ -491,8 +492,12 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
         tree3.commit('rev2c', committer='qux@')
         tree.merge_from_branch(tree3.branch)
-        tree.commit('rev2b', rev_id='rev2b')
-        job = RevisionsAddedJob.create(branch, 'rev2b', 'rev2b', '')
+        tree.commit('rev2b', rev_id='rev2b', timestamp=1000, timezone=0,
+            committer='J. Random Hacker <jrandom@example.org>')
+        return RevisionsAddedJob.create(branch, 'rev2b', 'rev2b', '')
+
+    def test_getMergeAuthors(self):
+        job = self.makeRevisionsAddedWithMergeCommit()
         job.bzr_branch.lock_write()
         self.addCleanup(job.bzr_branch.unlock)
         self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
@@ -512,6 +517,19 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
         '  rev1\n', message)
+
+    def test_getRevisionMessage_with_merge_authors(self):
+        job = self.makeRevisionsAddedWithMergeCommit()
+        message = job.getRevisionMessage('rev2b', 1)
+        self.assertEqual(
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'author: bar@, baz@, foo@, qux@\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2b\n', message)
 
     def test_email_format(self):
         """Contents of the email are as expected."""

@@ -11,7 +11,8 @@ import shutil
 from StringIO import StringIO
 
 from bzrlib.bzrdir import BzrDirMetaFormat1
-from bzrlib.log import log_formatter, show_log
+from bzrlib.log import (
+    _DefaultLogGenerator, Logger, LongLogFormatter, make_log_request_dict)
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
@@ -472,12 +473,29 @@ class RevisionsAddedJob(BranchJobDerived):
         """
         info = RevisionInfo(self.bzr_branch, revno, revision_id)
         outf = StringIO()
-        lf = log_formatter('long', to_file=outf)
-        show_log(self.bzr_branch,
-                 lf,
-                 start_revision=info,
-                 end_revision=info,
-                 verbose=True)
+        lf = LongLogFormatter(to_file=outf)
+        rqst = make_log_request_dict(direction='reverse', start_revision=info,
+                                     end_revision=info, delta_type='full')
+        self.bzr_branch.lock_read()
+        merge_authors = self.getMergeAuthors(revision_id)
+        self.bzr_branch.unlock()
+
+        class LaunchpadLogGenerator(_DefaultLogGenerator):
+
+            def iter_log_revisions(self):
+                iterator = _DefaultLogGenerator.iter_log_revisions(self)
+                for log_revision in iterator:
+                    if len(merge_authors) > 0:
+                        authors = '\n'.join(sorted(merge_authors))
+                        log_revision.rev.properties['authors'] = authors
+                    yield log_revision
+
+        class LaunchpadLogger(Logger):
+
+            def _generator_factory(self, branch, rqst):
+                return LaunchpadLogGenerator(branch, rqst)
+
+        LaunchpadLogger(self.bzr_branch, rqst).show(lf)
         return outf.getvalue()
 
 
