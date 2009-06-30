@@ -33,6 +33,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp import canonical_url
 from lp.code.bzr import (
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
@@ -516,6 +517,13 @@ class RevisionsAddedJob(BranchJobDerived):
                 outf.write('Related merge proposals:\n')
             for bmp in bmps:
                 outf.write('  %s\n' % canonical_url(bmp))
+                proposer = bmp.registrant
+                outf.write('  proposed by: %s (%s)\n' % (proposer.displayname,
+                                                         proposer.name))
+                if (bmp.reviewer is not None and bmp.queue_status ==
+                    BranchMergeProposalStatus.CODE_APPROVED):
+                    outf.write('  approved by: %s (%s)\n' %
+                               (bmp.reviewer.displayname, bmp.reviewer.name))
             lf = LongLogFormatter(to_file=outf)
             rqst = make_log_request_dict(direction='reverse',
                                          start_revision=info,
