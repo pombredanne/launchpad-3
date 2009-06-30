@@ -616,26 +616,12 @@
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
         name="+edit"/>
     <browser:page
-        name="+edit"
+        name="+delete"
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
-        class="lp.bugs.browser.bugbranch.BugBranchEditView"
+        class="lp.bugs.browser.bugbranch.BugBranchDeleteView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/bugbranch-edit.pt"/>
-    <browser:page
-        name="+branch-edit"
-        for="lp.bugs.interfaces.bugbranch.IBugBranch"
-        class="lp.bugs.browser.bugbranch.BugBranchBranchInlineEditView"
-        facet="branches"
-        permission="launchpad.Edit"
-        template="../templates/bugbranch-inline-edit.pt"/>
-    <browser:page
-        name="+bug-edit"
-        for="lp.bugs.interfaces.bugbranch.IBugBranch"
-        class="lp.bugs.browser.bugbranch.BugBranchBugInlineEditView"
-        facet="branches"
-        permission="launchpad.Edit"
-        template="../templates/bugbranch-inline-edit.pt"/>
+        template="../templates/bugbranch-delete.pt"/>
     <facet
         facet="bugs">
         <browser:menus

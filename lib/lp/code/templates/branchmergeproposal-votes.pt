@@ -19,7 +19,8 @@
       <td>
         <tal:reviewer replace="structure review/reviewer/fmt:link:mainsite">
         Eric the Reviewer</tal:reviewer>
-      </td>
+        <tal:community condition="not: review/trusted">
+        (community)</tal:community></td>
       <td tal:content="review/review_type" />
       <td>
         <tal:date-requested condition="review/show_date_requested">

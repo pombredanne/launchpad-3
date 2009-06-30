@@ -42,8 +42,8 @@ to the main merge proposal page.
     This is a very long comment about what things should be done to the
     source branch to land it. When this comment is replied to, it should
     wrap the line properly.
-    >>> print_comments('commentSuffix')
     Reply
+    >>> print_comments('boardCommentFooter')
 
 The person's name links back to the main site for that person.
 
@@ -79,6 +79,7 @@ After this, we are taken to the main page for the merge proposal
     I wish I had time to review it properly
     This is a longer message with several lines
     Email me at eric@vikings-r-us.example.com for more details
+    Reply
 
 Email addresses in code review comments are hidden for users not logged in.
 
@@ -88,7 +89,7 @@ Email addresses in code review comments are hidden for users not logged in.
     I wish I had time to review it properly
     This is a longer message with several lines
     Email me at &lt;email address hidden&gt; for more details
-
+    Reply
 
 == Reviewing ==
 
@@ -102,7 +103,9 @@ vote summary table.
     >>> eric_browser.getControl('Save Review').click()
 
     >>> print_comments('boardCommentDetails', eric_browser, index=2)
-    timeless Abstain   Eric the Viking voted ...second...ago
+    Eric the Viking ...second...ago
+    >>> print_comments('boardCommentFooter', eric_browser, index=0)
+    review: Abstain (timeless)
     >>> print_comments('boardCommentBody', eric_browser, index=2)
 
 
@@ -113,6 +116,7 @@ in a table at the top of the page.
 
     >>> print extract_text(find_tag_by_id(
     ...     eric_browser.contents, 'code-review-votes'))
-    Reviewer         Review Type    Date Requested    Status
-    Eric the Viking  timeless       ...               Abstain ...second...ago
+    Reviewer                     Review Type    Date Requested    Status
+    Eric the Viking (community)  timeless       ...               Abstain...
+    second...ago
     Review via email: mp+1@code.launchpad.dev

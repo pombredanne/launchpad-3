@@ -862,17 +862,14 @@ class Bug(SQLBase):
 
         return branch is not None
 
-    def addBranch(self, branch, registrant, whiteboard=None, status=None):
+    def addBranch(self, branch, registrant):
         """See `IBug`."""
         for bug_branch in shortlist(self.bug_branches):
             if bug_branch.branch == branch:
                 return bug_branch
-        if status is None:
-            status = IBugBranch['status'].default
 
         bug_branch = BugBranch(
-            branch=branch, bug=self, whiteboard=whiteboard, status=status,
-            registrant=registrant)
+            branch=branch, bug=self, registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
         self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch, self))

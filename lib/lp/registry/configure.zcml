@@ -397,7 +397,9 @@
                 getReleasesAndPublishingHistory
                 upstream_product
                 target_type_display
-                official_bug_tags"/>
+                official_bug_tags
+                findRelatedArchives
+                findRelatedArchivePublications"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
