@@ -494,7 +494,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree3.commit('rev2b', committer='qux@')
         tree.merge_from_branch(tree3.branch)
         if include_ghost:
-            tree.add_parent_tree_id('rev2c')
+            tree.add_parent_tree_id('rev2c-id')
         tree.commit('rev2d', rev_id='rev2d-id', timestamp=1000, timezone=0,
             committer='J. Random Hacker <jrandom@example.org>',
             authors=authors)
