@@ -81,5 +81,5 @@ done
 # Build launchpad if there were changes.
 if [ $FINAL_REV != $INITIAL_REV ];
 then
-    make -C "$LP_TRUNK_NAME"
+    make -C "$LP_TRUNK_PATH"
 fi
