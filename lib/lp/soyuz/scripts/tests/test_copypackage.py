@@ -41,15 +41,14 @@ from lp.soyuz.model.publishing import (
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
-    check_copy, _do_delayed_copy, _do_direct_copy,
-    PackageCopier, re_upload_file, UnembargoSecurityPackage,
-    update_files_privacy)
+    CopyChecker, _do_delayed_copy, _do_direct_copy, PackageCopier,
+    re_upload_file, UnembargoSecurityPackage, update_files_privacy)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     TestCase, TestCaseWithFactory)
 
 
-class TestReUploadFile(TestCaseWithFactory):
+class ReUploadFileTestCase(TestCaseWithFactory):
     """Test `ILibraryFileAlias` reupload helper.
 
     A `ILibraryFileAlias` object can be reupload to a different or
@@ -133,7 +132,7 @@ class TestReUploadFile(TestCaseWithFactory):
         self.assertFileIsReset(private_file)
 
 
-class TestUpdateFilesPrivacy(TestCaseWithFactory):
+class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
     """Test publication `updateFilesPrivacy` helper.
 
     When called for a `SourcePackagePublishingHistory` or a
@@ -384,34 +383,36 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
         self.assertBinaryFilesArePublic(copied_binary, 3)
 
 
-class TestCheckCopyHarness:
+class CopyCheckerHarness:
     """Basic checks common for all scenarios."""
 
     def assertCanCopySourceOnly(self):
-        """check_copy() for source-only copy returns None."""
+        """checkCopy() for source-only copy returns None."""
+        copy_checker = CopyChecker(self.archive, include_binaries=False)
         self.assertIs(
             None,
-            check_copy(self.source, self.archive, self.series,
-                       self.pocket, False))
+            copy_checker.checkCopy(self.source, self.series, self.pocket))
 
     def assertCanCopyBinaries(self):
-        """check_copy() for copy including binaries returns None."""
+        """checkCopy() for copy including binaries returns None."""
+        copy_checker = CopyChecker(self.archive, include_binaries=True)
         self.assertIs(
             None,
-            check_copy(self.source, self.archive, self.series,
-                       self.pocket, True))
+            copy_checker.checkCopy(self.source, self.series, self.pocket))
 
     def assertCannotCopySourceOnly(self, msg):
-        """check_copy() for source-only copy raises CannotCopy."""
+        """checkCopy() for source-only copy raises CannotCopy."""
+        copy_checker = CopyChecker(self.archive, include_binaries=False)
         self.assertRaisesWithContent(
-            CannotCopy, msg, check_copy, self.source, self.archive,
-            self.series, self.pocket, False)
+            CannotCopy, msg,
+            copy_checker.checkCopy, self.source, self.series, self.pocket)
 
     def assertCannotCopyBinaries(self, msg):
-        """check_copy() for copy including binaries raises CannotCopy."""
+        """checkCopy() for copy including binaries raises CannotCopy."""
+        copy_checker = CopyChecker(self.archive, include_binaries=True)
         self.assertRaisesWithContent(
-            CannotCopy, msg, check_copy, self.source, self.archive,
-            self.series, self.pocket, True)
+            CannotCopy, msg,
+            copy_checker.checkCopy, self.source, self.series, self.pocket)
 
     def test_cannot_copy_binaries_from_building(self):
         [build] = self.source.createMissingBuilds()
@@ -446,12 +447,12 @@ class TestCheckCopyHarness:
         self.assertCanCopyBinaries()
 
 
-class TestCheckCopyHarnessSameArchive(TestCaseWithFactory,
-                                      TestCheckCopyHarness):
+class CopyCheckerSameArchiveHarness(TestCaseWithFactory,
+                                    CopyCheckerHarness):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestCheckCopyHarnessSameArchive, self).setUp()
+        super(CopyCheckerSameArchiveHarness, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
         self.source = self.test_publisher.getPubSource()
@@ -511,12 +512,12 @@ class TestCheckCopyHarnessSameArchive(TestCaseWithFactory,
             'destination archive')
 
 
-class TestCheckCopyHarnessDifferentArchive(TestCaseWithFactory,
-                                           TestCheckCopyHarness):
+class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
+                                         CopyCheckerHarness):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestCheckCopyHarnessDifferentArchive, self).setUp()
+        super(CopyCheckerDifferentArchiveHarness, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
         self.source = self.test_publisher.getPubSource()
@@ -548,17 +549,17 @@ class TestCheckCopyHarnessDifferentArchive(TestCaseWithFactory,
         self.assertCanCopySourceOnly()
 
 
-class TestCheckCopy(TestCaseWithFactory):
+class CopyCheckerTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestCheckCopy, self).setUp()
+        super(CopyCheckerTestCase, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
 
-    def testCannotCopyExpiredBinaries(self):
-        # check_copy() raises CannotCopy if the copy includes binaries
+    def test_checkCopy_cannot_copy_expired_binaries(self):
+        # checkCopy() raises CannotCopy if the copy includes binaries
         # and the binaries contain expired files. Publications of
         # expired files can't be processed by the publisher since
         # the file is unreachable.
@@ -575,10 +576,12 @@ class TestCheckCopy(TestCaseWithFactory):
         pocket = source.pocket
 
         # At this point copy is allowed with or without binaries.
+        copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertIs(
-            None, check_copy(source, archive, series, pocket, False))
+            None, copy_checker.checkCopy(source, series, pocket))
+        copy_checker = CopyChecker(archive, include_binaries=True)
         self.assertIs(
-            None, check_copy(source, archive, series, pocket, True))
+            None, copy_checker.checkCopy(source, series, pocket))
 
         # Set the expiration date of one of the testing binary files.
         utc = pytz.timezone('UTC')
@@ -587,16 +590,18 @@ class TestCheckCopy(TestCaseWithFactory):
         a_binary_file.libraryfile.expires = old_date
 
         # Now source-only copies are allowed.
+        copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertIs(
-            None, check_copy(source, archive, series, pocket, False))
+            None, copy_checker.checkCopy(source, series, pocket))
 
         # Copies with binaries are denied.
+        copy_checker = CopyChecker(archive, include_binaries=True)
         self.assertRaisesWithContent(
             CannotCopy,
             'source has expired binaries',
-            check_copy, source, archive, series, pocket, True)
+            copy_checker.checkCopy, source, series, pocket)
 
-    def test_check_copy_forbids_copies_from_other_distributions(self):
+    def test_checkCopy_forbids_copies_from_other_distributions(self):
         # We currently deny copies to series that are not for the Archive
         # distribution, because they will never be published. And abandoned
         # copies like these keep triggering the PPA publication spending
@@ -617,18 +622,59 @@ class TestCheckCopy(TestCaseWithFactory):
 
         # Copy of sources to series in another distribution, cannot be
         # performed.
+        copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertRaisesWithContent(
             CannotCopy,
             'Cannot copy to an unsupported distribution: ubuntu.',
-            check_copy, source, archive, series, pocket, False)
+            copy_checker.checkCopy, source, series, pocket)
+
+    def test_checkCopy_identifies_conflicting_copy_candidates(self):
+        # checkCopy() is able to identify conflicting candidates within
+        # the copy batch.
+
+        # Create a source with binaries in ubuntutest/breezy-autotest.
+        source = self.test_publisher.getPubSource(
+            architecturehintlist='i386')
+        binary = self.test_publisher.getPubBinaries(
+            pub_source=source)[0]
+
+        # Copy it with binaries to ubuntutest/hoary-test.
+        hoary = self.test_publisher.ubuntutest.getSeries('hoary-test')
+        self.test_publisher.addFakeChroots(hoary)
+        copied_source = source.copyTo(hoary, source.pocket, source.archive)
+        binary.copyTo(hoary, source.pocket, source.archive)
+
+        # Create a fresh PPA for ubuntutest, which will be the copy
+        # destination and initialise a CopyChecker for it.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        copy_checker = CopyChecker(archive, include_binaries=False)
+
+        # The first source-only copy is allowed, thus stored in the
+        # copy checker inventory.
+        self.assertIs(
+            None,
+            copy_checker.checkCopy(
+                source, source.distroseries, source.pocket))
+        copy_checker.addCopy(source)
+
+        # The second source-only copy, for hoary-test, fails, since it
+        # conflicts with the just-approved copy.
+        self.assertRaisesWithContent(
+            CannotCopy,
+            'same version already building in the destination archive '
+            'for Breezy Badger Autotest',
+            copy_checker.checkCopy,
+            copied_source, copied_source.distroseries, copied_source.pocket)
 
 
-class TestDoDirectCopy(TestCaseWithFactory):
+class DoDirectCopyTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestDoDirectCopy, self).setUp()
+        super(DoDirectCopyTestCase, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
 
@@ -672,12 +718,12 @@ class TestDoDirectCopy(TestCaseWithFactory):
             [copy.displayname for copy in copies])
 
 
-class TestDoDelayedCopy(TestCaseWithFactory):
+class DoDelayedCopyTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestDoDelayedCopy, self).setUp()
+        super(DoDelayedCopyTestCase, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
 
     def createDelayedCopyContext(self):
@@ -755,7 +801,7 @@ class TestDoDelayedCopy(TestCaseWithFactory):
             [custom.libraryfilealias for custom in delayed_copy.customfiles])
 
 
-class TestCopyPackageScript(unittest.TestCase):
+class CopyPackageScriptTestCase(unittest.TestCase):
     """Test the copy-package.py script."""
     layer = LaunchpadZopelessLayer
 
@@ -820,7 +866,7 @@ class TestCopyPackageScript(unittest.TestCase):
         self.assertEqual(num_bin_pub + 4, num_bin_pub_after)
 
 
-class TestCopyPackage(TestCase):
+class CopyPackageTestCase(TestCase):
     """Test the CopyPackageHelper class."""
     layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser
@@ -1759,7 +1805,7 @@ class TestCopyPackage(TestCase):
         self.assertEqual(
             copy_helper.logger.buffer.getvalue().splitlines()[-1],
             'ERROR: foo 1.0 in hoary '
-            '(Cannot copy private source into public archives.)')
+            '(cannot copy private files into public archives)')
 
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""

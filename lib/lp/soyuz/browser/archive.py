@@ -70,8 +70,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation)
-from lp.soyuz.scripts.packagecopier import (
-    check_copy, do_copy)
+from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -772,7 +771,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
             self.setFieldError('selected_sources', 'No sources selected.')
 
     @action(_("Request Deletion"), name="delete", validator="validate_delete")
-    def action_delete(self, action, data):
+    def delete_action(self, action, data):
         """Perform the deletion of the selected packages.
 
         The deletion will be performed upon the 'selected_sources' contents
@@ -936,23 +935,24 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    required=True))
 
     @action(_("Update"), name="update")
-    def action_update(self, action, data):
+    def update_action(self, action, data):
         """Simply re-issue the form with the new values."""
         pass
 
-    def validate_copy(self, action, data):
-        """Validate copy parameters.
+    @action(_("Copy Packages"), name="copy")
+    def copy_action(self, action, data):
+        """Perform the copy of the selected packages.
 
-        Ensure we have:
+        Ensure that at least one source is selected. Executes `do_copy`
+        for all the selected sources.
 
-         * At least, one source selected;
-         * The default series input is not given when copying to the
-           context PPA;
-         * The select destination fits all selected sources.
+        If `do_copy` raises `CannotCopy` the error content is set as
+        the 'selected_sources' field error.
+
+        if `do_copy` succeeds, an informational messages is set containing
+        the copied packages.
         """
-        form.getWidgetsData(self.widgets, 'field', data)
-
-        selected_sources = data.get('selected_sources', [])
+        selected_sources = data.get('selected_sources')
         destination_archive = data.get('destination_archive')
         destination_series = data.get('destination_series')
         include_binaries = data.get('include_binaries')
@@ -962,47 +962,27 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             self.setFieldError('selected_sources', 'No sources selected.')
             return
 
-        broken_copies = []
-        for source in selected_sources:
-            if destination_series is None:
-                destination_series = source.distroseries
-            try:
-                check_copy(
-                    source, destination_archive, destination_series,
-                    destination_pocket, include_binaries)
-            except CannotCopy, reason:
-                broken_copies.append(
-                    "%s (%s)" % (source.displayname, reason))
+        try:
+            copies = do_copy(
+                selected_sources, destination_archive, destination_series,
+                destination_pocket, include_binaries)
+        except CannotCopy, error:
+            messages = []
+            error_lines = str(error).splitlines()
+            if len(error_lines) == 1:
+                messages.append(
+                    "<p>The following source cannot be copied:</p>")
+            else:
+                messages.append(
+                    "<p>The following sources cannot be copied:</p>")
+            messages.append('<ul>')
+            messages.append(
+                "\n".join('<li>%s</li>' % line for line in error_lines))
+            messages.append('</ul>')
 
-        if len(broken_copies) == 0:
+            self.setFieldError(
+                'selected_sources', structured('\n'.join(messages)))
             return
-
-        if len(broken_copies) == 1:
-            error_message = (
-                "The following source cannot be copied: %s"
-                % broken_copies[0])
-        else:
-            error_message = (
-                "The following sources cannot be copied:\n%s" %
-                ",\n".join(broken_copies))
-
-        self.setFieldError('selected_sources', error_message)
-
-    @action(_("Copy Packages"), name="copy", validator="validate_copy")
-    def action_copy(self, action, data):
-        """Perform the copy of the selected packages."""
-        if len(self.errors) != 0:
-            return
-
-        selected_sources = data.get('selected_sources')
-        destination_archive = data.get('destination_archive')
-        destination_series = data.get('destination_series')
-        include_binaries = data.get('include_binaries')
-        destination_pocket = self.default_pocket
-
-        copies = do_copy(
-            selected_sources, destination_archive, destination_series,
-            destination_pocket, include_binaries)
 
         # Present a page notification describing the action.
         messages = []
@@ -1337,7 +1317,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                 "Public PPAs cannot depend on private ones.")
 
     @action(_("Save"), name="save")
-    def action_save(self, action, data):
+    def save_action(self, action, data):
         """Save dependency configuration changes.
 
         See `_remove_dependencies`, `_add_ppa_dependencies` and
@@ -1420,7 +1400,7 @@ class ArchiveActivateView(LaunchpadFormView):
                 "PPA Terms of Service must be accepted to activate a PPA.")
 
     @action(_("Activate"), name="activate")
-    def action_save(self, action, data):
+    def save_action(self, action, data):
         """Activate a PPA and moves to its page."""
 
         # 'name' field is omitted from the form data for default PPAs and
@@ -1471,12 +1451,12 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
     field_names = []
 
     @action(_("Save"), name="save", validator="validate_save")
-    def action_save(self, action, data):
+    def save_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
+    def cancel_action(self, action, data):
         self.next_url = canonical_url(self.context)
 
     def validate_save(self, action, data):

@@ -81,7 +81,7 @@ from lp.soyuz.interfaces.publishing import (
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.soyuz.scripts.packagecopier import (
-    CannotCopy, check_copy, do_copy)
+    CannotCopy, do_copy)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -1037,19 +1037,7 @@ class Archive(SQLBase):
         else:
             series = None
 
-        # Validate the copy.
-        broken_copies = []
-        for source in sources:
-            try:
-                check_copy(
-                    source, self, series, pocket, include_binaries)
-            except CannotCopy, reason:
-                broken_copies.append("%s (%s)" % (source.displayname, reason))
-
-        if len(broken_copies) != 0:
-            raise CannotCopy("\n".join(broken_copies))
-
-        # Perform the copy.
+        # Perform the copy, may raise CannotCopy.
         copies = do_copy(
             sources, self, series, pocket, include_binaries)
 
