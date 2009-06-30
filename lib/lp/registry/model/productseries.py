@@ -433,14 +433,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                                      orderBy=['-priority','name'])
         return shortlist(result, 300)
 
-    def getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
         # Avoid circular imports.
         from lp.registry.model.product import Product
 
         store = Store.of(self)
+        if just_ids:
+            looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
+
         result = store.find(
-            POTemplate,
+            looking_for,
             POTemplate.iscurrent == True,
             POTemplate.productseries == self,
             ProductSeries.id == self.id,

@@ -583,15 +583,20 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             sourcepackagename=self.sourcepackagename)
         return shortlist(result.orderBy(['-priority', 'name']), 300)
 
-    def getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
         # Avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.distribution import Distribution
 
         store = Store.of(self.sourcepackagename)
+        if just_ids:
+            looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
+
         result = store.find(
-            POTemplate,
+            looking_for,
             POTemplate.iscurrent == True,
             POTemplate.distroseries == self.distroseries,
             POTemplate.sourcepackagename == self.sourcepackagename,

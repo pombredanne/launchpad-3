@@ -636,3 +636,17 @@ And GNU tar can cope with it.
     ...     tarfile_string)
     >>> pofile.split('\n')[0]
     '# traducci\xc3\xb3n de es.po al Spanish'
+
+
+= HasTranslationTemplates =
+
+This provides several methods for dealing with objects which can
+hold multiple translation templates, such as ProductSeries,
+DistroSeries or SourcePackages.
+
+    >>> from canonical.launchpad.database.potemplate import (
+    ...     HasTranslationTemplates)
+    >>> from canonical.launchpad.interfaces.potemplate import (
+    ...     IHasTranslationTemplates)
+    >>> verifyObject(IHasTranslationTemplates, HasTranslationTemplates)
+    True
