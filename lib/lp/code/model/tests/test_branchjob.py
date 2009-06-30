@@ -938,7 +938,7 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         """
         hosted = config.codehosting.hosted_branches_root
         shutil.rmtree(hosted, ignore_errors=True)
-        os.mkdir(hosted)
+        os.makedirs(hosted)
         self.addCleanup(shutil.rmtree, hosted)
         mirrored = config.codehosting.mirrored_branches_root
         shutil.rmtree(mirrored, ignore_errors=True)
