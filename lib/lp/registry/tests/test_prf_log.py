@@ -5,9 +5,7 @@
 
 """Tests for canonical.launchpad.productreleasefinder.log."""
 
-__copyright__ = "Copyright © 2005 Canonical Ltd."
 __author__    = "Scott James Remnant <scott@canonical.com>"
-
 
 import unittest
 
