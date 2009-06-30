@@ -919,13 +919,13 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         return self.comments[0].text_contents != self.context.bug.description
 
     @cachedproperty
-    def bug_branches(self):
+    def linked_branches(self):
         """Filter out the bug_branch links to non-visible private branches."""
-        bug_branches = []
-        for bug_branch in self.context.bug.bug_branches:
-            if check_permission('launchpad.View', bug_branch.branch):
-                bug_branches.append(bug_branch)
-        return bug_branches
+        linked_branches = []
+        for linked_branch in self.context.bug.linked_branches:
+            if check_permission('launchpad.View', linked_branch.branch):
+                linked_branches.append(bug_branch)
+        return linked_branches
 
     @property
     def days_to_expiration(self):

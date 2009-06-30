@@ -255,7 +255,7 @@ class Bug(SQLBase):
     questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
-    bug_branches = SQLMultipleJoin(
+    linked_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
@@ -864,7 +864,7 @@ class Bug(SQLBase):
 
     def linkBranch(self, branch, registrant):
         """See `IBug`."""
-        for bug_branch in shortlist(self.bug_branches):
+        for bug_branch in shortlist(self.linked_branches):
             if bug_branch.branch == branch:
                 return bug_branch
 

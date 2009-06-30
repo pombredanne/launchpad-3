@@ -240,7 +240,7 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
             readonly=True))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
-    bug_branches = Attribute(
+    linked_branches = Attribute(
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
     tags = exported(
