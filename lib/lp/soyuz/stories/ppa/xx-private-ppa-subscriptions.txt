@@ -107,7 +107,7 @@ heading:
     >>> cprov_browser.open("/~cprov/+archivesubscriptions")
     >>> h1_heading = find_main_content(cprov_browser.contents).find('h1')
     >>> print extract_text(h1_heading)
-    Celso Providelo's private archive subscriptions
+    Private PPA subscriptions
 
 A person who is not subscribed to any archives will see an appropriate
 explanation if they try to view their archive subscriptions:
@@ -136,18 +136,17 @@ listed in the current subscriptions area:
     >>> for row in find_tags_by_class(joe_browser.contents,
     ...                               'archive-subscription-row'):
     ...     print extract_text(row)
-    Archive                       Status
-    ...PPA for Mark Shuttleworth  Pending    Confirm
-    ...PPA for Celso Providelo    Pending    Confirm
+    Archive
+    PPA for Mark Shuttleworth    View
+    PPA for Celso Providelo      View
 
 == Confirming a subscription ==
 
-When a person clicks on the confirm link, they are taken to a page
-displaying the subscription and requesting their confirmation.
+When a person clicks on the view button, the subscription is confirmed
+automatically (creating a token for the user) and they are taken to a page
+displaying their subscription.
 
-    >>> joe_browser.getLink(text="Confirm").click()
-    >>> joe_browser.getControl(name='activate').click()
-
+    >>> joe_browser.getControl(name="activate", index=0).click()
     >>> sources_list = find_tag_by_id(joe_browser.contents, 'sources_list')
     >>> print(extract_text(sources_list))
     Custom sources.list entries
