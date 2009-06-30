@@ -25,6 +25,7 @@ setup(
         'feedvalidator',
         'launchpadlib',
         'lazr.uri',
+        'mocker',
         'oauth',
         'python-openid',
         'pytz',

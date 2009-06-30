@@ -46,8 +46,8 @@ Now we are redirected to the Overview page of the product series we just added
     Product series add testing
 
     >>> content = find_main_content(browser.contents)
-    >>> print content.find('ul', 'branch').find('a')
-    <a href="http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2">lp://dev/firefox/stable</a>
+    >>> print content.find('ul').find('a')
+    <a class="sprite branch" href="http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2">lp://dev/firefox/stable</a>
 
 
 == Editing a series ==
@@ -103,8 +103,8 @@ The new values are then shown in the series' page.
     Release manager: None Appoint release manager
 
     >>> content = find_main_content(browser.contents)
-    >>> print content.find('ul', 'branch').find('a')
-    <a href="http://code.launchpad.dev/~name12/firefox/main">lp://dev/firefox/unstable</a>
+    >>> print content.find('ul').find('a')
+    <a class="sprite branch" href="http://code.launchpad.dev/~name12/firefox/main">lp://dev/firefox/unstable</a>
 
 
 And if we try to add another series with the same name to same product, we
