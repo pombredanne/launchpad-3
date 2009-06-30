@@ -67,7 +67,7 @@ class BranchPortletSubscribersContent(LaunchpadView):
         """Return a decorated list of branch subscriptions."""
         sorted_subscriptions = sorted(
             self.context.subscriptions,
-            key=lambda subscription: subscription.person.browsername)
+            key=lambda subscription: subscription.person.displayname)
         return [DecoratedSubscription(
                     subscription, self.isEditable(subscription))
                 for subscription in sorted_subscriptions]

@@ -287,7 +287,11 @@ class IDistributionPublic(
     @operation_returns_entry(Interface) # Really IDistroSeries, see below
     @export_read_operation()
     def getSeries(name_or_version):
-        """Return the series with the name or version given."""
+        """Return the series with the name or version given.
+
+        :param name_or_version: The `IDistroSeries.name` or
+            `IDistroSeries.version`.
+        """
 
     def getMirrorByName(name):
         """Return the mirror with the given name for this distribution or None

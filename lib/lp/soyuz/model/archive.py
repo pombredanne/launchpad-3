@@ -51,6 +51,7 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadSource)
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
@@ -174,6 +175,9 @@ class Archive(SQLBase):
 
     signing_key = ForeignKey(
         foreignKey='GPGKey', dbName='signing_key', notNull=False)
+
+    relative_build_score = IntCol(
+        dbName='relative_build_score', notNull=True, default=0)
 
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
@@ -1356,7 +1360,6 @@ class ArchiveSet:
             query, limit=5, clauseTables=['Archive', 'DistroSeries'],
             orderBy=['-datecreated', '-id'])
 
-
     def getMostActivePPAsForDistribution(self, distribution):
         """See `IArchiveSet`."""
         cur = cursor()
@@ -1490,3 +1493,29 @@ class ArchiveSet:
             *extra_exprs)
 
         return query
+
+    def getPublicationsInArchives(self, source_package_name, archive_list,
+                                  distribution):
+        """See `IArchiveSet`."""
+        archive_ids = [archive.id for archive in archive_list]
+
+        store = Store.of(source_package_name)
+
+        # Return all the published source pubs for the given name in the
+        # given list of archives. Note: importing DistroSeries here to
+        # avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        results = store.find(
+            SourcePackagePublishingHistory,
+            Archive.id.is_in(archive_ids),
+            SourcePackagePublishingHistory.archive == Archive.id,
+            (SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED),
+            (SourcePackagePublishingHistory.sourcepackagerelease ==
+                SourcePackageRelease.id),
+            SourcePackageRelease.sourcepackagename == source_package_name,
+            SourcePackagePublishingHistory.distroseries == DistroSeries.id,
+            DistroSeries.distribution == distribution,
+            )
+
+        return results

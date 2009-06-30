@@ -125,7 +125,7 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
                 _("The %s for this project release was deactivated "
                   "so that bugs and blueprints cannot be associated with "
                   "this release." % milestone_link)))
-        self.next_url = canonical_url(newrelease.milestone.productseries)
+        self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
 
     @property

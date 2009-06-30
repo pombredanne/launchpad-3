@@ -98,19 +98,6 @@ Again, attempting to link to the same branch gives an error.
     >>> browser.getControl('Cancel').click()
 
 
-== Editing a Branch Link ==
-
-The edit link in the branches portlet takes us to a form that can be
-used to edit the summary of the branch link:
-
-    >>> browser.getLink(url='branch/sabdfl/firefox/release-0.8').click()
-    >>> back_link = browser.getLink('Support Native SVG Objects')
-    >>> back_link.url
-    'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
-    >>> browser.getControl('Summary').value = 'New summary'
-    >>> browser.getControl('Update').click()
-
-
 == Deleting a Branch Link ==
 
 Users can delete the branch link from the branch link page:
