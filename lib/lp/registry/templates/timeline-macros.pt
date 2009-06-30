@@ -24,40 +24,45 @@
           style="display: none; border: 0"
           scrolling="no"
           width="100%" height="100px"></iframe>
-  <tal:script
-    replace="structure
-    string:&lt;script type='text/javascript'&gt;" />
+  <script>
+  function timeline_iframe(auto_resize, hide_zoom_buttons, include_inactive) {
+      var timeline_url = "+timeline-graph?";
+      if (include_inactive == 'true') {
+          timeline_url += "include_inactive=true&";
+      }
 
-    var auto_resize = '<tal:x replace="auto_resize | nothing"/>';
-    var hide_zoom_buttons = '<tal:x replace="hide_zoom_buttons | nothing"/>';
-    var include_inactive = '<tal:x replace="include_inactive | nothing"/>';
-    <!--
-    var timeline_url = "+timeline-graph?";
-    if (include_inactive == 'true') {
-        timeline_url += "include_inactive=true&";
-    }
-
-    if (auto_resize == 'true') {
-        timeline_url += 'resize_frame=timeline-iframe&';
-    }
-    if (hide_zoom_buttons == 'true') {
-        timeline_url += 'hide_zoom_buttons=true';
-    }
-    YUI().use('node', function(Y) {
-        if (Y.UA.ie) {
-            return;
-        }
-        var loading_el = Y.get('#timeline-loading');
-        loading_el.setStyle('display', 'block');
-        var iframe = Y.get('#timeline-iframe');
-        iframe.set('src', timeline_url);
-        Y.on('load', function(e) {
-            loading_el.setStyle('display', 'none');
-            iframe.setStyle('display', 'block');
-        }, iframe);
-    });
-    -->
-  <tal:script replace="structure string:&lt;/script&gt;" />
+      if (auto_resize == 'true') {
+          timeline_url += 'resize_frame=timeline-iframe&';
+      }
+      if (hide_zoom_buttons == 'true') {
+          timeline_url += 'hide_zoom_buttons=true';
+      }
+      YUI().use('node', function(Y) {
+          if (Y.UA.ie) {
+              return;
+          }
+          var loading_el = Y.get('#timeline-loading');
+          loading_el.setStyle('display', 'block');
+          var iframe = Y.get('#timeline-iframe');
+          iframe.set('src', timeline_url);
+          Y.on('load', function(e) {
+              loading_el.setStyle('display', 'none');
+              iframe.setStyle('display', 'block');
+          }, iframe);
+      });
+  }
+  </script>
+  <script
+    tal:define="
+      auto_resize auto_resize | nothing;
+      hide_zoom_buttons hide_zoom_buttons | nothing;
+      include_inactive include_inactive | nothing"
+    tal:content="string:
+      timeline_iframe(
+        '${auto_resize}',
+        '${hide_zoom_buttons}',
+        '${include_inactive}');
+      "/>
 </metal:timeline-iframe>
 
 </html>
