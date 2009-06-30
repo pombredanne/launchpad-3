@@ -34,7 +34,6 @@ class IHasLinkedBranches(Interface):
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         branch=Reference(schema=IBranch))
-    @operation_returns_entry(IBranch)
     @export_write_operation()
     def linkBranch(branch, registrant):
         """Associate a branch with this bug.

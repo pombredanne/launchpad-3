@@ -86,6 +86,11 @@ IHasMergeProposals['getMergeProposals'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
         IBranchMergeProposal
 
+# IBug
+
+IBug['linkBranch'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBugBranch
+
 # IBugTask
 
 IBugTask['findSimilarBugs'].queryTaggedValue(
