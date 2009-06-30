@@ -37,7 +37,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
