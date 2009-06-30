@@ -54,9 +54,7 @@ class CodeReviewComment(SQLBase):
     @property
     def message_body(self):
         """See `ICodeReviewComment'."""
-        for chunk in self.message:
-            if chunk.content:
-                return chunk.content
+        return self.message.text_contents
 
     def getAttachments(self):
         """See `ICodeReviewComment`."""

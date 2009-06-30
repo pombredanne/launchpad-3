@@ -833,6 +833,85 @@ It works also with user submitted values:
     requested statuses.
 
 
+=== Question listing table ===
+
+The SearchQuestionsView has two attributes that control the columns of
+the question listing table. Products display the default columns of
+Summary, Created, Submitter, Assignee, and Status.
+
+    >>> from canonical.launchpad.layers import AnswersLayer
+    >>> from canonical.launchpad.testing.pages import (
+    ...     extract_text, find_tag_by_id)
+
+    >>> view = create_initialized_view(
+    ...     firefox, name="+questions", layer=AnswersLayer,
+    ...     principal=question_three.owner)
+    >>> view.display_sourcepackage_column
+    False
+    >>> view.display_target_column
+    False
+    >>> table = find_tag_by_id(view.render(), 'question-listing')
+    >>> for row in table.findAll('tr'):
+    ...     print extract_text(row)
+    Summary                Created     Submitter      Assignee  Status
+    6 Newly installed...  2005-10-14   Sample Person  &mdash;   Answered ...
+
+Distribution display the "Source Package" column. The name of the source
+package is displayed if it exists.
+
+    >>> view = create_initialized_view(
+    ...     ubuntu, name="+questions", layer=AnswersLayer,
+    ...     principal=question_three.owner)
+    >>> view.display_sourcepackage_column
+    True
+    >>> view.display_target_column
+    False
+    >>> table = find_tag_by_id(view.render(), 'question-listing')
+    >>> for row in table.findAll('tr'):
+    ...     print extract_text(row)
+    Summary  Created     Submitter      Source Package   Assignee  Status ...
+    8 ...    2006-07-20  Sample Person  mozilla-firefox  &mdash;   Answered
+    7 ...    2005-10-14  Foo Bar        &mdash;          &mdash;   Needs ...
+
+Projects display the "In" column to show the product name.
+
+    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+
+    >>> view = create_initialized_view(
+    ...     mozilla, name="+questions", layer=AnswersLayer,
+    ...     principal=question_three.owner)
+    >>> view.display_sourcepackage_column
+    False
+    >>> view.display_target_column
+    True
+    >>> table = find_tag_by_id(view.render(), 'question-listing')
+    >>> for row in table.findAll('tr'):
+    ...     print extract_text(row)
+    Summary  Created     Submitter      In               Assignee  Status
+    6 ...    2005-10-14  Sample Person  Mozilla Firefox  &mdash;   Answered...
+
+The Assignee column is always displayed. It contains The person assigned to
+the question, or an m-dash if there is no assignee.
+
+    >>> question_six = firefox.getQuestion(6)
+    >>> question_six.assignee = factory.makePerson(
+    ...     name="bob", displayname="Bob")
+    >>> view = create_initialized_view(
+    ...     firefox, name="+questions", layer=AnswersLayer,
+    ...     principal=question_three.owner)
+    >>> view.display_sourcepackage_column
+    False
+    >>> view.display_target_column
+    False
+    >>> table = find_tag_by_id(view.render(), 'question-listing')
+    >>> for row in table.findAll('tr'):
+    ...     print extract_text(row)
+    Summary  Created     Submitter      Assignee  Status
+    6 ...    2005-10-14  Sample Person  Bob       Answered
+    4 ...    2005-09-05  Foo Bar        &mdash;   Open ...
+
+
 == QuestionCollectionOpenCountView ==
 
 There is a helper view that is available on all IQuestionCollection
