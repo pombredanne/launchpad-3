@@ -12,8 +12,8 @@
   <div class="portletContent">
 
     <ul>
-      <li class="language">
-        <span tal:replace="context/language/englishname">Language</span>
+      <li>
+        <span tal:content="context/language/englishname" class="sprite language">Language</span>
         <tal:block condition="context/language/nativename">
           (<span tal:replace="context/language/nativename">native</span>)
         </tal:block>

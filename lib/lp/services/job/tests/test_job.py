@@ -180,6 +180,15 @@ class TestReadiness(TestCase):
         job = Job(lease_expires=future)
         self.assertEqual([], list(Store.of(job).execute(Job.ready_jobs)))
 
+    def test_ready_jobs_not_jobs_scheduled_in_future(self):
+        """Job.ready_jobs does not included jobs scheduled for a time in the
+        future.
+        """
+        future = datetime.fromtimestamp(
+            time.time() + 1000, pytz.timezone('UTC'))
+        job = Job(scheduled_start=future)
+        self.assertEqual([], list(Store.of(job).execute(Job.ready_jobs)))
+
     def test_acquireLease(self):
         """Job.acquireLease should set job.lease_expires."""
         job = Job()
