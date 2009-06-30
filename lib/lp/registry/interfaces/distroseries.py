@@ -413,15 +413,17 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         that can be translated.
         """
 
-    def getStaticTranslationFiles(since_timestamp):
-        """Return static translation files for this distribution series.
+    def getPackageUploads(created_since_date, status, archive, pocket,
+                          custom_type):
+        """Get package upload records for this distribution series.
 
-        Static translation files are Gnome help files that are stripped
-        from built packages and uploaded with the binary as a custom file.
-
-        :param since_timestamp: If specified, only returns files uploaded
+        :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
-        :return: A result set containing `LibraryFileAlias`es.
+        :param status: Filter results by this `PackageUploadStatus`
+        :param archive: Filter results for this `IArchive`
+        :param pocket: Filter results by this `PackagePublishingPocket`
+        :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :return: A result set containing `IPackageUpload`s
         """
 
     def checkTranslationsViewable():
