@@ -16,19 +16,19 @@ __all__ = [
 import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6, BzrBranchFormat7)
-try:
-    from bzrlib.branch import BzrBranchFormat8
-    # Shut up, pyflakes.
-    BzrBranchFormat8
-except ImportError:
-    BzrBranchFormat8 = None
+    BzrBranchFormat6, BzrBranchFormat7, BzrBranchFormat8)
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
     BzrBranchLoomFormat1, BzrBranchLoomFormat6)
 from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
     RepositoryFormatKnit3, RepositoryFormatKnit4)
+try:
+    from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
+    # Shut up, pyflakes.
+    RepositoryFormat2a
+except ImportError:
+    RepositoryFormat2a = None
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4, RepositoryFormatKnitPack5,
@@ -189,6 +189,19 @@ class RepositoryFormat(DBEnumeratedType):
         " and chk inventories\n",
         )
 
+    BZR_CHK2 = DBItem(410,
+        "Bazaar development format - chk repository with bencode revision"
+        " serialization (needs bzr.dev from 1.16)\n",
+        "Development repository format - rich roots, group compression"
+        " and chk inventories\n",
+        )
+
+    BZR_CHK_2A = DBItem(415,
+        "Bazaar repository format 2a (needs bzr 1.16 or later)\n",
+        "Development repository format - rich roots, group compression"
+        " and chk inventories\n",
+        )
+
 
 class ControlFormat(DBEnumeratedType):
     """Control directory (BzrDir) format.
@@ -211,25 +224,15 @@ class ControlFormat(DBEnumeratedType):
 BRANCH_FORMAT_UPGRADE_PATH = {
     BranchFormat.UNRECOGNIZED: None,
     BranchFormat.BRANCH_REFERENCE: None,
-    BranchFormat.BZR_BRANCH_4: BzrBranchFormat7,
-    BranchFormat.BZR_BRANCH_5: BzrBranchFormat7,
-    BranchFormat.BZR_BRANCH_6: BzrBranchFormat7,
-    BranchFormat.BZR_BRANCH_7: None,
+    BranchFormat.BZR_BRANCH_4: BzrBranchFormat8,
+    BranchFormat.BZR_BRANCH_5: BzrBranchFormat8,
+    BranchFormat.BZR_BRANCH_6: BzrBranchFormat8,
+    BranchFormat.BZR_BRANCH_7: BzrBranchFormat8,
     BranchFormat.BZR_BRANCH_8: None,
     BranchFormat.BZR_LOOM_1: None,
     BranchFormat.BZR_LOOM_2: None,
     BranchFormat.BZR_LOOM_3: None,
     }
-
-
-# BzrBranchFormat8 was added in Bazaar 1.15. We can move this into the main
-# BranchFormat enum definition once we've upgraded to Bazaar 1.15.
-if BzrBranchFormat8 is not None:
-    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_4] = BzrBranchFormat8
-    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_5] = BzrBranchFormat8
-    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_6] = BzrBranchFormat8
-    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_7] = BzrBranchFormat8
-    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_8] = None
 
 
 REPOSITORY_FORMAT_UPGRADE_PATH = {
@@ -255,4 +258,11 @@ REPOSITORY_FORMAT_UPGRADE_PATH = {
     RepositoryFormat.BZR_DEV_1_SUBTREE: None,
     RepositoryFormat.BZR_DEV_2: None,
     RepositoryFormat.BZR_DEV_2_SUBTREE: None,
-    RepositoryFormat.BZR_CHK1: None}
+    RepositoryFormat.BZR_CHK1: None,
+    RepositoryFormat.BZR_CHK2: None,
+    RepositoryFormat.BZR_CHK_2A: None
+    }
+
+if RepositoryFormat2a is not None:
+    for k in [RepositoryFormat.BZR_CHK1, RepositoryFormat.BZR_CHK2]:
+        REPOSITORY_FORMAT_UPGRADE_PATH[k] = RepositoryFormat2a

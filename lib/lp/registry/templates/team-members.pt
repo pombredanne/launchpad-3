@@ -21,7 +21,7 @@
                  active_member_count context/active_member_count">
 
   <h1>Members of
-    &#8220;<span tal:replace="context/browsername" />&#8221;
+    &#8220;<span tal:replace="context/displayname" />&#8221;
   </h1>
 
   <p>Active, pending and former members of this team.</p>
@@ -35,7 +35,7 @@
       <p>
         There are <span tal:replace="active_member_count">15</span>
         direct members of the 
-        "<span tal:replace="context/browsername">Ubuntu Members</span>" team,
+        "<span tal:replace="context/displayname">Ubuntu Members</span>" team,
         and <span tal:replace="context/all_member_count">23</span> people are
         members in total, directly and indirectly through other team
         memberships.
@@ -60,8 +60,7 @@
           <tr tal:repeat="membership membership_batch">
             <tal:block define="member membership/person">
               <td>
-                <a tal:attributes="href member/fmt:url"
-                   tal:content="member/browsername" />
+                <a tal:replace="structure member/fmt:link"/>
               </td>
               <td>
                 <span class="sortkey"
@@ -104,7 +103,7 @@
 
     <li tal:condition="not: active_member_count">
       <h2>
-        &#8220;<span tal:replace="context/browsername" />&#8221; has no 
+        &#8220;<span tal:replace="context/displayname" />&#8221; has no 
         members
       </h2>
 
@@ -136,7 +135,7 @@
               <tal:block tal:define="member membership/person">
                 <td>
                   <a tal:attributes="href member/fmt:url"
-                     tal:content="member/browsername" />
+                     tal:content="member/displayname" />
                 </td>
                 <td>
                   <span class="sortkey"
@@ -181,7 +180,7 @@
               <tal:block tal:define="member membership/person">
               <td>
                 <a tal:attributes="href member/fmt:url"
-                   tal:content="member/browsername" />
+                   tal:content="member/displayname" />
               </td>
                 <td>
                   <span class="sortkey"
@@ -240,8 +239,7 @@
             <tal:block define="member membership/person">
             <td>
               <a tal:attributes="href member/fmt:url"
-                 tal:content="member/browsername"
-                 title="Renew/Reactivate this membership" />
+                 tal:content="member/displayname" />
             </td>
             <td
               tal:content="membership/datejoined/fmt:date"

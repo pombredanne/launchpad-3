@@ -12,9 +12,12 @@ from zope.event import notify
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 
+from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -51,12 +54,12 @@ class BugSubscriptionAddView(LaunchpadFormView):
         super(BugSubscriptionAddView, self).validate_widgets(data, names)
 
 
-class BugPortletSubcribersContents(LaunchpadView):
+class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
 
     def getSortedDirectSubscriptions(self):
         """Get the list of direct subscriptions to the bug.
-        
+
         The list is sorted such that subscriptions you can unsubscribe appear
         before all other subscriptions.
         """
@@ -64,6 +67,8 @@ class BugPortletSubcribersContents(LaunchpadView):
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:
+            if not check_permission('launchpad.View', subscription.person):
+                continue
             if subscription.person == self.user:
                 can_unsubscribe = [subscription] + can_unsubscribe
             elif subscription.canBeUnsubscribedByUser(self.user):
@@ -75,4 +80,3 @@ class BugPortletSubcribersContents(LaunchpadView):
     def getSortedSubscriptionsFromDuplicates(self):
         """Get the list of subscriptions to duplicates of this bug."""
         return self.context.getSubscriptionsFromDuplicates()
-

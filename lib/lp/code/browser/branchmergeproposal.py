@@ -54,6 +54,8 @@ from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.comments.interfaces.conversation import (
+    IComment, IConversation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
@@ -313,6 +315,30 @@ class BranchMergeProposalNavigation(Navigation):
         except WrongBranchMergeProposal:
             return None
 
+
+class CodeReviewDisplayComment:
+    """A code review comment or activity or both."""
+
+    implements(IComment)
+
+    delegates(ICodeReviewComment, 'comment')
+
+    def __init__(self, comment):
+        self.comment = comment
+        self.has_body = bool(self.comment.message_body)
+        self.has_footer = self.comment.vote is not None
+        self.date = self.comment.message.datecreated
+
+
+class CodeReviewConversation:
+    """A code review conversation."""
+
+    implements(IConversation)
+
+    def __init__(self, comments):
+        self.comments = comments
+
+
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
@@ -324,6 +350,16 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     def comment_location(self):
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
+
+    @cachedproperty
+    def conversation(self):
+        """Return a conversation that is to be rendered."""
+        # Sort the comments by date order.
+        comments = [
+            CodeReviewDisplayComment(comment)
+            for comment in self.context.all_comments]
+        comments = sorted(comments, key=operator.attrgetter('date'))
+        return CodeReviewConversation(comments)
 
     @property
     def comments(self):
@@ -477,11 +513,11 @@ class BranchMergeProposalVoteView(LaunchpadView):
     @cachedproperty
     def show_user_review_link(self):
         """Show self in the review table if can review and not asked."""
+        if self.user is None or not self.context.isMergable():
+            return False
         reviewers = [review.reviewer for review in self.reviews]
         # The owner of the source branch should not get a review link.
-        return (self.context.isPersonValidReviewer(self.user) and
-                self.user not in reviewers and
-                self.context.isMergable())
+        return self.user not in reviewers
 
 
 class IReviewRequest(Interface):
@@ -1047,27 +1083,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
 
         if self.user is None:
             # Anonymous users are not valid voters.
-            valid_voter = False
-        elif self.context.isPersonValidReviewer(self.user):
-            # A user who is a valid reviewer for the proposal is a valid
-            # voter.
-            valid_voter = True
-        elif self.users_vote_ref is not None:
-            # The user has already voted, so can change their vote.
-            valid_voter = True
-        else:
-            valid_voter = False
-            # Look through the requested reviewers.
-            for vote_reference in self.context.votes:
-                # If the user is in the team of a pending team review request,
-                # then they are valid voters.
-                if (vote_reference.comment is None and
-                    self.user.inTeam(vote_reference.reviewer)):
-                    valid_voter = True
-
-        if not valid_voter:
             raise AssertionError('Invalid voter')
-
         LaunchpadFormView.initialize(self)
 
     def setUpFields(self):

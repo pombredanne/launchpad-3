@@ -8,7 +8,7 @@
       </a>
       <tal:badges replace="structure context/image:badges" />
     </div>
-    <div class="lesser">
+    <div class="lesser" tal:condition="hide_extra_details|nothing">
       <tal:affected_pillars define="also_in context/other_affected_pillars"
                            condition="also_in">
         also in 
@@ -22,7 +22,7 @@
         tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
       by
       <a tal:attributes="href context/owner/fmt:url"
-         tal:content="context/owner/browsername">Foo Bar</a>
+         tal:content="context/owner/displayname">Foo Bar</a>
     </div>
   </td>
 </tr>

@@ -135,8 +135,7 @@ class BugEmailCommand(EmailCommand):
             params = CreateBugParams(
                 msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
-            bug = getUtility(IBugSet).createBug(params)
-            return bug, ObjectCreatedEvent(bug)
+            return getUtility(IBugSet).createBugWithoutTarget(params)
         else:
             try:
                 bugid = int(bugid)
@@ -354,7 +353,7 @@ class UnsubscribeEmailCommand(EmailCommand):
                         'user-cannot-unsubscribe.txt',
                         person=person.displayname))
         if bug.isSubscribedToDupes(person):
-            bug.unsubscribeFromDupes(person)
+            bug.unsubscribeFromDupes(person, person)
 
         return bug, current_event
 

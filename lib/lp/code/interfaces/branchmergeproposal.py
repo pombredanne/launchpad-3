@@ -31,7 +31,7 @@ from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
+from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
 from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
@@ -517,6 +517,23 @@ class IBranchMergeProposalGetter(Interface):
             the branch, and to LP admins.
         :raises BadBranchMergeProposalSearchContext: If the context is not
             understood.
+        """
+
+    def getProposalsForParticipant(participant, status=None,
+        visible_by_user=None):
+        """Return BranchMergeProposals associated with the context.
+
+        :param participant: An `IPerson` that is participating in the merge
+            proposal, either a reviewer or reviewee.
+        :param status: An iterable of queue_status of the proposals to return.
+            If None is specified, all the proposals of all possible states
+            are returned.
+        :param visible_by_user: If a person is not supplied, only merge
+            proposals based on public branches are returned.  If a person is
+            supplied, merge proposals based on both public branches, and the
+            private branches that the person is entitled to see are returned.
+            Private branches are only visible to the owner and subscribers of
+            the branch, and to LP admins.
         """
 
     def getVotesForProposals(proposals):

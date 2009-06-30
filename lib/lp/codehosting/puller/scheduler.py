@@ -1,4 +1,4 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0702
 
 __metaclass__ = type
@@ -329,21 +329,26 @@ class PullerMaster:
         """Spawn a worker process to mirror a branch."""
         deferred = defer.Deferred()
         protocol = self.protocol_class(deferred, self)
+        interpreter = '%s/bin/py' % config.root
         command = [
-            sys.executable, self.path_to_script, self.source_url,
+            interpreter, self.path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), str(self.unique_name),
             self.branch_type.name, self.oops_prefix,
             self.default_stacked_on_url]
         self.logger.debug("executing %s", command)
         env = os.environ.copy()
         env['BZR_EMAIL'] = get_lock_id_for_branch_id(self.branch_id)
-        reactor.spawnProcess(protocol, sys.executable, command, env=env)
+        reactor.spawnProcess(protocol, interpreter, command, env=env)
         return deferred
 
     def run(self):
         """Launch a child worker and mirror a branch, handling errors.
 
         This is the main method to call to mirror a branch.
+
+        :return: A Deferred that fires when the mirroring job is completed,
+            one way or the other. It will never fire with a failure. The value
+            of the Deferred itself is uninteresting (probably None).
         """
         deferred = self.mirror()
         deferred.addErrback(self.unexpectedError)

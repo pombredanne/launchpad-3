@@ -125,11 +125,11 @@ PENDING or PUBLISHED source record) PPAs.
     >>> for ppa_row in find_tags_by_class(
     ...     anon_browser.contents, 'ppa_batch_row'):
     ...     print extract_text(ppa_row)
-    Celso Providelo
+    PPA for Celso Providelo
     packages to help my friends.
     3
     3
-    Mark Shuttleworth
+    PPA for Mark Shuttleworth
     packages to help the humanity (you know, ubuntu)
     1
     1
@@ -181,15 +181,15 @@ to allow inactive PPA results.
     >>> for ppa_row in find_tags_by_class(anon_browser.contents,
     ...                                   'ppa_batch_row'):
     ...    print extract_text(ppa_row)
-    Celso Providelo
+    PPA for Celso Providelo
     packages to help my friends.
     3
     3
-    No Privileges Person
+    PPA for No Privileges Person
     I am not allowed to say, I have no privs.
     0
     0
-    Mark Shuttleworth
+    PPA for Mark Shuttleworth
     packages to help the humanity (you know, ubuntu)
     1
     1
@@ -573,6 +573,40 @@ Also the repository URL, within the sources.list snippet, is an actual link.
     http://ppa.launchpad.dev/no-priv/ppa/ubuntu
 
 
+== Upload hint ==
+
+Users who have upload permissions to the PPA can see an 'upload hint'
+section in the PPA details table.
+
+    >>> no_priv_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+
+    >>> print print_tag_with_id(
+    ...     no_priv_browser.contents, 'upload-hint')
+    Upload packages: dput ppa:no-priv/ppa &lt;source.changes&gt;
+    (Read about uploading)
+    None
+
+It also has a link pointing to its corresponding help page.
+
+    >>> print no_priv_browser.getLink('Read about uploading').url
+    https://help.launchpad.net/Packaging/PPA/Uploading
+
+Anonymous access or users with no upload permission cannot see the
+upload hint section.
+
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> print find_tag_by_id(
+    ...     anon_browser.contents, 'upload-hint')
+    None
+
+    >>> admin_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> print find_tag_by_id(
+    ...     anon_browser.contents, 'upload-hint')
+    None
+
+
 == PPA signing key ==
 
 PPA signing keys are automatically generated and set sometime after
@@ -606,8 +640,7 @@ help wiki are presented in the PPA index page.
     ...     anon_browser.contents, 'signing-key')
 
     >>> print extract_text(signing_key_section)
-    This repository is signed with the OpenPGP key 1024D/12345678
-    Help on installing software from this PPA.
+    Signing key: 1024D/12345678 (What is this?)
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
@@ -616,10 +649,16 @@ keyserver.
     ...     '1024D/12345678').url
     http://keyserver.ubuntu.com:11371/pks/lookup?search=0xABCDEF0123456789ABCDDCBA0000111112345678&op=index
 
-Another link in this section point users to the expanded instructions
-about how to use the signing_key.
+Using software from a PPA can be hard for novices. We offer two
+links to the same help pop-up that describes how to add a PPA and
+its key to Ubuntu.
 
-    >>> print anon_browser.getLink('How do I do that?').url
+    >>> print anon_browser.getLink('Read about installing').url
+    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
+
+And further down, next to the key id, we link to that same pop-up help:
+
+    >>> print anon_browser.getLink('What is this?').url
     http://launchpad.dev/+help/soyuz/ppa-sources-list.html
 
 
@@ -669,9 +708,9 @@ The repository size information is available in a separate page,
 '+repository-size', which is going be to added to the index page using
 javascript.
 
-    >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
+    >>> results = find_tag_by_id(anon_browser.contents, 'package-counters')
     >>> print extract_text(results)
-    Repository disk usage
+    Repository disk usage:
     Package counters and estimated archive size temporarily unavailable.
 
     >>> anon_browser.open(
@@ -744,9 +783,8 @@ The package row headings show an Uploader column:
 The package row data shows the uploader:
 
     >>> print_archive_package_rows(foo_browser.contents)
-    Source                 Uploader Published Status   Series  Section  Build
-        Status
-    mozilla-firefox - 0.9  name16             Pending  Hoary   Base
+    Source              Uploader ... Status   Series  Section  Build Status
+    mozilla-firefox...  name16       Pending  Hoary   Base
 
 Links from files go to their on-archive locations:
 

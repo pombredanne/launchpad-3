@@ -130,7 +130,6 @@ Projects are available at their canonical URL on the API virtual host.
     active: True
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
-    branches_collection_link: u'http://.../firefox/branches'
     brand_link: u'http://.../firefox/brand'
     bug_reporting_guidelines: None
     bug_tracker_link: None
@@ -179,7 +178,6 @@ several that are not available to non-privileged users marked as
     active: True
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
-    branches_collection_link: u'http://.../firefox/branches'
     brand_link: u'http://.../firefox/brand'
     bug_reporting_guidelines: None
     bug_tracker_link: None
@@ -218,17 +216,6 @@ several that are not available to non-privileged users marked as
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
     wiki_url: None
-
-Branches can be accessed through the branches_collection_link.
-
-    >>> response = webservice.get(firefox['branches_collection_link'])
-    >>> branches = response.jsonBody()
-    >>> print_self_link_of_entries(branches)
-    http://.../~name12/firefox/main
-    http://.../~sabdfl/firefox/release--0.9.1
-    http://.../~sabdfl/firefox/release-0.8
-    http://.../~sabdfl/firefox/release-0.9
-    http://.../~sabdfl/firefox/release-0.9.2
 
 The milestones can be accessed through the
 active_milestones_collection_link and the
@@ -381,23 +368,35 @@ hierarchy of series, milestones, and releases.
     >>> print pretty(timeline)
     [{u'is_development_focus': False,
       u'landmarks': [{u'code_name': u'First Stable Release',
+                      u'date': u'2004-06-28',
                       u'name': u'1.0.0',
-                      u'type': u'release'}],
-      u'name': u'1.0'},
+                      u'type': u'release',
+                      u'uri': u'/firefox/1.0/1.0.0'}],
+      u'name': u'1.0',
+      u'uri': u'/firefox/1.0'},
      {u'is_development_focus': True,
-      u'landmarks': [{u'code_name': u'One (secure) Tree Hill',
-                      u'name': u'0.9.2',
-                      u'type': u'release'},
-                     {u'code_name': u'One Tree Hill (v2)',
-                      u'name': u'0.9.1',
-                      u'type': u'release'},
-                     {u'code_name': u'One Tree Hill',
-                      u'name': u'0.9',
-                      u'type': u'release'},
-                     {u'code_name': None,
+      u'landmarks': [{u'code_name': None,
+                      u'date': u'2056-10-16',
                       u'name': u'1.0',
-                      u'type': u'milestone'}],
-      u'name': u'trunk'}]
+                      u'type': u'milestone',
+                      u'uri': u'/firefox/+milestone/1.0'},
+                     {u'code_name': u'One (secure) Tree Hill',
+                      u'date': u'2004-10-15',
+                      u'name': u'0.9.2',
+                      u'type': u'release',
+                      u'uri': u'/firefox/trunk/0.9.2'},
+                     {u'code_name': u'One Tree Hill (v2)',
+                      u'date': u'2004-10-15',
+                      u'name': u'0.9.1',
+                      u'type': u'release',
+                      u'uri': u'/firefox/trunk/0.9.1'},
+                     {u'code_name': u'One Tree Hill',
+                      u'date': u'2004-10-15',
+                      u'name': u'0.9',
+                      u'type': u'release',
+                      u'uri': u'/firefox/trunk/0.9'}],
+      u'name': u'trunk',
+      u'uri': u'/firefox/trunk'}]
 
 
 Project collection
@@ -735,7 +734,7 @@ virtual host.
     self_link: u'http://.../babadoo/foobadoo'
     status: u'Active Development'
     summary: u'Foobadoo support for Babadoo'
-    title: u'Babadoo Series: foobadoo'
+    title: u'Babadoo foobadoo series'
 
 "get_timeline" returns a lightweight representation of the series'
 milestones and releases.
@@ -745,7 +744,8 @@ milestones and releases.
     >>> print pretty(timeline)
     {u'is_development_focus': False,
      u'landmarks': [],
-     u'name': u'foobadoo'}
+     u'name': u'foobadoo',
+     u'uri': u'/babadoo/foobadoo'}
 
 
 Creating a milestone on the product series

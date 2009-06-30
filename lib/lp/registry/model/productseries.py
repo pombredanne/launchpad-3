@@ -1,5 +1,6 @@
 # Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
+"""Models for `IProductSeries`."""
 
 __metaclass__ = type
 
@@ -8,10 +9,11 @@ __all__ = [
     'ProductSeriesSet',
     ]
 
+import datetime
+
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from storm.expr import In, Sum
-from warnings import warn
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
@@ -44,6 +46,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from lp.blueprints.interfaces.specification import (
@@ -59,6 +62,17 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+
+def landmark_key(landmark):
+    """Sorts landmarks by date and name."""
+    if landmark['date'] is None:
+        # Null dates are assumed to be in the future.
+        date = '9999-99-99'
+    else:
+        date = landmark['date']
+    return date + landmark['name']
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -91,6 +105,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         notNull=True,
         schema=TranslationsBranchImportMode,
         default=TranslationsBranchImportMode.NO_IMPORT)
+    translations_branch = ForeignKey(
+        dbName='translations_branch', foreignKey='Branch', notNull=False,
+        default=None)
     # where are the tarballs released from this branch placed?
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
@@ -146,7 +163,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
-        return sorted(drivers, key=lambda x: x.browsername)
+        return sorted(drivers, key=lambda x: x.displayname)
 
     @property
     def bug_supervisor(self):
@@ -165,13 +182,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     @property
     def title(self):
-        return self.product.displayname + ' Series: ' + self.displayname
-
-    def shortdesc(self):
-        warn('ProductSeries.shortdesc should be ProductSeries.summary',
-             DeprecationWarning)
-        return self.summary
-    shortdesc = property(shortdesc)
+        return '%s %s series' % (self.product.displayname, self.displayname)
 
     @property
     def bug_reporting_guidelines(self):
@@ -459,6 +470,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `IProductSeries`."""
         store = Store.of(self)
 
+        english = getUtility(ILaunchpadCelebrities).english
+
         results = []
         if self.potemplate_count == 1:
             # If there is only one POTemplate in a ProductSeries, fetch
@@ -473,7 +486,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 Language.visible==True,
                 POFile.potemplate==POTemplate.id,
                 POTemplate.productseries==self,
-                POTemplate.iscurrent==True)
+                POTemplate.iscurrent==True,
+                Language.id!=english.id)
 
             for language, pofile in query.order_by(['Language.englishname']):
                 psl = ProductSeriesLanguage(self, language, pofile=pofile)
@@ -505,7 +519,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 Language.visible==True,
                 POFile.potemplate==POTemplate.id,
                 POTemplate.productseries==self,
-                POTemplate.iscurrent==True).group_by(Language)
+                POTemplate.iscurrent==True,
+                Language.id!=english.id).group_by(Language)
 
             for (language, imported, changed, new, unreviewed) in (
                 query.order_by(['Language.englishname'])):
@@ -524,16 +539,33 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 if not include_inactive and not milestone.active:
                     continue
                 node_type = 'milestone'
+                date = milestone.dateexpected
+                uri = canonical_url(milestone, path_only_if_possible=True)
             else:
                 node_type = 'release'
+                date = milestone.product_release.datereleased
+                uri = canonical_url(
+                    milestone.product_release, path_only_if_possible=True)
+
+            if isinstance(date, datetime.datetime):
+                date = date.date().isoformat()
+            elif isinstance(date, datetime.date):
+                date = date.isoformat()
+
             entry = dict(
                 name=milestone.name,
                 code_name=milestone.code_name,
-                type=node_type)
+                type=node_type,
+                date=date,
+                uri=uri)
             landmarks.append(entry)
+
+        landmarks = sorted_dotted_numbers(landmarks, key=landmark_key)
+        landmarks.reverse()
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
+            uri=canonical_url(self, path_only_if_possible=True),
             landmarks=landmarks)
 
 

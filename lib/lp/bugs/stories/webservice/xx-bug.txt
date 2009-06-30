@@ -63,7 +63,7 @@ Bugs have relationships to other bugs, like "duplicate_of".
   >>> bug_six['duplicate_of_link']
   u'http://.../bugs/5'
 
-To create a new bug we use the createBug operation.  That operation
+To create a new bug we use the createBug operation. This operation
 takes a target parameter which must be a either a Product, a
 Distribution or a DistributionSourcePackage.
 
@@ -88,14 +88,43 @@ Distribution or a DistributionSourcePackage.
     Location: http://.../bugs/...
     ...
 
-    >>> print webservice.named_post(
+    >>> response = webservice.named_post(
     ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
     ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/evolution'))
+    >>> print response
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
     ...
+
+    >>> new_bug = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+
+Activity is recorded and notifications are sent for newly created
+bugs.
+
+    >>> from lp.bugs.model.bugnotification import BugNotification
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from zope.component import getUtility
+
+    >>> login(ANONYMOUS)
+    >>> bug = getUtility(IBugSet).get(new_bug['id'])
+
+    >>> for activity in bug.activity:
+    ...     print '%s, %s, %s' % (
+    ...         activity.whatchanged, activity.message,
+    ...         activity.person.name)
+    bug, added bug, salgado
+
+    >>> for notification in BugNotification.selectBy(bug=bug, orderBy='id'):
+    ...     print '%s, %s, %s' % (
+    ...         notification.message.owner.name, notification.is_comment,
+    ...         notification.message.text_contents)
+    salgado, True, Test bug
+
+    >>> logout()
 
 A ProductSeries can't be the target of a new bug.
 
@@ -577,9 +606,7 @@ he or she belongs.
 For this example, we need a member of the ubuntu-team group,
 any member will do.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu_team_member = getUtility(IPersonSet).getByName(
@@ -629,6 +656,78 @@ Salgado is the webservice user and cannot unsubscribe SteveA.
     >>> print webservice.named_get(
     ...     subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody()
     False
+
+
+=== Unsubscribing From Duplicates ===
+
+If a user is subscribed via a duplicate, the user can unsubscribe from the
+main bug and be unsubscribed from the duplicate as well.
+
+bug_six is a duplicate of bug_five.
+
+    >>> bug_five = webservice.get('/bugs/5').jsonBody()
+    >>> bug_six['duplicate_of_link'] == bug_five['self_link']
+    True
+
+To demonstrate unsubscribing from duplicates, first subscribe the
+web service user himself (Salgado) so he has permission to unsubscribe
+himself.
+
+    >>> print webservice.named_post(
+    ...     bug_six['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~salgado'))
+    HTTP/1.1 200 Ok...
+
+bug_six now has one subscriber, Salgado.
+
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> for entry in bug_six_subscriptions['entries']:
+    ...     print entry['person_link']
+    http://.../~salgado
+
+Unsubscribe from bug_five, the primary bug, to unsubscribe from both
+it and its duplicate, bug_six.
+
+    >>> print webservice.named_post(
+    ...     bug_five['self_link'], 'unsubscribeFromDupes')
+    HTTP/1.1 200 Ok...
+
+Now bug_six has no subscibers.
+
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> print bug_six_subscriptions['total_size']
+    0
+
+Unsubscribing from duplicates is also supported for teams.
+To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
+
+    >>> print webservice.named_post(
+    ...     bug_six['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    HTTP/1.1 200 Ok...
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> for entry in bug_six_subscriptions['entries']:
+    ...     print entry['person_link']
+    http://.../~ubuntu-team
+
+Now, a team member can unsubscribe from bug_five to be unsubscribed
+from both it and the duplicate (bug_six).  Use the previously created
+member_webservice, which is for an Ubuntu Team member.
+
+    >>> print member_webservice.named_post(
+    ...     bug_five['self_link'], 'unsubscribeFromDupes',
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    HTTP/1.1 200 Ok...
+
+Now again, bug_six has no subscibers.
+
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> print bug_six_subscriptions['total_size']
+    0
 
 
 == Bug Watches ==
@@ -1060,7 +1159,8 @@ setting the tags_combinator parameter to 'All'.
 It is possible to search for bugs targeted to a milestone within a
 project group.
 
-    >>> from canonical.launchpad.interfaces import IMilestoneSet, IProductSet
+    >>> from lp.registry.interfaces.milestone import IMilestoneSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> login('foo.bar@canonical.com')
     >>> product_set = getUtility(IProductSet)
     >>> milestone_set = getUtility(IMilestoneSet)

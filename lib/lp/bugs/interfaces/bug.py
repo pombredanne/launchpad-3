@@ -60,7 +60,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, datecreated=None, security_related=False,
                  private=False, subscribers=(), binarypackagename=None,
-                 tags=None, subscribe_reporter=True):
+                 tags=None, subscribe_owner=True, filed_by=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -76,7 +76,8 @@ class CreateBugParams:
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
         self.tags = tags
-        self.subscribe_reporter = subscribe_reporter
+        self.subscribe_owner = subscribe_owner
+        self.filed_by = filed_by
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -335,7 +336,11 @@ class IBug(ICanBeMentored):
     def unsubscribe(person, unsubscribed_by):
         """Remove this person's subscription to this bug."""
 
-    def unsubscribeFromDupes(person):
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
+    @export_write_operation()
+    def unsubscribeFromDupes(person, unsubscribed_by):
         """Remove this person's subscription from all dupes of this bug."""
 
     def isSubscribed(person):
@@ -441,19 +446,17 @@ class IBug(ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    @call_with(registrant=REQUEST_USER, whiteboard=None, status=None)
+    @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         branch=Reference(schema=IBranch))
     @operation_returns_entry(Interface) # Really IBugBranch
     @export_operation_as('linkBranch')
     @export_write_operation()
-    def addBranch(branch, registrant, whiteboard=None, status=None):
+    def addBranch(branch, registrant):
         """Associate a branch with this bug.
 
         :param branch: The branch being linked to the bug
         :param registrant: The user making the link.
-        :param whiteboard: A space where people can write about the bug fix
-        :param status: The status of the fix in the branch
 
         Returns an IBugBranch.
         """
@@ -907,6 +910,17 @@ class IBugSet(Interface):
 
           * binarypackagename, if not None, will be added to the bug's
             description
+        """
+
+    def createBugWithoutTarget(bug_params):
+        """Create a bug without a bug target and return it.
+
+        This is a variant of `createBug()` that does not create the
+        first bugtask for the bug. The bug creation event is not sent,
+        and a `(bug, event)` tuple is returned instead. The caller is
+        therefore responsible for sending the event at a later point.
+
+        See `createBug()` for more information.
         """
 
     def getDistinctBugsForBugTasks(bug_tasks, user, limit=10):

@@ -1273,6 +1273,8 @@ class PublishingSet:
             PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.distroseriesID ==
                 SourcePackageRelease.upload_distroseriesID,
+            PackageUpload.archiveID ==
+                SourcePackageRelease.upload_archiveID,
             PackageUploadSource.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
             SourcePackageRelease.id ==

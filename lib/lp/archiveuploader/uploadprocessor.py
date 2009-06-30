@@ -74,6 +74,15 @@ __all__ = [
     'parse_upload_path',
     ]
 
+UPLOAD_PATH_ERROR_TEMPLATE = (
+"""Launchpad failed to process the upload path '%(upload_path)s':
+
+%(path_error)s
+
+It is likely that you have a configuration problem with dput/dupload.
+%(extra_info)s
+""")
+
 
 class UploadStatusEnum:
     """Possible results from processing an upload.
@@ -91,8 +100,10 @@ class UploadStatusEnum:
 class UploadPathError(Exception):
     """This exception happened when parsing the upload path."""
 
+
 class PPAUploadPathError(Exception):
     """Exception when parsing a PPA upload path."""
+
 
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
@@ -277,7 +288,7 @@ class UploadProcessor:
         # Reject the upload since we could not process the path,
         # Store the exception information as a rejection message.
         relative_path = os.path.dirname(changes_file)
-        error = None
+        upload_path_error = None
         try:
             (distribution, suite_name,
              archive) = parse_upload_path(relative_path)
@@ -287,7 +298,11 @@ class UploadProcessor:
             distribution = getUtility(IDistributionSet)['ubuntu']
             suite_name = None
             archive = distribution.main_archive
-            error = str(e)
+            upload_path_error = UPLOAD_PATH_ERROR_TEMPLATE % (
+                dict(upload_path=relative_path, path_error=str(e),
+                     extra_info=(
+                         "Please update your dput/dupload configuration "
+                         "and then re-upload.")))
         except PPAUploadPathError, e:
             # Again, pick some defaults but leave a hint for the rejection
             # emailer that it was a PPA failure.
@@ -299,8 +314,12 @@ class UploadProcessor:
             # enough). On the other hand if we set an arbitrary owner it
             # will break nascentupload ACL calculations.
             archive = distribution.getAllPPAs()[0]
-            error = str(e)
-
+            upload_path_error = UPLOAD_PATH_ERROR_TEMPLATE % (
+                dict(upload_path=relative_path, path_error=str(e),
+                     extra_info=(
+                         "Please check the documentation at "
+                         "https://help.launchpad.net/Packaging/PPA#Uploading "
+                         "and update your configuration.")))
         self.log.debug("Finding fresh policy")
         self.options.distro = distribution.name
         policy = findPolicyByOptions(self.options)
@@ -327,9 +346,9 @@ class UploadProcessor:
             upload.reject(error_message)
             self.log.error(error_message)
 
-        # Store archive lookup error in the upload if it was the case.
-        if error is not None:
-            upload.reject(error)
+        # Reject upload with path processing errors.
+        if upload_path_error is not None:
+            upload.reject(upload_path_error)
 
         # Store processed NascentUpload instance, mostly used for tests.
         self.last_processed_upload = upload
@@ -478,7 +497,8 @@ def _getDistributionAndSuite(parts, exc_type):
     distribution_name = parts[0]
     distribution = getUtility(IDistributionSet).getByName(distribution_name)
     if distribution is None:
-        raise exc_type("Could not find distribution '%s'" % distribution_name)
+        raise exc_type(
+            "Could not find distribution '%s'." % distribution_name)
 
     if len(parts) == 1:
         return (distribution, None)
@@ -487,7 +507,7 @@ def _getDistributionAndSuite(parts, exc_type):
     try:
         suite = distribution.getDistroSeriesAndPocket(suite_name)
     except NotFoundError:
-        raise exc_type("Could not find suite '%s'" % suite_name)
+        raise exc_type("Could not find suite '%s'." % suite_name)
 
     return (distribution, suite_name)
 
@@ -532,7 +552,7 @@ def parse_upload_path(relative_path):
         person = getUtility(IPersonSet).getByName(person_name)
         if person is None:
             raise PPAUploadPathError(
-                "Could not find person '%s'" % person_name)
+                "Could not find person or team named '%s'." % person_name)
 
         ppa_name = parts[1]
 
@@ -548,38 +568,32 @@ def parse_upload_path(relative_path):
             archive = person.getPPAByName(ppa_name)
         except NoSuchPPA:
             raise PPAUploadPathError(
-                "Could not find PPA named '%s' for '%s'"
+                "Could not find a PPA named '%s' for '%s'."
                 % (ppa_name, person_name))
-
-        if not archive.enabled:
-            raise PPAUploadPathError(
-                "%s is disabled" % archive.displayname)
 
         distribution, suite_name = _getDistributionAndSuite(
             distribution_and_suite, PPAUploadPathError)
 
-        if archive.distribution != distribution:
-            raise PPAUploadPathError(
-                "%s only supports uploads to '%s'"
-                % (archive.displayname, archive.distribution.name))
     elif first_path.isdigit():
         # This must be a binary upload from a build slave.
         try:
             archive = getUtility(IArchiveSet).get(int(first_path))
         except SQLObjectNotFound:
             raise UploadPathError(
-                "Could not find archive with id=%s" % first_path)
-        if not archive.enabled:
-            raise UploadPathError("%s is disabled" % archive.displayname)
+                "Could not find archive with id=%s." % first_path)
         distribution, suite_name = _getDistributionAndSuite(
             parts[1:], UploadPathError)
     else:
         # Upload path does not match anything we support.
-        raise UploadPathError(
-            "Path mismatch '%s'. "
-            "Use ~<person>/<ppa_name>/<distro>[/distroseries]/"
-            "[files] for PPAs and <distro>/[files] for normal uploads."
-            % (relative_path))
+        raise UploadPathError("Path format mismatch.")
+
+    if not archive.enabled:
+        raise PPAUploadPathError("%s is disabled." % archive.displayname)
+
+    if archive.distribution != distribution:
+        raise PPAUploadPathError(
+            "%s only supports uploads to '%s' distribution."
+            % (archive.displayname, archive.distribution.name))
 
     return (distribution, suite_name, archive)
 

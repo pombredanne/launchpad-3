@@ -19,18 +19,18 @@ import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 
+from canonical.config import config
+from canonical.launchpad.interfaces.translations import (
+    TranslationsBranchImportMode)
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
 from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.scanner.bzrsync import (
     BzrSync, InvalidStackedBranchURL, schedule_translation_upload)
 from lp.codehosting.scanner.fixture import make_zope_event_fixture
-from canonical.config import config
-from canonical.launchpad.database import (
-    BranchRevision, Revision, RevisionAuthor, RevisionParent)
-from canonical.launchpad.interfaces import IRevisionSet
-from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.code.interfaces.branchlookup import IBranchLookup
-from canonical.launchpad.interfaces.translations import (
-    TranslationsBranchImportMode)
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 

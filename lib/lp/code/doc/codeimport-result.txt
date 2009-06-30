@@ -27,7 +27,7 @@ factory.
 
     >>> log_data = 'several\nlines\nof\nlog data'
     >>> log_excerpt = log_data.splitlines()[-1]
-    >>> log_alias = factory.makeLibraryFileAlias(log_data)
+    >>> log_alias = factory.makeLibraryFileAlias(content=log_data)
     >>> log_alias_id = log_alias.id
 
 Then commit the transaction, so the external librarian process can see

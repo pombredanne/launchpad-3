@@ -14,6 +14,8 @@ __all__ = [
 import datetime
 import logging
 import os
+import re
+
 from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
@@ -37,10 +39,11 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOFileSet, IPOTemplate, IPOTemplateSet,
-    IPOTemplateSubset, ITranslationExporter, ITranslationFileData,
-    ITranslationImporter, IVPOTExportSet, LanguageNotFound, NotFoundError,
-    RosettaImportStatus, TranslationFileFormat,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+    IPOTemplateSharingSubset, IPOTemplateSubset, ITranslationExporter,
+    ITranslationFileData, ITranslationImporter, IVPOTExportSet,
+    LanguageNotFound, NotFoundError, RosettaImportStatus,
+    TranslationFileFormat, TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError)
 from canonical.launchpad.interfaces.potmsgset import BrokenTextError
 from canonical.launchpad.translationformat import TranslationMessageData
 
@@ -616,7 +619,38 @@ class POTemplate(SQLBase, RosettaStats):
 
         return os.path.join(potemplate_dir, path)
 
-    def newPOFile(self, language_code, variant=None, requester=None):
+    def _createPOFilesInSharingPOTemplates(self, pofile):
+        """Create copies of the given pofile in all sharing potemplates."""
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            product=self.product)
+        for template in subset.getSharingPOTemplates(self.name):
+            template = removeSecurityProxy(template)
+            if template is self:
+                continue
+            language_code = pofile.language.code
+            variant = pofile.variant
+            existingpo = template.getPOFileByLang(language_code, variant)
+            if existingpo is not None:
+                continue
+            newpopath = template._composePOFilePath(pofile.language, variant)
+            pofile = POFile(
+                potemplate=template,
+                language=pofile.language,
+                topcomment=pofile.topcomment,
+                header=pofile.header,
+                fuzzyheader=pofile.fuzzyheader,
+                owner=pofile.owner,
+                variant=pofile.variant,
+                path=newpopath)
+
+            # Update cache to reflect the change.
+            template._cached_pofiles_by_language[language_code,
+                                                 variant] = pofile
+
+    def newPOFile(self, language_code, variant=None, requester=None,
+                  create_sharing=True):
         """See `IPOTemplate`."""
         # Make sure we don't already have a PO file for this language.
         existingpo = self.getPOFileByLang(language_code, variant)
@@ -667,6 +701,8 @@ class POTemplate(SQLBase, RosettaStats):
         # Update cache to reflect the change.
         self._cached_pofiles_by_language[language_code, variant] = pofile
 
+        if create_sharing:
+            self._createPOFilesInSharingPOTemplates(pofile)
         # Store the changes.
         flush_database_updates()
 
@@ -920,6 +956,21 @@ class POTemplateSubset:
             titlestr += self.productseries.displayname
         return titlestr
 
+    def _copyPOFilesFromSharingTemplates(self, template):
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=template.distribution,
+            sourcepackagename=template.sourcepackagename,
+            product=template.product)
+        for shared_template in subset.getSharingPOTemplates(template.name):
+            shared_template = removeSecurityProxy(shared_template)
+            if shared_template is template:
+                continue
+            for pofile in shared_template.pofiles:
+                template.newPOFile(pofile.language.code,
+                                   pofile.variant, pofile.owner, False)
+            # Do not continue, else it would trigger an existingpo assertion.
+            return
+
     def new(self, name, translation_domain, path, owner):
         """See `IPOTemplateSubset`."""
         header_params = {
@@ -928,7 +979,7 @@ class POTemplateSubset:
             'languagename': 'LANGUAGE',
             'languagecode': 'LL',
             }
-        return POTemplate(name=name,
+        template = POTemplate(name=name,
                           translation_domain=translation_domain,
                           sourcepackagename=self.sourcepackagename,
                           distroseries=self.distroseries,
@@ -936,6 +987,8 @@ class POTemplateSubset:
                           path=path,
                           owner=owner,
                           header=standardTemplateHeader % header_params)
+        self._copyPOFilesFromSharingTemplates(template)
+        return template
 
     def getPOTemplateByName(self, name):
         """See `IPOTemplateSubset`."""
@@ -1062,6 +1115,13 @@ class POTemplateSet:
             sourcepackagename=sourcepackagename,
             iscurrent=iscurrent)
 
+    def getSharingSubset(self, distribution=None, sourcepackagename=None,
+                         product=None):
+        """See `IPOTemplateSet`."""
+        return POTemplateSharingSubset(self, distribution=distribution,
+                                       sourcepackagename=sourcepackagename,
+                                       product=product)
+
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
         distroseries=None, sourcepackagename=None):
         """See `IPOTemplateSet`."""
@@ -1105,6 +1165,122 @@ class POTemplateSet:
             raise AssertionError(
                 'Either productseries or sourcepackagename arguments must be'
                 ' not None.')
+
+    @staticmethod
+    def compareSharingPrecedence(left, right):
+        """See IPOTemplateSet."""
+        if left == right:
+            return 0
+
+        # Current templates always have precedence over non-current ones.
+        if left.iscurrent != right.iscurrent:
+            if left.iscurrent:
+                return -1
+            else:
+                return 1
+
+        if left.productseries:
+            left_series = left.productseries
+            right_series = right.productseries
+            assert left_series.product == right_series.product
+            focus = left_series.product.primary_translatable
+        else:
+            left_series = left.distroseries
+            right_series = right.distroseries
+            assert left_series.distribution == right_series.distribution
+            focus = left_series.distribution.translation_focus
+
+        # Translation focus has precedence.  In case of a tie, newest
+        # template wins.
+        if left_series == focus:
+            return -1
+        elif right_series == focus:
+            return 1
+        elif left.id > right.id:
+            return -1
+        else:
+            assert left.id < right.id, "Got unordered ids."
+            return 1
+
+
+class POTemplateSharingSubset(object):
+    implements(IPOTemplateSharingSubset)
+
+    distribution = None
+    sourcepackagename = None
+    product = None
+
+    def __init__(self, potemplateset,
+                 distribution=None, sourcepackagename=None,
+                 product=None):
+        assert product or distribution, "Pick a product or distribution!"
+        assert not (product and distribution), (
+            "Pick a product or distribution, not both!")
+        assert distribution or not sourcepackagename, (
+            "Picking a source package only makes sense with a distribution.")
+        self.potemplateset = potemplateset
+        self.distribution = distribution
+        self.sourcepackagename = sourcepackagename
+        self.product = product
+
+
+    def _get_potemplate_equivalence_class(self, template):
+        """Return whatever we group `POTemplate`s by for sharing purposes."""
+        if template.sourcepackagename is None:
+            package = None
+        else:
+            package = template.sourcepackagename.name
+        return (template.name, package)
+
+    def _iterate_potemplates(self, name_pattern=None):
+        """Yield all templates matching the provided argument.
+
+        This is much like a `IPOTemplateSubset`, except it operates on
+        `Product`s and `Distribution`s rather than `ProductSeries` and
+        `DistroSeries`.
+        """
+        if self.product:
+            subsets = [
+                self.potemplateset.getSubset(productseries=series)
+                for series in self.product.serieses
+                ]
+        else:
+            subsets = [
+                self.potemplateset.getSubset(
+                    distroseries=series,
+                    sourcepackagename=self.sourcepackagename)
+                for series in self.distribution.serieses
+                ]
+        for subset in subsets:
+            for template in subset:
+                if name_pattern is None or re.match(name_pattern,
+                                                    template.name):
+                    yield template
+
+    def getSharingPOTemplates(self, potemplate_name):
+        """See IPOTemplateSharingSubset."""
+        if self.distribution is not None:
+            assert self.sourcepackagename is not None, (
+                   "Need sourcepackagename to select from distribution.")
+
+        return self._iterate_potemplates("^%s$" % potemplate_name)
+
+    def groupEquivalentPOTemplates(self, name_pattern=None):
+        """See IPOTemplateSharingSubset."""
+        equivalents = {}
+
+        for template in self._iterate_potemplates(name_pattern):
+            key = self._get_potemplate_equivalence_class(template)
+            if key not in equivalents:
+                equivalents[key] = []
+            equivalents[key].append(template)
+
+        for equivalence_list in equivalents.itervalues():
+            # Sort potemplates from "most representative" to "least
+            # representative."
+            equivalence_list.sort(cmp=POTemplateSet.compareSharingPrecedence)
+
+        return equivalents
 
 
 class POTemplateToTranslationFileDataAdapter:

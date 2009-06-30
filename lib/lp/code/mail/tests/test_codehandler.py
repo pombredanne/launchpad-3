@@ -27,7 +27,7 @@ from lp.codehosting.vfs import get_lp_server
 from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.database import MessageSet
-from lp.code.model.branchmergeproposal import (
+from lp.code.model.branchmergeproposaljob import (
     CreateMergeProposalJob, MergeProposalCreatedJob)
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
@@ -414,6 +414,17 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('', comment)
         transaction.commit()
 
+    def test_findMergeDirectiveAndCommentUnicodeBody(self):
+        """findMergeDirectiveAndComment returns unicode comments."""
+        md = self.factory.makeMergeDirective()
+        message = self.factory.makeSignedMessage(
+            body=u'\u1234', attachment_contents=''.join(md.to_lines()))
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        comment, md2 = code_handler.findMergeDirectiveAndComment(message)
+        self.assertEqual(u'\u1234', comment)
+        transaction.commit()
+
     def test_findMergeDirectiveAndCommentNoMergeDirective(self):
         """findMergeDirectiveAndComment handles missing merge directives.
 
@@ -520,6 +531,24 @@ class TestCodeHandler(TestCaseWithFactory):
         self.switchDbUser(config.create_merge_proposals.dbuser)
         JobRunner.fromReady(CreateMergeProposalJob).runAll()
         self.assertEqual(target, source.landing_targets[0].target_branch)
+        # Ensure the DB operations violate no constraints.
+        transaction.commit()
+
+    def test_processWithUnicodeMergeDirectiveEmail(self):
+        """process creates a comment from a unicode message body."""
+        message, file_alias, source, target = (
+            self.factory.makeMergeDirectiveEmail(body=u'\u1234'))
+        # Ensure the message is stored in the librarian.
+        # mail.incoming.handleMail also explicitly does this.
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        self.assertEqual(0, source.landing_targets.count())
+        code_handler.process(message, 'merge@code.launchpad.net', file_alias)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
+        JobRunner.fromReady(CreateMergeProposalJob).runAll()
+        comment = source.landing_targets[0].root_comment
+        self.assertIsNot(None, comment)
+        self.assertEqual(u'\u1234', comment.message.text_contents)
         # Ensure the DB operations violate no constraints.
         transaction.commit()
 

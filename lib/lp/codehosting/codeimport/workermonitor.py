@@ -19,10 +19,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import begin, commit, rollback
-from lp.codehosting.codeimport.worker import CodeImportSourceDetails
-from canonical.launchpad.interfaces import (
-     ICodeImportJobSet, ICodeImportJobWorkflow, ILibraryFileAliasSet)
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interaction import Participation
 from canonical.launchpad.webapp import canonical_url
 from canonical.twistedsupport import defer_to_thread
@@ -31,6 +28,10 @@ from canonical.twistedsupport.loggingsupport import (
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
 from lp.code.enums import CodeImportResultStatus
+from lp.code.interfaces.codeimportjob import (
+    ICodeImportJobSet, ICodeImportJobWorkflow)
+from lp.codehosting.codeimport.worker import CodeImportSourceDetails
+from lp.testing import login, logout, ANONYMOUS
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
@@ -276,12 +277,13 @@ class CodeImportWorkerMonitor:
         """Launch the code-import-worker.py child process."""
         deferred = defer.Deferred()
         protocol = self._makeProcessProtocol(deferred)
-        command = [sys.executable, self.path_to_script]
+        interpreter = '%s/bin/py' % config.root
+        command = [interpreter, self.path_to_script]
         command.extend(source_details.asArguments())
         self._logger.info(
             "Launching worker child process %s.", command)
         reactor.spawnProcess(
-            protocol, sys.executable, command, env=os.environ, usePTY=True)
+            protocol, interpreter, command, env=os.environ, usePTY=True)
         return deferred
 
     def run(self):

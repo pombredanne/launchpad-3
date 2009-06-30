@@ -40,7 +40,7 @@ The methods are called by the BugWatchUpdater class:
     >>> txn.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('checkwatches')
 
-    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> external_bugtracker = BackLinkingExternalBugTracker(
     ...     'http://example.com/')

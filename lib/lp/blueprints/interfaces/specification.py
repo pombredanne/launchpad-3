@@ -814,7 +814,6 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
 
         It returns a SpecificationLifecycleStatus dbschema showing the
         overall state of the specification IF the state has changed.
-
         """
 
     # event-related methods
@@ -876,12 +875,12 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
 
-    @call_with(registrant=REQUEST_USER, summary=None)
+    @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         branch=Reference(schema=IBranch))
     @operation_returns_entry(Interface) # Really IBugBranch
     @export_write_operation()
-    def linkBranch(branch, registrant, summary=None):
+    def linkBranch(branch, registrant):
         """Link the given branch to this specification.
 
         :param branch: The branch to link to this specification.

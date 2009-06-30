@@ -156,6 +156,7 @@ of the following file type in its context.
  * Binary changesfile: '.changes';
  * Build logs: '.txt.gz';
  * Build upload logs: '_log.txt';
+ * Built files: '*deb';
 
     >>> print build.title
     i386 build of test-pkg 1.0 in ubuntutest breezy-autotest RELEASE
@@ -177,10 +178,11 @@ And unreachable files in `NotFoundError`.
 Retrieving a binary changesfile.  "test_1.0_i386.changes" is created when
 SoyuzTestPublisher creates the "test" binary publication.
 
-    >>> print build.changesfile.filename
+    >>> print build.upload_changesfile.filename
     test_1.0_i386.changes
 
-    >>> build.changesfile == build.getFileByName(build.changesfile.filename)
+    >>> build.upload_changesfile == build.getFileByName(
+    ...     build.upload_changesfile.filename)
     True
 
 Adding and retrieving a buildlog.
@@ -203,3 +205,7 @@ Adding and retrieving a upload_log.
     >>> upload_log == build.getFileByName(upload_log_name)
     True
 
+Retrieve a built file:
+
+    >>> deb == build.getFileByName('test_1.0_all.deb')
+    True

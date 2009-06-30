@@ -22,6 +22,7 @@ __all__ = [
     'BranchView',
     'BranchSubscriptionsView',
     'RegisterBranchMergeProposalView',
+    'TryImportAgainView',
     ]
 
 import cgi
@@ -73,6 +74,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -384,6 +386,9 @@ class BranchView(LaunchpadView, FeedsMixin):
         targets = []
         targets_added = set()
         for proposal in self.context.landing_targets:
+            # Don't show the proposal if the user can't see it.
+            if not check_permission('launchpad.View', proposal):
+                continue
             # Only show the must recent proposal for any given target.
             target_id = proposal.target_branch.id
             if target_id in targets_added:
@@ -402,7 +407,8 @@ class BranchView(LaunchpadView, FeedsMixin):
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
-        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+        return [DecoratedMergeProposal(proposal) for proposal in candidates
+                if check_permission('launchpad.View', proposal)]
 
     def _getBranchCountText(self, count):
         """Help to show user friendly text."""
@@ -415,17 +421,18 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     @cachedproperty
     def dependent_branch_count_text(self):
-        branch_count = self.context.dependent_branches.count()
+        branch_count = len(self.dependent_branches)
         return self._getBranchCountText(branch_count)
 
     @cachedproperty
     def landing_candidate_count_text(self):
-        branch_count = self.context.landing_candidates.count()
+        branch_count = len(self.landing_candidates)
         return self._getBranchCountText(branch_count)
 
     @cachedproperty
     def dependent_branches(self):
-        return list(self.context.dependent_branches)
+        return [branch for branch in self.context.dependent_branches
+                if check_permission('launchpad.View', branch)]
 
     @cachedproperty
     def no_merges(self):
@@ -538,6 +545,7 @@ class BranchEditSchema(Interface):
         'owner',
         'name',
         'url',
+        'description',
         'lifecycle_status',
         'whiteboard',
         ])
@@ -761,7 +769,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'name', 'private', 'url', 'lifecycle_status']
+        'owner', 'name', 'private', 'url', 'description', 'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
@@ -983,15 +991,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         return canonical_url(self.context)
 
 
-class DecoratedSubscription:
-    """Adds the editable attribute to a `BranchSubscription`."""
-    delegates(IBranchSubscription, 'subscription')
-
-    def __init__(self, subscription, editable):
-        self.subscription = subscription
-        self.editable = editable
-
-
 class BranchSubscriptionsView(LaunchpadView):
     """The view for the branch subscriptions portlet.
 
@@ -999,29 +998,6 @@ class BranchSubscriptionsView(LaunchpadView):
     in order to provide links to be able to edit the subscriptions
     based on whether or not the user is able to edit the subscription.
     """
-
-    def isEditable(self, subscription):
-        """A subscription is editable by members of the subscribed team.
-
-        Launchpad Admins are special, and can edit anyone's subscription.
-        """
-        # We don't want to say editable if the logged in user
-        # is the same as the person of the subscription.
-        if self.user is None or self.user == subscription.person:
-            return False
-        celebs = getUtility(ILaunchpadCelebrities)
-        return (self.user.inTeam(subscription.person) or
-                self.user.inTeam(celebs.admin) or
-                self.user.inTeam(celebs.bazaar_experts))
-
-    def subscriptions(self):
-        """Return a decorated list of branch subscriptions."""
-        sorted_subscriptions = sorted(
-            self.context.subscriptions,
-            key=lambda subscription: subscription.person.browsername)
-        return [DecoratedSubscription(
-                    subscription, self.isEditable(subscription))
-                for subscription in sorted_subscriptions]
 
     def owner_is_registrant(self):
         """Return whether or not owner is the same as the registrant"""
@@ -1187,10 +1163,10 @@ class BranchRequestImportView(LaunchpadFormView):
         if self.context.code_import.import_job is None:
             self.request.response.addNotification(
                 "This import is no longer being updated automatically.")
-        elif self.context.code_import.import_job.state != \
-                 CodeImportJobState.PENDING:
-            assert self.context.code_import.import_job.state == \
-                   CodeImportJobState.RUNNING
+        elif (self.context.code_import.import_job.state !=
+              CodeImportJobState.PENDING):
+            assert (self.context.code_import.import_job.state ==
+                    CodeImportJobState.RUNNING)
             self.request.response.addNotification(
                 "The import is already running.")
         elif self.context.code_import.import_job.requesting_user is not None:
@@ -1212,6 +1188,37 @@ class BranchRequestImportView(LaunchpadFormView):
     @property
     def action_url(self):
         return "%s/@@+request-import" % canonical_url(self.context)
+
+
+class TryImportAgainView(LaunchpadFormView):
+    """The view to provide an 'Try again' button on the branch index page.
+
+    This only appears on the page of a branch with an associated code import
+    that is marked as failing.
+    """
+
+    schema = IBranch
+    field_names = []
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Try Again', name='tryagain')
+    def request_try_again(self, action, data):
+        if (self.context.code_import.review_status !=
+            CodeImportReviewStatus.FAILING):
+            self.request.response.addNotification(
+                "The import is now %s."
+                % self.context.code_import.review_status.name)
+        else:
+            self.context.code_import.tryFailingImportAgain(self.user)
+            self.request.response.addNotification(
+                "Import will be tried again as soon as possible.")
+
+    @property
+    def prefix(self):
+        return "tryagain"
 
 
 class BranchSparkView(LaunchpadView):

@@ -82,11 +82,11 @@ def print_remote_bugtasks(content):
     For each remote bugtask, print the target and the bugwatch.
     """
     affects_table = find_tags_by_class(content, 'listing')[0]
-    for img in affects_table.findAll('img'):
-        for key, value in img.attrs:
-            if '@@/bug-remote' in value:
-                target = extract_text(img.findAllPrevious('td')[-2])
-                print target, extract_text(img.findNext('a'))
+    for span in affects_table.findAll('span'):
+        for key, value in span.attrs:
+            if 'bug-remote' in value:
+                target = extract_text(span.findAllPrevious('td')[-2])
+                print target, extract_text(span.findNext('a'))
 
 
 def print_bugs_table(content, table_id):

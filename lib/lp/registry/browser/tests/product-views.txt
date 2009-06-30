@@ -115,13 +115,13 @@ licenses.
     >>> login('commercial-member@canonical.com')
     >>> view = create_initialized_view(firefox, name='+review-license')
     >>> print view.label
-    Review project licensing
+    Review project
 
 The view allow the reviewer to see and change project privileges and
 judge the licenses.
 
     >>> view.field_names
-    ['active', 'private_bugs', 'license_reviewed', 'license_approved',
+    ['license_reviewed', 'license_approved', 'active', 'private_bugs',
      'reviewer_whiteboard']
 
 The reviewer can deactivate a project if he concludes it is bogus.

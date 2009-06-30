@@ -55,15 +55,6 @@ class IBranchCollection(Interface):
         defined by the arguments to this function.  These extra tables are
         joined specificly to allow the caller to sort on values not in the
         Branch table itself.
-
-        XXX TimPenhey 2009-03-16, spec=package-branches
-        When we have extra sorting columns in the views on source package
-        branches, we'll have to update the parameters to this method.  Ideally
-        we'll come up with a cleaner interface.  If we don't then a source
-        package listing, which obviously won't have a "Sort by Project name"
-        will be joining across the Product table (which will be empty anyway)
-        and slowing down the query.  By having these parameters, we can make
-        the queries for the counting and branch id queries much faster.
         """
 
     def getMergeProposals(statuses=None, for_branches=None):
@@ -97,6 +88,9 @@ class IBranchCollection(Interface):
 
     def inSourcePackage(package):
         """Restrict the collection to branches in 'package'."""
+
+    def inDistributionSourcePackage(distro_source_package):
+        """Restrict to branches in a 'package' for a 'distribution'."""
 
     def isJunk():
         """Restrict the collection to junk branches.
@@ -152,6 +146,7 @@ class IBranchCollection(Interface):
         A branch is targeted by a person if that person has registered a merge
         proposal with the branch as the target.
         """
+
 
 class IAllBranches(IBranchCollection):
     """An `IBranchCollection` representing all branches in Launchpad."""

@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 <body>
@@ -15,23 +15,17 @@
 
     <h1><span tal:replace="context/displayname" /> Timeline</h1>
 
+    <tal:iframe define="auto_resize python:True">
+      <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
+    </tal:iframe>
+
     <div tal:repeat="series view/sorted_series_list">
-      <div tal:define="is_focus python:context.development_focus == series"
-           tal:attributes="class
-              python:is_focus and 'highlighted' or 'unhighlighted'">
-        <metal:series use-macro="series/@@+macros/detailed_display">
-          <div metal:fill-slot="extra"
-               tal:define="openbugs_count series/open_bugtasks/count;
-                           closedbugs_count series/closed_bugtasks/count"
-               tal:condition="python: openbugs_count or closedbugs_count">
-              <strong>Bugs:</strong>
-              <a tal:attributes="href string:${series/fmt:url}/+bugs"
-                 tal:content="string: ${openbugs_count} open">0 open</a>
-              and
-              <a tal:attributes="href python: view.getClosedBugsURL(series)"
-                 tal:content="string: ${closedbugs_count} closed">10 closed</a>
-          </div>
-        </metal:series>
+      <div style="margin-top: 1em;
+                  border-bottom: 1px solid #ccc; max-width: 60em;"
+        tal:define="is_focus series/is_development_focus"
+        tal:attributes="class series/css_class;
+                        id series/name/fmt:css-id/series-;">
+        <tal:status replace="structure series/series/@@+status" />
       </div>
     </div>
 

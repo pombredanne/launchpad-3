@@ -32,7 +32,6 @@ from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
-from canonical.librarian.interfaces import ILibrarianClient
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -844,7 +843,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
-                date_created=None, description=None):
+                date_created=None, description=None, comment=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -862,8 +861,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePersonNoCommit()
         if title is None:
             title = self.getUniqueString()
+        if comment is None:
+            comment = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString(), private=private,
+            owner, title, comment=comment, private=private,
             datecreated=date_created, description=description)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
@@ -1006,6 +1007,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             msgid = self.makeUniqueRFC822MsgId()
         if body is None:
             body = self.getUniqueString('body')
+        charset = 'ascii'
+        try:
+            body = body.encode(charset)
+        except UnicodeEncodeError:
+            charset = 'utf-8'
+            body = body.encode(charset)
         mail['Message-Id'] = msgid
         mail['Date'] = formatdate()
         if signing_context is not None:
@@ -1031,6 +1038,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         body_part['Content-type'] = 'text/plain'
         if force_transfer_encoding:
             encode_base64(body_part)
+        body_part.set_charset(charset)
         mail.parsed_string = mail.as_string()
         return mail
 
@@ -1234,14 +1242,19 @@ class LaunchpadObjectFactory(ObjectFactory):
         syncUpdate(series)
         return series
 
-    def makeLibraryFileAlias(self, log_data=None):
+    def makeLibraryFileAlias(self, filename=None, content=None,
+                             content_type='text/plain', restricted=False,
+                             expires=None):
         """Make a library file, and return the alias."""
-        if log_data is None:
-            log_data = self.getUniqueString()
-        filename = self.getUniqueString('filename')
-        log_alias_id = getUtility(ILibrarianClient).addFile(
-            filename, len(log_data), StringIO(log_data), 'text/plain')
-        return getUtility(ILibraryFileAliasSet)[log_alias_id]
+        if filename is None:
+            filename = self.getUniqueString('filename')
+        if content is None:
+            content = self.getUniqueString()
+        library_file_alias_set = getUtility(ILibraryFileAliasSet)
+        library_file_alias = library_file_alias_set.create(
+            filename, len(content), StringIO(content), content_type,
+            expires=expires, restricted=restricted)
+        return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None):
         """Make a new distribution."""
@@ -1367,12 +1380,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code, potemplate=None, owner=None,
-                   variant=None):
+                   variant=None, create_sharing=False):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
         return potemplate.newPOFile(language_code, variant,
-                                    requester=potemplate.owner)
+                                    requester=potemplate.owner,
+                                    create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       context=None, sequence=None):

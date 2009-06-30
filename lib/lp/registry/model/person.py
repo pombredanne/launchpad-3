@@ -41,7 +41,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, Join, Lower
+from storm.expr import And, In, Join, Lower, Not, Or, SQL
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -58,6 +58,7 @@ from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
 from canonical.launchpad.database.account import Account
 from lp.bugs.model.bugtarget import HasBugsBase
+from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
 from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.oauth import (
@@ -78,8 +79,7 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.enums import BranchMergeProposalStatus
-from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -202,7 +202,7 @@ def validate_person_visibility(person, attr, value):
     # If transitioning to a non-public visibility, check for existing
     # relationships that could leak data.
     if value != PersonVisibility.PUBLIC:
-        warning = person.visibility_consistency_warning
+        warning = person.visibilityConsistencyWarning(value)
         if warning is not None:
             raise ImmutableVisibilityError(warning)
 
@@ -210,7 +210,8 @@ def validate_person_visibility(person, attr, value):
 
 
 class Person(
-    SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin):
+    SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
+    HasBranchesMixin, HasMergeProposalsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -225,6 +226,8 @@ class Person(
     _sortingColumnsForSetOperations = SQLConstant(
         "person_sort_key(displayname, name)")
     _defaultOrder = sortingColumns
+    _visibility_warning_marker = object()
+    _visibility_warning_cache = _visibility_warning_marker
 
     account = ForeignKey(dbName='account', foreignKey='Account', default=None)
 
@@ -564,10 +567,10 @@ class Person(
             mail_text = get_email_template('person-location-modified.txt')
             mail_text = mail_text % {
                 'actor': user.name,
-                'actor_browsername': user.browsername,
+                'actor_browsername': user.displayname,
                 'person': self.name}
             subject = '%s updated your location and time zone' % (
-                user.browsername)
+                user.displayname)
             getUtility(IPersonNotificationSet).addNotification(
                 self, subject, mail_text)
 
@@ -640,11 +643,6 @@ class Person(
     def unique_displayname(self):
         """See `IPerson`."""
         return "%s (%s)" % (self.displayname, self.name)
-
-    @property
-    def browsername(self):
-        """See `IPersonPublic`."""
-        return self.displayname
 
     @property
     def has_any_specifications(self):
@@ -851,17 +849,6 @@ class Person(
     def isTeam(self):
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
-
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IPerson`."""
-        if not status:
-            status = (
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW,
-                BranchMergeProposalStatus.WORK_IN_PROGRESS)
-
-        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self, status, visible_by_user=None)
 
     @property
     def mailing_list(self):
@@ -1410,7 +1397,7 @@ class Person(
     @property
     def title(self):
         """See `IPerson`."""
-        return self.browsername
+        return self.displayname
 
     @property
     def allmembers(self):
@@ -1744,19 +1731,22 @@ class Person(
         else:
             return True
 
-    @property
-    def visibility_consistency_warning(self):
+    def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
 
         A private-membership team cannot be connected to other
         objects, since it may be possible to infer the membership.
         """
+        if self._visibility_warning_cache != self._visibility_warning_marker:
+            return self._visibility_warning_cache
+
         cur = cursor()
         references = list(postgresql.listReferences(cur, 'person', 'id'))
         # These tables will be skipped since they do not risk leaking
         # team membership information, except StructuralSubscription
         # which will be checked further down to provide a clearer warning.
-        skip = [
+        # Note all of the table names and columns must be all lowercase.
+        skip = set([
             ('emailaddress', 'person'),
             ('gpgkey', 'owner'),
             ('ircid', 'person'),
@@ -1779,7 +1769,21 @@ class Person(
             # Skip mailing lists because if the mailing list is purged, it's
             # not a problem.  Do this check separately below.
             ('mailinglist', 'team')
-            ]
+            ])
+
+        # Private teams may participate in more areas of Launchpad than
+        # Private Membership teams.  The following relationships are allowable
+        # for Private teams and thus should be skipped.
+        if new_value == PersonVisibility.PRIVATE:
+            skip.update([('bugsubscription', 'person'),
+                         ('bugtask', 'assignee'),
+                         ('branch', 'owner'),
+                         ('branchsubscription', 'person'),
+                         ('branchvisibilitypolicy', 'team'),
+                         ('archive', 'owner'),
+                         ('archivesubscriber', 'subscriber'),
+                         ])
+
         warnings = set()
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
             if (src_tab, src_col) in skip:
@@ -1793,43 +1797,48 @@ class Person(
                     article = 'a'
                 warnings.add('%s %s' % (article, src_tab))
 
-        # Add warnings for subscriptions in StructuralSubscription table
-        # describing which kind of object is being subscribed to.
-        cur.execute("""
-            SELECT
-                count(product) AS product_count,
-                count(productseries) AS productseries_count,
-                count(project) AS project_count,
-                count(milestone) AS milestone_count,
-                count(distribution) AS distribution_count,
-                count(distroseries) AS distroseries_count,
-                count(sourcepackagename) AS sourcepackagename_count
-            FROM StructuralSubscription
-            WHERE subscriber=%d LIMIT 1
-            """ % self.id)
+        # Private teams may have structural subscription, so the following
+        # test is not applied to them.
+        if new_value != PersonVisibility.PRIVATE:
+            # Add warnings for subscriptions in StructuralSubscription table
+            # describing which kind of object is being subscribed to.
+            cur.execute("""
+                SELECT
+                    count(product) AS product_count,
+                    count(productseries) AS productseries_count,
+                    count(project) AS project_count,
+                    count(milestone) AS milestone_count,
+                    count(distribution) AS distribution_count,
+                    count(distroseries) AS distroseries_count,
+                    count(sourcepackagename) AS sourcepackagename_count
+                FROM StructuralSubscription
+                WHERE subscriber=%d LIMIT 1
+                """ % self.id)
 
-        row = cur.fetchone()
-        for count, warning in zip(row, [
-                'a project subscriber',
-                'a project series subscriber',
-                'a project subscriber',
-                'a milestone subscriber',
-                'a distribution subscriber',
-                'a distroseries subscriber',
-                'a source package subscriber']):
-            if count > 0:
-                warnings.add(warning)
+            row = cur.fetchone()
+            for count, warning in zip(row, [
+                    'a project subscriber',
+                    'a project series subscriber',
+                    'a project subscriber',
+                    'a milestone subscriber',
+                    'a distribution subscriber',
+                    'a distroseries subscriber',
+                    'a source package subscriber']):
+                if count > 0:
+                    warnings.add(warning)
 
-        # Non-purged mailing list check.
-        mailing_list = getUtility(IMailingListSet).get(self.name)
-        if (mailing_list is not None and
-            mailing_list.status != MailingListStatus.PURGED):
-            warnings.add('a mailing list')
+        # Non-purged mailing list check for transitioning to or from PUBLIC.
+        if PersonVisibility.PUBLIC in [self.visibility, new_value]:
+            mailing_list = getUtility(IMailingListSet).get(self.name)
+            if (mailing_list is not None and
+                mailing_list.status != MailingListStatus.PURGED):
+                warnings.add('a mailing list')
 
         # Compose warning string.
         warnings = sorted(warnings)
+
         if len(warnings) == 0:
-            return None
+            self._visibility_warning_cache = None
         else:
             if len(warnings) == 1:
                 message = warnings[0]
@@ -1837,8 +1846,10 @@ class Person(
                 message = '%s and %s' % (
                     ', '.join(warnings[:-1]),
                     warnings[-1])
-            return ('This team cannot be made private since it is referenced'
-                    ' by %s.' % message)
+            self._visibility_warning_cache = (
+                'This team cannot be converted to %s since it is '
+                'referenced by %s.' % (new_value, message))
+        return self._visibility_warning_cache
 
     @property
     def member_memberships(self):
@@ -2493,39 +2504,52 @@ class PersonSet:
         """
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
-            private_query = """
-                TeamParticipation.person = %s
+            private_query = SQL("""
+                TeamParticipation.person = ?
                 AND Person.teamowner IS NOT NULL
-                AND Person.visibility != %s
-                """ % (sqlvalues(logged_in_user, PersonVisibility.PUBLIC))
+                AND Person.visibility != ?
+                """, (logged_in_user.id, PersonVisibility.PUBLIC.value))
         else:
-            private_query = "1 = 0"
-        base_query = """
-            (Person.visibility = %s OR
-            (%s))""" % (quote(PersonVisibility.PUBLIC), private_query)
-        return base_query
+            private_query = None
 
-    def _teamEmailQuery(self, text, privacy_query):
+        base_query = SQL("Person.visibility = ?",
+                         (PersonVisibility.PUBLIC.value,),
+                         tables=['Person'])
+
+        if private_query is None:
+            query = base_query
+        else:
+            query = Or(base_query, private_query)
+
+        return query
+
+    def _teamEmailQuery(self, text):
         """Product the query for team email addresses."""
-        team_email_query = """
-            %s
-            AND TeamParticipation.team = Person.id
-            AND Person.teamowner IS NOT NULL
-            AND Person.merged IS NULL
-            AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%'
-            """ % (privacy_query, quote_like(text),)
+        privacy_query = self._teamPrivacyQuery()
+        # XXX: BradCrittenden 2009-06-08 bug=244768:  Use Not(Bar.foo == None)
+        # instead of Bar.foo != None.
+        team_email_query = And(
+            privacy_query,
+            TeamParticipation.team == Person.id,
+            Not(Person.teamowner == None),
+            Person.merged == None,
+            EmailAddress.person == Person.id,
+            StartsWith(Lower(EmailAddress.email), text)
+            )
         return team_email_query
 
-    def _teamNameQuery(self, text, privacy_query):
+    def _teamNameQuery(self, text):
         """Produce the query for team names."""
-        team_name_query = """
-            %s
-            AND TeamParticipation.team = Person.id
-            AND Person.teamowner IS NOT NULL
-            AND Person.merged IS NULL
-            AND Person.fti @@ ftq(%s)
-            """ % (privacy_query, quote(text),)
+        privacy_query = self._teamPrivacyQuery()
+        # XXX: BradCrittenden 2009-06-08 bug=244768:  Use Not(Bar.foo == None)
+        # instead of Bar.foo != None.
+        team_name_query = And(
+            privacy_query,
+            TeamParticipation.team == Person.id,
+            Not(Person.teamowner == None),
+            Person.merged == None,
+            SQL("Person.fti @@ ftq(?)", (text,))
+            )
         return team_name_query
 
     def find(self, text):
@@ -2536,49 +2560,49 @@ class PersonSet:
 
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-
+        inactive_statuses = tuple(
+            status.value for status in INACTIVE_ACCOUNT_STATUSES)
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between four queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        args = (quote_like(text),) + sqlvalues(INACTIVE_ACCOUNT_STATUSES)
-        person_email_query = """
-            Person.teamowner IS NULL
-            AND Person.merged IS NULL
-            AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%'
-            AND Person.account = Account.id
-            AND Account.status NOT IN %s
-            """ % args
+        person_email_query = And(
+            Person.teamowner == None,
+            Person.merged == None,
+            EmailAddress.person == Person.id,
+            Person.account == Account.id,
+            Not(In(Account.status, inactive_statuses)),
+            StartsWith(Lower(EmailAddress.email), text)
+            )
 
-        results = Person.select(
-            person_email_query, clauseTables=['EmailAddress', 'Account'])
+        store = IStore(Person)
 
-        person_name_query = """
-            Person.teamowner IS NULL
-            AND Person.merged is NULL
-            AND Person.fti @@ ftq(%s)
-            AND Person.account = Account.id
-            AND Account.status NOT IN %s
-            """ % sqlvalues(text, INACTIVE_ACCOUNT_STATUSES)
+        # The call to order_by() is necessary to avoid having the default
+        # ordering applied.  Since no value is passed the effect is to remove
+        # the generation of an 'ORDER BY' clause on the intermediate results.
+        # Otherwise the default ordering is taken from the ordering
+        # declaration on the class.  The final result set will have the
+        # appropriate ordering set.
+        results = store.find(
+            Person, person_email_query).order_by()
 
-        results = results.union(Person.select(
-            person_name_query, clauseTables=['Account']))
+        person_name_query = And(
+            Person.teamowner == None,
+            Person.merged == None,
+            Person.account == Account.id,
+            Not(In(Account.status, inactive_statuses)),
+            SQL("Person.fti @@ ftq(?)", (text, ))
+            )
 
-        privacy_query = self._teamPrivacyQuery()
-
-        team_email_query = self._teamEmailQuery(text, privacy_query)
-
-        results = results.union(Person.select(
-            team_email_query, clauseTables=['EmailAddress',
-                                            'TeamParticipation']))
-
-        team_name_query = self._teamNameQuery(text, privacy_query)
-
+        results = results.union(store.find(
+            Person, person_name_query)).order_by()
+        team_email_query = self._teamEmailQuery(text)
         results = results.union(
-                Person.select(team_name_query,
-                              clauseTables=['TeamParticipation']),
-                orderBy=orderBy)
-        return results
+            store.find(Person, team_email_query)).order_by()
+        team_name_query = self._teamNameQuery(text)
+        results = results.union(
+            store.find(Person, team_name_query)).order_by()
+
+        return results.order_by(orderBy)
 
     def findPerson(
             self, text="", exclude_inactive_accounts=True,
@@ -2586,45 +2610,54 @@ class PersonSet:
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        base_query = [
-                'Person.teamowner IS NULL',
-                'Person.merged IS NULL',
-                ]
+        store = IStore(Person)
+        inactive_statuses = tuple(
+            status.value for status in INACTIVE_ACCOUNT_STATUSES)
+        base_query = And(
+            Person.teamowner == None,
+            Person.merged == None
+            )
+
         clause_tables = []
 
         if exclude_inactive_accounts:
             clause_tables.append('Account')
-            base_query.append('Person.account = Account.id')
-            base_query.append(
-                'Account.status NOT IN (%s)'
-                % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
-
+            base_query = And(
+                base_query,
+                Person.account == Account.id,
+                Not(In(Account.status, inactive_statuses))
+                )
         email_clause_tables = clause_tables + ['EmailAddress']
         if must_have_email:
             clause_tables = email_clause_tables
-            base_query.append('EmailAddress.person = Person.id')
+            base_query = And(
+                base_query,
+                EmailAddress.person == Person.id
+                )
 
         # Short circuit for returning all users in order
         if not text:
-            return Person.select(
-                    ' AND '.join(base_query), clauseTables=clause_tables)
+            #query = SQL(' AND '.join(base_query), tables=clause_tables)
+            results = store.find(Person, base_query).order_by(orderBy)
+            return results
 
         # We use a UNION here because this makes things *a lot* faster
         # than if we did a single SELECT with the two following clauses
         # ORed.
-        email_query = base_query + [
-                'EmailAddress.person = Person.id',
-                "lower(EmailAddress.email) LIKE %s || '%%'" % quote_like(text)
-                ]
-        name_query = base_query + ["Person.fti @@ ftq(%s)" % quote(text)]
+        email_query = And(
+            base_query,
+            EmailAddress.person == Person.id,
+            StartsWith(Lower(EmailAddress.email), text)
+            )
 
-        results = Person.select(
-                ' AND '.join(email_query), clauseTables=email_clause_tables)
-        results = results.union(
-                Person.select(
-                    ' AND '.join(name_query), clauseTables=clause_tables))
-
-        return results.orderBy(orderBy)
+        name_query = And(
+            base_query,
+            SQL("Person.fti @@ ftq(?)", (text,))
+            )
+        email_results = store.find(Person, email_query).order_by()
+        name_results = store.find(Person, name_query).order_by()
+        combined_results = email_results.union(name_results)
+        return combined_results.order_by(orderBy)
 
     def findTeam(self, text=""):
         """See `IPersonSet`."""
@@ -2633,19 +2666,13 @@ class PersonSet:
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        privacy_query = self._teamPrivacyQuery()
-
-        email_query = self._teamEmailQuery(text, privacy_query)
-
-        email_results = Person.select(email_query,
-                                      clauseTables=['EmailAddress',
-                                                    'TeamParticipation'])
-        name_query = self._teamNameQuery(text, privacy_query)
-
-        name_results = Person.select(name_query,
-                                     clauseTables=['TeamParticipation'])
-        combined_results = email_results.union(name_results, orderBy=orderBy)
-        return combined_results
+        email_query = self._teamEmailQuery(text)
+        store = IStore(Person)
+        email_results = store.find(Person, email_query).order_by()
+        name_query = self._teamNameQuery(text)
+        name_results = store.find(Person, name_query).order_by()
+        combined_results = email_results.union(name_results)
+        return combined_results.order_by(orderBy)
 
     def get(self, personid):
         """See `IPersonSet`."""
@@ -3371,7 +3398,12 @@ class PersonSet:
         subscriber_ids = [
             subscription.subscriberID for subscription in subscriptions]
         if len(subscriber_ids) > 0:
-            list(Person.select("id IN %s" % sqlvalues(subscriber_ids)))
+            # Pull in ValidPersonCache records in addition to Person
+            # records to warm up the cache.
+            list(IStore(Person).find(
+                    (Person, ValidPersonCache),
+                    In(Person.id, subscriber_ids),
+                    ValidPersonCache.id == Person.id))
 
         subscribers = set()
         for subscription in subscriptions:

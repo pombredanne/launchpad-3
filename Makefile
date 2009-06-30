@@ -12,11 +12,9 @@ TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
 SHHH=${PY} utilities/shhh.py
-STARTSCRIPT=runlaunchpad.py
 HERE:=$(shell pwd)
 
 LPCONFIG=development
-CONFFILE=configs/${LPCONFIG}/launchpad.conf
 
 MINS_TO_SHUTDOWN=15
 
@@ -72,6 +70,9 @@ check_db_merge: $(PY)
 check_sourcecode_merge: build check
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+
+check_config: build
+	bin/test -m canonical.config.tests -vvt test_config
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
@@ -143,18 +144,17 @@ ftest_inplace: inplace
 
 run: inplace stop
 	$(RM) thread*.request
-	bin/run -r librarian,google-webservice -C $(CONFFILE)
+	bin/run -r librarian,google-webservice -i $(LPCONFIG)
 
 start-gdb: inplace stop support_files
 	$(RM) thread*.request
-	nohup gdb -x run.gdb --args bin/run \
-		-r librarian,google-webservice -C $(CONFFILE) \
+	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
+		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: inplace stop hosted_branches
 	$(RM) thread*.request
-	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
-		 -C $(CONFFILE)
+	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
@@ -186,7 +186,7 @@ support_files: $(WADL_FILE) $(BZR_VERSION_INFO)
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
 start: inplace stop support_files
-	nohup bin/run -C $(CONFFILE) > ${LPCONFIG}-nohup.out 2>&1 &
+	nohup bin/run -i $(LPCONFIG) > ${LPCONFIG}-nohup.out 2>&1 &
 
 # This is a stripped down version of the "start" target for use on
 # production servers - removes running 'make build' because we already
@@ -195,7 +195,7 @@ start: inplace stop support_files
 # even if the service is already stopped, and bzr_version_info is not
 # needed either because it's run as part of 'make build'.
 initscript-start:
-	nohup bin/run -C $(CONFFILE) > ${LPCONFIG}-nohup.out 2>&1 &
+	nohup bin/run -i $(LPCONFIG) > ${LPCONFIG}-nohup.out 2>&1 &
 
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition.
@@ -313,4 +313,4 @@ ID: compile
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge check_mailman
+	reload-apache hosted_branches check_db_merge check_mailman check_config
