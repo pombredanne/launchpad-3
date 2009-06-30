@@ -1385,7 +1385,7 @@ class HasTranslationTemplatesMixin:
         columns = []
         for column in current_templates.columns:
             if column.name == 'id':
-                columns = [col]
+                columns = [column]
                 break
         current_templates.columns = columns
         templates = Alias(current_templates, 'potemplates')
