@@ -524,6 +524,11 @@ class RevisionsAddedJob(BranchJobDerived):
                     BranchMergeProposalStatus.CODE_APPROVED):
                     outf.write('  approved by: %s (%s)\n' %
                                (bmp.reviewer.displayname, bmp.reviewer.name))
+                for review in bmp.votes:
+                    outf.write('  review: %s - %s (%s)\n' %
+                        (review.comment.vote.title,
+                         review.reviewer.displayname,
+                         review.reviewer.name))
             lf = LongLogFormatter(to_file=outf)
             rqst = make_log_request_dict(direction='reverse',
                                          start_revision=info,

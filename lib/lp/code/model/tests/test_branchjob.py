@@ -37,7 +37,7 @@ from lp.code.bzr import (
     REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    CodeReviewNotificationLevel, CodeReviewVote)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
     IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
@@ -606,17 +606,21 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                                          name='jrandom')
         reviewer = self.factory.makePerson(displayname='J. Random Reviewer',
                                            name='jrandom2')
+        other = self.factory.makePerson(displayname='Other Reviewer',
+                                        name='other')
         job.branch.reviewer = reviewer
         bmp = self.factory.makeBranchMergeProposal(target_branch=job.branch,
                                                    registrant=hacker)
         bmp.approveBranch(reviewer, 'rev3-id')
         bmp.source_branch.last_scanned_id = 'rev3-id'
+        bmp.createComment(other, 'foo', vote=CodeReviewVote.NEEDS_FIXING)
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Related merge proposals:\n'
         '  %s\n'
         '  proposed by: J. Random Hacker (jrandom)\n'
         '  approved by: J. Random Reviewer (jrandom2)\n'
+        '  review: Needs Fixing - Other Reviewer (other)\n'
         '------------------------------------------------------------\n'
         'revno: 2 [merge]\n'
         'author: bar@, baz@, foo@, qux@\n'
