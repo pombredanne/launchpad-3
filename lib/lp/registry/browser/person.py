@@ -1055,7 +1055,10 @@ class PPANavigationMenuMixIn:
         target = '#ppas'
         text = 'Personal Package Archives'
         view = get_current_view()
-        enabled = view.should_show_ppa_section
+        if isinstance(view, PersonView):
+            enabled = view.should_show_ppa_section
+        else:
+            enabled = True
         return Link(target, text, enabled=enabled)
 
 
