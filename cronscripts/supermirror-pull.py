@@ -37,26 +37,11 @@ if __name__ == '__main__':
     parser = OptionParser()
     logger_options(parser)
     (options, arguments) = parser.parse_args()
-    which = arguments.pop(0)
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
-
-    branch_type_map = {
-        'upload': BranchType.HOSTED,
-        'mirror': BranchType.MIRRORED,
-        'import': BranchType.IMPORTED
-        }
-
-    try:
-        branch_type = branch_type_map[which]
-    except KeyError:
-        parser.error(
-            'Expected one of %s, but got: %r'
-            % (branch_type_map.keys(), which))
-
-    log = set_up_logging_for_script(options, 'supermirror_%s_puller' % which)
+    log = set_up_logging_for_script(options, 'supermirror_upload_puller')
     manager = scheduler.JobScheduler(
-        Proxy(config.codehosting.branch_puller_endpoint), log, branch_type)
+        Proxy(config.codehosting.branch_puller_endpoint), log)
 
     reactor.callWhenRunning(run_mirror, log, manager)
     reactor.run()

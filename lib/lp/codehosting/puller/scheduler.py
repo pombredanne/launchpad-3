@@ -414,12 +414,11 @@ class JobScheduler:
     branches.
     """
 
-    def __init__(self, branch_puller_endpoint, logger, branch_type):
+    def __init__(self, branch_puller_endpoint, logger):
         self.branch_puller_endpoint = branch_puller_endpoint
         self.logger = logger
         self.actualLock = None
-        self.branch_type = branch_type
-        self.name = 'branch-puller-%s' % branch_type.name.lower()
+        self.name = 'branch-puller-upload'
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
 
     @cachedproperty
@@ -433,42 +432,46 @@ class JobScheduler:
         return set(
             [str(i) for i in range(config.supermirror.maximum_workers)])
 
-    def _run(self, puller_masters):
-        """Run all branches_to_mirror registered with the JobScheduler."""
-        self.logger.info('%d branches to mirror', len(puller_masters))
-        assert config.supermirror.maximum_workers is not None, (
-            "config.supermirror.maximum_workers is not defined.")
-        semaphore = defer.DeferredSemaphore(
-            config.supermirror.maximum_workers)
-        deferreds = [
-            semaphore.run(puller_master.run)
-            for puller_master in puller_masters]
-        deferred = defer.gatherResults(deferreds)
-        deferred.addCallback(self._finishedRunning)
+    def _poll(self):
+        deferred = self.branch_puller_endpoint.callRemote(
+            'acquireBranchToPull')
+        def _cb(job_tuple):
+            if len(job_tuple) == 0:
+                print 'did not get job'
+                return None
+            (branch_id, pull_url, unique_name,
+             default_stacked_on_url, branch_type_name) = job_tuple
+            print 'got job', job_tuple
+            def start():
+                print 'starting job'
+                from lp.code.interfaces.branch import BranchType
+                branch_type = {
+                    'HOSTED': BranchType.HOSTED,
+                    'MIRRORED': BranchType.MIRRORED,
+                    'IMPORTED': BranchType.IMPORTED
+                    }[branch_type_name]
+
+                master = PullerMaster(
+                    branch_id, pull_url, unique_name, branch_type,
+                    default_stacked_on_url, self.logger,
+                    self.branch_puller_endpoint, self.available_oops_prefixes)
+                return master.run()
+            return start
+        deferred.addCallback(_cb)
         return deferred
 
     def run(self):
-        deferred = self.branch_puller_endpoint.callRemote(
-            'getBranchPullQueue', self.branch_type.name)
-        deferred.addCallback(self.getPullerMasters)
-        deferred.addCallback(self._run)
+        from canonical.twistedsupport.task import (
+            ParallelLimitedTaskConsumer, PollingTaskSource)
+        consumer = ParallelLimitedTaskConsumer(config.supermirror.maximum_workers)
+        source = PollingTaskSource(10, self._poll)
+        deferred = consumer.consume(source)
+        deferred.addCallback(self._finishedRunning)
         return deferred
 
     def _finishedRunning(self, ignored):
         self.logger.info('Mirroring complete')
         return ignored
-
-    def getPullerMaster(self, branch_id, branch_src, unique_name,
-                        default_stacked_on_url):
-        branch_src = branch_src.strip()
-        return PullerMaster(
-            branch_id, branch_src, unique_name, self.branch_type,
-            default_stacked_on_url, self.logger,
-            self.branch_puller_endpoint, self.available_oops_prefixes)
-
-    def getPullerMasters(self, branches_to_pull):
-        return [
-            self.getPullerMaster(*branch) for branch in branches_to_pull]
 
     def lock(self):
         self.actualLock = GlobalLock(self.lockfilename)
