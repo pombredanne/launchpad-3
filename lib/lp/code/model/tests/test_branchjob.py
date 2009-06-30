@@ -491,28 +491,28 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree2.commit('rev3', authors=['bar@', 'baz@'])
         tree.merge_from_branch(tree2.branch)
         tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
-        tree3.commit('rev2c', committer='qux@')
+        tree3.commit('rev2b', committer='qux@')
         tree.merge_from_branch(tree3.branch)
         if include_ghost:
-            tree.add_parent_tree_id('rev2d')
-        tree.commit('rev2b', rev_id='rev2b', timestamp=1000, timezone=0,
+            tree.add_parent_tree_id('rev2c')
+        tree.commit('rev2d', rev_id='rev2d-id', timestamp=1000, timezone=0,
             committer='J. Random Hacker <jrandom@example.org>',
             authors=authors)
-        return RevisionsAddedJob.create(branch, 'rev2b', 'rev2b', '')
+        return RevisionsAddedJob.create(branch, 'rev2d-id', 'rev2d-id', '')
 
     def test_getMergeAuthors(self):
         job = self.makeRevisionsAddedWithMergeCommit()
         job.bzr_branch.lock_write()
         self.addCleanup(job.bzr_branch.unlock)
         self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
-                         job.getMergeAuthors('rev2b'))
+                         job.getMergeAuthors('rev2d-id'))
 
     def test_getMergeAuthors_with_ghost(self):
         job = self.makeRevisionsAddedWithMergeCommit(include_ghost=True)
         job.bzr_branch.lock_write()
         self.addCleanup(job.bzr_branch.unlock)
         self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
-                         job.getMergeAuthors('rev2b'))
+                         job.getMergeAuthors('rev2d-id'))
 
     def test_getRevisionMessage(self):
         """getRevisionMessage provides a correctly-formatted message."""
@@ -531,7 +531,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_getRevisionMessage_with_merge_authors(self):
         job = self.makeRevisionsAddedWithMergeCommit()
-        message = job.getRevisionMessage('rev2b', 1)
+        message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         '------------------------------------------------------------\n'
         'revno: 2 [merge]\n'
@@ -540,11 +540,11 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'branch nick: nicholas\n'
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
-        '  rev2b\n', message)
+        '  rev2d\n', message)
 
     def test_getRevisionMessage_with_merge_authors_and_authors(self):
         job = self.makeRevisionsAddedWithMergeCommit(authors=['quxx'])
-        message = job.getRevisionMessage('rev2b', 1)
+        message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         '------------------------------------------------------------\n'
         'revno: 2 [merge]\n'
@@ -553,7 +553,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'branch nick: nicholas\n'
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
-        '  rev2b\n', message)
+        '  rev2d\n', message)
 
     def test_email_format(self):
         """Contents of the email are as expected."""
