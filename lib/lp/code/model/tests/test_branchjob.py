@@ -480,7 +480,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             committer='J. Random Hacker <jrandom@example.org>')
         return branch, tree
 
-    def makeRevisionsAddedWithMergeCommit(self, authors=None):
+    def makeRevisionsAddedWithMergeCommit(self, authors=None,
+                                          include_ghost=False):
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.branch.nick = 'nicholas'
@@ -492,6 +493,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
         tree3.commit('rev2c', committer='qux@')
         tree.merge_from_branch(tree3.branch)
+        if include_ghost:
+            tree.add_parent_tree_id('rev2d')
         tree.commit('rev2b', rev_id='rev2b', timestamp=1000, timezone=0,
             committer='J. Random Hacker <jrandom@example.org>',
             authors=authors)
@@ -499,6 +502,13 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_getMergeAuthors(self):
         job = self.makeRevisionsAddedWithMergeCommit()
+        job.bzr_branch.lock_write()
+        self.addCleanup(job.bzr_branch.unlock)
+        self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
+                         job.getMergeAuthors('rev2b'))
+
+    def test_getMergeAuthors_with_ghost(self):
+        job = self.makeRevisionsAddedWithMergeCommit(include_ghost=True)
         job.bzr_branch.lock_write()
         self.addCleanup(job.bzr_branch.unlock)
         self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),

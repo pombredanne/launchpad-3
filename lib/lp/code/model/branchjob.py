@@ -451,14 +451,21 @@ class RevisionsAddedJob(BranchJobDerived):
             subject)
 
     def getMergeAuthors(self, revision_id):
+        """Determine authors of the revisions merged by this revision.
+
+        Ghost revisions are skipped.
+        :param revision_id: The revision to examine.
+        :return: a set of author commit-ids
+        """
         graph = self.bzr_branch.repository.get_graph()
         parents = graph.get_parent_map([revision_id])[revision_id]
         merged_revision_ids = set()
         for merge_parent in parents[1:]:
             merged = graph.find_difference(parents[0], merge_parent)[1]
             merged_revision_ids.update(merged)
+        present_merged = graph.get_parent_map(merged_revision_ids).keys()
         merged_revisions = self.bzr_branch.repository.get_revisions(
-            merged_revision_ids)
+            present_merged)
         authors = set()
         for revision in merged_revisions:
             authors.update(revision.get_apparent_authors())
