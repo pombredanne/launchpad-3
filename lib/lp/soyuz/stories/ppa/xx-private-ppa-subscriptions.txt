@@ -142,7 +142,8 @@ listed in the current subscriptions area:
 
 == Confirming a subscription ==
 
-When a person clicks on the confirm button, they are taken to a page
+When a person clicks on the view button, the subscription is confirmed
+automatically (creating a token for the user) and they are taken to a page
 displaying their subscription.
 
     >>> joe_browser.getControl(name="activate", index=0).click()
