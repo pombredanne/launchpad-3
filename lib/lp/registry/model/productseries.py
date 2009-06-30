@@ -79,7 +79,8 @@ def landmark_key(landmark):
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
-                    HasTranslationTemplatesMixin, StructuralSubscriptionTargetMixin):
+                    HasTranslationTemplatesMixin,
+                    StructuralSubscriptionTargetMixin):
     """A series of product releases."""
     implements(
         IProductSeries, IHasTranslationTemplates,

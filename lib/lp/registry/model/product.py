@@ -685,7 +685,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def translatable_packages(self):
         """See `IProduct`."""
         packages = set(package for package in self.sourcepackages
-                       if bool(package.getCurrentTranslationTemplates().any()))
+                       if bool(
+                           package.getCurrentTranslationTemplates().any())
+                       )
         # Sort packages by distroseries.name and package.name
         return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 

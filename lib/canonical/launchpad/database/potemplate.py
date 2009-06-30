@@ -42,9 +42,9 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.interfaces import (
     IHasTranslationTemplates, ILaunchpadCelebrities, IPOFileSet, IPOTemplate,
-    IPOTemplateSet, IPOTemplateSharingSubset, IPOTemplateSubset, ITranslationExporter,
-    ITranslationFileData, ITranslationImporter, IVPOTExportSet,
-    LanguageNotFound, NotFoundError, RosettaImportStatus,
+    IPOTemplateSet, IPOTemplateSharingSubset, IPOTemplateSubset,
+    ITranslationExporter, ITranslationFileData, ITranslationImporter,
+    IVPOTExportSet, LanguageNotFound, NotFoundError, RosettaImportStatus,
     TranslationFileFormat, TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError)
 from canonical.launchpad.interfaces.potmsgset import BrokenTextError
@@ -1380,12 +1380,14 @@ class HasTranslationTemplatesMixin:
         # XXX 2009-06-30 Danilo: until Storm can do find() on
         # ResultSets (bug #338255), we need to manually get a select
         # and extend it with another condition.
-        current_templates = self.getCurrentTranslationTemplates()._get_select()
+        current_templates = (
+            self.getCurrentTranslationTemplates()._get_select())
         columns = []
-        for col in current_templates.columns:
-            if col.name=='id':
+        for column in current_templates.columns:
+            if column.name == 'id':
                 columns = [col]
-        current_templates.columns=columns
+                break
+        current_templates.columns = columns
         templates = Alias(current_templates, 'potemplates')
 
         if just_ids:
