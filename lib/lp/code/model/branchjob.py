@@ -22,6 +22,7 @@ from lazr.delegates import delegates
 import simplejson
 from sqlobject import ForeignKey, StringCol
 from storm.expr import And
+from storm.locals import Store
 import transaction
 from zope.component import getUtility
 from zope.interface import classProvides, implements
@@ -32,6 +33,7 @@ from canonical.database.sqlbase import SQLBase
 from lp.code.bzr import (
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
+from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
@@ -480,6 +482,20 @@ class RevisionsAddedJob(BranchJobDerived):
         for revision in merged_revisions:
             authors.update(revision.get_apparent_authors())
         return authors
+
+    def findRelatedBMP(self, revision_ids):
+        """Find merge proposals related to the revision-ids and branch.
+
+        Only proposals whose source branch last-scanned-id is in the set of
+        revision-ids and whose target_branch is the BranchJob branch are
+        returned.
+        """
+        store = Store.of(self.branch)
+        result = store.find(BranchMergeProposal,
+                            BranchMergeProposal.target_branch==self.branch.id,
+                            BranchMergeProposal.source_branch==Branch.id,
+                            Branch.last_scanned_id.is_in(revision_ids))
+        return result
 
     def getRevisionMessage(self, revision_id, revno):
         """Return the log message for a revision.

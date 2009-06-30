@@ -508,6 +508,22 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual(set(['rev2a-id', 'rev3-id', 'rev2b-id', 'rev2c-id']),
                          job.getMergedRevisionIDs('rev2d-id', graph))
 
+    def test_findRelatedBMP(self):
+        self.useBzrBranches()
+        target_branch, tree = self.create_branch_and_tree('tree')
+        desired_proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch)
+        desired_proposal.source_branch.last_scanned_id = 'rev2a-id'
+        wrong_revision_proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch)
+        wrong_revision_proposal.source_branch.last_scanned_id = 'rev3-id'
+        wrong_target_proposal = self.factory.makeBranchMergeProposal()
+        wrong_target_proposal.source_branch.last_scanned_id = 'rev2a-id'
+        job = RevisionsAddedJob.create(target_branch, 'rev2b-id', 'rev2b-id',
+                                       '')
+        self.assertEqual([desired_proposal],
+                         list(job.findRelatedBMP(['rev2a-id'])))
+
     def test_getMergeAuthors(self):
         job = self.makeRevisionsAddedWithMergeCommit()
         job.bzr_branch.lock_write()
