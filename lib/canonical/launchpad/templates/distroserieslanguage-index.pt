@@ -140,7 +140,7 @@
             <tal:block condition="entry/lasttranslator">
               <a tal:condition="entry/lasttranslator"
                  tal:attributes="href entry/lasttranslator/fmt:url"
-                 tal:content="entry/lasttranslator/browsername/fmt:shorten/25"></a>
+                 tal:content="entry/lasttranslator/displayname/fmt:shorten/25"></a>
             </tal:block>
             <tal:block condition="not: entry/lasttranslator">
                 &mdash;
