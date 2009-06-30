@@ -213,25 +213,28 @@ access details.
         for Celso Providelo
     ...
 
-    >>> for msg in get_feedback_messages(joe_browser.contents):
-    ...     print msg
-    You have confirmed your subscription to the archive...
-
 When Joe navigates back to his current archive subscriptions then the list of
-subscriptions reflects the confirmed subscription.
+subscriptions reflects the confirmed subscription, providing a normal
+link to view the details.
 
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> print_subscriptions_for_person(joe_browser.contents)
     Archive
     PPA for Celso Providelo     View
+    >>> joe_browser.getLink('View').click()
+    >>> print(extract_text(joe_browser.contents))
+    Joe Smith's subscription to PPA for Celso Providelo...
 
 === Scenario 2: A user re-generates the token for a subscription ===
 
 Given an activated subscription to Celso's private PPA, when Joe visits
-his private archive subscriptions page and clicks on the 'view' link to view a subscription then information regarding the generation of a new personal
+his private archive subscriptions page and clicks on the 'view' link to view
+a subscription then information regarding the generation of a new personal
 subscription is displayed.
 
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> joe_browser.getLink('View').click()
     >>> regeneration_info = find_tag_by_id(
     ...     joe_browser.contents, 'regenerate_token')
@@ -302,18 +305,19 @@ access details are displayed.
         to PPA for Celso Providelo
     ...
 
-    >>> for msg in get_feedback_messages(mark_browser.contents):
-    ...     print msg
-    You have confirmed your subscription to the archive...
-
 When Mark navigates back to his current archive subscriptions then the list of
-subscriptions reflects the confirmed subscription.
+subscriptions reflects the confirmed subscription, providing a normal
+link to view the details.
 
     >>> mark_browser.open(
     ...     "http://launchpad.dev/~sabdfl/+archivesubscriptions")
     >>> print_subscriptions_for_person(mark_browser.contents)
     Archive
-    PPA for Celso Providelo         View
+    PPA for Celso Providelo     View
+
+    >>> mark_browser.getLink('View').click()
+    >>> print(extract_text(mark_browser.contents))
+    Mark Shuttleworth's subscription to PPA for Celso Providelo...
 
 
 == Story 4: A user's subscription expires or is cancelled ==
