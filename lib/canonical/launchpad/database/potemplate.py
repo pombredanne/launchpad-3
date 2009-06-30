@@ -1377,7 +1377,9 @@ class HasTranslationTemplatesMixin:
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-
+        # XXX 2009-06-30 Danilo: until Storm can do find() on
+        # ResultSets (bug #338255), we need to manually get a select
+        # and extend it with another condition.
         current_templates = self.getCurrentTranslationTemplates()._get_select()
         columns = []
         for col in current_templates.columns:
@@ -1390,14 +1392,18 @@ class HasTranslationTemplatesMixin:
             looking_for = POFile.id
         else:
             looking_for = POFile
-        store = self._store
-        return store.using(
-            POFile, templates).find(looking_for, POFile.potemplate==SQL('potemplates.id'))
+        store = Store.of(self)
+        if store is None:
+            # If self is a non-DB object like SourcePackage,
+            # it keeps current store in self._store.
+            store = self._store
+        return store.using(POFile, templates).find(
+            looking_for, POFile.potemplate==SQL('potemplates.id'))
 
-    def getObsoleteTranslationTemplates():
+    def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         raise NotImplementedError('This must be provided by a parent object.')
 
-    def getTranslationTemplates():
+    def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         raise NotImplementedError('This must be provided by a parent object.')
