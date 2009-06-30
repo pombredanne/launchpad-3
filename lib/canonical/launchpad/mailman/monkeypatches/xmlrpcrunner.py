@@ -195,7 +195,7 @@ class XMLRPCRunner(Runner):
             real name, flags, and status of each person in the list's
             subscribers.
         """
-        syslog('xmlrpc', '%s subinfo: %s', list_name, subscription_info)
+        ## syslog('xmlrpc', '%s subinfo: %s', list_name, subscription_info)
         # Start with an unlocked list.
         mlist = MailList(list_name, lock=False)
         # Create a mapping of email address to the member's real name,
@@ -305,8 +305,8 @@ class XMLRPCRunner(Runner):
         while lists:
             batch = lists[:mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE]
             lists = lists[mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE:]
-            syslog('xmlrpc', 'batch: %s', batch)
-            syslog('xmlrpc', 'lists: %s', lists)
+            ## syslog('xmlrpc', 'batch: %s', batch)
+            ## syslog('xmlrpc', 'lists: %s', lists)
             # Get the information for this batch of mailing lists.
             try:
                 info = self._proxy.getMembershipInformation(batch)
