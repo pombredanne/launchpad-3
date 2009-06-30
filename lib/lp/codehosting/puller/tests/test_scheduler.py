@@ -71,55 +71,32 @@ class TestJobScheduler(unittest.TestCase):
 
     def setUp(self):
         self.masterlock = 'master.lock'
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
         reset_logging()
-
-    def makeFakeClient(self, hosted, mirrored, imported):
-        return FakePullerEndpointProxy(
-            {'HOSTED': hosted, 'MIRRORED': mirrored, 'IMPORTED': imported})
-
-    def makeJobScheduler(self, branch_type, branch_tuples):
-        if branch_type == BranchType.HOSTED:
-            client = self.makeFakeClient(branch_tuples, [], [])
-        elif branch_type == BranchType.MIRRORED:
-            client = self.makeFakeClient([], branch_tuples, [])
-        elif branch_type == BranchType.IMPORTED:
-            client = self.makeFakeClient([], [], branch_tuples)
-        else:
-            self.fail("Unknown branch type: %r" % (branch_type,))
-        return scheduler.JobScheduler(
-            client, logging.getLogger(), branch_type)
-
-    def testManagerCreatesLocks(self):
-        try:
-            manager = self.makeJobScheduler(BranchType.HOSTED, [])
-            manager.lockfilename = self.masterlock
-            manager.lock()
-            self.failUnless(os.path.exists(self.masterlock))
-            manager.unlock()
-        finally:
-            self._removeLockFile()
-
-    def testManagerEnforcesLocks(self):
-        try:
-            manager = self.makeJobScheduler(BranchType.HOSTED, [])
-            manager.lockfilename = self.masterlock
-            manager.lock()
-            anothermanager = self.makeJobScheduler(BranchType.HOSTED, [])
-            anothermanager.lockfilename = self.masterlock
-            self.assertRaises(scheduler.LockError, anothermanager.lock)
-            self.failUnless(os.path.exists(self.masterlock))
-            manager.unlock()
-        finally:
-            self._removeLockFile()
-
-    def _removeLockFile(self):
         if os.path.exists(self.masterlock):
             os.unlink(self.masterlock)
+
+    def makeJobScheduler(self):
+        return scheduler.JobScheduler(
+            None, logging.getLogger(), BranchType.HOSTED)
+
+    def testManagerCreatesLocks(self):
+        manager = self.makeJobScheduler()
+        manager.lockfilename = self.masterlock
+        manager.lock()
+        self.failUnless(os.path.exists(self.masterlock))
+        manager.unlock()
+
+    def testManagerEnforcesLocks(self):
+        manager = self.makeJobScheduler()
+        manager.lockfilename = self.masterlock
+        manager.lock()
+        anothermanager = self.makeJobScheduler()
+        anothermanager.lockfilename = self.masterlock
+        self.assertRaises(scheduler.LockError, anothermanager.lock)
+        self.failUnless(os.path.exists(self.masterlock))
+        manager.unlock()
 
 
 class TestPullerWireProtocol(TrialTestCase):
