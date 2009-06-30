@@ -41,7 +41,7 @@ from lp.soyuz.model.publishing import (
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
-    check_copy, _do_delayed_copy, _do_direct_copy, override_from_ancestry,
+    check_copy, _do_delayed_copy, _do_direct_copy,
     PackageCopier, re_upload_file, UnembargoSecurityPackage,
     update_files_privacy)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -382,157 +382,6 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
         self.assertSourceFilesArePublic(copied_source, 3)
         self.assertNewFiles(new_binary_files, [])
         self.assertBinaryFilesArePublic(copied_binary, 3)
-
-
-class TestOverrideFromAncestry(TestCaseWithFactory):
-    """Test publication `override_from_ancestry` helper.
-
-    When called for a `SourcePackagePublishingHistory` or a
-    `BinaryPackagePublishingHistory` it sets the object target component
-    according to its ancestry if available or falls back to the component
-    it was originally uploaded to.
-    """
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.test_publisher = SoyuzTestPublisher()
-        self.test_publisher.prepareBreezyAutotest()
-
-    def testOverrideFromAncestryOnlyWorksForPublishing(self):
-        # override_from_ancestry only accepts
-        # `ISourcePackagePublishingHistory`
-        # or `IBinaryPackagePublishingHistory` objects.
-        self.assertRaisesWithContent(
-            AssertionError,
-            'pub_record is not one of SourcePackagePublishingHistory or '
-            'BinaryPackagePublishingHistory.',
-            override_from_ancestry, None)
-
-    def testOverrideFromAncestryOnlyWorksForPendingRecords(self):
-        # override_from_ancestry only accepts PENDING publishing records.
-        source = self.test_publisher.getPubSource()
-
-        forbidden_status = [
-            item
-            for item in PackagePublishingStatus.items
-            if item is not PackagePublishingStatus.PENDING]
-
-        for status in forbidden_status:
-            source.secure_record.status = status
-            self.layer.commit()
-            self.assertRaisesWithContent(
-                AssertionError,
-                'Cannot override published records.',
-                override_from_ancestry, source)
-
-    def makeSource(self):
-        """Return a 'source' publication.
-
-        It's pending publication with binaries in a brand new PPA
-        and in 'main' component.
-        """
-        test_archive = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
-        source = self.test_publisher.getPubSource(archive=test_archive)
-        self.test_publisher.getPubBinaries(pub_source=source)
-        return source
-
-    def copyAndCheck(self, pub_record, series, component_name):
-        """Copy and check if override_from_ancestry is working as expected.
-
-        The copied publishing record is targeted to the same component
-        as its source, but override_from_ancestry changes it to follow
-        the ancestry or fallback to the SPR/BPR original component.
-        """
-        copied = pub_record.copyTo(
-            series, pub_record.pocket, series.main_archive)
-
-        # Cope with heterogeneous results from copyTo().
-        try:
-            copies = tuple(copied)
-        except TypeError:
-            copies = (copied,)
-
-        for copy in copies:
-            self.assertEquals(copy.component, pub_record.component)
-            override_from_ancestry(copy)
-            self.layer.commit()
-            self.assertEquals(copy.component.name, 'universe')
-
-    def testFallBackToSourceComponent(self):
-        # override_from_ancestry on the lack of ancestry, falls back to the
-        # component the source was originally uploaded to.
-        source = self.makeSource()
-
-        # Adjust the source package release original component.
-        universe = getUtility(IComponentSet)['universe']
-        source.sourcepackagerelease.component = universe
-
-        self.copyAndCheck(source, source.distroseries, 'universe')
-
-    def testFallBackToBinaryComponent(self):
-        # override_from_ancestry on the lack of ancestry, falls back to the
-        # component the binary was originally uploaded to.
-        binary = self.makeSource().getPublishedBinaries()[0]
-
-        # Adjust the binary package release original component.
-        universe = getUtility(IComponentSet)['universe']
-        from zope.security.proxy import removeSecurityProxy
-        removeSecurityProxy(binary.binarypackagerelease).component = universe
-
-        self.copyAndCheck(
-            binary, binary.distroarchseries.distroseries, 'universe')
-
-    def testFollowAncestrySourceComponent(self):
-        # override_from_ancestry finds and uses the component of the most
-        # recent PUBLISHED publication of the same name in the same
-        #location.
-        source = self.makeSource()
-
-        # Create a published ancestry source in the copy destination
-        # targeted to 'universe' and also 2 other noise source
-        # publications, a pending source target to 'restricted' and
-        # a published, but older, one target to 'multiverse'.
-        self.test_publisher.getPubSource(component='restricted')
-
-        self.test_publisher.getPubSource(
-            component='multiverse', status=PackagePublishingStatus.PUBLISHED)
-
-        self.test_publisher.getPubSource(
-            component='universe', status=PackagePublishingStatus.PUBLISHED)
-
-        # Overridden copy it targeted to 'universe'.
-        self.copyAndCheck(source, source.distroseries, 'universe')
-
-    def testFollowAncestryBinaryComponent(self):
-        # override_from_ancestry finds and uses the component of the most
-        # recent published publication of the same name in the same
-        # location.
-        binary = self.makeSource().getPublishedBinaries()[0]
-
-        # Create a published ancestry binary in the copy destination
-        # targeted to 'universe'.
-        restricted_source = self.test_publisher.getPubSource(
-            component='restricted')
-        self.test_publisher.getPubBinaries(pub_source=restricted_source)
-
-        multiverse_source = self.test_publisher.getPubSource(
-            component='multiverse')
-        self.test_publisher.getPubBinaries(
-            pub_source=multiverse_source,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        ancestry_source = self.test_publisher.getPubSource(
-            component='universe')
-        self.test_publisher.getPubBinaries(
-            pub_source=ancestry_source,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # Overridden copy it targeted to 'universe'.
-        self.copyAndCheck(
-            binary, binary.distroarchseries.distroseries, 'universe')
 
 
 class TestCheckCopyHarness:
@@ -1995,14 +1844,8 @@ class TestCopyPackage(TestCase):
         # shows that the ancestry override worked.
         self.layer.txn.commit()
         for published in copied:
-            # This is cheating a bit but it's fine.  The script updates
-            # the secure publishing record but this change does not
-            # get reflected in SQLObject's cache on the object that comes
-            # from the SQL View, the non-secure record.  No amount of
-            # syncUpdate and flushing seems to want to make it update :(
-            # So, I am checking the secure record in this test.
             self.assertEqual(
-                published.secure_record.component.name, universe.name,
+                published.component.name, universe.name,
                 "%s is in %s" % (published.displayname,
                                  published.component.name))
             for published_file in published.files:

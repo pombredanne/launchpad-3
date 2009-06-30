@@ -92,9 +92,9 @@ augments the IBuildSet.getStatusSummaryForBuilds() method to include the
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> stp = SoyuzTestPublisher()
-    >>> stp.prepareBreezyAutotest()
-    >>> spph = stp.getPubSource(architecturehintlist='any')
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> spph = test_publisher.getPubSource(architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> for build in builds:
     ...     build.buildstate = BuildStatus.FULLYBUILT
@@ -122,8 +122,8 @@ If one of the builds becomes published, it will not appear in the summary:
 
     >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
-    >>> bpr = stp.uploadBinaryForBuild(builds[0], 'foo-bin')
-    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive,
+    >>> bpr = test_publisher.uploadBinaryForBuild(builds[0], 'foo-bin')
+    >>> bpph = test_publisher.publishBinaryInArchive(bpr, spph.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT_PENDING
@@ -154,12 +154,13 @@ But the returned build-states can be set explicitly:
 Just switch it back to FULLYBUILT before continuing:
 
     >>> builds[1].buildstate = BuildStatus.FULLYBUILT
-    
+
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
 
-    >>> bpr = stp.uploadBinaryForBuild(builds[1], 'foo-bin')
-    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive,
+    >>> bpr = test_publisher.uploadBinaryForBuild(builds[1], 'foo-bin')
+    >>> bpph = test_publisher.publishBinaryInArchive(
+    ...     bpr, spph.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT
@@ -189,7 +190,7 @@ superseded (just to cancel the build) even though the SPPH is itself
 not marked as superseded, the status summary will not include
 that build:
 
-    >>> spph = stp.getPubSource(architecturehintlist='any')
+    >>> spph = test_publisher.getPubSource(architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> builds[0].buildstate = BuildStatus.SUPERSEDED
     >>> builds[1].buildstate = BuildStatus.FULLYBUILT
@@ -201,8 +202,8 @@ that build:
 And after publishing the other build, the normal FULLY_BUILT status
 is achieved (without the 'canceled' build):
 
-    >>> bpr = stp.uploadBinaryForBuild(builds[1], 'foo-bin')
-    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive,
+    >>> bpr = test_publisher.uploadBinaryForBuild(builds[1], 'foo-bin')
+    >>> bpph = test_publisher.publishBinaryInArchive(bpr, spph.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT
@@ -210,7 +211,7 @@ is achieved (without the 'canceled' build):
 
 IBinaryPackagePublishingHistory also contains similar API conveniences.
 
-    >>> bpph = stp.getPubBinaries()[0]
+    >>> bpph = test_publisher.getPubBinaries()[0]
     >>> verifyObject(IBinaryPackagePublishingHistory, bpph)
     True
 
@@ -344,22 +345,10 @@ which returns all published binaries build from a source in the pocket
 it is published.
 
 We will use SoyuzTestPublisher to generate coherent publications to
-test this feature.
+test this feature. We will create a publication for a source (foo) and
+two architecture-specific binaries in ubuntu/breezy-autotest.
 
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
-
-    >>> from canonical.launchpad.ftests import login
-    >>> login('foo.bar@canonical.com')
-
-    >>> test_publisher.prepareBreezyAutotest()
-
-We will create a publication for a source (foo) and two
-architecture-specific binaries in ubuntu/breezy-autotest.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     PackagePublishingStatus, PackagePublishingPocket)
+    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
     >>> source = test_publisher.getPubSource(
     ...     architecturehintlist='any',
     ...     status=PackagePublishingStatus.PUBLISHED,
@@ -997,7 +986,7 @@ is correct:
     >>> sources = []
     >>> builds = []
     >>> for count in range(2):
-    ...     spph = stp.getPubSource(architecturehintlist='any')
+    ...     spph = test_publisher.getPubSource(architecturehintlist='any')
     ...     missing_builds = spph.createMissingBuilds()
     ...     for build in missing_builds:
     ...         build.buildstate = BuildStatus.FULLYBUILT
@@ -1014,8 +1003,8 @@ is correct:
 If we then publish one of the builds, the number of unpublished builds
 reflects the change:
 
-    >>> bpr = stp.uploadBinaryForBuild(builds[0], 'foo-bin')
-    >>> bpph = stp.publishBinaryInArchive(bpr, sources[0].archive,
+    >>> bpr = test_publisher.uploadBinaryForBuild(builds[0], 'foo-bin')
+    >>> bpph = test_publisher.publishBinaryInArchive(bpr, sources[0].archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> unpublished_builds = (
     ...     publishing_set.getUnpublishedBuildsForSources(sources))
@@ -1501,15 +1490,13 @@ is used via the API via IArchive.getBuildSummariesForSourceIds).
 
 First we'll create two source publishing history records:
 
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
-    >>> stp = SoyuzTestPublisher()
-    >>> stp.prepareBreezyAutotest()
-    >>> firefox_source_pub = stp.getPubSource(sourcename='firefox-test')
-    >>> binaries = stp.getPubBinaries(pub_source=firefox_source_pub,
+    >>> firefox_source_pub = test_publisher.getPubSource(
+    ...     sourcename='firefox-test')
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     pub_source=firefox_source_pub,
     ...     status=PackagePublishingStatus.PUBLISHED)
-    >>> foo_pub = stp.getPubSource(sourcename='foobar-test')
-    >>> binaries = stp.getPubBinaries(pub_source=foo_pub,
+    >>> foo_pub = test_publisher.getPubSource(sourcename='foobar-test')
+    >>> binaries = test_publisher.getPubBinaries(pub_source=foo_pub,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> from lp.registry.interfaces.distribution import (
@@ -1563,3 +1550,111 @@ required archive parameter will be ignored:
     >>> print_build_summaries(build_summaries)
 
 
+== IPublishing ancestry lookup and override ==
+
+`IPublishing` is implemented by both kinds of package publications we
+have `SourcePackagePublishingHistory` and
+`BinaryPackagePublishingHistory`.
+
+This interface allows, among other features, easy ancestry lookup and
+pre-publication overrides via:
+
+ * getAncestry
+ * overrideFromAncestry
+
+    # Setup a publishing scenario for illustrating ancestry lookup.
+    >>> ubuntu_source_ancestry = test_publisher.getPubSource(
+    ...     sourcename='testing', version='1.0',
+    ...     architecturehintlist='i386', component='multiverse',
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> ubuntu_binary_ancestry = test_publisher.getPubBinaries(
+    ...     binaryname='testing-bin', pub_source=ubuntu_source_ancestry,
+    ...     status=PackagePublishingStatus.PUBLISHED)[0]
+    >>> ppa_source_ancestry = test_publisher.getPubSource(
+    ...     sourcename='testing', version='1.1', component='main',
+    ...     architecturehintlist='i386', archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> ppa_binary_ancestry = test_publisher.getPubBinaries(
+    ...     binaryname='testing-bin', pub_source=ppa_source_ancestry,
+    ...     status=PackagePublishingStatus.PUBLISHED)[0]
+    >>> test_source = test_publisher.getPubSource(
+    ...     sourcename='testing', version='2.0', component='universe',
+    ...     architecturehintlist='i386')
+    >>> test_binary = test_publisher.getPubBinaries(
+    ...     binaryname='testing-bin', pub_source=test_source)[0]
+
+We will create a helper function to inspect ancestries. It simply pass
+any given keyword argument to 'test_source' and 'test_binary'
+getAncestry() method.
+
+    >>> def print_ancestries(**kwargs):
+    ...     def print_displayname(pub):
+    ...         if pub is not None:
+    ...             print pub.displayname
+    ...         else:
+    ...             print pub
+    ...     print_displayname(test_source.getAncestry(**kwargs))
+    ...     print_displayname(test_binary.getAncestry(**kwargs))
+
+The 'test_source' and 'test_binary' ancestries in the same context,
+i.e. ubuntu primary archive.
+
+    >>> print_ancestries()
+    testing 1.0 in breezy-autotest
+    testing-bin 1.0 in breezy-autotest i386
+
+Call sites may quickly adjust the context where the ancestries are
+looked up.
+
+    >>> print_ancestries(archive=cprov.archive)
+    testing 1.1 in breezy-autotest
+    testing-bin 1.1 in breezy-autotest i386
+
+    >>> print_ancestries(distroseries=test_source.distroseries)
+    testing 1.0 in breezy-autotest
+    testing-bin 1.0 in breezy-autotest i386
+
+    >>> print_ancestries(pocket=test_source.pocket)
+    testing 1.0 in breezy-autotest
+    testing-bin 1.0 in breezy-autotest i386
+
+The default 'status' filter is set to PUBLISHED ancestries, however
+call sites may decide differently.
+
+    >>> print_ancestries(status=PackagePublishingStatus.PUBLISHED)
+    testing 1.0 in breezy-autotest
+    testing-bin 1.0 in breezy-autotest i386
+
+On the lack of ancestry, None is returned.
+
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     inactive_publishing_status)
+    >>> print_ancestries(status=inactive_publishing_status)
+    None
+    None
+
+`overrideFromAncestry` operates directly on top of the default
+behavior of `getAncestry`. It looks up the most recent ancestry for a
+publication and override it in place.
+
+    >>> print test_source.component.name
+    universe
+
+    >>> test_source.overrideFromAncestry()
+    >>> print test_source.component.name
+    multiverse
+
+It works in the same way for binaries and follows the new publishing
+context.
+
+    >>> print test_binary.component.name
+    universe
+
+    >>> copied_binary = test_binary.copyTo(
+    ...     test_source.distroseries, test_source.pocket, cprov.archive)[0]
+    >>> print copied_binary.component.name
+    universe
+
+    >>> copied_binary.overrideFromAncestry()
+    >>> print copied_binary.component.name
+    main
