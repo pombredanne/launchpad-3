@@ -450,6 +450,20 @@ class RevisionsAddedJob(BranchJobDerived):
             self.branch, revno, self.from_address, message, diff_text,
             subject)
 
+    def getMergedRevisionIDs(self, revision_id, graph):
+        """Determine which revisions were merged by this revision.
+
+        :param revision_id: ID of the revision to examine.
+        :param graph: a bzrlib.graph.Graph.
+        :return: a set of revision IDs.
+        """
+        parents = graph.get_parent_map([revision_id])[revision_id]
+        merged_revision_ids = set()
+        for merge_parent in parents[1:]:
+            merged = graph.find_difference(parents[0], merge_parent)[1]
+            merged_revision_ids.update(merged)
+        return merged_revision_ids
+
     def getMergeAuthors(self, revision_id):
         """Determine authors of the revisions merged by this revision.
 
@@ -458,11 +472,7 @@ class RevisionsAddedJob(BranchJobDerived):
         :return: a set of author commit-ids
         """
         graph = self.bzr_branch.repository.get_graph()
-        parents = graph.get_parent_map([revision_id])[revision_id]
-        merged_revision_ids = set()
-        for merge_parent in parents[1:]:
-            merged = graph.find_difference(parents[0], merge_parent)[1]
-            merged_revision_ids.update(merged)
+        merged_revision_ids = self.getMergedRevisionIDs(revision_id, graph)
         present_merged = graph.get_parent_map(merged_revision_ids).keys()
         merged_revisions = self.bzr_branch.repository.get_revisions(
             present_merged)

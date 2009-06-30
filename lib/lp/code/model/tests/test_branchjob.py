@@ -487,11 +487,11 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree.branch.nick = 'nicholas'
         tree.commit('rev1')
         tree2 = tree.bzrdir.sprout('tree2').open_workingtree()
-        tree2.commit('rev2a', committer='foo@')
-        tree2.commit('rev3', authors=['bar@', 'baz@'])
+        tree2.commit('rev2a', rev_id='rev2a-id', committer='foo@')
+        tree2.commit('rev3', rev_id='rev3-id', authors=['bar@', 'baz@'])
         tree.merge_from_branch(tree2.branch)
         tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
-        tree3.commit('rev2b', committer='qux@')
+        tree3.commit('rev2b', rev_id='rev2b-id', committer='qux@')
         tree.merge_from_branch(tree3.branch)
         if include_ghost:
             tree.add_parent_tree_id('rev2c-id')
@@ -499,6 +499,14 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             committer='J. Random Hacker <jrandom@example.org>',
             authors=authors)
         return RevisionsAddedJob.create(branch, 'rev2d-id', 'rev2d-id', '')
+
+    def test_getMergedRevisionIDs(self):
+        job = self.makeRevisionsAddedWithMergeCommit(include_ghost=True)
+        job.bzr_branch.lock_write()
+        graph = job.bzr_branch.repository.get_graph()
+        self.addCleanup(job.bzr_branch.unlock)
+        self.assertEqual(set(['rev2a-id', 'rev3-id', 'rev2b-id', 'rev2c-id']),
+                         job.getMergedRevisionIDs('rev2d-id', graph))
 
     def test_getMergeAuthors(self):
         job = self.makeRevisionsAddedWithMergeCommit()
