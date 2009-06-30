@@ -554,21 +554,20 @@ class TestGitImportWorker(WorkerTest):
 def clean_up_default_stores_for_import(source_details):
     """Clean up the default branch and foreign tree stores for an import.
 
-    This checks for an existing branch and/or foreign tree tarball
-    corresponding to the passed in import and deletes them if they
-    are found.
+    This checks for an existing branch and/or other import data corresponding
+    to the passed in import and deletes them if they are found.
 
-    If there are tarballs or branches in the default stores that
-    might conflict with working on our job, life gets very, very
-    confusing.
+    If there are tarballs or branches in the default stores that might
+    conflict with working on our job, life gets very, very confusing.
 
     :source_details: A `CodeImportSourceDetails` describing the import.
     """
     tree_transport = get_transport(config.codeimport.foreign_tree_store)
     prefix = '%08x' % source_details.branch_id
-    for filename in tree_transport.list_dir('.'):
-        if filename.startswith(prefix):
-            tree_transport.delete(filename)
+    if tree_transport.has('.'):
+        for filename in tree_transport.list_dir('.'):
+            if filename.startswith(prefix):
+                tree_transport.delete(filename)
     branchstore = get_default_bazaar_branch_store()
     branch_transport = branchstore.transport
     branch_name = '%08x' % source_details.branch_id
