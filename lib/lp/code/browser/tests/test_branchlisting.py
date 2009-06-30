@@ -9,7 +9,8 @@ import unittest
 from storm.expr import Asc, Desc
 
 from lp.code.browser.branchlisting import (
-    BranchListingSort, BranchListingView, SourcePackageBranchesView)
+    BranchListingSort, BranchListingView,
+    GroupedDistributionSourcePackageBranchesView, SourcePackageBranchesView)
 from lp.code.model.branch import Branch
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
@@ -113,6 +114,30 @@ class TestSourcePackageBranchesView(TestCaseWithFactory):
                   ),
              ],
             list(view.series_links))
+
+
+class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
+    """Test the groups for the branches of distribution source packages."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_grourps_with_no_branches(self):
+        # If there are no branches, the groups have empty lists.
+        distro = self.factory.makeDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        expected = []
+        for version in ("1.0", "2.0", "3.0"):
+            series = self.factory.makeDistroRelease(
+                distribution=distro, version=version)
+            expected.append(
+                {'distroseries': series,
+                 'branches': [],
+                 'more-branch-count': 0})
+        distro_source_package = self.factory.makeDistributionSourcePackage(
+            distribution=distro, sourcepackagename=sourcepackagename)
+        view = GroupedDistributionSourcePackageBranchesView(
+            distro_source_package, LaunchpadTestRequest())
+        self.assertEqual(expected, view.groups)
 
 
 def test_suite():

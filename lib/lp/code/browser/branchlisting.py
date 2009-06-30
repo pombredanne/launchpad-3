@@ -26,6 +26,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+from operator import attrgetter
 
 import simplejson
 from storm.expr import Asc, Desc
@@ -42,6 +43,7 @@ from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
+
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
@@ -1352,6 +1354,50 @@ class DistributionSourcePackageBranchesView(BranchListingView):
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
             self.context)
+
+
+class GroupedDistributionSourcePackageBranchesView(LaunchpadView):
+    """A view that groups branches into distro series."""
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).inDistributionSourcePackage(
+            self.context)
+
+    def _getBranchDict(self):
+        """Return a dict of branches grouped by distroseries."""
+        branches = {}
+        collection = self._getCollection().visibleByUser(self.user)
+        # We're only interested in active branches.
+        collection = collection.withLifecycleStatus(
+            *DEFAULT_BRANCH_STATUS_IN_LISTING)
+        for branch in collection.getBranches():
+            branches.setdefault(branch.distroseries, []).append(branch)
+        return branches
+
+    @cachedproperty
+    def groups(self):
+        """Return a list of dicts containg series and branches.
+
+        The list is ordered so the most recent distro series is first.
+
+        The list contains dicts.  The dict has three values:
+          * distroseries - a `IDistroSeries` object
+          * branches - an ordered list of branches
+          * more-branch-count - a count of additional branches
+
+        The branches list will contain at most five branches.  If there are
+        non-official branches associated with the distroseries, then there
+        will always be some non-official branches shown in the summary even if
+        there are five different official branches (for the different
+        pockets).
+
+        The official branches are sorted based on PackagePublishingPocket, and
+        the non-official branches are sorted on date last modified.
+        """
+        active_series = sorted([
+            series for series in self.context.distribution.serieses
+            if series.status == DistroSeriesStatus.OBSOLETE],
+            key=attrgetter('version'))
 
 
 class SourcePackageBranchesView(BranchListingView):
