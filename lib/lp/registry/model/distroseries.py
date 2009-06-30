@@ -969,14 +969,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 for pubrecord in result]
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None):
+                        arch_tag=None, user=None):
         """See IHasBuildRecords"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
 
         # Find out the distroarchseries in question.
-        arch_ids = [arch.id for arch in self.architectures]
+        if arch_tag is None:
+            arch_ids = [arch.id for arch in self.architectures]
+        else:
+            arch_ids = [arch.id for arch in self.architectures
+                            if arch_tag == arch.architecturetag]
+
         # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)

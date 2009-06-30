@@ -979,7 +979,8 @@ a getBuildRecords() method.
 
 The builds can also be filtered by an architecture tag:
 
-    >>> builds = breezy_autotest.getBuildRecords(name='firefox', arch='i386')
+    >>> builds = ubuntu['warty'].getBuildRecords(name='firefox',
+    ...                                          arch_tag='i386')
     >>> for build in builds:
     ...     print build.title
     i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
