@@ -28,6 +28,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
@@ -35,6 +36,7 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingPriority,
     PackagePublishingStatus)
 from canonical.launchpad.scripts import FakeLogger
+from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -633,6 +635,148 @@ class TestNativePublishing(TestNativePublishingBase):
         # Remove locally created dir.
         shutil.rmtree(test_pool_dir)
         shutil.rmtree(test_temp_dir)
+
+
+class TestOverrideFromAncestry(TestCaseWithFactory):
+    """Test `IPublishing.overrideFromAncestry`.
+
+    When called from a `SourcePackagePublishingHistory` or a
+    `BinaryPackagePublishingHistory` it sets the object target component
+    according to its ancestry if available or falls back to the component
+    it was originally uploaded to.
+    """
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
+
+    def test_overrideFromAncestry_only_works_for_pending_records(self):
+        # overrideFromAncestry only accepts PENDING publishing records.
+        source = self.test_publisher.getPubSource()
+
+        forbidden_status = [
+            item
+            for item in PackagePublishingStatus.items
+            if item is not PackagePublishingStatus.PENDING]
+
+        for status in forbidden_status:
+            source.secure_record.status = status
+            self.layer.commit()
+            self.assertRaisesWithContent(
+                AssertionError,
+                'Cannot override published records.',
+                source.overrideFromAncestry)
+
+    def makeSource(self):
+        """Return a 'source' publication.
+
+        It's pending publication with binaries in a brand new PPA
+        and in 'main' component.
+        """
+        test_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose = ArchivePurpose.PPA)
+        source = self.test_publisher.getPubSource(archive=test_archive)
+        self.test_publisher.getPubBinaries(pub_source=source)
+        return source
+
+    def copyAndCheck(self, pub_record, series, component_name):
+        """Copy and check if overrideFromAncestry is working as expected.
+
+        The copied publishing record is targeted to the same component
+        as its source, but override_from_ancestry changes it to follow
+        the ancestry or fallback to the SPR/BPR original component.
+        """
+        copied = pub_record.copyTo(
+            series, pub_record.pocket, series.main_archive)
+
+        # Cope with heterogeneous results from copyTo().
+        try:
+            copies = tuple(copied)
+        except TypeError:
+            copies = (copied,)
+
+        for copy in copies:
+            self.assertEquals(copy.component, pub_record.component)
+            copy.overrideFromAncestry()
+            self.layer.commit()
+            self.assertEquals(copy.component.name, 'universe')
+
+    def test_overrideFromAncestry_fallback_to_source_component(self):
+        # overrideFromancestry on the lack of ancestry, falls back to the
+        # component the source was originally uploaded to.
+        source = self.makeSource()
+
+        # Adjust the source package release original component.
+        universe = getUtility(IComponentSet)['universe']
+        source.sourcepackagerelease.component = universe
+
+        self.copyAndCheck(source, source.distroseries, 'universe')
+
+    def test_overrideFromAncestry_fallback_to_binary_component(self):
+        # overrideFromAncestry on the lack of ancestry, falls back to the
+        # component the binary was originally uploaded to.
+        binary = self.makeSource().getPublishedBinaries()[0]
+
+        # Adjust the binary package release original component.
+        universe = getUtility(IComponentSet)['universe']
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(binary.binarypackagerelease).component = universe
+
+        self.copyAndCheck(
+            binary, binary.distroarchseries.distroseries, 'universe')
+
+    def test_overrideFromAncestry_follow_ancestry_source_component(self):
+        # overrideFromAncestry finds and uses the component of the most
+        # recent PUBLISHED publication of the same name in the same
+        #location.
+        source = self.makeSource()
+
+        # Create a published ancestry source in the copy destination
+        # targeted to 'universe' and also 2 other noise source
+        # publications, a pending source target to 'restricted' and
+        # a published, but older, one target to 'multiverse'.
+        self.test_publisher.getPubSource(component='restricted')
+
+        self.test_publisher.getPubSource(
+            component='multiverse', status=PackagePublishingStatus.PUBLISHED)
+
+        self.test_publisher.getPubSource(
+            component='universe', status=PackagePublishingStatus.PUBLISHED)
+
+        # Overridden copy it targeted to 'universe'.
+        self.copyAndCheck(source, source.distroseries, 'universe')
+
+    def test_overrideFromAncestry_follow_ancestry_binary_component(self):
+        # overrideFromAncestry finds and uses the component of the most
+        # recent published publication of the same name in the same
+        # location.
+        binary = self.makeSource().getPublishedBinaries()[0]
+
+        # Create a published ancestry binary in the copy destination
+        # targeted to 'universe'.
+        restricted_source = self.test_publisher.getPubSource(
+            component='restricted')
+        self.test_publisher.getPubBinaries(pub_source=restricted_source)
+
+        multiverse_source = self.test_publisher.getPubSource(
+            component='multiverse')
+        self.test_publisher.getPubBinaries(
+            pub_source=multiverse_source,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        ancestry_source = self.test_publisher.getPubSource(
+            component='universe')
+        self.test_publisher.getPubBinaries(
+            pub_source=ancestry_source,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Overridden copy it targeted to 'universe'.
+        self.copyAndCheck(
+            binary, binary.distroarchseries.distroseries, 'universe')
+
 
 
 def test_suite():

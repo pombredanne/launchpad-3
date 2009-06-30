@@ -10,7 +10,6 @@ __all__ = [
     'do_copy',
     '_do_delayed_copy',
     '_do_direct_copy',
-    'override_from_ancestry',
     're_upload_file',
     'update_files_privacy',
     ]
@@ -31,7 +30,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.build import incomplete_building_status
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingStatus, active_publishing_status)
+    active_publishing_status)
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
@@ -130,51 +129,6 @@ def update_files_privacy(pub_record):
     return re_uploaded_files
 
 
-def override_from_ancestry(pub_record):
-    """Set the right published component from publishing ancestry.
-
-    Start with the publishing records and fall back to the original
-    uploaded package if necessary.
-    """
-    if ISourcePackagePublishingHistory.providedBy(pub_record):
-        is_source = True
-        source_package = pub_record.sourcepackagerelease
-        prev_published = pub_record.archive.getPublishedSources(
-            name=source_package.sourcepackagename.name,
-            status=PackagePublishingStatus.PUBLISHED,
-            distroseries=pub_record.distroseries,
-            exact_match=True)
-    elif IBinaryPackagePublishingHistory.providedBy(pub_record):
-        is_source = False
-        binary_package = pub_record.binarypackagerelease
-        prev_published = pub_record.archive.getAllPublishedBinaries(
-            name=binary_package.binarypackagename.name,
-            status=PackagePublishingStatus.PUBLISHED,
-            distroarchseries=pub_record.distroarchseries,
-            exact_match=True)
-    else:
-        raise AssertionError(
-            "pub_record is not one of SourcePackagePublishingHistory or "
-            "BinaryPackagePublishingHistory.")
-
-    if prev_published.count() > 0:
-        # Use the first record (the most recently published).
-        component = prev_published[0].component
-    else:
-        # It's not been published yet, check the original package.
-        if is_source:
-            component = pub_record.sourcepackagerelease.component
-        else:
-            component = pub_record.binarypackagerelease.component
-
-    # We don't want to use changeOverride here because it creates a
-    # new publishing record. This code can be only executed for pending
-    # publishing records.
-    assert pub_record.status == PackagePublishingStatus.PENDING, (
-        "Cannot override published records.")
-    pub_record.secure_record.component = component
-
-
 def is_completely_built(source):
     """Whether or not a source publication is completely built.
 
@@ -189,49 +143,6 @@ def is_completely_built(source):
             return False
 
     return True
-
-
-def compare_sources(source, ancestry):
-    """Compare `ISourcePackagePublishingHistory` records versions.
-
-    :param source: context `ISourcePackagePublishingHistory`.
-    :param ancestry: ancestry `ISourcePackagePublishingHistory`.
-
-    :return: `apt_pkg.VersionCompare(source_version, ancestry_version)`
-        which uses the behaviour as python cmp(); 1 if source_version >
-        ancestry_version, 0 if source_version == ancestry_version, -1 if
-        source_version < ancestry_version.
-    """
-    ancestry_version = ancestry.sourcepackagerelease.version
-    copy_version = source.sourcepackagerelease.version
-    apt_pkg.InitSystem()
-    return apt_pkg.VersionCompare(copy_version, ancestry_version)
-
-
-def get_ancestry_candidate(source, archive, series, pocket):
-    """Find a ancestry candidate in the give location.
-
-    Look for the newest active source publication in the location (archive,
-    series, pocket) with the same name as the given source.
-
-    :param source: context `ISourcePackagePublishingHistory`.
-    :param archive: destination `IArchive`.
-    :param series: destination `IDistroSeries`.
-    :param pocket: destination `PackagePublishingPocket`.
-
-    :return: the corresponding `ISourcePackagePublishingHistory` record if
-        it was found or None.
-    """
-    destination_series_ancestries = archive.getPublishedSources(
-        name=source.sourcepackagerelease.name, exact_match=True,
-        pocket=pocket, distroseries=series,
-        status=active_publishing_status)
-
-    if destination_series_ancestries.count() == 0:
-        return None
-
-    ancestry = destination_series_ancestries[0]
-    return ancestry
 
 
 def check_archive_conflicts(source, archive, series, include_binaries):
@@ -416,11 +327,16 @@ def check_copy(source, archive, series, pocket, include_binaries,
     # published in the destination archive.
     check_archive_conflicts(source, archive, series, include_binaries)
 
-    ancestry = get_ancestry_candidate(source, archive, series, pocket)
-    if ancestry is not None and compare_sources(source, ancestry) < 0:
-        raise CannotCopy(
-            "version older than the %s published in %s" %
-            (ancestry.displayname, ancestry.distroseries.name))
+    ancestry = source.getAncestry(
+        archive, series, pocket, status=active_publishing_status)
+    if ancestry is not None:
+        ancestry_version = ancestry.sourcepackagerelease.version
+        copy_version = source.sourcepackagerelease.version
+        apt_pkg.InitSystem()
+        if apt_pkg.VersionCompare(copy_version, ancestry_version) < 0:
+            raise CannotCopy(
+                "version older than the %s published in %s" %
+                (ancestry.displayname, ancestry.distroseries.name))
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False):
@@ -834,7 +750,7 @@ class UnembargoSecurityPackage(PackageCopier):
         # Fix copies by overriding them according the current ancestry
         # and re-upload files with privacy mismatch.
         for pub_record in copies:
-            override_from_ancestry(pub_record)
+            pub_record.overrideFromAncestry()
             for new_file in update_files_privacy(pub_record):
                 self.logger.info(
                     "Re-uploaded %s to librarian" % new_file.filename)
