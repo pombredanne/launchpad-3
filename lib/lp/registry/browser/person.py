@@ -4710,7 +4710,7 @@ class PersonAnswersMenu(ApplicationMenu):
              'subscribed', 'answer_contact_for']
 
     def answer_contact_for(self):
-        summary = "Projects for which %s is an answer contact for" % (
+        summary = "Projects for which %s is an answer contact" % (
             self.context.displayname)
         return Link('+answer-contact-for', 'Answer contact for', summary)
 
