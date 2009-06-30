@@ -29,13 +29,7 @@
     string:&lt;script type='text/javascript'&gt;" />
   var resize_frame =
       '<tal:x replace="request/form/resize_frame | nothing"/>';
-  var hide_zoom_buttons =
-      '<tal:x replace="request/form/hide_zoom_buttons | nothing"/>';
-  if (hide_zoom_buttons == 'true') {
-      hide_zoom_buttons = true;
-  } else {
-      hide_zoom_buttons = false;
-  }
+
   var include_inactive =
       '<tal:x replace="request/form/include_inactive | nothing"/>';
   if (include_inactive == 'true') {
@@ -62,7 +56,6 @@
               container.setStyle('display', 'block');
               var config = {
                   timeline: timeline,
-                  hide_zoom_buttons: hide_zoom_buttons,
                   boundingBox: container
               };
               if (resize_frame !== '') {
