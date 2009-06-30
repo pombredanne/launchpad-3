@@ -16,6 +16,7 @@ import traceback
 import xmlrpclib
 
 from cStringIO import StringIO
+from random import shuffle
 
 # pylint: disable-msg=F0401
 from Mailman import Errors
@@ -195,6 +196,7 @@ class XMLRPCRunner(Runner):
             real name, flags, and status of each person in the list's
             subscribers.
         """
+        ## syslog('xmlrpc', '%s subinfo: %s', list_name, subscription_info)
         # Start with an unlocked list.
         mlist = MailList(list_name, lock=False)
         # Create a mapping of email address to the member's real name,
@@ -296,23 +298,32 @@ class XMLRPCRunner(Runner):
         """Get the latest subscription information."""
         # First, calculate the names of the active mailing lists.
         # pylint: disable-msg=W0331
-        lists = [list_name
-                 for list_name in Utils.list_names()
-                 if list_name <> mm_cfg.MAILMAN_SITE_LIST]
+        lists = sorted(list_name
+                       for list_name in Utils.list_names()
+                       if list_name <> mm_cfg.MAILMAN_SITE_LIST)
         # Batch the subscription requests in order to reduce the possibility
-        # of timeouts in the XMLRPC server.
+        # of timeouts in the XMLRPC server.  Note that we cannot eliminate
+        # timeouts, which will cause an entire batch to fail.  To reduce the
+        # possibility that the same batch of teams will always fail, we
+        # shuffle the list of team names so the batches will always be
+        # different.
+        shuffle(lists)
         while lists:
             batch = lists[:mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE]
             lists = lists[mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE:]
+            ## syslog('xmlrpc', 'batch: %s', batch)
+            ## syslog('xmlrpc', 'lists: %s', lists)
             # Get the information for this batch of mailing lists.
             try:
                 info = self._proxy.getMembershipInformation(batch)
             except (xmlrpclib.ProtocolError, socket.error), error:
                 log_exception('Cannot talk to Launchpad: %s', error)
-                return
+                syslog('xmlrpc', 'batch: %s', batch)
+                continue
             except xmlrpclib.Fault, error:
                 log_exception('Launchpad exception: %s', error)
-                return
+                syslog('xmlrpc', 'batch: %s', batch)
+                continue
             for list_name in info:
                 subscription_info = info[list_name]
                 # The subscription info for a mailing list can be None,

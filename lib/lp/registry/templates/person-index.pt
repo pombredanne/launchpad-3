@@ -70,7 +70,8 @@
     <div tal:replace="structure context/@@+portlet-contact-details"/>
     <div tal:replace="structure context/@@+portlet-map" />
     <div tal:replace="structure context/@@+portlet-contributions"/>
-    <div tal:replace="structure context/@@+portlet-ppas"/>
+    <div tal:condition="view/should_show_ppa_section"
+         tal:replace="structure context/@@+portlet-ppas"/>
     <div tal:replace="structure context/@@+portlet-currentfocus"/>
     <div tal:replace="structure context/@@+portlet-memberships"/>
     <div tal:replace="structure context/@@+portlet-details"/>
