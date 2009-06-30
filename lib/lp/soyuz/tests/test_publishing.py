@@ -637,7 +637,7 @@ class TestNativePublishing(TestNativePublishingBase):
         shutil.rmtree(test_temp_dir)
 
 
-class TestOverrideFromAncestry(TestCaseWithFactory):
+class OverrideFromAncestryTestCase(TestCaseWithFactory):
     """Test `IPublishing.overrideFromAncestry`.
 
     When called from a `SourcePackagePublishingHistory` or a
