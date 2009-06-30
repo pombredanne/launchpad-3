@@ -29,7 +29,7 @@ def retry_transaction(func):
     The function being decorated should not have side effects outside
     of the transaction.
     """
-    def retry_transaction_decorator(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         attempt = 0
         while True:
             attempt += 1
@@ -39,7 +39,7 @@ def retry_transaction(func):
                     TransactionRollbackError), exc:
                 if attempt >= RETRY_ATTEMPTS:
                     raise # tried too many times
-    return mergeFunctionMetadata(func, retry_transaction_decorator)
+    return mergeFunctionMetadata(func, wrapper)
 
 
 def read_transaction(func):
@@ -49,14 +49,13 @@ def read_transaction(func):
     function.  The transaction will be retried if appropriate.
     """
     @reset_store
-    def read_transaction_decorator(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         transaction.begin()
         try:
             return func(*args, **kwargs)
         finally:
             transaction.abort()
-    return retry_transaction(mergeFunctionMetadata(
-        func, read_transaction_decorator))
+    return retry_transaction(mergeFunctionMetadata(func, wrapper))
 
 
 def write_transaction(func):
@@ -67,7 +66,7 @@ def write_transaction(func):
     if appropriate.
     """
     @reset_store
-    def write_transaction_decorator(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         transaction.begin()
         try:
             ret = func(*args, **kwargs)
@@ -76,8 +75,7 @@ def write_transaction(func):
             raise
         transaction.commit()
         return ret
-    return retry_transaction(mergeFunctionMetadata(
-        func, write_transaction_decorator))
+    return retry_transaction(mergeFunctionMetadata(func, wrapper))
 
 
 class Library:

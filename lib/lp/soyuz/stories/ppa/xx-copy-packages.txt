@@ -342,49 +342,11 @@ Leave the Destination PPA alone, because it defaults to 'This PPA'.
     ...     'Destination PPA').displayValue
     ['This PPA']
 
-James is too excited and rapidly hit the 'Copy Packages' button before
-actually selecting the wanted destination series.
-
 The destination series always default to 'The same series'.
 
     >>> jblack_browser.getControl(
     ...     'Destination series').displayValue
     ['The same series']
-
-When he requests the action, nothing is copied, since a copy of a
-published source to 'This PPA' and 'The same series' has no effect,
-because it results in publishing cruft (the former publishing record
-will be dominated and the archive won't be changed).
-
-    >>> jblack_browser.getControl("Copy Packages").click()
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    All packages already copied to PPA for James Blackwell.
-
-Without thinking much James erroneously selects 'hoary' series and
-pushes the copy button. The same message is rendered.
-
-    >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [pmount_pub_id]
-
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['hoary']
-
-    >>> jblack_browser.getControl("Copy Packages").click()
-    >>> messages = get_feedback_messages(jblack_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    All packages already copied to PPA for James Blackwell.
-
-Darn, now James being more careful and re-selects the 'pmount' source
-and 'grumpy' as Destination Series.
-
-    >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [pmount_pub_id]
-
-    >>> jblack_browser.getControl(
-    ...     'Destination series').value = ['grumpy']
 
 He uses the default option of rebuilding copied source along the way.
 
@@ -396,7 +358,7 @@ All done and reviewed, James pushes the button.
 
     >>> jblack_browser.getControl("Copy Packages").click()
 
-And again, pmount could not be copied, because since it is building in
+'pmount' could not be copied, because since it is building in
 hoary, if we allow the source to be copied and built in grumpy the
 resulted binaries would conflict (same name and version, but different
 contents). So, this copy is not allowed.
@@ -816,7 +778,12 @@ completely ignored.
     >>> messages = get_feedback_messages(jblack_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    All packages already copied to PPA for James Blackwell Friends.
+    There is 1 error.
+    The following sources cannot be copied:
+    iceweasel 1.0 in hoary
+    (same version already has published binaries in the destination archive),
+    pmount 0.1-1 in hoary
+    (same version already has published binaries in the destination archive)
 
 James goes wild and decided to create a new team PPA for his sandbox
 tests.

@@ -23,9 +23,8 @@ from bzrlib.urlutils import join as urljoin
 from canonical.cachedproperty import cachedproperty
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, ImportWorker,
-    PullingImportWorker, get_default_bazaar_branch_store,
-    get_default_foreign_tree_store)
+    BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, GitImportWorker,
+    ImportDataStore, ImportWorker, get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, SubversionServer)
 from lp.codehosting.tests.helpers import (
@@ -214,6 +213,118 @@ class TestBazaarBranchStore(WorkerTest):
             sftp_prefix_noslash + '/' + '%08x' % self.arbitrary_branch_id)
 
 
+class TestImportDataStore(WorkerTest):
+    """Tests for `ImportDataStore`."""
+
+    def test_fetch_returnsFalseIfNotFound(self):
+        # If the requested file does not exist on the transport, fetch returns
+        # False.
+        filename = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        source_details = self.factory.makeCodeImportSourceDetails()
+        store = ImportDataStore(self.get_transport(), source_details)
+        ret = store.fetch(filename)
+        self.assertFalse(ret)
+
+    def test_fetch_doesntCreateFileIfNotFound(self):
+        # If the requested file does not exist on the transport, no local file
+        # is created.
+        filename = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        source_details = self.factory.makeCodeImportSourceDetails()
+        store = ImportDataStore(self.get_transport(), source_details)
+        store.fetch(filename)
+        self.assertFalse(os.path.exists(filename))
+
+    def test_fetch_returnsTrueIfFound(self):
+        # If the requested file exists on the transport, fetch returns True.
+        source_details = self.factory.makeCodeImportSourceDetails()
+        # That the remote name is like this is part of the interface of
+        # ImportDataStore.
+        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        transport = self.get_transport()
+        transport.put_bytes(remote_name, '')
+        store = ImportDataStore(transport, source_details)
+        ret = store.fetch(local_name)
+        self.assertTrue(ret)
+
+    def test_fetch_retrievesFileIfFound(self):
+        # If the requested file exists on the transport, fetch copies its
+        # content to the filename given to fetch.
+        source_details = self.factory.makeCodeImportSourceDetails()
+        # That the remote name is like this is part of the interface of
+        # ImportDataStore.
+        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        content = self.factory.getUniqueString()
+        transport = self.get_transport()
+        transport.put_bytes(remote_name, content)
+        store = ImportDataStore(transport, source_details)
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        store.fetch(local_name)
+        self.assertEquals(content, open(local_name).read())
+
+    def test_fetch_with_dest_transport(self):
+        # The second, optional, argument to fetch is the transport in which to
+        # place the retrieved file.
+        source_details = self.factory.makeCodeImportSourceDetails()
+        # That the remote name is like this is part of the interface of
+        # ImportDataStore.
+        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        content = self.factory.getUniqueString()
+        transport = self.get_transport()
+        transport.put_bytes(remote_name, content)
+        store = ImportDataStore(transport, source_details)
+        local_prefix = self.factory.getUniqueString()
+        self.get_transport(local_prefix).ensure_base()
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        store.fetch(local_name, self.get_transport(local_prefix))
+        self.assertEquals(
+            content, open(os.path.join(local_prefix, local_name)).read())
+
+    def test_put_copiesFileToTransport(self):
+        # Put copies the content of the passed filename to the remote
+        # transport.
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        source_details = self.factory.makeCodeImportSourceDetails()
+        content = self.factory.getUniqueString()
+        get_transport('.').put_bytes(local_name, content)
+        transport = self.get_transport()
+        store = ImportDataStore(transport, source_details)
+        store.put(local_name)
+        # That the remote name is like this is part of the interface of
+        # ImportDataStore.
+        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        self.assertEquals(content, transport.get_bytes(remote_name))
+
+    def test_put_ensures_base(self):
+        # Put ensures that the directory pointed to by the transport exists.
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        subdir_name = self.factory.getUniqueString()
+        source_details = self.factory.makeCodeImportSourceDetails()
+        get_transport('.').put_bytes(local_name, '')
+        transport = self.get_transport()
+        store = ImportDataStore(transport.clone(subdir_name), source_details)
+        store.put(local_name)
+        self.assertTrue(transport.has(subdir_name))
+
+    def test_put_with_source_transport(self):
+        # The second, optional, argument to put is the transport from which to
+        # read the retrieved file.
+        local_prefix = self.factory.getUniqueString()
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        source_details = self.factory.makeCodeImportSourceDetails()
+        content = self.factory.getUniqueString()
+        os.mkdir(local_prefix)
+        get_transport(local_prefix).put_bytes(local_name, content)
+        transport = self.get_transport()
+        store = ImportDataStore(transport, source_details)
+        store.put(local_name, self.get_transport(local_prefix))
+        # That the remote name is like this is part of the interface of
+        # ImportDataStore.
+        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        self.assertEquals(content, transport.get_bytes(remote_name))
+
+
+
 class MockForeignWorkingTree:
     """Working tree that records calls to checkout and update."""
 
@@ -240,79 +351,65 @@ class TestForeignTreeStore(WorkerTest):
     def setUp(self):
         """Set up a code import for an SVN working tree."""
         super(TestForeignTreeStore, self).setUp()
-        self.source_details = self.factory.makeCodeImportSourceDetails()
         self.temp_dir = self.makeTemporaryDirectory()
 
-    def makeForeignTreeStore(self, transport=None):
+    def makeForeignTreeStore(self, source_details=None):
         """Make a foreign tree store.
 
         The store is in a different directory to the local working directory.
         """
-        def _getForeignTree(source_details, target_path):
+        def _getForeignTree(target_path):
             return MockForeignWorkingTree(target_path)
-        if transport is None:
-            transport = self.get_transport('remote')
-        store = ForeignTreeStore(transport)
-        store._getForeignTree = _getForeignTree
+        fake_it = False
+        if source_details is None:
+            fake_it = True
+            source_details = self.factory.makeCodeImportSourceDetails()
+        transport = self.get_transport('remote')
+        store = ForeignTreeStore(ImportDataStore(transport, source_details))
+        if fake_it:
+            store._getForeignTree = _getForeignTree
         return store
 
     def test_getForeignTreeSubversion(self):
         # _getForeignTree() returns a Subversion working tree for Subversion
         # code imports.
-        store = ForeignTreeStore(None)
-        svn_branch_url = self.factory.getUniqueURL()
         source_details = self.factory.makeCodeImportSourceDetails(
             rcstype='svn')
-        working_tree = store._getForeignTree(source_details, 'path')
+        store = self.makeForeignTreeStore(source_details)
+        working_tree = store._getForeignTree('path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(
             working_tree.remote_url, source_details.svn_branch_url)
 
     def test_getForeignTreeCVS(self):
         # _getForeignTree() returns a CVS working tree for CVS code imports.
-        store = ForeignTreeStore(None)
         source_details = self.factory.makeCodeImportSourceDetails(
             rcstype='cvs')
-        working_tree = store._getForeignTree(source_details, 'path')
+        store = self.makeForeignTreeStore(source_details)
+        working_tree = store._getForeignTree('path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(working_tree.root, source_details.cvs_root)
         self.assertEqual(working_tree.module, source_details.cvs_module)
-
-    def test_defaultStore(self):
-        # The default store is at config.codeimport.foreign_tree_store.
-        store = get_default_foreign_tree_store()
-        self.assertEqual(
-            store.transport.base.rstrip('/'),
-            config.codeimport.foreign_tree_store.rstrip('/'))
 
     def test_getNewWorkingTree(self):
         # If the foreign tree store doesn't have an archive of the foreign
         # tree, then fetching the tree actually pulls in from the original
         # site.
         store = self.makeForeignTreeStore()
-        tree = store.fetchFromSource(self.source_details, self.temp_dir)
+        tree = store.fetchFromSource(self.temp_dir)
         self.assertCheckedOut(tree)
 
     def test_archiveTree(self):
         # Once we have a foreign working tree, we can archive it so that we
         # can retrieve it more reliably in the future.
         store = self.makeForeignTreeStore()
-        foreign_tree = store.fetchFromSource(
-            self.source_details, self.temp_dir)
-        store.archive(self.source_details, foreign_tree)
+        foreign_tree = store.fetchFromSource(self.temp_dir)
+        store.archive(foreign_tree)
+        transport = store.import_data_store._transport
+        source_details = store.import_data_store.source_details
         self.assertTrue(
-            store.transport.has(
-                '%08x.tar.gz' % self.source_details.branch_id),
-            "Couldn't find '%08x.tar.gz'" % self.source_details.branch_id)
-
-    def test_makeDirectories(self):
-        # archive() tries to create the base directory of the foreign tree
-        # store if it doesn't already exist.
-        store = self.makeForeignTreeStore(self.get_transport('doesntexist'))
-        foreign_tree = store.fetchFromSource(
-            self.source_details, self.temp_dir)
-        store.archive(self.source_details, foreign_tree)
-        self.assertIsDirectory('doesntexist', self.get_transport())
+            transport.has('%08x.tar.gz' % source_details.branch_id),
+            "Couldn't find '%08x.tar.gz'" % source_details.branch_id)
 
     def test_fetchFromArchiveFailure(self):
         # If a tree has not been archived yet, but we try to retrieve it from
@@ -320,18 +417,16 @@ class TestForeignTreeStore(WorkerTest):
         store = self.makeForeignTreeStore()
         self.assertRaises(
             NoSuchFile,
-            store.fetchFromArchive, self.source_details, self.temp_dir)
+            store.fetchFromArchive, self.temp_dir)
 
     def test_fetchFromArchive(self):
         # After archiving a tree, we can retrieve it from the store -- the
         # tarball gets downloaded and extracted.
         store = self.makeForeignTreeStore()
-        foreign_tree = store.fetchFromSource(
-            self.source_details, self.temp_dir)
-        store.archive(self.source_details, foreign_tree)
+        foreign_tree = store.fetchFromSource(self.temp_dir)
+        store.archive(foreign_tree)
         new_temp_dir = self.makeTemporaryDirectory()
-        foreign_tree2 = store.fetchFromArchive(
-            self.source_details, new_temp_dir)
+        foreign_tree2 = store.fetchFromArchive(new_temp_dir)
         self.assertEqual(new_temp_dir, foreign_tree2.local_path)
         self.assertDirectoryTreesEqual(self.temp_dir, new_temp_dir)
 
@@ -339,23 +434,11 @@ class TestForeignTreeStore(WorkerTest):
         # The local working tree is updated with changes from the remote
         # branch after it has been fetched from the archive.
         store = self.makeForeignTreeStore()
-        foreign_tree = store.fetchFromSource(
-            self.source_details, self.temp_dir)
-        store.archive(self.source_details, foreign_tree)
+        foreign_tree = store.fetchFromSource(self.temp_dir)
+        store.archive(foreign_tree)
         new_temp_dir = self.makeTemporaryDirectory()
-        foreign_tree2 = store.fetchFromArchive(
-            self.source_details, new_temp_dir)
+        foreign_tree2 = store.fetchFromArchive(new_temp_dir)
         self.assertUpdated(foreign_tree2)
-
-
-class FakeForeignTreeStore(ForeignTreeStore):
-    """A ForeignTreeStore that always fetches fake foreign trees."""
-
-    def __init__(self):
-        ForeignTreeStore.__init__(self, None)
-
-    def fetch(self, source_details, target_path):
-        return MockForeignWorkingTree(target_path)
 
 
 class TestWorkerCore(WorkerTest):
@@ -370,10 +453,10 @@ class TestWorkerCore(WorkerTest):
         return BazaarBranchStore(self.get_transport('bazaar_branches'))
 
     def makeImportWorker(self):
-        """Make an ImportWorker that only uses fake branches."""
+        """Make an ImportWorker."""
         return ImportWorker(
-            self.source_details, self.makeBazaarBranchStore(),
-            logging.getLogger("silent"))
+            self.source_details, self.get_transport('import_data'),
+            self.makeBazaarBranchStore(), logging.getLogger("silent"))
 
     def test_construct(self):
         # When we construct an ImportWorker, it has a CodeImportSourceDetails
@@ -406,39 +489,85 @@ class TestCSCVSWorker(WorkerTest):
         self.source_details = self.factory.makeCodeImportSourceDetails()
 
     def makeImportWorker(self):
-        """Make an ImportWorker that only uses fake foreign trees."""
+        """Make a CSCVSImportWorker."""
         return CSCVSImportWorker(
-            self.source_details, FakeForeignTreeStore(),
-            None, logging.getLogger("silent"))
+            self.source_details, self.get_transport('import_data'), None,
+            logging.getLogger("silent"))
 
     def test_getForeignTree(self):
         # getForeignTree returns an object that represents the 'foreign'
         # branch (i.e. a CVS or Subversion branch).
         worker = self.makeImportWorker()
+        def _getForeignTree(target_path):
+            return MockForeignWorkingTree(target_path)
+        worker.foreign_tree_store._getForeignTree = _getForeignTree
         working_tree = worker.getForeignTree()
         self.assertIsSameRealPath(
             os.path.abspath(worker.FOREIGN_WORKING_TREE_PATH),
             working_tree.local_path)
 
 
+class TestGitImportWorker(WorkerTest):
+    """Test for behaviour particular to `GitImportWorker`."""
+
+    def makeBazaarBranchStore(self):
+        """Make a Bazaar branch store."""
+        t = self.get_transport('bazaar_branches')
+        t.ensure_base()
+        return BazaarBranchStore(self.get_transport('bazaar_branches'))
+
+    def makeImportWorker(self):
+        """Make an GitImportWorker."""
+        source_details = self.factory.makeCodeImportSourceDetails()
+        return GitImportWorker(
+            source_details, self.get_transport('import_data'),
+            self.makeBazaarBranchStore(), logging.getLogger("silent"))
+
+    def test_pushBazaarWorkingTree_saves_git_db(self):
+        # GitImportWorker.pushBazaarWorkingTree saves the git.db file from the
+        # tree's repository in the worker's ImportDataStore.
+        content = self.factory.getUniqueString()
+        tree = self.make_branch_and_tree('.')
+        tree.branch.repository._transport.put_bytes('git.db', content)
+        import_worker = self.makeImportWorker()
+        import_worker.pushBazaarWorkingTree(tree)
+        import_worker.import_data_store.fetch('git.db')
+        self.assertEqual(content, open('git.db').read())
+
+    def test_getBazaarWorkingTree_fetches_git_db(self):
+        # GitImportWorker.getBazaarWorkingTree fetches the git.db file from
+        # the worker's ImportDataStore into the tree's repository.
+        import_worker = self.makeImportWorker()
+        # Store the git.db file in the store.
+        content = self.factory.getUniqueString()
+        open('git.db', 'w').write(content)
+        import_worker.import_data_store.put('git.db')
+        # Make sure there's a Bazaar branch in the branch store.
+        tree = self.make_branch_and_tree('tree')
+        ImportWorker.pushBazaarWorkingTree(import_worker, tree)
+        # Finally, fetching the tree gets the git.db file too.
+        tree = import_worker.getBazaarWorkingTree()
+        self.assertEqual(
+            content, tree.branch.repository._transport.get('git.db').read())
+
+
 def clean_up_default_stores_for_import(source_details):
     """Clean up the default branch and foreign tree stores for an import.
 
-    This checks for an existing branch and/or foreign tree tarball
-    corresponding to the passed in import and deletes them if they
-    are found.
+    This checks for an existing branch and/or other import data corresponding
+    to the passed in import and deletes them if they are found.
 
-    If there are tarballs or branches in the default stores that
-    might conflict with working on our job, life gets very, very
-    confusing.
+    If there are tarballs or branches in the default stores that might
+    conflict with working on our job, life gets very, very confusing.
 
     :source_details: A `CodeImportSourceDetails` describing the import.
     """
-    treestore = get_default_foreign_tree_store()
-    tree_transport = treestore.transport
-    archive_name = treestore._getTarballName(source_details.branch_id)
-    if tree_transport.has(archive_name):
-        tree_transport.delete(archive_name)
+    tree_transport = get_transport(config.codeimport.foreign_tree_store)
+    prefix = '%08x' % source_details.branch_id
+    if tree_transport.has('.'):
+        for filename in tree_transport.list_dir('.'):
+            if filename.startswith(prefix):
+                tree_transport.delete(filename)
     branchstore = get_default_bazaar_branch_store()
     branch_transport = branchstore.transport
     branch_name = '%08x' % source_details.branch_id
@@ -517,8 +646,7 @@ class TestActualImportMixin:
         # restored at the end of the test.
         os.chdir(tree_dir)
         if isinstance(worker, CSCVSImportWorker):
-            foreign_tree = worker.foreign_tree_store.fetch(
-                worker.source_details, tree_dir)
+            foreign_tree = worker.foreign_tree_store.fetch(tree_dir)
         else:
             foreign_tree = None
         self.commitInForeignTree(foreign_tree)
@@ -575,14 +703,12 @@ class CSCVSActualImportMixin(TestActualImportMixin):
         TestActualImportMixin.setUpImport does.
         """
         TestActualImportMixin.setUpImport(self)
-        self.foreign_store = ForeignTreeStore(
-            self.get_transport('foreign_store'))
 
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
         return CSCVSImportWorker(
-            self.source_details, self.foreign_store, self.bazaar_store,
-            logging.getLogger())
+            self.source_details, self.get_transport('foreign_store'),
+            self.bazaar_store, logging.getLogger())
 
 
 class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
@@ -658,10 +784,23 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
         load_optional_plugin('git')
         self.setUpImport()
 
+    def tearDown(self):
+        """Clear bzr-git's cache of sqlite connections.
+
+        This is rather obscure: different test runs tend to re-use the same
+        paths on disk, which confuses bzr-git as it keeps a cache that maps
+        paths to database connections, which happily returns the connection
+        that corresponds to a path that no longer exists.
+        """
+        from bzrlib.plugins.git.shamap import mapdbs
+        mapdbs().clear()
+        WorkerTest.tearDown(self)
+
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
-        return PullingImportWorker(
-            self.source_details, self.bazaar_store, logging.getLogger())
+        return GitImportWorker(
+            self.source_details, self.get_transport('import_data'),
+            self.bazaar_store, logging.getLogger())
 
     def commitInForeignTree(self, foreign_tree):
         """Change the foreign tree, generating exactly one commit."""
