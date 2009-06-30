@@ -22,7 +22,7 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
-from zope.schema import Int, TextLine
+from zope.schema import Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
@@ -95,6 +95,10 @@ class IPackageUpload(Interface):
             title=_("The pocket"), required=True, readonly=False,
             )
 
+    date_created = Datetime(
+        title=_('Date created'),
+        description=_("The date this package upload was done."))
+
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
 
@@ -105,7 +109,6 @@ class IPackageUpload(Interface):
     customfiles = Attribute("Custom upload files associated with this "
                             "queue item")
 
-    datecreated = Attribute("The date on which this queue was created.")
     displayname = TextLine(
         title=_("Generic displayname for a queue item"), readonly=True)
     displayversion = TextLine(
@@ -128,6 +131,8 @@ class IPackageUpload(Interface):
         "wheter or not this upload contains DDTP images")
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
+    is_delayed_copy = Attribute(
+        "Whether or not this PackageUpload record is a delayed-copy.")
 
     components = Attribute(
         """The set of components used in this upload.
@@ -167,13 +172,24 @@ class IPackageUpload(Interface):
     def acceptFromUploader(changesfile_path, logger=None):
         """Perform upload acceptance during upload-time.
 
-         * Move the upload to accepted queue in all cases;
-         * Publish and close bugs for 'single-source' uploads;
+         * Move the upload to accepted queue in all cases.
+         * Publish and close bugs for 'single-source' uploads.
          * Skip bug-closing for PPA uploads.
+         * Grant karma to people involved with the upload.
+        """
+
+    def acceptFromCopy():
+        """Perform upload acceptance for a delayed-copy record.
+
+         * Move the upload to accepted queue in all cases.
+         * Close bugs for uploaded sources (skip imported ones).
         """
 
     def acceptFromQueue(announce_list, logger=None, dry_run=False):
-        """Call setAccepted, do a syncUpdate, and send notification email."""
+        """Call setAccepted, do a syncUpdate, and send notification email.
+
+         * Grant karma to people involved with the upload.
+        """
 
     def rejectFromQueue(logger=None, dry_run=False):
         """Call setRejected, do a syncUpdate, and send notification email."""
@@ -352,9 +368,9 @@ class IPackageUploadSource(Interface):
         that only PRIMARY archive allows post-RELEASE pockets are:
 
          1. original archive, original distroseries and pocket (old
-            DEVELOPMENT/SRU/PPA uploads);
+            DEVELOPMENT/SRU/PPA uploads).
          2. primary archive, original distroseries and release pocket (NEW
-            SRU/PPA uploads fallback);
+            SRU/PPA uploads fallback).
          3. primary_archive, any distroseries and release pocket (BACKPORTS)
 
         We lookup a source publication with the same name in those location
@@ -520,6 +536,17 @@ class IPackageUploadSet(Interface):
         If status is ommitted return the number of all entries.
         'distroseries' is optional and restrict the results in given
         distroseries, same for pocket.
+        """
+
+    def createDelayedCopy(archive, distroseries, pocket, signing_key):
+        """Return a `PackageUpload` record for a delayed-copy operation.
+
+        :param archive: target `IArchive`,
+        :param distroseries: target `IDistroSeries`,
+        :param pocket: target `PackagePublishingPocket`,
+        :param signing_key: `IGPGKey` of the user requesting this copy.
+
+        :return: an `IPackageUpload` record in NEW state.
         """
 
     def getBuildByBuildIDs(build_ids):

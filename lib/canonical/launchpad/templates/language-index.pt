@@ -119,8 +119,8 @@
                   <a
                     tal:attributes="
                       href expert_info/expert/fmt:url;
-                      title expert_info/expert/browsername/fmt:shorten/80"
-                    tal:content="expert_info/expert/browsername"
+                      title expert_info/expert/displayname/fmt:shorten/80"
+                    tal:content="expert_info/expert/displayname"
                     >Expert name</a>(
                     <tal:groups repeat="group expert_info/groups">
                       <a tal:attributes="
