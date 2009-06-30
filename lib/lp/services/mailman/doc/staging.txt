@@ -22,14 +22,16 @@ informing them of their new list.  We can ignore these.
 
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
 
-    >>> team_one = factory.makeTeam(owner=no_priv, name='staging-one')
-    >>> team_two = factory.makeTeam(owner=no_priv, name='staging-two')
+    >>> owner = factory.makePerson()
+    >>> team_one = factory.makeTeam(owner=owner, name='staging-one')
+    >>> team_two = factory.makeTeam(owner=owner, name='staging-two')
     >>> transaction.commit()
     >>> logout()
-    >>> browser = Browser('no-priv@canonical.com:test')
+
+    >>> browser = Browser('%s:%s' %
+    ...     (owner._preferredemail_cached.email,
+    ...      owner._password_cleartext_cached))
 
     >>> from lp.services.mailman.testing import helpers
     >>> helpers.apply_for_list(browser, 'staging-one')

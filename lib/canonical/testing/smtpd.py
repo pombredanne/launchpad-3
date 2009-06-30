@@ -1,4 +1,4 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  All rights reserved.
 
 """SMTP test helper."""
 
@@ -43,17 +43,14 @@ class SMTPServer(QueueServer):
         # local part indicates that the message is destined for a Mailman
         # mailing list, deliver it to Mailman's incoming queue.
         # pylint: disable-msg=F0401
-        if 'x-beenthere' in message:
-            # It came from Mailman and goes in the queue.
-            log.debug('delivered to upstream: %s', message_id)
-            self.queue.put(message)
-        elif local in listnames:
+        if local in listnames and 'x-beenthere' not in message:
             # It's destined for a mailing list.
             log.debug('delivered to Mailman: %s', message_id)
             from Mailman.Post import inject
             inject(local, message)
         else:
-            # It's destined for a 'normal' user.
+            # It came from Mailman and goes in the queue, or it's destined for
+            # a 'normal' user.  Either way, it goes in the queue.
             log.debug('delivered to upstream: %s', message_id)
             self.queue.put(message)
 
