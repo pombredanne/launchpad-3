@@ -390,7 +390,7 @@ there are no binaries to be copied.
     ...     print msg
     There is 1 error.
     The following source cannot be copied:
-     pmount 0.1-1 in hoary (source has no binaries to be copied)
+    pmount 0.1-1 in hoary (source has no binaries to be copied)
 
 We will mark the pmount build completed, to emulate the situation
 described in bug #236407 when binaries were built but have to
@@ -429,8 +429,8 @@ binaries could not be published in the PPA.
     The following source cannot be copied:
     pmount 0.1-1 in hoary
     (same version has unpublished binaries in the destination
-     archive for Hoary, please wait for them to be published before
-     copying)
+    archive for Hoary, please wait for them to be published before
+    copying)
 
 Including binaries doesn't help either, since the copied source itself
 has unpublished binaries.
@@ -605,7 +605,7 @@ published in the archive.
     The following source cannot be copied:
     pmount 0.1-1 in hoary
     (same version already has published binaries in the destination
-     archive)
+    archive)
 
 Since pmount was built in his archive, the only alternative is to
 copy the binaries too. The copied binaries will be checked against
@@ -1084,7 +1084,7 @@ to copy the *same* version with different contents to grumpy in his PPA.
     The following source cannot be copied:
     foo 1.1 in hoary
     (a different source with the same version is published in the
-     destination archive)
+    destination archive)
 
 James thinks that his last chance will be copying the just-uploaded
 foo-9.9 source from 'James-Friend's PPA.

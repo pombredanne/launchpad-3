@@ -48,7 +48,7 @@ from lp.testing import (
     TestCase, TestCaseWithFactory)
 
 
-class TestReUploadFile(TestCaseWithFactory):
+class ReUploadFileTestCase(TestCaseWithFactory):
     """Test `ILibraryFileAlias` reupload helper.
 
     A `ILibraryFileAlias` object can be reupload to a different or
@@ -132,7 +132,7 @@ class TestReUploadFile(TestCaseWithFactory):
         self.assertFileIsReset(private_file)
 
 
-class TestUpdateFilesPrivacy(TestCaseWithFactory):
+class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
     """Test publication `updateFilesPrivacy` helper.
 
     When called for a `SourcePackagePublishingHistory` or a
@@ -383,7 +383,7 @@ class TestUpdateFilesPrivacy(TestCaseWithFactory):
         self.assertBinaryFilesArePublic(copied_binary, 3)
 
 
-class TestCopyCheckerHarness:
+class CopyCheckerHarness:
     """Basic checks common for all scenarios."""
 
     def assertCanCopySourceOnly(self):
@@ -447,12 +447,12 @@ class TestCopyCheckerHarness:
         self.assertCanCopyBinaries()
 
 
-class TestCopyCheckerHarnessSameArchive(TestCaseWithFactory,
-                                        TestCopyCheckerHarness):
+class CopyCheckerSameArchiveHarness(TestCaseWithFactory,
+                                    CopyCheckerHarness):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestCopyCheckerHarnessSameArchive, self).setUp()
+        super(CopyCheckerSameArchiveHarness, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
         self.source = self.test_publisher.getPubSource()
@@ -512,12 +512,12 @@ class TestCopyCheckerHarnessSameArchive(TestCaseWithFactory,
             'destination archive')
 
 
-class TestCopyCheckerHarnessDifferentArchive(TestCaseWithFactory,
-                                             TestCopyCheckerHarness):
+class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
+                                         CopyCheckerHarness):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestCopyCheckerHarnessDifferentArchive, self).setUp()
+        super(CopyCheckerDifferentArchiveHarness, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
         self.source = self.test_publisher.getPubSource()
@@ -549,12 +549,12 @@ class TestCopyCheckerHarnessDifferentArchive(TestCaseWithFactory,
         self.assertCanCopySourceOnly()
 
 
-class TestCopyChecker(TestCaseWithFactory):
+class CopyCheckerTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestCopyChecker, self).setUp()
+        super(CopyCheckerTestCase, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
 
@@ -669,12 +669,12 @@ class TestCopyChecker(TestCaseWithFactory):
             copied_source, copied_source.distroseries, copied_source.pocket)
 
 
-class TestDoDirectCopy(TestCaseWithFactory):
+class DoDirectCopyTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestDoDirectCopy, self).setUp()
+        super(DoDirectCopyTestCase, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
 
@@ -718,12 +718,12 @@ class TestDoDirectCopy(TestCaseWithFactory):
             [copy.displayname for copy in copies])
 
 
-class TestDoDelayedCopy(TestCaseWithFactory):
+class DoDelayedCopyTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestDoDelayedCopy, self).setUp()
+        super(DoDelayedCopyTestCase, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
 
     def createDelayedCopyContext(self):
@@ -801,7 +801,7 @@ class TestDoDelayedCopy(TestCaseWithFactory):
             [custom.libraryfilealias for custom in delayed_copy.customfiles])
 
 
-class TestCopyPackageScript(unittest.TestCase):
+class CopyPackageScriptTestCase(unittest.TestCase):
     """Test the copy-package.py script."""
     layer = LaunchpadZopelessLayer
 
@@ -866,7 +866,7 @@ class TestCopyPackageScript(unittest.TestCase):
         self.assertEqual(num_bin_pub + 4, num_bin_pub_after)
 
 
-class TestCopyPackage(TestCase):
+class CopyPackageTestCase(TestCase):
     """Test the CopyPackageHelper class."""
     layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser

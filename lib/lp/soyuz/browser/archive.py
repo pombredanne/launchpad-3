@@ -771,7 +771,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
             self.setFieldError('selected_sources', 'No sources selected.')
 
     @action(_("Request Deletion"), name="delete", validator="validate_delete")
-    def action_delete(self, action, data):
+    def delete_action(self, action, data):
         """Perform the deletion of the selected packages.
 
         The deletion will be performed upon the 'selected_sources' contents
@@ -935,12 +935,12 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    required=True))
 
     @action(_("Update"), name="update")
-    def action_update(self, action, data):
+    def update_action(self, action, data):
         """Simply re-issue the form with the new values."""
         pass
 
     @action(_("Copy Packages"), name="copy")
-    def action_copy(self, action, data):
+    def copy_action(self, action, data):
         """Perform the copy of the selected packages.
 
         Ensure that at least one source is selected. Executes `do_copy`
@@ -1317,7 +1317,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                 "Public PPAs cannot depend on private ones.")
 
     @action(_("Save"), name="save")
-    def action_save(self, action, data):
+    def save_action(self, action, data):
         """Save dependency configuration changes.
 
         See `_remove_dependencies`, `_add_ppa_dependencies` and
@@ -1400,7 +1400,7 @@ class ArchiveActivateView(LaunchpadFormView):
                 "PPA Terms of Service must be accepted to activate a PPA.")
 
     @action(_("Activate"), name="activate")
-    def action_save(self, action, data):
+    def save_action(self, action, data):
         """Activate a PPA and moves to its page."""
 
         # 'name' field is omitted from the form data for default PPAs and
@@ -1451,12 +1451,12 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
     field_names = []
 
     @action(_("Save"), name="save", validator="validate_save")
-    def action_save(self, action, data):
+    def save_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
+    def cancel_action(self, action, data):
         self.next_url = canonical_url(self.context)
 
     def validate_save(self, action, data):
