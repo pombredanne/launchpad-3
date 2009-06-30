@@ -292,7 +292,7 @@ subscriptions.
     Archive
     PPA for Celso Providelo            View
 
-When Marks clicks on the view button, then he is taken to the page for
+When Mark clicks on the view button, then he is taken to the page for
 his personal subscription for Celso's private PPA and the newly-created
 access details are displayed.
 
