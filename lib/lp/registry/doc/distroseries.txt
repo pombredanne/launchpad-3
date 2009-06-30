@@ -964,3 +964,23 @@ earlier development state of a distroseries) are possible:
 
     >>> len(latest_uploads)
     0
+
+
+== Getting build records for a distro series ==
+
+IDistroSeries implements the IHasBuilds interfaces and therefore provides
+a getBuildRecords() method.
+
+    >>> builds = ubuntu['warty'].getBuildRecords(name='firefox')
+    >>> for build in builds:
+    ...     print build.title
+    hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+
+The builds can also be filtered by an architecture tag:
+
+    >>> builds = breezy_autotest.getBuildRecords(name='firefox', arch='i386')
+    >>> for build in builds:
+    ...     print build.title
+    i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+
