@@ -30,6 +30,7 @@ from zope.interface import classProvides, implements
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.webapp import canonical_url
 from lp.code.bzr import (
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
@@ -508,6 +509,13 @@ class RevisionsAddedJob(BranchJobDerived):
         try:
             info = RevisionInfo(self.bzr_branch, revno, revision_id)
             outf = StringIO()
+            graph = self.bzr_branch.repository.get_graph()
+            merged_revisions = self.getMergedRevisionIDs(revision_id, graph)
+            bmps = list(self.findRelatedBMP(merged_revisions))
+            if len(bmps) > 0:
+                outf.write('Related merge proposals:\n')
+            for bmp in bmps:
+                outf.write('  %s\n' % canonical_url(bmp))
             lf = LongLogFormatter(to_file=outf)
             rqst = make_log_request_dict(direction='reverse',
                                          start_revision=info,
