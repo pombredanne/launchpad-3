@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import datetime
 import os
 import shutil
 from unittest import TestLoader
@@ -938,11 +939,11 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         """
         hosted = config.codehosting.hosted_branches_root
         shutil.rmtree(hosted, ignore_errors=True)
-        os.mkdir(hosted)
+        os.makedirs(hosted)
         self.addCleanup(shutil.rmtree, hosted)
         mirrored = config.codehosting.mirrored_branches_root
         shutil.rmtree(mirrored, ignore_errors=True)
-        os.mkdir(mirrored)
+        os.makedirs(mirrored)
         self.addCleanup(shutil.rmtree, mirrored)
 
     def setUp(self):
@@ -954,6 +955,15 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         job = getUtility(IReclaimBranchSpaceJobSource).create(
             self.factory.getUniqueInteger())
         self.assertCorrectlyProvides(job, IReclaimBranchSpaceJob)
+
+    def test_scheduled_in_future(self):
+        # A freshly created ReclaimBranchSpaceJob is scheduled to run in a
+        # week's time.
+        job = getUtility(IReclaimBranchSpaceJobSource).create(
+            self.factory.getUniqueInteger())
+        self.assertEqual(
+            datetime.timedelta(days=7),
+            job.job.scheduled_start - job.job.date_created)
 
     def test_stores_id(self):
         # An instance of ReclaimBranchSpaceJob stores the ID of the branch
