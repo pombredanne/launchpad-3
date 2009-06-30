@@ -524,6 +524,8 @@ distribution_builds = ContextTitle('%s builds')
 
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
+distributionsourcepackage_branches = ContextTitle('Branches for the %s')
+
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')

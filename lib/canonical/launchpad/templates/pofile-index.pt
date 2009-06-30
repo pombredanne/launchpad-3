@@ -32,10 +32,9 @@
       translation:
     </p>
 
-    <ul class="person" tal:condition="view/contributors">
+    <ul tal:condition="view/contributors">
       <li tal:repeat="contributor view/contributors">
-        <a tal:content="contributor/displayname"
-          tal:attributes="href contributor/fmt:url" />
+        <a tal:replace="structure contributor/fmt:link" />
         (<a tal:attributes="
             href string:${context/fmt:url}/+filter?person=${contributor/name}"
           >filter</a>)
