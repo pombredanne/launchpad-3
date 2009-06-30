@@ -55,7 +55,7 @@ class IVPOExportSet(Interface):
 
 
 class IVPOExport(Interface):
-    """Database view for efficient PO exports."""
+    """Shorthand of translation messages for efficient exports."""
 
     potemplate = Object(
         title=u"Template",

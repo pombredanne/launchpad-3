@@ -89,3 +89,57 @@ all current messages that have not been imported.
     ...     print row
     2 english2 esperanto2
 
+
+== VPOExport and translation divergence ==
+
+A particular product has two series, trunk and stable, each with the
+same template.  The templates thus share messages.
+
+    >>> from canonical.launchpad.database.translationtemplateitem import (
+    ...     TranslationTemplateItem)
+    >>> product = factory.makeProduct()
+    >>> trunk = product.getSeries('trunk')
+    >>> stable = factory.makeProductSeries()
+    >>> trunk_template = factory.makePOTemplate(productseries=trunk, name='t')
+    >>> stable_template = factory.makePOTemplate(
+    ...     productseries=stable, name='t')
+
+The two templates contain the same two POTMsgSets.  They are shared
+between the two templates.
+
+    >>> potmsgset1 = factory.makePOTMsgSet(trunk_template, '1', sequence=1)
+    >>> potmsgset2 = factory.makePOTMsgSet(trunk_template, '2', sequence=2)
+    >>> for number, msgset in enumerate([potmsgset1, potmsgset2]):
+    ...     new_tti = TranslationTemplateItem(
+    ...         potemplate=stable_template, sequence=number+1,
+    ...         potmsgset=msgset)
+
+The templates are translated to Dutch.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> trunk_pofile = factory.makePOFile('nl', potemplate=trunk_template)
+    >>> stable_pofile = factory.makePOFile('nl', potemplate=stable_template)
+    >>> message1 = factory.makeTranslationMessage(
+    ...     pofile=removeSecurityProxy(trunk_pofile), potmsgset=potmsgset1,
+    ...     translations=['een'])
+    >>> message2 = factory.makeTranslationMessage(
+    ...     pofile=removeSecurityProxy(trunk_pofile), potmsgset=potmsgset2,
+    ...     translations=['twee'])
+
+Of the translations, one message is diverged for trunk and the other is
+diverged for stable.
+
+    >>> removeSecurityProxy(message1).potemplate = trunk_template
+    >>> removeSecurityProxy(message2).potemplate = stable_template
+
+When we export trunk, only the trunk message shows up.
+
+    >>> for row in vpoexportset.get_pofile_rows(trunk_pofile):
+    ...     print describe_poexport_row(row)
+    1   1   een
+
+In an export for stable, only the stable message shows up.
+
+    >>> for row in vpoexportset.get_pofile_rows(stable_pofile):
+    ...     print describe_poexport_row(row)
+    2   2   twee
