@@ -22,6 +22,7 @@ __all__ = [
     'IArchiveSet',
     'IArchiveSourceSelectionForm',
     'IDistributionArchive',
+    'InvalidComponent',
     'IPPA',
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
@@ -102,6 +103,10 @@ class ArchiveNotPrivate(Exception):
 
 class ComponentNotFound(Exception):
     """Invalid source name."""
+    webservice_error(400) #Bad request.
+
+class InvalidComponent(Exception):
+    """Invalid component name."""
     webservice_error(400) #Bad request.
 
 
@@ -467,6 +472,8 @@ class IArchivePublic(IHasOwner):
         :param component: An `IComponent` or textual component name.
         :return: An `IArchivePermission` which is the newly-created
             permission.
+        :raises InvalidComponent: if this archive is a PPA and the component
+            is not 'main'.
         """
 
     @operation_parameters(
