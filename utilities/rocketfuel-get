@@ -23,7 +23,7 @@ INITIAL_REV=$(bzr revno)
 bzr pull
 FINAL_REV=$(bzr revno)
 
-# Make sure our directories are around
+# Make sure our directories are around.
 if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
 if [ ! -d $LP_EGGS_PATH ]; then mkdir -p $LP_EGGS_PATH; fi
 
@@ -63,7 +63,7 @@ do
         bzr pull --remember $branch | sed -e 's,.*,        \0,'
     else
         cd $LP_SOURCEDEPS_PATH
-        bzr branch $branch $package | sed -e 's,.*,        \0,'
+        bzr branch --standalone $branch $package | sed -e 's,.*,        \0,'
     fi
 done
 

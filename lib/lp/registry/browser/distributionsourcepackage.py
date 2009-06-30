@@ -20,6 +20,7 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
@@ -154,6 +155,80 @@ class DistributionSourcePackageView(LaunchpadFormView):
                     }
                 results.append(entry)
         return results
+
+    @property
+    def latest_published_ppa_versions(self):
+        """Return a list of the latest 3 ppas with related publishings.
+
+        The list contains dictionaries each with a key of 'archive' and
+        'publications'.
+        """
+        # Grab the related archive publications and limit the result to
+        # the first 3.
+        # XXX Michael Nelson 2009-06-24 bug=387020
+        # Currently we need to find distinct archives here manually because,
+        # without a concept of IArchive.rank or similar, the best ordering
+        # that orderDistributionSourcePackage.findRelatedArchives() method
+        # can provide is on a join (SourcePackageRelease.dateuploaded), but
+        # this prohibits a distinct clause.
+        # To ensure that we find distinct archives here with only one query,
+        # we grab the first 20 results and iterate through to find three
+        # distinct archives (20 is a magic number being greater than
+        # 3 * number of distroseries).
+        latest_related_archives = self.context.findRelatedArchives()
+        latest_related_archives.config(limit=20)
+        latest_three_archives = []
+        for archive in latest_related_archives:
+            if archive in latest_three_archives:
+                continue
+            else:
+                latest_three_archives.append(archive)
+
+            if len(latest_three_archives) == 3:
+                break
+
+        # Now we'll find the relevant publications for the latest
+        # three archives.
+        archive_set = getUtility(IArchiveSet)
+        publications = archive_set.getPublicationsInArchives(
+                self.context.sourcepackagename, latest_three_archives,
+                self.context.distribution)
+
+        # Collect the publishings for each archive
+        archive_publishings = {}
+        for pub in publications:
+            archive_publishings.setdefault(pub.archive, []).append(pub)
+
+        # Then construct a list of dicts with the results for easy use in
+        # the template, preserving the order of the archives:
+        archive_versions = []
+        for archive in latest_three_archives:
+            versions = []
+
+            # For each publication, append something like:
+            # 'Jaunty (1.0.1b)' to the versions list.
+            for pub in archive_publishings[archive]:
+                versions.append(
+                    "%s (%s)" % (
+                        pub.distroseries.displayname,
+                        pub.source_package_version
+                        )
+                    )
+            archive_versions.append({
+                'archive': archive,
+                'versions': ", ".join(versions)
+                })
+
+        return archive_versions
+
+    @property
+    def further_ppa_versions_url(self):
+        """Return the url used to find further PPA versions of this package.
+        """
+        return "%s/+ppas?name_filter=%s" % (
+            canonical_url(self.context.distribution),
+            self.context.name,
+            )
 
     def _createPackagingField(self):
         """Create a field to specify a Packaging association.

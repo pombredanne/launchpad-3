@@ -54,7 +54,6 @@
       <a tal:replace="structure overview_menu/delete/fmt:icon" />
       <a tal:replace="structure overview_menu/edit/fmt:icon" />
     </h1>
-
     <table id="series-details" style="margin-bottom: 1em;">
       <tr>
         <th>Project:</th>
@@ -103,6 +102,10 @@
 
     <div>
       <a tal:replace="structure overview_menu/subscribe/fmt:link-icon" />
+    </div>
+
+    <div style="padding-top: 2em" tal:define="auto_resize python:True">
+      <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
     </div>
 
     <h2 style="margin-top: 2em;">Milestones and releases</h2>
