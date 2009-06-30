@@ -371,6 +371,11 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     similar_questions = None
     similar_faqs = None
 
+    @property
+    def cancel_url(self):
+        """Return the url `IQuestionTarget`."""
+        return canonical_url(self.context)
+
     def setUpFields(self):
         """Set up the form_fields from the schema and custom_widgets."""
         # Add our language field with a vocabulary specialized for
