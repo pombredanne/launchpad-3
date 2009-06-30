@@ -480,7 +480,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             committer='J. Random Hacker <jrandom@example.org>')
         return branch, tree
 
-    def makeRevisionsAddedWithMergeCommit(self):
+    def makeRevisionsAddedWithMergeCommit(self, authors=None):
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.branch.nick = 'nicholas'
@@ -493,7 +493,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree3.commit('rev2c', committer='qux@')
         tree.merge_from_branch(tree3.branch)
         tree.commit('rev2b', rev_id='rev2b', timestamp=1000, timezone=0,
-            committer='J. Random Hacker <jrandom@example.org>')
+            committer='J. Random Hacker <jrandom@example.org>',
+            authors=authors)
         return RevisionsAddedJob.create(branch, 'rev2b', 'rev2b', '')
 
     def test_getMergeAuthors(self):
@@ -525,6 +526,19 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         '------------------------------------------------------------\n'
         'revno: 2 [merge]\n'
         'author: bar@, baz@, foo@, qux@\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2b\n', message)
+
+    def test_getRevisionMessage_with_merge_authors_and_authors(self):
+        job = self.makeRevisionsAddedWithMergeCommit(authors=['quxx'])
+        message = job.getRevisionMessage('rev2b', 1)
+        self.assertEqual(
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'author: bar@, baz@, foo@, qux@, quxx\n'
         'committer: J. Random Hacker <jrandom@example.org>\n'
         'branch nick: nicholas\n'
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'

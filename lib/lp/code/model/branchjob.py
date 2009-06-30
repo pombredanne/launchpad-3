@@ -477,17 +477,22 @@ class RevisionsAddedJob(BranchJobDerived):
         rqst = make_log_request_dict(direction='reverse', start_revision=info,
                                      end_revision=info, delta_type='full')
         self.bzr_branch.lock_read()
-        merge_authors = self.getMergeAuthors(revision_id)
+        authors = self.getMergeAuthors(revision_id)
         self.bzr_branch.unlock()
 
         class LaunchpadLogGenerator(_DefaultLogGenerator):
 
             def iter_log_revisions(self):
+                # Despite appearances, this only fires *once*, pulling in
+                # authors from the enclosing context.
                 iterator = _DefaultLogGenerator.iter_log_revisions(self)
                 for log_revision in iterator:
-                    if len(merge_authors) > 0:
-                        authors = '\n'.join(sorted(merge_authors))
-                        log_revision.rev.properties['authors'] = authors
+                    recorded_authors = log_revision.rev.get_apparent_authors()
+                    if recorded_authors != [log_revision.rev.committer]:
+                        authors.update(recorded_authors)
+                    if len(authors) > 0:
+                        author_text = '\n'.join(sorted(authors))
+                        log_revision.rev.properties['authors'] = author_text
                     yield log_revision
 
         class LaunchpadLogger(Logger):
