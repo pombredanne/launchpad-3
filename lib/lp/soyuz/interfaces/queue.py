@@ -24,8 +24,16 @@ __all__ = [
 
 from zope.schema import Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
+
 from canonical.launchpad import _
+
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+
+from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -78,43 +86,62 @@ class IPackageUploadQueue(Interface):
 
 class IPackageUpload(Interface):
     """A Queue item for Lucille"""
+    export_as_webservice_entry()
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
             )
 
-    status = Int(
+    status = exported(
+        Choice(
+            vocabulary=PackageUploadStatus,
+            description=_("The status of this upload."),
             title=_("Queue status"), required=False, readonly=True,
-            )
+            ))
 
-    distroseries = Int(
+    distroseries = exported(
+        Reference(
+            schema=IDistroSeries,
+            description=_("The distroseries targeted by this upload."),
             title=_("Series"), required=True, readonly=False,
-            )
+            ))
 
-    pocket = Int(
+    pocket = exported(
+        Choice(
+            vocabulary=PackagePublishingPocket,
+            description=_("The pocket targeted by this upload."),
             title=_("The pocket"), required=True, readonly=False,
             )
 
-    date_created = Datetime(
-        title=_('Date created'),
-        description=_("The date this package upload was done."))
+    date_created = exported(
+        Datetime(
+            title=_('Date created'),
+            description=_("The date this package upload was done.")))
 
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
 
     signing_key = Attribute("Changesfile Signing Key.")
-    archive = Int(title=_("Archive"), required=True, readonly=True)
+    archive = exported(
+        Reference(
+            schema=IArchive,
+            description=_("The archive for this upload."),
+            title=_("Archive"), required=True, readonly=True))
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
     customfiles = Attribute("Custom upload files associated with this "
                             "queue item")
 
-    displayname = TextLine(
-        title=_("Generic displayname for a queue item"), readonly=True)
-    displayversion = TextLine(
-        title=_("The source package version for this item"), readonly=True)
-    displayarchs = TextLine(
-        title=_("Architetures related to this item"), readonly=True)
+    displayname = exported(
+        TextLine(
+            title=_("Generic displayname for a queue item"), readonly=True))
+    displayversion = exported(
+        TextLine(
+            title=_("The source package version for this item"),
+            readonly=True))
+    displayarchs = exported(
+        TextLine(
+            title=_("Architectures related to this item"), readonly=True))
 
     sourcepackagerelease = Attribute(
         "The source package release for this item")
