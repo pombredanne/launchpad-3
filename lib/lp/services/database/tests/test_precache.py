@@ -14,9 +14,10 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.services.database.precache import precache, PrecacheResultSet
+from lp.testing import TestCase
 
 
-class PrecacheTestCase(unittest.TestCase):
+class PrecacheTestCase(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -38,15 +39,15 @@ class PrecacheTestCase(unittest.TestCase):
         # Ensure our precached result really is a PrecacheResultSet.
         # One of our methods might not be sticky, and we have ended up
         # with a normal Storm ResultSet.
-        self.failUnless(
+        self.assertTrue(
             isinstance(precached, PrecacheResultSet),
             "Expected a PrecacheResultSet, got %s" % repr(precached))
 
         # Confirm the two result sets return identical results.
-        self.failUnlessEqual(list(precached), list(normal))
+        self.assertEqual(list(normal), list(precached))
 
     def test_count(self):
-        self.failUnlessEqual(
+        self.assertEqual(
             self.standard_result.count(),
             self.precache_result.count())
 
@@ -75,11 +76,11 @@ class PrecacheTestCase(unittest.TestCase):
             self.standard_result[4:6])
 
     def test_any(self):
-        self.failUnless(self.precache_result.any() in self.standard_result)
+        self.assertIn(self.precache_result.any(), self.standard_result)
 
     def test_first(self):
-        self.failUnlessEqual(
-            self.precache_result.first(), self.standard_result.first())
+        self.assertEqual(
+            self.standard_result.first(), self.precache_result.first())
 
     def test_one(self):
         standard_result = self.store.find(Product, Product.name == 'firefox')
@@ -87,7 +88,7 @@ class PrecacheTestCase(unittest.TestCase):
             (Product, Person),
             Person.id == Product.ownerID,
             Product.name == 'firefox'))
-        self.failUnlessEqual(standard_result.one(), precache_result.one())
+        self.assertEqual(standard_result.one(), precache_result.one())
 
     def test_cache_populated(self):
         # Load a row.
@@ -98,7 +99,7 @@ class PrecacheTestCase(unittest.TestCase):
         # was retrieved from the database.
         self.store.execute("UPDATE Person SET displayname='foo'")
 
-        self.failIfEqual(product.owner.displayname, 'foo')
+        self.failIfEqual('foo', product.owner.displayname)
 
 
 def test_suite():
