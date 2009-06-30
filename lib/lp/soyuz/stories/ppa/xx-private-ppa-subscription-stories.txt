@@ -193,24 +193,14 @@ then he'll see a list of his current subscriptions.
     >>> joe_browser.open("http://launchpad.dev/~joesmith")
     >>> joe_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Archive                             Status
-    PPA for Celso Providelo             Pending     Confirm
+    Archive
+    PPA for Celso Providelo            View
 
-When Joe clicks on the 'Confirm' link for Celso's PPA then the
-details of the subscription are displayed with a request to confirm the
-subscription.
+When Joe clicks on the View button for Celso's PPA then the
+details of the subscription are displayed with the newly created
+access details.
 
-    >>> joe_browser.getLink('Confirm').click()
-    >>> print extract_text(find_main_content(joe_browser.contents))
-    Profile...
-    Joe Smith's subscription to PPA for Celso Providelo
-    ...
-    Confirm subscription
-
-When Joe clicks on the 'Confirm subscription' button then a sources.list
-snippet is displayed.as well as a notification message.
-
-    >>> joe_browser.getControl(name='activate').click()
+    >>> joe_browser.getControl(name="activate").click()
     >>> sources_list = find_tag_by_id(joe_browser.contents, 'sources_list')
     >>> print(extract_text(sources_list))
     Custom sources.list entries
@@ -233,8 +223,8 @@ subscriptions reflects the confirmed subscription.
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Archive                      Status
-    PPA for Celso Providelo      Active     View
+    Archive
+    PPA for Celso Providelo     View
 
 === Scenario 2: A user re-generates the token for a subscription ===
 
@@ -292,26 +282,14 @@ subscriptions.
 
     >>> mark_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(mark_browser.contents)
-    Archive                            Status
-    PPA for Celso Providelo            Pending    Confirm
+    Archive
+    PPA for Celso Providelo            View
 
-When Marks clicks on the confirm link, then he is taken to the page for
-his personal subscription for Celso's private PPA and asked to confirm
-the subscription.
+When Marks clicks on the view button, then he is taken to the page for
+his personal subscription for Celso's private PPA and the newly-created
+access details are displayed.
 
-    >>> mark_browser.getLink('Confirm').click()
-    >>> print mark_browser.url
-    http://launchpad.dev/~sabdfl/+archivesubscriptions/9
-    >>> print extract_text(find_main_content(mark_browser.contents))
-    Profile...
-    Mark Shuttleworth's subscription to PPA for Celso Providelo
-    ...
-    Confirm subscription
-
-When Mark clicks on the 'Confirm subscription' button then a sources.list
-snippet is displayed.as well as a notification message.
-
-    >>> mark_browser.getControl(name='activate').click()
+    >>> mark_browser.getControl(name="activate").click()
     >>> sources_list = find_tag_by_id(mark_browser.contents, 'sources_list')
     >>> print(extract_text(sources_list))
     Custom sources.list entries
@@ -334,8 +312,8 @@ subscriptions reflects the confirmed subscription.
     >>> mark_browser.open(
     ...     "http://launchpad.dev/~sabdfl/+archivesubscriptions")
     >>> print_subscriptions_for_person(mark_browser.contents)
-    Archive                             Status
-    PPA for Celso Providelo             Active    View
+    Archive
+    PPA for Celso Providelo         View
 
 
 == Story 4: A user's subscription expires or is cancelled ==

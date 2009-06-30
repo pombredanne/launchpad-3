@@ -1758,6 +1758,21 @@ p.update-failure-message {
 a.update-retry {
     padding-left: 1em;
 }
+
+form.archive-subscription-activation button {
+    border: none;
+    float:left; /* See http://is.gd/1i7TB */
+    color: #0033AA;
+    background:transparent url(/@@/info) no-repeat scroll left center;
+    padding: 0 0 0 15px;
+    margin:0;
+    cursor: pointer;
+    font-size: 100%;
+}
+
+form.archive-subscription-activation button:hover {
+    text-decoration: underline;
+}
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
