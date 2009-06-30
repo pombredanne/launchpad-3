@@ -35,6 +35,8 @@ __all__ = [
     'ProductTranslationsMenu',
     'ProductView',
     'SortSeriesMixin',
+    'ProjectAddStepOne',
+    'ProjectAddStepTwo',
     ]
 
 
@@ -1519,6 +1521,7 @@ class ProjectAddStepOne(StepView):
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
+    heading = "Register a project in Launchpad"
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
@@ -1526,9 +1529,13 @@ class ProjectAddStepOne(StepView):
     step_description = 'Project basics'
     search_results_count = 0
 
+    @property
+    def get_next_step(self):
+        return ProjectAddStepTwo
+
     def main_action(self, data):
         """See `MultiStepView`."""
-        self.next_step = ProjectAddStepTwo
+        self.next_step = self.get_next_step
         self.request.form['displayname'] = data['displayname']
         self.request.form['name'] = data['name'].lower()
         self.request.form['summary'] = data['summary']
@@ -1538,11 +1545,12 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'licenses', 'license_info']
+                    'description', 'project', 'licenses', 'license_info']
     main_action_label = u'Complete Registration'
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
+    heading = "Register a project in Launchpad"
 
     product = None
 
@@ -1632,7 +1640,21 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Register %s (%s) in Launchpad' % (
-            self.request.form['displayname'], self.request.form['name'])
+                self.request.form['displayname'], self.request.form['name'])
+
+    def create_product(self, data):
+        """Create the product from the user data."""
+        project = data.get('project', None)
+        return getUtility(IProductSet).createProduct(
+            owner=self.user,
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            displayname=data['displayname'],
+            licenses=data['licenses'],
+            license_info=data['license_info'],
+            project=project
+            )
 
     def main_action(self, data):
         """See `MultiStepView`."""
@@ -1644,15 +1666,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
             data['owner'] = self.user
             data['license_reviewed'] = False
 
-        self.product = getUtility(IProductSet).createProduct(
-            owner=self.user,
-            name=data['name'],
-            title=data['title'],
-            summary=data['summary'],
-            displayname=data['displayname'],
-            licenses=data['licenses'],
-            license_info=data['license_info'])
-
+        self.product = self.create_product(data)
         self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.next_url = canonical_url(self.product)
