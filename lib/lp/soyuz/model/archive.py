@@ -877,11 +877,14 @@ class Archive(SQLBase):
     def newComponentUploader(self, person, component_name):
         """See `IArchive`."""
         if self.is_ppa:
-            if ((isinstance(component_name, str) and component_name != 'main')
-                or
-                (IComponent.providedBy(component_name) and
-                    component_name.name != 'main')):
-                # Component should be main.
+            if IComponent.providedBy(component_name):
+                name = component_name.name
+            elif isinstance(component_name, str):
+                name = component_name
+            else:
+                name = None
+
+            if name is None or name != 'main':
                 raise InvalidComponent("Component for PPAs should be 'main'")
 
         permission_set = getUtility(IArchivePermissionSet)

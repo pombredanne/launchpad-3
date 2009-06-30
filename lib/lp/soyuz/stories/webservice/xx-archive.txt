@@ -311,6 +311,18 @@ component.
     Archive Upload Rights ...~ubuntu-team restricted None
     Archive Upload Rights ...~ubuntu-team universe None
 
+If you add a new permission for someone to upload to a PPA, you must specify
+the 'main' component, or an error is returned:
+
+    >>> response = webservice.named_post(
+    ...     cprov_archive['self_link'], 'newComponentUploader', {},
+    ...     person=name12['self_link'], component_name='restricted')
+    >>> print response.getOutput()
+    HTTP/1.1 400 Bad Request                                                  
+    ...
+    InvalidComponent: Component for PPAs should be 'main'
+    <BLANKLINE>
+
 deleteComponentUploader() removes that permission:
 
     >>> print webservice.named_post(
