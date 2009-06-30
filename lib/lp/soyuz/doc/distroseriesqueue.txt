@@ -47,7 +47,6 @@ We need some setup for the upload handler.
   >>> from lp.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
-
 Since we landed correct security adapters for PackageUpload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
@@ -187,7 +186,7 @@ Check the behaviour of @cachedproperty  attributes:
 
   >>> qitem = qset.get(1)
 
-  >>> qitem.datecreated
+  >>> qitem.date_created
   datetime.datetime(...)
 
   >>> print qitem.changesfile.filename
@@ -213,7 +212,7 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
 
   >>> custom_item = qset.get(5)
 
-  >>> custom_item.datecreated
+  >>> custom_item.date_created
   datetime.datetime(...)
 
   >>> print custom_item.changesfile.filename
@@ -228,11 +227,8 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
   >>> print custom_item.displayarchs
   raw-translations
 
-  >>> custom_item.sourcepackagerelease
-  Traceback (most recent call last):
-  ...
-  AssertionError: No source available.
-
+  >>> print custom_item.sourcepackagerelease
+  None
 
 The method getBuildByBuildIDs() will return all the PackageUploadBuild
 records that match the supplied build IDs.
@@ -947,4 +943,96 @@ Clean up the librarian files:
 
    >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
    >>> cleanupLibrarianFiles()
+
+
+== Delayed copies ==
+
+IPackageUploadSet allows call sites to create 'delayed-copy'
+PackageUpload records.
+
+   >>> from lp.registry.interfaces.gpg import IGPGKeySet
+   >>> testing_key = getUtility(IGPGKeySet).get(1)
+
+   >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+   ...     ubuntu.main_archive, breezy_autotest,
+   ...     PackagePublishingPocket.RELEASE, testing_key)
+
+A 'delayed-copy' is a PackageUpload record.
+
+   >>> verifyObject(IPackageUpload, delayed_copy)
+   True
+
+The distinction between normal uploads and delayed-copies can be made
+by checking IPackageUpload.is_delayed_copy.
+
+   >>> delayed_copy.is_delayed_copy
+   True
+
+   >>> normal_upload = breezy_autotest.createQueueEntry(
+   ...     PackagePublishingPocket.RELEASE, 'foo.changes',
+   ...     'something', ubuntu.main_archive)
+
+   >>> normal_upload.is_delayed_copy
+   False
+
+Delayed-copies are targeted to a publication context (archive,
+distroseries, pocket).
+
+   >>> print delayed_copy.archive.displayname
+   Primary Archive for Ubuntu Linux
+
+   >>> print delayed_copy.distroseries.displayname
+   Breezy Badger Autotest
+
+   >>> print delayed_copy.pocket.name
+   RELEASE
+
+And are created in NEW state, so they have to pass through the upload
+state-machine.
+
+   >>> print delayed_copy.status.name
+   NEW
+
+However they have no 'changesfile', only a signing_key representing the
+requester of the copy.
+
+   >>> print delayed_copy.changesfile
+   None
+
+   >>> print delayed_copy.signing_key.owner.displayname
+   Foo Bar
+
+Delayed copies are further manipulated exactly as normal uploads
+are. Contents can be attached to it.
+
+   # Retrieve a SourcePackageRelease from the sampledata.
+   >>> a_source_package = ubuntu.getSourcePackage('pmount')['0.1-2']
+   >>> a_source_release = a_source_package.sourcepackagerelease
+
+   >>> unused = delayed_copy.addSource(a_source_release)
+
+IPackageUpload.acceptFromCopy() checks and accepts a delayed-copy
+record. It also closes related bug reports and grant karma to people
+related with the upload, although it doesn't send any emails.
+
+   >>> delayed_copy.acceptFromCopy()
+
+   >>> transaction.commit()
+   >>> pop_notifications()
+   []
+
+   >>> print delayed_copy.status.name
+   ACCEPTED
+
+Once accepted a delayed-copy is published as a normal upload, via
+IPackageUpload.realiseUpload().
+
+   >>> publishing_records = delayed_copy.realiseUpload()
+
+   >>> for pub_record in publishing_records:
+   ...     print pub_record.displayname, pub_record.status.name
+   pmount 0.1-2 in breezy-autotest PENDING
+
+   >>> print delayed_copy.status.name
+   DONE
 

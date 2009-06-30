@@ -7,6 +7,7 @@ from datetime import datetime
 import pytz
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
@@ -142,6 +143,19 @@ class TestPerson(TestCaseWithFactory):
                 str(exc),
                 'This team cannot be converted to Private Membership since '
                 'it is referenced by an announcement.')
+
+    def test_visibility_validator_caching(self):
+        # The method Person.visibilityConsistencyWarning can be called twice
+        # when editing a team.  The first is part of the form validator.  It
+        # is then called again as part of the database validator.  The test
+        # can be expensive so the value is cached so that the queries are
+        # needlessly run.
+        fake_warning = 'Warning!  Warning!'
+        naked_team = removeSecurityProxy(self.otherteam)
+        naked_team._visibility_warning_cache = fake_warning
+        warning = self.otherteam.visibilityConsistencyWarning(
+            PersonVisibility.PRIVATE_MEMBERSHIP)
+        self.assertEqual(fake_warning, warning)
 
     def test_visibility_validator_answer_contact(self):
         answer_contact = AnswerContact(

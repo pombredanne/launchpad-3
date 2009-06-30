@@ -166,6 +166,6 @@ The user automatically got subscribed to this new question.
 
     >>> find_tag_by_id(user_browser.contents, 'portlet-subscribers')
     <div class="portlet" id="portlet-subscribers">
-    ...<a href=".../~no-priv">No Privileges Person</a>...
+    ...<a href=".../~no-priv" class="sprite person">No Privileges Person</a>...
     </div>
 

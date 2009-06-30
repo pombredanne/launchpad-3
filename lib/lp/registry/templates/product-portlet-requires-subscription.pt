@@ -6,8 +6,6 @@
 
 <div class="portlet" id="portlet-requires-subscription"
      tal:condition="context/commercial_subscription_is_due">
-  <img style="padding-top: 1em; float: right" alt=""
-       src="/@@/expiration-large" />
   <h2>
     Purchasing a subscription is required
   </h2>
@@ -19,6 +17,8 @@
     </strong>
   </div>
   <div>
+    <img style="float:left;" alt="Expiration warning"
+      src="/@@/expiration-large" />
     The licensing of your project does not qualify for free
     hosting. You have two options to continue using Launchpad
     for this project.

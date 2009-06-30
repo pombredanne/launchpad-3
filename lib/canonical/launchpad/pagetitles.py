@@ -95,7 +95,7 @@ class ContextTitle(SubstitutionHelper):
 class ContextBrowsername(SubstitutionHelper):
     """Return the formatted string with context's browsername."""
     def __call__(self, context, view):
-        return self.text % context.browsername
+        return self.text % context.displayname
 
 
 class LaunchbagBugID(SubstitutionHelper):
@@ -281,6 +281,8 @@ bug_create_question = LaunchbagBugID(
 bug_remove_question = LaunchbagBugID(
     'Bug #%d - Convert this question back to a bug')
 
+bugbranch_delete = 'Delete bug branch link'
+
 bugbranch_edit = "Edit branch fix status"
 
 def bugcomment_index(context, view):
@@ -319,7 +321,7 @@ def bugwatch_comments(context, view):
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
     if view.user:
-        return 'Bugs assigned to %s' % view.user.browsername
+        return 'Bugs assigned to %s' % view.user.displayname
     else:
         return 'No-one to display bugs for'
 
@@ -521,6 +523,8 @@ distribution_index = ContextTitle('%s in Launchpad')
 distribution_builds = ContextTitle('%s builds')
 
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
+
+distributionsourcepackage_branches = ContextTitle('Branches for the %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -1412,7 +1416,7 @@ specificationgoal_setgoals = ContextTitle('Set goals for %s')
 
 def specificationsubscription_edit(context, view):
     """Return the page title for subscribing to a specification."""
-    return "Subscription of %s" % context.person.browsername
+    return "Subscription of %s" % context.person.displayname
 
 specificationtarget_documentation = ContextTitle('Documentation for %s')
 
@@ -1490,17 +1494,17 @@ team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
 def teammembership_index(context, view):
     """Return the page title to the persons status in a team."""
     return smartquote("%s's membership status in %s") % (
-        context.person.browsername, context.team.browsername)
+        context.person.displayname, context.team.displayname)
 
 def teammembership_invitation(context, view):
     """Return the page title to invite a person to become a team member."""
     return "Make %s a member of %s" % (
-        context.person.browsername, context.team.browsername)
+        context.person.displayname, context.team.displayname)
 
 def teammembership_self_renewal(context, view):
     """Return the page title renew membership in a team."""
     return "Renew membership of %s in %s" % (
-        context.person.browsername, context.team.browsername)
+        context.person.displayname, context.team.displayname)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
 

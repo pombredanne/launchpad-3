@@ -111,17 +111,84 @@ finds the fti results:
 
 == Distribution package change summary ==
 
+Before we can test the page we publish netapplet to the ubuntutest main
+archive as well as some new PPAs.
+
+    # Setup the breezy autotest distroseries
+    >>> login("foo.bar@canonical.com")
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> publisher = SoyuzTestPublisher()
+    >>> publisher.prepareBreezyAutotest()
+    >>> ubuntutest = publisher.ubuntutest
+    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
+    >>> ubuntutest['breezy-autotest'].status = DistroSeriesStatus.DEVELOPMENT
+    >>> ubuntutest['hoary-test'].status = DistroSeriesStatus.DEVELOPMENT
+
+    # Publish the source 'netapplet' in the breezy-autotest and
+    #  main archive.
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> netapplet_pub_breezy = publisher.getPubSource(
+    ...     sourcename="netapplet", archive=ubuntutest.main_archive,
+    ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED, version='1.3.1')
+    >>> netapplet_pub_hoary = publisher.getPubSource(
+    ...     sourcename="netapplet", archive=ubuntutest.main_archive,
+    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED, version='1.0.1a',
+    ...     distroseries=ubuntutest['hoary-test'])
+
+    # Next, we'll create some related netapplet publishings in some PPAs.
+    >>> ppa_nightly = factory.makeArchive(name="nightly",
+    ...                                   distribution=ubuntutest)
+    >>> ppa_beta = factory.makeArchive(name="beta",
+    ...                                distribution=ubuntutest)
+
+    # Then publish netapplet to both PPAs
+    >>> netapplet_nightly_pub_breezy = publisher.getPubSource(
+    ...     sourcename="netapplet", archive=ppa_nightly,
+    ...     date_uploaded=datetime(2010, 12 ,1, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.2n3')
+    >>> netapplet_beta_pub_breezy = publisher.getPubSource(
+    ...     sourcename="netapplet", archive=ppa_beta,
+    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.1')
+    >>> netapplet_beta_pub_hoary = publisher.getPubSource(
+    ...     sourcename="netapplet", archive=ppa_beta,
+    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.0',
+    ...     distroseries=ubuntutest['hoary-test'])
+    >>> logout()
+
 A /$DISTRO/+source/$PACKAGE page shows for a given source package all
 the distro releases in which it was published (see table at the top of
 the page). The information presented in each row is as follows: the
 distro series name and status as well as the package component, pocket
 and version.
 
-    >>> browser.open("http://launchpad.dev/ubuntu/+source/netapplet/")
+    >>> browser.open("http://launchpad.dev/ubuntutest/+source/netapplet/")
     >>> print extract_text(find_tag_by_id(browser.contents, 'packaging'))
-    Ubuntu version                            Upstream version
-    hoary development main release 1.0-1      NetApplet trunk series
-    warty current     main release 0.99.6-1   NetApplet trunk series
+    ubuntutest version                                 Upstream version
+    hoary-test development main release 1.0.1a         None defined
+    breezy-autotest development main release 1.3.1     None defined
+
+Directly after the distro releases, the three latest PPA uploads of
+this source package are displayed.
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'ppa_packaging'))
+    PPA named nightly for Person-name2 (Person-name2):
+      Breezy Badger Autotest (0.8.2n3)
+    PPA named beta for Person-name5 (Person-name5):
+      Breezy Badger Autotest (0.8.1), Hoary Mock (0.8.0)
+
+A link to further PPA searches is also included.
+
+    >>> link = browser.getLink(
+    ...     url='http://launchpad.dev/ubuntutest/+ppas?'
+    ...         'name_filter=netapplet')
+    >>> link.text
+    "...unsupported and untrusted versions of..."
 
 /$DISTRO/+source/$PACKAGE pages contain a version history that lists
 each published version of a package with its changelog entry for that

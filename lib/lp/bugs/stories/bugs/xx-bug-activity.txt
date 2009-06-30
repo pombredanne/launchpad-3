@@ -55,6 +55,7 @@ page.
     Changed in thunderbird:
                     status: Unknown &#8594; New
     --------
+    #7
     No Privileges Person wrote ...
     Here's a comment for testing, like.
     --------
@@ -229,6 +230,7 @@ package, the name of the package and the distro will be displayed.
     >>> admin_browser.getControl('Status').value = ['Confirmed']
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
+    #1
     Sample Person
     ...
     --------
@@ -249,9 +251,11 @@ bundled with that comment in the UI.
     >>> admin_browser.getControl('Comment').value = "Lookit, a change!"
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
+    #1
     Sample Person
     ...
     --------
+    #2
     Foo Bar
     wrote
     ...
