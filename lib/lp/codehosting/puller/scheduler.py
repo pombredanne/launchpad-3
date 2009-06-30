@@ -432,32 +432,30 @@ class JobScheduler:
         return set(
             [str(i) for i in range(config.supermirror.maximum_workers)])
 
+    def _turnJobTupleIntoTask(self, job_tuple):
+        if len(job_tuple) == 0:
+            print 'did not get job'
+            return None
+        (branch_id, pull_url, unique_name,
+         default_stacked_on_url, branch_type_name) = job_tuple
+        print 'got job', job_tuple
+        from lp.code.enums import BranchType
+        branch_type = {
+            'HOSTED': BranchType.HOSTED,
+            'MIRRORED': BranchType.MIRRORED,
+            'IMPORTED': BranchType.IMPORTED
+            }[branch_type_name]
+
+        master = PullerMaster(
+            branch_id, pull_url, unique_name, branch_type,
+            default_stacked_on_url, self.logger,
+            self.branch_puller_endpoint, self.available_oops_prefixes)
+        return master.run
+
     def _poll(self):
         deferred = self.branch_puller_endpoint.callRemote(
             'acquireBranchToPull')
-        def _cb(job_tuple):
-            if len(job_tuple) == 0:
-                print 'did not get job'
-                return None
-            (branch_id, pull_url, unique_name,
-             default_stacked_on_url, branch_type_name) = job_tuple
-            print 'got job', job_tuple
-            def start():
-                print 'starting job'
-                from lp.code.interfaces.branch import BranchType
-                branch_type = {
-                    'HOSTED': BranchType.HOSTED,
-                    'MIRRORED': BranchType.MIRRORED,
-                    'IMPORTED': BranchType.IMPORTED
-                    }[branch_type_name]
-
-                master = PullerMaster(
-                    branch_id, pull_url, unique_name, branch_type,
-                    default_stacked_on_url, self.logger,
-                    self.branch_puller_endpoint, self.available_oops_prefixes)
-                return master.run()
-            return start
-        deferred.addCallback(_cb)
+        deferred.addCallback(self._turnJobTupleIntoTask)
         return deferred
 
     def run(self):
