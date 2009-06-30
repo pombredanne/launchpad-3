@@ -540,8 +540,6 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     @action(u"Continue", name="change")
     def change_action(self, action, data):
         """Update the Question from the request form data."""
-        if self.shouldWarnAboutUnsupportedLanguage():
-            return self.template()
         self.updateContextFromData(data)
         self.request.response.redirect(canonical_url(self.context))
 
