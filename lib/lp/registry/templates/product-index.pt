@@ -243,10 +243,8 @@
       <div class="portlet">
         <h2>Series and milestones</h2>
 
-        <tal:vars define="hide_zoom_buttons string:true">
-          <iframe
-            metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
-        </tal:vars>
+        <iframe
+          metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
         <div
            class="actions"
            tal:content="structure overview_menu/series_add/render"

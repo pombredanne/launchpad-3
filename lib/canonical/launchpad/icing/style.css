@@ -1579,6 +1579,15 @@ div#branch-description {
     margin-top: 1em;
 }
 
+/* Timeline Graph */
+div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
+  visibility: hidden;
+}
+
+div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
+  visibility: visible;
+}
+
 /* The top-most Person portlet, Contact Details, is allowed to float up and
 beside the mugshot. */
 #contact-details {clear: none;}
