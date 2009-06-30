@@ -1103,8 +1103,24 @@ class PillarFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
     def link(self, view_name):
+        """The html to show a link to a Product, Project or distribution.
+
+        In the case of Products, we display the custom icon if one exists.
+        """
         html = super(PillarFormatterAPI, self).link(view_name)
         if IProduct.providedBy(self._context):
+            product = self._context
+            custom_icon = ObjectImageDisplayAPI(product)._get_custom_icon_url()
+            url = canonical_url(product, view_name=view_name)
+            summary = self._make_link_summary()
+            if custom_icon is None:
+                css_class= ObjectImageDisplayAPI(product).sprite_css()
+                html = (u'<a href="%s" class="%s">%s</a>') % (
+                    url, css_class, summary)
+            else:
+                html = (u'<a href="%s" class="bg-image" '
+                         'style="background-image: url(%s)">%s</a>') % (
+                    url, custom_icon, summary)
             license_status = self._context.license_status
             if license_status != LicenseStatus.OPEN_SOURCE:
                 html = '<span title="%s">%s (%s)</span>' % (
