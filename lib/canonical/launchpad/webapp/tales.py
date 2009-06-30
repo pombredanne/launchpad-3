@@ -1103,10 +1103,10 @@ class PillarFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
     def link(self, view_name):
-    """Return the html to show a link to a Product, Project or
-    distribution. In the case of Products, we display the custom
-    icon if one exists."""
+        """The html to show a link to a Product, Project or distribution.
 
+        In the case of Products, we display the custom icon if one exists.
+        """
         html = super(PillarFormatterAPI, self).link(view_name)
         if IProduct.providedBy(self._context):
             product = self._context
