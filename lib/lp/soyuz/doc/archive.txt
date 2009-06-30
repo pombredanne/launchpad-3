@@ -1954,7 +1954,9 @@ Note that when creating a new permission, trying to specify a component other
 than 'main' results in an exception being raised, because components are not
 really applicable for PPAs.  'main' is used because *something* needs to be
 specified to satisfy database constraints, and it makes the most sense since
-that's the component that PPA packages are published in.
+that's the component that PPA packages are published in.  In the future,
+packagesets will replace components entirely as the ACL mechanism, so this
+anacronism can be removed.
 
     >>> cprov_archive.newComponentUploader(
     ...     carlos, "universe")
