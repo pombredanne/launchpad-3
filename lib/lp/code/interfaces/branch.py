@@ -526,6 +526,13 @@ class IBranch(IHasOwner, IHasBranchTarget):
             readonly=True,
             value_type=Reference(schema=Interface))) # Really IBugBranch
 
+    def linkBug(bug, registrant):
+        """Link a bug to this branch.
+
+        :param bug: IBug to link.
+        :param user: IPerson linking the bug.
+        """
+
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
@@ -536,6 +543,13 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_("Specification linked to this branch."),
             readonly=True,
             value_type=Reference(Interface))) # Really ISpecificationBranch
+
+    def linkSpecification(spec, registrant):
+        """Like an ISpecification to a branch.
+
+        :param spec: ISpecification to link.
+        :param registrant: IPerson linking the spec.
+        """
 
     pending_writes = Attribute(
         "Whether there is new Bazaar data for this branch.")

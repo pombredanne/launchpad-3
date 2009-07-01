@@ -351,8 +351,10 @@
                     revision_count
                     warehouse_url
                     bug_branches
+                    linkBug
                     related_bugs
                     spec_links
+                    linkSpecification
                     revision_history
                     subscriptions
                     subscribers

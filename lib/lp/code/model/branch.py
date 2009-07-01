@@ -196,9 +196,19 @@ class Branch(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='branch', orderBy='id')
 
+    def linkBug(self, bug, registrant):
+        """See `IBranch`."""
+        bug = removeSecurityProxy(bug)
+        return bug.linkBranch(self, registrant)
+
     spec_links = SQLMultipleJoin('SpecificationBranch',
         joinColumn='branch',
         orderBy='id')
+
+    def linkSpecification(self, spec, registrant):
+        """See `IBranch`."""
+        spec = removeSecurityProxy(spec)
+        return spec.linkBranch(self, registrant)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_last_modified = UtcDateTimeCol(notNull=True, default=DEFAULT)
