@@ -303,12 +303,6 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         if self.request.form.get('activate') and not self.active_token:
             token = self.context.archive.newAuthToken(self.context.subscriber)
 
-            self.request.response.addNotification(structured(
-                "You have confirmed your subscription to the archive %s. "
-                "Before you can install software from the archive you need "
-                "to follow the instructions below to update your custom "
-                " \"sources.list\"." % self.context.archive.displayname))
-
             self.request.response.redirect(self.request.getURL())
 
         # Otherwise, if a regeneration was requested and there is an
