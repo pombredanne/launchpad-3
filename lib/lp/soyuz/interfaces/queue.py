@@ -22,7 +22,8 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
-from zope.schema import Choice, Datetime, Int, TextLine
+from zope.schema import Choice, Datetime, Int, List, TextLine
+from zope.schema.interfaces import ITextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -34,7 +35,7 @@ from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from lazr.restful.fields import Reference
+from lazr.restful.fields import CollectionField, Reference
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -186,6 +187,15 @@ class IPackageUpload(Interface):
     builds = Attribute("The queue builds associated with the queue item")
     customfiles = Attribute("Custom upload files associated with this "
                             "queue item")
+
+    custom_file_urls = exported(
+        List(
+            title=_("Custom File URLs"),
+            description=_("Librarian URLs for all the custom files attached "
+                          "to this upload."),
+            value_type=TextLine(),
+            required=False,
+            readonly=True))
 
     displayname = exported(
         TextLine(

@@ -173,6 +173,11 @@ class PackageUpload(SQLBase):
     customfiles = SQLMultipleJoin('PackageUploadCustom',
                                   joinColumn='packageupload')
 
+    @property
+    def custom_file_urls(self):
+        """See `IPackageUpload`."""
+        return tuple(
+            file.libraryfilealias.getURL() for file in self.customfiles)
 
     def setNew(self):
         """See `IPackageUpload`."""
