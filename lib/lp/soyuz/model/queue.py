@@ -18,11 +18,10 @@ import tempfile
 
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
-
+from storm.locals import Join
+from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
-
-from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
@@ -70,7 +69,9 @@ from lp.soyuz.scripts.packagecopier import update_files_privacy
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
+
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -467,7 +468,7 @@ class PackageUpload(SQLBase):
             archs.append(queue_build.build.distroarchseries.architecturetag)
         for queue_custom in self.customfiles:
             archs.append(queue_custom.customformat.title)
-        return ",".join(archs)
+        return ", ".join(archs)
 
     @cachedproperty
     def displayversion(self):
@@ -1386,55 +1387,24 @@ class PackageUploadSource(SQLBase):
             break
         return ancestry
 
-    def _conflictWith(self, upload_source):
-        """Whether a given PackageUploadSource conflicts with the context.
-
-        :param upload_source: a `PackageUploadSource` to be checked
-            against this context for source 'name' and 'version' conflict.
-        :return: True if the checked `PackageUploadSource` contains a
-            `SourcePackageRelease` with the same name and version.
-             Otherwise, False is returned.
-        """
-        conflict_release = upload_source.sourcepackagerelease
-        proposed_name = self.sourcepackagerelease.name
-        proposed_version = self.sourcepackagerelease.version
-
-        if (conflict_release.name == proposed_name and
-            conflict_release.version == proposed_version):
-            return True
-
-        return False
-
     def verifyBeforeAccept(self):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
-        for distroseries in self.packageupload.distroseries.distribution:
-            uploads = distroseries.getQueueItems(
-                status=[PackageUploadStatus.ACCEPTED,
-                        PackageUploadStatus.DONE],
-                name=self.sourcepackagerelease.name,
-                version=self.sourcepackagerelease.version,
-                archive=self.packageupload.archive,
-                exact_match=True)
-            # Isolate conflicting PackageUploadSources.
-            conflict_candidates = [
-                upload.sources[0] for upload in uploads
-                if len(list(upload.sources)) > 0]
-            # Isolate only conflicting SourcePackageRelease.
-            conflicts = [
-                upload_source for upload_source in conflict_candidates
-                if self._conflictWith(upload_source)]
-            # If there are any conflicting SourcePackageRelease the
-            # upload cannot be accepted.
-            if len(conflicts) > 0:
-                raise QueueInconsistentStateError(
-                    "The source %s is already accepted in %s/%s and you "
-                    "cannot upload the same version within the same "
-                    "distribution. You have to modify the source version "
-                    "and re-upload." % (
-                        self.sourcepackagerelease.title,
-                        distroseries.distribution.name,
-                        distroseries.name))
+        conflict = getUtility(IPackageUploadSet).findSourceUpload(
+            self.sourcepackagerelease.name,
+            self.sourcepackagerelease.version,
+            self.packageupload.archive,
+            self.packageupload.distroseries.distribution)
+
+        if conflict is not None:
+            raise QueueInconsistentStateError(
+                "The source %s is already accepted in %s/%s and you "
+                "cannot upload the same version within the same "
+                "distribution. You have to modify the source version "
+                "and re-upload." % (
+                    self.sourcepackagerelease.title,
+                    conflict.distroseries.distribution.name,
+                    conflict.distroseries.name))
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""
@@ -1679,9 +1649,46 @@ class PackageUploadSet:
 
     def createDelayedCopy(self, archive, distroseries, pocket,
                           signing_key):
+        """See `IPackageUploadSet`."""
         return PackageUpload(
             archive=archive, distroseries=distroseries, pocket=pocket,
             status=PackageUploadStatus.NEW, signing_key=signing_key)
+
+    def findSourceUpload(self, name, version, archive, distribution):
+        """See `IPackageUploadSet`."""
+        # Avoiding circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.sourcepackagename import SourcePackageName
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = (
+            PackageUpload,
+            Join(DistroSeries,
+                 DistroSeries.id == PackageUpload.distroseriesID),
+            Join(PackageUploadSource,
+                 PackageUploadSource.packageuploadID == PackageUpload.id),
+            Join(SourcePackageRelease,
+                 SourcePackageRelease.id ==
+                     PackageUploadSource.sourcepackagereleaseID),
+            Join(SourcePackageName,
+                 SourcePackageName.id ==
+                     SourcePackageRelease.sourcepackagenameID),
+            )
+
+        approved_status = (
+            PackageUploadStatus.ACCEPTED,
+            PackageUploadStatus.DONE,
+            )
+        conflicts = store.using(*origin).find(
+            PackageUpload,
+            PackageUpload.status.is_in(approved_status),
+            PackageUpload.archive == archive,
+            DistroSeries.distribution == distribution,
+            SourcePackageRelease.version == version,
+            SourcePackageName.name == name)
+
+        return conflicts.one()
 
     def count(self, status=None, distroseries=None, pocket=None):
         """See `IPackageUploadSet`."""
