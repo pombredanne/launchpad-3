@@ -19,6 +19,7 @@ from zope.interface import implements
 from storm.locals import And, Desc
 from storm.store import Store
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -454,7 +455,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             Product.official_rosetta == True)
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
-    @property
+    @cachedproperty
     def potemplate_count(self):
         """See `IProductSeries`."""
         return self.getCurrentTranslationTemplates().count()

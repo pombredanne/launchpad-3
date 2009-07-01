@@ -418,8 +418,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin,
         self.has_multiple_templates = (
             self.context.getCurrentTranslationTemplates().count() > 1)
 
-        # let's find out what source package is associated with this
-        # productseries in the current release of ubuntu
+        # Let's find out what source package is associated with this
+        # productseries in the current release of ubuntu.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.curr_ubuntu_series = ubuntu.currentseries
         self.setUpPackaging()

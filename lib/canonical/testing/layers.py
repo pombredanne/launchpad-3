@@ -1040,7 +1040,11 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
 
 
 class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
-    """Testing layer for unit tests with no need for librarian."""
+    """Testing layer for unit tests with no need for librarian.
+
+    Can be used wherever you're accustomed to using LaunchpadZopeless
+    or LaunchpadScript layers, but there is no need for librarian.
+    """
 
     @classmethod
     @profiled

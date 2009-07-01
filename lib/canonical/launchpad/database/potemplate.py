@@ -1373,7 +1373,7 @@ class HasTranslationTemplatesMixin:
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        raise NotImplementedError('This must be provided by a parent object.')
+        raise NotImplementedError('This must be provided when subclassing.')
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
@@ -1382,11 +1382,13 @@ class HasTranslationTemplatesMixin:
         # and extend it with another condition.
         current_templates = (
             self.getCurrentTranslationTemplates()._get_select())
-        columns = []
         for column in current_templates.columns:
             if column.name == 'id':
                 columns = [column]
                 break
+        assert len(columns) == 1, (
+            'There is no ID column in getCurrentTranslationTemplates '
+            'select query.')
         current_templates.columns = columns
         templates = Alias(current_templates, 'potemplates')
 
@@ -1404,8 +1406,8 @@ class HasTranslationTemplatesMixin:
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        raise NotImplementedError('This must be provided by a parent object.')
+        raise NotImplementedError('This must be provided when subclassing.')
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        raise NotImplementedError('This must be provided by a parent object.')
+        raise NotImplementedError('This must be provided when subclassing.')
