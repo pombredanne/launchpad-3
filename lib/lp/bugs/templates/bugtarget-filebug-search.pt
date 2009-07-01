@@ -82,7 +82,7 @@
                         error python:view.getFieldError(field_name);
                         error_class python:error and 'error' or None;"
             tal:attributes="class error_class"
-            style="text-align: right;">
+            style="text-align: left; padding-left: 5em;">
           <div>
             <input tal:replace="structure widget" />
           </div>
@@ -93,7 +93,7 @@
              tal:content="widget/hint">Some Help Text
           </p>
         </td>
-        <td>
+        <td style="text-align: left;">
           <input tal:replace="structure view/actions/field.actions.search/render" />
           <span id="spinner" style="text-align: center; display: none;">
             <img src="/@@/spinner" />

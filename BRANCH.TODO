@@ -9,9 +9,6 @@
  - Neuter the form!
  - Deal with Martin's issues:
    - Enter on the field reloads the page?
-   - When there's no matches, and you get the form, you get redirected
-     to the #form-start anchor, which moves the page down. That's a big
-     part of the confusion
    - I think "no, I need to report this bug" should clean out the
      results and show you the form. Again, not moving the page at all.
    - I should still be able to search again for duped, even if I looked
