@@ -14,13 +14,13 @@ from canonical.launchpad.interfaces import TranslationValidationStatus
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import ZopelessDatabaseLayer
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):
     """Test behaviour of PO files with shared POTMsgSets."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a product with two series and a shared POTemplate
@@ -809,7 +809,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 class TestSharedPOFileCreation(TestCaseWithFactory):
     """Test that POFiles are created in shared POTemplates."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a product with two series and a shared POTemplate
@@ -875,7 +875,7 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
     """Test ordering of POTMsgSets as returned by PO file methods."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a product with two series and a shared POTemplate
@@ -1080,7 +1080,7 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 class TestPOFileStatistics(TestCaseWithFactory):
     """Test PO files statistics calculation."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a POFile to calculate statistics on.

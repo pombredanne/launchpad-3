@@ -40,6 +40,7 @@ __all__ = [
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
     'ZopelessAppServerLayer',
+    'ZopelessDatabaseLayer',
     'ZopelessLayer',
     'disconnect_stores',
     'reconnect_stores',
@@ -1035,6 +1036,43 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
 
         # Disconnect Storm so it doesn't get in the way of database resets
         disconnect_stores()
+
+
+
+class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
+    """Testing layer for unit tests with no need for librarian.
+
+    Can be used wherever you're accustomed to using LaunchpadZopeless
+    or LaunchpadScript layers, but there is no need for librarian.
+    """
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        # Signal Layer cannot be torn down fully
+        raise NotImplementedError
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        # LaunchpadZopelessLayer takes care of reconnecting the stores
+        if not LaunchpadZopelessLayer.isSetUp:
+            reconnect_stores()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        disconnect_stores()
+
+    @classmethod
+    @profiled
+    def switchDbConfig(cls, database_config_section):
+        reconnect_stores(database_config_section=database_config_section)
 
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
