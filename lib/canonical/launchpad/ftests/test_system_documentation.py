@@ -191,10 +191,6 @@ special = {
     'autodecorate.txt':
         LayeredDocFileSuite('../doc/autodecorate.txt', layer=BaseLayer),
 
-    'remove-upstream-translations-script.txt': LayeredDocFileSuite(
-            '../doc/remove-upstream-translations-script.txt',
-            setUp=setGlobs, stdout_logging=False, layer=None
-            ),
 
     # And this test want minimal environment too.
     'package-relationship.txt': LayeredDocFileSuite(
@@ -211,10 +207,6 @@ special = {
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
-    'poexport-queue.txt': LayeredDocFileSuite(
-            '../doc/poexport-queue.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
     'message.txt': LayeredDocFileSuite(
             '../doc/message.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
@@ -222,18 +214,6 @@ special = {
     'close-account.txt': LayeredDocFileSuite(
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer
-            ),
-    'translationimportqueue.txt': LayeredDocFileSuite(
-            '../doc/translationimportqueue.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'pofile-pages.txt': LayeredDocFileSuite(
-            '../doc/pofile-pages.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'rosetta-karma.txt': LayeredDocFileSuite(
-            '../doc/rosetta-karma.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'launchpadform.txt': LayeredDocFileSuite(
             '../doc/launchpadform.txt',
@@ -255,14 +235,6 @@ special = {
             setUp=test_notifications.setUp,
             tearDown=test_notifications.tearDown,
             stdout_logging=False, layer=None
-            ),
-    'translationmessage-destroy.txt': LayeredDocFileSuite(
-            '../doc/translationmessage-destroy.txt',
-            layer=LaunchpadZopelessLayer
-            ),
-    'translationsoverview.txt': LayeredDocFileSuite(
-            '../doc/translationsoverview.txt',
-            layer=LaunchpadZopelessLayer
             ),
     'hwdb-device-tables.txt': LayeredDocFileSuite(
             '../doc/hwdb-device-tables.txt',

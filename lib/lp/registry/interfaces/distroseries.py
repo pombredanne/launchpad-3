@@ -22,7 +22,7 @@ from canonical.launchpad.fields import (
     ContentNameField, Description, PublicPersonChoice, Summary, Title)
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.languagepack import ILanguagePack
+from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
 from lp.registry.interfaces.milestone import IHasMilestones

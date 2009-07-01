@@ -1,0 +1,489 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    i18n_domain="launchpad">
+    <include
+        package=".browser"/>
+    <securedutility
+        class="canonical.launchpad.database.vpotexport.VPOTExportSet"
+        provides="lp.translations.interfaces.vpotexport.IVPOTExportSet">
+        <allow
+            interface="lp.translations.interfaces.vpotexport.IVPOTExportSet"/>
+    </securedutility>
+    <class
+        class="canonical.launchpad.database.vpotexport.VPOTExport">
+        <allow
+            interface="lp.translations.interfaces.vpotexport.IVPOTExport"/>
+    </class>
+    <class
+        class="canonical.launchpad.database.potranslation.POTranslation">
+        <allow
+            interface="lp.translations.interfaces.potranslation.IPOTranslation"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.vpoexport.VPOExportSet"
+        provides="lp.translations.interfaces.vpoexport.IVPOExportSet">
+        <allow
+            interface="lp.translations.interfaces.vpoexport.IVPOExportSet"/>
+    </securedutility>
+    <class
+        class="canonical.launchpad.database.vpoexport.VPOExport">
+        <allow
+            interface="lp.translations.interfaces.vpoexport.IVPOExport"/>
+    </class>
+    <class
+        class="canonical.launchpad.database.pomsgid.POMsgID">
+        <allow
+            interface="lp.translations.interfaces.pomsgid.IPOMsgID"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.systemhomes.RosettaApplication"
+        provides="canonical.launchpad.interfaces.IRosettaApplication">
+        <allow
+            interface="canonical.launchpad.interfaces.IRosettaApplication"/>
+    </securedutility>
+    
+    <!-- TranslationsOverview -->
+    
+    <class
+        class="canonical.launchpad.database.TranslationsOverview">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationsOverview"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.TranslationsOverview"
+        provides="canonical.launchpad.interfaces.ITranslationsOverview">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationsOverview"/>
+    </securedutility>
+    <!-- ITranslationsPerson -->
+    
+    <class
+        class="canonical.launchpad.database.TranslationsPerson">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationsPerson"/>
+        <require
+            permission="launchpad.Edit"
+            set_attributes="translations_relicensing_agreement"/>
+    </class>
+    <adapter
+        for="canonical.launchpad.interfaces.IPerson"
+        provides="canonical.launchpad.interfaces.ITranslationsPerson"
+        factory="canonical.launchpad.database.TranslationsPerson"
+        trusted="yes"/>
+    <class
+        class="lp.translations.utilities.translation_common_format.TranslationMessageData">
+        <allow
+            interface="lp.translations.interfaces.translationcommonformat.ITranslationMessageData"/>
+    </class>
+    <securedutility
+        class="lp.translations.utilities.TranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationExporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationExporter"/>
+    </securedutility>
+    <class
+        class="lp.translations.utilities.translation_export.ExportedTranslationFile">
+        <allow
+            interface="canonical.launchpad.interfaces.IExportedTranslationFile"/>
+    </class>
+    
+    <!-- Translation file export plugins -->
+    
+    <class
+        class="lp.translations.utilities.gettext_po_exporter.GettextPOExporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationFormatExporter"/>
+    </class>
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationFormatExporter"
+        factory="lp.translations.utilities.gettext_po_exporter.GettextPOExporter"/>
+    <class
+        class="lp.translations.utilities.gettext_mo_exporter.GettextMOExporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationFormatExporter"/>
+    </class>
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationFormatExporter"
+        factory="lp.translations.utilities.gettext_mo_exporter.GettextMOExporter"/>
+    <class
+        class="lp.translations.utilities.kde_po_exporter.KdePOExporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationFormatExporter"/>
+    </class>
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationFormatExporter"
+        factory="lp.translations.utilities.kde_po_exporter.KdePOExporter"/>
+    <class
+        class="lp.translations.utilities.xpi_po_exporter.XPIPOExporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationFormatExporter"/>
+    </class>
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationFormatExporter"
+        factory="lp.translations.utilities.xpi_po_exporter.XPIPOExporter"/>
+    <class
+        class="lp.translations.utilities.gettext_po_exporter.GettextPOChangedExporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationFormatExporter"/>
+    </class>
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationFormatExporter"
+        factory="lp.translations.utilities.gettext_po_exporter.GettextPOChangedExporter"/>
+    <facet
+        facet="translations">
+        
+        <!-- TranslatorSet -->
+        
+        <securedutility
+            class="canonical.launchpad.database.TranslatorSet"
+            provides="lp.translations.interfaces.translator.ITranslatorSet">
+            <allow
+                interface="lp.translations.interfaces.translator.ITranslatorSet"/>
+        </securedutility>
+        
+        <!-- Translator -->
+        
+        <class
+            class="canonical.launchpad.database.Translator">
+            <allow
+                interface="lp.translations.interfaces.translator.ITranslator"/>
+            <require
+                permission="launchpad.Admin"
+                set_schema="lp.translations.interfaces.translator.IAdminTranslator"/>
+            <require
+                permission="launchpad.Edit"
+                set_schema="lp.translations.interfaces.translator.IEditTranslator"/>
+        </class>
+    </facet>
+    <facet
+        facet="translations">
+        
+        <!-- TranslationImportQueue -->
+        
+        <class
+            class="canonical.launchpad.database.TranslationImportQueueEntry">
+            <allow
+                interface="lp.translations.interfaces.translationimportqueue.ITranslationImportQueueEntry"/>
+            <require
+                permission="launchpad.Edit"
+                set_schema="lp.translations.interfaces.translationimportqueue.ITranslationImportQueueEntry"/>
+        </class>
+        
+        <!-- TranslationImportQueue -->
+        
+        <securedutility
+            class="canonical.launchpad.database.TranslationImportQueue"
+            provides="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue">
+            <allow
+                interface="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"/>
+        </securedutility>
+    </facet>
+    <class
+        class="canonical.launchpad.database.POFileTranslator">
+        <allow
+            interface="lp.translations.interfaces.pofiletranslator.IPOFileTranslator"/>
+    </class>
+    <class
+        class="canonical.launchpad.database.POFileTranslatorSet">
+        <allow
+            interface="lp.translations.interfaces.pofiletranslator.IPOFileTranslatorSet"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.POFileTranslatorSet"
+        provides="lp.translations.interfaces.pofiletranslator.IPOFileTranslatorSet">
+        <allow
+            interface="lp.translations.interfaces.pofiletranslator.IPOFileTranslatorSet"/>
+    </securedutility>
+    
+    <!-- DistroSeriesLanguage and Dummy -->
+    
+    <class
+        class="canonical.launchpad.database.DistroSeriesLanguage">
+        <allow
+            interface="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"/>
+    </class>
+    <class
+        class="canonical.launchpad.database.DummyDistroSeriesLanguage">
+        <allow
+            interface="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"/>
+    </class>
+    
+    <!-- DistroSeriesLanguageSet -->
+    
+    <securedutility
+        class="canonical.launchpad.database.DistroSeriesLanguageSet"
+        provides="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguageSet">
+        <allow
+            interface="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguageSet"/>
+    </securedutility>
+    <securedutility
+        class="lp.translations.utilities.TranslationImporter"
+        provides="canonical.launchpad.interfaces.ITranslationImporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationImporter"/>
+    </securedutility>
+    <class
+        class="lp.translations.utilities.gettext_po_parser.POHeader">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationHeaderData"/>
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.ITranslationHeaderData"/>
+    </class>
+    <class
+        class="lp.translations.utilities.gettext_po_importer.GettextPOImporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationFormatImporter"/>
+    </class>
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+        provides="canonical.launchpad.interfaces.ITranslationFormatImporter"
+        factory="lp.translations.utilities.gettext_po_importer.GettextPOImporter"/>
+    <class
+        class="lp.translations.utilities.xpi_header.XpiHeader">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationHeaderData"/>
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.ITranslationHeaderData"/>
+    </class>
+    <class
+        class="lp.translations.utilities.kde_po_importer.KdePOImporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationFormatImporter"/>
+    </class>
+    <class
+        class="lp.translations.utilities.mozilla_xpi_importer.MozillaXpiImporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationFormatImporter"/>
+    </class>
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+        provides="canonical.launchpad.interfaces.ITranslationFormatImporter"
+        factory="lp.translations.utilities.mozilla_xpi_importer.MozillaXpiImporter"/>
+    <facet
+        facet="translations">
+        <class
+            class="canonical.launchpad.database.POFile">
+            <allow
+                interface="lp.translations.interfaces.pofile.IPOFile"/>
+            <require
+                permission="launchpad.Edit"
+                set_schema="lp.translations.interfaces.pofile.IPOFile"/>
+        </class>
+        <adapter
+            name="all_messages"
+            for="lp.translations.interfaces.pofile.IPOFile"
+            provides="canonical.launchpad.interfaces.ITranslationFileData"
+            factory="canonical.launchpad.database.POFileToTranslationFileDataAdapter"/>
+        <adapter
+            name="changed_messages"
+            for="lp.translations.interfaces.pofile.IPOFile"
+            provides="canonical.launchpad.interfaces.ITranslationFileData"
+            factory="canonical.launchpad.database.POFileToChangedFromPackagedAdapter"/>
+        
+        <!-- Dummy PO File -->
+        
+        <class
+            class="canonical.launchpad.database.DummyPOFile">
+            <allow
+                interface="lp.translations.interfaces.pofile.IPOFile"/>
+        </class>
+        
+        <!-- POFileSet -->
+        
+        <securedutility
+            class="canonical.launchpad.database.POFileSet"
+            provides="lp.translations.interfaces.pofile.IPOFileSet">
+            <allow
+                interface="lp.translations.interfaces.pofile.IPOFileSet"/>
+        </securedutility>
+    </facet>
+    <class
+        class="canonical.launchpad.database.TranslationTemplateItem">
+        <allow
+            interface="lp.translations.interfaces.translationtemplateitem.ITranslationTemplateItem"/>
+    </class>
+    
+    <!-- ProductSeriesLanguage and Dummy -->
+    
+    <class
+        class="canonical.launchpad.database.ProductSeriesLanguage">
+        <allow
+            interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"/>
+    </class>
+    <class
+        class="canonical.launchpad.database.DummyProductSeriesLanguage">
+        <allow
+            interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"/>
+    </class>
+    
+    <!-- ProductSeriesLanguageSet -->
+    
+    <securedutility
+        class="canonical.launchpad.database.ProductSeriesLanguageSet"
+        provides="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguageSet">
+        <allow
+            interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguageSet"/>
+    </securedutility>
+    <facet
+        facet="translations">
+        
+        <!-- Language -->
+        
+        
+        <!-- Language portlets -->
+        
+        
+        <!-- LanguageSet -->
+        
+    </facet>
+    <facet
+        facet="translations">
+        <class
+            class="canonical.launchpad.database.POTemplate">
+            <allow
+                interface="lp.translations.interfaces.potemplate.IPOTemplate"/>
+            <require
+                permission="launchpad.Edit"
+                set_attributes="owner priority description"/>
+            <require
+                permission="launchpad.Admin"
+                set_attributes="name translation_domain productseries distroseries                                                                                                 sourcepackagename sourcepackageversion                                                                                                 binarypackagename languagepack path header                                                                                                 iscurrent from_sourcepackagename date_last_updated                                                                                                 source_file source_file_format"/>
+        </class>
+        <adapter
+            name="all_messages"
+            for="lp.translations.interfaces.potemplate.IPOTemplate"
+            provides="canonical.launchpad.interfaces.ITranslationFileData"
+            factory="canonical.launchpad.database.POTemplateToTranslationFileDataAdapter"/>
+        
+        <!-- POTemplateSet -->
+        
+        <securedutility
+            class="canonical.launchpad.database.POTemplateSet"
+            provides="lp.translations.interfaces.potemplate.IPOTemplateSet">
+            <allow
+                interface="lp.translations.interfaces.potemplate.IPOTemplateSet"/>
+        </securedutility>
+        <class
+            class="canonical.launchpad.database.POTemplateSubset">
+            <require
+                permission="zope.Public"
+                interface="lp.translations.interfaces.potemplate.IPOTemplateSubset"
+                set_attributes="sourcepackagename distroseries"/>
+        </class>
+        <class
+            class="lp.translations.model.potemplate.POTemplateSharingSubset">
+            <require
+                permission="zope.Public"
+                interface="lp.translations.interfaces.potemplate.IPOTemplateSharingSubset"/>
+        </class>
+    </facet>
+    <facet
+        facet="translations">
+        
+        <!-- TranslationGroup -->
+        
+        <class
+            class="canonical.launchpad.database.TranslationGroup">
+            <allow
+                interface="lp.translations.interfaces.translationgroup.ITranslationGroup"/>
+            <require
+                permission="launchpad.Edit"
+                set_schema="lp.translations.interfaces.translationgroup.ITranslationGroup"/>
+        </class>
+        
+        <!-- TranslationGroupSet -->
+        
+        <securedutility
+            class="canonical.launchpad.database.TranslationGroupSet"
+            provides="lp.translations.interfaces.translationgroup.ITranslationGroupSet">
+            <allow
+                interface="lp.translations.interfaces.translationgroup.ITranslationGroupSet"/>
+        </securedutility>
+    </facet>
+    <class
+        class="canonical.launchpad.database.POTMsgSet">
+        <allow
+            interface="lp.translations.interfaces.potmsgset.IPOTMsgSet"/>
+        
+        <!-- The following require is needed only for tests that use
+                     IPOTMsgSets outside of its usual security proxy environment. -->
+
+        <require
+            permission="launchpad.Admin"
+            set_attributes="commenttext sourcecomment filereferences flagscomment"/>
+    </class>
+    <facet
+        facet="translations">
+        
+        <!-- LanguagePack -->
+        
+        <class
+            class="canonical.launchpad.database.LanguagePack">
+            <allow
+                interface="lp.translations.interfaces.languagepack.ILanguagePack"/>
+            <require
+                permission="launchpad.LanguagePacksAdmin"
+                set_schema="lp.translations.interfaces.languagepack.ILanguagePack"/>
+        </class>
+        
+        <!-- LanguageSet -->
+        
+        <securedutility
+            class="canonical.launchpad.database.LanguagePackSet"
+            provides="lp.translations.interfaces.languagepack.ILanguagePackSet">
+            <allow
+                interface="lp.translations.interfaces.languagepack.ILanguagePackSet"/>
+        </securedutility>
+    </facet>
+    <facet
+        facet="translations">
+        <class
+            class="canonical.launchpad.database.TranslationMessage">
+            <allow
+                interface="lp.translations.interfaces.translationmessage.ITranslationMessage"/>
+            <require
+                permission="launchpad.Edit"
+                set_schema="lp.translations.interfaces.translationmessage.ITranslationMessage"/>
+        </class>
+        
+        <!-- Dummy Translation Message. It's a read only class. -->
+        
+        <class
+            class="canonical.launchpad.database.DummyTranslationMessage">
+            <allow
+                interface="lp.translations.interfaces.translationmessage.ITranslationMessage"/>
+        </class>
+        
+
+        
+        <!-- TranslationMessageSet -->
+        
+        <securedutility
+            class="canonical.launchpad.database.TranslationMessageSet"
+            provides="lp.translations.interfaces.translationmessage.ITranslationMessageSet">
+            <allow
+                interface="lp.translations.interfaces.translationmessage.ITranslationMessageSet"/>
+        </securedutility>
+    </facet>
+    <class
+        class="canonical.launchpad.database.CustomLanguageCode">
+        <allow
+            interface="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.POExportRequestSet"
+        provides="lp.translations.interfaces.poexportrequest.IPOExportRequestSet">
+        <allow
+            interface="lp.translations.interfaces.poexportrequest.IPOExportRequestSet"/>
+    </securedutility>
+</configure>

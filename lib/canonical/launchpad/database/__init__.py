@@ -4,7 +4,7 @@
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
 from canonical.launchpad.database.account import *
-from canonical.launchpad.database.customlanguagecode import *
+from lp.translations.model.customlanguagecode import *
 from lp.registry.model.milestone import *
 from lp.registry.model.person import *
 from lp.registry.model.personlocation import *
@@ -17,7 +17,7 @@ from lp.registry.model.productlicense import *
 from lp.registry.model.productseries import *
 from lp.registry.model.productrelease import *
 from lp.registry.model.project import *
-from canonical.launchpad.database.productserieslanguage import *
+from lp.translations.model.productserieslanguage import *
 from canonical.launchpad.database.projectbounty import *
 from lp.registry.model.poll import *
 from lp.registry.model.announcement import *
@@ -38,12 +38,12 @@ from lp.registry.model.commercialsubscription import *
 from lp.bugs.model.cve import *
 from lp.bugs.model.cvereference import *
 from lp.bugs.model.bugtracker import *
-from canonical.launchpad.database.pofile import *
-from canonical.launchpad.database.pofiletranslator import *
-from canonical.launchpad.database.potemplate import *
-from canonical.launchpad.database.potmsgset import *
-from canonical.launchpad.database.pomsgid import *
-from canonical.launchpad.database.potranslation import *
+from lp.translations.model.pofile import *
+from lp.translations.model.pofiletranslator import *
+from lp.translations.model.potemplate import *
+from lp.translations.model.potmsgset import *
+from lp.translations.model.pomsgid import *
+from lp.translations.model.potranslation import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
 from lp.registry.model.sourcepackage import *
@@ -61,7 +61,7 @@ from lp.registry.model.distributionsourcepackagecache import *
 from lp.soyuz.model.distributionsourcepackagerelease import *
 from lp.registry.model.distroseries import *
 from lp.soyuz.model.distroseriesbinarypackage import *
-from canonical.launchpad.database.distroserieslanguage import *
+from lp.translations.model.distroserieslanguage import *
 from lp.soyuz.model.distroseriespackagecache import *
 from lp.soyuz.model.distroseriessourcepackagerelease import *
 from lp.soyuz.model.distroarchseries import *
@@ -70,14 +70,14 @@ from lp.soyuz.model.distroarchseriesbinarypackagerelease\
     import *
 from lp.registry.model.person import *
 from lp.services.worlddata.model.language import *
-from canonical.launchpad.database.languagepack import *
-from canonical.launchpad.database.translationgroup import *
-from canonical.launchpad.database.translationimportqueue import *
-from canonical.launchpad.database.translationmessage import *
-from canonical.launchpad.database.translationsoverview import *
-from canonical.launchpad.database.translationsperson import *
-from canonical.launchpad.database.translationtemplateitem import *
-from canonical.launchpad.database.translator import *
+from lp.translations.model.languagepack import *
+from lp.translations.model.translationgroup import *
+from lp.translations.model.translationimportqueue import *
+from lp.translations.model.translationmessage import *
+from lp.translations.model.translationsoverview import *
+from lp.translations.model.translationsperson import *
+from lp.translations.model.translationtemplateitem import *
+from lp.translations.model.translator import *
 from lp.soyuz.model.processor import *
 from lp.soyuz.model.build import *
 from lp.soyuz.model.builder import *
@@ -109,8 +109,8 @@ from canonical.launchpad.database.logintoken import *
 from lp.registry.model.codeofconduct import *
 from lp.soyuz.model.component import *
 from lp.soyuz.model.section import *
-from canonical.launchpad.database.vpoexport import *
-from canonical.launchpad.database.vpotexport import *
+from lp.translations.model.vpoexport import *
+from lp.translations.model.vpotexport import *
 from lp.registry.model.karma import *
 from lp.registry.model.teammembership import *
 from canonical.launchpad.database.temporaryblobstorage import *
@@ -119,7 +119,7 @@ from lp.coop.answersbugs.model import *
 from lp.answers.model.questionmessage import *
 from lp.answers.model.questionreopening import *
 from lp.answers.model.questionsubscription import *
-from canonical.launchpad.database.poexportrequest import *
+from lp.translations.model.poexportrequest import *
 from lp.registry.model.gpgkey import *
 from lp.soyuz.model.archive import *
 from canonical.launchpad.database.emailaddress import *

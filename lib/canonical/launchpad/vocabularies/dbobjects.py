@@ -64,7 +64,7 @@ from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.services.worlddata.interfaces.language import ILanguage
-from canonical.launchpad.interfaces.languagepack import LanguagePackType
+from lp.translations.interfaces.languagepack import LanguagePackType
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.tales import FormattersAPI

@@ -164,7 +164,7 @@
     <browser:page
         name="+translations"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.translations.TranslationsRedirectView"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -194,7 +194,7 @@
         name="+help-translate-button"
         facet="translations"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.translations.HelpTranslateButtonView"
+        class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
