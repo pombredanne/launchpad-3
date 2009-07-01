@@ -24,6 +24,7 @@ from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
@@ -784,6 +785,11 @@ class IBugDelta(Interface):
         "A sequence of IBugTaskDeltas, one IBugTaskDelta or None.")
 
 
+# A simple vocabulary for the subscribe_to_existing_bug form field.
+SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
+    [('yes', True), ('no', False)])
+
+
 class IBugAddForm(IBug):
     """Information we need to create a bug"""
     id = Int(title=_("Bug #"), required=False)
@@ -837,8 +843,9 @@ class IBugAddForm(IBug):
     assignee = PublicPersonChoice(
         title=_('Assign to'), required=False,
         vocabulary='ValidAssignee')
-    subscribe_to_existing_bug = Bool(
-        title=_(u'Subscribe to this bug'),
+    subscribe_to_existing_bug = Choice(
+        title=u'Subscribe to this bug',
+        vocabulary=SUBSCRIBE_TO_BUG_VOCABULARY,
         required=True, default=False)
 
 

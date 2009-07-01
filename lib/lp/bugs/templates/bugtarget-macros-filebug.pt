@@ -101,7 +101,7 @@
 
   <tr>
     <td colspan="2">
-      <fieldset class="collapsible collapsed">
+      <fieldset id="filebug-extra-options" class="collapsible collapsed">
         <legend>Extra options</legend>
         <table>
           <tal:status
@@ -526,22 +526,47 @@
   </tal:similar-bugs>
 
   <tal:submit-new-bug>
-    <div id="bug_reporting_form">
-      <metal:form use-macro="context/@@launchpad_form/form">
-        <a name="form-start" />
-        <metal:widgets metal:fill-slot="widgets">
-          <table class="form">
-            <metal:basic_filebug_widgets
-                metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
-          </table>
-        </metal:widgets>
-        <div class="actions" metal:fill-slot="buttons">
-          <input tal:replace="structure view/submit_bug_action/render" />
-        </div>
-      </metal:form>
-    </div>
+    <metal:basic_filebug_widgets
+        metal:use-macro="context/@@+filebug-macros/inline-filebug-form" />
   </tal:submit-new-bug>
 
 </metal:similar-bugs-and-filebug-form>
+
+<metal:inline-filebug-form define-macro="inline-filebug-form">
+  <div id="bug_reporting_form">
+    <metal:form use-macro="context/@@launchpad_form/form">
+      <a name="form-start" />
+      <metal:widgets metal:fill-slot="widgets">
+        <table class="form">
+          <metal:basic_filebug_widgets
+              metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+        </table>
+      </metal:widgets>
+      <div class="actions" metal:fill-slot="buttons">
+        <input tal:replace="structure view/submit_bug_action/render" />
+      </div>
+    </metal:form>
+  </div>
+</metal:inline-filebug-form>
+
+<metal:filebug-form define-macro="simple-filebug-form">
+  <form action="."
+        tal:attributes="action view/action_url"
+        name="launchpadform"
+        method="post"
+        enctype="multipart/form-data"
+        accept-charset="UTF-8"
+        id="filebug-form">
+
+    <table class="form">
+      <metal:basic_filebug_widgets
+          metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+    </table>
+    <div class="actions">
+      <input tal:replace="structure view/submit_bug_action/render" />
+    </div>
+
+  </form>
+</metal:filebug-form>
 
 </tal:root>

@@ -27,6 +27,7 @@ import tempfile
 import urllib
 
 from z3c.ptcompat import ViewPageTemplateFile
+from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
@@ -831,6 +832,12 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
     """
     schema = IBugAddForm
 
+    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across inheritance.
+    actions = FileBugViewBase.actions
+    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
+
     _MATCHING_BUGS_LIMIT = 10
 
     @property
@@ -874,14 +881,22 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
 
         return matching_bugs
 
+    @property
+    def show_duplicate_list(self):
+        """Return whether or not to show the duplicate list.
+
+        We only show the dupes if:
+          - The context uses Malone AND
+          - There are dupes to show AND
+          - There are no widget errors.
+        """
+        return (
+            self.contextUsesMalone and
+            len(self.similar_bugs) > 0 and
+            len(self.widget_errors) == 0)
+
 
 class FileBugGuidedView(FilebugShowSimilarBugsView):
-    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
-    # hack to make the action decorator Just Work across inheritance.
-    actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=40)
-    custom_widget('tags', BugTagsWidget)
-
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-search.pt")
     _FILEBUG_FORM = ViewPageTemplateFile(
@@ -941,20 +956,6 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
             return self.widgets['title'].getInputValue()
         except InputErrors:
             return None
-
-    @property
-    def show_duplicate_list(self):
-        """Return whether or not to show the duplicate list.
-
-        We only show the dupes if:
-          - The context uses Malone AND
-          - There are dupes to show AND
-          - There are no widget errors.
-        """
-        return (
-            self.contextUsesMalone and
-            len(self.similar_bugs) > 0 and
-            len(self.widget_errors) == 0)
 
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""

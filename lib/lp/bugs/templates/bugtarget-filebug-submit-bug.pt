@@ -21,7 +21,7 @@
           'base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
             Y.bugs.setup_dupe_finder();
         });
-      </script>
+    </script>
 
   </metal:block>
 

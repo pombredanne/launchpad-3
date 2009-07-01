@@ -10,11 +10,35 @@
 >
 <body>
 
+  <metal:block fill-slot="head_epilogue">
+    <tal:devmode condition="devmode">
+      <script type="text/javascript"
+              tal:define="lp_js string:${icingroot}/build"
+              tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js">
+      </script>
+      <script type="text/javascript">
+          YUI().use(
+            'base', 'io', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
+              Y.bugs.setup_dupe_finder();
+          });
+      </script>
+    </tal:devmode>
+  </metal:block>
+
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-latestbugs|nothing" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
+
+  <tal:dupefinder-js condition="view/bugtarget">
+    <tal:comment replace="nothing">
+      We don't include this JavaScript on the front page yet, since it
+      can't handle the front page's bugtarget-free-ness.
+    </tal:comment>
+    <script type="text/javascript" tal:condition="view/contextUsesMalone">
+    </script>
+  </tal:dupefinder-js>
 
       <div tal:condition="view/isPrivate" id="privacy" class="aside private"
       >This report will be private, though you can disclose it later.</div>
@@ -25,7 +49,7 @@
 
 <tal:uses_malone tal:condition="view/contextUsesMalone">
   <div metal:use-macro="context/@@launchpad_form/form">
-    <table class="form" metal:fill-slot="widgets">
+    <table metal:fill-slot="widgets">
 
       <tal:product_widget
           tal:define="widget nocall:view/widgets/product|nothing"
@@ -44,18 +68,47 @@
       <tr>
         <td colspan="2">
           <p>
-        Please describe the bug in a few words, for example, "weather
-        applet crashes on logout":
+            Please describe the bug in a few words, for example, "weather
+            applet crashes on logout":
           </p>
         </td>
       </tr>
       <tal:title_widget tal:define="widget nocall:view/widgets/title">
-        <metal:widget use-macro="context/@@launchpad_form/widget_row" />
+        <tal:comment replace="nothing">
+          The desire to have more control over the styling of this widget
+          prevents us from using the widget_row macro here.
+        </tal:comment>
+        <td tal:define="field_name widget/context/__name__;
+                        error python:view.getFieldError(field_name);
+                        error_class python:error and 'error' or None;"
+            tal:attributes="class error_class"
+            style="text-align: right;">
+          <div>
+            <input tal:replace="structure widget" />
+          </div>
+          <div class="message" tal:condition="error"
+               tal:content="structure error">Error message</div>
+          <p class="formHelp"
+             tal:condition="widget/hint"
+             tal:content="widget/hint">Some Help Text
+          </p>
+        </td>
+        <td>
+          <input tal:replace="structure view/actions/field.actions.search/render" />
+        </td>
       </tal:title_widget>
     </table>
 
-    <div class="actions" metal:fill-slot="buttons">
-      <input tal:replace="structure view/actions/field.actions.search/render" />
+    <div metal:fill-slot="buttons">
+      <tal:comment replace="nothing">
+        We add this to hide the standard action buttons.
+      </tal:comment>
+    </div>
+  </div>
+
+  <div id="possible-duplicates" style="display: none; text-align: left;">
+    <div id="spinner" style="text-align: center">
+      <img src="/@@/spinner" />
     </div>
   </div>
 
@@ -63,6 +116,8 @@
         &#187;
         <a tal:attributes="href view/advanced_filebug_url"
         >Advanced reporting options</a>
+        <a id="duplicate-search-url" href="/firefox/+filebug-show-similar"
+            style="display: none;"></a>
       </p>
 
   <tal:most-common-bugs condition="view/most_common_bugs">
