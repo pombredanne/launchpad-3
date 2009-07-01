@@ -16,7 +16,7 @@
 
   <tal:script
     replace="structure
-    string:&lt;script type='text/javascript'&gt;" />
+    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
     YUI().use('node', 'lp.milestoneoverlay', function (Y) {
 
         // This is a value for the SELECT OPTION which is passed with
