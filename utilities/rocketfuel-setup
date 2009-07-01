@@ -282,8 +282,8 @@ fi
 mkdir -p $LP_PROJECT_ROOT
 cd $LP_PROJECT_ROOT
 if [ ! -d $LP_SHARED_REPO ]; then
-  # 1.6 format needed for stacking on Launchpad.
-  bzr init-repo --1.6 $LP_SHARED_REPO
+  # 2a format (a.k.a. "brisbane-core") needed for stacking on Launchpad.
+  bzr init-repo --2a $LP_SHARED_REPO
   if [ $? -ne 0 ]; then
     echo "ERROR: Unable to setup local LP repository"
     exit 1
