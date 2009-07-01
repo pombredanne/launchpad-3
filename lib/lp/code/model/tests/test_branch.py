@@ -1550,5 +1550,41 @@ class TestBranchCommitsForDays(TestCaseWithFactory):
         self.assertEqual(commits, branch.commitsForDays(self.epoch))
 
 
+class TestBranchBugLinks(TestCaseWithFactory):
+    """Tests for bug linkages in `Branch`"""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+
+    def test_bug_link(self):
+        # Branches can be linked to bugs through the Branch interface.
+        branch = self.factory.makeAnyBranch()
+        bug = self.factory.makeBug()
+        branch.linkBug(bug, self.user)
+
+        self.assertEqual(branch.bug_branches.count(), 1)
+
+        bug_branch = branch.bug_branches[0]
+
+        self.assertIs(bug_branch.bug, bug)
+        self.assertIs(bug_branch.branch, branch)
+
+    def test_bug_unlink(self):
+        # Branches can be unlinked from the bug as well.
+        user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        branch = self.factory.makeAnyBranch()
+        bug = self.factory.makeBug()
+        branch.linkBug(bug, self.user)
+
+        self.assertEqual(branch.bug_branches.count(), 1)
+
+        branch.unlinkBug(bug, self.user)
+
+        self.assertEqual(branch.bug_branches.count(), 0)
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
