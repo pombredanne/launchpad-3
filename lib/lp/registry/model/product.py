@@ -63,6 +63,7 @@ from canonical.launchpad.database.productbounty import ProductBounty
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.services.database.precache import precache
 from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from lp.blueprints.model.specification import (

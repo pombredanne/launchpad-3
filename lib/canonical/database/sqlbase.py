@@ -56,6 +56,7 @@ __all__ = [
     'rollback',
     'SQLBase',
     'sqlvalues',
+    'StupidCache',
     'ZopelessTransactionManager',]
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will

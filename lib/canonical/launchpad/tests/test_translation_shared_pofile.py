@@ -574,6 +574,19 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions().count(),
             1)
 
+    def test_getPOTMsgSetWithNewSuggestions_empty(self):
+        # Test listing of POTMsgSets with empty strings as suggestions.
+
+        # When an empty suggestion is added, the potmsgset is NOT returned.
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u""], suggestion=True)
+        self.assertEquals(False, translation.is_current)
+
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals([], found_translations)
+
     def test_getPOTMsgSetChangedInLaunchpad(self):
         # Test listing of POTMsgSets which contain changes from imports.
 
