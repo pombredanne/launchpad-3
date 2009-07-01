@@ -328,9 +328,6 @@ redirect:
     ...     spiv_subscription, name="+index", form={'activate': '1'})
     >>> view.request.response.getStatus()
     302
-    >>> for notification in view.request.notifications:
-    ...     print notification.message
-    You have confirmed your subscription to...
 
 Now the view can then access the token and the source list entries sub-view:
 
