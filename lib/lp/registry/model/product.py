@@ -23,7 +23,6 @@ from storm.locals import And, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
-from canonical.launchpad.components.precache import precache
 from canonical.cachedproperty import cachedproperty
 from lazr.delegates import delegates
 from canonical.lazr.utils import safe_hasattr
