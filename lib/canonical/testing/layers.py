@@ -1391,6 +1391,7 @@ class LayerProcessController:
         handler.setFormatter(formatter)
         log.setLevel(logging.DEBUG)
         log.addHandler(handler)
+        log.propagate = False
         cls.smtp_controller = SMTPController('localhost', 9025)
         cls.smtp_controller.start()
         # Make sure that the smtp server is killed even if tearDown() is
