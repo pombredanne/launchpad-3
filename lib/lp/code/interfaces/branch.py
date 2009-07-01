@@ -44,8 +44,9 @@ from zope.schema import (
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_entry)
+    call_with, export_as_webservice_entry, export_read_operation,
+    export_write_operation, exported, operation_parameters,
+    operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
 
@@ -526,6 +527,10 @@ class IBranch(IHasOwner, IHasBranchTarget):
             readonly=True,
             value_type=Reference(schema=Interface))) # Really IBugBranch
 
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        bug=Reference(schema=Interface)) # Really IBug
+    @export_write_operation()
     def linkBug(bug, registrant):
         """Link a bug to this branch.
 
@@ -533,6 +538,10 @@ class IBranch(IHasOwner, IHasBranchTarget):
         :param registrant: IPerson linking the bug.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        bug=Reference(schema=Interface)) # Really IBug
+    @export_write_operation()
     def unlinkBug(bug, user):
         """Unlink a bug to this branch.
 
@@ -551,6 +560,10 @@ class IBranch(IHasOwner, IHasBranchTarget):
             readonly=True,
             value_type=Reference(Interface))) # Really ISpecificationBranch
 
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        spec=Reference(schema=Interface)) # Really ISpecification
+    @export_write_operation()
     def linkSpecification(spec, registrant):
         """Link an ISpecification to a branch.
 
@@ -558,6 +571,10 @@ class IBranch(IHasOwner, IHasBranchTarget):
         :param registrant: IPerson unlinking the spec.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        spec=Reference(schema=Interface)) # Really ISpecification
+    @export_write_operation()
     def unlinkSpecification(spec, user):
         """Unlink an ISpecification to a branch.
 
