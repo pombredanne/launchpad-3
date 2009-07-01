@@ -621,13 +621,25 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
-    def makePackageBranch(self, sourcepackage=None, **kwargs):
+    def makePackageBranch(self, sourcepackage=None, distroseries=None,
+                          sourcepackagename=None, **kwargs):
         """Make a package branch on an arbitrary package.
 
         See `makeBranch` for more information on arguments.
+
+        You can pass in either `sourcepackage` or one or both of
+        `distroseries` and `sourcepackagename`, but not combinations or all of
+        them.
         """
+        assert not(sourcepackage is not None and distroseries is not None), (
+            "Don't pass in both sourcepackage and distroseries")
+        assert not(sourcepackage is not None
+                   and sourcepackagename is not None), (
+            "Don't pass in both sourcepackage and sourcepackagename")
         if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage()
+            sourcepackage = self.makeSourcePackage(
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries)
         return self.makeBranch(sourcepackage=sourcepackage, **kwargs)
 
     def makePersonalBranch(self, owner=None, **kwargs):

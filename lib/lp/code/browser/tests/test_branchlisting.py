@@ -121,22 +121,40 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_grourps_with_no_branches(self):
-        # If there are no branches, the groups have empty lists.
+    def makeDistro(self):
+        """Make a distro with some series."""
         distro = self.factory.makeDistribution()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        expected = []
         for version in ("1.0", "2.0", "3.0"):
-            series = self.factory.makeDistroRelease(
+            self.factory.makeDistroRelease(
                 distribution=distro, version=version)
-            expected.append(
-                {'distroseries': series,
-                 'branches': [],
-                 'more-branch-count': 0})
+        return distro
+
+    def test_groups_with_no_branches(self):
+        # If there are no branches for a series, the groups are not there.
+        distro = self.makeDistro()
+        sourcepackagename = self.factory.makeSourcePackageName()
         distro_source_package = self.factory.makeDistributionSourcePackage(
             distribution=distro, sourcepackagename=sourcepackagename)
         view = GroupedDistributionSourcePackageBranchesView(
             distro_source_package, LaunchpadTestRequest())
+        self.assertEqual([], view.groups)
+
+    def test_groups_with_some_branches(self):
+        # If there are no branches for a series, the groups are not there.
+        distro = self.makeDistro()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        distro_source_package = self.factory.makeDistributionSourcePackage(
+            distribution=distro, sourcepackagename=sourcepackagename)
+        series = distro.serieses[0]
+        branch = self.factory.makePackageBranch(
+            distroseries=series, sourcepackagename=sourcepackagename)
+        view = GroupedDistributionSourcePackageBranchesView(
+            distro_source_package, LaunchpadTestRequest())
+        expected = [
+            {'distroseries': series,
+             'branches': [branch],
+             'more-branch-count': 0,
+             }]
         self.assertEqual(expected, view.groups)
 
 

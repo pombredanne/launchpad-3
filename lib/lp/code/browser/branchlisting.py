@@ -1394,10 +1394,15 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView):
         The official branches are sorted based on PackagePublishingPocket, and
         the non-official branches are sorted on date last modified.
         """
-        active_series = sorted([
-            series for series in self.context.distribution.serieses
-            if series.status == DistroSeriesStatus.OBSOLETE],
-            key=attrgetter('version'))
+        result = []
+        branches = self._getBranchDict()
+        for series in self.context.distribution.serieses:
+            if series in branches:
+                result.append(
+                    {'distroseries': series,
+                     'branches': branches[series],
+                     'more-branch-count': 0})
+        return result
 
 
 class SourcePackageBranchesView(BranchListingView):
