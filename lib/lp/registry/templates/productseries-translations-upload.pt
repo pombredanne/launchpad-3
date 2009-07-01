@@ -25,7 +25,7 @@
     <tal:admin_or_owner condition="context/product/required:launchpad.Edit">
       You can change this in the
       <a tal:attributes="href string:${context/product/fmt:url}/+edit">
-        project settings</a>.
+        project settings</a>. (<a href="/+help/getting-started-for-your-project.html" target="help">Getting started with translating your project in Launchpad</a>)
     </tal:admin_or_owner>
   </p>
   <p>
