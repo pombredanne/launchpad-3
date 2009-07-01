@@ -42,7 +42,8 @@
     (templates and translations) that it finds in
     <strong><tal:series replace="structure view/series_title">
       Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
-
+      (<a href="https://help.launchpad.net/Translations/ImportPolicy">Read the
+      translations import policy</a>)
   </p>
   <p tal:condition="not:view/has_imports_enabled" id="settings-display">
   <img src="/@@/info" class="inline-icon" />
