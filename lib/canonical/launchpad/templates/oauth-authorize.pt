@@ -38,7 +38,7 @@
               do you want to grant?</p>
 
             <table>
-              <tr tal:repeat="action view/actions">
+              <tr tal:repeat="action view/visible_actions">
                 <td style="text-align: right">
                   <tal:action replace="structure action/render" />
                 </td>

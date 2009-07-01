@@ -8,7 +8,7 @@
   redirects to the mailing lists in case that is incorrect.
 </tal:comment>
 
-<tal:content define="potemplates context/getCurrentTranslationTemplates">
+<tal:content define="potemplates view/potemplates">
 
   <tal:block condition="not: potemplates">
     <h2>No translatable templates available</h2>
