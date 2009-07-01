@@ -421,6 +421,7 @@ class DecoratedCodeReviewVoteReference:
         is_mergable = self.context.branch_merge_proposal.isMergable()
         self.can_change_review = (user == context.reviewer) and is_mergable
         branch = context.branch_merge_proposal.source_branch
+        self.trusted = (user is not None and user.inTeam(branch.reviewer))
         if user is None:
             self.user_can_review = False
         else:
