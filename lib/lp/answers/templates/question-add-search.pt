@@ -38,6 +38,7 @@
 
     <div class="actions" metal:fill-slot="buttons">
       <input tal:replace="structure view/continue_action/render" />
+      or <a tal:attributes="href view/cancel_url">Cancel</a>
     </div>
 
   </metal:form>

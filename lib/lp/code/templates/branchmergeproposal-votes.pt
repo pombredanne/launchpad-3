@@ -58,16 +58,6 @@
         </tal:vote-link>
       </td>
     </tr>
-    <tr tal:condition="view/show_user_review_link">
-      <td class="greylink">
-        <tal:user replace="structure view/user/fmt:link:mainsite"/>
-      </td>
-      <td colspan="2"></td>
-      <td>
-        <a href="+review">[Review]</a>
-      </td>
-    </tr>
-
     <tr>
       <td colspan="4" style="padding-top: 1em; patting-bottom: 0.5em">
         Review <a href="https://help.launchpad.net/Code/Review"

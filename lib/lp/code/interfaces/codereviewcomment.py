@@ -40,7 +40,7 @@ class ICodeReviewComment(Interface):
 
     vote = exported(
         Choice(
-            title=_('Reviewer says'), required=False,
+            title=_('Review'), required=False,
             vocabulary=CodeReviewVote))
 
     vote_tag = exported(
