@@ -1190,8 +1190,6 @@ class IPersonViewRestricted(Interface):
                 "Your name as you would like it displayed throughout "
                 "Launchpad. Most people use their full name here.")),
         exported_as='display_name')
-    browsername = Attribute(
-        'Return a textual name suitable for display in a browser.')
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     active_member_count = Attribute(

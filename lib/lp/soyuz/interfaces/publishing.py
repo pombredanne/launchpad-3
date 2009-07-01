@@ -341,6 +341,34 @@ class IPublishing(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
+    def getAncestry(archive=None, distroseries=None, pocket=None,
+                    status=None):
+        """Return the most recent publication of the same source or binary.
+
+        If a suitable ancestry could not be found, None is returned.
+
+        It optionally accepts parameters for adjusting the publishing
+        context, if not given they default to the current context.
+
+        :param archive: optional `IArchive`, defaults to the context archive.
+        :param distroseries: optional `IDistroSeries`, defaults to the
+            context distroseries.
+        :param pocket: optional `PackagePublishingPocket`, defaults to any
+            pocket.
+        :param status: optional `PackagePublishingStatus` or a collection of
+            them, defaults to `PackagePublishingStatus.PUBLISHED`
+        """
+
+    def overrideFromAncestry():
+        """Set the right published component from publishing ancestry.
+
+        Start with the publishing records and fall back to the original
+        uploaded package if necessary.
+
+        :raise: AssertionError if the context publishing record is not in
+            PENDING status.
+        """
+
 
 class IFilePublishing(Interface):
     """Base interface for *FilePublishing classes"""

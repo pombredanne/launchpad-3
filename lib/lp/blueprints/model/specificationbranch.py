@@ -30,7 +30,6 @@ class SpecificationBranch(SQLBase):
     specification = ForeignKey(dbName="specification",
                                foreignKey="Specification", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
-    summary = StringCol(dbName="summary", notNull=False, default=None)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',

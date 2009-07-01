@@ -9,14 +9,17 @@ __all__ = [
     ]
 from textwrap import TextWrapper
 
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, DropdownWidget
 from zope.interface import Interface, implements
 from zope.schema import Text
 
 from canonical.cachedproperty import cachedproperty
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
     LaunchpadView, Link)
@@ -80,6 +83,27 @@ class CodeReviewCommentView(LaunchpadView):
     """Standard view of a CodeReviewComment"""
     __used_for__ = ICodeReviewComment
 
+
+    @cachedproperty
+    def comment_author(self):
+        """The author of the comment."""
+        return self.context.message.owner
+
+    @cachedproperty
+    def has_body(self):
+        """Is there body text?"""
+        return bool(self.body_text)
+
+    @cachedproperty
+    def body_text(self):
+        """Get the body text for the message."""
+        return self.context.message_body
+
+    @cachedproperty
+    def comment_date(self):
+        """The date of the comment."""
+        return self.context.message.datecreated
+
     # Should the comment be shown in full?
     full_comment = True
     # Show comment expanders?
@@ -135,15 +159,25 @@ class CodeReviewCommentSummary(CodeReviewCommentView):
 class IEditCodeReviewComment(Interface):
     """Interface for use as a schema for CodeReviewComment forms."""
 
-    comment = Text(title=_('Comment'), required=True)
+    vote = copy_field(ICodeReviewComment['vote'], required=False)
+
+    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+
+    comment = Text(title=_('Comment'), required=False)
 
 
 class CodeReviewCommentAddView(LaunchpadFormView):
     """View for adding a CodeReviewComment."""
 
+    class MyDropWidget(DropdownWidget):
+        "Override the default no-value display name to -Select-."
+        _messageNoValue = '-Select-'
+
     schema = IEditCodeReviewComment
 
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+    custom_widget('vote', MyDropWidget)
+
 
     @property
     def initial_values(self):
@@ -185,7 +219,8 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         """Create the comment..."""
         comment = self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
-            parent=self.reply_to)
+            parent=self.reply_to, vote=data['vote'],
+            review_type=data['review_type'])
 
     @property
     def next_url(self):

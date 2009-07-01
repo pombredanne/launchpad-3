@@ -106,8 +106,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branch_b = self.factory.makeProductBranch(product=badger)
         branch_c = self.factory.makePersonalBranch()
         self.assertEqual(
-            [branch_a, branch_b, branch_c],
-            list(self.all_branches.getBranches()
+            sorted([branch_a, branch_b, branch_c]),
+            sorted(self.all_branches.getBranches()
                  .order_by(Branch.target_suffix)))
 
     def test_count_respects_visibleByUser_filter(self):
@@ -175,6 +175,35 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         collection = self.all_branches.inSourcePackage(branch.sourcepackage)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_in_distribution_source_package(self):
+        # 'inDistributionSourcePackage' returns a new collection that only has
+        # branches for the source package across any distroseries of the
+        # distribution.
+        series_one = self.factory.makeDistroRelease()
+        series_two = self.factory.makeDistroRelease(
+            distribution=series_one.distribution)
+        package = self.factory.makeSourcePackageName()
+        sourcepackage_one = self.factory.makeSourcePackage(
+            sourcepackagename=package, distroseries=series_one)
+        sourcepackage_two = self.factory.makeSourcePackage(
+            sourcepackagename=package, distroseries=series_two)
+        sourcepackage_other_distro = self.factory.makeSourcePackage(
+            sourcepackagename=package)
+        branch = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage_one)
+        branch2 = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage_two)
+        branch3 = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage_other_distro)
+        branch4 = self.factory.makePackageBranch()
+        branch5 = self.factory.makeAnyBranch()
+        distro_source_package = self.factory.makeDistributionSourcePackage(
+            sourcepackagename=package, distribution=series_one.distribution)
+        collection = self.all_branches.inDistributionSourcePackage(
+            distro_source_package)
+        self.assertEqual(
+            sorted([branch, branch2]), sorted(collection.getBranches()))
+
     def test_withLifecycleStatus(self):
         # 'withLifecycleStatus' returns a new collection that only has
         # branches with the given lifecycle statuses.
@@ -190,7 +219,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             BranchLifecycleStatus.DEVELOPMENT,
             BranchLifecycleStatus.MATURE)
         self.assertEqual(
-            set([branch1, branch3, branch4]), set(collection.getBranches()))
+            sorted([branch1, branch3, branch4]),
+            sorted(collection.getBranches()))
 
     def test_registeredBy(self):
         # 'registeredBy' returns a new collection that only has branches that
@@ -254,8 +284,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branches = self.all_branches.withBranchType(
             BranchType.HOSTED, BranchType.MIRRORED)
         self.assertEqual(
-            set([hosted_branch1, hosted_branch2, mirrored_branch]),
-            set(branches.getBranches()))
+            sorted([hosted_branch1, hosted_branch2, mirrored_branch]),
+            sorted(branches.getBranches()))
 
     def test_scanned(self):
         scanned_branch = self.factory.makeAnyBranch()
@@ -316,9 +346,9 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # Without the visibleByUser filter, all branches are in the
         # collection.
         self.assertEqual(
-            set([self.public_branch, self.private_branch1,
+            sorted([self.public_branch, self.private_branch1,
                  self.private_branch2]),
-            set(self.all_branches.getBranches()))
+            sorted(self.all_branches.getBranches()))
 
     def test_anonymous_sees_only_public(self):
         # Anonymous users can see only public branches.
@@ -345,8 +375,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         owner = removeSecurityProxy(self.private_branch1).owner
         branches = self.all_branches.visibleByUser(owner)
         self.assertEqual(
-            set([self.public_branch, self.private_branch1]),
-            set(branches.getBranches()))
+            sorted([self.public_branch, self.private_branch1]),
+            sorted(branches.getBranches()))
 
     def test_owner_member_sees_own_branches(self):
         # Members of teams that own branches can see branches owned by those
@@ -357,14 +387,15 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             owner=team, private=True, name='team')
         branches = self.all_branches.visibleByUser(team_owner)
         self.assertEqual(
-            set([self.public_branch, private_branch]),
-            set(branches.getBranches()))
+            sorted([self.public_branch, private_branch]),
+            sorted(branches.getBranches()))
 
     def test_launchpad_services_sees_all(self):
         # The LAUNCHPAD_SERVICES special user sees *everything*.
         branches = self.all_branches.visibleByUser(LAUNCHPAD_SERVICES)
         self.assertEqual(
-            set(self.all_branches.getBranches()), set(branches.getBranches()))
+            sorted(self.all_branches.getBranches()),
+            sorted(branches.getBranches()))
 
     def test_admins_see_all(self):
         # Launchpad administrators see *everything*.
@@ -374,7 +405,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         admin_team.addMember(admin, admin_team.teamowner)
         branches = self.all_branches.visibleByUser(admin)
         self.assertEqual(
-            set(self.all_branches.getBranches()), set(branches.getBranches()))
+            sorted(self.all_branches.getBranches()),
+            sorted(branches.getBranches()))
 
     def test_bazaar_experts_see_all(self):
         # Members of the bazaar_experts team see *everything*.
@@ -384,7 +416,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         bzr_experts.addMember(expert, bzr_experts.teamowner)
         branches = self.all_branches.visibleByUser(expert)
         self.assertEqual(
-            set(self.all_branches.getBranches()), set(branches.getBranches()))
+            sorted(self.all_branches.getBranches()),
+            sorted(branches.getBranches()))
 
     def test_subscribers_can_see_branches(self):
         # A person subscribed to a branch can see it, even if it's private.
@@ -395,8 +428,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             CodeReviewNotificationLevel.NOEMAIL)
         branches = self.all_branches.visibleByUser(subscriber)
         self.assertEqual(
-            set([self.public_branch, self.private_branch1]),
-            set(branches.getBranches()))
+            sorted([self.public_branch, self.private_branch1]),
+            sorted(branches.getBranches()))
 
     def test_subscribed_team_members_can_see_branches(self):
         # A person in a team that is subscribed to a branch can see that
@@ -413,8 +446,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # subscribed to.
         branches = self.all_branches.visibleByUser(team_owner)
         self.assertEqual(
-            set([self.public_branch, private_branch]),
-            set(branches.getBranches()))
+            sorted([self.public_branch, private_branch]),
+            sorted(branches.getBranches()))
 
 
 class TestBranchMergeProposals(TestCaseWithFactory):
@@ -456,7 +489,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
             target_branch=target, source_branch=branch3)
         collection = self.all_branches.ownedBy(person)
         proposals = collection.getMergeProposals()
-        self.assertEqual(set([mp1, mp2]), set(proposals))
+        self.assertEqual(sorted([mp1, mp2]), sorted(proposals))
 
     def test_merge_proposals_in_product(self):
         mp1 = self.factory.makeBranchMergeProposal()
@@ -485,7 +518,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         proposals = self.all_branches.getMergeProposals(
             [BranchMergeProposalStatus.WORK_IN_PROGRESS,
              BranchMergeProposalStatus.NEEDS_REVIEW])
-        self.assertEqual(set([mp1, mp2]), set(proposals))
+        self.assertEqual(sorted([mp1, mp2]), sorted(proposals))
 
     def test_status_restriction_with_product_filter(self):
         # getMergeProposals returns the merge proposals with a particular
@@ -637,7 +670,7 @@ class TestSearch(TestCaseWithFactory):
         branch2 = self.factory.makeAnyBranch(name='foo')
         not_branch = self.factory.makeAnyBranch()
         search_results = self.collection.search('foo')
-        self.assertEqual(set([branch1, branch2]), set(search_results))
+        self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
 
     def test_match_sub_branch_name(self):
         # search returns all branches which have a name of which the search
@@ -646,7 +679,7 @@ class TestSearch(TestCaseWithFactory):
         branch2 = self.factory.makeAnyBranch(name='foob')
         not_branch = self.factory.makeAnyBranch()
         search_results = self.collection.search('foo')
-        self.assertEqual(set([branch1, branch2]), set(search_results))
+        self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
 
     def test_match_exact_owner_name(self):
         # search returns all branches which have an owner with a name matching
@@ -656,7 +689,7 @@ class TestSearch(TestCaseWithFactory):
         branch2 = self.factory.makeAnyBranch(owner=person)
         not_branch = self.factory.makeAnyBranch()
         search_results = self.collection.search('foo')
-        self.assertEqual(set([branch1, branch2]), set(search_results))
+        self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
 
     def test_match_sub_owner_name(self):
         # search returns all branches that have an owner name where the search
@@ -667,7 +700,7 @@ class TestSearch(TestCaseWithFactory):
         branch2 = self.factory.makeAnyBranch(owner=person2)
         not_branch = self.factory.makeAnyBranch()
         search_results = self.collection.search('foo')
-        self.assertEqual(set([branch1, branch2]), set(search_results))
+        self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
 
     def test_match_exact_product_name(self):
         # search returns all branches that have a product name where the
@@ -677,7 +710,7 @@ class TestSearch(TestCaseWithFactory):
         branch2 = self.factory.makeAnyBranch(product=product)
         not_branch = self.factory.makeAnyBranch()
         search_results = self.collection.search('foo')
-        self.assertEqual(set([branch1, branch2]), set(search_results))
+        self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
 
     def test_match_sub_product_name(self):
         # search returns all branches that have a product name where the
@@ -688,7 +721,7 @@ class TestSearch(TestCaseWithFactory):
         branch2 = self.factory.makeProductBranch(product=product2)
         not_branch = self.factory.makeAnyBranch()
         search_results = self.collection.search('foo')
-        self.assertEqual(set([branch1, branch2]), set(search_results))
+        self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
 
     def test_match_sub_distro_name(self):
         # search returns all branches that have a distro name where the search
