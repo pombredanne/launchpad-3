@@ -31,7 +31,8 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.translationmessage import TranslationMessage
+from canonical.launchpad.database.translationmessage import (
+    TranslationMessage, make_plurals_sql_fragment)
 from canonical.launchpad.database.translationtemplateitem import (
     TranslationTemplateItem)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -708,9 +709,12 @@ class POFile(SQLBase, POFileMixIn):
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
         clauses = self._getClausesForPOFileMessages()
+        msgstr_clause =  make_plurals_sql_fragment(
+            "TranslationMessage.msgstr%(form)d IS NOT NULL", "OR")
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             'TranslationMessage.is_current IS NOT TRUE',
+            "(%s)" % msgstr_clause
             ])
 
         variant_clause = self._getLanguageVariantClause(table='diverged')
