@@ -73,7 +73,8 @@ from lp.code.interfaces.branchcollection import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
-
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks)
 from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -1374,6 +1375,67 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView):
             branches.setdefault(branch.distroseries, []).append(branch)
         return branches
 
+    def _getOfficialBranches(self):
+        """Get all the official branchs for the disro source package.
+
+        Return a dict of distro series to a list of branches.
+
+        The branches are ordered by official pocket.
+        """
+        link_set = getUtility(IFindOfficialBranchLinks)
+        links = link_set.findForDistributionSourcePackage(self.context)
+        # Remember it is possible that the linked branch is not visible by the
+        # user.  Unlikely, but possible.
+        visible_links = [
+            link for link in links
+            if check_permission('launchpad.View', link.branch)]
+        # Sort into distroseries.
+        distro_links = {}
+        for link in visible_links:
+            distro_links.setdefault(link.distroseries, []).append(link)
+        # For each distro series, we only want the "best" pocket if one branch
+        # is linked to more than one pocket.  Best here means smaller value.
+        official_branches = {}
+        for key, value in distro_links.iteritems():
+            ordered = sorted(value, key=attrgetter('pocket'))
+            seen_branches = set()
+            branches = []
+            for link in ordered:
+                if link.branch not in seen_branches:
+                    branches.append(link.branch)
+                    seen_branches.add(link.branch)
+            official_branches[key] = branches
+        return official_branches
+
+    def _getSeriesBranches(self, official_branches, branches):
+        """Return the "best" five branches."""
+        # Sort the branches by the last modified date, and ignore any that are
+        # official.
+        ordered_branches = sorted(
+            [branch for branch in branches
+             if branch not in official_branches],
+            key=attrgetter('date_last_modified'), reverse=True)
+        # Start with the assumption that we want at most non-official
+        # branches.
+        num_branches = len(ordered_branches)
+        non_official_count = min(3, num_branches)
+        # Given that number, we want to make up to five using official
+        # branches.
+        official_count = max(2, (5 - non_official_count))
+        # But we can only have as many as we have.
+        num_official = len(official_branches)
+        official_count = min(num_official, official_count)
+        # If there are less than 2 official branches, top up with unofficial
+        # ones.
+        non_official_count = max(non_official_count, 5 - official_count)
+        branches = (
+            official_branches[:official_count] +
+            ordered_branches[:non_official_count])
+        more_count = max(0,
+            num_branches + num_official
+            - official_count - non_official_count)
+        return branches, more_count
+
     @cachedproperty
     def groups(self):
         """Return a list of dicts containg series and branches.
@@ -1396,12 +1458,16 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView):
         """
         result = []
         branches = self._getBranchDict()
+        official_branches = self._getOfficialBranches()
         for series in self.context.distribution.serieses:
             if series in branches:
+                branches, more_count = self._getSeriesBranches(
+                    official_branches.get(series, []),
+                    branches.get(series, []))
                 result.append(
                     {'distroseries': series,
-                     'branches': branches[series],
-                     'more-branch-count': 0})
+                     'branches': branches,
+                     'more-branch-count': more_count})
         return result
 
 
