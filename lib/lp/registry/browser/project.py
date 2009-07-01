@@ -391,7 +391,8 @@ class ProjectGroupAddStepOne(ProjectAddStepOne):
             self.context.displayname)
 
     @property
-    def get_next_step(self):
+    def _next_step(self):
+        """See `ProjectAddStepOne`."""
         return ProjectGroupAddStepTwo
 
 

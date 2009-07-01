@@ -1530,12 +1530,18 @@ class ProjectAddStepOne(StepView):
     search_results_count = 0
 
     @property
-    def get_next_step(self):
+    def _next_step(self):
+        """Define the next step.
+
+        Subclasses can override this method to avoid having to override the
+        more complicated `main_action` method for customization.  The actual
+        property `next_step` must not be set before `main_action` is called.
+        """
         return ProjectAddStepTwo
 
     def main_action(self, data):
         """See `MultiStepView`."""
-        self.next_step = self.get_next_step
+        self.next_step = self._next_step
         self.request.form['displayname'] = data['displayname']
         self.request.form['name'] = data['name'].lower()
         self.request.form['summary'] = data['summary']
