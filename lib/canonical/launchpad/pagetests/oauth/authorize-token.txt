@@ -71,9 +71,47 @@ This page contains one submit button for each item of OAuthPermission.
     >>> len(actions) == len(OAuthPermission.items)
     True
 
-An application, when asking to access Launchpad on a user's behalf may
-also specify a certain context, so that the access granted by the user
-is restricted to things related to that context.
+An application, when asking to access Launchpad on a user's behalf,
+may restrict the user to certain items of OAuthPermission. This
+prevents annoying cases where the user grants a level of permission
+that isn't enough for the application. The user always has the option
+to deny permission altogether.
+
+    >>> def print_access_levels(allow_permission):
+    ...     browser.open(
+    ...         "http://launchpad.dev/+authorize-token?%s&%s"
+    ...         % (urlencode(params), allow_permission))
+    ...     main_content = find_tag_by_id(browser.contents, 'maincontent')
+    ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
+    ...     for action in actions:
+    ...         print action['value']
+
+    >>> print_access_levels(
+    ...     'allow_permission=WRITE_PUBLIC&allow_permission=WRITE_PRIVATE')
+    No Access
+    Change Non-Private Data
+    Change Anything
+
+If an application doesn't specify any valid access levels, or only
+specifies the UNAUTHORIZED access level, Launchpad will show all the
+access levels.
+
+    >>> print_access_levels('')
+    No Access
+    Read Non-Private Data
+    Change Non-Private Data
+    Read Anything
+    Change Anything
+
+    >>> print_access_levels('allow_permission=UNAUTHORIZED')
+    No Access
+    Read Non-Private Data
+    Change Non-Private Data
+    Read Anything
+    Change Anything
+
+An application may also specify a context, so that the access granted
+by the user is restricted to things related to that context.
 
     >>> params_with_context = {'lp.context': 'firefox'}
     >>> params_with_context.update(params)
@@ -84,6 +122,40 @@ is restricted to things related to that context.
     >>> print extract_text(main_content)
     Authorize application to access Launchpad on your behalf
     The application...wants to access things related to Mozilla Firefox...
+
+A client other than a web browser may request a JSON representation of
+the list of authentication levels.
+
+    >>> import simplejson
+    >>> from canonical.launchpad.testing.pages import setupBrowser
+
+    >>> json_browser = setupBrowser()
+    >>> json_browser.addHeader('Accept', 'application/json')
+    >>> json_browser.addHeader('Authorization',
+    ...     'Basic test@canonical.com:test')
+    >>> json_browser.open(
+    ...     "http://launchpad.dev/+authorize-token?%s"
+    ...     % urlencode(params))
+    >>> json_token = simplejson.loads(json_browser.contents)
+    >>> sorted(json_token.keys())
+    [u'access_levels', u'oauth_token', u'oauth_token_consumer']
+
+    >>> sorted((level['value'], level['title'])
+    ...        for level in json_token['access_levels'])
+    [(u'READ_PRIVATE', u'Read Anything'),
+     (u'READ_PUBLIC', u'Read Non-Private Data'),
+     (u'UNAUTHORIZED', u'No Access'),
+     (u'WRITE_PRIVATE', u'Change Anything'),
+     (u'WRITE_PUBLIC', u'Change Non-Private Data')]
+
+    >>> json_browser.open(
+    ...     ("http://launchpad.dev/+authorize-token?%s"
+    ...      "&allow_permission=READ_PRIVATE") % urlencode(params))
+    >>> json_token = simplejson.loads(json_browser.contents)
+    >>> sorted((level['value'], level['title'])
+    ...        for level in json_token['access_levels'])
+    [(u'READ_PRIVATE', u'Read Anything'),
+     (u'UNAUTHORIZED', u'No Access')]
 
 Once the user authorizes the application to access Launchpad on his
 behalf, we issue a redirect to the given oauth_callback (if it was

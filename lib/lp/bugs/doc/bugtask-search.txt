@@ -588,7 +588,7 @@ Searching for bugs with any of the tags returns both of them.
     >>> def search_tasks_and_print_bugs(user=None, **args):
     ...     params = BugTaskSearchParams(user=user, **args)
     ...     tasks = firefox.searchTasks(params)
-    ...     bugs = set(task.bug for task in tasks)
+    ...     bugs = (task.bug for task in tasks)
     ...     bugs = sorted(bugs, key=attrgetter('id'))
     ...     for bug in bugs:
     ...         print "%s [%s]" % (bug.title, ", ".join(bug.tags))
@@ -667,6 +667,18 @@ all bugs with tags, but without test-tag-1:
     >>> search_tasks_and_print_bugs(tag=all('*', '-test-tag-1'))
     Reflow problems with complex page layouts [layout-test]
     Firefox install instructions should be complete [doc]
+
+The following is very similar; it finds all bugs with tags, *or*
+without test-tag-1:
+
+    >>> search_tasks_and_print_bugs(tag=any('*', '-test-tag-1'))
+    Firefox does not support SVG []
+    Reflow problems with complex page layouts [layout-test]
+    Firefox install instructions should be complete [doc]
+    Firefox crashes when Save As dialog for a nonexistent window is closed []
+    Some bug []
+    test bug a [test-tag-1, test-tag-2]
+    test bug b [test-tag-1]
 
 The following finds all untagged bugs and bugs with the doc tag.
 

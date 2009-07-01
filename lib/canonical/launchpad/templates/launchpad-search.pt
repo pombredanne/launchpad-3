@@ -56,7 +56,7 @@
                   by
                   <a
                     tal:attributes="href view/bug/owner/fmt:url"
-                    tal:content="view/bug/owner/browsername">Foo Bar</a>
+                    tal:content="view/bug/owner/displayname">Foo Bar</a>
                 </div>
               </li>
 
