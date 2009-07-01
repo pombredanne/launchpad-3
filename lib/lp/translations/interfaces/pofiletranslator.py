@@ -13,8 +13,8 @@ from zope.interface import Interface
 from zope.schema import Datetime, Int, Object
 
 from canonical.launchpad import _
-from lp.translations.interfaces.pofile import IPOFile
 from lp.registry.interfaces.person import IPerson
+from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage)
 

@@ -871,7 +871,7 @@ class POTemplate(SQLBase, RosettaStats):
                         logger.warn(
                             "Statistics update failed: %s" % unicode(error))
 
-        template = helpers.get_email_template(template_mail)
+        template = helpers.get_email_template(template_mail, 'translations')
         message = template % replacements
         return (subject, message)
 

@@ -11,7 +11,8 @@ import gettextpo
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.interfaces.translationmessage import ITranslationMessageSet
+from lp.translations.interfaces.translationmessage import (
+    ITranslationMessageSet)
 from canonical.launchpad.helpers import validate_translation
 from lp.services.scripts.base import LaunchpadScript
 

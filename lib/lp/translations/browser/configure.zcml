@@ -494,7 +494,7 @@
             for="*"
             permission="launchpad.Edit"
             name="+object-reassignment"
-            template="../templates/object-reassignment.pt"
+            template="../../../canonical/launchpad/templates/object-reassignment.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"

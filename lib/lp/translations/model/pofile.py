@@ -1142,7 +1142,7 @@ class POFile(SQLBase, POFileMixIn):
             # Now we update the statistics after this new import
             self.updateStatistics()
 
-        template = helpers.get_email_template(template_mail)
+        template = helpers.get_email_template(template_mail, 'translations')
         message = template % replacements
         return (subject, message)
 

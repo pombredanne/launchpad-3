@@ -16,7 +16,7 @@ from zope.component import getUtility
 
 from canonical.database.postgresql import drop_tables
 from canonical.database.sqlbase import cursor, sqlvalues
-from lp.registry.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces import IPersonSet
 from lp.translations.interfaces.translationmessage import RosettaTranslationOrigin
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)

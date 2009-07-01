@@ -10,12 +10,17 @@ Only current translations are copied.
 """
 
 import _pythonpath
+
+#from zope.configuration import xmlconfig
+#xmlconfig.file('script.zcml')
+
 import sys
 from zope.component import getUtility
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.copy_distroseries_translations import (
+from lp.translations.scripts.copy_distroseries_translations import (
     copy_distroseries_translations)
 
 

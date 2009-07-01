@@ -572,13 +572,17 @@ def positiveIntOrZero(value):
     return value
 
 
-def get_email_template(filename):
+def get_email_template(filename, app=None):
     """Returns the email template with the given file name.
 
     The templates are located in 'lib/canonical/launchpad/emailtemplates'.
     """
-    base = os.path.dirname(canonical.launchpad.__file__)
-    fullpath = os.path.join(base, 'emailtemplates', filename)
+    if app is None:
+        base = os.path.dirname(canonical.launchpad.__file__)
+        fullpath = os.path.join(base, 'emailtemplates', filename)
+    else:
+        base = os.path.dirname(lp.__file__)
+        fullpath = os.path.join(base, app, 'emailtemplates', filename)
     return open(fullpath).read()
 
 

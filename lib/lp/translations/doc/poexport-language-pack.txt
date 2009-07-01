@@ -123,10 +123,10 @@ that last part based on .po files and the original en-US.xpi file. To
 achieve that, we export all translations for XPI files in a special
 directory: xpi/translation_domain/
 
-    >>> from canonical.launchpad.database import SourcePackageName
-    >>> from canonical.launchpad.database import POTemplate
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
+    >>> from lp.translations.model.potemplate import POTemplate
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
 Get hold of a person.
 
@@ -143,7 +143,7 @@ Get the Grumpy distro series.
 We need to import an XPI template and a translation to see those files
 exported as part of language packs.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from lp.translations.utilities.tests.test_xpi_import \
     ...     import get_en_US_xpi_file_to_import
