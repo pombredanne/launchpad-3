@@ -1029,6 +1029,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.can_confirm_and_dismiss = False
         self.can_dismiss_on_empty = False
         self.can_dismiss_on_plural = False
+        self.can_dismiss_packaged = False
 
         # Set up alternative language variables.
         # XXX: kiko 2006-09-27:
@@ -1131,10 +1132,10 @@ class CurrentTranslationMessageView(LaunchpadView):
         """Set dismissal flags.
 
         The flags are all initialized as False."""
+        # Only official translators can dismiss anything.
         if not self.user_is_official_translator:
             return
 
-        has_local_suggestions = len(local_suggestions) > 0
         if imported is not None:
             date_reviewed = self.context.date_reviewed
             if date_reviewed is None:
@@ -1144,10 +1145,13 @@ class CurrentTranslationMessageView(LaunchpadView):
         else:
             has_new_imported = False
 
-        if not (has_local_suggestions or has_new_imported):
+        # If there are no local suggestion or a newly imported string,
+        # nothing can be dismissed.
+        if not (len(local_suggestions) > 0 or has_new_imported):
             return
 
         # OK, let's set some flags.
+        self.can_dismiss_packaged = has_new_imported
         if self.is_plural:
             self.can_dismiss_on_plural = True
         else:
@@ -1155,7 +1159,6 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.can_dismiss_on_empty = True
             else:
                 self.can_confirm_and_dismiss = True
-
 
     def _buildAllSuggestions(self):
         """Builds all suggestions and puts them into suggestions_block.
@@ -1468,6 +1471,21 @@ class CurrentTranslationMessageView(LaunchpadView):
         If there is no limit, we return None.
         """
         return 3
+
+    @property
+    def dismissable_class(self):
+        """The class string for dismissable parts."""
+        return "%s_dismissable %s_dismissable_button" % (
+                    self.html_id, self.html_id)
+
+    @property
+    def dismissable_class_packaged(self):
+        """The class string for dismissable packaged translations."""
+        if self.can_dismiss_packaged:
+            return self.dismissable_class
+        # Buttons are always dismissable.
+        return "%s_dismissable_button" % self.html_id
+
 
 
 class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
