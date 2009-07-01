@@ -127,7 +127,7 @@ class BranchNavigation(Navigation):
         """Traverses to an `IBugBranch`."""
         bug = getUtility(IBugSet).get(bugid)
 
-        for bug_branch in bug.bug_branches:
+        for bug_branch in bug.linked_branches:
             if bug_branch.branch == self.context:
                 return bug_branch
 

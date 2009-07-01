@@ -589,7 +589,7 @@
                     displayname
                     activity
                     initial_message
-                    bug_branches
+                    linked_branches
                     watches
                     cves
                     cve_links
@@ -642,8 +642,8 @@
                     findCvesInText
                     newMessage
                     linkMessage
-                    addBranch
-                    removeBranch
+                    linkBranch
+                    unlinkBranch
                     addAttachment
                     unsubscribeFromDupes
                     subscribe
