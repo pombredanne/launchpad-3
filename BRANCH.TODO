@@ -18,3 +18,4 @@
      also thing the button should be replaced by the spinner
    - For some of the transitions, you could use the slider so it's less
      surprising
+     - Working on this: it's non-obvious how to make it work, though.
