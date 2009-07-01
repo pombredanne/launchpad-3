@@ -421,11 +421,6 @@ class ProjectGroupAddStepTwo(ProjectAddStepTwo):
             self.request.form['displayname'], self.request.form['name'],
             self.context.displayname)
 
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        super(ProjectGroupAddStepTwo, self).setUpFields()
-        self.form_fields = self.form_fields.omit('project')
-
 
 class ProjectAddProductView(ProductAddView):
     """The controlling view for project/+newproduct."""

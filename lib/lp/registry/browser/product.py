@@ -1551,7 +1551,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'project', 'licenses', 'license_info']
+                    'description', 'licenses', 'license_info']
     main_action_label = u'Complete Registration'
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -1562,9 +1562,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
-
-    custom_widget('project', VocabularyPickerWidget,
-                  header="Select a project group")
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
 
