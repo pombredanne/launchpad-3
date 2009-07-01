@@ -6,7 +6,7 @@ __metaclass__ = type
 from datetime import datetime
 import time
 
-from twisted.web import resource, static, error, util, server, proxy
+from twisted.web import resource, static, util, server, proxy
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
@@ -26,7 +26,7 @@ defaultResource = static.Data("""
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
-fourOhFour = error.NoResource('No such resource')
+fourOhFour = resource.NoResource('No such resource')
 
 
 class NotFound(Exception):
