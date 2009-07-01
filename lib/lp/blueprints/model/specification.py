@@ -644,8 +644,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
         notify(ObjectCreatedEvent(branch_link))
         return branch_link
 
-    def unlinkBranch(self, branch, unregistrant):
-        pass
+    def unlinkBranch(self, branch, user):
+        spec_branch = self.getBranchLink(branch)
+        spec_branch.destroySelf()
 
 
 class HasSpecificationsMixin:

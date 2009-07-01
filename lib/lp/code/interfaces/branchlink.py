@@ -1,11 +1,10 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
-
+# Copyright 2009 Canonical Ltd.  All rights reserved.
 """Interfaces for linking Specifications and Branches."""
 
 __metaclass__ = type
 
 __all__ = [
+    "IHasLinkedBranches",
     "ISpecificationBranch",
     "ISpecificationBranchSet",
     ]
@@ -46,10 +45,10 @@ class IHasLinkedBranches(Interface):
     @operation_parameters(
         branch=Reference(schema=IBranch))
     @export_write_operation()
-    def unlinkBranch(branch, unregistrant):
+    def unlinkBranch(branch, user):
         """Unlink a branch from this bug.
 
         :param branch: The branch being unlinked from.
-        :param unregistrant: The user unlinking the branch.
+        :param user: The user unlinking the branch.
         """
 
