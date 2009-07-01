@@ -581,6 +581,7 @@ def get_email_template(filename, app=None):
         base = os.path.dirname(canonical.launchpad.__file__)
         fullpath = os.path.join(base, 'emailtemplates', filename)
     else:
+        import lp
         base = os.path.dirname(lp.__file__)
         fullpath = os.path.join(base, app, 'emailtemplates', filename)
     return open(fullpath).read()
