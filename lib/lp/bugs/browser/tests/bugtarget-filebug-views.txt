@@ -43,6 +43,31 @@ directly.
     u'Test description.'
 
 
+== URLs to additional FileBug elements ==
+
+FileBugViewBase provides properties that return the URLs of further
+useful parts of the +filebug process.
+
+The advanced_filebug_url property returns the URL of the advanced
+filebug form for the context.
+
+    >>> print filebug_view.advanced_filebug_url
+    http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug-advanced
+
+The inline_filebug_form_url property returns the URL of the inline
+filebug form so that it may be loaded asynchronously.
+
+    >>> print filebug_view.inline_filebug_form_url
+    http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug-inline-form
+
+Similarly, the duplicate_search_url property returns the base URL for
+the duplicate search view, which can be used to load the list of
+possible duplicates for a bug asynchronously.
+
+    >>> print filebug_view.duplicate_search_url
+    http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug-show-similar
+
+
 == Adding extra info to filed bugs ==
 
 It's possible for bug reporting tools to upload a file with debug

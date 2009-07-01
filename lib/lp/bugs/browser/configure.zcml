@@ -85,6 +85,13 @@
             facet="bugs"
             permission="launchpad.AnyPerson"/>
         <browser:page
+            name="+filebug-inline-form"
+            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            class="lp.bugs.browser.bugtarget.FilebugShowSimilarBugsView"
+            template="../templates/bugtarget-filebug-inline-form.pt"
+            facet="bugs"
+            permission="launchpad.AnyPerson"/>
+        <browser:page
             name="+manage-official-tags"
             for="lp.bugs.interfaces.bugtarget.IOfficialBugTagTargetRestricted"
             class="lp.bugs.browser.bugtarget.OfficialBugTagsManageView"

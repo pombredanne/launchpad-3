@@ -42,7 +42,7 @@
 
       <div tal:condition="view/isPrivate" id="privacy" class="aside private"
       >This report will be private, though you can disclose it later.</div>
-      <h1>Report a bug</h1>
+      <h1 id="page-title">Report a bug</h1>
 
 <metal:not_uses_malone
     use-macro="context/@@+filebug-macros/not_uses_malone" />
@@ -95,6 +95,9 @@
         </td>
         <td>
           <input tal:replace="structure view/actions/field.actions.search/render" />
+          <span id="spinner" style="text-align: center; display: none;">
+            <img src="/@@/spinner" />
+          </span>
         </td>
       </tal:title_widget>
     </table>
@@ -106,19 +109,22 @@
     </div>
   </div>
 
-  <div id="possible-duplicates" style="display: none; text-align: left;">
-    <div id="spinner" style="text-align: center">
-      <img src="/@@/spinner" />
-    </div>
+  <div id="possible-duplicates" style="text-align: left;">
+  </div>
+  <div id="filebug-form-container" style="display: none;">
   </div>
 
-      <p>
-        &#187;
-        <a tal:attributes="href view/advanced_filebug_url"
-        >Advanced reporting options</a>
-        <a id="duplicate-search-url" href="/firefox/+filebug-show-similar"
-            style="display: none;"></a>
-      </p>
+  <p>
+    &#187;
+    <a tal:attributes="href view/advanced_filebug_url"
+    >Advanced reporting options</a>
+    <a id="filebug-form-url"
+        tal:attributes="href view/inline_filebug_form_url"
+        style="display: none;"></a>
+    <a id="duplicate-search-url"
+        tal:attributes="href view/duplicate_search_url"
+        style="display: none;"></a>
+  </p>
 
   <tal:most-common-bugs condition="view/most_common_bugs">
     <h2>Most Frequently Reported Bugs</h2>

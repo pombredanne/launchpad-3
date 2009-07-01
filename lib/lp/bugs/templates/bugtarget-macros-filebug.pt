@@ -492,8 +492,8 @@
 
 </metal:similar-bugs>
 
-<metal:similar-bugs-and-filebug-form
-    define-macro="show-similar-bugs-and-filebug-form">
+<metal:similar-bugs-and-filebug-button
+    define-macro="show-similar-bugs-and-filebug-button">
 
   <tal:similar-bugs condition="view/show_duplicate_list">
     <metal:similar-bugs
@@ -524,6 +524,13 @@
     </ul>
 
   </tal:similar-bugs>
+</metal:similar-bugs-and-filebug-button>
+
+<metal:similar-bugs-and-filebug-form
+    define-macro="show-similar-bugs-and-filebug-form">
+
+  <metal:similar-bugs
+      use-macro="context/@@+filebug-macros/show-similar-bugs-and-filebug-button" />
 
   <tal:submit-new-bug>
     <metal:basic_filebug_widgets

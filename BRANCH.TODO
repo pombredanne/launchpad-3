@@ -2,3 +2,8 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+ - Error handling.
+ - Fix the title field escaping nonsense.
+ - Deal with the frontpage +filebug.
+ - Neuter the form!

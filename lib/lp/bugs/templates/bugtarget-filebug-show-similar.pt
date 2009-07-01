@@ -3,8 +3,12 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
 
-  <div id="similar-bugs-list">
+  <tal:similar-bugs-list condition="view/similar_bugs">
     <metal:display-similar-bugs
-        use-macro="context/@@+filebug-macros/show-similar-bugs-and-filebug-form" />
+        use-macro="context/@@+filebug-macros/show-similar-bugs-and-filebug-button" />
+  </tal:similar-bugs-list>
+  <tal:no-similar-bugs>
+    <p>No similar bug reports were found.</p>
+  </tal:no-similar-bugs>
 
 </tal:root>

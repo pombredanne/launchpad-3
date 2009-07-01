@@ -670,6 +670,26 @@ class FileBugViewBase(LaunchpadFormView):
             url = urlappend(url, self.extra_data_token)
         return url
 
+    @property
+    def inline_filebug_form_url(self):
+        """The URL to the inline filebug form.
+
+        If a token was passed to this view, it will be be passed through
+        to the inline bug filing form via the returned URL.
+        """
+        url = urlappend(canonical_url(self.context), '+filebug-inline-form')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
+    @property
+    def duplicate_search_url(self):
+        """The URL to the inline duplicate search view."""
+        url = urlappend(canonical_url(self.context), '+filebug-show-similar')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
         if self.extra_data_token is not None:
@@ -799,6 +819,11 @@ class FileBugViewBase(LaunchpadFormView):
                             "content": content,
                             })
         return guidelines
+
+
+class FileBugInlineFormView(FileBugViewBase):
+    """A browser view for displaying the inline filebug form."""
+    schema = IBugAddForm
 
 
 class FileBugAdvancedView(FileBugViewBase):
