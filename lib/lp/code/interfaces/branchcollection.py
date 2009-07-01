@@ -89,6 +89,9 @@ class IBranchCollection(Interface):
     def inSourcePackage(package):
         """Restrict the collection to branches in 'package'."""
 
+    def inDistributionSourcePackage(distro_source_package):
+        """Restrict to branches in a 'package' for a 'distribution'."""
+
     def isJunk():
         """Restrict the collection to junk branches.
 

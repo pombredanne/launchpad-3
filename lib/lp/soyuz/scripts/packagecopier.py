@@ -28,7 +28,7 @@ from lp.soyuz.adapters.packagelocation import (
     build_package_location)
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import incomplete_building_status
+from lp.soyuz.interfaces.build import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingStatus, active_publishing_status)
@@ -175,22 +175,6 @@ def override_from_ancestry(pub_record):
     pub_record.secure_record.component = component
 
 
-def is_completely_built(source):
-    """Whether or not a source publication is completely built.
-
-    Check if all builds have quiesced before copying.
-    :param source: context `ISourcePackagePublishingHistory`.
-
-    :return: False if there is, at least, one incomplete build, True
-        otherwise.
-    """
-    for build in source.getBuilds():
-        if build.buildstate in incomplete_building_status:
-            return False
-
-    return True
-
-
 def compare_sources(source, ancestry):
     """Compare `ISourcePackagePublishingHistory` records versions.
 
@@ -294,10 +278,15 @@ def check_archive_conflicts(source, archive, series, include_binaries):
             include_binaries):
             continue
 
-        # Conflicting candidates building in a different series are a
-        # blocker for the copy. The copied source will certainly produce
-        # conflicting binaries.
-        if not is_completely_built(candidate):
+        # Conflicting candidates pending build or building in a different
+        # series are a blocker for the copy. The copied source will
+        # certainly produce conflicting binaries.
+        build_summary = candidate.getStatusSummaryForBuilds()
+        building_states = (
+            BuildSetStatus.NEEDSBUILD,
+            BuildSetStatus.BUILDING,
+            )
+        if build_summary['status'] in building_states:
             raise CannotCopy(
                 "same version already building in the destination archive "
                 "for %s" % candidate.distroseries.displayname)
@@ -307,9 +296,7 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # next publishing cycle to happen before copying the package.
         # The copy is only allowed when all built binaries are published,
         # this way there is no chance of a conflict.
-        unpublished_builds = candidate.getUnpublishedBuilds()
-        if (unpublished_builds.count() > 0 and
-            candidate.status in active_publishing_status):
+        if build_summary['status'] == BuildSetStatus.FULLYBUILT_PENDING:
             raise CannotCopy(
                 "same version has unpublished binaries in the destination "
                 "archive for %s, please wait for them to be published "

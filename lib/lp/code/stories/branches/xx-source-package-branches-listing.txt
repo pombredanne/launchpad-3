@@ -32,10 +32,46 @@ This takes us to the branch listing for that source package
 
 Both of the branches we made appear in the listing.
 
-    >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
-    ...     print extract_text(row)
+    >>> def print_branches(browser):
+    ...    table = find_tag_by_id(browser.contents, 'branchtable')
+    ...    for row in table.tbody.fetch('tr'):
+    ...        print extract_text(row)
+    >>> print_branches(browser)
     lp://dev/~owner1/distro/series/foo/branch1 ...
     lp://dev/~owner2/distro/series/foo/branch2 ...
 
 XXX: Show that the summary is beautiful.
+
+
+There is also a simple branch listing for the distribution source package that
+shows all branches for that source package across all series for the
+distribution.
+
+    >>> login(ANONYMOUS)
+    >>> distro = branch1.distroseries.distribution
+    >>> next_series = factory.makeDistroRelease(
+    ...     name='next', distribution=distro)
+    >>> source_package = factory.makeSourcePackage(
+    ...     sourcepackagename=branch1.sourcepackagename,
+    ...     distroseries=next_series)
+    >>> branch3 = factory.makePackageBranch(
+    ...     sourcepackage=source_package, owner=branch1.owner, name="branch3")
+    >>> distro_source_package = factory.makeDistributionSourcePackage(
+    ...     distribution=distro, sourcepackagename=branch1.sourcepackagename)
+    >>> distro_source_package_listing = canonical_url(
+    ...     distro_source_package, view_name="+branches")
+    >>> logout()
+
+    >>> browser.open(distro_source_package_listing)
+    >>> print_branches(browser)
+    lp://dev/~owner1/distro/series/foo/branch1 ...
+    lp://dev/~owner1/distro/next/foo/branch3 ...
+    lp://dev/~owner2/distro/series/foo/branch2 ...
+
+
+The code tab is enabled for distribution source packages.
+
+    >>> print_location_apps(browser.contents)
+    * Overview ...
+    * Code (selected) - http://code.launchpad.dev/distro/+source/foo
+    ...
