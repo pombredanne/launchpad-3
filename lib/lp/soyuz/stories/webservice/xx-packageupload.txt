@@ -66,10 +66,12 @@ that contain these file types.
     ...     warty['self_link'], 'getPackageUploads', {},
     ...     custom_type='raw-translations-static').jsonBody()
 
-Once we have the uploads, we can inspect the custom_file_urls property:
+Once we have the uploads, we can inspect the custom_file_urls property,
+which is a list of URLs to librarian files:
 
     >>> for entry in uploads['entries']:
+    ...     print entry['display_name']
     ...     print entry['custom_file_urls']
-    [u'http://.../custom1',
-     u'http://.../custom2']
+    custom1, custom2
+    [u'http://.../custom1', u'http://.../custom2']
 

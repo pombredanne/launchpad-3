@@ -1326,7 +1326,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             *(status_query_clause + archive_query_clause +
               pocket_query_clause + timestamp_query_clause +
               custom_type_query_clause)
-            ).order_by(Desc(PackageUpload.id))
+            ).order_by(Desc(PackageUpload.id)).config(distinct=True)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):
