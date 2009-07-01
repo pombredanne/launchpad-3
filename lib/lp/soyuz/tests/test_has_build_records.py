@@ -37,64 +37,52 @@ class TestCaseWithPublishedBuilds(TestCaseWithFactory):
         self.builds += gtg_src_hist.createMissingBuilds()
 
 
-class TestDistroSeriesHasBuildRecords(TestCaseWithPublishedBuilds):
-    """Test the DistroSeries implementation of
-       IHasBuildRecords.getBuildRecords().
+class TestHasBuildRecordsInterface(TestCaseWithPublishedBuilds):
+    """Tests the implementation of IHasBuildRecords by the
+       Distribution content class by default.
+
+       Inherit and set self.context to another content class to test it.
     """
     def setUp(self):
         """Use `SoyuzTestPublisher` to publish some sources in archives."""
-        super(TestDistroSeriesHasBuildRecords, self).setUp()
+        super(TestHasBuildRecordsInterface, self).setUp()
 
-        self.distroseries = self.publisher.distroseries
+        self.context = self.publisher.distroseries.distribution
 
     def testGetBuildRecordsNoArgs(self):
         # getBuildRecords() called without any arguments returns all builds.
-        builds = self.distroseries.getBuildRecords()
+        builds = self.context.getBuildRecords()
         num_results = builds.count()
         self.assertEquals(3, num_results, "Expected 3 builds but "
                                           "got %s" % num_results)
 
     def testGetBuildRecordsFilterByArchTag(self):
         # Build records can be filtered by architecture tag.
-        builds = self.distroseries.getBuildRecords(arch_tag="hppa")
-        num_results = builds.count()
-        self.assertEquals(0, num_results, "Expected 0 builds but "
-                                          "got %s" % num_results)
-
-        # Target one of the builds to hppa
-        self.builds[0].distroarchseries = self.distroseries['hppa']
-        builds = self.distroseries.getBuildRecords(arch_tag="hppa")
-        num_results = builds.count()
-        self.assertEquals(1, num_results, "Expected 1 build but "
-                                          "got %s" % num_results)
-
-
-class TestDistributionHasBuildRecords(TestCaseWithPublishedBuilds):
-    def setUp(self):
-        super(TestDistributionHasBuildRecords, self).setUp()
-
-        self.distribution = self.publisher.distroseries.distribution
-
-    def testGetBuildRecordsNoArgs(self):
-        # getBuildRecords() called without any arguments returns all builds.
-        builds = self.distribution.getBuildRecords()
-        num_results = builds.count()
-        self.assertEquals(3, num_results, "Expected 3 builds but "
-                                          "got %s." % num_results)
-
-    def testGetBuildRecordsFilterByArchTag(self):
-        # Build records can be filtered by architecture tag.
-        builds = self.distribution.getBuildRecords(arch_tag="hppa")
-        num_results = builds.count()
-        self.assertEquals(0, num_results, "Expected 0 builds but "
-                                          "got %s" % num_results)
 
         # Target one of the builds to hppa
         self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
-        builds = self.distribution.getBuildRecords(arch_tag="hppa")
+        builds = self.context.getBuildRecords(arch_tag="i386")
         num_results = builds.count()
-        self.assertEquals(1, num_results, "Expected 1 build but "
+        self.assertEquals(2, num_results, "Expected 2 build but "
                                           "got %s" % num_results)
+
+
+class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
+    """Test the DistroSeries implementation of IHasBuildRecords.
+    """
+    def setUp(self):
+        super(TestDistroSeriesHasBuildRecords, self).setUp()
+
+        self.context = self.publisher.distroseries
+
+
+class TestDistroArchSeriesHasBuildRecords(TestHasBuildRecordsInterface):
+    """Test the DistroArchSeries implementation of IHasBuildRecords.
+    """
+    def setUp(self):
+        super(TestDistroArchSeriesHasBuildRecords, self).setUp()
+
+        self.context = self.publisher.distroseries['i386']
 
 
 def test_suite():
