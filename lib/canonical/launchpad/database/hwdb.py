@@ -28,6 +28,8 @@ __all__ = [
     'HWVendorIDSet',
     'HWVendorName',
     'HWVendorNameSet',
+    'make_submission_device_statistics_clause',
+    '_userCanAccessSubmissionStormClause',
     ]
 
 import re
@@ -1274,4 +1276,3 @@ def _userCanAccessSubmissionStormClause(user):
                 HWSubmission.private))
         has_access = HWSubmission.ownerID.is_in(subselect)
         return Or(public, has_access)
-
