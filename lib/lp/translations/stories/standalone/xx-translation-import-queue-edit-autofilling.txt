@@ -3,11 +3,11 @@ of the Translation import queue reviewers.
 
 First, we need to feed the import queue.
 
-  >>> import canonical.launchpad
+  >>> import lp.translations
   >>> import os.path
   >>> test_file_name = os.path.join(
-  ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/translations/xx-translation-import-queue-edit-autofilling.tar.gz')
+  ...     os.path.dirname(lp.translations.__file__),
+  ...     'stories/standalone/xx-translation-import-queue-edit-autofilling.tar.gz')
   >>> tarball = open(test_file_name)
 
   >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')

@@ -6,11 +6,11 @@ translation import queue form.
 To get the filter widgets we will use their names directly because there
 is no human readable labels associated with them.
 
-    >>> import canonical.launchpad
+    >>> import lp.translations
     >>> import os.path
     >>> test_file_name = os.path.join(
-    ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'pagetests/translations/xx-translation-import-queue-filtering.tar.gz')
+    ...     os.path.dirname(lp.translations.__file__),
+    ...     'stories/standalone/xx-translation-import-queue-filtering.tar.gz')
     >>> tarball = open(test_file_name)
 
 Our star for this session is Carlos, who has full access rights to the

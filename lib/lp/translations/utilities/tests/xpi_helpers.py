@@ -15,7 +15,7 @@ import zipfile
 
 from textwrap import dedent
 
-import canonical.launchpad
+import lp.translations
 
 
 command_key_source_comment = dedent(u"""
@@ -47,7 +47,7 @@ def get_en_US_xpi_file_to_import(subdir):
 
     # Get the root path where the data to generate .xpi file is stored.
     test_root = os.path.join(
-        os.path.dirname(canonical.launchpad.__file__),
+        os.path.dirname(lp.translations.__file__),
         'utilities/tests/firefox-data', subdir)
 
     # First create a en-US.jar file to be included in XPI file.
