@@ -56,7 +56,7 @@ test the name field validator.
 
     >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
     There is 1 error.
-    Invalid name 'election_2100'. Names must start with a letter...
+    Invalid name 'election_2100'. Names must be at least two characters ...
 
 We fix the name, but swap the dates. Again a nice error message.
 

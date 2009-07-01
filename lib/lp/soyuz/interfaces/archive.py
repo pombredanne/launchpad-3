@@ -22,6 +22,7 @@ __all__ = [
     'IArchiveSet',
     'IArchiveSourceSelectionForm',
     'IDistributionArchive',
+    'InvalidComponent',
     'IPPA',
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
@@ -102,6 +103,10 @@ class ArchiveNotPrivate(Exception):
 
 class ComponentNotFound(Exception):
     """Invalid source name."""
+    webservice_error(400) #Bad request.
+
+class InvalidComponent(Exception):
+    """Invalid component name."""
     webservice_error(400) #Bad request.
 
 
@@ -467,6 +472,8 @@ class IArchivePublic(IHasOwner):
         :param component: An `IComponent` or textual component name.
         :return: An `IArchivePermission` which is the newly-created
             permission.
+        :raises InvalidComponent: if this archive is a PPA and the component
+            is not 'main'.
         """
 
     @operation_parameters(
@@ -1070,6 +1077,20 @@ class IArchiveSet(Interface):
 
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
+
+    def getPublicationsInArchives(source_package_name, archive_list,
+                                  distribution):
+        """Return a result set of publishing records for the source package.
+
+        :param source_package_name: an `ISourcePackageName` identifying the
+            source package for which the publishings will be returned.
+        :param archive_list: a list of at least one archive with which to
+            restrict the search.
+        :param distribution: the distribution by which the results will
+            be limited.
+        :return: a resultset of the `ISourcePackagePublishingHistory` objects
+            that are currently published in the given archives.
+        """
 
 
 class ArchivePurpose(DBEnumeratedType):

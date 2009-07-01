@@ -1,6 +1,6 @@
 """Tests for lp.registry.scripts.productreleasefinder.walker."""
 
-import cStringIO
+import StringIO
 import logging
 import unittest
 import urlparse
@@ -163,6 +163,41 @@ class WalkerBase_Base(unittest.TestCase):
             WalkerBase.FRAGMENTS = False
 
 
+class WalkerBase_walk(unittest.TestCase):
+    """Test the walk() method."""
+
+    def tearDown(self):
+        reset_logging()
+
+    def test_walk_UnicodeEncodeError(self):
+        """Verify that a UnicodeEncodeError is logged."""
+        from lp.registry.scripts.productreleasefinder.walker import (
+            WalkerBase)
+        class TestWalker(WalkerBase):
+
+            def list(self, sub_dir):
+                # Force the walker to handle an exception.
+                raise UnicodeEncodeError(
+                    'utf-8', u'source text', 0, 1, 'reason')
+
+            def open(self):
+                pass
+
+            def close(self):
+                pass
+
+        log_output = StringIO.StringIO()
+        logging.basicConfig(level=logging.WARNING)
+        logger = logging.getLogger()
+        logger.addHandler(logging.StreamHandler(log_output))
+        walker = TestWalker('http://example.org/foo', logger)
+        for dummy in walker:
+            pass
+        self.assertEqual(
+            "Unicode error parsing http://example.org/foo page '/foo/'\n",
+            log_output.getvalue())
+
+
 class FTPWalker_Base(unittest.TestCase):
     def testFtpScheme(self):
         """FTPWalker works when initialised with an ftp-scheme URL."""
@@ -242,7 +277,7 @@ class HTTPWalker_ListDir(unittest.TestCase):
                 test.assertEqual(method, 'GET')
                 test.assertEqual(urlparse.urljoin(self.base, path),
                                  listing_url)
-                return cStringIO.StringIO(listing_content)
+                return StringIO.StringIO(listing_content)
 
             def isDirectory(self, path):
                 return path.endswith('/')
