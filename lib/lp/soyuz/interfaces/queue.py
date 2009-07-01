@@ -22,7 +22,7 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
-from zope.schema import Datetime, Int, TextLine
+from zope.schema import Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -34,6 +34,7 @@ from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
+from lazr.restful.fields import Reference
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -84,6 +85,60 @@ class IPackageUploadQueue(Interface):
     """
 
 
+class PackageUploadStatus(DBEnumeratedType):
+    """Distro Release Queue Status
+
+    An upload has various stages it must pass through before becoming part
+    of a DistroSeries. These are managed via the Upload table
+    and related tables and eventually (assuming a successful upload into the
+    DistroSeries) the effects are published via the PackagePublishing and
+    SourcePackagePublishing tables.  """
+
+    NEW = DBItem(0, """
+        New
+
+        This upload is either a brand-new source package or contains a
+        binary package with brand new debs or similar. The package must sit
+        here until someone with the right role in the DistroSeries checks
+        and either accepts or rejects the upload. If the upload is accepted
+        then entries will be made in the overrides tables and further
+        uploads will bypass this state """)
+
+    UNAPPROVED = DBItem(1, """
+        Unapproved
+
+        If a DistroSeries is frozen or locked out of ordinary updates then
+        this state is used to mean that while the package is correct from a
+        technical point of view; it has yet to be approved for inclusion in
+        this DistroSeries. One use of this state may be for security
+        releases where you want the security team of a DistroSeries to
+        approve uploads.  """)
+
+    ACCEPTED = DBItem(2, """
+        Accepted
+
+        An upload in this state has passed all the checks required of it and
+        is ready to have its publishing records created.  """)
+
+    DONE = DBItem(3, """
+        Done
+
+        An upload in this state has had its publishing records created if it
+        needs them and is fully processed into the DistroSeries. This state
+        exists so that a logging and/or auditing tool can pick up accepted
+        uploads and create entries in a journal or similar before removing
+        the queue item.  """)
+
+    REJECTED = DBItem(4, """
+        Rejected
+
+        An upload which reaches this state has, for some reason or another
+        not passed the requirements (technical or human) for entry into the
+        DistroSeries it was targetting. As for the 'done' state, this state
+        is present to allow logging tools to record the rejection and then
+        clean up any subsequently unnecessary records.  """)
+
+
 class IPackageUpload(Interface):
     """A Queue item for Lucille"""
     export_as_webservice_entry()
@@ -111,7 +166,7 @@ class IPackageUpload(Interface):
             vocabulary=PackagePublishingPocket,
             description=_("The pocket targeted by this upload."),
             title=_("The pocket"), required=True, readonly=False,
-            )
+            ))
 
     date_created = exported(
         Datetime(
@@ -134,14 +189,17 @@ class IPackageUpload(Interface):
 
     displayname = exported(
         TextLine(
-            title=_("Generic displayname for a queue item"), readonly=True))
+            title=_("Generic displayname for a queue item"), readonly=True),
+        exported_as="display_name")
     displayversion = exported(
         TextLine(
             title=_("The source package version for this item"),
-            readonly=True))
+            readonly=True),
+        exported_as="display_version")
     displayarchs = exported(
         TextLine(
-            title=_("Architectures related to this item"), readonly=True))
+            title=_("Architectures related to this item"), readonly=True),
+        exported_as="display_arches")
 
     sourcepackagerelease = Attribute(
         "The source package release for this item")
@@ -612,61 +670,6 @@ class IHasQueueItems(Interface):
 
         Use 'exact_match' argument for precise results.
         """
-
-
-class PackageUploadStatus(DBEnumeratedType):
-    """Distro Release Queue Status
-
-    An upload has various stages it must pass through before becoming part
-    of a DistroSeries. These are managed via the Upload table
-    and related tables and eventually (assuming a successful upload into the
-    DistroSeries) the effects are published via the PackagePublishing and
-    SourcePackagePublishing tables.  """
-
-    NEW = DBItem(0, """
-        New
-
-        This upload is either a brand-new source package or contains a
-        binary package with brand new debs or similar. The package must sit
-        here until someone with the right role in the DistroSeries checks
-        and either accepts or rejects the upload. If the upload is accepted
-        then entries will be made in the overrides tables and further
-        uploads will bypass this state """)
-
-    UNAPPROVED = DBItem(1, """
-        Unapproved
-
-        If a DistroSeries is frozen or locked out of ordinary updates then
-        this state is used to mean that while the package is correct from a
-        technical point of view; it has yet to be approved for inclusion in
-        this DistroSeries. One use of this state may be for security
-        releases where you want the security team of a DistroSeries to
-        approve uploads.  """)
-
-    ACCEPTED = DBItem(2, """
-        Accepted
-
-        An upload in this state has passed all the checks required of it and
-        is ready to have its publishing records created.  """)
-
-    DONE = DBItem(3, """
-        Done
-
-        An upload in this state has had its publishing records created if it
-        needs them and is fully processed into the DistroSeries. This state
-        exists so that a logging and/or auditing tool can pick up accepted
-        uploads and create entries in a journal or similar before removing
-        the queue item.  """)
-
-    REJECTED = DBItem(4, """
-        Rejected
-
-        An upload which reaches this state has, for some reason or another
-        not passed the requirements (technical or human) for entry into the
-        DistroSeries it was targetting. As for the 'done' state, this state
-        is present to allow logging tools to record the rejection and then
-        clean up any subsequently unnecessary records.  """)
-
 
 # If you change this (add items, change the meaning, whatever) search for
 # the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and

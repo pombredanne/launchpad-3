@@ -56,6 +56,8 @@ from lp.soyuz.interfaces.publishing import (
     ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingPocket, PackagePublishingStatus)
 from lp.soyuz.interfaces.packageset import IPackageset
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
@@ -211,6 +213,15 @@ patch_reference_property(
     IDistroSeries, 'main_archive', IArchive)
 patch_reference_property(
     IDistroSeries, 'distribution', IDistribution)
+patch_choice_parameter_type(
+    IDistroSeries, 'getPackageUploads', 'status', PackageUploadStatus)
+patch_choice_parameter_type(
+    IDistroSeries, 'getPackageUploads', 'pocket', PackagePublishingPocket)
+patch_choice_parameter_type(
+    IDistroSeries, 'getPackageUploads', 'custom_type',
+    PackageUploadCustomFormat)
+patch_collection_return_type(
+    IDistroSeries, 'getPackageUploads', IPackageUpload)
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
