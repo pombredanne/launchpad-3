@@ -548,8 +548,7 @@ operation.
 syncSources() allows the caller to specify a list of sources to copy all at
 once.  The latest versions that are found in the from_archive are
 "synchronised" to the context archive.  If a particular version already
-exists then nothing is copied.  The list of packages that were copied is
-returned from the function call.
+exists then nothing is copied.
 
     >>> print cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
@@ -558,10 +557,9 @@ returned from the function call.
     ...     to_series="warty")
     HTTP/1.1 200 Ok
     ...
-    ["package1", "package2"]
 
-If there's nothing to copy at all, an error is returned.  Repeating the copy
-above will give this effect.
+The operation still successful if there is nothing to copy, as you
+would expect from a 'sync-like' method.
 
     >>> already_copied = cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
@@ -569,10 +567,8 @@ above will give this effect.
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
     ...     to_series="warty")
     >>> print already_copied
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 200 Ok
     ...
-    CannotCopy: Packages already copied.
-    <BLANKLINE>
 
 Within the web application, the CannotCopy exception means that there
 was an oversight in the code that called syncSources()--that method

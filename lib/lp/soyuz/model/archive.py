@@ -76,8 +76,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet,
-    ISourcePackagePublishingHistory)
+    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.soyuz.scripts.packagecopier import (
@@ -1014,8 +1013,7 @@ class Archive(SQLBase):
                 from_archive.getPublishedSources(
                     name=name, exact_match=True)[0])
 
-        return self._copySources(
-            sources, to_pocket, to_series, include_binaries)
+        self._copySources(sources, to_pocket, to_series, include_binaries)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False):
@@ -1063,19 +1061,7 @@ class Archive(SQLBase):
             series = None
 
         # Perform the copy, may raise CannotCopy.
-        copies = do_copy(
-            sources, self, series, pocket, include_binaries)
-
-        if len(copies) == 0:
-            raise CannotCopy("Packages already copied.")
-
-        # Return a list of string names of source packages that were copied.
-        # We only return source package names, even when binaries were copied,
-        # because that's the "Contract".
-        return [
-            copy.sourcepackagerelease.sourcepackagename.name
-            for copy in copies
-            if ISourcePackagePublishingHistory.providedBy(copy)]
+        do_copy(sources, self, series, pocket, include_binaries)
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
