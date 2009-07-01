@@ -41,7 +41,7 @@ class IHasLinkedBranches(Interface):
         :param registrant: The user linking the branch.
         """
 
-    @call_with(unregistrant=REQUEST_USER)
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         branch=Reference(schema=IBranch))
     @export_write_operation()
