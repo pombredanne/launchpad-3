@@ -17,7 +17,7 @@ from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
 
-from storm.locals import Desc, In, Join, SQL
+from storm.locals import Join, SQL
 from storm.store import Store
 
 from zope.component import getUtility
@@ -65,8 +65,7 @@ from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.potemplate import POTemplate
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadCustom, PackageUploadQueue)
+from lp.soyuz.model.queue import PackageUpload, PackageUploadQueue
 from lp.soyuz.model.section import Section
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -96,7 +95,7 @@ from lp.soyuz.interfaces.publishedpackage import (
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, ICanPublishPackages, PackagePublishingPocket,
     PackagePublishingStatus, pocketsuffix)
-from lp.soyuz.interfaces.queue import IHasQueueItems
+from lp.soyuz.interfaces.queue import IHasQueueItems, IPackageUploadSet
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
 from lp.registry.interfaces.sourcepackagename import (
@@ -1279,54 +1278,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getPackageUploads(self, created_since_date=None, status=None,
                           archive=None, pocket=None, custom_type=None):
         """See `IDistroSeries`."""
-        # This method is an incremental deprecation of getQueueItems(),
-        # below.  It's basically re-writing it using Storm queries
-        # instead of SQLObject, but not everything is implemented yet.
-        # When it is, this comment and the old method can be removed and
-        # call sites updated to use this one.
-        store = Store.of(self)
-
-        def dbitem_values_tuple(item_or_list):
-            if not isinstance(item_or_list, list):
-                return (item_or_list.value,)
-            else:
-                return tuple(item.value for item in item_or_list)
-
-        timestamp_query_clause = ()
-        if created_since_date is not None:
-            timestamp_query_clause = (
-                PackageUpload.date_created > created_since_date,)
-
-        status_query_clause = ()
-        if status is not None:
-            status = dbitem_values_tuple(status)
-            status_query_clause = (
-                In(PackageUpload.status, status),)
-
-        archives = self.distribution.getArchiveIDList(archive)
-        archive_query_clause = (
-            In(PackageUpload.archiveID, archives),)
-
-        pocket_query_clause = ()
-        if pocket is not None:
-            pocket = dbitem_values_tuple(pocket)
-            pocket_query_clause = (
-                In(PackageUpload.pocket, pocket),)
-
-        custom_type_query_clause = ()
-        if custom_type is not None:
-            custom_type = dbitem_values_tuple(custom_type)
-            custom_type_query_clause = (
-                PackageUpload.id == PackageUploadCustom.packageuploadID,
-                In(PackageUploadCustom.customformat, custom_type))
-
-        return store.find(
-            PackageUpload,
-            PackageUpload.distroseries == self,
-            *(status_query_clause + archive_query_clause +
-              pocket_query_clause + timestamp_query_clause +
-              custom_type_query_clause)
-            ).order_by(Desc(PackageUpload.id)).config(distinct=True)
+        return getUtility(IPackageUploadSet).getAll(
+            self, created_since_date, status, archive, pocket, custom_type)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):

@@ -23,7 +23,6 @@ __all__ = [
     ]
 
 from zope.schema import Choice, Datetime, Int, List, TextLine
-from zope.schema.interfaces import ITextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -35,7 +34,7 @@ from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.fields import Reference
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -642,6 +641,19 @@ class IPackageUploadSet(Interface):
         :param signing_key: `IGPGKey` of the user requesting this copy.
 
         :return: an `IPackageUpload` record in NEW state.
+        """
+
+    def getAll(distroseries, created_since_date=None, status=None,
+               archive=None, pocket=None, custom_type=None):
+        """Get package upload records for a series with optional filtering.
+
+        :param created_since_date: If specified, only returns items uploaded
+            since the timestamp supplied.
+        :param status: Filter results by this `PackageUploadStatus`
+        :param archive: Filter results for this `IArchive`
+        :param pocket: Filter results by this `PackagePublishingPocket`
+        :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :return: A result set containing `IPackageUpload`s
         """
 
     def getBuildByBuildIDs(build_ids):
