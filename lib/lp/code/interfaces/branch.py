@@ -530,7 +530,14 @@ class IBranch(IHasOwner, IHasBranchTarget):
         """Link a bug to this branch.
 
         :param bug: IBug to link.
-        :param user: IPerson linking the bug.
+        :param registrant: IPerson linking the bug.
+        """
+
+    def unlinkBug(bug, user):
+        """Unlink a bug to this branch.
+
+        :param bug: IBug to unlink.
+        :param user: IPerson unlinking the bug.
         """
 
     related_bugs = Attribute(
@@ -545,10 +552,17 @@ class IBranch(IHasOwner, IHasBranchTarget):
             value_type=Reference(Interface))) # Really ISpecificationBranch
 
     def linkSpecification(spec, registrant):
-        """Like an ISpecification to a branch.
+        """Link an ISpecification to a branch.
 
         :param spec: ISpecification to link.
-        :param registrant: IPerson linking the spec.
+        :param registrant: IPerson unlinking the spec.
+        """
+
+    def unlinkSpecification(spec, user):
+        """Unlink an ISpecification to a branch.
+
+        :param spec: ISpecification to unlink.
+        :param user: IPerson unlinking the spec.
         """
 
     pending_writes = Attribute(

@@ -1617,7 +1617,7 @@ class TestBranchSpecLinks(TestCaseWithFactory):
 
         self.assertEqual(branch.spec_links.count(), 1)
 
-        branch.unlinkSpec(spec, self.user)
+        branch.unlinkSpecification(spec, self.user)
 
         self.assertEqual(branch.spec_links.count(), 0)
 
