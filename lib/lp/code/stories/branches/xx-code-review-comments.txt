@@ -15,7 +15,7 @@ Set up required objects
 
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> eric_browser.open(merge_proposal_url)
-    >>> eric_browser.getLink('Add a comment').click()
+    >>> eric_browser.getLink('Add a review or comment').click()
     >>> eric_browser.getControl(name='field.comment').value = ('This is a '
     ... 'very long comment about what things should be done to the source '
     ... 'branch to land it.  When this comment is replied to, it '
@@ -93,14 +93,13 @@ Email addresses in code review comments are hidden for users not logged in.
 
 == Reviewing ==
 
-When replying normally there is only a comment field shown.  If the user
-wants to review the branch, they click on the [Review] link shown in the
-vote summary table.
+If the user wants to review the branch, they click on the 'Add a review or
+comment' link.
 
-    >>> eric_browser.getLink('[Review]').click()
-    >>> eric_browser.getControl('Reviewer says').displayValue = ['Abstain']
+    >>> eric_browser.getLink('Add a review or comment').click()
+    >>> eric_browser.getControl(name='field.vote').displayValue = ['Abstain']
     >>> eric_browser.getControl('Review type').value = 'timeless'
-    >>> eric_browser.getControl('Save Review').click()
+    >>> eric_browser.getControl('Save Comment').click()
 
     >>> print_comments('boardCommentDetails', eric_browser, index=2)
     Eric the Viking ...second...ago
@@ -116,6 +115,7 @@ in a table at the top of the page.
 
     >>> print extract_text(find_tag_by_id(
     ...     eric_browser.contents, 'code-review-votes'))
-    Reviewer         Review Type    Date Requested    Status
-    Eric the Viking  timeless       ...               Abstain ...second...ago
+    Reviewer                     Review Type    Date Requested    Status
+    Eric the Viking (community)  timeless       ...               Abstain...
+    second...ago
     Review via email: mp+1@code.launchpad.dev

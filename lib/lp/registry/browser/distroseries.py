@@ -387,6 +387,10 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         """Return the sourcepackages that lack a link to a productseries."""
         return self.context.getUnlinkedTranslatableSourcePackages()
 
+    @property
+    def potemplates(self):
+        return list(self.context.getCurrentTranslationTemplates())
+
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
 
