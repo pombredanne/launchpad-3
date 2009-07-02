@@ -531,15 +531,19 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         job = self.makeRevisionsAddedWithMergeCommit()
         job.bzr_branch.lock_write()
         self.addCleanup(job.bzr_branch.unlock)
+        graph = job.bzr_branch.repository.get_graph()
+        revision_ids = ['rev2a-id', 'rev3-id', 'rev2b-id']
         self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
-                         job.getMergeAuthors('rev2d-id'))
+                         job.getAuthors(revision_ids, graph))
 
     def test_getMergeAuthors_with_ghost(self):
         job = self.makeRevisionsAddedWithMergeCommit(include_ghost=True)
         job.bzr_branch.lock_write()
+        graph = job.bzr_branch.repository.get_graph()
         self.addCleanup(job.bzr_branch.unlock)
+        revision_ids = ['rev2a-id', 'rev3-id', 'rev2b-id', 'rev2c-id']
         self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
-                         job.getMergeAuthors('rev2d-id'))
+                         job.getAuthors(revision_ids, graph))
 
     def test_getRevisionMessage(self):
         """getRevisionMessage provides a correctly-formatted message."""

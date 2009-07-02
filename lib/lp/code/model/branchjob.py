@@ -479,20 +479,18 @@ class RevisionsAddedJob(BranchJobDerived):
             merged_revision_ids.update(merged)
         return merged_revision_ids
 
-    def getMergeAuthors(self, revision_id):
+    def getAuthors(self, revision_ids, graph):
         """Determine authors of the revisions merged by this revision.
 
         Ghost revisions are skipped.
-        :param revision_id: The revision to examine.
+        :param revision_ids: The revision to examine.
         :return: a set of author commit-ids
         """
-        graph = self.bzr_branch.repository.get_graph()
-        merged_revision_ids = self.getMergedRevisionIDs(revision_id, graph)
-        present_merged = graph.get_parent_map(merged_revision_ids).keys()
-        merged_revisions = self.bzr_branch.repository.get_revisions(
-            present_merged)
+        present_ids = graph.get_parent_map(revision_ids).keys()
+        present_revisions = self.bzr_branch.repository.get_revisions(
+            present_ids)
         authors = set()
-        for revision in merged_revisions:
+        for revision in present_revisions:
             authors.update(revision.get_apparent_authors())
         return authors
 
@@ -529,7 +527,7 @@ class RevisionsAddedJob(BranchJobDerived):
                      verbose=True)
             graph = self.bzr_branch.repository.get_graph()
             merged_revisions = self.getMergedRevisionIDs(revision_id, graph)
-            authors = list(sorted(self.getMergeAuthors(revision_id)))
+            authors = list(sorted(self.getAuthors(merged_revisions, graph)))
             def person_id(person):
                 return '%s (%s)' % (person.displayname, person.name)
             if len(authors) > 0:
