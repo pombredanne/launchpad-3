@@ -249,29 +249,14 @@ class BranchMailer(BaseMailer):
             return subject
         return '[Branch %s]' % (db_branch.unique_name)
 
-    def _diffText(self, max_diff):
+    def _diffText(self, email):
         """Determine the text to use for the diff.
 
         If the diff's length exceeds the user preferences, a message
         about this is returned.  Otherwise, the diff is returned.
         """
-        if self.diff is None:
-            return self.contents or ''
-        diff_size = self.diff.count('\n') + 1
-        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
-            if max_diff == BranchSubscriptionDiffSize.NODIFF:
-                contents = self.contents
-            elif diff_size > max_diff.value:
-                diff_msg = (
-                    'The size of the diff (%d lines) is larger than your '
-                    'specified limit of %d lines' % (
-                    diff_size, max_diff.value))
-                contents = "%s\n%s" % (self.contents, diff_msg)
-            else:
-                contents = "%s\n%s" % (self.contents, self.diff)
-        else:
-            contents = "%s\n%s" % (self.contents, self.diff)
-        return contents
+        contents = self.contents or ''
+        return contents + self._includeDiff(email)[1]
 
     def _getHeaders(self, email):
         headers = BaseMailer._getHeaders(self, email)
@@ -295,9 +280,32 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
-        params['diff'] = self._diffText(reason.max_diff_lines)
+        params['diff'] = self._diffText(email)
         params.setdefault('delta', '')
         return params
+
+    def _includeDiff(self, email):
+        if self.diff is None:
+            return False, ''
+        reason, rationale = self._recipients.getReason(email)
+        if reason.max_diff_lines == BranchSubscriptionDiffSize.NODIFF:
+            return False, ''
+        if reason.max_diff_lines != BranchSubscriptionDiffSize.WHOLEDIFF:
+            diff_size = self.diff.count('\n') + 1
+            if diff_size > reason.max_diff_lines.value:
+                message = (
+                    'The size of the diff (%d lines) is larger than your '
+                    'specified limit of %d lines' % (
+                    diff_size, reason.max_diff_lines.value))
+                return False, message
+        return True, ''
+
+    def _addAttachments(self, ctrl, email):
+        if not self._includeDiff(email)[0]:
+            return
+        ctrl.addAttachment(
+            self.diff, content_type='text/x-diff', inline=True,
+                filename='revision.diff')
 
     @staticmethod
     def _format_user_address(user):
