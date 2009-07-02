@@ -139,6 +139,8 @@ YUI({
         filter: 'raw'
     }).use('node', 'event', 'lazr.effects', function(Y) {
 
+    // XXX Michael Nelson 20090702 bug=340497 This slider
+    // needs an integration test.
     // Collapse the body of the slider widget initially.
     Y.get('#related-ppa-versions .widget-bd').addClass('lazr-closed');
 
