@@ -8,6 +8,7 @@ __all__ = [
     'BranchBadges',
     'BranchListingView',
     'DistributionSourcePackageBranchesView',
+    'GroupedDistributionSourcePackageBranchesView',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -81,8 +82,8 @@ from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
-
 
 def get_plural_text(count, singular, plural):
     """Return 'singular' if 'count' is 1, 'plural' otherwise."""
@@ -1474,13 +1475,13 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
         The tuple contains the branches, and the 'more_count'.
         """
         series_branches = {}
-        branches = self._getBranchDict()
+        all_branches = self._getBranchDict()
         official_branches = self._getOfficialBranches()
         for series in self.context.distribution.serieses:
-            if series in branches:
+            if series in all_branches:
                 branches, more_count = self._getSeriesBranches(
                     official_branches.get(series, []),
-                    branches.get(series, []))
+                    all_branches.get(series, []))
                 series_branches[series] = (branches, more_count)
         return series_branches
 
@@ -1495,6 +1496,11 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
         for branches, count in self.series_branches_map.itervalues():
             visible_branches.extend(branches)
         return visible_branches
+
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return len(self.visible_branches_for_view)
 
     @cachedproperty
     def groups(self):
@@ -1519,13 +1525,18 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
         """
         result = []
         series_branches_map = self.series_branches_map
+        sp_factory = getUtility(ISourcePackageFactory)
         for series in self.context.distribution.serieses:
             if series in series_branches_map:
                 branches, more_count = series_branches_map[series]
+                sourcepackage = sp_factory.new(
+                    self.context.sourcepackagename, series)
                 result.append(
                     {'distroseries': series,
                      'branches': self.decoratedBranches(branches),
-                     'more-branch-count': more_count})
+                     'more-branch-count': more_count,
+                     'package': sourcepackage,
+                     })
         return result
 
 

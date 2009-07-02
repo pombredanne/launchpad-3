@@ -24,12 +24,12 @@
 
   <table id="series-branches" class="listing">
     <tal:distro-series repeat="group view/groups">
+      <tbody>
       <tal:series-branches
-          define="series group/distroseries;
-                  obsolete series/status/enumvalue:OBSOLETE"
-          condition="not: obsolete">
+          define="series group/distroseries"
+          condition="series/active">
         <tr>
-          <td class="section-heading" colspan="3"
+          <td class="section-heading" colspan="4"
               tal:content="series/displayname">
             Karmic
           </td>
@@ -57,7 +57,15 @@
               </span> ago
           </td>
         </tr>
+        <tr tal:condition="group/more-branch-count">
+          <td colspan="4" style="padding-left: 2em">
+            <a tal:attributes="href group/package/fmt:url">
+              and <tal:count replace="group/more-branch-count"/> more...
+            </a>
+          </td>
+        </tr>
       </tal:series-branches>
+      </tbody>
     </tal:distro-series>
 
   </table>
