@@ -17,12 +17,14 @@ class TestSuperFastImports(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def setUp(self):
-        # Create a product with two series and a shared POTemplate
-        # in different series ('devel' and 'stable').
+        # Set up a single POFile in the database to be cached and
+        # examined.
         super(TestSuperFastImports, self).setUp()
         self.pofile = self.factory.makePOFile('sr')
 
     def getTranslationMessageData(self, translationmessage):
+        # Convert a TranslationMessage to TranslationMessageData object,
+        # which is used during import.
         potmsgset = translationmessage.potmsgset
         message_data = TranslationMessageData()
         message_data.context = potmsgset.context
@@ -35,6 +37,8 @@ class TestSuperFastImports(TestCaseWithFactory):
         return message_data
 
     def test_current_messages(self):
+        # Make sure current, non-imported messages are properly
+        # cached in ExistingPOFileInDatabase.
         current_message = self.factory.makeTranslationMessage(
             pofile=self.pofile, is_imported=False)
         cached_file = ExistingPOFileInDatabase(self.pofile)
@@ -43,6 +47,8 @@ class TestSuperFastImports(TestCaseWithFactory):
         self.assertTrue(cached_file.isAlreadyTranslatedTheSame(message_data))
 
     def test_imported_messages(self):
+        # Make sure current, imported messages are properly
+        # cached in ExistingPOFileInDatabase.
         imported_message = self.factory.makeTranslationMessage(
             pofile=self.pofile, is_imported=True)
         cached_file = ExistingPOFileInDatabase(self.pofile, is_imported=True)
@@ -51,6 +57,8 @@ class TestSuperFastImports(TestCaseWithFactory):
         self.assertTrue(cached_file.isAlreadyTranslatedTheSame(message_data))
 
     def test_inactive_messages(self):
+        # Make sure non-current messages (i.e. suggestions) are
+        # not cached in ExistingPOFileInDatabase.
         inactive_message = self.factory.makeTranslationMessage(
             pofile=self.pofile, suggestion=True)
         cached_file = ExistingPOFileInDatabase(self.pofile)
