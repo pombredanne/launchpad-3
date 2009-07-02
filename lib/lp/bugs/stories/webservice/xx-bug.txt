@@ -1204,6 +1204,140 @@ the advanced search interface.
     http://.../ubuntu/+source/linux-source-2.6.15/+bug/10
     http://.../ubuntu/+source/thunderbird/+bug/9
 
+=== Hardware related bug tasks ===
+
+We can search for bugs related to a given hardware device. We must
+specify a device by its bus, vendor and product IDs and the kind
+of link between a bug and a HWDB submission.
+
+We can search for bugs reported by owners of the PCI device (0x10de,
+0x045d).
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+We can further limit the search to devices controlled by a given driver.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_bug_reporter=True,
+    ...     hardware_driver_name='ahci').jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_driver_name='nonsense',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+We can search for bugs related to any hardware device controlled by a
+given driver.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+We can limit the search to devices controlled by a driver from a given
+package.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
+    ...     hardware_driver_package_name='linux-image-2.6.24-19-generic',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
+    ...     hardware_driver_package_name='nonsense',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+Instead of searching for bugs reported by the owner of a given device,
+we can look for bugs where a device owner is affected by a bug...
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_affected_by_bug=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+    >>> login(ANONYMOUS)
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> sample_person_webservice = webservice_for_person(
+    ...     sample_person, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> sample_person_webservice.named_post(
+    ...     'http://api.launchpad.dev/beta/bugs/2', 'markUserAffected',
+    ...     affected=True).jsonBody()
+
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_affected_by_bug=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+...or for bugs to which owners of a given device are subscribed...
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_subscribed_to_bug=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9
+
+...or for bugs which are directly linked to a HWDB submission containing
+a given device.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_is_linked_to_bug=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+    >>> bug_ten = webservice.get('/bugs/10').jsonBody()
+    >>> sample_submission = webservice.get(
+    ...     '/+hwdb/+submission/sample-submission').jsonBody()
+    >>> print webservice.named_post(
+    ...     bug_ten['self_link'], 'linkHWSubmission',
+    ...     submission=sample_submission['self_link'])
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_is_linked_to_bug=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10
+
 
 == Affected users ==
 
