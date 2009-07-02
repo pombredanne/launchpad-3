@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 from datetime import timedelta
+from pprint import pformat
 import unittest
 
 from storm.expr import Asc, Desc
@@ -147,20 +148,6 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
             self.distro_source_package, LaunchpadTestRequest())
         self.assertEqual([], view.groups)
 
-    def test_groups_with_some_branches(self):
-        # If there are no branches for a series, the groups are not there.
-        series = self.distro.serieses[0]
-        branch = self.factory.makePackageBranch(
-            distroseries=series, sourcepackagename=self.sourcepackagename)
-        view = GroupedDistributionSourcePackageBranchesView(
-            self.distro_source_package, LaunchpadTestRequest())
-        expected = [
-            {'distroseries': series,
-             'branches': [branch],
-             'more-branch-count': 0,
-             }]
-        self.assertEqual(expected, view.groups)
-
     def makeBranches(self, branch_count, official_count=0):
         """Make some package branches.
 
@@ -216,7 +203,14 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         view = GroupedDistributionSourcePackageBranchesView(
             self.distro_source_package, LaunchpadTestRequest())
         series_group = view.groups[0]
-        self.assertEqual(expected, series_group['branches'])
+        branches = series_group['branches']
+        self.assertEqual(len(expected), len(branches),
+                         "%s different length to %s" %
+                         (pformat(expected), pformat(branches)))
+        for b1, b2 in zip(expected, branches):
+            # Since one is a branch and the other is a decorated branch,
+            # just check the ids.
+            self.assertEqual(b1.id, b2.id)
 
     def test_series_branch_order_no_official(self):
         # If there are no official branches, then the branches are in most
