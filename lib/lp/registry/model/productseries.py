@@ -455,7 +455,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             Product.official_rosetta == True)
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
-    @cachedproperty
+    @property
     def potemplate_count(self):
         """See `IProductSeries`."""
         return self.getCurrentTranslationTemplates().count()

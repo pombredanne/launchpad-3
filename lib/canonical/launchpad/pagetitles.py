@@ -1060,8 +1060,6 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-product_add_from_project = 'Register a project in your project group'
-
 product_admin = ContextTitle('Administer %s in Launchpad')
 
 product_bugs = ContextDisplayName('Bugs in %s')
@@ -1086,7 +1084,9 @@ def product_mergeproposals(context, view):
     """Return the view's heading."""
     return view.heading
 
-product_new = 'Register a project in Launchpad'
+def product_new(context, view):
+    """Return the view's heading."""
+    return view.heading
 
 product_new_guided = 'Before you register your project...'
 
