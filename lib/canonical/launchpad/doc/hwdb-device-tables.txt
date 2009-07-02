@@ -1488,6 +1488,7 @@ is not included.
 
     >>> from canonical.launchpad.database import HWDriver
     >>> store.add(HWDriver(name='foo', package_name=None))
+    <HWDriver at...
     >>> for package_name in driver_set.all_package_names():
     ...     print package_name.package_name
     <BLANKLINE>
