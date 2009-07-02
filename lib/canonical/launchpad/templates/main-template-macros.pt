@@ -16,6 +16,11 @@
       use-macro="context/@@+base-layout-macros/load-javascript" />
   </metal:load-javascript>
 
+  <metal:page-javascript define-macro="page-javascript">
+    <metal:base-page-javascript
+      use-macro="context/@@+base-layout-macros/page-javascript" />
+  </metal:page-javascript>
+
   <metal:launchpad-stylesheet define-macro="launchpad-stylesheet">
     <metal:base-launchpad-stylesheet
       use-macro="context/@@+base-layout-macros/launchpad-stylesheet" />

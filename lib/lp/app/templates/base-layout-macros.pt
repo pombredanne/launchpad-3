@@ -42,9 +42,7 @@
       revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       icingroot string:${rooturl}+icing/rev${revno};
-      icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
       devmode modules/canonical.config/config/devmode;
-      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};
       yui string:${icingroot}/yui/3.0.0pr2/build;
       lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
@@ -53,21 +51,6 @@
     This macro just loads javascript files. It doesn't
     do any initialization.
   </tal:comment>
-
-  <tal:needs_json tal:condition="request/needs_json">
-    <script type="text/javascript"
-            tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
-  </tal:needs_json>
-  <tal:needs-gmap2 condition="request/needs_gmap2">
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:attributes="src string:http://maps.google.com/maps?${map_query};"></script>
-    <script type="text/javascript"
-            tal:condition="not: devmode"
-            tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical${map_query};"></script>
-  </tal:needs-gmap2>
 
   <tal:devmode condition="devmode">
     <script type="text/javascript"
@@ -164,6 +147,37 @@
 
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
+</metal:load-javascript>
+
+
+<metal:page-javascript define-macro="page-javascript"
+  tal:define="
+      revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
+      icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
+      devmode modules/canonical.config/config/devmode;
+      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};
+  >
+  <tal:comment replace="nothing">
+    Load and initialize the common script used by all pages.
+  </tal:comment>
+
+  <tal:needs_json tal:condition="request/needs_json">
+    <script type="text/javascript"
+            tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
+  </tal:needs_json>
+  <tal:needs-gmap2 condition="request/needs_gmap2">
+    <script type="text/javascript"
+            tal:condition="devmode"
+            tal:attributes="src string:http://maps.google.com/maps?${map_query};"></script>
+    <script type="text/javascript"
+            tal:condition="not: devmode"
+            tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical${map_query};"></script>
+  </tal:needs-gmap2>
+
+  <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script type="text/javascript">
     YUI().use('node', function(Y) {
@@ -180,7 +194,7 @@
         Y.on('click', handleClickOnPage, window);
     });
   </script>
-</metal:load-javascript>
+</metal:page-javascript>
 
 
 <metal:launchpad-stylesheet define-macro="launchpad-stylesheet"
@@ -244,7 +258,7 @@
     the new stylesheet. When no pages use main-template, this can be
     refactored.
   </tal:comment>
-  <metal:old-style-sheet use-macro="template/macros/launchpad-stylesheet" />
+  <metal:old-style-sheet use-macro="context/@@+base-layout-macros/launchpad-stylesheet" />
   <link rel="stylesheet" type="text/css"
     tal:attributes="href string:${yui}/cssreset/reset.css" />
   <link rel="stylesheet" type="text/css"
