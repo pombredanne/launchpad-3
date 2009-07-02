@@ -773,3 +773,17 @@ For a user with no PPAs, nobody will see the section apart from himself.
     >>> view = create_initialized_view(sample_person, "+index")
     >>> view.should_show_ppa_section
     False
+
+If the person is a member of teams with PPAs but doesn't own any himself, the
+section will still not appear for anyone but people with lp.edit.
+
+    >>> login("admin@canonical.com")
+    >>> team = factory.makeTeam()
+    >>> team.addMember(sample_person, sample_person)
+    >>> ppa = factory.makeArchive(distribution=ubuntu, owner=team)
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(sample_person, "+index")
+    >>> view.should_show_ppa_section
+    False
+

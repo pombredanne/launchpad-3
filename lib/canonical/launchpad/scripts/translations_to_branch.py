@@ -111,7 +111,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 # transaction for too long.
                 if self.txn:
                     self.txn.commit()
-
+            except (KeyboardInterrupt, SystemExit):
+                raise
             except Exception, e:
                 items_failed += 1
                 self.logger.warn("Failure: %s" % e)
