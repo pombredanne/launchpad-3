@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    "BugBranchStatus",
     "IBugBranch",
     "IBugBranchSet",
     ]
@@ -21,43 +20,12 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import BugField, Summary
 from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 
 
-class BugBranchStatus(DBEnumeratedType):
-    """The status of a bugfix branch."""
-
-    ABANDONED = DBItem(10, """
-        Abandoned Attempt
-
-        A fix for this bug is no longer being worked on in this
-        branch.
-        """)
-
-    INPROGRESS = DBItem(20, """
-        Fix In Progress
-
-        Development to fix this bug is currently going on in this
-        branch.
-        """)
-
-    FIXAVAILABLE = DBItem(30, """
-        Fix Available
-
-        This branch contains a potentially useful fix for this bug.
-        """)
-
-    BESTFIX = DBItem(40, """
-        Best Fix Available
-
-        This branch contains a fix agreed upon by the community as
-        being the best available branch from which to merge to fix
-        this bug.
-        """)
-
-
-class IBugBranch(IHasDateCreated, IHasBug):
+class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):
     """A branch linked to a bug."""
 
     export_as_webservice_entry()
@@ -72,14 +40,6 @@ class IBugBranch(IHasDateCreated, IHasBug):
             title=_("Branch"), schema=IBranch,
             vocabulary="Branch", required=True))
     revision_hint = TextLine(title=_("Revision Hint"))
-    status = Choice(
-        title=_("State"), vocabulary=BugBranchStatus,
-        default=BugBranchStatus.INPROGRESS)
-    whiteboard = Summary(
-        title=_('Status Whiteboard'), required=False,
-        description=_(
-            'Additional information about the status of the bugfix '
-            'in this branch.'))
 
     bug_task = Object(
         schema=IBugTask, title=_("The bug task that the branch fixes"),

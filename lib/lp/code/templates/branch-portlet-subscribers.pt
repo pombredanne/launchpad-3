@@ -50,7 +50,7 @@
         tal:condition="link/enabled"
         >
         <a id="selfsubscription"
-           class="bg-image add"
+           class="sprite add"
            tal:attributes="href link/url"
            tal:content="link/text" />
       </div>

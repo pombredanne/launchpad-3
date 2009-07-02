@@ -311,6 +311,18 @@ component.
     Archive Upload Rights ...~ubuntu-team restricted None
     Archive Upload Rights ...~ubuntu-team universe None
 
+If you add a new permission for someone to upload to a PPA, you must specify
+the 'main' component, or an error is returned:
+
+    >>> response = webservice.named_post(
+    ...     cprov_archive['self_link'], 'newComponentUploader', {},
+    ...     person=name12['self_link'], component_name='restricted')
+    >>> print response.getOutput()
+    HTTP/1.1 400 Bad Request                                                  
+    ...
+    InvalidComponent: Component for PPAs should be 'main'
+    <BLANKLINE>
+
 deleteComponentUploader() removes that permission:
 
     >>> print webservice.named_post(
@@ -572,6 +584,38 @@ the client's fault. Therefore, there's no need to record an OOPS.
     >>> 'X-Lazr-Oopsid' in already_copied.getOutput()
     False
 
+'syncSources' behaves trasactionally, i.e. it will only synchronise
+all packages or none of them if there was a problem.
+
+    # Create an 'allowed' source publication with binaries in main_archive.
+    # It can be successfully synchronised to Celso's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> allowed_source = test_publisher.getPubSource(
+    ...     sourcename="allowed", version="1.0", archive=main_archive)
+    >>> ignore = test_publisher.getPubBinaries(pub_source=allowed_source)
+    >>> logout()
+
+'package1' has no binaries to be copied, so when we attempt to copy
+'allowed' and 'package1' with binaries an error is returned.
+
+    >>> print cprov_webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSources', {},
+    ...     source_names=['allowed', 'package1'],
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="warty", include_binaries=True)
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotCopy: package1 1.1 in hoary (source has no binaries to be copied)
+    <BLANKLINE>
+
+Even if the error was only when processing 'package1', the 'allowed'
+source was not synchronised to Celso's PPA.
+
+    >>> cprov_webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="allowed").jsonBody()['total_size']
+    0
+
 Keys with not enough permissions in Celso's PPA context are not
 allowed to call the method at all.
 
@@ -763,7 +807,7 @@ the same for `syncSource` or `syncSources` operations.
     HTTP/1.1 400 Bad Request
     ...
     CannotCopy: private 1.0 in hoary
-    (Cannot copy private source into public archives.)
+    (cannot copy private files into public archives)
     <BLANKLINE>
 
     >>> print cprov_webservice.named_post(
@@ -774,5 +818,5 @@ the same for `syncSource` or `syncSources` operations.
     HTTP/1.1 400 Bad Request
     ...
     CannotCopy: private 1.0 in hoary
-    (Cannot copy private source into public archives.)
+    (cannot copy private files into public archives)
     <BLANKLINE>

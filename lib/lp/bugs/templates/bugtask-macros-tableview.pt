@@ -204,7 +204,7 @@
   <td tal:condition="python:'assignedto' in listing_columns">
     <a tal:condition="task/assignee"
        tal:attributes="href task/assignee/fmt:url"
-       tal:content="task/assignee/browsername">
+       tal:content="task/assignee/displayname">
       somebody
     </a>
     <span tal:condition="not: task/assignee">
@@ -228,7 +228,7 @@
     </span>
   </td>
   <td tal:condition="python:'submittedby' in listing_columns"
-       tal:content="task/owner/browsername|string:-">
+       tal:content="task/owner/displayname|string:-">
        name
   </td>
 </metal:header>

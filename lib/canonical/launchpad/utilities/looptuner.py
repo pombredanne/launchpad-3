@@ -224,15 +224,11 @@ class DBLoopTuner(LoopTuner):
                     current_query
                 FROM activity()
                 WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
+                    AND datname = current_database()
                 """ % self.long_running_transaction).get_all())
             if not results:
                 break
             for runtime, procpid, usename, datname, query in results:
-                if query is None:
-                    # Query details are hidden to avoid exposing
-                    # sensitive data in log files.  This does not happen
-                    # if the transaction is idle.
-                    query = "<Busy>"
                 self.log.info(
                     "Blocked on %s old xact %s@%s/%d - %s."
                     % (runtime, usename, datname, procpid, query))

@@ -78,12 +78,19 @@ class IHasTranslationTemplates(Interface):
     Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
     """
 
-    def getCurrentTranslationTemplates():
-        """Return an iterator over its active translation templates.
+    def getCurrentTranslationTemplates(just_ids=False):
+        """Return an iterator over all active translation templates.
 
         A translation template is considered active when both
-        `IPOTemplate`.iscurrent and `IDistribution`.official_rosetta flags
+        `IPOTemplate`.iscurrent and parent official_rosetta flags
         are set to True.
+        """
+
+    def getCurrentTranslationFiles(just_ids=False):
+        """Return an iterator over all active translation files.
+
+        A translation file is active if it's attached to an
+        active translation template.
         """
 
     def getObsoleteTranslationTemplates():
