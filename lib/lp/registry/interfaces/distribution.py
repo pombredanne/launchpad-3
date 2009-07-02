@@ -35,8 +35,8 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
-    ILaunchpadUsage)
+    IHasAppointedDriver, IHasDrivers, IHasSecurityContact, ILaunchpadUsage)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
