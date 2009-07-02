@@ -11,8 +11,7 @@ import shutil
 from StringIO import StringIO
 
 from bzrlib.bzrdir import BzrDirMetaFormat1
-from bzrlib.log import (
-    _DefaultLogGenerator, Logger, LongLogFormatter, make_log_request_dict)
+from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
@@ -522,52 +521,38 @@ class RevisionsAddedJob(BranchJobDerived):
         try:
             info = RevisionInfo(self.bzr_branch, revno, revision_id)
             outf = StringIO()
+            lf = log_formatter('long', to_file=outf)
+            show_log(self.bzr_branch,
+                     lf,
+                     start_revision=info,
+                     end_revision=info,
+                     verbose=True)
             graph = self.bzr_branch.repository.get_graph()
             merged_revisions = self.getMergedRevisionIDs(revision_id, graph)
+            authors = list(sorted(self.getMergeAuthors(revision_id)))
+            def person_id(person):
+                return '%s (%s)' % (person.displayname, person.name)
+            if len(authors) > 0:
+                outf.write('Merge authors: ')
+                outf.write(', '.join(authors[:5]))
+                if len(authors) > 5:
+                    outf.write('...')
+                outf.write('\n')
             bmps = list(self.findRelatedBMP(merged_revisions))
             if len(bmps) > 0:
                 outf.write('Related merge proposals:\n')
             for bmp in bmps:
                 outf.write('  %s\n' % canonical_url(bmp))
                 proposer = bmp.registrant
-                outf.write('  proposed by: %s (%s)\n' % (proposer.displayname,
-                                                         proposer.name))
+                outf.write('  proposed by: %s\n' % person_id(proposer))
                 if (bmp.reviewer is not None and bmp.queue_status ==
                     BranchMergeProposalStatus.CODE_APPROVED):
-                    outf.write('  approved by: %s (%s)\n' %
-                               (bmp.reviewer.displayname, bmp.reviewer.name))
+                    outf.write('  approved by: %s\n' %
+                               person_id(bmp.reviewer))
                 for review in bmp.votes:
-                    outf.write('  review: %s - %s (%s)\n' %
+                    outf.write('  review: %s - %s\n' %
                         (review.comment.vote.title,
-                         review.reviewer.displayname,
-                         review.reviewer.name))
-            lf = LongLogFormatter(to_file=outf)
-            rqst = make_log_request_dict(direction='reverse',
-                                         start_revision=info,
-                                         end_revision=info, delta_type='full')
-            authors = self.getMergeAuthors(revision_id)
-            class LaunchpadLogGenerator(_DefaultLogGenerator):
-
-                def iter_log_revisions(self):
-                    # Despite appearances, this only fires *once*, pulling in
-                    # authors from the enclosing context.
-                    iterator = _DefaultLogGenerator.iter_log_revisions(self)
-                    for log_revision in iterator:
-                        revision = log_revision.rev
-                        recorded_authors = revision.get_apparent_authors()
-                        if recorded_authors != [revision.committer]:
-                            authors.update(recorded_authors)
-                        if len(authors) > 0:
-                            author_text = '\n'.join(sorted(authors))
-                            revision.properties['authors'] = author_text
-                        yield log_revision
-
-            class LaunchpadLogger(Logger):
-
-                def _generator_factory(self, branch, rqst):
-                    return LaunchpadLogGenerator(branch, rqst)
-
-            LaunchpadLogger(self.bzr_branch, rqst).show(lf)
+                         person_id(review.reviewer)))
         finally:
             self.bzr_branch.unlock()
         return outf.getvalue()
