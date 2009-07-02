@@ -1,0 +1,43 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+  >
+<body>
+  <div metal:fill-slot="main">
+    <tal:block replace="context/displayname">Evolution</tal:block>
+    uses the following custom language codes:
+    <table>
+      <tr>
+        <th>Language code...</th>
+        <th>maps to language</th>
+      </tr>
+      <tal:block repeat="entry context/custom_language_codes">
+        <tr>
+          <td align="center" tal:content="entry/language_code">pt-PT</td>
+          <td>
+            <tal:language
+              condition="entry/language"
+              replace="entry/language/displayname">Portuguese (pt)
+            </tal:language>
+            <tal:nolanguage condition="not: entry/language">
+              &mdash;
+            </tal:nolanguage>
+          </td>
+        </tr>
+      </tal:block>
+    </table>
+    <div>
+      <a tal:attributes="href context/fmt:url/+addcustomlanguagecode">
+        Add a custom language code
+      </a>
+    </div>
+  </div>
+</body>
+</html>

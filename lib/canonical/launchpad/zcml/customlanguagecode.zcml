@@ -4,8 +4,29 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
+<facet facet="translations">
+
   <class class="canonical.launchpad.database.CustomLanguageCode">
     <allow interface="canonical.launchpad.interfaces.ICustomLanguageCode" />
   </class>
 
+  <browser:page
+      name="+customlanguagecodes"
+      for="canonical.launchpad.interfaces.IHasCustomLanguageCodes"
+      layer="canonical.launchpad.layers.TranslationsLayer"
+      class="canonical.launchpad.browser.CustomLanguageCodeIndexView"
+      template="../templates/customlanguagecode-index.pt"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      name="+addcustomlanguagecode"
+      for="canonical.launchpad.interfaces.IHasCustomLanguageCodes"
+      layer="canonical.launchpad.layers.TranslationsLayer"
+      class="canonical.launchpad.browser.CustomLanguageCodeAddView"
+      permission="launchpad.Admin"
+      template="../templates/customlanguagecode-add.pt"
+      />
+
+</facet>
 </configure>

@@ -1051,6 +1051,8 @@
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
+            interface="canonical.launchpad.interfaces.IHasCustomLanguageCodes"/>
+        <allow
             interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
         <require
             permission="launchpad.Driver"
@@ -1477,6 +1479,8 @@
             interface="lp.registry.interfaces.sourcepackage.ISourcePackage"/>
         <allow
             interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+        <allow
+            interface="canonical.launchpad.interfaces.IHasCustomLanguageCodes"/>
         <allow
             interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
         <allow

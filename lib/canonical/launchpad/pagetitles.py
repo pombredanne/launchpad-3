@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -454,6 +454,10 @@ codeofconduct_list = 'Ubuntu Codes of Conduct'
 codereviewcomment_index = 'Code review comment'
 
 codereviewcomment_reply = 'Reply to code review comment'
+
+customlanguagecode_index = 'Custom language codes'
+
+customlanguagecode_add = 'Add custom language code'
 
 def contact_user(context, view):
     return view.specific_contact_title_text

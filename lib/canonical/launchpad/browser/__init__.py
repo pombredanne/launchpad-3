@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401
 
 """Launchpad Browser-Interface View classes.
@@ -27,6 +27,7 @@ from lp.code.browser.codeimport import *
 from lp.code.browser.codeimportmachine import *
 from lp.registry.browser.codeofconduct import *
 from lp.code.browser.codereviewcomment import *
+from canonical.launchpad.browser.customlanguagecode import *
 from lp.registry.browser.distributionmirror import *
 from lp.soyuz.browser.distributionsourcepackagerelease import *
 from lp.soyuz.browser.distroarchseries import *

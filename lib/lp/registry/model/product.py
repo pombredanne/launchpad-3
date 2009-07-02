@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -77,6 +77,8 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
+from canonical.launchpad.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from lp.registry.interfaces.person import IPersonSet
@@ -169,8 +171,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     """A Product."""
 
     implements(
-        IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
-        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget,
+        IFAQTarget, IHasBugSupervisor, IHasCustomLanguageCodes, IHasIcon,
+        IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget,
         IStructuralSubscriptionTarget)
 
     _table = 'Product'
@@ -931,10 +933,21 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
 
+    @property
+    def custom_language_codes(self):
+        """See `IHasCustomLanguageCodes`."""
+        return CustomLanguageCode.selectBy(
+            product=self, orderBy=['language_code'])
+
     def getCustomLanguageCode(self, language_code):
-        """See `IProduct`."""
+        """See `IHasCustomLanguageCodes`."""
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
+
+    def createCustomLanguageCode(self, language_code, language):
+        """See `IHasCustomLanguageCodes`."""
+        return CustomLanguageCode(
+            product=self, language_code=language_code, language=language)
 
     def userCanEdit(self, user):
         """See `IProduct`."""

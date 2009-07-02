@@ -44,6 +44,8 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from canonical.launchpad.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes)
 from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishing import (
@@ -157,8 +159,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
-        IQuestionTarget)
+        ISourcePackage, IHasBuildRecords, IHasCustomLanguageCodes,
+        IHasTranslationTemplates, IQuestionTarget)
 
     classProvides(ISourcePackageFactory)
 
