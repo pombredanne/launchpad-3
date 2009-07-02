@@ -128,7 +128,7 @@
                 <tr class="discreet secondary">
                   <td colspan="3">
                     Uploaded by 
-                    <a tal:content="entry/importer/browsername"
+                    <a tal:content="entry/importer/displayname"
                        tal:attributes="href entry/importer/fmt:url"
                        >Mark Shuttleworth</a>
                     on <span tal:content="entry/dateimported/fmt:datetime">date</span>

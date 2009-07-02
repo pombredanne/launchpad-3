@@ -35,6 +35,8 @@ __all__ = [
     'ProductTranslationsMenu',
     'ProductView',
     'SortSeriesMixin',
+    'ProjectAddStepOne',
+    'ProjectAddStepTwo',
     ]
 
 
@@ -104,7 +106,7 @@ from canonical.widgets.itemswidgets import (
 from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import (
-    LicenseWidget, ProductBugTrackerWidget, ProductNameWidget)
+    LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.registry.model.productseries import ProductSeries
 
@@ -223,7 +225,7 @@ class ProductLicenseMixin:
 
             template = helpers.get_email_template('product-license.txt')
             message = template % dict(
-                user_browsername=user.browsername,
+                user_browsername=user.displayname,
                 user_name=user.name,
                 product_name=self.product.name,
                 product_url=canonical_url(self.product),
@@ -1117,10 +1119,10 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "development_focus",
         "licenses",
         "license_info",
-    ]
-    custom_widget(
-        'licenses', LicenseWidget, column_count=3, orientation='vertical')
+        ]
+    custom_widget('licenses', LicenseWidget)
     custom_widget('bugtracker', ProductBugTrackerWidget)
+    custom_widget('license_info', GhostWidget)
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1131,6 +1133,16 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         if (len(self.context.licenses) == 0 and
             self.widgets.get('licenses') is not None):
             self.widgets['licenses'].allow_pending_license = True
+
+    def showOptionalMarker(self, field_name):
+        """See `LaunchpadFormView`."""
+        # This has the effect of suppressing the ": (Optional)" stuff for the
+        # license_info widget.  It's the last piece of the puzzle for
+        # manipulating the license_info widget into the table for the
+        # LicenseWidget instead of the enclosing form.
+        if field_name == 'license_info':
+            return False
+        return super(ProductEditView, self).showOptionalMarker(field_name)
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
@@ -1509,6 +1521,7 @@ class ProjectAddStepOne(StepView):
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
+    heading = "Register a project in Launchpad"
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
@@ -1516,9 +1529,19 @@ class ProjectAddStepOne(StepView):
     step_description = 'Project basics'
     search_results_count = 0
 
+    @property
+    def _next_step(self):
+        """Define the next step.
+
+        Subclasses can override this method to avoid having to override the
+        more complicated `main_action` method for customization.  The actual
+        property `next_step` must not be set before `main_action` is called.
+        """
+        return ProjectAddStepTwo
+
     def main_action(self, data):
         """See `MultiStepView`."""
-        self.next_step = ProjectAddStepTwo
+        self.next_step = self._next_step
         self.request.form['displayname'] = data['displayname']
         self.request.form['name'] = data['name'].lower()
         self.request.form['summary'] = data['summary']
@@ -1533,16 +1556,14 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
+    heading = "Register a project in Launchpad"
 
     product = None
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
-
-    custom_widget('project', VocabularyPickerWidget,
-                  header="Select a project group")
-    custom_widget('licenses', LicenseWidget, column_count=3,
-                  orientation='vertical')
+    custom_widget('licenses', LicenseWidget)
+    custom_widget('license_info', GhostWidget)
 
     @property
     def step_description(self):
@@ -1622,7 +1643,21 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Register %s (%s) in Launchpad' % (
-            self.request.form['displayname'], self.request.form['name'])
+                self.request.form['displayname'], self.request.form['name'])
+
+    def create_product(self, data):
+        """Create the product from the user data."""
+        project = data.get('project', None)
+        return getUtility(IProductSet).createProduct(
+            owner=self.user,
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            displayname=data['displayname'],
+            licenses=data['licenses'],
+            license_info=data['license_info'],
+            project=project
+            )
 
     def main_action(self, data):
         """See `MultiStepView`."""
@@ -1634,15 +1669,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
             data['owner'] = self.user
             data['license_reviewed'] = False
 
-        self.product = getUtility(IProductSet).createProduct(
-            owner=self.user,
-            name=data['name'],
-            title=data['title'],
-            summary=data['summary'],
-            displayname=data['displayname'],
-            licenses=data['licenses'],
-            license_info=data['license_info'])
-
+        self.product = self.create_product(data)
         self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.next_url = canonical_url(self.product)
@@ -1714,7 +1741,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         by oldOwner of the product.
 
         """
-        from zope.security.proxy import removeSecurityProxy
         import_queue = getUtility(ITranslationImportQueue)
         for entry in import_queue.getAllEntries(target=product):
             if entry.importer == oldOwner:

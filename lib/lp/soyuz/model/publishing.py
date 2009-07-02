@@ -771,6 +771,44 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return getUtility(
             IPublishingSet).getBuildStatusSummaryForSourcePublication(self)
 
+    def getAncestry(self, archive=None, distroseries=None, pocket=None,
+                    status=None):
+        """See `ISourcePackagePublishingHistory`."""
+        if archive is None:
+            archive = self.archive
+        if distroseries is None:
+            distroseries = self.distroseries
+        if status is None:
+            status = PackagePublishingStatus.PUBLISHED
+
+        ancestries = archive.getPublishedSources(
+            name=self.source_package_name, exact_match=True,
+            status=status, distroseries=distroseries, pocket=pocket)
+
+        if ancestries.count() > 0:
+            return ancestries[0]
+
+        return None
+
+    def overrideFromAncestry(self):
+        """See `ISourcePackagePublishingHistory`."""
+        # We don't want to use changeOverride here because it creates a
+        # new publishing record. This code can be only executed for pending
+        # publishing records.
+        assert self.status == PackagePublishingStatus.PENDING, (
+            "Cannot override published records.")
+
+        # If there is an published ancestry, use its component, otherwise
+        # use the original upload component.
+        ancestry = self.getAncestry()
+        if ancestry is not None:
+            component = ancestry.component
+        else:
+            component = self.sourcepackagerelease.component
+
+        self.secure_record.component = component
+        Store.of(self).invalidate(self)
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
@@ -997,6 +1035,44 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return [
             BinaryPackagePublishingHistory.get(copy.id) for copy in copies]
+
+    def getAncestry(self, archive=None, distroseries=None, pocket=None,
+                    status=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        if archive is None:
+            archive = self.archive
+        if distroseries is None:
+            distroseries = self.distroarchseries.distroseries
+        if status is None:
+            status = PackagePublishingStatus.PUBLISHED
+
+        ancestries = archive.getAllPublishedBinaries(
+            name=self.binary_package_name, exact_match=True, pocket=pocket,
+            status=status, distroarchseries=distroseries.architectures)
+
+        if ancestries.count() > 0:
+            return ancestries[0]
+
+        return None
+
+    def overrideFromAncestry(self):
+        """See `IBinaryPackagePublishingHistory`."""
+        # We don't want to use changeOverride here because it creates a
+        # new publishing record. This code can be only executed for pending
+        # publishing records.
+        assert self.status == PackagePublishingStatus.PENDING, (
+            "Cannot override published records.")
+
+        # If there is an ancestry, use its component, otherwise use the
+        # original upload component.
+        ancestry = self.getAncestry()
+        if ancestry is not None:
+            component = ancestry.component
+        else:
+            component = self.binarypackagerelease.component
+
+        self.secure_record.component = component
+        Store.of(self).invalidate(self)
 
 
 class PublishingSet:

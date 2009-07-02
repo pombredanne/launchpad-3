@@ -1,4 +1,6 @@
-= Using a mailing list as a team's contact address =
+================================================
+Using a mailing list as a team's contact address
+================================================
 
 The contact address for any team can be set to the team's mailing list, in
 which case all notifications sent by Launchpad to the team will be sent to the
@@ -58,7 +60,7 @@ member.
     >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
     >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
 
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     3
 
@@ -80,8 +82,8 @@ Here is the message to the person who added the question.
     Return-Path: bounces@canonical.com
     Precedence: bulk
     ...
-    X-Launchpad-Hash: ...
-    Received: by smtp2mbox
+    X-MailFrom: bounces@canonical.com
+    X-RcptTo: no-priv@canonical.com
     <BLANKLINE>
     New question #... on Mozilla Firefox:
     http://answers.launchpad.dev:8085/firefox/+question/...
@@ -92,8 +94,6 @@ Here is the message to the person who added the question.
     <BLANKLINE>
     You received this question notification because you are a direct
     subscriber of the question.
-    <BLANKLINE>
-    <BLANKLINE>
 
 Here is the message to Anne, the mailing list member.
 
@@ -120,7 +120,9 @@ Here is the message to Anne, the mailing list member.
     Content-Transfer-Encoding: 7bit
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    X-RcptTo: anne.person@example.com
     <BLANKLINE>
     New question #... on Mozilla Firefox:
     http://answers.launchpad.dev:8085/firefox/+question/...
@@ -135,8 +137,6 @@ Here is the message to Anne, the mailing list member.
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 Here is the message to the archive submission address.
 
@@ -169,7 +169,7 @@ One is sent to Anne and the other is sent to the archiver.
 
     >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
     >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     2
     >>> from operator import itemgetter
@@ -187,7 +187,9 @@ This one gets sent to Anne...
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    X-RcptTo: anne.person@example.com
     <BLANKLINE>
     You are now subscribed to the blueprint canvas - Support <canvas>
     Objects.
@@ -199,8 +201,6 @@ This one gets sent to Anne...
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 ...and this one gets sent to the archives.
 
@@ -214,7 +214,9 @@ This one gets sent to Anne...
     ...
     Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    X-RcptTo: archive@mail-archive.dev
     <BLANKLINE>
     You are now subscribed to the blueprint canvas - Support <canvas>
     Objects.
@@ -226,8 +228,6 @@ This one gets sent to Anne...
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 The team's contact address is set to each team member individually.
 Notifications will no longer be sent to the mailing list.
@@ -257,7 +257,7 @@ no-priv@canonical.com because he added the question.  The other goes to Anne
 as a member of the team, since the team's contact address is not set.  Nothing
 is sent to the archive because the mailing list was not used.
 
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     2
 
@@ -326,7 +326,7 @@ delivered since the mailing list is still active.
     ... """)
     >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
     >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
 
 Anne (as the only member of the mailing list) and the archive submission
 address both get copies of the message.
@@ -344,7 +344,9 @@ address both get copies of the message.
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    X-RcptTo: anne.person@example.com
     <BLANKLINE>
     Hi, I am a member of Launchpad.
     _______________________________________________
@@ -352,8 +354,6 @@ address both get copies of the message.
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
     >>> print messages[1].as_string()
     From: anne.person@example.com
@@ -364,7 +364,9 @@ address both get copies of the message.
     ...
     Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    X-RcptTo: archive@mail-archive.dev
     <BLANKLINE>
     Hi, I am a member of Launchpad.
     _______________________________________________
@@ -372,5 +374,3 @@ address both get copies of the message.
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>

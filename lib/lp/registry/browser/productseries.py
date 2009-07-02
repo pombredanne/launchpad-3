@@ -77,7 +77,8 @@ from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
-from lp.registry.browser import get_status_counts, RegistryDeleteViewMixin
+from lp.registry.browser import (
+    get_status_counts, MilestoneOverlayMixin, RegistryDeleteViewMixin)
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -370,14 +371,15 @@ class ProductSeriesTranslationsExportView(BaseExportView):
         """Process form submission requesting translations export."""
         pofiles = []
         translation_templates = self.context.getCurrentTranslationTemplates()
-        for translation_template in translation_templates:
-            pofiles += list(translation_template.pofiles)
+        pofiles = self.context.getCurrentTranslationFiles()
+        if not bool(pofiles.any()):
+            pofiles = None
         return (translation_templates, pofiles)
 
     def getDefaultFormat(self):
         """Return the default template format."""
         templates = self.context.getCurrentTranslationTemplates()
-        if len(templates) == 0:
+        if not bool(templates.any()):
             return None
         return templates[0].source_file_format
 
@@ -404,7 +406,8 @@ def get_series_branch_error(product, branch):
 # this becomes maintainable and form validation handled for us.
 # Currently, the pages just return 'System Error' as they trigger database
 # constraints.
-class ProductSeriesView(LaunchpadView, TranslationsMixin):
+class ProductSeriesView(LaunchpadView, TranslationsMixin,
+                        MilestoneOverlayMixin):
     """A view to show a series with translations."""
     def initialize(self):
         """See `LaunchpadFormView`."""
@@ -412,11 +415,11 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         self.has_errors = False
 
         # Whether there is more than one PO template.
-        self.has_multiple_templates = len(
-            self.context.getCurrentTranslationTemplates()) > 1
+        self.has_multiple_templates = (
+            self.context.getCurrentTranslationTemplates().count() > 1)
 
-        # let's find out what source package is associated with this
-        # productseries in the current release of ubuntu
+        # Let's find out what source package is associated with this
+        # productseries in the current release of ubuntu.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.curr_ubuntu_series = ubuntu.currentseries
         self.setUpPackaging()
@@ -747,6 +750,22 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
             all_specifications = all_specifications.union(
                 list(milestone.specifications))
         return get_status_counts(all_specifications, 'implementation_status')
+
+    @property
+    def milestone_table_class(self):
+        """The milestone table will be unseen if there are no milestones."""
+        if len(self.released_and_active_milestones) > 0:
+            return 'listing'
+        else:
+            # The page can remove the 'unseen' class to make the table
+            # visible.
+            return 'listing unseen'
+
+    @property
+    def milestone_row_uri_template(self):
+        return (
+            '%s/+milestone/{name}/+productseries-table-row' %
+            canonical_url(self.context.product, path_only_if_possible=True))
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):

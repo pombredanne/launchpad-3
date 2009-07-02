@@ -5,14 +5,13 @@ comments. Since the text of this comment is already displayed as the
 bug report itself (or is accessible via the link "show original bug
 report"), no text content is displayed for this comment.
 
-Without an attachment to the bug report, the first displayed comment 
+Without an attachment to the bug report, the first displayed comment
 of bug #11 is:
 
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> comment_1 = find_tags_by_class(browser.contents, 'boardComment')[0]
     >>> print extract_text(comment_1)
-    Valentina Commissari wrote on 2007-03-15:
-    (permalink)
+    #1 Valentina Commissari wrote on 2007-03-15:
     The solution to this is to make Jokosher use autoaudiosink...
 
 If we add an attachment to the bug report...
@@ -39,8 +38,7 @@ displayed as the bug report).
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> comment_0 = find_tags_by_class(browser.contents, 'boardComment')[0]
     >>> print extract_text(comment_0)
-    Daniel Silverstone wrote on 2007-03-15:
-    (permalink)
+    #0 Daniel Silverstone wrote on 2007-03-15:
     sample data (8 bytes, text/plain)
     >>> link = browser.getLink('sample data')
     >>> print link.url

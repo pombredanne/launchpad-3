@@ -10,7 +10,7 @@ if ! which bzr > /dev/null || !  test -x $(which bzr); then
 fi
 
 newfile=bzr-version-info-${RANDOM}.py
-PYTHONPATH= bzr version-info --format=python > $newfile 2>/dev/null;
+PYTHONPATH=lib bzr version-info --format=python > $newfile 2>/dev/null;
 # There's a leading space here that I don't care to trim.. 
 revno=$(python $newfile | grep revision: | cut -d: -f2)
 if ! [ -f bzr-version-info.py ]; then

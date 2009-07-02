@@ -37,7 +37,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
@@ -875,12 +875,12 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
 
-    @call_with(registrant=REQUEST_USER, summary=None)
+    @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         branch=Reference(schema=IBranch))
     @operation_returns_entry(Interface) # Really IBugBranch
     @export_write_operation()
-    def linkBranch(branch, registrant, summary=None):
+    def linkBranch(branch, registrant):
         """Link the given branch to this specification.
 
         :param branch: The branch to link to this specification.
