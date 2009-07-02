@@ -414,13 +414,12 @@ class DeleteUnlinkedPersonEntries(TunableLoop):
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self.store.execute(
             "CREATE TEMPORARY TABLE LinkedPeople(person integer primary key)")
-        # Prefill with recently created Person.
+        # Prefill with Person entries created after our OpenID provider
+        # started creating personless accounts on signup.
         self.store.execute("""
             INSERT INTO LinkedPeople
             SELECT id FROM Person
-            WHERE datecreated >
-                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                    - interval '2 weeks'
+            WHERE datecreated > '2009-04-01'
             """)
         for (from_table, from_column, to_table, to_column, uflag, dflag) in (
                 postgresql.listReferences(cursor(), 'person', 'id')):
@@ -557,5 +556,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionAuthorEmailLinker,
         HWSubmissionEmailLinker,
         MailingListSubscriptionPruner,
+        ]
+    tunable_loops = [
         DeleteUnlinkedPersonEntries,
         ]
