@@ -27,10 +27,6 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
@@ -157,14 +153,18 @@ class IPackageUpload(Interface):
 
     distroseries = exported(
         Reference(
-            schema=IDistroSeries,
+            # Really IDistroSeries, patched in
+            # _schema_circular_imports.py
+            schema=Interface,
             description=_("The distroseries targeted by this upload."),
             title=_("Series"), required=True, readonly=False,
             ))
 
     pocket = exported(
         Choice(
-            vocabulary=PackagePublishingPocket,
+            # Really PackagePublishingPocket, patched in
+            # _schema_circular_imports.py
+            vocabulary=DBEnumeratedType,
             description=_("The pocket targeted by this upload."),
             title=_("The pocket"), required=True, readonly=False,
             ))
@@ -180,7 +180,8 @@ class IPackageUpload(Interface):
     signing_key = Attribute("Changesfile Signing Key.")
     archive = exported(
         Reference(
-            schema=IArchive,
+            # Really IArchive, patched in _schema_circular_imports.py
+            schema=Interface,
             description=_("The archive for this upload."),
             title=_("Archive"), required=True, readonly=True))
     sources = Attribute("The queue sources associated with this queue item")

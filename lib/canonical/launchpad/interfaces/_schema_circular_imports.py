@@ -220,6 +220,8 @@ patch_choice_parameter_type(
 patch_choice_parameter_type(
     IDistroSeries, 'getPackageUploads', 'custom_type',
     PackageUploadCustomFormat)
+patch_plain_parameter_type(
+    IDistroSeries, 'getPackageUploads', 'archive', IArchive)
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 
@@ -235,3 +237,8 @@ patch_plain_parameter_type(
     IPackageset, 'getSourcesSharedBy', 'other_package_set', IPackageset)
 patch_plain_parameter_type(
     IPackageset, 'getSourcesNotSharedBy', 'other_package_set', IPackageset)
+
+# IPackageUpload
+IPackageUpload['pocket'].vocabulary = PackagePublishingPocket
+patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
+patch_reference_property(IPackageUpload, 'archive', IArchive)

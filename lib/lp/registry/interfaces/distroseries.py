@@ -21,7 +21,6 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad.fields import (
     ContentNameField, Description, PublicPersonChoice, Summary, Title)
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
-from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -430,7 +429,8 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             description=_("Return only items that have this status."),
             required=False),
         archive=Reference(
-            schema=IArchive,
+            # Really IArchive, patched in _schema_circular_imports.py
+            schema=Interface,
             title=_("Archive"),
             description=_("Return only items for this archive."),
             required=False),
