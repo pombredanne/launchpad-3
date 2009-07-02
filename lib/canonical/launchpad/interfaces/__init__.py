@@ -51,7 +51,6 @@ from lp.registry.interfaces.codeofconduct import *
 from lp.registry.interfaces.commercialsubscription import *
 from lp.soyuz.interfaces.component import *
 from lp.services.worlddata.interfaces.country import *
-from lp.translations.interfaces.customlanguagecode import *
 from lp.bugs.interfaces.cve import *
 from lp.bugs.interfaces.cvereference import *
 from lp.registry.interfaces.distribution import *
@@ -66,7 +65,6 @@ from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease\
     import *
 from lp.registry.interfaces.distroseries import *
 from lp.soyuz.interfaces.distroseriesbinarypackage import *
-from lp.translations.interfaces.distroserieslanguage import *
 from lp.soyuz.interfaces.distroseriespackagecache import *
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import *
 from canonical.launchpad.interfaces.emailaddress import *
@@ -82,7 +80,6 @@ from lp.registry.interfaces.irc import *
 from lp.registry.interfaces.jabber import *
 from lp.registry.interfaces.karma import *
 from lp.services.worlddata.interfaces.language import *
-from lp.translations.interfaces.languagepack import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.launchpadstatistic import *
 from canonical.launchpad.interfaces.librarian import *
@@ -101,13 +98,7 @@ from canonical.launchpad.interfaces.openidconsumer import *
 from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
-from lp.translations.interfaces.pofile import *
-from lp.translations.interfaces.pofiletranslator import *
 from lp.registry.interfaces.poll import *
-from lp.translations.interfaces.pomsgid import *
-from lp.translations.interfaces.potemplate import *
-from lp.translations.interfaces.potmsgset import *
-from lp.translations.interfaces.potranslation import *
 from lp.soyuz.interfaces.processor import *
 from lp.registry.interfaces.product import *
 from canonical.launchpad.interfaces.productbounty import *
@@ -115,12 +106,10 @@ from lp.registry.interfaces.productlicense import *
 from lp.registry.interfaces.productrelease import *
 from lp.registry.interfaces.productseries import *
 from lp.registry.interfaces.project import *
-from lp.translations.interfaces.productserieslanguage import *
 from canonical.launchpad.interfaces.projectbounty import *
 from lp.soyuz.interfaces.publishedpackage import *
 from lp.soyuz.interfaces.publishing import *
 from lp.soyuz.interfaces.queue import *
-from lp.translations.interfaces.rosettastats import *
 from lp.registry.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
 from lp.services.scripts.interfaces.scriptactivity import *
@@ -143,23 +132,7 @@ from lp.registry.interfaces.ssh import *
 from canonical.launchpad.interfaces.structuralsubscription import *
 from lp.registry.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
-from lp.translations.interfaces.translationcommonformat import *
-from lp.translations.interfaces.translationexporter import *
-from lp.translations.interfaces.translationfileformat import *
-from lp.translations.interfaces.translationimporter import *
-from lp.translations.interfaces.translationmessage import *
-from lp.translations.interfaces.translations import *
-from lp.translations.interfaces.translationsoverview import *
-from lp.translations.interfaces.translationsperson import *
-from lp.translations.interfaces.translationtemplateitem import *
-from lp.translations.interfaces.translationcommonformat import *
-from lp.translations.interfaces.translationgroup import *
-from lp.translations.interfaces.translationimportqueue import *
-from lp.translations.interfaces.translator import *
-from lp.translations.interfaces.vpoexport import *
-from lp.translations.interfaces.vpotexport import *
 from lp.registry.interfaces.wikiname import *
-from lp.translations.interfaces.poexportrequest import *
 from lp.soyuz.interfaces.packagediff import *
 from lp.soyuz.interfaces.packageset import *
 
