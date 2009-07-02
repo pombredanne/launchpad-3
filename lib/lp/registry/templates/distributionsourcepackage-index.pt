@@ -95,28 +95,35 @@
   </p>
 
   <div tal:define="ppa_versions view/latest_published_ppa_versions"
-       tal:condition="ppa_versions" class="informational ppa">
+       tal:condition="ppa_versions">
     <p>The following <strong>unsupported</strong> and 
-       <strong>untrusted</strong> PPAs also provide
-       '<span tal:replace="context/name" />':</p>
-    <ul id="ppa_packaging">
-      <li tal:repeat="ppa_version ppa_versions">
-        <a tal:attributes="href ppa_version/archive/fmt:url"
-           tal:content="ppa_version/archive/displayname">
-          Super trusted PPA
-        </a>
-        (<span tal:replace="ppa_version/archive/owner/displayname">
-           Joe Dodgy
-         </span>):
-         <span tal:replace="ppa_version/versions">
-           Hoary (1.0.1), Feisty (2.0.1)
-         </span>
-      </li>
-    </ul>
+       <strong>untrusted</strong> Personal Archives (PPAs) also provide
+       packages of '<span tal:replace="context/name" />':</p>
+    <dl id="ppa_packaging">
+      <tal:definition tal:repeat="ppa_version ppa_versions">
+        <dt>
+          <a tal:attributes="href ppa_version/archive/fmt:url">
+            <img tal:replace="structure ppa_version/archive/image:icon" />
+            <span tal:replace="ppa_version/archive/displayname">
+              Super trusted PPA
+            </span>
+          </a> owned by
+          <a tal:replace="structure ppa_version/archive/owner/fmt:link">
+            Joe Dodgy
+          </a>
+        </dt>
+        <dd>
+          Versions:
+          <span tal:replace="ppa_version/versions">
+            Hoary (1.0.1), Feisty (2.0.1)
+          </span>
+        </dd>
+      </tal:definition>
+    </dl>
 
     <p>You can also search for
        <a tal:attributes="href view/further_ppa_versions_url">
-         all unsupported and untrusted versions of
+         more untrusted versions of
          '<span tal:replace="context/name" />'</a>.
     </p>
   </div>
