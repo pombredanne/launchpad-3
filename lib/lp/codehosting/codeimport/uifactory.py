@@ -110,7 +110,7 @@ class LoggingTextProgressView(TextProgressView):
         self._last_repaint = now
         self._repaint()
 
-    def _show_transport_activity(self, transport, direction, byte_count):
+    def show_transport_activity(self, transport, direction, byte_count):
         """Called by transports via the ui_factory, as they do IO.
 
         This may update a progress bar, spinner, or similar display.
@@ -143,3 +143,7 @@ class LoggingTextProgressView(TextProgressView):
             self._bytes_since_update = 0
             self._last_transport_msg = msg
             self._repaint()
+
+    # bzr 1.17 renamed _show_transport_activity to show_transport_activity.
+    # When we have upgraded to bzr 1.17, this compatibility hack can go away.
+    _show_transport_activity = show_transport_activity

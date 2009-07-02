@@ -66,8 +66,7 @@ from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_queue_item)
-from lp.soyuz.scripts.packagecopier import (
-    override_from_ancestry, update_files_privacy)
+from lp.soyuz.scripts.packagecopier import update_files_privacy
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp import canonical_url
@@ -525,7 +524,7 @@ class PackageUpload(SQLBase):
         # Adjust component and file privacy of delayed_copies.
         if self.is_delayed_copy:
             for pub_record in publishing_records:
-                override_from_ancestry(pub_record)
+                pub_record.overrideFromAncestry()
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
                           "Re-uploaded %s to librarian" % new_file.filename)

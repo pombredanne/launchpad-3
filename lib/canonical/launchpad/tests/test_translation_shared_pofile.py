@@ -14,13 +14,13 @@ from canonical.launchpad.interfaces import TranslationValidationStatus
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import ZopelessDatabaseLayer
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):
     """Test behaviour of PO files with shared POTMsgSets."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a product with two series and a shared POTemplate
@@ -574,6 +574,19 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions().count(),
             1)
 
+    def test_getPOTMsgSetWithNewSuggestions_empty(self):
+        # Test listing of POTMsgSets with empty strings as suggestions.
+
+        # When an empty suggestion is added, the potmsgset is NOT returned.
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u""], suggestion=True)
+        self.assertEquals(False, translation.is_current)
+
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals([], found_translations)
+
     def test_getPOTMsgSetChangedInLaunchpad(self):
         # Test listing of POTMsgSets which contain changes from imports.
 
@@ -796,7 +809,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 class TestSharedPOFileCreation(TestCaseWithFactory):
     """Test that POFiles are created in shared POTemplates."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a product with two series and a shared POTemplate
@@ -862,7 +875,7 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
     """Test ordering of POTMsgSets as returned by PO file methods."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a product with two series and a shared POTemplate
@@ -1067,7 +1080,7 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 class TestPOFileStatistics(TestCaseWithFactory):
     """Test PO files statistics calculation."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a POFile to calculate statistics on.

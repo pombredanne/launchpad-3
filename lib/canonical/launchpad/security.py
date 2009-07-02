@@ -52,8 +52,8 @@ from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IBazaarApplication, IHasBug, IHasDrivers, IHasOwner,
-    ILaunchpadCelebrities)
+    IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (

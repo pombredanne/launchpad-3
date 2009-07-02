@@ -56,8 +56,8 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
-    IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES, PocketNotFound,
-    SourceNotFound, default_name_by_purpose)
+    IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
+    PocketNotFound, SourceNotFound, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivepermission import (
@@ -67,11 +67,12 @@ from lp.soyuz.interfaces.archivesubscriber import (
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.interfaces.launchpad import (
-    IHasOwner, ILaunchpadCelebrities, NotFoundError)
+    ILaunchpadCelebrities, NotFoundError)
+from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
@@ -81,7 +82,7 @@ from lp.soyuz.interfaces.publishing import (
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.soyuz.scripts.packagecopier import (
-    CannotCopy, check_copy, do_copy)
+    CannotCopy, do_copy)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -842,11 +843,25 @@ class Archive(SQLBase):
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."
+        # PPA access is immediately granted if the user is in the PPA
+        # team.
         if self.is_ppa:
-            return user.inTeam(self.owner)
-        else:
-            return self._authenticate(
-                user, component_or_package, ArchivePermissionType.UPLOAD)
+            if user.inTeam(self.owner):
+                return True
+            else:
+                # If the user is not in the PPA team, default to using
+                # the main component for further ACL checks.  This is
+                # not ideal since PPAs don't use components, but when
+                # packagesets replace them for main archive uploads this
+                # interface will no longer require them because we can
+                # then relax the database constraint on
+                # ArchivePermission.
+                component_or_package = getUtility(IComponentSet)['main']
+
+        # Otherwise any archive, including PPAs, uses the standard
+        # ArchivePermission entries.
+        return self._authenticate(
+            user, component_or_package, ArchivePermissionType.UPLOAD)
 
     def canAdministerQueue(self, user, component):
         """See `IArchive`."""
@@ -866,6 +881,17 @@ class Archive(SQLBase):
 
     def newComponentUploader(self, person, component_name):
         """See `IArchive`."""
+        if self.is_ppa:
+            if IComponent.providedBy(component_name):
+                name = component_name.name
+            elif isinstance(component_name, str):
+                name = component_name
+            else:
+                name = None
+
+            if name is None or name != 'main':
+                raise InvalidComponent("Component for PPAs should be 'main'")
+
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.newComponentUploader(
             self, person, component_name)
@@ -1037,19 +1063,7 @@ class Archive(SQLBase):
         else:
             series = None
 
-        # Validate the copy.
-        broken_copies = []
-        for source in sources:
-            try:
-                check_copy(
-                    source, self, series, pocket, include_binaries)
-            except CannotCopy, reason:
-                broken_copies.append("%s (%s)" % (source.displayname, reason))
-
-        if len(broken_copies) != 0:
-            raise CannotCopy("\n".join(broken_copies))
-
-        # Perform the copy.
+        # Perform the copy, may raise CannotCopy.
         copies = do_copy(
             sources, self, series, pocket, include_binaries)
 
