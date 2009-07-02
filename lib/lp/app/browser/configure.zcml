@@ -5,12 +5,6 @@
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
     <browser:page
-        name="base_layout"
-        for="*"
-        permission="zope.Public"
-        template="../templates/base-layout.pt"
-        />
-    <browser:page
         for="*"
         name="+base-layout-macros"
         template="../templates/base-layout-macros.pt"
