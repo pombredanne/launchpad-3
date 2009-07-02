@@ -50,9 +50,6 @@ class BugSubscriptionAddView(LaunchpadFormView):
 
     cancel_url = next_url
 
-    def validate_widgets(self, data, names=None):
-        super(BugSubscriptionAddView, self).validate_widgets(data, names)
-
 
 class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
