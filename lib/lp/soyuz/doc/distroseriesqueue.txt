@@ -1050,7 +1050,7 @@ creating a duplicated delayed-copy is perfectly possible.
 
    >>> unused = dup_delayed_copy.addSource(a_source_release)
 
-Although, it cannot be accepted.
+Although it cannot be accepted.
 
    >>> dup_delayed_copy.acceptFromCopy()
    Traceback (most recent call last):
