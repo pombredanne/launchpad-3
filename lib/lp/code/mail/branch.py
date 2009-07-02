@@ -249,15 +249,6 @@ class BranchMailer(BaseMailer):
             return subject
         return '[Branch %s]' % (db_branch.unique_name)
 
-    def _diffText(self, email):
-        """Determine the text to use for the diff.
-
-        If the diff's length exceeds the user preferences, a message
-        about this is returned.  Otherwise, the diff is returned.
-        """
-        contents = self.contents or ''
-        return contents + self._includeDiff(email)[1]
-
     def _getHeaders(self, email):
         headers = BaseMailer._getHeaders(self, email)
         reason, rationale = self._recipients.getReason(email)
@@ -280,11 +271,16 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
-        params['diff'] = self._diffText(email)
+        params['diff'] = (self.contents or '') + self._includeDiff(email)[1]
         params.setdefault('delta', '')
         return params
 
     def _includeDiff(self, email):
+        """Determine whether to include a diff, and explanation.
+
+        Explanation is provided if the diff is wanted and present, but is
+        too large.
+        """
         if self.diff is None:
             return False, ''
         reason, rationale = self._recipients.getReason(email)
@@ -301,6 +297,7 @@ class BranchMailer(BaseMailer):
         return True, ''
 
     def _addAttachments(self, ctrl, email):
+        """Attach the diff, if present and not too large."""
         if not self._includeDiff(email)[0]:
             return
         ctrl.addAttachment(

@@ -164,8 +164,8 @@ class TestBranchMailerDiff(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeBobMailer(self, diff=None,
-                      max_lines=BranchSubscriptionDiffSize.WHOLEDIFF):
+    def makeBobMailController(self, diff=None,
+                              max_lines=BranchSubscriptionDiffSize.WHOLEDIFF):
         bob = self.factory.makePerson(email='bob@example.com')
         branch = self.factory.makeProductBranch(owner=bob)
         subscription = branch.getSubscription(bob)
@@ -174,19 +174,17 @@ class TestBranchMailerDiff(TestCaseWithFactory):
             BranchSubscriptionNotificationLevel.FULL)
         mailer = BranchMailer.forRevision(
             branch, 1, 'from@example.com', contents='', diff=diff, subject='')
-        return mailer, branch
+        return mailer.generateEmail('bob@example.com', branch.owner)
 
     def test_generateEmail_with_no_diff(self):
         """When there is no diff, no attachment should be included."""
-        mailer, branch = self.makeBobMailer()
-        ctrl = mailer.generateEmail('bob@example.com', branch.owner)
+        ctrl = self.makeBobMailController()
         self.assertEqual([], ctrl.attachments)
         self.assertNotIn('larger than your specified limit', ctrl.body)
 
     def test_generateEmail_with_diff(self):
         """When there is a diff, it should be an attachment, not inline."""
-        mailer, branch = self.makeBobMailer(diff='hello')
-        ctrl = mailer.generateEmail('bob@example.com', branch.owner)
+        ctrl = self.makeBobMailController(diff='hello')
         self.assertEqual(1, len(ctrl.attachments))
         diff = ctrl.attachments[0]
         self.assertEqual('hello', diff.get_payload(decode=True))
@@ -198,18 +196,16 @@ class TestBranchMailerDiff(TestCaseWithFactory):
 
     def test_generateEmail_with_oversize_diff(self):
         """When the diff is oversize, don't attach, add reason."""
-        mailer, branch = self.makeBobMailer(diff='hello\n' * 5000,
+        ctrl = self.makeBobMailController(diff='hello\n' * 5000,
             max_lines=BranchSubscriptionDiffSize.FIVEKLINES)
-        ctrl = mailer.generateEmail('bob@example.com', branch.owner)
         self.assertEqual([], ctrl.attachments)
         self.assertIn('The size of the diff (5001 lines) is larger than your'
             ' specified limit of 5000 lines', ctrl.body)
 
     def test_generateEmail_with_subscription_no_diff(self):
         """When subscription forbids diffs, don't add reason."""
-        mailer, branch = self.makeBobMailer(diff='hello\n',
+        ctrl = self.makeBobMailController(diff='hello\n',
             max_lines=BranchSubscriptionDiffSize.NODIFF)
-        ctrl = mailer.generateEmail('bob@example.com', branch.owner)
         self.assertEqual([], ctrl.attachments)
         self.assertNotIn('larger than your specified limit', ctrl.body)
 
