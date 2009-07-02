@@ -15,7 +15,8 @@ from canonical.database.enumcol import EnumCol
 from lp.translations.interfaces.poexportrequest import (
     IPOExportRequest, IPOExportRequestSet)
 from lp.translations.interfaces.potemplate import IPOTemplate
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.registry.interfaces.person import validate_public_person
 
 

@@ -11,7 +11,8 @@ from zope.component import getUtility
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import RosettaImportStatus
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
 from lp.translations.utilities.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.testing import LaunchpadZopelessLayer

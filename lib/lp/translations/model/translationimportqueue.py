@@ -38,12 +38,17 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
-from lp.translations.interfaces.translationimporter import ITranslationImporter
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
+from lp.translations.interfaces.translationimporter import (
+    ITranslationImporter)
 from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports, ITranslationImportQueue,
-    ITranslationImportQueueEntry, RosettaImportStatus,
-    SpecialTranslationImportTargetFilter, TranslationImportQueueConflictError)
+    IHasTranslationImports,
+    ITranslationImportQueue,
+    ITranslationImportQueueEntry,
+    RosettaImportStatus,
+    SpecialTranslationImportTargetFilter,
+    TranslationImportQueueConflictError)
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient

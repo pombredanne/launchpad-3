@@ -9,12 +9,20 @@ through the possibilities should go here.
 
 import unittest
 
-from canonical.launchpad.database import (
-    CustomLanguageCode, Distribution, Language, POTemplateSet,
-    POTemplateSubset, SourcePackageName, SourcePackageNameSet,
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.sourcepackagename import (
+    SourcePackageName,
+    SourcePackageNameSet)
+from lp.services.worlddata.model.language import Language
+from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.potemplate import (
+    POTemplateSet,
+    POTemplateSubset)
+from lp.translations.model.translationimportqueue import (
     TranslationImportQueue)
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
-from lp.translations.interfaces.translationimportqueue import RosettaImportStatus
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer

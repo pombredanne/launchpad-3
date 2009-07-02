@@ -19,8 +19,11 @@ from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import TranslationMessage
 
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.interfaces.translations import TranslationConstants
+
+
 def getOrCreatePOMsgID(msgid):
     try:
         pomsgid = POMsgID.byMsgid(msgid)

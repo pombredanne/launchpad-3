@@ -20,18 +20,25 @@ from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.translations.interfaces.potmsgset import (
-    BrokenTextError, IPOTMsgSet, POTMsgSetInIncompatibleTemplatesError)
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
-from lp.translations.interfaces.translationimporter import ITranslationImporter
+    BrokenTextError,
+    IPOTMsgSet,
+    POTMsgSetInIncompatibleTemplatesError)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
+from lp.translations.interfaces.translationimporter import (
+    ITranslationImporter)
 from lp.translations.interfaces.translationmessage import (
-    RosettaTranslationOrigin, TranslationConflict, TranslationValidationStatus)
+    RosettaTranslationOrigin,
+    TranslationConflict,
+    TranslationValidationStatus)
 from lp.translations.interfaces.translations import TranslationConstants
 from canonical.launchpad.helpers import shortlist
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import (
-    DummyTranslationMessage, TranslationMessage)
+    DummyTranslationMessage,
+    TranslationMessage)
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem)
 

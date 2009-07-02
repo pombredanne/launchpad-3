@@ -19,7 +19,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError)
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.interfaces.translationmessage import TranslationConflict
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import ZopelessDatabaseLayer

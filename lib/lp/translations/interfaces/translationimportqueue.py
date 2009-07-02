@@ -8,7 +8,8 @@ from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productseries import IProductSeries

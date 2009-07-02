@@ -14,7 +14,8 @@ from zope.schema import Int, Object
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 class IPOExportRequestSet(Interface):
     entry_count = Int(
         title=u'Number of entries waiting in the queue.',

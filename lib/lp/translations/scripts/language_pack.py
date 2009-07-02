@@ -21,8 +21,11 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues, cursor
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.translations.interfaces.languagepack import ILanguagePackSet, LanguagePackType
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
+from lp.translations.interfaces.languagepack import (
+    ILanguagePackSet,
+    LanguagePackType)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.interfaces.vpoexport import IVPOExportSet
 from lp.translations.utilities.translation_export import (
     LaunchpadWriteTarFile)

@@ -41,7 +41,9 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from lp.translations.browser.potemplate import POTemplateFacets
-from canonical.launchpad.webapp.interfaces import ILaunchBag, UnexpectedFormData
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag,
+    UnexpectedFormData)
 from lp.translations.interfaces.pofile import IPOFileAlternativeLanguage
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage, ITranslationMessageSet,

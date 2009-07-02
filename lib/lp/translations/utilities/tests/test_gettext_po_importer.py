@@ -12,9 +12,12 @@ from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
-from lp.translations.interfaces.translationimporter import ITranslationFormatImporter
-from lp.translations.interfaces.translationimportqueue import ITranslationImportQueue
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
+from lp.translations.interfaces.translationimporter import (
+    ITranslationFormatImporter)
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 from canonical.testing import LaunchpadZopelessLayer
 
 test_template = r'''

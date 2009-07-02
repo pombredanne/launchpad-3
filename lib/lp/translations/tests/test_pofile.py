@@ -10,7 +10,8 @@ import unittest
 from zope.component import getAdapter
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.interfaces.translationmessage import TranslationValidationStatus
+from lp.translations.interfaces.translationmessage import (
+    TranslationValidationStatus)
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.testing import TestCaseWithFactory

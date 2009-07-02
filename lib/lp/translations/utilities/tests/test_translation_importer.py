@@ -9,10 +9,15 @@ from zope.interface.verify import verifyObject
 
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
-from lp.translations.interfaces.translationimporter import ITranslationImporter
-from lp.translations.utilities import (
-    importers, is_identical_translation, TranslationImporter,
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
+from lp.translations.interfaces.translationimporter import (
+    ITranslationImporter)
+from lp.translations.utilities.translation_import import (
+    importers,
+    is_identical_translation,
+    TranslationImporter)
+from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
 from canonical.testing import LaunchpadZopelessLayer
 

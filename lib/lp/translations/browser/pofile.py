@@ -27,11 +27,15 @@ from lp.translations.browser.translationmessage import (
     BaseTranslationView, CurrentTranslationMessageView)
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import POTemplateFacets
-from canonical.launchpad.webapp.interfaces import NotFoundError, UnexpectedFormData
+from canonical.launchpad.webapp.interfaces import (
+    NotFoundError,
+    UnexpectedFormData)
 from lp.registry.interfaces.person import IPersonSet
 from lp.translations.interfaces.pofile import IPOFile
-from lp.translations.interfaces.translationimporter import ITranslationImporter
-from lp.translations.interfaces.translationimportqueue import ITranslationImportQueue
+from lp.translations.interfaces.translationimporter import (
+    ITranslationImporter)
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from canonical.launchpad.webapp import (

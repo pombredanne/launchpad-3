@@ -39,9 +39,13 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateSubset)
-from lp.translations.interfaces.translationimporter import ITranslationImporter
-from lp.translations.interfaces.translationimportqueue import ITranslationImportQueue
+    IPOTemplate,
+    IPOTemplateSet,
+    IPOTemplateSubset)
+from lp.translations.interfaces.translationimporter import (
+    ITranslationImporter)
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, GetitemNavigation,
     LaunchpadView, LaunchpadEditFormView, Link, Navigation, NavigationMenu,

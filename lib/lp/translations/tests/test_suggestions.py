@@ -13,7 +13,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.interfaces.translationmessage import TranslationValidationStatus
+from lp.translations.interfaces.translationmessage import (
+    TranslationValidationStatus)
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 

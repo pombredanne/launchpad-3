@@ -12,8 +12,10 @@ from canonical.launchpad.ftests import sync
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationcommonformat import ITranslationFileData
-from lp.translations.interfaces.translationexporter import ITranslationFormatExporter
+from lp.translations.interfaces.translationcommonformat import (
+    ITranslationFileData)
+from lp.translations.interfaces.translationexporter import (
+    ITranslationFormatExporter)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from lp.translations.utilities.xpi_po_exporter import (

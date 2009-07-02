@@ -19,7 +19,8 @@ from canonical.launchpad.ftests import sync
 from lp.translations.model.translationrelicensingagreement import (
     TranslationRelicensingAgreement)
 from lp.registry.interfaces.person import IPersonSet
-from lp.translations.interfaces.translationmessage import RosettaTranslationOrigin
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin)
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.translations.scripts.remove_translations import (
     RemoveTranslations, remove_translations)

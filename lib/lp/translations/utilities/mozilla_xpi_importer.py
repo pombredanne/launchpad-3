@@ -14,15 +14,21 @@ from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-    ITranslationFormatImporter, TranslationConstants, TranslationFileFormat,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
+from lp.translations.interfaces.translationimporter import (
+    ITranslationFormatImporter,
+    TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError)
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.translation_common_format import (
-    TranslationFileData, TranslationMessageData)
+    TranslationFileData,
+    TranslationMessageData)
 from lp.translations.utilities.mozilla_zip import (
     MozillaZipTraversal)
 from lp.translations.utilities.xpi_header import XpiHeader
 from canonical.librarian.interfaces import ILibrarianClient
+
 
 
 def add_source_comment(message, comment):

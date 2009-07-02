@@ -9,8 +9,10 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import IPersonSet
-from lp.translations.interfaces.translationimporter import OutdatedTranslationError
-from lp.translations.interfaces.translationimportqueue import ITranslationImportQueue
+from lp.translations.interfaces.translationimporter import (
+    OutdatedTranslationError)
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from lp.testing import TestCaseWithFactory

@@ -9,7 +9,8 @@ from zope.interface import implements
 from sqlobject import ForeignKey, IntCol
 
 from canonical.database.sqlbase import SQLBase
-from lp.translations.interfaces.translationtemplateitem import ITranslationTemplateItem
+from lp.translations.interfaces.translationtemplateitem import (
+    ITranslationTemplateItem)
 class TranslationTemplateItem(SQLBase):
     """See `ITranslationTemplateItem`."""
     implements(ITranslationTemplateItem)
