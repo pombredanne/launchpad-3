@@ -97,12 +97,14 @@
   <div tal:define="ppa_versions view/latest_published_ppa_versions"
        tal:condition="ppa_versions" id="related-ppa-versions">
     <div class="widget-hd" id="slide-trigger">
-      Most recent versions uploaded to untrusted personal archives...
+      Other versions of '<span tal:replace="context/name" />' in untrusted
+      archives.
     </div>
     <div class="widget-bd">
       <p>The following <strong>unsupported</strong> and 
-         <strong>untrusted</strong> Personal Archives (PPAs) also provide
-         packages of '<span tal:replace="context/name" />':</p>
+         <strong>untrusted</strong> Personal Archives (PPAs) provide
+         the most recently uploaded packages of
+         '<span tal:replace="context/name" />':</p>
       <dl id="ppa_packaging">
         <tal:definition tal:repeat="ppa_version ppa_versions">
           <dt>
