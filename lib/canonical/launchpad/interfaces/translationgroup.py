@@ -19,7 +19,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from lazr.enum import DBEnumeratedType, DBItem
 
 

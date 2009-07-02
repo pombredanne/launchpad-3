@@ -18,7 +18,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 
 
 class IIrcID(IHasOwner):
