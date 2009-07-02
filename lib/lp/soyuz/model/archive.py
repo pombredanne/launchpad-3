@@ -71,7 +71,8 @@ from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.interfaces.launchpad import (
-    IHasOwner, ILaunchpadCelebrities, NotFoundError)
+    ILaunchpadCelebrities, NotFoundError)
+from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
