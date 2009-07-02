@@ -686,9 +686,12 @@ class IProductPublic(
         this Product.
         """
 
+    @operation_parameters(
+        include_inactive=Bool(title=_("Include inactive"),
+                              required=False, default=False))
     @export_read_operation()
     @export_operation_as('get_timeline')
-    def getTimeline():
+    def getTimeline(include_inactive):
         """Return basic timeline data useful for creating a diagram."""
 
 

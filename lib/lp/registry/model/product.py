@@ -966,7 +966,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         series_list.insert(0, self.development_focus)
         series_list.reverse()
         return [series.getTimeline(include_inactive=include_inactive)
-                for series in series_list]
+                for series in series_list
+                if include_inactive or series.active]
 
 
 class ProductSet:

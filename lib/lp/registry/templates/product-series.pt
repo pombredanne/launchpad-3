@@ -15,15 +15,15 @@
 
     <h1><span tal:replace="context/displayname" /> Timeline</h1>
 
-    <tal:iframe define="auto_resize python:True">
+    <tal:vars define="auto_resize string:true; include_inactive string:true">
       <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
-    </tal:iframe>
+    </tal:vars>
 
     <div tal:repeat="series view/sorted_series_list">
       <div style="margin-top: 1em;
                   border-bottom: 1px solid #ccc; max-width: 60em;"
         tal:define="is_focus series/is_development_focus"
-        tal:attributes="class series/css_class;
+        tal:attributes="class string:${series/css_class} series;
                         id series/name/fmt:css-id/series-;">
         <tal:status replace="structure series/series/@@+status" />
       </div>
