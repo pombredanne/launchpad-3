@@ -549,6 +549,17 @@ class IPackageUploadSet(Interface):
         :return: an `IPackageUpload` record in NEW state.
         """
 
+    def findSourceUpload(name, version, archive, distribution):
+        """Return a `PackageUpload` for a matching source.
+
+        :param name: a string with the exact source name.
+        :param version: a string with the exact source version.
+        :param archive: source upload target `IArchive`.
+        :param distribution: source upload target `IDistribution`.
+
+        :return: a matching `IPackageUpload` object.
+        """
+
     def getBuildByBuildIDs(build_ids):
         """Return `PackageUploadBuilds`s for the supplied build IDs."""
 
