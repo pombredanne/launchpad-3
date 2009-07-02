@@ -24,69 +24,79 @@
       <img src="/@@/spinner" /> Loading...
     </div>
   </div>
-  <tal:script
-    replace="structure
-    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
-  var resize_frame =
-      '<tal:x replace="request/form/resize_frame | nothing"/>';
-  <!--
-  YUI().use('registry.timeline', 'node', function(Y) {
-      Y.on('domready', function(e) {
-          if (Y.UA.ie) {
-              return;
-          }
+  <script>
+  function show_timeline_graph(include_inactive, resize_frame) {
+      if (include_inactive == 'true') {
+          include_inactive = true;
+      } else {
+          include_inactive = false;
+      }
 
-          var display_graph = function(result) {
-              var timeline = result;
-              // The timeline for a productseries needs to be wrapped
-              // in an array.
-              if (!Y.Lang.isArray(timeline)) {
-                  timeline = [timeline];
+      YUI().use('registry.timeline', 'node', function(Y) {
+          Y.on('domready', function(e) {
+              if (Y.UA.ie) {
+                  return;
               }
-              // Don't display graph if there are zero milestones or releases.
-              var container = Y.get('#timeline-container');
-              container.setStyle('display', 'block');
-              var config = {
-                  timeline: timeline,
-                  boundingBox: container
-              };
-              if (resize_frame !== '') {
-                  config.resize_frame = resize_frame;
-              }
-              var graph = new Y.registry.timeline.TimelineGraph(config);
-              graph.render();
-              Y.get('#spinner').setStyle('display', 'none');
-              // Scroll to the most recent milestones or
-              // releases on the development focus series.
-              graph.scroll_to_last_development_focus_landmark();
-          }
 
-          var client = new LP.client.Launchpad();
-          var timeline = client.named_get(
-              LP.client.cache['context']['self_link'],
-              'get_timeline', {
-                  parameters: {},
-                  on: {
-                      success: display_graph,
-                      failure: function(ignore, response, args) {
-                          // Firefox triggers the failure handler with
-                          // status=0 if the page load is interrupted.
-                          if (response.status !== 0) {
-                              alert(
-                                  response.status +
-                                  ' Error retrieving series data.\n' +
-                                  response.responseText);
+              var display_graph = function(result) {
+                  var timeline = result;
+                  // The timeline for a productseries needs to be wrapped
+                  // in an array.
+                  if (!Y.Lang.isArray(timeline)) {
+                      timeline = [timeline];
+                  }
+
+                  // Don't display graph if there are zero milestones or
+                  // releases.
+                  var container = Y.get('#timeline-container');
+                  container.setStyle('display', 'block');
+                  var config = {
+                      timeline: timeline,
+                      boundingBox: container
+                  };
+                  if (resize_frame !== '') {
+                      config.resize_frame = resize_frame;
+                  }
+                  var graph = new Y.registry.timeline.TimelineGraph(config);
+                  graph.render();
+                  Y.get('#spinner').setStyle('display', 'none');
+                  // Scroll to the most recent milestones or
+                  // releases on the development focus series.
+                  graph.scroll_to_last_development_focus_landmark();
+              }
+
+              var client = new LP.client.Launchpad();
+              var timeline = client.named_get(
+                  LP.client.cache['context']['self_link'],
+                  'get_timeline', {
+                      parameters: {include_inactive: include_inactive},
+                      on: {
+                          success: display_graph,
+                          failure: function(ignore, response, args) {
+                              // Firefox triggers the failure handler with
+                              // status=0 if the page load is interrupted.
+                              if (response.status !== 0) {
+                                  alert(
+                                      response.status +
+                                      ' Error retrieving series data.\n' +
+                                      response.responseText);
+                              }
                           }
                       }
-                  }
-              });
+                  });
 
-          var drag_scroll_handler = new DragScrollEventHandler();
-          drag_scroll_handler.activate();
+              var drag_scroll_handler = new DragScrollEventHandler();
+              drag_scroll_handler.activate();
+          });
       });
-  });
-  -->
-  <tal:script replace="structure string:&lt;/script&gt;" />
+  }
+  </script>
+  <script
+    tal:define="
+      include_inactive request/form/include_inactive | nothing;
+      resize_frame request/form/resize_frame | nothing"
+    tal:content="
+      string: show_timeline_graph('${include_inactive}', '${resize_frame}');"/>
 
 </body>
 </html>

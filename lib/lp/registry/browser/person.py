@@ -2891,17 +2891,13 @@ class PersonView(LaunchpadView, FeedsMixin):
         We display it if:
         person has viewable ppa or current_user has lp.edit
         """
-        # Avoid circular import.
-        from lp.soyuz.interfaces.archive import IArchiveSet
-
         # If the current user has edit permission, show the section.
         if check_permission('launchpad.Edit', self.context):
             return True
 
         # If the current user is allowed to see any PPAs, show the
         # section.
-        ppas = getUtility(IArchiveSet).getPPAsForUser(self.context)
-        for ppa in ppas:
+        for ppa in self.context.ppas:
             if check_permission('launchpad.View', ppa):
                 return True
 
@@ -4739,7 +4735,7 @@ class PersonAnswersMenu(ApplicationMenu):
              'subscribed', 'answer_contact_for']
 
     def answer_contact_for(self):
-        summary = "Projects for which %s is an answer contact for" % (
+        summary = "Projects for which %s is an answer contact" % (
             self.context.displayname)
         return Link('+answer-contact-for', 'Answer contact for', summary)
 

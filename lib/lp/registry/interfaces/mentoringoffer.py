@@ -19,7 +19,7 @@ from zope.schema import Datetime, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 class IMentoringOffer(IHasOwner):
     """An offer of mentoring help."""
 

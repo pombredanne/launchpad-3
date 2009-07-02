@@ -45,6 +45,7 @@ Then he returns to delete trunk. He is informed that deletion is permanent,
 and that the milestones, releases, and files will also be deleted. The
 milestones and releases are linked.
 
+    >>> owner_browser.getLink('View full history').click()
     >>> owner_browser.getLink('trunk').click()
     >>> owner_browser.getLink('Delete series').click()
     >>> print owner_browser.title
