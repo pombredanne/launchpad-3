@@ -2891,9 +2891,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         We display it if:
         person has viewable ppa or current_user has lp.edit
         """
-        # Avoid circular import.
-        from lp.soyuz.interfaces.archive import IArchiveSet
-
         # If the current user has edit permission, show the section.
         if check_permission('launchpad.Edit', self.context):
             return True
