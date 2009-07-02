@@ -73,10 +73,15 @@
                       on: {
                           success: display_graph,
                           failure: function(ignore, response, args) {
-                              alert(
-                                  response.status +
-                                  ' Error retrieving series data.\n' +
-                                  response.responseText);
+                              // XXX: EdwinGrubbs 2009-07-02 bug=394912
+                              // Firefox triggers the failure handler with
+                              // status=0 if the page load is interrupted.
+                              if (response.status !== 0) {
+                                  alert(
+                                      response.status +
+                                      ' Error retrieving series data.\n' +
+                                      response.responseText);
+                              }
                           }
                       }
                   });
