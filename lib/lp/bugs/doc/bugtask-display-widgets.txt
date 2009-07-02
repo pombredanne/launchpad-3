@@ -17,7 +17,7 @@ person icon in front of the name.
     >>> from canonical.launchpad.interfaces import IBugSet, IBugTask
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> firefox_bugtask = bug_one.bugtasks[0]
-    >>> firefox_bugtask.assignee.browsername
+    >>> firefox_bugtask.assignee.displayname
     u'Mark Shuttleworth'
 
     >>> assignee_field = IBugTask['assignee'].bind(firefox_bugtask)

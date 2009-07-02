@@ -549,13 +549,19 @@
         <browser:page
             name="+index"
             template="../templates/codereviewcomment-index.pt"/>
+        <browser:page
+            name="+fragment"
+            template="../templates/codereviewcomment-fragment.pt"/>
+        <browser:page
+            name="+comment-header"
+            template="../templates/codereviewcomment-header.pt"/>
+        <browser:page
+            name="+comment-body"
+            template="../templates/codereviewcomment-body.pt"/>
+        <browser:page
+            name="+comment-footer"
+            template="../templates/codereviewcomment-footer.pt"/>
     </browser:pages>
-    <browser:page
-        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-        class="lp.code.browser.codereviewcomment.CodeReviewCommentView"
-        name="+fragment"
-        permission="zope.Public"
-        template="../templates/codereviewcomment-fragment.pt"/>
     <browser:page
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
         class="lp.code.browser.codereviewcomment.CodeReviewCommentSummary"
@@ -625,6 +631,13 @@
         facet="branches"
         name="+branches"
         template="../templates/sourcepackage-branches.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.code.browser.branchlisting.DistributionSourcePackageBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+branches"
+        template="../templates/distributionsourcepackage-branches.pt"/>
     <browser:page
         for="lp.registry.interfaces.project.IProject"
         class="lp.code.browser.branchlisting.ProjectBranchesView"
@@ -774,6 +787,11 @@
 
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        layer="canonical.launchpad.layers.CodeLayer"
+        name="+branches"/>
+
+    <browser:defaultView
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         layer="canonical.launchpad.layers.CodeLayer"
         name="+branches"/>
 

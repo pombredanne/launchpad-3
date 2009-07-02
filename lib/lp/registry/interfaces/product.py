@@ -45,8 +45,8 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
-    ILaunchpadUsage)
+    IHasLogo, IHasMugshot,IHasSecurityContact, ILaunchpadUsage)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from lp.registry.interfaces.announcement import IMakesAnnouncements

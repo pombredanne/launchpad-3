@@ -14,7 +14,7 @@ from zope.interface import Interface
 from zope.schema import Bool, Datetime, Int, List, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from lp.registry.interfaces.person import IPerson
 from lazr.restful.declarations import (

@@ -344,7 +344,7 @@
         <td colspan="4" />
         <td id="translated_by" style="overflow: auto;">
           Translated by
-          <a tal:content="submitter/browsername"
+          <a tal:content="submitter/displayname"
              tal:attributes="href submitter/fmt:url">Foo Bar</a>
           <span
             tal:attributes="title context/date_created/fmt:datetime"
@@ -360,7 +360,7 @@
             id="translated_and_reviewed_by"
             style="overflow: auto">
           Translated and reviewed by
-          <a tal:content="context/reviewer/browsername"
+          <a tal:content="context/reviewer/displayname"
              tal:attributes="href context/reviewer/fmt:url">Foo Bar</a>
           <span
             tal:attributes="title context/date_reviewed/fmt:datetime"
@@ -373,7 +373,7 @@
             id="reviewed_by"
             style="overflow: auto">
           Reviewed by
-          <a tal:content="context/reviewer/browsername"
+          <a tal:content="context/reviewer/displayname"
              tal:attributes="href context/reviewer/fmt:url">Foo Bar</a>
           <span
             tal:attributes="title context/date_reviewed/fmt:datetime"
@@ -449,7 +449,7 @@
           <td colspan="4" class="icon left right" />
           <td style="overflow: auto;">
             Translated by
-            <a tal:content="submission/submitter/browsername"
+            <a tal:content="submission/submitter/displayname"
                tal:attributes="href submission/submitter/fmt:url">Foo Bar</a>
             <span
               tal:attributes="title submission/date_created/fmt:datetime"
