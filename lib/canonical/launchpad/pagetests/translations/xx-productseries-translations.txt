@@ -1,40 +1,117 @@
 = ProductSeries translations =
 
-This page shows a list of PO templates contained within a given
-product series.
+This page shows a list of available languages for user to translate to in
+a single product series, or instructions on how to set up a series for
+translation.
 
-In this case, we're asking for the translation template list for Mozilla
-Firefox 0.9.  (This series is translatable, so we are not forwarded to
-its upload page).
+    >>> login('foo.bar@canonical.com')
+    >>> frobnicator = factory.makeProduct(name='frobnicator')
+    >>> frobnicator.official_rosetta = True
+    >>> frobnicator_trunk = frobnicator.getSeries('trunk')
+    >>> frobnicator_trunk_url = canonical_url(
+    ...     frobnicator_trunk, rootsite='translations')
+    >>> logout()
 
-    >>> anon_browser.open('http://translations.launchpad.dev/firefox/trunk')
+Listing languages with translations is best checked with a helper method.
+
+    >>> def print_language_stats(browser):
+    ...     table = find_tag_by_id(browser.contents, 'languagestats')
+    ...     if table is None:
+    ...         print "No translations."
+    ...         return
+    ...     language_rows = find_tags_by_class(str(table), 'stats')
+    ...     print "%-25s %13s %13s %13s" % (
+    ...         "Language", "Untranslated", "Unreviewed", "Changed")
+    ...     for row in language_rows:
+    ...         cols = row.findAll('td')
+    ...         language = extract_text(cols[0])
+    ...         untranslated = extract_text(cols[2])
+    ...         unreviewed = extract_text(cols[3])
+    ...         changed = extract_text(cols[4])
+    ...         print "%-25s %13d %13d %13d" % (
+    ...             language,
+    ...             int(untranslated), int(unreviewed), int(changed))
+
+When there are no translatable templates, series is considered as not
+being set up for translation.
+
+    >>> anon_browser.open(frobnicator_trunk_url)
     >>> print anon_browser.title
-    Translation templates for trunk
+    Translations overview for Frobnicator trunk series
 
-    >>> print find_main_content(anon_browser.contents).findAll('h1')[0]
-    <h1> Translation templates for Mozilla Firefox Series: trunk </h1>
+    >>> main_content = find_main_content(anon_browser.contents)
+    >>> print extract_text(main_content.findAll('h1')[0])
+    Translations for Frobnicator trunk series
 
-Check to be sure that listing available resources to translate for a product
-series is working.
+    >>> print_language_stats(anon_browser)
+    No translations.
 
-    >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk')
-    >>> print anon_browser.title
-    Translation templates for trunk
+Explanation is shown to indicate that there are no translations for
+this series.
 
-    >>> print anon_browser.title
-    Translation templates for trunk
+    >>> print extract_text(main_content.findAll('p')[0])
+    There are no translations for this release series.
 
-    >>> print anon_browser.contents
-    <...
-    <tr id="evolution-2.2_af">
-    <BLANKLINE>
-    <td>
-    <a href="/evolution/trunk/+pots/evolution-2.2/af/+translate">Afrikaans</a>
-    </td>
-    ...
-    <td> <span class="sortkey">22</span>
-    ...
+Administrator will also see instructions on how to set up a project for
+translation.
 
+    >>> admin_browser.open(frobnicator_trunk_url)
+    >>> main_content = find_main_content(admin_browser.contents)
+    >>> paragraphs = main_content.findAll('p')
+    >>> print extract_text(main_content.findAll('p')[1])
+    To start translating your project...
+
+With one translatable template (with fake stats for 10 messages), a listing
+of existing translations is shown.
+
+    >>> login('foo.bar@canonical.com')
+    >>> pot = factory.makePOTemplate(
+    ...     productseries=frobnicator_trunk, name="template1")
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(pot).messagecount = 10
+    >>> pofile = factory.makePOFile('sr', potemplate=pot)
+    >>> naked_pofile = removeSecurityProxy(pofile)
+    >>> naked_pofile.rosettacount = 4
+    >>> naked_pofile.updatescount = 2
+    >>> naked_pofile.unreviewed_count = 5
+    >>> logout()
+
+    >>> browser.open(frobnicator_trunk_url)
+    >>> print_language_stats(browser)
+    Language                   Untranslated    Unreviewed       Changed
+    Serbian                               6             5             2
+
+Since there is only one template, language link directly to PO file
+pages.
+
+    >>> serbian_row = find_tags_by_class(browser.contents, "language-sr")[0]
+    >>> serbian_link = serbian_row.find('a')
+    >>> serbian_link['href']
+    u'/frobnicator/trunk/+pots/template1/sr/+translate'
+
+A product series can have more than one translatable template.
+
+    >>> login('foo.bar@canonical.com')
+    >>> pot = factory.makePOTemplate(
+    ...     productseries=frobnicator_trunk, name="template2")
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(pot).messagecount = 5
+    >>> logout()
+
+Statistics add up for untranslated messages.
+
+    >>> browser.open(frobnicator_trunk_url)
+    >>> print_language_stats(browser)
+    Language                   Untranslated    Unreviewed       Changed
+    Serbian                              11             5             2
+
+With more than one template, link points to a product series per-language
+translations page.
+
+    >>> serbian_row = find_tags_by_class(browser.contents, "language-sr")[0]
+    >>> serbian_link = serbian_row.find('a')
+    >>> serbian_link['href']
+    u'/frobnicator/trunk/+lang/sr'
 
 == Upload page and Translations use ==
 
@@ -80,7 +157,7 @@ Now this is changed: Evolution's owner configures it not to use
 Launchpad Translations.
 
     # Use the raw DB object to bypass the security proxy.
-    >>> from canonical.launchpad.database.product import Product
+    >>> from lp.registry.model.product import Product
     >>> Product.byName('evolution').official_rosetta = False
 
 When the owner now visits the upload page for trunk, there's a notice.

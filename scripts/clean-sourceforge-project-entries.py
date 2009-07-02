@@ -11,7 +11,7 @@ from zope.component import getUtility
 from canonical.lp import initZopeless
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.validators.sourceforgeproject import (
+from canonical.launchpad.interfaces.product import (
     valid_sourceforge_project_name)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)

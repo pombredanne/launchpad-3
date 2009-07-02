@@ -35,7 +35,7 @@ associated with the source package of the used application.
     'Help and support options for ...mozilla-firefox...'
     >>> user_browser.getLink('Submit your question').click()
     >>> user_browser.title
-    'Ask a question about Ubuntu Hoary mozilla-firefox'
+    'Ask a question about mozilla-firefox in Ubuntu Hoary'
 
 
 == Searching for Similar FAQs and Questions ==
@@ -75,10 +75,10 @@ questions are displayed.
     ...     'ascii', 'backslashreplace')
     Installation of Java Runtime Environment for Mozilla  (Answered)
         posted on 2006-07-20 by  Sample Person
-        in ...mozilla-firefox... source package in Ubuntu
+        in ...mozilla-firefox... package in Ubuntu
     mailto: problem in webpage (Solved)
         posted on 2006-07-20 by Sample Person, answered by Foo Bar
-        in ...mozilla-firefox... source package in Ubuntu
+        in ...mozilla-firefox... package in Ubuntu
     >>> similar_questions.a['href']
     u'http://answers.../ubuntu/+source/mozilla-firefox/+question/...'
 
@@ -166,6 +166,6 @@ The user automatically got subscribed to this new question.
 
     >>> find_tag_by_id(user_browser.contents, 'portlet-subscribers')
     <div class="portlet" id="portlet-subscribers">
-    ...<a href=".../~no-priv">No Privileges Person</a>...
+    ...<a href=".../~no-priv" class="sprite person">No Privileges Person</a>...
     </div>
 

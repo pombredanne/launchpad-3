@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWVendorNameSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.librarian.ftests.harness import fillLibrarianFile
+from canonical.librarian.interfaces import LibrarianServerError
 from canonical.launchpad.scripts.hwdbsubmissions import (
     HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
     PCI_CLASS_STORAGE, PCI_SUBCLASS_BRIDGE_CARDBUS, PCI_SUBCLASS_BRIDGE_PCI,
@@ -3354,6 +3355,70 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
                 'Unexpected log message: %r' % messages)
 
         SubmissionParser.processSubmission = process_submission_regular
+
+    def testProcessingLoopExceptionHandling(self):
+        """Test of the exception handling of ProcessingLoop.__call__()"""
+        def processSubmission(self, submission):
+            """Force failures during submission processing."""
+            if submission.submission_key == 'submission-2':
+                raise LibrarianServerError('Librarian does not respond')
+            else:
+                return True
+
+        process_submission_regular = SubmissionParser.processSubmission
+        SubmissionParser.processSubmission = processSubmission
+
+        self.createSubmissionData(data='whatever', compress=False,
+                                  submission_key='submission-1')
+        self.createSubmissionData(data='whatever', compress=False,
+                                  submission_key='submission-2')
+
+        # When we call process_pending_submissions(), submission-2 will
+        # cause an exception
+        self.assertRaises(
+            LibrarianServerError, process_pending_submissions,
+            self.layer.txn, self.log)
+        error_utility = ErrorReportingUtility()
+        error_report = error_utility.getLastOopsReport()
+        fp = StringIO()
+        error_report.write(fp)
+        error_text = fp.getvalue()
+
+        expected_explanation = (
+            'Exception-Type: LibrarianServerError\n'
+            'Exception-Value: Librarian does not respond')
+        self.failUnless(
+            error_text.find(expected_explanation) >= 0,
+            'Expected Exception type not found in OOPS report:\n%s'
+            % error_text)
+
+        messages = [record.getMessage() for record in self.handler.records]
+        messages = '\n'.join(messages)
+        expected_message = (
+            'Could not reach the Librarian while processing HWDB '
+            'submission submission-2 (OOPS-')
+        self.failUnless(
+                messages.startswith(expected_message),
+                'Unexpected log messages: %r' % messages)
+
+        # Though processing the second submission caused an exception,
+        # the first one has been corretly marked as being processed...
+        self.layer.txn.begin()
+        submission_set = getUtility(IHWSubmissionSet)
+        submission_1 = submission_set.getBySubmissionKey('submission-1')
+        self.assertEqual(
+            submission_1.status, HWSubmissionProcessingStatus.PROCESSED,
+            'Unexpected status of submission 1: %s' % submission_1.status)
+
+        # ... while the second submission has the status SUBMITTED.
+        submission_set = getUtility(IHWSubmissionSet)
+        submission_2 = submission_set.getBySubmissionKey('submission-2')
+        self.assertEqual(
+            submission_2.status, HWSubmissionProcessingStatus.SUBMITTED,
+            'Unexpected status of submission 1: %s' % submission_2.status)
+
+        SubmissionParser.processSubmission = process_submission_regular
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

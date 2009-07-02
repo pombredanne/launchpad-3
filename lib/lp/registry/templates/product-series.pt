@@ -1,0 +1,34 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+<body>
+
+  <div metal:fill-slot="main">
+
+    <h1><span tal:replace="context/displayname" /> Timeline</h1>
+
+    <tal:iframe define="auto_resize python:True">
+      <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
+    </tal:iframe>
+
+    <div tal:repeat="series view/sorted_series_list">
+      <div style="margin-top: 1em;
+                  border-bottom: 1px solid #ccc; max-width: 60em;"
+        tal:define="is_focus series/is_development_focus"
+        tal:attributes="class series/css_class;
+                        id series/name/fmt:css-id/series-;">
+        <tal:status replace="structure series/series/@@+status" />
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import canonical_url

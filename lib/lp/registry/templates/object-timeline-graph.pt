@@ -1,0 +1,88 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad"
+>
+<head>
+  <metal:launchpad-stylesheet
+    use-macro="context/@@+main-template-macros/launchpad-stylesheet" />
+  <metal:load-javascript
+    use-macro="context/@@+main-template-macros/load-javascript" />
+  <metal:lp-client-cache
+    use-macro="context/@@+main-template-macros/lp-client-cache" />
+</head>
+
+<body style="margin: 0; padding: 0">
+  <div id="timeline-container">
+    <div id="spinner"
+         style="position: absolute; margin: 0; top: 50%; left: 50%">
+      <img src="/@@/spinner" /> Loading...
+    </div>
+  </div>
+  <tal:script
+    replace="structure
+    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
+  var resize_frame =
+      '<tal:x replace="request/form/resize_frame | nothing"/>';
+  <!--
+  YUI().use('registry.timeline', 'node', function(Y) {
+      Y.on('domready', function(e) {
+          if (Y.UA.ie) {
+              return;
+          }
+
+          var display_graph = function(result) {
+              var timeline = result;
+              // The timeline for a productseries needs to be wrapped
+              // in an array.
+              if (!Y.Lang.isArray(timeline)) {
+                  timeline = [timeline];
+              }
+              // Don't display graph if there are zero milestones or releases.
+              var container = Y.get('#timeline-container');
+              container.setStyle('display', 'block');
+              var config = {
+                  timeline: timeline,
+                  boundingBox: container
+              };
+              if (resize_frame !== '') {
+                  config.resize_frame = resize_frame;
+              }
+              var graph = new Y.registry.timeline.TimelineGraph(config);
+              graph.render();
+              Y.get('#spinner').setStyle('display', 'none');
+              // Scroll to the most recent milestones or
+              // releases on the development focus series.
+              graph.scroll_to_last_development_focus_landmark();
+          }
+
+          var client = new LP.client.Launchpad();
+          var timeline = client.named_get(
+              LP.client.cache['context']['self_link'],
+              'get_timeline', {
+                  parameters: {},
+                  on: {
+                      success: display_graph,
+                      failure: function(ignore, response, args) {
+                          alert(
+                              response.status +
+                              ' Error retrieving series data.\n' +
+                              response.responseText);
+                      }
+                  }
+              });
+
+          var drag_scroll_handler = new DragScrollEventHandler();
+          drag_scroll_handler.activate();
+      });
+  });
+  -->
+  <tal:script replace="structure string:&lt;/script&gt;" />
+
+</body>
+</html>

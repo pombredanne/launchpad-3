@@ -28,7 +28,7 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest, _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
-from canonical.lazr.rest.declarations import webservice_error
+from lazr.restful.declarations import webservice_error
 
 
 UTC = pytz.timezone('UTC')

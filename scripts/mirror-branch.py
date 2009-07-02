@@ -29,13 +29,14 @@ Where:
 
 import _pythonpath
 from optparse import OptionParser
+import resource
 import sys
 
 import bzrlib.repository
 
-from canonical.codehosting.puller.worker import (
+from lp.code.enums import BranchType
+from lp.codehosting.puller.worker import (
     install_worker_ui_factory, PullerWorker, PullerWorkerProtocol)
-from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
@@ -81,6 +82,8 @@ if __name__ == '__main__':
     globalErrorUtility.configure(section_name)
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
+
+    resource.setrlimit(resource.RLIMIT_AS, (1500000000, 1500000000))
 
     protocol = PullerWorkerProtocol(sys.stdout)
     install_worker_ui_factory(protocol)

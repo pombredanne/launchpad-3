@@ -92,7 +92,7 @@ are once again what they were.
 
 The Translations administrators also receive an email about the error.
 
-    >>> from canonical.launchpad.mail.stub import test_emails
+    >>> from lp.services.mail.stub import test_emails
     >>> from_addr, to_addrs, body = test_emails.pop()
     >>> len(test_emails)
     0
@@ -126,7 +126,7 @@ fixed by running the verifier directly.
     >>> import subprocess
     >>> import sys
     >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-pofile-stats.py', '-v'],
+    ...     sys.executable, 'cronscripts/rosetta-pofile-stats.py'],
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.STDOUT)
     >>> (output, empty) = process.communicate()
@@ -134,5 +134,4 @@ fixed by running the verifier directly.
     INFO    creating lockfile
     INFO    Starting verification of POFile stats at id 0
     INFO    Done.
-    DEBUG   Removing lock file: /var/lock/launchpad-pofile-stats.lock
 

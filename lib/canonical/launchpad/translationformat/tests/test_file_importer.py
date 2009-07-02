@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 """Translation File Importer tests."""
 
 __metaclass__ = type
@@ -6,13 +6,13 @@ __metaclass__ = type
 import unittest
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, ITranslationImportQueue)
+    IPersonSet, ITranslationImportQueue, OutdatedTranslationError)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory)
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.launchpad.translationformat.translation_import import (
@@ -87,7 +87,7 @@ msgid "%s"
 msgstr "format specifier changes %%s"
 '''  % (TEST_MSGID_ERROR)
 
-class FileImporterTestCase(unittest.TestCase):
+class FileImporterTestCase(TestCaseWithFactory):
     """Class test for translation importer component"""
     layer = LaunchpadZopelessLayer
 
@@ -159,7 +159,7 @@ class FileImporterTestCase(unittest.TestCase):
             template_entry, GettextPOImporter(), None )
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(FileImporterTestCase, self).setUp()
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 
@@ -244,8 +244,9 @@ class FileImporterTestCase(unittest.TestCase):
             pot_importer, TEST_TRANSLATION_EXPORTED, is_published=True,
             person=unprivileged_person)
 
-        po_importer.translation_import_queue_entry.importer = (
-            po_importer.translation_import_queue_entry.importer)
+        entry = removeSecurityProxy(
+            po_importer.translation_import_queue_entry)
+        entry.importer = po_importer.translation_import_queue_entry.importer
         is_editor = po_importer.pofile.canEditTranslations(
             unprivileged_person)
         self.assertFalse(is_editor,
@@ -328,7 +329,8 @@ class FileImporterTestCase(unittest.TestCase):
             potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
                                                         unicode(TEST_MSGID))
             message = potmsgset.getCurrentTranslationMessage(
-                po_importer.pofile.language, po_importer.pofile.variant)
+                po_importer.potemplate, po_importer.pofile.language,
+                po_importer.pofile.variant)
             self.failUnless(message is not None,
                 "POFileImporter.importFile did not create an "
                 "ITranslationMessage object in the database.")
@@ -391,12 +393,112 @@ class FileImporterTestCase(unittest.TestCase):
         potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
             unicode(TEST_MSGID_ERROR))
         message = potmsgset.getLocalTranslationMessages(
-            po_importer.pofile.language)[0]
+            po_importer.potemplate, po_importer.pofile.language)[0]
         self.failUnless(message is not None,
             "POFileImporter.importFile did not create an "
             "ITranslationMessage object with format errors in the database.")
 
+    def test_ValidationErrorPlusConflict(self):
+        # Sometimes a conflict is detected when we resubmit a message as
+        # a suggestion because it failed validation.  We don't much care
+        # what happens to it, so long as the import doesn't bomb out and
+        # the message doesn't become a current translation.
+        (pot_importer, po_importer) = self._createFileImporters(
+                TEST_TEMPLATE_FOR_ERROR,
+                TEST_TRANSLATION_FILE_WITH_ERROR, False)
+        pot_importer.importFile()
+        po_importer.importFile()
+        transaction.commit()
+
+        po_importer2 = self._createPOFileImporter(
+            pot_importer, TEST_TRANSLATION_EXPORTED_EARLIER, False,
+            po_importer.pofile)
+        po_importer2.importFile()
+
+        potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
+            unicode(TEST_MSGID_ERROR))
+        messages = potmsgset.getLocalTranslationMessages(
+            po_importer.pofile.potemplate, po_importer.pofile.language)
+
+        for message in messages:
+            if message.potmsgset.msgid_singular.msgid == TEST_MSGID_ERROR:
+                # This is the accursed message.  Whatever happens, it
+                # must not be set as the current translation.
+                self.assertFalse(message.is_current)
+            else:
+                # This is the other message that the doomed message
+                # conflicted with.
+                self.assertEqual(
+                    message.potmsgset.msgid_singular.msgid, TEST_MSGID)
+                self.assertEqual(message.translations, [TEST_MSGSTR2])
+
+    def test_InvalidTranslatorEmail(self):
+        # A Last-Translator with invalid email address does not upset
+        # the importer.  It just picks the uploader as the last
+        # translator.
+        pot_content = TEST_TEMPLATE_PUBLISHED
+        po_content = """
+            msgid ""
+            msgstr ""
+            "PO-Revision-Date: 2005-05-03 20:41+0100\\n"
+            "Last-Translator: Hector Atlas <??@??.??>\\n"
+            "Content-Type: text/plain; charset=UTF-8\\n"
+            "X-Launchpad-Export-Date: 2008-11-05 13:31+0000\\n"
+            
+            msgid "%s"
+            msgstr "Dankuwel"
+            """ % TEST_MSGID
+        (pot_importer, po_importer) = self._createFileImporters(
+            pot_content, po_content, False)
+        pot_importer.importFile()
+
+        po_importer.importFile()
+        self.assertEqual(
+            po_importer.last_translator,
+            po_importer.translation_import_queue_entry.importer)
+
+
+class CreateFileImporterTestCase(TestCaseWithFactory):
+    """Class test for translation importer creation."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(CreateFileImporterTestCase, self).setUp()
+        self.translation_import_queue = getUtility(ITranslationImportQueue)
+        self.importer_person = self.factory.makePerson()
+
+    def _make_queue_entry(self, is_published):
+        pofile = self.factory.makePOFile('eo')
+        # Create a header with a newer date than what is found in
+        # TEST_TRANSLATION_FILE.
+        pofile.header = ("PO-Revision-Date: 2009-01-05 13:22+0000\n"
+                         "Content-Type: text/plain; charset=UTF-8\n")
+        po_content = TEST_TRANSLATION_FILE % ("", "foo", "bar")
+        queue_entry = self.translation_import_queue.addOrUpdateEntry(
+            pofile.path, po_content, is_published, self.importer_person,
+            productseries=pofile.potemplate.productseries, pofile=pofile)
+        transaction.commit()
+        return queue_entry
+
+    def test_raises_OutdatedTranslationError_on_user_uploads(self):
+        queue_entry = self._make_queue_entry(False)
+        self.assertRaises(OutdatedTranslationError, POFileImporter,
+            queue_entry, GettextPOImporter(), None )
+
+    def test_not_raises_OutdatedTranslationError_on_published_uploads(self):
+        queue_entry = self._make_queue_entry(True)
+        try:
+            importer = POFileImporter(queue_entry, GettextPOImporter(), None )
+        except OutdatedTranslationError:
+            self.fail("OutdatedTranslationError raised.")
+
+    def test_old_published_upload_not_changes_header(self):
+        queue_entry = self._make_queue_entry(True)
+        pofile = queue_entry.pofile
+        old_raw_header = pofile.header
+        importer = POFileImporter(queue_entry, GettextPOImporter(), None )
+        self.assertEqual(old_raw_header, pofile.header)
+
+
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(FileImporterTestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)

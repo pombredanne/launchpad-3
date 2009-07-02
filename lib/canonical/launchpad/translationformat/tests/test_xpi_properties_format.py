@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd. All rights reserved.
+# Copyright 2007-2009 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
@@ -40,6 +40,16 @@ class PropertyFileFormatTestCase(unittest.TestCase):
             default-last-title-mac=Conclusi\u00F3n
             '''
         self._baseContentEncodingTest(content)
+
+    def test_InvalidPropertyFileUnicodeEscape(self):
+        # An invalid Unicode escape sequence is a
+        # TranslationFormatInvalidInputError.
+        content = '''
+            weirdness=\u1
+            '''
+        self.assertRaises(
+            TranslationFormatInvalidInputError, PropertyFile, None,
+            'test.properties', content)
 
     def test_Latin1PropertyFileTest(self):
         """This test makes sure that we detect bad encodings."""

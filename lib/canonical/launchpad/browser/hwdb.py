@@ -12,12 +12,13 @@ __all__ = [
 
 from textwrap import dedent
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from z3c.ptcompat import ViewPageTemplateFile
+
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchBag, NotFoundError
 from canonical.launchpad.interfaces.hwdb import (
     IHWDBApplication, IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet,

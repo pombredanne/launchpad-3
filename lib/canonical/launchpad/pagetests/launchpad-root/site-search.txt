@@ -7,17 +7,19 @@ bugs, teams, etc.).
     >>> from canonical.encoding import ascii_smash
 
     # Our very helpful function for printing all the page results.
-    >>> def print_search_results():
-    ...     tag = find_tag_by_id(anon_browser.contents, 'search-results')
+    >>> def print_search_results(contents=None):
+    ...     if contents is None:
+    ...         contents = anon_browser.contents
+    ...     tag = find_tag_by_id(contents, 'search-results')
     ...     if tag:
     ...         print ascii_smash(extract_text(tag))
 
-    # Another helper to make searching convenient
-    >>> def search_for(terms):
+    # Another helper to make searching convenient.
+    >>> def search_for(terms, browser=anon_browser):
     ...     try:
-    ...         search_form = anon_browser.getForm('globalsearch')
+    ...         search_form = browser.getForm('globalsearch')
     ...     except LookupError:
-    ...         search_form = anon_browser.getForm(name='sitesearch')
+    ...         search_form = browser.getForm(name='sitesearch')
     ...     search_text = search_form.getControl(name='field.text')
     ...     search_text.value = terms
     ...     search_form.submit()
@@ -235,7 +237,7 @@ the user. The text field is focused so that the user can try another
 search.
 
     >>> search_for('fnord')
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print extract_text(find_main_content(anon_browser.contents), skip_tags=[])
     Pages matching "fnord" in Launchpad
     <!-- setFocusByName('field.text'); // -->
     Your search for &ldquo;fnord&rdquo; did not return any results.
@@ -310,3 +312,35 @@ in the page he is viewing and submit the form to see the results.
     browser technology.
     Registered by Sample Person
     on 2004-09-24
+
+
+== Searching for private data ==
+
+When a search matches a private object those objects are only shown if
+the logged in users has the permission to see it.
+
+    >>> # Create a new person and a private team.
+    >>> from zope.component import getMultiAdapter, getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet, PersonVisibility
+    >>> login('foo.bar@canonical.com')
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> priv_team = factory.makeTeam(
+    ...     owner=salgado, name="private-benjamin",
+    ...     displayname="Private Benjamin",
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> logout()
+    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
+    >>> browser.open('http://launchpad.dev/+search')
+    >>> search_for('Private Benjamin', browser=browser)
+    >>> print_search_results(browser.contents)
+    Exact matches
+    Private Benjamin
+    (private-benjamin)
+    ...
+
+A user who is not in the private team will not see the team listed in
+the results.
+
+    >>> user_browser.open('http://launchpad.dev/+search')
+    >>> search_for('Private Benjamin', browser=user_browser)
+    >>> print_search_results(user_browser.contents)

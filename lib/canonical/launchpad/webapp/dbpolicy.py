@@ -25,7 +25,7 @@ from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore,
     IDatabasePolicy, IStoreSelector,
-    MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore, SLAVE_FLAVOR)
 
 
 def _now():
@@ -114,6 +114,15 @@ class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
             raise DisallowedStore(flavor)
         return super(SlaveOnlyDatabasePolicy, self).getStore(
             name, SLAVE_FLAVOR)
+
+
+def LaunchpadDatabasePolicyFactory(request):
+    """Return the Launchpad IDatabasePolicy for the current appserver state.
+    """
+    if config.launchpad.read_only:
+        return ReadOnlyLaunchpadDatabasePolicy(request)
+    else:
+        return LaunchpadDatabasePolicy(request)
 
 
 class LaunchpadDatabasePolicy(BaseDatabasePolicy):
@@ -246,6 +255,28 @@ class SSODatabasePolicy(BaseDatabasePolicy):
             raise DisallowedStore(name, flavor)
 
         return super(SSODatabasePolicy, self).getStore(name, flavor)
+
+
+class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
+    """Policy for Launchpad web requests when running in read-only mode.
+
+    Access to all master Stores is blocked.
+    """
+    def getStore(self, name, flavor):
+        """See `IDatabasePolicy`.
+
+        Access to all master Stores is blocked. The default Store is
+        the slave.
+
+        Note that we even have to block access to the authdb master
+        Store, as it allows access to tables replicated from the
+        lpmain replication set. These tables will be locked during
+        a lpmain replication set database upgrade.
+        """
+        if flavor == MASTER_FLAVOR:
+            raise ReadOnlyModeDisallowedStore(name, flavor)
+        return super(ReadOnlyLaunchpadDatabasePolicy, self).getStore(
+            name, SLAVE_FLAVOR)
 
 
 class WhichDbView(LaunchpadView):

@@ -12,8 +12,8 @@ from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, IAccountSet)
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.registry.interfaces.person import IPerson
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility)
@@ -38,7 +38,7 @@ class TestLoginAndLogout(TestCaseWithFactory):
         person = self.factory.makePerson('foo.bar@example.com')
         self.failIfEqual(person.id, person.account.id)
         self.principal = LaunchpadPrincipal(
-            person.account.id, person.browsername,
+            person.account.id, person.displayname,
             person.displayname, person)
 
     def test_logging_in_and_logging_out(self):

@@ -41,9 +41,9 @@ from canonical.launchpad.interfaces import (
     IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
     QuestionPriority, QuestionSort, QuestionStatus)
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -52,8 +52,8 @@ from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
 from lp.answers.model.answercontact import AnswerContact
-from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
-from canonical.launchpad.database.language import Language
+from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from lp.coop.answersbugs.model import QuestionBug
 from lp.answers.model.questionmessage import QuestionMessage
@@ -88,7 +88,8 @@ class notify_question_modified:
 
             edited_fields = ['messages']
             for field in ['status', 'date_solved', 'answerer', 'answer',
-                          'datelastquery', 'datelastresponse', 'target']:
+                          'datelastquery', 'datelastresponse', 'target',
+                          'assignee']:
                 if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
 
@@ -1000,7 +1001,7 @@ class SimilarQuestionsSearch(QuestionSearch):
 class QuestionPersonSearch(QuestionSearch):
     """Search questions which are related to a particular person.
 
-    Used to implement IPerson.searchQuestions().
+    Used to implement IQuestionsPerson.searchQuestions().
     """
 
     def __init__(self, person, search_text=None,
@@ -1181,7 +1182,7 @@ class QuestionTargetMixin:
     @property
     def direct_answer_contacts(self):
         """See `IQuestionTarget`."""
-        from canonical.launchpad.database.person import Person
+        from lp.registry.model.person import Person
         origin = [AnswerContact,
                   LeftJoin(Person, AnswerContact.person == Person.id)]
         conditions = self._getConditionsToQueryAnswerContacts()
@@ -1196,7 +1197,7 @@ class QuestionTargetMixin:
         languages pre-filled so that we don't need to hit the DB again to get
         them.
         """
-        from canonical.launchpad.database.person import (
+        from lp.registry.model.person import (
             Person, PersonLanguage)
         origin = [
             AnswerContact,
@@ -1238,7 +1239,7 @@ class QuestionTargetMixin:
         constraints.append("""Person.id = AnswerContact.person""")
         clause_tables.append('AnswerContact')
         # Avoid a circular import of Person, which imports the mixin.
-        from canonical.launchpad.database.person import Person
+        from lp.registry.model.person import Person
         return Person.select(
             " AND ".join(constraints), clauseTables=clause_tables,
             orderBy=['displayname'], distinct=True)

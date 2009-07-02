@@ -1,5 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,W0401
+# pylint: disable-msg=E0211,E0213,W0401
 
 __metaclass__ = type
 __all__ = [
@@ -16,16 +16,8 @@ __all__ = [
     'IBugField',
     'IDescription',
     'ILocationField',
+    'INoneableTextLine',
     'IPasswordField',
-    'IShipItAddressline1',
-    'IShipItAddressline2',
-    'IShipItCity',
-    'IShipItOrganization',
-    'IShipItPhone',
-    'IShipItProvince',
-    'IShipItQuantity',
-    'IShipItReason',
-    'IShipItRecipientDisplayname',
     'IStrippedTextLine',
     'ISummary',
     'ITag',
@@ -34,26 +26,19 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
-    'is_valid_public_person_link',
     'KEEP_SAME_IMAGE',
+    'LocationField',
     'LogoImageUpload',
     'MugshotImageUpload',
-    'LocationField',
+    'NoneableTextLine',
+    'ParticipatingPersonChoice',
     'PasswordField',
     'PillarAliases',
     'PillarNameField',
     'ProductBugTracker',
     'ProductNameField',
     'PublicPersonChoice',
-    'ShipItAddressline1',
-    'ShipItAddressline2',
-    'ShipItCity',
-    'ShipItOrganization',
-    'ShipItPhone',
-    'ShipItProvince',
-    'ShipItQuantity',
-    'ShipItReason',
-    'ShipItRecipientDisplayname',
+    'SearchTag',
     'StrippedTextLine',
     'Summary',
     'Tag',
@@ -62,6 +47,8 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
+    'is_private_membership',
+    'is_valid_public_person',
     ]
 
 
@@ -69,26 +56,25 @@ import re
 from StringIO import StringIO
 from textwrap import dedent
 
-from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
     TextLine, Tuple)
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IDatetime, IField, IInt, IObject,
+    ConstraintNotSatisfied, IBytes, IDatetime, IField, IObject,
     IPassword, IText, ITextLine, Interface)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
 
-from canonical.lazr.fields import Reference
-from canonical.lazr.interfaces.fields import IReferenceChoice
+from lazr.restful.fields import Reference
+from lazr.restful.interfaces import IReferenceChoice
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -99,23 +85,38 @@ KEEP_SAME_IMAGE = object()
 class IStrippedTextLine(ITextLine):
     """A field with leading and trailing whitespaces stripped."""
 
+
 class ITitle(IStrippedTextLine):
     """A Field that implements a launchpad Title"""
+
+
+class INoneableTextLine(IStrippedTextLine):
+    """A field that is None if it's value is empty or whitespace."""
+
 
 class ISummary(IText):
     """A Field that implements a Summary"""
 
+
 class IDescription(IText):
     """A Field that implements a Description"""
+
+
+class INoneableDescription(IDescription):
+    """A field that is None if it's value is empty or whitespace."""
+
 
 class IWhiteboard(IText):
     """A Field that implements a Whiteboard"""
 
+
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
 
+
 class IBugField(IObject):
     """A field that allows entry of a Bug number or nickname"""
+
 
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
@@ -138,66 +139,6 @@ class ILocationField(IField):
     latitude = Float(title=_('Latitude'))
     longitude = Float(title=_('Longitude'))
     time_zone = Choice(title=_('Time zone'), vocabulary='TimezoneName')
-
-
-class IShipItRecipientDisplayname(ITextLine):
-    """A field used for the recipientdisplayname attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItOrganization(ITextLine):
-    """A field used for the organization attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItCity(ITextLine):
-    """A field used for the city attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItProvince(ITextLine):
-    """A field used for the province attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItAddressline1(ITextLine):
-    """A field used for the addressline1 attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItAddressline2(ITextLine):
-    """A field used for the addressline2 attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItPhone(ITextLine):
-    """A field used for the phone attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItReason(ITextLine):
-    """A field used for the reason attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItQuantity(IInt):
-    """A field used for the quantity of CDs on shipit forms."""
 
 
 class ITag(ITextLine):
@@ -259,6 +200,10 @@ class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
 
+class NoneableTextLine(StrippedTextLine):
+    implements(INoneableTextLine)
+
+
 # Title
 # A field to capture a launchpad object title
 class Title(StrippedTextLine):
@@ -275,6 +220,10 @@ class Summary(Text):
 # A field capture a Launchpad object description
 class Description(Text):
     implements(IDescription)
+
+
+class NoneableDescription(Description):
+    implements(INoneableDescription)
 
 
 # Whiteboard
@@ -328,7 +277,7 @@ class DuplicateBug(BugField):
         bug isn't a duplicate of itself, otherwise
         return False.
         """
-        from canonical.launchpad.interfaces.bug import IBugSet
+        from lp.bugs.interfaces.bug import IBugSet
         bugset = getUtility(IBugSet)
         current_bug = self.context
         dup_target = value
@@ -363,6 +312,22 @@ class Tag(TextLine):
         """Make sure that the value is a valid name."""
         super_constraint = TextLine.constraint(self, value)
         return super_constraint and valid_name(value)
+
+
+class SearchTag(Tag):
+    def constraint(self, value):
+        """Make sure the value is a valid search tag.
+
+        A valid search tag is a valid name or a valid name prepended
+        with a minus, denoting "not this tag". A simple wildcard - an
+        asterisk - is also valid, with or without a leading minus.
+        """
+        if value in ('*', '-*'):
+            return True
+        elif value.startswith('-'):
+            return super(SearchTag, self).constraint(value[1:])
+        else:
+            return super(SearchTag, self).constraint(value)
 
 
 class PasswordField(Password):
@@ -469,7 +434,7 @@ class BlacklistableContentNameField(ContentNameField):
             return
 
         # Need a local import because of circular dependencies.
-        from canonical.launchpad.interfaces.person import IPersonSet
+        from lp.registry.interfaces.person import IPersonSet
         if getUtility(IPersonSet).isNameBlacklisted(input):
             raise LaunchpadValidationError(
                 "The name '%s' has been blocked by the Launchpad "
@@ -491,9 +456,9 @@ class PillarAliases(TextLine):
         not identical to the pillar's existing name.
         """
         context = self.context
-        from canonical.launchpad.interfaces.product import IProduct
-        from canonical.launchpad.interfaces.project import IProject
-        from canonical.launchpad.interfaces.distribution import IDistribution
+        from lp.registry.interfaces.product import IProduct
+        from lp.registry.interfaces.project import IProject
+        from lp.registry.interfaces.distribution import IDistribution
         if IProduct.providedBy(context):
             name_field = IProduct['name']
         elif IProject.providedBy(context):
@@ -521,42 +486,6 @@ class PillarAliases(TextLine):
         return " ".join(object.aliases)
 
 
-class ShipItRecipientDisplayname(TextLine):
-    implements(IShipItRecipientDisplayname)
-
-
-class ShipItOrganization(TextLine):
-    implements(IShipItOrganization)
-
-
-class ShipItCity(TextLine):
-    implements(IShipItCity)
-
-
-class ShipItProvince(TextLine):
-    implements(IShipItProvince)
-
-
-class ShipItAddressline1(TextLine):
-    implements(IShipItAddressline1)
-
-
-class ShipItAddressline2(TextLine):
-    implements(IShipItAddressline2)
-
-
-class ShipItPhone(TextLine):
-    implements(IShipItPhone)
-
-
-class ShipItReason(Text):
-    implements(IShipItReason)
-
-
-class ShipItQuantity(Int):
-    implements(IShipItQuantity)
-
-
 class ProductBugTracker(Choice):
     """A bug tracker used by a Product.
 
@@ -571,7 +500,7 @@ class ProductBugTracker(Choice):
     @property
     def schema(self):
         # The IBugTracker needs to be imported here to avoid an import loop.
-        from canonical.launchpad.interfaces.bugtracker import IBugTracker
+        from lp.bugs.interfaces.bugtracker import IBugTracker
         return IBugTracker
 
     def get(self, ob):
@@ -800,23 +729,54 @@ class ProductNameField(PillarNameField):
     @property
     def _content_iface(self):
         # Local import to avoid circular dependencies.
-        from canonical.launchpad.interfaces.product import IProduct
+        from lp.registry.interfaces.product import IProduct
         return IProduct
 
 
-def is_valid_public_person_link(person, other):
+def is_valid_public_person(person):
+    """Return True if the person is public."""
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
         raise ConstraintNotSatisfied("Expected a person.")
     if person.visibility == PersonVisibility.PUBLIC:
         return True
     else:
+        # PRIVATE_MEMBERSHIP or PRIVATE.
+        return False
+
+
+def is_private_membership(person):
+    """True if the person/team has private membership visibility."""
+    from canonical.launchpad.interfaces import IPerson, PersonVisibility
+    if not IPerson.providedBy(person):
+        raise ConstraintNotSatisfied("Expected a person.")
+    if person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
+        # PRIVATE_MEMBERSHIP.
+        return True
+    else:
+        # PUBLIC or PRIVATE.
         return False
 
 
 class PublicPersonChoice(Choice):
+    """A person or team who is public."""
     implements(IReferenceChoice)
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
     def constraint(self, value):
-        return is_valid_public_person_link(value, self.context)
+        return is_valid_public_person(value)
+
+
+class ParticipatingPersonChoice(Choice):
+    """A person or team who is not a private membership team.
+
+    A person can participate in all contexts.  A PRIVATE team can participate
+    in many contexts, depending up on the permissions of the logged in
+    user.  A PRIVATE MEMBERSHIP team is severely limited in the roles in which
+    it can participate.
+    """
+    implements(IReferenceChoice)
+    schema = IObject    # Will be set to IPerson once IPerson is defined.
+
+    def constraint(self, value):
+        return not is_private_membership(value)

@@ -4,46 +4,82 @@
 # sure all source dependencies are properly linked in to all the branches you
 # are working on.
 
-source "$HOME/.rocketfuel-env.sh"
-if [ "$?" != 0 ]; then
-    echo "Please run rocketfuel-setup first."
+# Stop if there's an error, and treat unset variables as errors.
+set -eu
+
+# Helper function to run a child process, indenting stdout to aid
+# readability.
+run-child() {
+    "$@" | sed -e "s/^/        /"
+}
+
+# Load local settings.
+if [ -e "$HOME/.rocketfuel-env.sh" ]
+then
+    source "$HOME/.rocketfuel-env.sh"
+else
+    echo "Please run rocketfuel-setup first." >&2
     exit 1
 fi
 
-DEVPAD="devpad.canonical.com"
-ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"
-RSYNCOPTIONS="-avp --partial --progress --delete"
-# Note, we also add a filter when rsync is evoked.
+LP_DOWNLOAD_CACHE_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/download-cache"
+LP_EGGS_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs"
+LP_DOWNLOAD_CACHE_PATH="$(eval echo ${LP_DOWNLOAD_CACHE_PATH})"
+LP_EGGS_PATH="$(eval echo ${LP_EGGS_PATH})"
 
-# Make sure we have an ssh key primed
-ssh-add -l
-if [ $? -gt 0 ]; then ssh-add; fi
+# Pull launchpad devel from launchpad.
+INITIAL_REV=$(bzr revno "$LP_TRUNK_PATH")
+bzr pull -d "$LP_TRUNK_PATH"
+FINAL_REV=$(bzr revno "$LP_TRUNK_PATH")
 
-# Pull from devpad trunk
-cd $LP_TRUNK_PATH
-INITIAL_REV=$(bzr revno)
-bzr pull
-FINAL_REV=$(bzr revno)
+# Make sure our directories are around.
+mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH"
 
-# Update the source dependencies
-if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
+# Get/update the download cache.
+if [ -d "$LP_DOWNLOAD_CACHE_PATH" ]
+then
+    bzr up "$LP_DOWNLOAD_CACHE_PATH"
+else
+    bzr co lp:lp-source-dependencies "$LP_DOWNLOAD_CACHE_PATH"
+fi
 
-# Several (*) have tried, and failed, to get the --filter to fit neatly
-# into RSYNCOPTIONS, so we put it here. Bash arrays do not count.
-#   * elmo, sabdfl
-rsync --filter=". utilities/sourcedeps.filter" $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $LP_SOURCEDEPS_PATH/
+# Add or update sourcepackages.
+sourcedeps_conf="$(dirname "$0")/sourcedeps.conf"
+if [ ! -e "$sourcedeps_conf" ]
+then
+    # Use the global deps which are stable.
+    echo "Could not find $sourcedeps_conf" >&2
+    sourcedeps_conf="$LP_TRUNK_PATH/utilities/sourcedeps.conf"
+fi
 
-cd $LP_PROJECT_PATH
-for branch in *; do
-  if [ -d $branch/sourcecode ]
-  then
-    echo "Updating sourcecode dependencies for ${branch}"
-    $LP_TRUNK_NAME/utilities/link-external-sourcecode --target=$branch --parent=../$LP_SOURCEDEPS_DIR
-  fi
+echo "Updating sourcecode dependencies in rocketfuel:"
+echo "    Sourcedeps: $LP_SOURCEDEPS_PATH"
+while IFS="=" read package branch
+do
+    package_path="$LP_SOURCEDEPS_PATH/$package"
+    echo "    Checking $package_path"
+    if [ -d "$package_path" ]
+    then
+        run-child bzr pull --remember "$branch" --directory "$package_path"
+    else
+        run-child bzr branch --standalone "$branch" "$package_path"
+    fi
+done < "$sourcedeps_conf"
+
+# Update the current trees in the repo.
+echo "Updating sourcecode dependencies in current local branches:"
+for branch in "$LP_PROJECT_PATH"/*
+do
+    if [ -d "$branch/sourcecode" ]
+    then
+        echo "    ${branch}"
+        run-child "$LP_TRUNK_PATH/utilities/link-external-sourcecode" \
+            --parent="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR" --target="$branch"
+    fi
 done
 
-# Exit if there are no new revisions
-if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
-
-cd $LP_TRUNK_NAME
-make
+# Build launchpad if there were changes.
+if [ $FINAL_REV != $INITIAL_REV ];
+then
+    make -C "$LP_TRUNK_PATH"
+fi

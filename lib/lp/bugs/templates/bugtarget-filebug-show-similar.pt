@@ -1,0 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
+
+  <metal:display-similar-bugs
+      use-macro="context/@@+filebug-macros/display-similar-bugs" />
+
+</tal:root>

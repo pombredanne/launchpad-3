@@ -13,7 +13,7 @@ from zope.interface import Interface
 from zope.schema import Datetime, Object, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 
 class IPersonNotification(Interface):

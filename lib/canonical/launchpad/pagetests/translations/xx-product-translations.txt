@@ -1,3 +1,5 @@
+= Product Translations =
+
 Each product in Launchpad has a Translations page.
 
     >>> anon_browser.open('http://translations.launchpad.dev/evolution')
@@ -5,27 +7,36 @@ Each product in Launchpad has a Translations page.
     <...
     ...Translations of The Evolution Groupware Application...
     ...
-    ...For Evolution, Launchpad currently recommends...
-    ...Evolution trunk...
+    ...Translation overview...
+    ...Translation for trunk...
     ...
 
-This page shows translations for upstream even if there aren't translations
-for a distribution.
+A helper method to print out language chart.
 
-    >>> anon_browser.open('http://translations.launchpad.dev/alsa-utils')
-    >>> print find_main_content(anon_browser.contents)
-    <...
-    ...Template "alsa-utils" in alsa-utils trunk...
+    >>> def print_language_stats(browser):
+    ...     table = find_tag_by_id(browser.contents, 'languagestats')
+    ...     if table is None:
+    ...         print "No translations."
+    ...         return
+    ...     language_rows = find_tags_by_class(str(table), 'stats')
+    ...     print "%-25s %13s %13s %13s" % (
+    ...         "Language", "Untranslated", "Unreviewed", "Changed")
+    ...     for row in language_rows:
+    ...         cols = row.findAll('td')
+    ...         language = extract_text(cols[0])
+    ...         untranslated = extract_text(cols[2])
+    ...         unreviewed = extract_text(cols[3])
+    ...         changed = extract_text(cols[4])
+    ...         print "%-25s %13d %13d %13d" % (
+    ...             language,
+    ...             int(untranslated), int(unreviewed), int(changed))
 
 We even have a language chart table.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'language-chart'))
-    Language   Status Untranslated Need review Changed Last Edited By
-    Afrikaans       3 &mdash; &mdash; &mdash; &mdash;
-    Sotho, Southern 3 &mdash; &mdash; &mdash; &mdash;
-    Xhosa           3 &mdash; &mdash; &mdash; &mdash;
-    Zulu            3 &mdash; &mdash; &mdash; &mdash;
+    >>> print_language_stats(anon_browser)
+    Language                   Untranslated    Unreviewed       Changed
+    Portuguese (Brazil)                  25             0             0
+    Spanish                              22             2             0
 
 If a product is not set up for translations in Launchpad, and you are its
 registrant or an admin, the Translations page suggests that you set it up for
@@ -70,7 +81,6 @@ contact the product's registrant.
     Overview / Import queue
     Translation setup needed
     ...
-    This project&rsquo;s license has not been specified.
     This project is not configured to use Launchpad for translations.
     The gnomebaker project is not set up for translation in Launchpad.
     You might want to talk with Foo Bar, the project registrant, about
@@ -113,7 +123,6 @@ registrant, so the text reflects both possibilities.
     Overview / Import queue
     Translation setup needed
     ...
-    This project&rsquo;s license has not been specified.
     This project is not configured to use Launchpad for translations.
     The gnomebaker project is not set up for translation in Launchpad.
     If you are Foo Bar, log in to begin the setup process.
@@ -138,7 +147,7 @@ Translations...
     ...Translation setup needed...
 
 And since the Network Applet isn't currently using Launchpad for
-Translations, there is no language chart show.
+Translations, there is no language chart shown.
 
     >>> print find_tag_by_id(anon_browser.contents, 'language-chart')
     None
@@ -152,7 +161,7 @@ them anymore.
     ...     find_tag_by_id(admin_browser.contents,
     ...                    'portlet-obsolete-translatable-series'))
     All product series with obsolete templates
-    NetApplet Series: trunk
+    NetApplet trunk series
 
 While we can see that anonymous people are not getting such information:
 
@@ -189,10 +198,5 @@ Also, we will get some translation status for network applet.
     >>> print find_main_content(anon_browser.contents)
     <...
     ...Translation overview...
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'language-chart'))
-    Language Status Untranslated Need review Changed Last Edited By
-    Afrikaans       43 &mdash;  &mdash; &mdash; &mdash;
-    Sotho, Southern 43 &mdash;  &mdash; &mdash; &mdash;
-    Xhosa           43 &mdash;  &mdash; &mdash; &mdash;
-    Zulu            43 &mdash;  &mdash; &mdash; &mdash;
+    >>> print_language_stats(anon_browser)
+    Language                   Untranslated    Unreviewed       Changed

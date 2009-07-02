@@ -17,12 +17,12 @@ from sqlobject import (
 from storm.expr import Join
 from storm.store import Store
 
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.project import Project
-from canonical.launchpad.database.teammembership import TeamParticipation
+from lp.registry.model.product import Product
+from lp.registry.model.project import Project
+from lp.registry.model.teammembership import TeamParticipation
 from canonical.launchpad.database.translator import Translator
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
@@ -30,7 +30,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class TranslationGroup(SQLBase):

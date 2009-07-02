@@ -67,7 +67,7 @@ changed by admins and commercial admins but not by regular users.
     >>> # Create a webservice object for commercial-admins.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> login(ANONYMOUS)

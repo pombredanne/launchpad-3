@@ -195,12 +195,19 @@ A distribution's owner can manage the distribution's templates.
     >>> print template.path
     bar.pot
 
+This privilege also extends to items that require "edit" permissions.
+
+    >>> distro_owner_browser.open(template_admin_url)
+    >>> distro_owner_browser.getControl(name='field.priority').value = '321'
+    >>> distro_owner_browser.getControl('Change').click()
+
 If the distribution has a translation group assigned, the group's owners
 can manage the distribution's translation templates as well.
 
     >>> group_owner_browser = setupBrowser(auth='Basic go@example.com:test')
     >>> group_owner_browser.open(template_admin_url)
     >>> group_owner_browser.getControl(name='field.path').value = 'splat.pot'
+    >>> group_owner_browser.getControl(name='field.priority').value = '543'
     >>> group_owner_browser.getControl('Change').click()
 
     >>> print template.path

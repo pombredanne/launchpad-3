@@ -5,6 +5,7 @@ __metaclass__ = type
 import warnings
 from datetime import datetime
 import re
+from textwrap import dedent
 
 import psycopg2
 from psycopg2.extensions import (
@@ -13,6 +14,8 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
+from storm.expr import State
+from storm.expr import compile as storm_compile
 from storm.locals import Storm, Store
 from storm.zope.interfaces import IZStorm
 
@@ -37,6 +40,7 @@ __all__ = [
     'commit',
     'ConflictingTransactionManagerError',
     'connect',
+    'convert_storm_clause_to_string',
     'cursor',
     'expire_from_cache',
     'flush_database_caches',
@@ -293,15 +297,27 @@ class ZopelessTransactionManager(object):
         if dbuser is None:
             dbuser = config.launchpad.dbuser
 
-        # Construct a config fragment:
-        overlay = '[database]\n'
-        overlay += 'main_master: %s\n' % connection_string
-        overlay += 'isolation_level: %s\n' % {
+        isolation_level = {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
             ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
             ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
+
+        # Construct a config fragment:
+        overlay = dedent("""\
+            [database]
+            main_master: %(connection_string)s
+            auth_master: %(connection_string)s
+            isolation_level: %(isolation_level)s
+            """ % vars())
+
         if dbuser:
-            overlay += '\n[launchpad]\ndbuser: %s\n' % dbuser
+            # XXX 2009-05-07 stub bug=373252: Scripts should not be connecting
+            # as the launchpad_auth database user.
+            overlay += dedent("""\
+                [launchpad]
+                dbuser: %(dbuser)s
+                auth_dbuser: launchpad_auth
+                """ % vars())
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:
@@ -551,9 +567,9 @@ def sqlvalues(*values, **kwvalues):
         raise TypeError(
             "Use either positional or keyword values with sqlvalue.")
     if values:
-        return tuple([quote(item) for item in values])
+        return tuple(quote(item) for item in values)
     elif kwvalues:
-        return dict([(key, quote(value)) for key, value in kwvalues.items()])
+        return dict((key, quote(value)) for key, value in kwvalues.items())
 
 
 def quote_identifier(identifier):
@@ -578,6 +594,51 @@ def quote_identifier(identifier):
 
 quoteIdentifier = quote_identifier # Backwards compatibility for now.
 
+
+def convert_storm_clause_to_string(storm_clause):
+    """Convert a Storm expression into a plain string.
+
+    :param storm_clause: A Storm expression
+
+    A helper function allowing to use a Storm expressions in old-style
+    code which builds for example WHERE expressions as plain strings.
+
+    >>> from lp.bugs.model.bug import Bug
+    >>> from lp.bugs.model.bugtask import BugTask
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
+    >>> from storm.expr import And, Or
+
+    >>> print convert_storm_clause_to_string(BugTask)
+    BugTask
+
+    >>> print convert_storm_clause_to_string(BugTask.id == 16)
+    BugTask.id = 16
+
+    >>> print convert_storm_clause_to_string(
+    ...     BugTask.importance == BugTaskImportance.UNKNOWN)
+    BugTask.importance = 999
+
+    >>> print convert_storm_clause_to_string(Bug.title == "foo'bar'")
+    Bug.title = 'foo''bar'''
+
+    >>> print convert_storm_clause_to_string(
+    ...     Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...        BugTask.importance == BugTaskImportance.HIGH))
+    BugTask.importance = 999 OR BugTask.importance = 40
+
+    >>> print convert_storm_clause_to_string(
+    ...    And(Bug.title == 'foo', BugTask.bug == Bug.id,
+    ...        Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...           BugTask.importance == BugTaskImportance.HIGH)))
+    Bug.title = 'foo' AND BugTask.bug = Bug.id AND
+    (BugTask.importance = 999 OR BugTask.importance = 40)
+    """
+    state = State()
+    clause = storm_compile(storm_clause, state)
+    if len(state.parameters):
+        parameters = [param.get(to_db=True) for param in state.parameters]
+        clause = clause.replace('?', '%s') % sqlvalues(*parameters)
+    return clause
 
 def flush_database_updates():
     """Flushes all pending database updates.

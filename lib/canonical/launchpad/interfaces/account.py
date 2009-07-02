@@ -22,7 +22,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import CollectionField, Reference
 
 
 class AccountStatus(DBEnumeratedType):
@@ -202,6 +202,53 @@ class IAccountPublic(Interface):
                       "The one we'll use to communicate with them."),
         readonly=True, required=False, schema=Interface)
 
+    validated_emails = CollectionField(
+        title=_("Confirmed e-mails of this account."),
+        description=_(
+            "Confirmed e-mails are the ones in the VALIDATED state.  The "
+            "user has confirmed that they are active and that they control "
+            "them."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
+
+    guessed_emails = CollectionField(
+        title=_("Guessed e-mails of this account."),
+        description=_(
+            "Guessed e-mails are the ones in the NEW state.  We believe "
+            "that the user owns the address, but they have not confirmed "
+            "the fact."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
+
+    def getUnvalidatedEmails():
+        """Get a list of the unvalidated email addresses for this account.
+
+        An unvalidated email address is one which the user has tried
+        to add to their account but has not yet replied to the
+        corresponding confirmation email."""
+
+    def setPreferredEmail(email):
+        """Set the given email address as this account's preferred one.
+
+        If ``email`` is None, the preferred email address is unset, which
+        will make the account invalid.
+        """
+
+    def validateAndEnsurePreferredEmail(email):
+        """Ensure this account has a preferred email.
+
+        If this account doesn't have a preferred email, <email> will be set as
+        this account's preferred one. Otherwise it'll be set as VALIDATED and
+        this account will keep their old preferred email.
+
+        This method is meant to be the only one to change the status of an
+        email address, but as we all know the real world is far from ideal
+        and we have to deal with this in one more place, which is the case
+        when people explicitly want to change their preferred email address.
+        On that case, though, all we have to do is use
+        account.setPreferredEmail().
+        """
+
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
@@ -248,16 +295,28 @@ class IAccountPrivate(Interface):
 class IAccountSpecialRestricted(Interface):
     """Attributes of `IAccount` protected with launchpad.Special."""
 
-    def reactivate(comment, password, preferred_email):
-        """Reactivate the given account.
+    # XXX sinzui 2008-07-14 bug=248518:
+    # This method would assert the password is not None, but
+    # setPreferredEmail() passes the Person's current password, which may
+    # be None.  Once that callsite is fixed, we will be able to check that the
+    # password is not None here and get rid of the reactivate() method below.
+    def activate(comment, password, preferred_email):
+        """Activate this account.
 
-        Set the account status to ACTIVE and possibly restore its name.
-        The preferred email address is set.
+        Set the account status to ACTIVE, the account's password to the given
+        one and its preferred email address.
 
         :param comment: An explanation of why the account status changed.
-        :param password: The user's password, it cannot be None.
+        :param password: The user's password.
         :param preferred_email: The `EmailAddress` to set as the account's
             preferred email address. It cannot be None.
+        """
+
+    def reactivate(comment, password, preferred_email):
+        """Reactivate this account.
+
+        Just like `IAccountSpecialRestricted`.activate() above, but here the
+        password can't be None or the empty string.
         """
 
 
@@ -287,7 +346,7 @@ class IAccountSet(Interface):
     def get(id):
         """Return the `IAccount` with the given id.
 
-        Return None if it doesn't exist.
+        :raises LookupError: If the account is not found.
         """
 
     def createAccountAndEmail(email, rationale, displayname, password,
@@ -303,8 +362,9 @@ class IAccountSet(Interface):
 
         :param email: A string, not an `IEmailAddress` provider.
 
-        :return: An `IAccount`, or None if the given email address
-        does not exist in the database or is not linked to an `IAccount`.
+        :return: An `IAccount`.
+
+        :raises LookupError: If the account is not found.
         """
 
     def getByOpenIDIdentifier(openid_identity):
@@ -312,8 +372,8 @@ class IAccountSet(Interface):
 
          :param open_identifier: An ascii compatible string that is either
              the old or new openid_identifier that belongs to an account.
-         :return: An `IAccount`, or None if the openid_identifier does
-             not belong to an account.
+         :return: An `IAccount`
+         :raises LookupError: If the account is not found.
          """
 
     def createOpenIDIdentifier(mnemonic):

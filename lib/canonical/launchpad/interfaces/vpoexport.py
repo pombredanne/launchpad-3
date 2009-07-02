@@ -14,7 +14,7 @@ from zope.interface import Interface
 from zope.schema import Bool, Int, Object, Text
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.language import ILanguage
+from lp.services.worlddata.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
@@ -69,6 +69,11 @@ class IVPOExport(Interface):
     pofile = Object(
         title=u"Translation file",
         required=True, readonly=True, schema=IPOFile)
+
+    diverged = Text(
+        title=u"Message divergence.",
+        description=u"A POTemplate this is a divergence for, or None.",
+        required=False, readonly=True)
 
     language = Object(
         title=u"Translation language",

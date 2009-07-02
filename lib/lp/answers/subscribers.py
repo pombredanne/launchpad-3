@@ -7,7 +7,7 @@ __all__ = ['update_last_updated']
 
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 
 def update_last_updated(faq, event):

@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Functions used with the Rosetta PO import script."""
 
@@ -153,7 +153,7 @@ class ImportProcess:
                         ITranslationImportQueue)
                     entry_to_import = translation_import_queue[
                         failed_entry_id]
-                    entry_to_import.status = RosettaImportStatus.FAILED
+                    entry_to_import.setStatus(RosettaImportStatus.FAILED)
                     self.ztm.commit()
                     self.ztm.begin()
                     # Go to process next entry.

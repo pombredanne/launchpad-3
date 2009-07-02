@@ -16,9 +16,9 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.widgets import (
     BranchPopupWidget, NoProductError)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.code.enums import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies import (
     BranchRestrictedOnProductVocabulary, BranchVocabulary)
 from canonical.testing import LaunchpadFunctionalLayer

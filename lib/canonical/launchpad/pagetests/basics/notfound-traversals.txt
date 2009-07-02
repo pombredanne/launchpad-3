@@ -96,9 +96,6 @@ status is returned.
 >>> check_not_found("/+groups/foos",
 ...                 host='translations.launchpad.dev')
 
->>> check("robots.txt", host="shipit.ubuntu.dev")
->>> check_redirect('/user.cgi', host="shipit.ubuntu.dev", status=301)
-
 >>> check("/bounties")
 >>> check("/bounties/foomatic-widgets")
 
@@ -159,7 +156,7 @@ status is returned.
 >>> check("/ubuntu/+edit", auth=True)
 >>> check("/ubuntu/+reassign", auth=True)
 >>> check("/ubuntu/+selectmemberteam", auth=True)
->>> check("/ubuntu/+changetranslators", host='translations.launchpad.dev',
+>>> check("/ubuntu/+settings", host='translations.launchpad.dev',
 ...       auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
 >>> check("/ubuntu/+linkbounty", auth=True)
@@ -313,13 +310,6 @@ form, a 404 will be issued immediately; no redirect will be sent.
 >>> check_not_found("/bugs/2/attachments/1")
 >>> check_not_found("/bugs/2/+attachment/1")
 
-Viewing a bug in the context of an upstream where the bug has not yet
-been reported.
-
->>> check("/netapplet/+bug/1")
->>> check_not_found("/netapplet/+bug/1/+viewstatus")
->>> check_not_found("/netapplet/+bug/1/+editstatus")
-
 Check a bug is traversable by nickname:
 
 >>> check_redirect("/bugs/blackhole")
@@ -328,45 +318,15 @@ Check a bug is traversable by nickname:
 >>> check_not_found("/bugs/invalid-nickname")
 >>> check_not_found("bugs/invalid-nickname")
 
-Viewing a bug in the context of a distribution where the bug has not
-yet been reported.
-
->>> check_redirect("/ubuntu/+bug")
->>> check_not_found("/ubuntu/+bug/3/+viewstatus")
->>> check_not_found("/ubuntu/+bug/3/+editstatus")
-
-Viewing a bug in the context of a distorelease where the bug has not
-yet been reported.
-
->>> check_redirect("/ubuntu/warty/+bug")
->>> check("/ubuntu/warty/+bug/3")
->>> check_not_found("/ubuntu/warty/+bug/3/+viewstatus")
->>> check_not_found("/ubuntu/warty/+bug/3/+editstatus")
-
 Viewing a bug in the context of a distro source package in which it's
 already been reported.
 
 >>> check("/ubuntu/+source/mozilla-firefox/+bug/1")
 
-Viewing a bug in the context of a distro source package in which it's
-not yet been reported.
-
->>> check_redirect("/ubuntu/+source/thunderbird/+bug")
->>> check("/ubuntu/+source/thunderbird/+bug/1")
->>> check_not_found("/ubuntu/+source/thunderbird/+bug/1/+viewstatus")
->>> check_not_found("/ubuntu/+source/thunderbird/+bug/1/+editstatus")
-
 Viewing the bug in the context of a distro series source package in
 which the bug has already been reported.
 
 >>> check("/ubuntu/warty/+source/mozilla-firefox/+bug/5")
-
-Viewing the bug in the context of a distro series source package in
-which the bug has not yet been reported.
-
->>> check("/ubuntu/warty/+source/mozilla-firefox/+bug/1")
->>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
->>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
 Viewing a bug in a distribution that doesn't use Bugs officially, where the
 bugtask is also assigned to a milestone (a corner case, but one that was causing
@@ -513,11 +473,6 @@ Icing resources.
 >>> check("/+icing/lazr/build/lazr.js")
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
 >>> check("/+icing-contrib/rev%s/json2.js" % revno)
->>> check("/+icing-kubuntu/rev%s/kubuntu-masthead2.css" % revno,
-...       host="shipit.kubuntu.dev")
->>> check("/+icing-edubuntu/rev%s/edubuntu.css" % revno,
-...       host="shipit.edubuntu.dev")
-
 
 Image resources are available from all the virtual hosts.
 
@@ -525,4 +480,3 @@ Image resources are available from all the virtual hosts.
 >>> check('/@@/add', host='bugs.launchpad.dev')
 >>> check('/@@/add', host='answers.launchpad.dev')
 >>> check('/@@/add', host='code.launchpad.dev')
-

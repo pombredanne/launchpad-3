@@ -32,6 +32,14 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.INoneableDescription"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.launchpad.browser.NoneableDescriptionWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="canonical.launchpad.fields.IWhiteboard"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.WhiteboardWidget"
@@ -56,73 +64,9 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItRecipientDisplayname"
+        for="canonical.launchpad.fields.INoneableTextLine"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItRecipientDisplaynameWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItOrganization"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItOrganizationWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItCity"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItCityWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItProvince"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItProvinceWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItAddressline1"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItAddressline1Widget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItAddressline2"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItAddressline2Widget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItPhone"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItPhoneWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItReason"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItReasonWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItQuantity"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItQuantityWidget"
+        factory="canonical.widgets.textwidgets.NoneableTextWidget"
         permission="zope.Public"
         />
 

@@ -24,7 +24,8 @@ class LaunchpadUser:
             # Check under which name they are logged in.
             result = client.commands.execJS(
                 code="""lookupNode({xpath: '//div[@id="logincontrol"]//a'}).text""")
-            if result['result'].strip() == self.display_name:
+            if (result['result'] is not None and
+                result['result'].strip() == self.display_name):
                 # We are logged as that user.
                 return
             client.click(name="logout")
@@ -43,11 +44,13 @@ class AnonymousUser:
 
     def ensure_login(self, client):
         """Ensure that the user is surfing anonymously."""
-        if client.asserts.assertNode(
-            link=u'Log in / Register', assertion=False):
+        result = client.asserts.assertNode(
+            link=u'Log in / Register', assertion=False)
+        if result['result']:
             return
+        client.waits.forElement(name="logout", timeout=u"100000")
         client.click(name="logout")
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=u'100000')
 
 
 # Well Known Users

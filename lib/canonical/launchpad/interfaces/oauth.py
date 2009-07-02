@@ -23,7 +23,7 @@ from zope.schema import Bool, Choice, Datetime, Object, TextLine
 from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
 
 

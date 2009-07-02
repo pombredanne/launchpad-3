@@ -57,7 +57,7 @@ TranslationFormatSyntaxError
     ...     potemplate.path, potemplate_contents, published, person,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> (subject, message) = potemplate.importFromQueue(entry)
 
 The import failed.

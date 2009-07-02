@@ -6,7 +6,7 @@ configuration options are controlled by code. This test demonstrates
 how that code works.
 
     >>> from zope.component import provideUtility
-    >>> from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+    >>> from lazr.restful.interfaces import IWebServiceConfiguration
     >>> from canonical.launchpad.rest.configuration import (
     ...     LaunchpadWebServiceConfiguration)
     >>> webservice_config = LaunchpadWebServiceConfiguration()

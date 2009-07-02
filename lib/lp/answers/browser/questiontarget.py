@@ -24,11 +24,12 @@ from operator import attrgetter
 from urllib import urlencode
 
 from zope.app.form.browser import DropdownWidget
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, queryMultiAdapter
 from zope.formlib import form
 from zope.schema import Bool, Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -110,7 +111,8 @@ class QuestionCollectionLatestQuestionsView:
         """Return <quantity> latest questions created for this target. This
         is used by the +portlet-latestquestions view.
         """
-        return self.context.searchQuestions()[:quantity]
+        question_collection = IQuestionCollection(self.context)
+        return question_collection.searchQuestions()[:quantity]
 
 
 class QuestionCollectionOpenCountView:
@@ -334,7 +336,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     @cachedproperty
     def context_question_languages(self):
         """Return the set of ILanguages used by this context's questions."""
-        return self.context.getQuestionLanguages()
+        question_collection = IQuestionCollection(self.context)
+        return question_collection.getQuestionLanguages()
 
     @property
     def show_language_control(self):
@@ -401,8 +404,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         # present in ISearchQuestionsForm (search_text, status, sort) and the
         # ones defined in getDefaultFilter() which varies based on the
         # concrete view class.
-        return BatchNavigator(
-            self.context.searchQuestions(**self.search_params), self.request)
+        question_collection = IQuestionCollection(self.context)
+        return BatchNavigator(question_collection.searchQuestions(
+            **self.search_params), self.request)
 
     @property
     def display_sourcepackage_column(self):
@@ -667,7 +671,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     @property
     def administrated_teams(self):
-        from canonical.launchpad.browser.person import (
+        from lp.registry.browser.person import (
             RestrictedMembershipsPersonView)
         restricted_view = RestrictedMembershipsPersonView(self.user,
                                                           self.request)

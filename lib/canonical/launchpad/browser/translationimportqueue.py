@@ -22,12 +22,12 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.hastranslationimports import (
     HasTranslationImportsView)
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
     ITranslationImportQueue, RosettaImportStatus,
     SpecialTranslationImportTargetFilter, TranslationFileType)
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.pofile import IPOFileSet
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp.interfaces import (
@@ -387,7 +387,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         # Store the associated IPOTemplate.
         self.context.potemplate = potemplate
 
-        self.context.status = RosettaImportStatus.APPROVED
+        self.context.setStatus(RosettaImportStatus.APPROVED)
         self.context.date_status_changed = UTC_NOW
 
 

@@ -3,21 +3,27 @@
 """OpenID Consumer related database classes."""
 
 __metaclass__ = type
-__all__ = ['OpenIDNonce']
+__all__ = ['OpenIDConsumerNonce']
 
-from storm.locals import DateTime, Int, Storm, Unicode
+from zope.interface import implements
 
-class OpenIDNonce(Storm):
-    """An OpenIDNonce.
+from canonical.launchpad.database.baseopenidstore import (
+    BaseStormOpenIDAssociation, BaseStormOpenIDNonce, BaseStormOpenIDStore)
+from canonical.launchpad.interfaces.openidconsumer import (
+    IOpenIDConsumerStore)
 
-    The table definition matches that required by the openid library,
-    so doesn't follow our standards. In particular, it doesn't have an
-    id column and the timestamp is an epoch time integer rather than a
-    datetime.
-    """
-    __storm_table__ = "OpenIDNonce"
-    __storm_primary__ = "server_url", "timestamp", "salt"
 
-    server_url = Unicode()
-    timestamp = Int()
-    salt = Unicode()
+class OpenIDConsumerAssociation(BaseStormOpenIDAssociation):
+    __storm_table__ = 'OpenIDConsumerAssociation'
+
+
+class OpenIDConsumerNonce(BaseStormOpenIDNonce):
+    __storm_table__ = 'OpenIDConsumerNonce'
+
+
+class OpenIDConsumerStore(BaseStormOpenIDStore):
+    """An OpenID association and nonce store for Launchpad."""
+    implements(IOpenIDConsumerStore)
+
+    Association = OpenIDConsumerAssociation
+    Nonce = OpenIDConsumerNonce

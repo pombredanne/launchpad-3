@@ -1,0 +1,123 @@
+<tal:bugtask
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  define="expandable view/canSeeTaskDetails;
+          indent_task view/shouldIndentTask;
+          is_conjoined_slave view/is_conjoined_slave;
+          tasklink view/taskLink;
+          row_id string:tasksummary${context/id};
+          form_row_id string:task${context/id}">
+  <tr tal:attributes="class view/getTaskRowCSSClass; id row_id">
+    <td class="icon left right">
+      <metal:expander
+          metal:define-macro="expander"
+          tal:define="expander_link_text expander_link_text|nothing">
+        <a tal:condition="expandable"
+           tal:attributes="
+            href tasklink;
+            onclick string:return toggleFormVisibility('${form_row_id}')"
+            class="sprite bug-status-expand">
+          <span class="invisible-link"></span>
+          <tal:link_text tal:replace="expander_link_text" />
+        </a>
+        <tal:no_expander tal:condition="not: expandable"
+                         tal:replace="expander_link_text" />
+      </metal:expander>
+    </td>
+    <td style="padding: 0.3em 0em 0.3em 1.5em"
+        tal:condition="indent_task"
+        tal:define="series_targetname view/getSeriesTargetName">
+      <span class="sprite milestone"></span>
+      <tal:not-conjoined-task condition="not: is_conjoined_slave">
+        <a
+          tal:attributes="href context/target/fmt:url"
+          tal:content="series_targetname"
+        />
+      </tal:not-conjoined-task>
+    </td>
+    <td tal:condition="not:indent_task">
+      <a tal:attributes="
+            href context/target/fmt:url;
+            title view/target_link_title;
+            class context/target/image:sprite_css"
+        tal:content="context/bugtargetdisplayname"
+      />
+    </td>
+
+    <tal:conjoined-task condition="is_conjoined_slave">
+    <td colspan="5" style="vertical-align: middle">
+      <span class="discreet lesser" style="font-size: 100%">
+        Status tracked in
+        <tal:master tal:replace="view/getConjoinedMasterName">
+          Hoary
+        </tal:master>
+      </span>
+    </td>
+    </tal:conjoined-task>
+
+    <tal:not-conjoined-task condition="not:is_conjoined_slave">
+    <td tal:attributes="class string:status${context/status/name}"
+        tal:define="expander_link_text context/status/title">
+      <metal:expander metal:use-macro="template/macros/expander" />
+    </td>
+
+    <td tal:attributes="class string:importance${context/importance/name}"
+        tal:define="expander_link_text context/importance/title">
+      <metal:expander metal:use-macro="template/macros/expander" />
+    </td>
+
+    <td class="icon left right">
+      <metal:expander metal:use-macro="template/macros/expander" />
+    </td>
+
+    <td style="margin: 0; padding: 0; vertical-align: middle">
+      <tal:has_watch condition="context/bugwatch">
+        <div style="text-decoration: none; padding: 0.25em">
+          <tal:bugtracker-active
+              condition="context/bugwatch/bugtracker/active">
+            <span tal:condition="not:context/bugwatch/last_error_type"
+                  class="sprite bug-remote"></span>
+            <span tal:condition="context/bugwatch/last_error_type"
+                  class="sprite warning-icon"></span>
+          </tal:bugtracker-active>
+          <span tal:condition="not:context/bugwatch/bugtracker/active"
+                class="sprite warning-icon"></span>
+          <a tal:replace="structure context/bugwatch/fmt:external-link" />
+        </div>
+      </tal:has_watch>
+      <tal:has_no_watch condition="not: context/bugwatch">
+
+        <tal:has_assignee condition="context/assignee">
+          <a
+            style="display: block; padding: 0.25em; text-decoration: none;"
+            tal:attributes="href context/assignee/fmt:url/+assignedbugs"
+          >
+            <tal:block replace="structure context/assignee/fmt:icon" />
+            <tal:name replace="context/assignee/fmt:displayname">
+              assignee.displayname
+            </tal:name>
+          </a>
+        </tal:has_assignee>
+      </tal:has_no_watch>
+    </td>
+
+    <tal:milestoned condition="context/milestone">
+      <td class="icon left right">
+        <metal:expander metal:use-macro="template/macros/expander" />
+      <a tal:attributes="href context/milestone/fmt:url"
+         tal:content="context/milestone/name">1.0</a>
+      </td>
+      </tal:milestoned>
+      <td tal:condition="not:context/milestone"></td>
+    </tal:not-conjoined-task>
+  </tr>
+  <tal:form condition="view/displayEditForm">
+    <tr
+      tal:attributes="id form_row_id"
+      tal:condition="expandable"
+      style="display: none"
+    >
+     <td colspan="7" tal:content="structure view/edit_view" />
+    </tr>
+  </tal:form>
+</tal:bugtask>

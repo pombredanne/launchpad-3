@@ -14,7 +14,7 @@ from zope.interface import implements
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.interfaces import IPerson, IPersonSet
 
-from canonical.lazr.interfaces.rest import (
+from lazr.restful.interfaces import (
     IJSONRequestCache, ITopLevelEntryLink)
 
 class IMeLink(ITopLevelEntryLink, ICanonicalUrlData):

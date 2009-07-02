@@ -48,9 +48,9 @@ And lets define a nice printout function for PO files.
     ...     for potmsgset in pofile.potemplate.getPOTMsgSets():
     ...         msgid = potmsgset.singular_text
     ...         current = potmsgset.getCurrentTranslationMessage(
-    ...             pofile.language)
+    ...             pofile.potemplate, pofile.language)
     ...         imported = potmsgset.getImportedTranslationMessage(
-    ...             pofile.language)
+    ...             pofile.potemplate, pofile.language)
     ...         imported_translation = translation = None
     ...         if imported is not None:
     ...             imported_translation = imported.msgstr0.translation
@@ -248,9 +248,9 @@ two new translations through Launchpad ("d-from-LP" and "e-from-LP"):
     >>> print_pofile_stats(firefox_serbian)
     total: 6
     translated: 4
-      imported: 2
+      imported: 1
         changed: 1
-      new: 2
+      new: 3
 
 Common next step is having a new package upload which provides us with
 updated translations upstream.  The "second" message translation is changed,
@@ -317,9 +317,9 @@ marked as 'changed in LP':
     >>> print_pofile_stats(firefox_serbian)
     total: 6
     translated: 5
-      imported: 5
+      imported: 4
         changed: 1
-      new: 0
+      new: 1
 
 A new translation for "second" message through Launchpad is added.  We also
 do another translator (i.e. not from a package) update, where we remove the
@@ -388,9 +388,9 @@ reverting a "fourth" translation to the imported one is shown by the decreased
     >>> print_pofile_stats(firefox_serbian)
     total: 6
     translated: 6
-      imported: 5
+      imported: 3
         changed: 2
-      new: 1
+      new: 3
 
 Finally, we make sure that adding another suggestion to the "second" message
 works properly, even if it makes us have two non-current and non-imported
@@ -453,9 +453,9 @@ was already 'changed':
     >>> print_pofile_stats(firefox_serbian)
     total: 6
     translated: 6
-      imported: 5
+      imported: 3
         changed: 2
-      new: 1
+      new: 3
 
 If a translation actually uses a different plural expression from the
 one we default to in Launchpad, non-plural messages are not reordered
@@ -519,9 +519,9 @@ Neither contents nor statistics have changed, so we've got the same output.
     >>> print_pofile_stats(firefox_serbian)
     total: 6
     translated: 6
-      imported: 5
+      imported: 3
         changed: 2
-      new: 1
+      new: 3
 
 Sometimes, people will send back their translations to upstream, which will
 be back with next automatic sync from upstream:

@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Unit tests for XPI headers (i.e. install.rdf files)."""
 
@@ -8,6 +8,8 @@ import unittest
 
 from cgi import escape
 
+from canonical.launchpad.interfaces.translationimporter import (
+    TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.xpi_header import XpiHeader
 
 
@@ -62,6 +64,16 @@ class XpiHeaderTestCase(unittest.TestCase):
         self.assertEqual(
             header.getRawContent(), rdf_content % {'contributors': ''})
         self.assertEqual(header.getLastTranslator(), (None, None))
+
+    def test_RdfSyntaxError(self):
+        # A general parse error in an RDF file is a
+        # TranslationFormatSyntaxError.  The exception is thrown when we
+        # try to retrieve information from the header.
+        content = rdf_content % {
+            'contributors': '</hah, this breaks the file!>'}
+        header = XpiHeader(content)
+        self.assertRaises(
+            TranslationFormatSyntaxError, header.getLastTranslator)
 
     def test_SetLastTranslator(self):
         # Setting the last translator is a no-op on XPI headers.

@@ -9,7 +9,8 @@ from zope.interface import implements
 from zope.exceptions.exceptionformatter import format_exception
 from zope.component import getUtility
 from zope.app.exception.interfaces import ISystemErrorView
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -231,3 +232,17 @@ class TranslationUnavailableView(SystemErrorView):
 
     def __call__(self):
         return self.index()
+
+
+class ReadOnlyErrorView(SystemErrorView):
+    """View rendered when an InvalidBatchSizeError is raised."""
+
+    response_code = 503
+
+    def isSystemError(self):
+        """We don't need to log these errors in the SiteLog."""
+        return False
+
+    def __call__(self):
+        return self.index()
+

@@ -13,8 +13,7 @@ import random
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.interfaces import IMasterStore
 
 
 def create_token(token_length):
@@ -41,7 +40,8 @@ def create_unique_token_for_table(token_length, column):
 
     :return: A new token string
     """
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    # Use the master Store to ensure no race conditions. 
+    store = IMasterStore(column.cls)
     token = create_token(token_length)
     while store.find(column.cls, column==token).one() is not None:
         token = create_token(token_length)

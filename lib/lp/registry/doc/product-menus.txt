@@ -1,0 +1,146 @@
+= The product menu classes =
+
+Each link specified by menu classes for products should be accessible.
+In most cases, the context for links will be the product itself, which
+makes it possible to test most of the links simply with getMultiAdapter().
+
+The check_menu_links() function is defined here to make it simple to
+test all the product menu classes below.
+
+    >>> import traceback
+    >>> import sys
+    >>> import os
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.lazr.utils import safe_hasattr
+    >>> from canonical.lazr.testing.menus import make_fake_request
+    >>> from canonical.launchpad.webapp.publisher import canonical_url
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> def check_menu_links(menu):
+    ...     for link in menu.iterlinks():
+    ...         if '?' in link.target:
+    ...             view_name, _args = link.target.split('?')
+    ...         else:
+    ...             view_name = link.target
+    ...         url = canonical_url(menu.context, view_name=view_name)
+    ...         print '%s: %s' % (link.name, url)
+    ...         request = make_fake_request(url)
+    ...         try:
+    ...             view = getMultiAdapter((firefox, request),
+    ...                                    name=view_name)
+    ...             if 'SimpleViewClass' in str(view):
+    ...                 class_name = 'SimpleViewClass'
+    ...             else:
+    ...                 class_name = view.__class__.__name__
+    ...             if safe_hasattr(view, 'template'):
+    ...                 _base, file_name = os.path.split(
+    ...                     view.template.filename)
+    ...             else:
+    ...                 file_name = 'unknown template'
+    ...             print '    %s: %s' % (class_name, file_name)
+    ...         except:
+    ...             traceback.print_exc(file=sys.stdout)
+
+    >>> from lp.registry.browser.product import (
+    ...     ProductBugsMenu,
+    ...     ProductEditNavigationMenu, ProductNavigationMenu,
+    ...     ProductOverviewMenu, ProductSpecificationsMenu)
+    >>> firefox = getUtility(IProductSet)['firefox']
+
+
+== ProductOverviewMenu ==
+
+    >>> overview_menu = ProductOverviewMenu(firefox)
+    >>> check_menu_links(overview_menu)
+    edit: http://launchpad.dev/firefox/+edit
+        SimpleViewClass: product-edit.pt
+    reassign: http://launchpad.dev/firefox/+edit-people
+        SimpleViewClass: product-edit-people.pt
+    top_contributors: http://launchpad.dev/firefox/+topcontributors
+        SimpleViewClass: karmacontext-topcontributors.pt
+    mentorship: http://launchpad.dev/firefox/+mentoring
+        SimpleViewClass: hasmentoringoffers-mentoring.pt
+    distributions: http://launchpad.dev/firefox/+distributions
+        SimpleViewClass: product-distros.pt
+    packages: http://launchpad.dev/firefox/+packages
+        SimpleViewClass: product-packages.pt
+    series_add: http://launchpad.dev/firefox/+addseries
+        SimpleViewClass: productseries-new.pt
+    announce: http://launchpad.dev/firefox/+announce
+        SimpleViewClass: announcement-add.pt
+    announcements: http://launchpad.dev/firefox/+announcements
+        SimpleViewClass: hasannouncements-index.pt
+    administer: http://launchpad.dev/firefox/+admin
+        SimpleViewClass: product-admin.pt
+    review_license: http://launchpad.dev/firefox/+review-license
+        SimpleViewClass: product-review-license.pt
+    rdf: http://launchpad.dev/firefox/+rdf
+        ProductRdfView: product-rdf.pt
+
+
+== ProductBranchesMenu and ProductTranslationsMenu ==
+
+We are not testing ProductBranchesMenu.code_import because it
+points to a view (/+code-imports/+new), which is not easily tested.
+
+Most of the links in ProductTranslationsMenu do not
+work with check_menu_links(). This might be because the
+facet is not applied correctly before using getMultiAdapter().
+
+# XXX: EdwinGrubbs 2008-11-11 bug=296927
+# A method for testing the links in the above menus should be added.
+
+
+== ProductBugsMenu ==
+
+    >>> bugs_menu = ProductBugsMenu(firefox)
+    >>> check_menu_links(bugs_menu)
+    filebug: http://launchpad.dev/firefox/+filebug
+        FileBugGuidedView: bugtarget-filebug-search.pt
+    bugsupervisor: http://launchpad.dev/firefox/+bugsupervisor
+        SimpleViewClass: edit-bug-supervisor.pt
+    securitycontact: http://launchpad.dev/firefox/+securitycontact
+        SimpleViewClass: securitycontact-edit.pt
+    cve: http://launchpad.dev/firefox/+cve
+        SimpleViewClass: product-cvereport.pt
+    subscribe: http://launchpad.dev/firefox/+subscribe
+        SimpleViewClass: structural-subscriptions-manage.pt
+
+
+== ProductSpecificationsMenu ==
+
+    >>> specs_menu = ProductSpecificationsMenu(firefox)
+    >>> check_menu_links(specs_menu)
+    listall: http://launchpad.dev/firefox/+specs
+        SimpleViewClass: hasspecifications-specs.pt
+    doc: http://launchpad.dev/firefox/+documentation
+        SimpleViewClass: specificationtarget-documentation.pt
+    table: http://launchpad.dev/firefox/+assignments
+        SimpleViewClass: specificationtarget-assignments.pt
+    new: http://launchpad.dev/firefox/+addspec
+        SimpleViewClass: specification-add.pt
+
+
+== ProductNavigationMenu ==
+
+    >>> nav_menu = ProductNavigationMenu(firefox)
+    >>> check_menu_links(nav_menu)
+    details: http://launchpad.dev/firefox/
+        ProductNavigation: unknown template
+    announcements: http://launchpad.dev/firefox/+announcements
+        SimpleViewClass: hasannouncements-index.pt
+    branchvisibility: http://launchpad.dev/firefox/+branchvisibility
+        SimpleViewClass: branch-visibility.pt
+    downloads: http://launchpad.dev/firefox/+download
+        SimpleViewClass: product-files.pt
+
+
+== ProductEditNavigationMenu ==
+
+    >>> edit_nav_menu = ProductEditNavigationMenu(firefox)
+    >>> check_menu_links(edit_nav_menu)
+    details: http://launchpad.dev/firefox/+edit
+        SimpleViewClass: product-edit.pt
+    branding: http://launchpad.dev/firefox/+branding
+        SimpleViewClass: object-branding.pt
+    people: http://launchpad.dev/firefox/+edit-people
+        SimpleViewClass: product-edit-people.pt

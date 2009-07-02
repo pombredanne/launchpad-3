@@ -9,7 +9,7 @@ from twisted.application import service, internet, strports
 from twisted.web import server
 
 from canonical.launchpad.daemons import tachandler
-from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
+from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
 

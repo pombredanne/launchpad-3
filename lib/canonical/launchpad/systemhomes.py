@@ -11,7 +11,6 @@ __all__ = [
     'MaloneApplication',
     'PrivateMaloneApplication',
     'RosettaApplication',
-    'ShipItApplication',
     ]
 
 __metaclass__ = type
@@ -23,27 +22,29 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.bug import (
-    CreateBugParams, IBugSet, InvalidBugTargetType)
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
+    IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication, IOpenIDApplication,
+    IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
-    IWebServiceApplication)
-from canonical.launchpad.interfaces.codehosting import (
-    IBranchFileSystemApplication, IBranchPullerApplication)
+    ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
 from canonical.launchpad.interfaces.hwdb import (
-    IHWDeviceSet, IHWDriverSet, IHWVendorIDSet)
+    IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
+    IHWVendorIDSet, ParameterError)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.lazr.rest import ServiceRootResource
+from lp.bugs.interfaces.bug import (
+    CreateBugParams, IBugSet, InvalidBugTargetType)
+from lp.code.interfaces.codehosting import (
+    IBranchFileSystemApplication, IBranchPullerApplication)
+from lp.code.interfaces.codeimportscheduler import (
+    ICodeImportSchedulerApplication)
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from lazr.restful import ServiceRootResource
 
 
 class AuthServerApplication:
@@ -79,10 +80,6 @@ class PrivateMaloneApplication:
     implements(IPrivateMaloneApplication)
 
     title = "Launchpad Bugs."
-
-
-class ShipItApplication:
-    implements(IShipItApplication)
 
 
 class MailingListApplication:
@@ -168,12 +165,6 @@ class BazaarApplication:
 
     def __init__(self):
         self.title = 'The Open Source Bazaar'
-
-
-class OpenIDApplication:
-    implements(IOpenIDApplication)
-
-    title = 'Launchpad Login Service'
 
 
 class RosettaApplication:
@@ -262,9 +253,84 @@ class HWDBApplication:
         return getUtility(IHWVendorIDSet).idsForBus(bus)
 
     @property
+    def driver_names(self):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWDriverSet).all_driver_names()
+
+    @property
     def package_names(self):
         """See `IHWDBApplication`."""
-        return getUtility(IHWDriverSet).package_names
+        return getUtility(IHWDriverSet).all_package_names()
+
+    def getDistroTarget(self, distribution, distroseries, distroarchseries):
+        distro_targets = [
+            target for target in (
+                distribution, distroseries, distroarchseries)
+            if target is not None]
+        if len(distro_targets) == 0:
+            return None
+        elif len(distro_targets) == 1:
+            return distro_targets[0]
+        else:
+            raise ParameterError(
+                'Only one of `distribution`, `distroseries` or '
+                '`distroarchseries` can be present.')
+
+    def numSubmissionsWithDevice(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """See `IHWDBApplication`."""
+        submissions_with_device, all_submissions = (
+            getUtility(IHWSubmissionSet).numSubmissionsWithDevice(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries)))
+        return {
+            'submissions_with_device': submissions_with_device,
+            'all_submissions': all_submissions,
+            }
+
+    def numOwnersOfDevice(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """See `IHWDBApplication`."""
+        owners, all_submitters = (
+            getUtility(IHWSubmissionSet).numOwnersOfDevice(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries)))
+        return {
+            'owners': owners,
+            'all_submitters': all_submitters,
+            }
+
+    def numDevicesInSubmissions(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionDeviceSet).numDevicesInSubmissions(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries))
+
+    def deviceDriverOwnersAffectedByBugs(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionSet).deviceDriverOwnersAffectedByBugs(
+            bus, vendor_id, product_id, driver_name, package_name, bug_ids,
+            bug_tags, affected_by_bug, subscribed_to_bug, user)
+
+    def hwInfoByBugRelatedUsers(
+        self, bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionSet).hwInfoByBugRelatedUsers(
+            bug_ids, bug_tags, affected_by_bug, subscribed_to_bug, user)
 
 
 class WebServiceApplication(ServiceRootResource):

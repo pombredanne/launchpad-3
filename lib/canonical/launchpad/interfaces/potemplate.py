@@ -8,12 +8,12 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
 from canonical.launchpad.interfaces.translationfileformat import (
     TranslationFileFormat)
@@ -26,6 +26,7 @@ __all__ = [
     'IHasTranslationTemplates',
     'IPOTemplate',
     'IPOTemplateSet',
+    'IPOTemplateSharingSubset',
     'IPOTemplateSubset',
     'IPOTemplateWithContent',
     'LanguageNotFound',
@@ -77,12 +78,19 @@ class IHasTranslationTemplates(Interface):
     Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
     """
 
-    def getCurrentTranslationTemplates():
-        """Return an iterator over its active translation templates.
+    def getCurrentTranslationTemplates(just_ids=False):
+        """Return an iterator over all active translation templates.
 
         A translation template is considered active when both
-        `IPOTemplate`.iscurrent and `IDistribution`.official_rosetta flags
+        `IPOTemplate`.iscurrent and parent official_rosetta flags
         are set to True.
+        """
+
+    def getCurrentTranslationFiles(just_ids=False):
+        """Return an iterator over all active translation files.
+
+        A translation file is active if it's attached to an
+        active translation template.
         """
 
     def getObsoleteTranslationTemplates():
@@ -393,15 +401,25 @@ class IPOTemplate(IRosettaStats):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def newPOFile(language_code, variant=None, requester=None):
-        """Return a new `IPOFile` for the given language. The variant is
-        optional.
+    def newPOFile(language_code, variant=None,
+                  requester=None, create_sharing=True):
+        """Return a new `IPOFile` for the given language.
 
         Raise LanguageNotFound if the language does not exist in the
         database.
 
-        We should not have already an `IPOFile` for the given language_code and
-        variant.
+        We should not have already an `IPOFile` for the given language_code
+        and variant.
+
+        :param language_code: The code of the language for which to create
+            the IPOFile.
+        :param variant: Optional language variant.
+        :param requester: The requester person. If given and will have edit
+            permissions on the IPOFile, it becomes the owner. Otherwise
+            rosetta_experts own the file.
+        :param create_sharing: Whether the IPOFile should be created in all
+            sharing templates, too. Should only be set to False to avoid
+            loops when creating a new IPOTemplate.
         """
 
     def getDummyPOFile(language_code, variant=None, requester=None):
@@ -439,6 +457,17 @@ class IPOTemplate(IRosettaStats):
         For non-plural messages, plural_text should be None.
 
         Returns the newly created message set.
+        """
+
+    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None):
+        """Finds an existing shared POTMsgSet to use or creates a new one.
+
+        :param singular_text: string containing singular form.
+        :param plural_text: string containing plural form.
+        :param context: context to differentiate between two messages with
+        same singular_text and plural_text.
+        :return: existing or new shared POTMsgSet with a sequence of 0
+        in this POTemplate.
         """
 
     def importFromQueue(entry_to_import, logger=None, txn=None):
@@ -555,6 +584,12 @@ class IPOTemplateSet(Interface):
         """Return a POTemplateSubset object depending on the given arguments.
         """
 
+    def getSharingSubset(distribution=None, sourcepackagename=None,
+                         products=None):
+        """Return a POTemplateSharingSubset object depending on the given
+        arguments.
+        """
+
     def getSubsetFromImporterSourcePackageName(
         distroseries, sourcepackagename, iscurrent=None):
         """Return a POTemplateSubset based on the origin sourcepackagename.
@@ -566,6 +601,63 @@ class IPOTemplateSet(Interface):
            came from the given arguments.
 
         Return None if there is no such `IPOTemplate`.
+        """
+
+    def compareSharingPrecedence(left, right):
+        """Sort comparison: order sharing templates by precedence.
+
+        Sort using this function to order sharing templates from most
+        representative to least representative, as per the message-sharing
+        migration spec.
+        """
+
+
+class IPOTemplateSharingSubset(Interface):
+    """A subset of sharing PO templates."""
+
+    distribution = Object(
+        title=_(
+            'The `IDistribution` associated with this subset.'),
+        schema=IDistribution)
+
+    product = Object(
+        title=_(
+            'The `IProduct` associated with this subset.'),
+        schema=IProduct)
+
+    sourcepackagename = Object(
+        title=_(
+            'The `ISourcePackageName` associated with this subset.'),
+        schema=ISourcePackageName,
+        required=False)
+
+    def getSharingPOTemplates(potemplate_name):
+        """Find all sharing templates of the given name.
+
+        For distributions this method requires that sourcepackagename is set.
+
+        :param potemplate_name: The name of the template for which to find
+            sharing equivalents.
+        :return: A list of all potemplates of the same name from all series.
+        """
+
+    def groupEquivalentPOTemplates(name_pattern=None):
+        """Within given IProduct or IDistribution, find equivalent templates.
+
+        Partitions all templates in the given context into equivalence
+        classes. This means that is groups all templates together for which
+        the tuple (template.name, sourcepackagename.name) is identical. This
+        tuple is called the equivalence class. When working with a product,
+        sourcepackagename.name is always None, so effectively the name of
+        the template is the class.
+
+        :param name_pattern: an optional regex pattern indicating which
+            template names are to be merged. If you're operating on
+            a distribution, you may want to pass a this to avoid doing too
+            much in one go.
+        :return: a dict mapping each equivalence class to a list of
+            `POTemplate`s in that class, each sorted from most to least
+            representative.
         """
 
 

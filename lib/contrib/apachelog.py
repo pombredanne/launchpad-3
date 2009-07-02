@@ -131,7 +131,7 @@ class parser:
         subpatterns = []
 
         findquotes = re.compile(r'^\\"')
-        findreferreragent = re.compile('Referer|User-Agent')
+        findreferreragent = re.compile('Referer|User-Agent', re.I)
         findpercent = re.compile('^%.*t$')
         lstripquotes = re.compile(r'^\\"')
         rstripquotes = re.compile(r'\\"$')
@@ -265,7 +265,7 @@ formats = {
     'vhcommon':r'%v %h %l %u %t \"%r\" %>s %b',
 
     # NCSA extended/combined log format
-    'extended':r'%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\"',
+    'extended':r'%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"',
     }
 
 if __name__ == '__main__':
@@ -274,8 +274,7 @@ if __name__ == '__main__':
     class TestApacheLogParser(unittest.TestCase):
 
         def setUp(self):
-            self.format = r'%h %l %u %t \"%r\" %>s '\
-                          r'%b \"%{Referer}i\" \"%{User-Agent}i\"'
+            self.format = formats['extended']
             self.fields = '%h %l %u %t %r %>s %b %{Referer}i '\
                           '%{User-Agent}i'.split(' ')
             self.pattern = '^(\\S*) (\\S*) (\\S*) (\\[[^\\]]+\\]) '\

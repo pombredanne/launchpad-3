@@ -10,7 +10,7 @@ from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.browser.launchpad import LaunchpadRootNavigation
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -104,6 +104,16 @@ class TestBranchTraversal(TestCaseWithFactory):
         # If there's no branch for a product series, generate a 404.
         series = self.factory.makeProductSeries()
         self.assertNotFound('%s/%s' % (series.product.name, series.name))
+
+    def test_too_short_branch_name(self):
+        # 404 if the thing following +branch is a unique name that's too short
+        # to be a real unique name.
+        owner = self.factory.makePerson()
+        self.assertNotFound('~%s' % owner.name)
+
+    def test_invalid_product_name(self):
+        # 404 if the thing following +branch has an invalid product name.
+        self.assertNotFound('a')
 
 
 def test_suite():

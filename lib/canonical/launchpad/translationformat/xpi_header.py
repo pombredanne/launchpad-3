@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -13,6 +13,8 @@ from StringIO import StringIO
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import ITranslationHeaderData
+from canonical.launchpad.interfaces.translationimporter import (
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 
 
 class XpiHeader:
@@ -54,17 +56,23 @@ class XpiHeader:
     def getLastTranslator(self):
         """See `ITranslationHeaderData`."""
         last_name, last_email = None, None
+        contributor_tag = "{http://www.mozilla.org/2004/em-rdf#}contributor"
         # Both cElementTree and elementtree fail when trying to parse
         # proper unicode strings.  Use our raw input instead.
-        parse = cElementTree.iterparse(StringIO(self._raw_content))
-        for event, elem in parse:
-            if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
-                # An XPI header can list multiple contributors, but here we
-                # care only about the latest one listed as a well-formed name
-                # and email address.
-                name, email = parseaddr(elem.text)
-                if name != '' and '@' in email:
-                    last_name, last_email = name, email
+        try:
+            parse = cElementTree.iterparse(StringIO(self._raw_content))
+            for event, elem in parse:
+                if elem.tag == contributor_tag:
+                    # An XPI header can list multiple contributors, but
+                    # here we care only about the latest one listed as a
+                    # well-formed name and email address.
+                    name, email = parseaddr(elem.text)
+                    if name != '' and '@' in email:
+                        last_name, last_email = name, email
+        except SyntaxError, exception:
+            raise TranslationFormatSyntaxError(
+                filename='install.rdf', line_number=exception.lineno,
+                message=exception.msg)
 
         return last_name, last_email
 

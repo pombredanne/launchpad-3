@@ -11,7 +11,7 @@ __all__ = []
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.standing import UpdatePersonalStanding
+from lp.registry.scripts.standing import UpdatePersonalStanding
 
 
 if __name__ == '__main__':

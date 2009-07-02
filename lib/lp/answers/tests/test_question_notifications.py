@@ -9,7 +9,7 @@ from unittest import TestCase, TestLoader
 from zope.interface import implements
 
 from lp.answers.notification import QuestionModifiedDefaultNotification
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 
 class TestQuestionModifiedNotification(QuestionModifiedDefaultNotification):

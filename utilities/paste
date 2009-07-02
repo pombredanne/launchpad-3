@@ -82,17 +82,7 @@ def authenticate(browser):
     """Go through the OpenID process and authenticate."""
     # First click on the page where it says we have to log in.
     browser.getControl('Continue').click()
-    # Then click on the page with nothing but a submit button.
-    browser.getControl('Continue').click()
-
-    # Now we're at the LP login. since we have sent the auth cookie, we
-    # can sign in without specifying a user and password.
-    try:
-        browser.getControl('Sign In').click()
-    except LookupError:
-        return False
-    else:
-        return True
+    return True
 
 
 def main():
@@ -133,8 +123,10 @@ def main():
     browser.mech_browser.set_cookiejar(cookiejar)
 
     browser.open(urljoin('https://' + PASTE_HOST, PASTE_PATH))
+
     # We need to authenticate before pasting.
-    if browser.getForm(name='oid_form') is not None:
+    oid_form = browser.getForm(id='openid_message')
+    if oid_form is not None:
         authenticated = authenticate(browser)
         if not authenticated:
             print LP_AUTH_INSTRUCTIONS

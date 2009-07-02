@@ -12,8 +12,8 @@ An Ubuntu task will be created for each imported bug.
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
-from canonical.launchpad.scripts.importdebianbugs import import_debian_bugs
+from lp.services.scripts.base import LaunchpadScript
+from lp.bugs.scripts.importdebianbugs import import_debian_bugs
 
 
 class DebianBugImportScript(LaunchpadScript):

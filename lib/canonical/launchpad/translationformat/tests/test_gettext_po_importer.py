@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 """Gettext PO importer tests."""
 
 __metaclass__ = type
@@ -77,11 +77,12 @@ class GettextPOImporterTestCase(unittest.TestCase):
                 "interface.")
 
     def testFormat(self):
-        """Check whether GettextPOImporter say that handles PO file format."""
+        # GettextPOImporter reports that it handles the PO file format.
         format = self.template_importer.getFormat(test_template)
         self.failUnless(
             format == TranslationFileFormat.PO,
             'GettextPOImporter format expected PO but got %s' % format.name)
+
 
 def test_suite():
     suite = unittest.TestSuite()

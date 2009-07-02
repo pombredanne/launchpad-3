@@ -11,13 +11,14 @@ __all__ = [
 import datetime
 import pytz
 from zope.app.form.browser import DropdownWidget
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -214,17 +215,17 @@ class HasTranslationImportsView(LaunchpadFormView):
             # special permissions to change status.
             if (new_status_name == RosettaImportStatus.DELETED.name and
                 check_permission('launchpad.Edit', entry)):
-                entry.status = RosettaImportStatus.DELETED
+                entry.setStatus(RosettaImportStatus.DELETED)
             elif (new_status_name == RosettaImportStatus.BLOCKED.name and
                   check_permission('launchpad.Admin', entry)):
-                entry.status = RosettaImportStatus.BLOCKED
+                entry.setStatus(RosettaImportStatus.BLOCKED)
             elif (new_status_name == RosettaImportStatus.APPROVED.name and
                   check_permission('launchpad.Admin', entry) and
                   entry.import_into is not None):
-                entry.status = RosettaImportStatus.APPROVED
+                entry.setStatus(RosettaImportStatus.APPROVED)
             elif (new_status_name == RosettaImportStatus.NEEDS_REVIEW.name and
                   check_permission('launchpad.Admin', entry)):
-                entry.status = RosettaImportStatus.NEEDS_REVIEW
+                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW)
             else:
                 # The user was not the importer or we are trying to set a
                 # status that must not be set from this form. That means that

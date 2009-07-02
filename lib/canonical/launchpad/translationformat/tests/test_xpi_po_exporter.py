@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd. All rights reserved.
+# Copyright 2008-2009 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
@@ -71,7 +71,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
             potemplate=self.firefox_template)
 
         # We must approve the entry to be able to import it.
-        entry.status = RosettaImportStatus.APPROVED
+        entry.setStatus(RosettaImportStatus.APPROVED)
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
         commit()

@@ -68,7 +68,7 @@ So gettext will check those in the translations for compatibility with
 those in the original message.
 
     >>> potmsgset = factory.makePOTMsgSet(
-    ...     potemplate=template, singular=u'%d n')
+    ...     potemplate=template, singular=u'%d n', sequence=1)
     >>> potmsgset.flagscomment = 'c-format'
     >>> potmsgset.flags
     [u'c-format']

@@ -96,6 +96,10 @@ PUBLIC_EXTERNAL_ARCHIVER = '/usr/bin/mhonarc \
 -spammode \
 -umask 022'
 PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
+
+# How often do we run the bounce processor?  For production, the default 15
+# minutes is fine, for testing we want to run it more often.
+REGISTER_BOUNCES_EVERY = %(register_bounces_every)d
 """ % dict(
     launchpad_top=launchpad_top,
     smtp_host=host,
@@ -113,6 +117,7 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
     shared_secret=config.mailman.shared_secret,
     soft_max_size=config.mailman.soft_max_size,
     hard_max_size=config.mailman.hard_max_size,
+    register_bounces_every=config.mailman.register_bounces_every,
     )
     finally:
         config_file.close()

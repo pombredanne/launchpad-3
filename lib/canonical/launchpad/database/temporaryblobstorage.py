@@ -64,7 +64,11 @@ class TemporaryStorageManager:
     def new(self, blob, expires=None):
         """See ITemporaryStorageManager."""
         if expires is None:
-            expires = datetime.utcnow().replace(tzinfo=utc)
+            # A week might be quite a long time, but it shouldn't hurt,
+            # and it gives people enough time to create an account
+            # before accessing the uploaded blob.
+            expires = (
+                datetime.utcnow().replace(tzinfo=utc) + timedelta(weeks=1))
 
         # At this stage we could do some sort of throttling if we were
         # concerned about abuse of the temporary storage facility. For

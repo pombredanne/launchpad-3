@@ -1,0 +1,36 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="privacy"
+  tal:attributes="
+    class python: path('context/private') and 'aside private' or 'aside public'
+  "
+  tal:define="link context/menu:context/visibility"
+>
+  <div tal:condition="not:context/private" id="privacy-text">
+    <a
+      tal:condition="link/enabled"
+      tal:attributes="href link/url; title link/text"
+      class="sprite edit"
+      id="privacy-link"
+    >This report is public</a>
+    <tal:unchangeable condition="not:link/enabled"
+    >This report is public</tal:unchangeable>
+  </div>
+  <div tal:condition="context/private" id="privacy-text">
+    <a
+      tal:condition="link/enabled"
+      tal:attributes="href link/url; title link/text"
+      class="sprite edit"
+      id="privacy-link"
+    >This report is <strong>private</strong></a>
+    <tal:unchangeable condition="not:link/enabled"
+    >This report is private</tal:unchangeable>
+  </div>
+  <div
+    tal:condition="context/security_related"
+    class="sprite security"
+    id="security-message"
+  >Security vulnerability</div>
+</div>

@@ -14,7 +14,7 @@ from zope.schema import Datetime, Int, Object
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pofile import IPOFile
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.translationmessage import (
     ITranslationMessage)
 
@@ -55,4 +55,18 @@ class IPOFileTranslatorSet(Interface):
         Fetches a large amount of data relevant to rendering the given
         `POFileTranslator` objects in the user interface, to reduce the
         number of queries needed while rendering the page.
+        """
+
+    def getForPersonPOFile(person, pofile):
+        """Retrieve `POFileTranslator` for given `Person` and `POFile`.
+
+        :return: one `POFileTranslator` object matching the requested
+            person and pofile, or None.
+        """
+
+    def getForPOTMsgSet(potmsgset):
+        """Retrieve `POFileTranslator`s for translations of `potmsgset`.
+
+        :return: a query result of `POFileTranslator`s whose
+            `latest_message` are translations of `potmsgset`.
         """

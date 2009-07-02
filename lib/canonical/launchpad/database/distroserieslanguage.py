@@ -16,7 +16,6 @@ import pytz
 
 from sqlobject import ForeignKey, IntCol
 from zope.interface import implements
-from zope.component import getUtility
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -25,7 +24,7 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.translator import Translator
 from canonical.launchpad.interfaces import (
-    IDistroSeriesLanguage, IDistroSeriesLanguageSet, IPersonSet)
+    IDistroSeriesLanguage, IDistroSeriesLanguageSet)
 
 
 class DistroSeriesLanguage(SQLBase, RosettaStats):
@@ -142,9 +141,8 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
         self.rosettacount = rosetta
         self.unreviewed_count = unreviewed
 
-        personset = getUtility(IPersonSet)
-        contributors = personset.getPOFileContributorsByDistroSeries(
-            self.distroseries, self.language)
+        contributors = self.distroseries.getPOFileContributorsByLanguage(
+            self.language)
         self.contributorcount = contributors.count()
 
         self.dateupdated = UTC_NOW
@@ -198,7 +196,7 @@ class DummyDistroSeriesLanguage(RosettaStats):
     def updatesCount(self, language=None):
         return 0
 
-    def nonUpdatesCount(self, language=None):
+    def newCount(self, language=None):
         return 0
 
     def translatedCount(self, language=None):
@@ -219,7 +217,7 @@ class DummyDistroSeriesLanguage(RosettaStats):
     def updatesPercentage(self, language=None):
         return 0.0
 
-    def nonUpdatesPercentage(self, language=None):
+    def newPercentage(self, language=None):
         return 0.0
 
     def translatedPercentage(self, language=None):

@@ -12,7 +12,7 @@ for fields which have an IHugeVocabulary.
     >>> view.title()
     'Select a project'
     >>> view.vocabulary()
-     <canonical.launchpad.vocabularies.dbobjects.ProductVocabulary...
+     <lp.registry.vocabularies.ProductVocabulary...
 
 We didn't provide any search terms, so there will be no items to display.
 

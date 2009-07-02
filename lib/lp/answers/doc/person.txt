@@ -2,7 +2,7 @@
 
 == searchQuestions() ==
 
-IPerson defines a searchQuestions() method which can be used to
+IQuestionsPerson defines a searchQuestions() method which can be used to
 select all or a subset of the questions in which the person is
 involved. This includes questions which the person created, is assigned
 to, is subscribed to, commented on, or answered. Various subsets can
@@ -10,8 +10,10 @@ be selected by using the following criteria status, search_text and
 participation type.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.answers.interfaces.questionsperson import IQuestionsPerson
     >>> personset = getUtility(IPersonSet)
-    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> foo_bar_raw = personset.getByEmail('foo.bar@canonical.com')
+    >>> foo_bar = IQuestionsPerson(foo_bar_raw)
 
 
 === search_text ===
@@ -161,7 +163,8 @@ Foo bar doesn't have any questions written in Spanish.
 
 But carlos has one.
 
-    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> carlos_raw = personset.getByName('carlos')
+    >>> carlos = IQuestionsPerson(carlos_raw)
     >>> for question in carlos.searchQuestions(
     ...     language=[english, spanish]):
     ...     [question.title, question.language.code]
@@ -199,9 +202,9 @@ by each criteria:
 
 == getQuestionLanguages() ==
 
-IPerson also defines a getQuestionLanguages() attribute which contains
-the set of languages used by all of the questions in which this person
-is involved.
+IQuestionsPerson also defines a getQuestionLanguages() attribute which
+contains the set of languages used by all of the questions in which this
+person is involved.
 
     >>> sorted(language.code for language in foo_bar.getQuestionLanguages())
     [u'en']
@@ -212,7 +215,7 @@ the user subscribed to.
     >>> from canonical.launchpad.interfaces import IQuestionSet
     >>> pt_BR_question = getUtility(IQuestionSet).get(13)
     >>> login('foo.bar@canonical.com')
-    >>> pt_BR_question.subscribe(foo_bar)
+    >>> pt_BR_question.subscribe(foo_bar_raw)
     <QuestionSubscription...>
 
     >>> sorted(language.code for language in foo_bar.getQuestionLanguages())
@@ -221,7 +224,7 @@ the user subscribed to.
 And also questions for which he's the answerer.
 
     >>> es_question = getUtility(IQuestionSet).get(12)
-    >>> es_question.reject(foo_bar, 'Reject question.')
+    >>> es_question.reject(foo_bar_raw, 'Reject question.')
     <QuestionMessage...>
 
     >>> sorted(language.code for language in foo_bar.getQuestionLanguages())
@@ -229,7 +232,7 @@ And also questions for which he's the answerer.
 
 As well, as question which are assigned to the user.
 
-    >>> pt_BR_question.assignee = carlos
+    >>> pt_BR_question.assignee = carlos_raw
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
@@ -240,7 +243,7 @@ And questions on which the user commented:
 
     >>> en_question = getUtility(IQuestionSet).get(1)
     >>> login('carlos@canonical.com')
-    >>> en_question.addComment(carlos, 'A simple comment.')
+    >>> en_question.addComment(carlos_raw, 'A simple comment.')
     <QuestionMessage...>
 
     >>> sorted(language.code for language in carlos.getQuestionLanguages())
@@ -249,19 +252,20 @@ And questions on which the user commented:
 
 == getDirectAnswerQuestionTargets() ==
 
-IPerson defines getDirectAnswerQuestionTargets that can be used to retrieve
-a list of IQuestionTargets that a person subscribed himself to as an
+IQuestionsPerson defines getDirectAnswerQuestionTargets that can be used to
+retrieve a list of IQuestionTargets that a person subscribed himself to as an
 answer contact.
 
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv_raw = personset.getByName('no-priv')
+    >>> no_priv = IQuestionsPerson(no_priv_raw)
     >>> no_priv.getDirectAnswerQuestionTargets()
     []
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> # Answer contacts must speak a language
-    >>> no_priv.addLanguage(english)
-    >>> firefox.addAnswerContact(no_priv)
+    >>> no_priv_raw.addLanguage(english)
+    >>> firefox.addAnswerContact(no_priv_raw)
     True
 
     >>> for target in no_priv.getDirectAnswerQuestionTargets():
@@ -270,14 +274,13 @@ answer contact.
 
 == getTeamAnswerQuestionTargets() ==
 
-IPerson defines getTeamAnswerQuestionTargets that retrieves a list of
-IQuestionTargets that the person is subscribed to indirectly as an
-answer contact through his team membership.
+IQuestionsPerson defines getTeamAnswerQuestionTargets that retrieves a list of
+IQuestionTargets that the person is subscribed to indirectly as an answer
+contact through his team membership.
 
-    >>> landscape_team = getUtility(IPersonSet).getByName(
-    ...    "landscape-developers")
-    >>> landscape_team.addMember(no_priv, foo_bar)
-    >>> no_priv.inTeam(landscape_team)
+    >>> landscape_team = personset.getByName("landscape-developers")
+    >>> landscape_team.addMember(no_priv_raw, foo_bar_raw)
+    >>> no_priv_raw.inTeam(landscape_team)
     True
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
@@ -295,10 +298,10 @@ the Landscape Team joins the Translator Team. So targets for which the
 Translator team is an answer contact will be included in No Privileges
 Person's supported IQuestionTargets:
 
-    >>> translator_team = getUtility(IPersonSet).getByName('ubuntu-translators')
-    >>> no_priv.inTeam(translator_team)
+    >>> translator_team = personset.getByName('ubuntu-translators')
+    >>> no_priv_raw.inTeam(translator_team)
     False
-    >>> translator_team.addMember(landscape_team, carlos)
+    >>> translator_team.addMember(landscape_team, carlos_raw)
 
     # We need to accept the invitation sent by the addMember() call in
     # order to make landscape_team an actual member of translator_team.
@@ -306,7 +309,7 @@ Person's supported IQuestionTargets:
     >>> landscape_team.acceptInvitationToBeMemberOf(
     ...     translator_team, comment='something')
 
-    >>> no_priv.hasParticipationEntryFor(translator_team)
+    >>> no_priv_raw.hasParticipationEntryFor(translator_team)
     True
     >>> evolution_package = ubuntu.getSourcePackage('evolution')
     >>> translator_team.addLanguage(english)

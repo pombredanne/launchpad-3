@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -13,6 +13,7 @@ from datetime import datetime
 import pytz
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+from storm.locals import SQL
 from storm.store import Store
 from zope.interface import implements
 
@@ -20,11 +21,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationConstants, TranslationValidationStatus)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 def make_plurals_fragment(fragment, separator):
@@ -66,14 +67,24 @@ class TranslationMessageMixIn:
             # This message is a singular message.
             return 1
         else:
-            return self.pofile.plural_forms
+            if self.language.pluralforms is not None:
+                forms = self.language.pluralforms
+            else:
+                # Don't know anything about plural forms for this
+                # language, fallback to the most common case, 2.
+                forms = 2
+            return forms
 
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
-        elements = [self.pofile.language.code]
+        elements = [self.language.code]
         if suffix is not None:
             elements.append(suffix)
         return self.potmsgset.makeHTMLID('_'.join(elements))
+
+    def setPOFile(self, pofile):
+        """See `ITransationMessage`."""
+        self.browser_pofile = pofile
 
 
 class DummyTranslationMessage(TranslationMessageMixIn):
@@ -89,11 +100,13 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         # Check whether we already have a suitable TranslationMessage, in
         # which case, the dummy one must not be used.
         assert potmsgset.getCurrentTranslationMessage(
+            pofile.potemplate,
             pofile.language) is None, (
                 'This translation message already exists in the database.')
 
         self.id = None
         self.pofile = pofile
+        self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
         self.language = pofile.language
         self.variant = pofile.variant
@@ -114,13 +127,20 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.is_complete = False
         self.is_imported = False
         self.is_empty = True
-        self.is_hidden = True
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
         if self.potmsgset.msgid_plural is None:
             self.translations = [None]
         else:
             self.translations = [None] * self.plural_forms
+
+    def isHidden(self, pofile):
+        """See `ITranslationMessage`."""
+        return True
+
+    def getOnePOFile(self):
+        """See `ITranslationMessage`."""
+        return None
 
     @property
     def all_msgstrs(self):
@@ -148,8 +168,10 @@ def validate_is_current(self, attr, value):
         # change current one to non current before.
         current_translation_message = (
             self.potmsgset.getCurrentTranslationMessage(
-                self.pofile.language, self.pofile.variant))
-        if current_translation_message is not None:
+                self.potemplate,
+                self.language, self.variant))
+        if (current_translation_message is not None and
+            current_translation_message.potemplate == self.potemplate):
             current_translation_message.is_current = False
             # We need to flush the old current message before the
             # new one because the database constraints prevent two
@@ -174,8 +196,10 @@ def validate_is_imported(self, attr, value):
         # change current one to non current before.
         imported_translation_message = (
             self.potmsgset.getImportedTranslationMessage(
-                self.pofile.language, self.pofile.variant))
-        if imported_translation_message is not None:
+                self.potemplate,
+                self.language, self.variant))
+        if (imported_translation_message is not None and
+            imported_translation_message.potemplate == self.potemplate):
             imported_translation_message.is_imported = False
             # We need to flush the old imported message before the
             # new one because the database constraints prevent two
@@ -191,7 +215,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     _table = 'TranslationMessage'
 
-    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
+    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=False)
+    browser_pofile = None
     potemplate = ForeignKey(
         foreignKey='POTemplate', dbName='potemplate', notNull=False,
         default=None)
@@ -294,8 +319,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # We found no translations in this translation_message
         return True
 
-    @property
-    def is_hidden(self):
+    def isHidden(self, pofile):
         """See `ITranslationMessage`."""
         # If this message is currently used or has been imported,
         # it's not hidden.
@@ -308,7 +332,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # it is hidden.
         # If it has not been reviewed yet, it's not hidden.
         current = self.potmsgset.getCurrentTranslationMessage(
-            self.pofile.language, self.pofile.variant)
+            pofile.potemplate,
+            self.language, self.variant)
         # If there is no current translation, none of the
         # suggestions have been reviewed, so they are all shown.
         if current is None:
@@ -318,6 +343,109 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         if date_reviewed is None:
             date_reviewed = current.date_created
         return date_reviewed > self.date_created
+
+    def getOnePOFile(self):
+        """See `ITranslationMessage`."""
+        from canonical.launchpad.database import POFile
+        clauses = [
+            "POFile.potemplate = TranslationTemplateItem.potemplate",
+            "TranslationTemplateItem.potmsgset = %s" % (
+                sqlvalues(self.potmsgset)),
+            "POFile.language = %s" % sqlvalues(self.language),
+            ]
+        if self.variant is None:
+            clauses.append("POFile.variant IS NULL")
+        else:
+            clauses.append("POFile.variant = %s" % sqlvalues(self.variant))
+
+        pofiles = POFile.select(' AND '.join(clauses),
+                                clauseTables=['TranslationTemplateItem'])
+        pofile = list(pofiles[:1])
+        if len(pofile) > 0:
+            return pofile[0]
+        else:
+            return None
+
+    def _getSharedEquivalent(self):
+        """Get shared message that otherwise exactly matches this one.
+        """
+        clauses = [
+            'potemplate IS NULL',
+            'potmsgset = %s' % sqlvalues(self.potmsgset),
+            'language = %s' % sqlvalues(self.language),
+            ]
+
+        if self.variant:
+            variant_clause = 'variant = %s' % sqlvalues(self.variant)
+        else:
+            variant_clause = 'variant IS NULL'
+        clauses.append(variant_clause)
+
+        for form in range(TranslationConstants.MAX_PLURAL_FORMS):
+            msgstr_name = 'msgstr%d' % form
+            msgstr = getattr(self, msgstr_name)
+            if msgstr is None:
+                form_clause = "%s IS NULL" % msgstr_name
+            else:
+                form_clause = "%s = %s" % (msgstr_name, quote(msgstr))
+            clauses.append(form_clause)
+
+        where_clause = SQL(' AND '.join(clauses))
+        return Store.of(self).find(TranslationMessage, where_clause).one()
+
+    def shareIfPossible(self):
+        """Make this message shared, if possible.
+
+        If there is already a similar message that is shared, this
+        message's information is merged into that of the existing one,
+        and self is deleted.
+        """
+        if self.potemplate is None:
+            # Already converged.
+            return
+
+        # Existing shared direct equivalent to this message, if any.
+        shared = self._getSharedEquivalent()
+
+        # Existing shared current translation for this POTMsgSet, if
+        # any.
+        current = self.potmsgset.getCurrentTranslationMessage(
+            potemplate=None, language=self.language, variant=self.variant)
+
+        # Existing shared imported translation for this POTMsgSet, if
+        # any.
+        imported = self.potmsgset.getImportedTranslationMessage(
+            potemplate=None, language=self.language, variant=self.variant)
+
+        if shared is None:
+            clash_with_shared_current = (
+                current is not None and self.is_current)
+            clash_with_shared_imported = (
+                imported is not None and self.is_imported)
+            if clash_with_shared_current or clash_with_shared_imported:
+                # Keep this message diverged, so it won't usurp the
+                # current or imported message that the templates share.
+                pass
+            else:
+                # No clashes; simply mark this message as shared.
+                self.potemplate = None
+        elif self.is_current or self.is_imported:
+            # Bequeathe current/imported flags to shared equivalent.
+            if self.is_current and current is None:
+                shared.is_current = True
+            if self.is_imported and imported is None:
+                shared.is_imported = True
+
+            current_diverged = (self.is_current and not shared.is_current)
+            imported_diverged = (self.is_imported and not shared.is_imported)
+            if not (current_diverged or imported_diverged):
+                # This message is now totally redundant.
+                self.destroySelf()
+        else:
+            # This is a suggestion duplicating an existing shared
+            # message.  This should not occur after migration, since
+            # suggestions will always be shared.
+            self.destroySelf()
 
 
 class TranslationMessageSet:

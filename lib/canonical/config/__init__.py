@@ -41,6 +41,19 @@ LPCONFIG = 'LPCONFIG'
 # variable, we have a fallback. This is what developers normally use.
 DEFAULT_CONFIG = 'development'
 
+PACKAGE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+# Root of the launchpad tree so code can stop jumping through hoops
+# with __file__.
+TREE_ROOT = os.path.abspath(
+    os.path.join(PACKAGE_DIR, os.pardir, os.pardir, os.pardir))
+
+# The directories containing instances configuration directories.
+CONFIG_ROOT_DIRS = [
+    os.path.join(TREE_ROOT, 'configs'),
+    os.path.join(TREE_ROOT, 'production-configs')
+    ]
+
 
 def find_instance_name():
     # Pull instance_name from the environment if possible.
@@ -60,6 +73,16 @@ def find_instance_name():
         instance_name = DEFAULT_CONFIG
 
     return instance_name
+
+
+def find_config_dir(instance_name):
+    """Look through CONFIG_ROOT_DIRS for instance_name."""
+    for root in CONFIG_ROOT_DIRS:
+        config_dir = os.path.join(root, instance_name)
+        if os.path.isdir(config_dir):
+            return config_dir
+    raise ValueError(
+        "Can't find %s in %s" % (instance_name, ", ".join(CONFIG_ROOT_DIRS)))
 
 
 class CanonicalConfig:
@@ -86,6 +109,7 @@ class CanonicalConfig:
             process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
         self._instance_name = instance_name
         self._process_name = process_name
+        self.root = TREE_ROOT
 
     @property
     def instance_name(self):
@@ -96,6 +120,11 @@ class CanonicalConfig:
         loaded from.
         """
         return self._instance_name
+
+    @property
+    def config_dir(self):
+        """Return the directory containing this instance configuration."""
+        return find_config_dir(self._instance_name)
 
     def setInstance(self, instance_name):
         """Set the instance name where the conf files are stored.
@@ -108,6 +137,8 @@ class CanonicalConfig:
         """
         self._instance_name = instance_name
         os.environ[LPCONFIG] = instance_name
+        # Need to reload the config.
+        self._config = None
 
     @property
     def process_name(self):
@@ -127,6 +158,8 @@ class CanonicalConfig:
         it will load launchpad-lazr.conf.
         """
         self._process_name = process_name
+        # Need to reload the config.
+        self._config = None
 
     def _getConfig(self):
         """Get the schema and config for this environment.
@@ -137,11 +170,8 @@ class CanonicalConfig:
         if self._config is not None:
             return
 
-        here = os.path.abspath(os.path.dirname(__file__))
-        schema_file = os.path.join(here, 'schema-lazr.conf')
-        config_dir = os.path.abspath(os.path.join(
-            here, os.pardir, os.pardir, os.pardir,
-            'configs', self.instance_name))
+        schema_file = os.path.join(PACKAGE_DIR, 'schema-lazr.conf')
+        config_dir = self.config_dir
         config_file = os.path.join(
             config_dir, '%s-lazr.conf' % self.process_name)
         if not os.path.isfile(config_file):
@@ -153,20 +183,20 @@ class CanonicalConfig:
         except ConfigErrors, error:
             message = '\n'.join([str(e) for e in error.errors])
             raise ConfigErrors(message)
-        self._setZConfig(here, config_dir)
+        self._setZConfig()
 
-    def _setZConfig(self, here, config_dir):
+    @property
+    def zope_config_file(self):
+        """Return the path to the ZConfig file for this instance."""
+        return os.path.join(self.config_dir, 'launchpad.conf')
+
+    def _setZConfig(self):
         """Modify the config, adding automatically generated settings"""
-        # Root of the launchpad tree so code can stop jumping through hoops
-        # with __file__.
-        self.root = os.path.abspath(os.path.join(
-            here, os.pardir, os.pardir, os.pardir))
-
         schemafile = os.path.join(
             self.root, 'lib/zope/app/server/schema.xml')
-        configfile = os.path.join(config_dir, 'launchpad.conf')
         schema = ZConfig.loadSchema(schemafile)
-        root_options, handlers = ZConfig.loadConfig(schema, configfile)
+        root_options, handlers = ZConfig.loadConfig(
+            schema, self.zope_config_file)
 
         # Devmode from the zope.app.server.main config, copied here for
         # ease of access.
@@ -177,6 +207,22 @@ class CanonicalConfig:
 
         # The number of configured threads.
         self.threads = root_options.threads
+
+    def generate_overrides(self):
+        """Ensure correct config .zcml overrides will be called.
+
+        Call this method before letting any ZCML processing occur.
+        """
+        loader_file = os.path.join(self.root, '+config-overrides.zcml')
+        loader = open(loader_file, 'w')
+
+        print >> loader, """<configure xmlns="http://namespaces.zope.org/zope">
+                <!-- This file automatically generated using
+                     canonical.config.CanonicalConfig.generate_overrides.
+                     DO NOT EDIT. -->
+                <include files="%s/*.zcml" />
+                </configure>""" % self.config_dir
+        loader.close()
 
     def __getattr__(self, name):
         self._getConfig()

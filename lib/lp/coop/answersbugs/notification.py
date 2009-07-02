@@ -8,8 +8,8 @@ __all__ = []
 import os
 
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
-from canonical.launchpad.mailout.mailwrapper import MailWrapper
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.bugs.interfaces.bugtask import IBugTask
 from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.answers.notification import QuestionNotification

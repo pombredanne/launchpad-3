@@ -154,6 +154,23 @@ valid header but no revision date.
     None
 
 
+Likewise, if the PO-Revision-Date header is semantically nonsensical
+(usually because of an insane timezone offset), it is simply ignored.
+
+    >>> header = POHeader("""
+    ... Project-Id-Version: foo
+    ... Report-Msgid-Bugs-To: foo@bar.com
+    ... POT-Creation-Date: 2005-01-26 01:01+0100
+    ... PO-Revision-Date: 2004-03-06 20:06+10000
+    ... Last-Translator: Foo translator <footranslator@bar.com>
+    ... MIME-Version: 1.0
+    ... Content-Type: text/plain; charset=UTF-8
+    ... Content-Transfer-Encoding: 8bit
+    ... """)
+    >>> print header.translation_revision_date
+    None
+
+
 === updateFromTemplateHeader(template_header) ===
 
 This method sets some header fields based on the given template_header.

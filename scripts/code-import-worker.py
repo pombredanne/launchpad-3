@@ -18,11 +18,13 @@ import _pythonpath
 
 from optparse import OptionParser
 
-from canonical.codehosting import load_optional_plugin
-from canonical.codehosting.codeimport.worker import (
+from bzrlib.transport import get_transport
+
+from canonical.config import config
+from lp.codehosting import load_optional_plugin
+from lp.codehosting.codeimport.worker import (
     BzrSvnImportWorker, CSCVSImportWorker, CodeImportSourceDetails,
-    GitImportWorker, get_default_bazaar_branch_store,
-    get_default_foreign_tree_store)
+    GitImportWorker, get_default_bazaar_branch_store)
 from canonical.launchpad import scripts
 
 
@@ -38,21 +40,19 @@ class CodeImportWorker:
         source_details = CodeImportSourceDetails.fromArguments(self.args)
         if source_details.rcstype == 'git':
             load_optional_plugin('git')
-            import_worker = GitImportWorker(
-                source_details, get_default_bazaar_branch_store(),
-                self.logger)
+            import_worker_cls = GitImportWorker
         elif source_details.rcstype == 'bzr-svn':
             load_optional_plugin('svn')
-            import_worker = BzrSvnImportWorker(
-                source_details, get_default_bazaar_branch_store(),
-                self.logger)
+            import_worker_cls = BzrSvnImportWorker
         else:
             if source_details.rcstype not in ['cvs', 'svn']:
                 raise AssertionError(
                     'unknown rcstype %r' % source_details.rcstype)
-            import_worker = CSCVSImportWorker(
-                source_details, get_default_foreign_tree_store(),
-                get_default_bazaar_branch_store(), self.logger)
+            import_worker_cls = CSCVSImportWorker
+        import_worker = import_worker_cls(
+            source_details,
+            get_transport(config.codeimport.foreign_tree_store),
+            get_default_bazaar_branch_store(), self.logger)
         import_worker.run()
 
 

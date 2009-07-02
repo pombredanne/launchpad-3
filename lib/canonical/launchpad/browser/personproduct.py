@@ -13,7 +13,7 @@ __all__ = [
 from zope.component import queryAdapter
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.launchpad.interfaces.branchnamespace import (
+from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.personproduct import IPersonProduct
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder

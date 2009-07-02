@@ -185,6 +185,18 @@ class LaunchpadFormView(LaunchpadView):
         return self.request.getURL()
 
     @property
+    def has_available_actions(self):
+        """Does the view have any available actions that will render?
+
+        If False is returned, the view or template probably needs to explain
+        why no actions can be performed and offer a cancel link.
+        """
+        for action in self.actions:
+            if action.available():
+                return True
+        return False
+
+    @property
     def initial_values(self):
         """Override this in your subclass if you want any widgets to have
         initial values.

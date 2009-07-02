@@ -57,7 +57,7 @@ of karma to that user.
 
     # Login as a rosetta expert to be able to change the import's status.
     >>> login('carlos@canonical.com')
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -89,7 +89,7 @@ Do the import.
     ...     potemplate.path, potemplate_contents, comes_from_upstream,
     ...     foo_bar, productseries=potemplate.productseries,
     ...     potemplate=potemplate)
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -145,7 +145,7 @@ Do the import.
     ...     pofile.path, pofile_contents, comes_from_upstream,
     ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate, pofile=pofile)
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -172,7 +172,7 @@ will give karma only for the upload action.
     ...     pofile.path, pofile_contents, comes_from_upstream, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -209,7 +209,7 @@ We attach the new file as not comming from upstream.
     ...     pofile.path, pofile_contents, not comes_from_upstream, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -241,7 +241,7 @@ We import it again without changes and see that we don't get karma changes.
     ...     pofile.path, pofile_contents, not comes_from_upstream, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction

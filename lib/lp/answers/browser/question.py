@@ -29,7 +29,6 @@ from xml.sax.saxutils import escape
 
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.widget import renderElement
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -38,6 +37,8 @@ from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 import zope.security
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -370,6 +371,11 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     similar_questions = None
     similar_faqs = None
 
+    @property
+    def cancel_url(self):
+        """Return the url `IQuestionTarget`."""
+        return canonical_url(self.context)
+
     def setUpFields(self):
         """Set up the form_fields from the schema and custom_widgets."""
         # Add our language field with a vocabulary specialized for
@@ -534,8 +540,6 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     @action(u"Continue", name="change")
     def change_action(self, action, data):
         """Update the Question from the request form data."""
-        if self.shouldWarnAboutUnsupportedLanguage():
-            return self.template()
         self.updateContextFromData(data)
         self.request.response.redirect(canonical_url(self.context))
 

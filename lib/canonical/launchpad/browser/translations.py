@@ -20,7 +20,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, ICountry, ILaunchpadCelebrities,
     ILaunchpadRoot, IRosettaApplication, IProductSet)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.layers import TranslationsLayer
 from canonical.launchpad.webapp import Navigation, stepto, canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator

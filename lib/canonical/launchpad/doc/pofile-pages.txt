@@ -148,13 +148,13 @@ update.
 But first, let's see current values.
 
     >>> pofile_es.updateStatistics()
-    (7, 1, 0, 1)
+    (6, 1, 1, 1)
     >>> pofile_es.currentCount()
-    7
+    6
     >>> pofile_es.updatesCount()
     1
     >>> pofile_es.rosettaCount()
-    0
+    1
     >>> pofile_es.unreviewedCount()
     1
 
@@ -187,7 +187,7 @@ Now we do a submission with new translations:
 And check again.
 
     >>> pofile_es.updateStatistics()
-    (7, 2, 1, 1)
+    (5, 2, 3, 1)
 
 The messages displayed on the +translate page are always in ascending order of
 their POTMsgSets' sequence numbers.
@@ -238,7 +238,8 @@ their sequence is 0.
 
     >>> from canonical.launchpad.database import POTMsgSet
     >>> potmsgset = POTMsgSet.get(161)
-    >>> potmsgset.getSequence(potmsgset.potemplate)
+    >>> potmsgset.setSequence(pofile_es.potemplate, 0)
+    >>> potmsgset.getSequence(pofile_es.potemplate)
     0
     >>> form = {
     ...     'batch': '10',
@@ -258,7 +259,8 @@ their sequence is 0.
 
 And we can see that we didn't get errors.
 
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(pofile_es.language)
+    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es.potemplate, pofile_es.language)
     >>> translationmessage.translations
     [u'Foo']
     >>> pofile_view.errors
@@ -349,7 +351,7 @@ To be sure that we are using the right entry from the import queue,
 we check that it contains only sample data entries.
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
-    >>> translationimportqueue.entryCount()
+    >>> translationimportqueue.countEntries()
     2
     >>> for entry in translationimportqueue.getAllEntries():
     ...     print entry.id, entry.content.filename
@@ -377,7 +379,7 @@ Now, we do the upload.
 
 As we can see, we have now one entry added to our queue.
 
-    >>> translationimportqueue.entryCount()
+    >>> translationimportqueue.countEntries()
     3
 
 Get it and check that some attributes are set as they should.

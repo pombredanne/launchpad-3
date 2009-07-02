@@ -11,7 +11,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+from lazr.restful.interfaces import IWebServiceConfiguration
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import (
     WebServiceClientRequest, WebServicePublication)
@@ -41,6 +41,14 @@ class LaunchpadWebServiceConfiguration:
         return request
 
     @property
+    def default_batch_size(self):
+        return config.launchpad.default_batch_size
+
+    @property
+    def max_batch_size(self):
+        return config.launchpad.max_batch_size
+
+    @property
     def show_tracebacks(self):
         """See `IWebServiceConfiguration`.
 
@@ -51,4 +59,6 @@ class LaunchpadWebServiceConfiguration:
         is_developer = getUtility(ILaunchBag).developer
         return (is_developer or config.canonical.show_tracebacks)
 
-
+    def get_request_user(self):
+        """See `IWebServiceConfiguration`."""
+        return getUtility(ILaunchBag).user

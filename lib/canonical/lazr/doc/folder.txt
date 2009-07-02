@@ -30,7 +30,7 @@ all the traversal logic.
 
     >>> from zope.interface.verify import verifyObject
     >>> from zope.publisher.interfaces.browser import IBrowserPublisher
-    >>> from canonical.lazr.testing.webservice import FakeRequest
+    >>> from lazr.restful.testing.webservice import FakeRequest
 
     >>> view = MyFolder(object(), FakeRequest())
     >>> verifyObject(IBrowserPublisher, view)

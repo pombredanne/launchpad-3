@@ -5,7 +5,7 @@ from zope.schema import Bool, Choice, Datetime, Int, Object, Text
 from lazr.enum import EnumeratedType, Item
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 __metaclass__ = type
 __all__ = [

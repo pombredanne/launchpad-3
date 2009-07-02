@@ -2,12 +2,12 @@
 
 __metaclass__ = type
 
-from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+from lazr.restful.interfaces import IWebServiceConfiguration
 from zope.component import getGlobalSiteManager, provideUtility
 from zope.interface import implements
 import unittest
 
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 
 class DummyWebServiceConfiguration:
     """A totally vanilla web service configuration."""

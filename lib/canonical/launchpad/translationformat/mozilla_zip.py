@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -8,8 +8,10 @@ __all__ = [
 
 from os.path import splitext, basename
 from cStringIO import StringIO
-from zipfile import ZipFile
+from zipfile import BadZipfile, ZipFile
 
+from canonical.launchpad.interfaces.translationimporter import (
+    TranslationFormatInvalidInputError)
 from canonical.launchpad.translationformat.xpi_header import XpiHeader
 from canonical.launchpad.translationformat.xpi_manifest import (
     make_jarpath, XpiManifest)
@@ -39,7 +41,11 @@ class MozillaZipTraversal:
         self.header = None
         self.last_translator = None
         self.manifest = manifest
-        self.archive = ZipFile(archive, 'r')
+        try:
+            self.archive = ZipFile(archive, 'r')
+        except BadZipfile, exception:
+            raise TranslationFormatInvalidInputError(
+                filename=filename, message=str(exception))
 
         if xpi_path is None:
             # This is the main XPI file.

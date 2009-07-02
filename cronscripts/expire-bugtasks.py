@@ -14,8 +14,8 @@ __metaclass__ = type
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.bugexpire import BugJanitor
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.bugs.scripts.bugexpire import BugJanitor
 
 
 class ExpireBugTasks(LaunchpadCronScript):

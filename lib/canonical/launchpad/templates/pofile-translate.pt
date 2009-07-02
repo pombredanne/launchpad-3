@@ -10,12 +10,16 @@
   i18n:domain="launchpad"
 >
   <body>
-    <script metal:fill-slot="head_epilogue" type="text/javascript">
+    <div metal:fill-slot="head_epilogue">
+    <style>
+    .dismissed, .dismissed a {
+        color: lightgray;
+    }
+    </style>
+    <script type="text/javascript">
       registerLaunchpadFunction(insertAllExpansionButtons);
 
       YUI().use('node', 'cookie', 'anim', function(Y) {
-          var dismiss_notice_cookie = ('translation-docs-for-' +
-                                       documentation_cookie);
 
           var hide_notification = function(node) {
               var hide_anim = new Y.Anim({
@@ -35,6 +39,8 @@
           var updateNotificationBox = function(e) {
               var notice = Y.get('.important-notice-container');
               var balloon = notice.query('.important-notice-balloon');
+              var dismiss_notice_cookie = ('translation-docs-for-' +
+                                           documentation_cookie);
 
               // Check the cookie to see if the user has already dismissed
               // the notification box for this session.
@@ -55,15 +61,49 @@
               });
           };
 
+          var setupSuggestionDismissal = function(e) {
+              Y.all('.dismiss_action').each(function(checkbox) {
+                  var classbase = checkbox.get('id');
+                  var current_class = classbase.replace(/dismiss/, 'current')
+                  var current_radios = Y.all('.'+current_class)
+                  var dismissables = Y.all('.'+classbase+'able');
+                  // The button and textarea cannot be fetched beforehand
+                  // because they are or may be created dynamically.
+                  var dismissable_inputs_class = 
+                      '.'+classbase+'able_button input, '+
+                      '.'+classbase+'able_button button, '+
+                      '.'+classbase+'able_button textarea';
+                  checkbox.on('click', function(e) {
+                      if(checkbox.get('checked')) {
+                          dismissables.addClass('dismissed');
+                          Y.all(dismissable_inputs_class).set(
+                              'disabled', true);
+                          current_radios.set('checked', true);
+                      }
+                      else
+                      {
+                          dismissables.removeClass('dismissed');
+                          Y.all(dismissable_inputs_class).set(
+                                  'disabled', false);
+                      }
+                  });
+              });
+          };
+
+          Y.on('domready', setupSuggestionDismissal);
           Y.on('domready', updateNotificationBox);
       });
     </script>
+    </div>
     <div metal:fill-slot="main">
       <script type="text/javascript"
             tal:condition="view/translation_group"
             tal:content="string:var documentation_cookie =
                             '${view/translation_group/name}' + '_'  +
                             '${context/language/code}';" />
+      <script type="text/javascript"
+            tal:condition="not:view/translation_group"
+            tal:content="string:var documentation_cookie = 'others';" />
       <div>
         <a tal:attributes="href context/potemplate/fmt:url"
            tal:content="context/potemplate/title">

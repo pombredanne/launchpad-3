@@ -42,7 +42,6 @@ __all__ = [
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
-    'IHasOwner',
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
@@ -52,7 +51,6 @@ __all__ = [
     'ILaunchpadSearch',
     'ILaunchpadUsage',
     'INotificationRecipientSet',
-    'IOpenIDApplication',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
@@ -61,7 +59,6 @@ __all__ = [
     'IPrivateMaloneApplication',
     'IReadZODBAnnotation',
     'IRosettaApplication',
-    'IShipItApplication',
     'IStructuralHeaderPresentation',
     'IStructuralObjectPresentation',
     'IWebServiceApplication',
@@ -114,6 +111,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
+    obsolete_junk = Attribute("The Obsolete Junk project.")
     rosetta_experts = Attribute("The Rosetta Experts team.")
     savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
     shipit_admin = Attribute("The ShipIt Administrators.")
@@ -186,16 +184,8 @@ class IRosettaApplication(ILaunchpadApplication):
         """Return the number of people who have given translations."""
 
 
-class IShipItApplication(ILaunchpadApplication):
-    """ShipIt application root."""
-
-
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
-
-
-class IOpenIDApplication(ILaunchpadApplication):
-    """Launchpad Login Service application root."""
 
 
 class IPrivateApplication(ILaunchpadApplication):
@@ -308,12 +298,6 @@ class IWriteZODBAnnotation(Interface):
 
 class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
-
-
-class IHasOwner(Interface):
-    """An object that has an owner."""
-
-    owner = Attribute("The object's owner, which is an IPerson.")
 
 
 class IHasDrivers(Interface):

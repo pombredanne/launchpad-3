@@ -20,6 +20,8 @@ from zope.event import notify
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILanguage)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
@@ -130,7 +132,8 @@ class LanguageView(TranslationsMixin, LaunchpadView):
             # translation_team would be either a person or a team.
             translation_teams.append({
                 'expert': translation_team,
-                'groups': translation_team.translation_groups,
+                'groups': ITranslationsPerson(
+                    translation_team).translation_groups,
                 })
         return translation_teams
 

@@ -11,16 +11,13 @@ __all__ = ['cmd_launchpad_server']
 
 
 import sys
-import xmlrpclib
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
-from bzrlib import lockdir, urlutils, ui
+from bzrlib import lockdir, ui
 
 from bzrlib.smart import medium, server
-from bzrlib.transport import get_transport, remote
-
-from canonical.config import config
+from bzrlib.transport import get_transport
 
 
 class cmd_launchpad_server(Command):
@@ -60,9 +57,9 @@ class cmd_launchpad_server(Command):
             smart_server = medium.SmartServerPipeStreamMedium(
                 sys.stdin, sys.stdout, transport)
         else:
-            host = remote.BZR_DEFAULT_INTERFACE
+            host = medium.BZR_DEFAULT_INTERFACE
             if port is None:
-                port = remote.BZR_DEFAULT_PORT
+                port = medium.BZR_DEFAULT_PORT
             else:
                 if ':' in port:
                     host, port = port.split(':')
@@ -88,20 +85,10 @@ class cmd_launchpad_server(Command):
 
     def run(self, user_id, port=None, upload_directory=None,
             mirror_directory=None, branchfs_endpoint_url=None, inet=False):
-        if upload_directory is None:
-            upload_directory = config.codehosting.hosted_branches_root
-        if mirror_directory is None:
-            mirror_directory = config.codehosting.mirrored_branches_root
-        if branchfs_endpoint_url is None:
-            branchfs_endpoint_url = config.codehosting.branchfs_endpoint
-
-        upload_url = urlutils.local_path_to_url(upload_directory)
-        mirror_url = urlutils.local_path_to_url(mirror_directory)
-        branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
-
-        from canonical.codehosting.vfs import get_lp_server
+        from lp.codehosting.vfs import get_lp_server
         lp_server = get_lp_server(
-            branchfs_client, int(user_id), upload_url, mirror_url)
+            int(user_id), branchfs_endpoint_url,
+            upload_directory, mirror_directory)
         lp_server.setUp()
 
         old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS

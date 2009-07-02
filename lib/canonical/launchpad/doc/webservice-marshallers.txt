@@ -29,8 +29,8 @@ returns that item. Otherwise it raises a ValueError.
 
     >>> from zope.component import getMultiAdapter
     >>> from zope.schema import Choice
-    >>> from canonical.lazr.interfaces import IFieldMarshaller
-    >>> from canonical.lazr.rest import EntryResource
+    >>> from lazr.restful.interfaces import IFieldMarshaller
+    >>> from lazr.restful import EntryResource
 
     # Bind the field, to resolve the vocabulary name.
     >>> field = Choice(__name__='some_person', vocabulary='ValidPersonOrTeam')
@@ -79,3 +79,8 @@ resource and not a random string.
 
     >>> marshaller.representation_name
     'some_person_link'
+
+Cleanup.
+
+    >>> request.oopsid = None
+    >>> request.publication.endRequest(request, None)

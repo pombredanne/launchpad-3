@@ -13,9 +13,9 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
-from canonical.launchpad.interfaces.mailinglist import (
+from lp.registry.interfaces.mailinglist import (
     CannotSubscribe, IMailingListSet, MailingListStatus)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.scripts import QuietFakeLogger
 
 

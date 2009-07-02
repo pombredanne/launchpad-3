@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Helper module reused in different tests."""
 
@@ -63,7 +63,7 @@ def import_pofile_or_potemplate(file_contents, person,
     else:
         commit()
 
-    entry.status = RosettaImportStatus.APPROVED
+    entry.setStatus(RosettaImportStatus.APPROVED)
     (subject, body) = target.importFromQueue(entry, FakeLogger())
     return entry
 

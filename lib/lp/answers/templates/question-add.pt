@@ -2,12 +2,10 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
 >
 <body>
 
@@ -21,7 +19,7 @@
     <metal:extra_info fill-slot="extra_info">
       <div>
       <tal:similar-faqs condition="view/similar_faqs">
-        <p i18n:translate="">These FAQs seems similar to your question. Take
+        <p>These FAQs seems similar to your question. Take
           a look at them, you may find your answer in one these.
         </p>
       
@@ -35,7 +33,7 @@
         </ul>
       </tal:similar-faqs>
       <tal:similar-questions condition="view/similar_questions">
-        <p i18n:translate="">These other questions seem similar to yours. You may want to take a look at them.</p>
+        <p>These other questions seem similar to yours. You may want to take a look at them.</p>
 
         <table id="similar-questions">
           <tbody>
@@ -46,22 +44,22 @@
       </tal:similar-questions>
 
       <tal:similar-items condition="view/has_similar_items">
-        <p i18n:translate="">If you did not find your problem in these
+        <p>If you did not find your problem in these
           existing FAQs or questions, enter the details of your problem
           to alert the
           <tal:displayName content="context/displayname"
-                            i18n:name="displayname">Project</tal:displayName>
+                           >Project</tal:displayName>
           support community, so they can help you resolve the issue.
         </p>
       </tal:similar-items>
 
       <tal:no-similar-items condition="not: view/has_similar_items">
-        <p i18n:translate="">There are no existing FAQs or questions similar to
+        <p>There are no existing FAQs or questions similar to
           the summary you entered.
         </p>
-        <p i18n:translate="">Enter the details of your problem to alert the
+        <p>Enter the details of your problem to alert the
           <tal:displayName content="context/displayname"
-                            i18n:name="displayname">Project</tal:displayName>
+                           >Project</tal:displayName>
           support community, so they can help you resolve the issue.
         </p>
       </tal:no-similar-items>
@@ -82,6 +80,7 @@
 
     <div class="actions" metal:fill-slot="buttons">
       <input tal:replace="structure view/add_action/render" />
+      or <a tal:attributes="href view/cancel_url">Cancel</a>
     </div>
 
   </metal:form>

@@ -45,6 +45,7 @@ COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format';
 COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is stacked on (if any).';
 COMMENT ON COLUMN Branch.distroseries IS 'The distribution series that the branch belongs to.';
 COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a branch of.';
+COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in the mirrored area.';
 
 -- BranchJob
 
@@ -156,7 +157,6 @@ COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch f
 COMMENT ON COLUMN BugBranch.bug IS 'The bug associated with this branch.';
 COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
-COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
 
@@ -681,9 +681,10 @@ COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last su
 COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
 COMMENT ON COLUMN ProductSeries.branch IS 'The branch for this product
 series.';
-COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'At what
-level the import of translations from a branch in codehosting will happen:
-None, POT files only, POT and PO files. See also the corresponding Enum.';
+COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'Level of
+translations imports from codehosting branch: None, templates only, templates
+and translations. See TranslationsBranchImportMode.';
+COMMENT ON COLUMN ProductSeries.translations_branch IS 'Branch to push translations updates to.';
 
 -- ProductSeriesCodeImport
 
@@ -782,6 +783,16 @@ COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
 COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the branch revision.';
 COMMENT ON COLUMN RevisionAuthor.email IS 'A valid email address extracted from the name.  This email address may or may not be associated with a Launchpad user at this stage.';
 COMMENT ON COLUMN RevisionAuthor.person IS 'The Launchpad person that has a verified email address that matches the email address of the revision author.';
+
+-- RevisionCache
+COMMENT ON TABLE RevisionCache IS 'A cache of revisions where the revision date is in the last 30 days.';
+COMMENT ON COLUMN RevisionCache.revision IS 'A reference to the actual revision.';
+COMMENT ON COLUMN RevisionCache.revision_author IS 'A refernce to the revision author for the revision.';
+COMMENT ON COLUMN RevisionCache.revision_date IS 'The date the revision was made.  Should be within 30 days of today (or the cleanup code is not cleaning up).';
+COMMENT ON COLUMN RevisionCache.product IS 'The product that the revision is found in (if it is indeed in a particular product).';
+COMMENT ON COLUMN RevisionCache.distroseries IS 'The distroseries for which a source package branch contains the revision.';
+COMMENT ON COLUMN RevisionCache.sourcepackagename IS 'The sourcepackagename for which a source package branch contains the revision.';
+COMMENT ON COLUMN RevisionCache.private IS 'True if the revision is only found in private branches, False if it can be found in a non-private branch.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -1019,7 +1030,7 @@ COMMENT ON COLUMN PackageUpload.distroseries IS 'This integer field refers to th
 
 COMMENT ON COLUMN PackageUpload.pocket IS 'This is the pocket the upload is targeted at.';
 
-COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload.';
+COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload. It is null for records refering to a delayed-copy.';
 
 COMMENT ON COLUMN PackageUpload.archive IS 'The archive to which this upload is targetted.';
 
@@ -1462,6 +1473,7 @@ COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
+COMMENT ON COLUMN LibraryFileContent.sha256 IS 'The SHA256 sum of the file''s contents';
 
 -- LibraryFileAlias
 
@@ -1869,10 +1881,10 @@ COMMENT ON COLUMN TranslationImportQueueEntry.error_output IS 'Error output from
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
 COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
+COMMENT ON COLUMN Archive.displayname IS 'User defined displayname for this archive.';
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
-COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
@@ -1881,7 +1893,7 @@ COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached fo
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
 COMMENT ON COLUMN Archive.name IS 'The name of the archive.';
-COMMENT ON COLUMN Archive.name IS 'Whether this archive should be published.';
+COMMENT ON COLUMN Archive.publish IS 'Whether this archive should be published.';
 COMMENT ON COLUMN Archive.date_updated IS 'When were the rebuild statistics last updated?';
 COMMENT ON COLUMN Archive.total_count IS 'How many source packages are in the rebuild archive altogether?';
 COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need building?';
@@ -1891,6 +1903,7 @@ COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at p
 COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
 COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days before superseded or deleted binary files are expired in the librarian, or zero for never.';
 COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
+COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 
 -- ArchiveAuthToken
 
@@ -1916,6 +1929,8 @@ COMMENT ON COLUMN ArchivePermission.permission IS 'The permission type being gra
 COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the permission is being granted.';
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
+COMMENT ON COLUMN ArchivePermission.packageset IS 'The package set to which this permission applies.';
+COMMENT ON COLUMN ArchivePermission.explicit IS 'This flag is set for package sets containing high-profile packages that must not break and/or require specialist skills for proper handling e.g. the kernel.';
 
 -- ArchiveSubscriber
 
@@ -2038,6 +2053,7 @@ COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
 COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
 COMMENT ON COLUMN OpenIdRPConfig.can_query_any_team IS 'This RP can query for membership of any or all teams, including private teams. This setting overrides any other private team query ACLs, and should not be used if more granular options are suitable.';
+COMMENT ON COLUMN OpenIdRPConfig.auto_authorize IS 'True if the user authorisation page is skipped by default for this RP.';
 
 --OpenIDRPSummary
 COMMENT ON TABLE OpenIDRPSummary IS 'The summary of the activity between a person and an RP.';
@@ -2083,6 +2099,12 @@ COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
 COMMENT ON COLUMN HWDriver.package_name IS 'The Debian package name a driver is a part of';
 COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
+
+COMMENT ON VIEW HWDriverNames IS 'A view returning the distinct driver names stored in HWDriver.';
+COMMENT ON COLUMN HWDriverNames.name IS 'The name of a driver.';
+
+COMMENT ON VIEW HWDriverPackageNames IS 'A view returning the distinct Debian package names stored in HWDriver.';
+COMMENT ON COLUMN HWDriverPackageNames.package_name IS 'The Debian package name a driver is a part of.';
 
 COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
 COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';
@@ -2252,3 +2274,27 @@ COMMENT ON COLUMN UserToUserEmail.recipient IS 'The person receiving this email.
 COMMENT ON COLUMN UserToUserEmail.date_sent IS 'The date the email was sent.';
 COMMENT ON COLUMN UserToUserEmail.subject IS 'The Subject: header.';
 COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';
+
+-- Packageset
+
+COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages for purposes like the control of upload permissions, et.';
+COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
+COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package set';
+COMMENT ON COLUMN Packageset.name IS 'The name for the package set on hand.';
+COMMENT ON COLUMN Packageset.description IS 'The description for the package set on hand.';
+
+-- PackagesetSources
+
+COMMENT ON TABLE PackagesetSources IS 'This table associates package sets and source package names.';
+COMMENT ON COLUMN PackagesetSources.packageset IS 'The associated package set.';
+COMMENT ON COLUMN PackagesetSources.sourcepackagename IS 'The associated source package name.';
+
+-- PackagesetInclusion
+COMMENT ON TABLE PackagesetInclusion IS 'sets may form a set-subset hierarchy; this table facilitates the definition of these set-subset relationships.';
+COMMENT ON COLUMN PackagesetInclusion.parent IS 'The package set that is including a subset.';
+COMMENT ON COLUMN PackagesetInclusion.child IS 'The package set that is being included as a subset.';
+
+-- FlatPackagesetInclusion
+COMMENT ON TABLE FlatPackagesetInclusion IS 'In order to facilitate the querying of set-subset relationships an expanded or flattened representation of the set-subset hierarchy is provided by this table.';
+COMMENT ON COLUMN FlatPackagesetInclusion.parent IS 'The package set that is (directly or indirectly) including a subset.';
+COMMENT ON COLUMN FlatPackagesetInclusion.child IS 'The package set that is being included as a subset.';

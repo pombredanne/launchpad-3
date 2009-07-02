@@ -43,7 +43,7 @@ a translations facet. The navigation menu has a view that is used to
 render the menu: +navigationmenutabs.
 
     >>> from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
-    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> productset = getUtility(IProductSet)
     >>> evolution = productset['evolution']
