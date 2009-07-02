@@ -558,7 +558,7 @@ exists then nothing is copied.
     HTTP/1.1 200 Ok
     ...
 
-The operation still successful if there is nothing to copy, as you
+The operation is still successful if there is nothing to copy, as you
 would expect from a 'sync-like' method.
 
     >>> already_copied = cprov_webservice.named_post(
