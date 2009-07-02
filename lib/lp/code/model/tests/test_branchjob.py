@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import datetime
 import os
 import shutil
 from unittest import TestLoader
@@ -19,8 +20,10 @@ from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.interfaces.translations import (
@@ -938,11 +941,11 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         """
         hosted = config.codehosting.hosted_branches_root
         shutil.rmtree(hosted, ignore_errors=True)
-        os.mkdir(hosted)
+        os.makedirs(hosted)
         self.addCleanup(shutil.rmtree, hosted)
         mirrored = config.codehosting.mirrored_branches_root
         shutil.rmtree(mirrored, ignore_errors=True)
-        os.mkdir(mirrored)
+        os.makedirs(mirrored)
         self.addCleanup(shutil.rmtree, mirrored)
 
     def setUp(self):
@@ -955,12 +958,30 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
             self.factory.getUniqueInteger())
         self.assertCorrectlyProvides(job, IReclaimBranchSpaceJob)
 
+    def test_scheduled_in_future(self):
+        # A freshly created ReclaimBranchSpaceJob is scheduled to run in a
+        # week's time.
+        job = getUtility(IReclaimBranchSpaceJobSource).create(
+            self.factory.getUniqueInteger())
+        self.assertEqual(
+            datetime.timedelta(days=7),
+            job.job.scheduled_start - job.job.date_created)
+
     def test_stores_id(self):
         # An instance of ReclaimBranchSpaceJob stores the ID of the branch
         # that has been deleted.
         branch_id = self.factory.getUniqueInteger()
         job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
         self.assertEqual(branch_id, job.branch_id)
+
+    def makeJobReady(self, job):
+        """Force `job` to be scheduled to run now.
+
+        New `ReclaimBranchSpaceJob`s are scheduled to run a week after
+        creation, so to be able to test running the job we have to force them
+        to be scheduled now.
+        """
+        removeSecurityProxy(job).job.scheduled_start = UTC_NOW
 
     def runReadyJobs(self):
         """Run all ready `ReclaimBranchSpaceJob`s with the appropriate dbuser.
@@ -969,14 +990,18 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         # make sure newly added jobs are still there after we call it.
         self.layer.txn.commit()
         self.layer.switchDbUser(config.reclaimbranchspace.dbuser)
+        job_count = 0
         for job in ReclaimBranchSpaceJob.iterReady():
             job.run()
+            job_count += 1
+        self.assertTrue(job_count > 0, "No jobs ran!")
 
     def test_run_branch_in_neither_area(self):
         # Running a job to reclaim space for a branch that was never pushed to
         # does nothing quietly.
         branch_id = self.factory.getUniqueInteger()
-        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        self.makeJobReady(job)
         # Just "assertNotRaises"
         self.runReadyJobs()
 
@@ -984,7 +1009,8 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         # Running a job to reclaim space for a branch that was pushed to
         # but never mirrored removes the branch from the hosted area.
         branch_id = self.factory.getUniqueInteger()
-        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        self.makeJobReady(job)
         hosted_branch_path = os.path.join(
             config.codehosting.hosted_branches_root,
             branch_id_to_path(branch_id), '.bzr')
@@ -997,7 +1023,8 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         # mirrored area (e.g. a MIRRORED branch) removes the branch from the
         # mirrored area.
         branch_id = self.factory.getUniqueInteger()
-        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        self.makeJobReady(job)
         mirrored_branch_path = os.path.join(
             config.codehosting.mirrored_branches_root,
             branch_id_to_path(branch_id), '.bzr')
@@ -1009,7 +1036,8 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         # Running a job to reclaim space for a branch is present in both the
         # mirrored and hosted area removes the branch from both areas.
         branch_id = self.factory.getUniqueInteger()
-        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        self.makeJobReady(job)
         hosted_branch_path = os.path.join(
             config.codehosting.hosted_branches_root,
             branch_id_to_path(branch_id), '.bzr')
