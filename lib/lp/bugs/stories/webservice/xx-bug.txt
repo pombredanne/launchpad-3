@@ -1,10 +1,12 @@
-= Introduction =
+Introduction
+============
 
 Bugs are some of the more complex objects in Launchpad. They have a
 lot of state and many relationships to other objects.
 
 
-== Bugs themselves ==
+Bugs themselves
+---------------
 
 At the top level we provide a collection of bugs.
 
@@ -211,7 +213,8 @@ the web UI. It is impossible, for example, to create circular relationships.
   HTTP/1.1 209 Content Returned...
 
 
-== Bugs as message targets ==
+Bugs as message targets
+-----------------------
 
 Each bug has a collection of messages.
 
@@ -266,7 +269,8 @@ We can add a new message to a bug by calling the newMessage method.
   subject: u'A new message'
 
 
-== Bug tasks ==
+Bug tasks
+---------
 
 Each bug may be associated with one or more bug tasks. Much of the
 data in a bug task is derived from the bug.
@@ -540,7 +544,8 @@ will return something more useful.
     "id": ...  "title": "Test bug"...
 
 
-== Bug subscriptions ==
+Bug subscriptions
+-----------------
 
 We can get the collection of subscriptions to a bug.
 
@@ -658,7 +663,8 @@ Salgado is the webservice user and cannot unsubscribe SteveA.
     False
 
 
-=== Unsubscribing From Duplicates ===
+Unsubscribing From Duplicates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If a user is subscribed via a duplicate, the user can unsubscribe from the
 main bug and be unsubscribed from the duplicate as well.
@@ -730,7 +736,8 @@ Now again, bug_six has no subscibers.
     0
 
 
-== Bug Watches ==
+Bug Watches
+-----------
 
 Bugs can have bug watches associated with them. Each bugwatch can also
 be optionally associated with one of the bugtasks in a bug, in which
@@ -835,7 +842,8 @@ Following the redirect, we can see the new bug watch:
   url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876'
 
 
-== Bug Trackers ==
+Bug Trackers
+------------
 
   >>> bug_tracker = webservice.get(bug_watch['bug_tracker_link']).jsonBody()
 
@@ -928,7 +936,8 @@ Admins can, however.
     active: False...
 
 
-== Bug attachments ==
+Bug attachments
+---------------
 
 Bug 1 has no attachments:
 
@@ -1073,7 +1082,8 @@ But we can remove the attachment altogether.
   ---
 
 
-== Searching for bugs ==
+Searching for bugs
+------------------
 
 Bug targets expose the searchTasks method, which provides a search interface
 for bug tasks, similar to the advanced search form on the web interface.
@@ -1204,7 +1214,8 @@ the advanced search interface.
     http://.../ubuntu/+source/linux-source-2.6.15/+bug/10
     http://.../ubuntu/+source/thunderbird/+bug/9
 
-=== Hardware related bug tasks ===
+Hardware related bug tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We can search for bugs related to a given hardware device. We must
 specify a device by its bus, vendor and product IDs and the kind
@@ -1339,7 +1350,8 @@ a given device.
     http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10
 
 
-== Affected users ==
+Affected users
+--------------
 
 It is possible to mark a bug as affecting the user using the web service.
 
@@ -1370,7 +1382,8 @@ It is possible to mark a bug as affecting the user using the web service.
     False
 
 
-== CVEs ==
+CVEs
+----
 
 CVEs and how they relate to Launchpad bugs can be accessed using the API.
 
@@ -1480,7 +1493,8 @@ Add a new task to the bug.
     ...
 
 
-== HWDB submissions ==
+HWDB submissions
+----------------
 
 We can create a link between a HWDB submission and a bug by calling
 bug.linkHWSubmission().
