@@ -15,7 +15,8 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import classProvides, implements
 from zope.component import getUtility
 
-from storm.locals import And, Desc, In, Select, SQL, Store
+from storm.expr import And
+from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
@@ -29,8 +30,9 @@ from lp.soyuz.model.distributionsourcepackagerelease import (
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.database.potemplate import (
+    HasTranslationTemplatesMixin,
+    POTemplate)
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.answers.model.question import (
@@ -148,7 +150,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
-                    HasTranslationImportsMixin):
+                    HasTranslationImportsMixin, HasTranslationTemplatesMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -315,22 +317,26 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
         The results are ordered by descending version.
         """
-        subselect = Select(
-            SourcePackageRelease.id, And(
-                SourcePackagePublishingHistory.distroseries ==
-                    self.distroseries,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagename ==
-                    self.sourcepackagename,
-                In(SourcePackagePublishingHistory.archiveID,
-                    self.distribution.all_distro_archive_ids)))
+        query = """
+            SourcePackagePublishingHistory.distroseries = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.archive IN %s
+        """ % sqlvalues(self.distroseries, self.sourcepackagename,
+                        self.distribution.all_distro_archive_ids)
 
-        return IStore(SourcePackageRelease).find(
-            SourcePackageRelease,
-            In(SourcePackageRelease.id, subselect)
-            ).order_by(Desc(
-                SQL("debversion_sort_key(SourcePackageRelease.version)")))
+        clauseTables = ['SourcePackagePublishingHistory']
+        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+
+        # Selecting ordered distinct `SourcePackageReleases` requires us
+        # to 'selectAlso' the ordering index (the debversion_sort_key).
+        releases = SourcePackageRelease.select(
+            query, clauseTables=clauseTables,
+            distinct=True, selectAlso=order_const,
+            orderBy=[SQLConstant(order_const + " DESC")])
+
+        return releases
 
     @property
     def name(self):
@@ -577,18 +583,27 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             sourcepackagename=self.sourcepackagename)
         return shortlist(result.orderBy(['-priority', 'name']), 300)
 
-    def getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            sourcepackagename = %s AND
-            iscurrent IS TRUE AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            Distribution.official_rosetta IS TRUE
-            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
-            clauseTables = ['DistroSeries', 'Distribution'])
-        return shortlist(result.orderBy(['-priority', 'name']), 300)
+        # Avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.distribution import Distribution
+
+        store = Store.of(self.sourcepackagename)
+        if just_ids:
+            looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
+
+        result = store.find(
+            looking_for,
+            POTemplate.iscurrent == True,
+            POTemplate.distroseries == self.distroseries,
+            POTemplate.sourcepackagename == self.sourcepackagename,
+            DistroSeries.id == self.distroseries.id,
+            DistroSeries.distribution == Distribution.id,
+            Distribution.official_rosetta == True)
+        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

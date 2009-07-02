@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import SQL, Max, Min
 
+from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -189,7 +190,7 @@ class CodeImportResultPruner(TunableLoop):
     """A TunableLoop to prune unwanted CodeImportResult rows.
 
     Removes CodeImportResult rows if they are older than 30 days
-    and they are not one of the 4 most recent results for that
+    and they are not one of the most recent results for that
     CodeImport.
     """
     maximum_chunk_size = 1000
@@ -230,11 +231,12 @@ class CodeImportResultPruner(TunableLoop):
                         LatestResult.code_import
                             = CodeImportResult.code_import
                     ORDER BY LatestResult.date_created DESC
-                    LIMIT 4)
+                    LIMIT %s)
             """ % sqlvalues(
                 self.next_code_import_id,
                 self.next_code_import_id,
-                chunk_size))
+                chunk_size,
+                config.codeimport.consecutive_failure_limit - 1))
         self.next_code_import_id += chunk_size
         transaction.commit()
 
@@ -313,13 +315,17 @@ class HWSubmissionEmailLinker(TunableLoop):
         self.submission_store = IMasterStore(HWSubmission)
         self.submission_store.execute(
             "DROP TABLE IF EXISTS NewlyMatchedSubmission")
+        # The join with the Person table is to avoid any replication
+        # lag issues - EmailAddress.person might reference a Person
+        # that does not yet exist.
         self.submission_store.execute("""
             CREATE TEMPORARY TABLE NewlyMatchedSubmission AS
             SELECT
                 HWSubmission.id AS submission,
                 EmailAddress.person AS owner
-            FROM HWSubmission, EmailAddress
+            FROM HWSubmission, EmailAddress, Person
             WHERE HWSubmission.owner IS NULL
+                AND EmailAddress.person = Person.id
                 AND EmailAddress.status IN %s
                 AND lower(HWSubmission.raw_emailaddress)
                     = lower(EmailAddress.email)

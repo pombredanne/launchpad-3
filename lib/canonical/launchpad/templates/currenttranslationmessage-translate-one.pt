@@ -344,7 +344,7 @@
         <td colspan="4" />
         <td id="translated_by" style="overflow: auto;">
           Translated by
-          <a tal:content="submitter/browsername"
+          <a tal:content="submitter/displayname"
              tal:attributes="href submitter/fmt:url">Foo Bar</a>
           <span
             tal:attributes="title context/date_created/fmt:datetime"
@@ -360,7 +360,7 @@
             id="translated_and_reviewed_by"
             style="overflow: auto">
           Translated and reviewed by
-          <a tal:content="context/reviewer/browsername"
+          <a tal:content="context/reviewer/displayname"
              tal:attributes="href context/reviewer/fmt:url">Foo Bar</a>
           <span
             tal:attributes="title context/date_reviewed/fmt:datetime"
@@ -373,7 +373,7 @@
             id="reviewed_by"
             style="overflow: auto">
           Reviewed by
-          <a tal:content="context/reviewer/browsername"
+          <a tal:content="context/reviewer/displayname"
              tal:attributes="href context/reviewer/fmt:url">Foo Bar</a>
           <span
             tal:attributes="title context/date_reviewed/fmt:datetime"
@@ -387,8 +387,8 @@
       define="submission translation_dictionary/imported_translation_message"
       condition="submission">
       <tal:imported-not-empty condition="not:submission/is_empty">
-        <tr class="secondary"
-          tal:attributes="id string:msgset_${context/potmsgset/id}_packaged">
+        <tr tal:attributes="class string:secondary ${view/dismissable_class_packaged};
+                            id string:msgset_${context/potmsgset/id}_packaged">
           <th colspan="3">
             Packaged:
           </th>
@@ -444,13 +444,12 @@
             </label>
           </td>
         </tr>
-        <tr class="discreet secondary"
-          tal:attributes="
-            id string:msgset_${context/potmsgset/id}_packaged_origin">
+        <tr tal:attributes="class string:discreet secondary ${view/dismissable_class_packaged};
+                            id string:msgset_${context/potmsgset/id}_packaged_origin">
           <td colspan="4" class="icon left right" />
           <td style="overflow: auto;">
             Translated by
-            <a tal:content="submission/submitter/browsername"
+            <a tal:content="submission/submitter/displayname"
                tal:attributes="href submission/submitter/fmt:url">Foo Bar</a>
             <span
               tal:attributes="title submission/date_created/fmt:datetime"
@@ -507,7 +506,7 @@
      </tr>
       <tr tal:condition="view/form_is_writeable"
           tal:attributes="class string:secondary translation
-          ${view/html_id}_dismissable ${view/html_id}_dismissable_button">
+                                       ${view/dismissable_class}">
         <tal:comment condition="nothing">
           Normally table cells align the baselines of their first lines of
           text. This doesn't work here because one of the cells sometimes
@@ -613,8 +612,7 @@
   </tal:locked>
   </tal:plural-form>
   </tal:translation-dictionaries>
-  <tr tal:attributes="class string:secondary
-      ${view/html_id}_dismissable ${view/html_id}_dismissable_button">
+  <tr tal:attributes="class string:secondary ${view/dismissable_class}">
     <td colspan="4" />
     <td>
       <div tal:condition="view/user_is_official_translator">

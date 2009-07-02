@@ -17,6 +17,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.model.codeimportresult import CodeImportResult
+from canonical.config import config
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
@@ -160,6 +161,9 @@ class TestGarbo(TestCaseWithFactory):
         now = datetime.utcnow().replace(tzinfo=UTC)
         store = IMasterStore(CodeImportResult)
 
+        results_to_keep_count = (
+            config.codeimport.consecutive_failure_limit - 1)
+
         def new_code_import_result(timestamp):
             LaunchpadZopelessLayer.switchDbUser('testadmin')
             CodeImportResult(
@@ -170,29 +174,32 @@ class TestGarbo(TestCaseWithFactory):
             transaction.commit()
 
         new_code_import_result(now - timedelta(days=60))
-        new_code_import_result(now - timedelta(days=19))
-        new_code_import_result(now - timedelta(days=20))
-        new_code_import_result(now - timedelta(days=21))
+        for i in range(results_to_keep_count - 1):
+            new_code_import_result(now - timedelta(days=19+i))
 
         # Run the garbage collector
         self.runDaily()
 
-        # Nothing is removed, because we always keep the 4 latest.
+        # Nothing is removed, because we always keep the
+        # ``results_to_keep_count`` latest.
         store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
-            store.find(CodeImportResult).count(), 4)
+            results_to_keep_count,
+            store.find(CodeImportResult).count())
 
         new_code_import_result(now - timedelta(days=31))
         self.runDaily()
         store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
-            store.find(CodeImportResult).count(), 4)
+            results_to_keep_count,
+            store.find(CodeImportResult).count())
 
         new_code_import_result(now - timedelta(days=29))
         self.runDaily()
         store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
-            store.find(CodeImportResult).count(), 4)
+            results_to_keep_count,
+            store.find(CodeImportResult).count())
 
         # We now have no CodeImportResults older than 30 days
         self.failUnless(

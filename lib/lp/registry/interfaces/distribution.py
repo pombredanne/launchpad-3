@@ -35,8 +35,8 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
-    ILaunchpadUsage)
+    IHasAppointedDriver, IHasDrivers, IHasSecurityContact, ILaunchpadUsage)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
@@ -287,7 +287,11 @@ class IDistributionPublic(
     @operation_returns_entry(Interface) # Really IDistroSeries, see below
     @export_read_operation()
     def getSeries(name_or_version):
-        """Return the series with the name or version given."""
+        """Return the series with the name or version given.
+
+        :param name_or_version: The `IDistroSeries.name` or
+            `IDistroSeries.version`.
+        """
 
     def getMirrorByName(name):
         """Return the mirror with the given name for this distribution or None

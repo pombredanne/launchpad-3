@@ -544,7 +544,7 @@
         facet="overview"
         class="lp.registry.browser.project.ProjectAddProductView"
         permission="launchpad.AnyPerson"
-        template="../templates/product-add-from-project.pt"/>
+        template="../templates/product-new.pt"/>
     <browser:addform
         name="+linkbounty"
         for="lp.registry.interfaces.project.IProject"
@@ -1764,7 +1764,7 @@
         <browser:page
             name="+timeline-graph"
             facet="overview"
-            template="../templates/product-timeline-graph.pt"/>
+            template="../templates/object-timeline-graph.pt"/>
         <browser:page
             name="+packages"
             facet="overview"
@@ -2022,8 +2022,8 @@
         facet="overview"
         permission="zope.Public">
         <browser:page
-            name="+index"
-            template="../templates/productseries-index.pt"/>
+            name="+timeline-graph"
+            template="../templates/object-timeline-graph.pt"/>
         <browser:page
             name="+macros"
             template="../templates/productseries-macros.pt"/>
@@ -2051,6 +2051,9 @@
         class="lp.registry.browser.productseries.ProductSeriesView"
         facet="overview"
         permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/productseries-index.pt"/>
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"/>
@@ -2883,4 +2886,10 @@
         for="lp.registry.interfaces.productrelease.IProductReleaseFile"
         permission="zope.Public"
         template="../templates/productreleasefile-macros.pt" />
+    <browser:page
+        for="*"
+        name="+timeline-macros"
+        template="../templates/timeline-macros.pt"
+        permission="zope.Public"
+        />
 </configure>

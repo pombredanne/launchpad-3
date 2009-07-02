@@ -42,10 +42,7 @@ forgetting to enter a title or summary.
     There are 3 errors.
     URL:
     http://launchpad.net/
-    Invalid name 'aard vark'. Names must start with a letter or
-    number and be lowercase. The characters +,
-    - and . are also allowed after the
-    first character.
+    Invalid name 'aard vark'. Names must be at least two characters ...
     At least one lowercase letter or number, followed by letters, numbers,
     dots, hyphens or pluses. Keep this name short; it is used in URLs as
     shown above.

@@ -14,6 +14,8 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
+from storm.expr import State
+from storm.expr import compile as storm_compile
 from storm.locals import Storm, Store
 from storm.zope.interfaces import IZStorm
 
@@ -38,6 +40,7 @@ __all__ = [
     'commit',
     'ConflictingTransactionManagerError',
     'connect',
+    'convert_storm_clause_to_string',
     'cursor',
     'expire_from_cache',
     'flush_database_caches',
@@ -349,19 +352,6 @@ class ZopelessTransactionManager(object):
         if connection._state == storm.database.STATE_CONNECTED:
             if connection._raw_connection is not None:
                 connection._raw_connection.close()
-
-            # This method assumes that calling transaction.abort() will
-            # call rollback() on the store, but this is no longer the
-            # case as of jamesh's fix for bug 230977; Stores are not
-            # registered with the transaction manager until they are
-            # used. While storm doesn't provide an API which does what
-            # we want, we'll go under the covers and emit the
-            # register-transaction event ourselves. This method is
-            # only called by the test suite to kill the existing
-            # connections so the Store's reconnect with updated
-            # connection settings.
-            store._event.emit('register-transaction')
-
             connection._raw_connection = None
             connection._state = storm.database.STATE_DISCONNECTED
         transaction.abort()
@@ -605,6 +595,51 @@ def quote_identifier(identifier):
 quoteIdentifier = quote_identifier # Backwards compatibility for now.
 
 
+def convert_storm_clause_to_string(storm_clause):
+    """Convert a Storm expression into a plain string.
+
+    :param storm_clause: A Storm expression
+
+    A helper function allowing to use a Storm expressions in old-style
+    code which builds for example WHERE expressions as plain strings.
+
+    >>> from lp.bugs.model.bug import Bug
+    >>> from lp.bugs.model.bugtask import BugTask
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
+    >>> from storm.expr import And, Or
+
+    >>> print convert_storm_clause_to_string(BugTask)
+    BugTask
+
+    >>> print convert_storm_clause_to_string(BugTask.id == 16)
+    BugTask.id = 16
+
+    >>> print convert_storm_clause_to_string(
+    ...     BugTask.importance == BugTaskImportance.UNKNOWN)
+    BugTask.importance = 999
+
+    >>> print convert_storm_clause_to_string(Bug.title == "foo'bar'")
+    Bug.title = 'foo''bar'''
+
+    >>> print convert_storm_clause_to_string(
+    ...     Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...        BugTask.importance == BugTaskImportance.HIGH))
+    BugTask.importance = 999 OR BugTask.importance = 40
+
+    >>> print convert_storm_clause_to_string(
+    ...    And(Bug.title == 'foo', BugTask.bug == Bug.id,
+    ...        Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...           BugTask.importance == BugTaskImportance.HIGH)))
+    Bug.title = 'foo' AND BugTask.bug = Bug.id AND
+    (BugTask.importance = 999 OR BugTask.importance = 40)
+    """
+    state = State()
+    clause = storm_compile(storm_clause, state)
+    if len(state.parameters):
+        parameters = [param.get(to_db=True) for param in state.parameters]
+        clause = clause.replace('?', '%s') % sqlvalues(*parameters)
+    return clause
+
 def flush_database_updates():
     """Flushes all pending database updates.
 
@@ -653,24 +688,24 @@ def flush_database_caches():
 
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
-    def block_implicit_flushes_decorator(*args, **kwargs):
+    def wrapped(*args, **kwargs):
         store = _get_sqlobject_store()
         store.block_implicit_flushes()
         try:
             return func(*args, **kwargs)
         finally:
             store.unblock_implicit_flushes()
-    return mergeFunctionMetadata(func, block_implicit_flushes_decorator)
+    return mergeFunctionMetadata(func, wrapped)
 
 
 def reset_store(func):
     """Function decorator that resets the main store."""
-    def reset_store_decorator(*args, **kwargs):
+    def wrapped(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         finally:
             _get_sqlobject_store().reset()
-    return mergeFunctionMetadata(func, reset_store_decorator)
+    return mergeFunctionMetadata(func, wrapped)
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid

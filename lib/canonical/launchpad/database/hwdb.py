@@ -28,6 +28,8 @@ __all__ = [
     'HWVendorIDSet',
     'HWVendorName',
     'HWVendorNameSet',
+    'make_submission_device_statistics_clause',
+    '_userCanAccessSubmissionStormClause',
     ]
 
 import re
@@ -338,7 +340,7 @@ class HWSubmissionSet:
 
         device_tables, device_clauses = (
             make_submission_device_statistics_clause(
-                bus, vendor_id, product_id, driver_name, package_name, True))
+                bus, vendor_id, product_id, driver_name, package_name, False))
         submission_ids = Select(
             columns=[HWSubmissionDevice.submissionID],
             tables=device_tables, where=And(*device_clauses))
@@ -351,8 +353,8 @@ class HWSubmissionSet:
         return (submissions_with_device, all_submissions)
 
     def numSubmissionsWithDevice(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distro_target=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distro_target=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         submissions_with_device_select, all_submissions_select = (
@@ -366,8 +368,8 @@ class HWSubmissionSet:
                 all_submissions.get_one()[0])
 
     def numOwnersOfDevice(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distro_target=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distro_target=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         submitters_with_device_select, all_submitters_select = (
@@ -957,7 +959,10 @@ class HWDriverSet:
     def all_package_names(self):
         """See `IHWDriverSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(HWDriverPackageName)
+        # XXX Abel Deuring 2009-06-19 The clause package_name != None
+        # can be removed once bug #306265 is fixed.
+        result = store.find(HWDriverPackageName,
+                            HWDriverPackageName.package_name != None)
         result.order_by(HWDriverPackageName.package_name)
         return result
 
@@ -1099,13 +1104,13 @@ class HWSubmissionDeviceSet:
             HWSubmissionDevice, HWSubmissionDevice.id == id).one()
 
     def numDevicesInSubmissions(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distro_target=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distro_target=None):
         """See `IHWSubmissionDeviceSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         tables, where_clauses = make_submission_device_statistics_clause(
-            bus, vendor_id, product_id, driver_name, package_name, True)
+            bus, vendor_id, product_id, driver_name, package_name, False)
 
         distro_tables, distro_clauses = make_distro_target_clause(
             distro_target)
@@ -1274,4 +1279,3 @@ def _userCanAccessSubmissionStormClause(user):
                 HWSubmission.private))
         has_access = HWSubmission.ownerID.is_in(subselect)
         return Or(public, has_access)
-

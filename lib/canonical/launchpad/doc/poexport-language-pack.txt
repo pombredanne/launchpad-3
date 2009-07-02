@@ -422,7 +422,7 @@ exported, thus, we set it and request an update export, which means we
 should get only files that where updated after 2000-01-02.
 
     >>> series.language_pack_base.date_exported = d2000_01_02
-    >>> transaction.commit()
+    >>> flush_database_caches()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='grumpy',
