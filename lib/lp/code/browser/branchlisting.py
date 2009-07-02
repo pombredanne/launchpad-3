@@ -26,7 +26,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-from operator import attrgetter
 
 import simplejson
 from storm.expr import Asc, Desc
