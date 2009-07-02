@@ -2900,8 +2900,7 @@ class PersonView(LaunchpadView, FeedsMixin):
 
         # If the current user is allowed to see any PPAs, show the
         # section.
-        ppas = getUtility(IArchiveSet).getPPAsForUser(self.context)
-        for ppa in ppas:
+        for ppa in self.context.ppas:
             if check_permission('launchpad.View', ppa):
                 return True
 
