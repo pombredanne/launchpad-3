@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0102
 
 __metaclass__ = type
@@ -8,13 +8,13 @@ import unittest
 from zope.security.proxy import removeSecurityProxy
 
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import ZopelessDatabaseLayer
 
 
 class TestTranslationSharingPOTemplate(unittest.TestCase):
     """Test behaviour of "sharing" PO templates."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         """Set up context to test in."""

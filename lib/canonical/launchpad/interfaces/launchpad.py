@@ -42,7 +42,6 @@ __all__ = [
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
-    'IHasOwner',
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
@@ -299,12 +298,6 @@ class IWriteZODBAnnotation(Interface):
 
 class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
-
-
-class IHasOwner(Interface):
-    """An object that has an owner."""
-
-    owner = Attribute("The object's owner, which is an IPerson.")
 
 
 class IHasDrivers(Interface):

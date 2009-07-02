@@ -238,7 +238,7 @@
     <class
         class="lp.registry.model.person.IrcID">
         <allow
-            interface="canonical.launchpad.interfaces.IHasOwner"/>
+            interface="lp.registry.interfaces.role.IHasOwner"/>
         <allow
             attributes="
                 id
@@ -461,7 +461,7 @@
     <class
         class="lp.registry.model.person.JabberID">
         <allow
-            interface="canonical.launchpad.interfaces.IHasOwner"/>
+            interface="lp.registry.interfaces.role.IHasOwner"/>
         <allow
             attributes="
                 id
@@ -996,7 +996,7 @@
     <class
         class="lp.registry.model.person.WikiName">
         <allow
-            interface="canonical.launchpad.interfaces.IHasOwner"/>
+            interface="lp.registry.interfaces.role.IHasOwner"/>
         <allow
             attributes="
                 id
