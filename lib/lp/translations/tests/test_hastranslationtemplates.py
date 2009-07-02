@@ -5,7 +5,7 @@ __metaclass__ = type
 import unittest
 
 from canonical.testing import ZopelessDatabaseLayer
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.testing import TestCaseWithFactory, verifyObject
 
 
