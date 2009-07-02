@@ -95,37 +95,75 @@
   </p>
 
   <div tal:define="ppa_versions view/latest_published_ppa_versions"
-       tal:condition="ppa_versions">
-    <p>The following <strong>unsupported</strong> and 
-       <strong>untrusted</strong> Personal Archives (PPAs) also provide
-       packages of '<span tal:replace="context/name" />':</p>
-    <dl id="ppa_packaging">
-      <tal:definition tal:repeat="ppa_version ppa_versions">
-        <dt>
-          <a tal:attributes="href ppa_version/archive/fmt:url">
-            <img tal:replace="structure ppa_version/archive/image:icon" />
-            <span tal:replace="ppa_version/archive/displayname">
-              Super trusted PPA
+       tal:condition="ppa_versions" id="related-ppa-versions">
+    <div class="widget-hd" id="slide-trigger">
+      Most recent versions uploaded to untrusted personal archives...
+    </div>
+    <div class="widget-bd">
+      <p>The following <strong>unsupported</strong> and 
+         <strong>untrusted</strong> Personal Archives (PPAs) also provide
+         packages of '<span tal:replace="context/name" />':</p>
+      <dl id="ppa_packaging">
+        <tal:definition tal:repeat="ppa_version ppa_versions">
+          <dt>
+            <a tal:attributes="href ppa_version/archive/fmt:url">
+              <img tal:replace="structure ppa_version/archive/image:icon" />
+              <span tal:replace="ppa_version/archive/displayname">
+                Super trusted PPA
+              </span>
+            </a> owned by
+            <a tal:replace="structure ppa_version/archive/owner/fmt:link">
+              Joe Dodgy
+            </a>
+          </dt>
+          <dd>
+            Versions:
+            <span tal:replace="ppa_version/versions">
+              Hoary (1.0.1), Feisty (2.0.1)
             </span>
-          </a> owned by
-          <a tal:replace="structure ppa_version/archive/owner/fmt:link">
-            Joe Dodgy
-          </a>
-        </dt>
-        <dd>
-          Versions:
-          <span tal:replace="ppa_version/versions">
-            Hoary (1.0.1), Feisty (2.0.1)
-          </span>
-        </dd>
-      </tal:definition>
-    </dl>
+          </dd>
+        </tal:definition>
+      </dl>
 
-    <p>You can also search for
-       <a tal:attributes="href view/further_ppa_versions_url">
-         more untrusted versions of
-         '<span tal:replace="context/name" />'</a>.
-    </p>
+      <p>You can also search for
+         <a tal:attributes="href view/further_ppa_versions_url">
+           more untrusted versions of
+           '<span tal:replace="context/name" />'</a>.
+      </p>
+    </div>
+<script type="text/javascript">
+YUI({
+        base: '../../lib/yui/current/build/',
+        filter: 'raw'
+    }).use('node', 'event', 'lazr.effects', function(Y) {
+
+    // Collapse the body of the slider widget initially.
+    Y.get('#related-ppa-versions .widget-bd').addClass('lazr-closed');
+
+    // Ensure that the widget header uses the correct sprite icon
+    // and gets the styling for javascript actions applied.
+    var widget_header = Y.get('#related-ppa-versions .widget-hd');
+    widget_header.addClass('sprite');
+    widget_header.addClass('treeCollapsed');
+    widget_header.addClass('js-action');
+
+    var slide;
+    Y.on('click', function(e) {
+        if (!slide) {
+            slide = Y.lazr.effects.slide_out('#related-ppa-versions .widget-bd');
+            widget_header.replaceClass('treeCollapsed', 'treeExpanded');
+        } else {
+            slide.set('reverse', !slide.get('reverse'));
+            widget_header.toggleClass('treeExpanded');
+            widget_header.toggleClass('treeCollapsed');
+        }
+        slide.stop();
+        slide.run();
+
+    }, '#slide-trigger');
+});
+</script>
+
   </div>
 
   <h2>Version history</h2>

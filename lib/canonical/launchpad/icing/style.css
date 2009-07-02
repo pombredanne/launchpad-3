@@ -274,6 +274,11 @@ a[onclick], .collapsible legend a, a.js-action               {color: #093;}
 a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
 a.js-action:active {color: #093;}
 
+/* The js-action class is also used for non-links, for example, with
+ * expand/collapse sections. */
+.widget-hd.js-action {color: #093; cursor:pointer}
+.widget-hd.js-action:hover {text-decoration: underline;}
+
 /* Help links */
 a.help {
   border-bottom: 1px dotted #03a;
@@ -1763,9 +1768,21 @@ p.update-failure-message {
 a.update-retry {
     padding-left: 1em;
 }
+
 dl#ppa_packaging dd {
     margin-left: 16px;
 }
+#related-ppa-versions .widget-bd {
+    margin-left: 2em;
+}
+/* Ensure that when we add the lazr-closed class via js that the
+ * slider body will not be visible. */
+#related-ppa-versions .widget-bd.lazr-closed {
+    height: 0px;
+    overflow: hidden;
+    display: block;
+}
+
 /* Archive subscription confirmation should be transparent
  * to users, hence the button styled as a link. */
 form.archive-subscription-activation button {
