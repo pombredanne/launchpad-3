@@ -79,7 +79,7 @@ class VPOExportSet:
             JOIN TranslationTemplateItem ON
                 TranslationTemplateItem.potemplate = %s AND
                 TranslationTemplateItem.potmsgset = POTMsgSet.id
-            JOIN TranslationMessage ON (
+            LEFT JOIN TranslationMessage ON (
                 TranslationMessage.potmsgset =
                     TranslationTemplateItem.potmsgset AND
                 TranslationMessage.is_current IS TRUE AND
