@@ -49,6 +49,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
@@ -81,7 +82,7 @@ def landmark_key(landmark):
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
                     HasTranslationTemplatesMixin,
-                    StructuralSubscriptionTargetMixin):
+                    StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
     implements(
         IProductSeries, IHasTranslationTemplates,
@@ -455,7 +456,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             Product.official_rosetta == True)
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
-    @cachedproperty
+    @property
     def potemplate_count(self):
         """See `IProductSeries`."""
         return self.getCurrentTranslationTemplates().count()

@@ -42,7 +42,7 @@ Now we test if we edited it successfully.
 
 The Firefox product's trunk series is set as the development focus:
 
-    >>> browser.open('http://launchpad.dev/firefox')
+    >>> browser.open('http://launchpad.dev/firefox/+series')
     >>> print browser.contents
     <!...
     ...
@@ -60,6 +60,7 @@ We can change this to the 1.0 series through the edit form:
     >>> browser.getControl(name='field.actions.change').click()
     >>> print browser.url
     http://launchpad.dev/firefox
+    >>> browser.getLink('View full history').click()
     >>> print browser.contents
     <!...
     ...

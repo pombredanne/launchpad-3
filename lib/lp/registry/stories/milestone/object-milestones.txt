@@ -240,8 +240,8 @@ Next, we'll target each bug to the 1.0 milestone:
 
 Observe that both bugs are listed in the 1.0 milestone listing:
 
-    >>> browser.open('http://launchpad.dev/firefox')
-    >>> browser.getLink('Milestone history').click()
+    >>> browser.open('http://launchpad.dev/firefox/trunk')
+    >>> browser.getLink('All milestones').click()
     >>> browser.getLink(milestone_regex).click()
     >>> print browser.title
     Mozilla Firefox 1.0
@@ -323,8 +323,7 @@ Mozilla Firefox product, to complement the existing series "1.0":
 
 We'll also create a new test milestone within the "trunk" series:
 
-    >>> browser.open('http://launchpad.dev/firefox')
-    >>> browser.getLink('trunk').click()
+    >>> browser.open('http://launchpad.dev/firefox/trunk')
     >>> print browser.title
     Mozilla Firefox trunk series
 

@@ -136,6 +136,8 @@ class ExistingPOFileInDatabase:
               POFile.id=%(pofile)s
             JOIN TranslationMessage ON
               POTMsgSet.id=TranslationMessage.potmsgset AND
+              (TranslationMessage.potemplate=POTemplate.id OR
+               TranslationMessage.potemplate IS NULL) AND
               POFile.language=TranslationMessage.language AND
               POFile.variant IS NOT DISTINCT FROM TranslationMessage.variant
             %(translation_joins)s
@@ -185,7 +187,7 @@ class ExistingPOFileInDatabase:
 
                 for plural in range(TranslationConstants.MAX_PLURAL_FORMS):
                     local_vars = locals()
-                    msgstr = getattr(local_vars, 'msgstr' + str(plural), None)
+                    msgstr = local_vars.get('msgstr' + str(plural), None)
                     if (msgstr is not None and
                         ((len(message.translations) > plural and
                           message.translations[plural] is None) or
