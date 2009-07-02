@@ -1131,7 +1131,12 @@ class CurrentTranslationMessageView(LaunchpadView):
     def _set_dismiss_flags(self, local_suggestions, imported):
         """Set dismissal flags.
 
-        The flags are all initialized as False."""
+        The flags are all initialized as False.
+
+        :param local_suggestions: The list of local suggestions.
+        :param imported: The imported (packaged) translation for this
+            message or None if there is no such translation.
+        """
         # Only official translators can dismiss anything.
         if not self.user_is_official_translator:
             return

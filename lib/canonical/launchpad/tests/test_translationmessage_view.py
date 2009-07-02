@@ -109,7 +109,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         self._assertConfirmEmptyPluralPackaged(False, False, True, False)
 
     def test_packaged_suggestion(self):
-        # If there is an packaged suggestion, it can be dismissed.
+        # If there is a packaged suggestion, it can be dismissed.
         packaged = self._makeTranslation(is_packaged=True)
         message = self._makeTranslation()
         new_packaged = self._makeTranslation(is_packaged=True)
