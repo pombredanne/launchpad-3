@@ -485,6 +485,12 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def makeRevisionsAddedWithMergeCommit(self, authors=None,
                                           include_ghost=False):
+        """Create a RevisionsAdded job with a revision that is a merge.
+
+        :param authors: If specified, the list of authors of the commit
+            that merges the others.
+        :param include_ghost:If true, add revision 2c as a ghost revision.
+        """
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.branch.nick = 'nicholas'
@@ -504,6 +510,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         return RevisionsAddedJob.create(branch, 'rev2d-id', 'rev2d-id', '')
 
     def test_getMergedRevisionIDs(self):
+        """Ensure the correct revision ids are returned for a merge."""
         job = self.makeRevisionsAddedWithMergeCommit(include_ghost=True)
         job.bzr_branch.lock_write()
         graph = job.bzr_branch.repository.get_graph()
@@ -512,6 +519,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                          job.getMergedRevisionIDs('rev2d-id', graph))
 
     def test_findRelatedBMP(self):
+        """The related branch merge proposals can be identified."""
         self.useBzrBranches()
         target_branch, tree = self.create_branch_and_tree('tree')
         desired_proposal = self.factory.makeBranchMergeProposal(
@@ -527,7 +535,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual([desired_proposal],
                          list(job.findRelatedBMP(['rev2a-id'])))
 
-    def test_getMergeAuthors(self):
+    def test_getAuthors(self):
+        """Ensure getAuthors returns the authors for the revisions."""
         job = self.makeRevisionsAddedWithMergeCommit()
         job.bzr_branch.lock_write()
         self.addCleanup(job.bzr_branch.unlock)
@@ -536,7 +545,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
                          job.getAuthors(revision_ids, graph))
 
-    def test_getMergeAuthors_with_ghost(self):
+    def test_getAuthors_with_ghost(self):
+        """getAuthors ignores ghosts when returning the authors."""
         job = self.makeRevisionsAddedWithMergeCommit(include_ghost=True)
         job.bzr_branch.lock_write()
         graph = job.bzr_branch.repository.get_graph()
@@ -561,6 +571,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         '  rev1\n', message)
 
     def test_getRevisionMessage_with_merge_authors(self):
+        """Merge authors are included after the main bzr log."""
         job = self.makeRevisionsAddedWithMergeCommit()
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
@@ -574,6 +585,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'Merge authors: bar@, baz@, foo@, qux@\n', message)
 
     def test_getRevisionMessage_with_merge_authors_and_authors(self):
+        """Merge authors are separate from normal authors."""
         job = self.makeRevisionsAddedWithMergeCommit(authors=['quxx'])
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
@@ -588,6 +600,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'Merge authors: bar@, baz@, foo@, qux@\n', message)
 
     def test_getRevisionMessage_with_related_BMP(self):
+        """Information about related proposals is displayed."""
         job = self.makeRevisionsAddedWithMergeCommit()
         hacker = self.factory.makePerson(displayname='J. Random Hacker',
                                          name='jrandom')
@@ -610,6 +623,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             message)
 
     def test_getRevisionMessage_with_related_approved_BMP(self):
+        """The approver is shown for approved proposals."""
         job = self.makeRevisionsAddedWithMergeCommit()
         hacker = self.factory.makePerson(displayname='J. Random Hacker',
                                          name='jrandom')
@@ -641,6 +655,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             % canonical_url(bmp), message)
 
     def test_getRevisionMessage_with_related_rejected_BMP(self):
+        """The reviewer is shown for non-approved proposals."""
         job = self.makeRevisionsAddedWithMergeCommit()
         hacker = self.factory.makePerson(displayname='J. Random Hacker',
                                          name='jrandom')
