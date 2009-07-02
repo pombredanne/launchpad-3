@@ -5,7 +5,8 @@ It's time to check the translation upload function.
    >>> import os.path
    >>> import transaction
    >>> from canonical.launchpad.database import SourcePackageRelease
-   >>> from canonical.launchpad.interfaces import ITranslationImportQueue
+   >>> from lp.translations.interfaces.translationimportqueue import (
+   ...     ITranslationImportQueue)
    >>> from canonical.librarian.interfaces import ILibrarianClient
    >>> translation_import_queue = getUtility(ITranslationImportQueue)
    >>> client = getUtility(ILibrarianClient)

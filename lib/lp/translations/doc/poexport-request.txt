@@ -4,7 +4,8 @@ The queue of export requests is served by a cron script. Let's check if it can
 serve those requests properly.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+    >>> from lp.translations.interfaces.poexportrequest import (
+    ...     IPOExportRequestSet)
     >>> from lp.translations.utilities.tests.helpers import (
     ...     is_valid_mofile)
 
@@ -40,7 +41,7 @@ Here's somebody to make a request.
 
 Our user requests the Catalan and Czech translations of a template.
 
-    >>> from canonical.launchpad.database import POTemplate
+    >>> from lp.translations.model.potemplate import POTemplate
     >>> potemplate = POTemplate.get(2)
     >>> ca = potemplate.getPOFileByLang('ca')
     >>> cs = potemplate.getPOFileByLang('cs')
@@ -181,7 +182,8 @@ Only the Spanish request is new, and that goes into the queue.
 
 Let's try requesting an export in MO format:
 
-    >>> from canonical.launchpad.interfaces import TranslationFileFormat
+    >>> from lp.translations.interfaces.translationfileformat import (
+    ...     TranslationFileFormat)
     >>> request_set.addRequest(person, None, [cs], TranslationFileFormat.MO)
     >>> process_queue(MockTransactionManager(), MockLogger())
     log> Exporting objects for Mark Shuttleworth, related to template pmount

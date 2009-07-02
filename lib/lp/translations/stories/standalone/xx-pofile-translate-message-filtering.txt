@@ -162,7 +162,8 @@ navigation.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IProductSet, ITranslatorSet)
+    ...     ILanguageSet, IPersonSet, IProductSet)
+    >>> from lp.translations.interfaces.translator import ITranslatorSet
 
     # Evolution uses Restricted mode, so a translation without reviewer
     # is closed.  Assign an en_AU reviewer to active the translation.

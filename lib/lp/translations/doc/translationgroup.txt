@@ -7,7 +7,8 @@
 
 Here are various sets of things that we'll need.
 
-    >>> from canonical.launchpad.interfaces import ITranslationGroupSet
+    >>> from lp.translations.interfaces.translationgroup import (
+    ...     ITranslationGroupSet)
     >>> translation_group_set = getUtility(ITranslationGroupSet)
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -16,13 +17,13 @@ Here are various sets of things that we'll need.
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> product_set = getUtility(IProductSet)
 
-    >>> from canonical.launchpad.interfaces import ITranslatorSet
+    >>> from lp.translations.interfaces.translator import ITranslatorSet
     >>> translator_set = getUtility(ITranslatorSet)
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> language_set = getUtility(ILanguageSet)
 
-    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
 Here are Carlos and No Privileges Person. Carlos manages the translation group
@@ -56,7 +57,8 @@ Let's make it the translation group for Evolution.
 
 Let's only allow translators from that group to translate.
 
-    >>> from canonical.launchpad.interfaces import TranslationPermission
+    >>> from lp.translations.interfaces.translationgroup import (
+    ...     TranslationPermission)
     >>> evolution.translationpermission = TranslationPermission.CLOSED
 
 No Privileges Person isn't allowed to translate into Welsh.

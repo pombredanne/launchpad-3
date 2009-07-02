@@ -1,6 +1,6 @@
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IRosettaStats
+from lp.translations.interfaces.rosettastats import IRosettaStats
 
 # XXX: Carlos Perello Marin 2005-04-14 bug=396:
 # This code should be change to be an adaptor.

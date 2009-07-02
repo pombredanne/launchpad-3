@@ -19,8 +19,9 @@ Here we have some imports and utility fetch.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IDistroSeries, ILaunchpadCelebrities,
-    ...     IProductSet, ITranslationImportQueue, ISourcePackageNameSet,
-    ...     RosettaImportStatus)
+    ...     IProductSet, ISourcePackageNameSet)
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from canonical.launchpad.database import (
     ...     DistroSeries, ProductSeries, SourcePackageName)
     >>> from canonical.launchpad.ftests import login, syncUpdate
@@ -250,7 +251,7 @@ Let's attach the .pot file
 
 Create the template name and attach this new import to it.
 
-    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> subset = potemplateset.getSubset(
     ...     distroseries=hoary_distroseries, sourcepackagename=kdebase)
@@ -318,7 +319,6 @@ We will see it working here with this example:
 
 Create the template name and attach this new import to it.
 
-    >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> subset = potemplateset.getSubset(
     ...     distroseries=hoary_distroseries, sourcepackagename=kdebase)
@@ -366,7 +366,6 @@ First, we are going to add two new sourcepackagenames for this test,
 koffice and koffice-l10n. The first is from where the .pot
 file come and the other for the .po files.
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> koffice = sourcepackagenameset.new('koffice')
     >>> koffice_l10n = sourcepackagenameset.new('koffice-l10n')
@@ -1049,9 +1048,8 @@ having pending imports again.
 addOrUpdateEntry adds a new entry to the import queue so we can handle it
 later with poimport script.
 
-    >>> from lp.translations.utilities import (
+    >>> from lp.translations.utilities.translation_export import (
     ...     LaunchpadWriteTarFile)
-    >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
     >>> potemplate_subset = potemplate_set.getSubset(
     ...     productseries=evolution_productseries)

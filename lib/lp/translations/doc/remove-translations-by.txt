@@ -46,7 +46,8 @@ to be deleted.  (But again, they are deleted only if they match all
 criteria).
 
     >>> from canonical.launchpad.ftests.script import run_script
-    >>> from canonical.launchpad.interfaces import RosettaTranslationOrigin
+    >>> from lp.translations.interfaces.translationmessage import (
+    ...     RosettaTranslationOrigin)
     >>> from storm.store import Store
 
     >>> message = factory.makePOTMsgSet(

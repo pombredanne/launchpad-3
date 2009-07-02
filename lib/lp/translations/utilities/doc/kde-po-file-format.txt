@@ -9,10 +9,11 @@ Such features include plural forms support and context support.
 == Helper imports ==
 
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IProductSet, TranslationFileFormat)
-    >>> from canonical.launchpad.database import (
-    ...     POTemplateSubset)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.translations.interfaces.translationfileformat import (
+    ...     TranslationFileFormat)
+    >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -229,8 +230,10 @@ Let's define a helper function for the exports.
 
     >>> from zope.component import getAdapter
     >>> def export_with_format(translation_file, format):
-    ...     from canonical.launchpad.interfaces import (
-    ...         ITranslationExporter, ITranslationFileData)
+    ...     from lp.translations.interfaces.translationexporter import (
+    ...         ITranslationExporter)
+    ...     from lp.translations.interfaces.translationcommonformat import (
+    ...         ITranslationFileData)
     ...
     ...     translation_exporter = getUtility(ITranslationExporter)
     ...     translation_format_exporter = (

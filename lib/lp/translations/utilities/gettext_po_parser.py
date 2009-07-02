@@ -24,11 +24,17 @@ from email.Utils import parseaddr
 from zope.interface import implements
 from zope import datetime as zope_datetime
 
-from canonical.launchpad.interfaces import (
-    ITranslationHeaderData, TooManyPluralFormsError, TranslationConstants,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+from lp.translations.interfaces.translationimporter import (
+    TooManyPluralFormsError,
+    TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError)
+from lp.translations.interfaces.translationcommonformat import (
+    ITranslationHeaderData)
+from lp.translations.interfaces.translations import (
+    TranslationConstants)
 from lp.translations.utilities.translation_common_format import (
-    TranslationFileData, TranslationMessageData)
+    TranslationFileData,
+    TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
 

@@ -7,8 +7,11 @@ First, we need some imports.
 
     >>> from StringIO import StringIO
     >>> from zope.publisher.browser import FileUpload
-    >>> from canonical.launchpad.interfaces import (
-    ...     ITranslationImportQueue, IPOTemplateSet, IDistributionSet,
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     ITranslationImportQueue)
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -109,7 +112,7 @@ Let's check the traversal code.
 
     >>> from zope.security.proxy import isinstance
     >>> from lp.translations.browser.potemplate import POTemplateNavigation
-    >>> from canonical.launchpad.database import POFile, DummyPOFile
+    >>> from lp.translations.model.pofile import POFile, DummyPOFile
 
 First, what happens if we get any method that is not supported?
 

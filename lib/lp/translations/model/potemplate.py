@@ -64,7 +64,8 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
 from lp.translations.interfaces.vpotexport import IVPOTExportSet
 from lp.translations.interfaces.potmsgset import BrokenTextError
-from lp.translations.utilities import TranslationMessageData
+from lp.translations.utilities.translation_common_format import (
+    TranslationMessageData)
 
 
 log = logging.getLogger(__name__)

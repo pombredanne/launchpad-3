@@ -13,7 +13,8 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
-from canonical.launchpad.database import POTemplate, POTMsgSet
+from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.interfaces.vpotexport import IVPOTExport, IVPOTExportSet
 class VPOTExportSet:
     """Retrieve collections of VPOTExport objects."""

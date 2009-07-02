@@ -3,8 +3,8 @@
 VPOTExportSet is a set of rows that represent a POTemplate content. It's
 used to serialise that template and store it as an exported file.
 
-    >>> from canonical.launchpad.interfaces import IVPOTExportSet
-    >>> from canonical.launchpad.database import POTemplate
+    >>> from lp.translations.interfaces.vpotexport import IVPOTExportSet
+    >>> from lp.translations.model.potemplate import POTemplate
 
 We need a template to export, for instance, the one with id = 1.
 

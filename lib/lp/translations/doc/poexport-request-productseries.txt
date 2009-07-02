@@ -2,7 +2,8 @@
 
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+    >>> from lp.translations.interfaces.poexportrequest import (
+    ...     IPOExportRequestSet)
 
 This is a dummy logger class to capture the export's log messages.
 
@@ -18,7 +19,8 @@ consists of a series of requests for all templates and translations attached
 to the product series.
 
     >>> from canonical.launchpad.database import (
-    ...     POTemplate, Product, ProductSeries)
+    ...     Product, ProductSeries)
+    >>> from lp.translations.model.potemplate import POTemplate
     >>> evolution_product = Product.selectOneBy(name='evolution')
     >>> evolution_trunk = ProductSeries.selectOneBy(
     ...     product=evolution_product, name='trunk')

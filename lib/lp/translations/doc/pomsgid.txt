@@ -3,7 +3,7 @@ POMsgID.byMsgid()
 
 Test that byMsgid is working:
 
->>> from canonical.launchpad.database import POMsgID
+>>> from lp.translations.model.pomsgid import POMsgID
 >>> created = POMsgID(msgid="This is a launchpad test")
 >>> got = POMsgID.byMsgid("This is a launchpad test")
 >>> got == created

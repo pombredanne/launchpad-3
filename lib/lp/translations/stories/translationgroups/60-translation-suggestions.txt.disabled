@@ -14,7 +14,8 @@ suggestions in Spanish.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IDistributionSet, ITranslatorSet)
+    ...     ILanguageSet, IPersonSet, IDistributionSet)
+    >>> from lp.translations.interfaces.translator import ITranslatorSet
 
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

@@ -54,10 +54,13 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from lp.code.model.branch import Branch
 from canonical.launchpad.database import (
     Archive, Bounty, Bug, BugTracker, BugWatch, Component, Country,
-    Distribution, DistroArchSeries, DistroSeries, Language, LanguagePack,
-    Person, POTemplate, Processor, ProcessorFamily, ProductSeries,
-    SourcePackageRelease, Specification, Sprint, TranslationGroup,
-    TranslationMessage)
+    Distribution, DistroArchSeries, DistroSeries, Language, Person,
+    Processor, ProcessorFamily, ProductSeries, SourcePackageRelease,
+    Specification, Sprint)
+from lp.translations.model.languagepack import LanguagePack
+from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.translationgroup import TranslationGroup
+from lp.translations.model.translationmessage import TranslationMessage
 from canonical.database.sqlbase import quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import ArchivePurpose

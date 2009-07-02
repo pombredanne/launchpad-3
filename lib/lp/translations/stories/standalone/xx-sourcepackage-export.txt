@@ -182,7 +182,8 @@ native file format.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from lp.translations.model.potemplate import POTemplateSubset
-    >>> from canonical.launchpad.interfaces import TranslationFileFormat
+    >>> from lp.translations.interfaces.translationfileformat import (
+    ...     TranslationFileFormat)
     >>> hoary = ubuntu.getSeries('hoary')
     >>> hoary_subset = POTemplateSubset(distroseries=hoary)
     >>> an_evolution_template = hoary_subset.getPOTemplateByPath(

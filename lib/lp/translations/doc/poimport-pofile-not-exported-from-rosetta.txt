@@ -20,8 +20,9 @@ warn the uploader about this.
 Here are some imports we need to get this test running.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
-    >>> from canonical.launchpad.database import POTemplateSubset
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     ITranslationImportQueue, RosettaImportStatus)
+    >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
@@ -29,10 +30,6 @@ Here are some imports we need to get this test running.
 We need this for the Librarian to work properly.
 
     >>> import transaction
-
-And also, the DBSchema to change the imports status
-
-    >>> from canonical.launchpad.interfaces import RosettaImportStatus
 
 Login as an admin to be able to do changes to the import queue.
 

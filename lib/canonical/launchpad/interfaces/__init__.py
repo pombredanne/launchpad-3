@@ -149,5 +149,6 @@ from lp.answers.interfaces.questionreopening import *
 from lp.answers.interfaces.questionsubscription import *
 from lp.answers.interfaces.questiontarget import *
 
+from lp.translations.interfaces.translationimportqueue import ITranslationImportQueue
 from canonical.launchpad.interfaces._schema_circular_imports import *
 

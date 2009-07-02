@@ -5,8 +5,10 @@ Let's do some imports we will need to test this class.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, ITranslationMessage,
-    ...     ITranslatorSet)
+    ...     ILanguageSet, IPersonSet)
+    >>> from lp.translations.interfaces.translationmessage import (
+    ...     ITranslationMessage)
+    >>> from lp.translations.interfaces.translator import ITranslatorSet
 
     >>> login('carlos@canonical.com')
     >>> pofile_es = factory.makePOFile(language_code='es')
@@ -106,7 +108,8 @@ a single translation group.
     >>> product = productseries.product
     >>> product.translationgroup = factory.makeTranslationGroup(product.owner)
 
-    >>> from canonical.launchpad.interfaces import TranslationPermission
+    >>> from lp.translations.interfaces.translationgroup import (
+    ...     TranslationPermission)
     >>> product.translationpermission = TranslationPermission.STRUCTURED
 
 The only Serbian reviewer in this translation group is 'name16' user.

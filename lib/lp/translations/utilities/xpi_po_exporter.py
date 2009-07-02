@@ -10,9 +10,10 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-    ITranslationFormatExporter, TranslationFileFormat)
-
+from lp.translations.interfaces.translationexporter import (
+    ITranslationFormatExporter)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.utilities.gettext_po_exporter import (
     GettextPOExporter)
 

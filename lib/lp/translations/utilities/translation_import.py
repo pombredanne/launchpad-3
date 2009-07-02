@@ -20,11 +20,23 @@ from operator import attrgetter
 from canonical.database.sqlbase import cursor, quote
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (
-    IPersonSet, ITranslationExporter, ITranslationImporter,
-    NotExportedFromLaunchpad, OutdatedTranslationError,
-    PersonCreationRationale, RosettaImportStatus, TranslationConflict,
-    TranslationConstants, TranslationFileFormat)
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale)
+from lp.translations.interfaces.translationexporter import (
+    ITranslationExporter)
+from lp.translations.interfaces.translationimporter import (
+    ITranslationImporter,
+    NotExportedFromLaunchpad,
+    OutdatedTranslationError)
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
+from lp.translations.interfaces.translationmessage import (
+    TranslationConflict)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
+from lp.translations.interfaces.translations import (
+    TranslationConstants)
 from canonical.launchpad.interfaces.emailaddress import InvalidEmailAddress
 from lp.translations.utilities.kde_po_importer import (
     KdePOImporter)

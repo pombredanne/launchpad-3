@@ -14,9 +14,12 @@ import subprocess
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-    ITranslationExporter, ITranslationFormatExporter, TranslationFileFormat,
+from lp.translations.interfaces.translationexporter import (
+    ITranslationExporter,
+    ITranslationFormatExporter,
     UnknownTranslationExporterError)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.utilities.translation_export import (
     ExportFileStorage)
 

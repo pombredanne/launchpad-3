@@ -16,9 +16,10 @@ notify the user about them.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITranslationImportQueue)
-    >>> from canonical.launchpad.database import POTemplateSubset
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     ITranslationImportQueue)
+    >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -26,7 +27,8 @@ Here are some imports we need to get this test running.
 
 And also, the DBSchema to change the imports status
 
-    >>> from canonical.launchpad.interfaces import RosettaImportStatus
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     RosettaImportStatus)
 
 Login as an admin to be able to do changes to the import queue.
 

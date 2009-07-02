@@ -5,8 +5,10 @@ ITranslationImportQueueEntry object.
 
     >>> from zope.component import getUtility, getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
-    >>> from canonical.launchpad.browser import TranslationImportQueueEntryView
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     ITranslationImportQueue)
+    >>> from lp.translations.browser.translationimportqueue import (
+    ...     TranslationImportQueueEntryView)
     >>> from canonical.launchpad.layers import TranslationsLayer, setFirstLayer
 
 This view is only accessible for administrators.

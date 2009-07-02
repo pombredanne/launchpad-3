@@ -19,10 +19,12 @@ from StringIO import StringIO
 from zope.component import subscribers
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-    IExportedTranslationFile, ITranslationExporter,
-    ITranslationFormatExporter, TranslationFileFormat)
-
+from lp.translations.interfaces.translationexporter import (
+    IExportedTranslationFile,
+    ITranslationExporter,
+    ITranslationFormatExporter)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 
 class ExportedTranslationFile:
     """See `IExportedTranslationFile`."""

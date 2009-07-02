@@ -347,7 +347,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
-        from canonical.launchpad.database import POFile
+        from lp.translations.model.pofile import POFile
         clauses = [
             "POFile.potemplate = TranslationTemplateItem.potemplate",
             "TranslationTemplateItem.potmsgset = %s" % (

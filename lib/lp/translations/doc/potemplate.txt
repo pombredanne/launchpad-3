@@ -3,7 +3,7 @@
 Test that the security setup for IPOTemplateSet is working
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
 == getAllByName ==
@@ -213,8 +213,8 @@ POTemplate is an object with all strings that must be translated for a
 concrete context.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.database import POTemplate
-    >>> from canonical.launchpad.interfaces import IPOTemplate
+    >>> from lp.translations.model.potemplate import POTemplate
+    >>> from lp.translations.interfaces.potemplate import IPOTemplate
     >>> potemplate = POTemplate.get(1)
 
 It implements the IPOTemplate interface.

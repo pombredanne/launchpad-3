@@ -17,7 +17,9 @@ test too much.
     ...     KarmaCategory, SourcePackageName)
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IKarmaCacheManager, IPersonSet,
-    ...     IProductSet, ITranslationsOverview)
+    ...     IProductSet)
+    >>> from lp.translations.interfaces.translationsoverview import (
+    ...     ITranslationsOverview)
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> karmacachemanager = getUtility(IKarmaCacheManager)
     >>> person_set = getUtility(IPersonSet)

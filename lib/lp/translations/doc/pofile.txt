@@ -7,8 +7,10 @@ Get evolution template for Ubuntu Hoary
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILanguageSet, IPersonSet, IPOFile,
-    ...     IPOTemplateSet, ISourcePackageNameSet)
+    ...     IDistributionSet, ILanguageSet, IPersonSet,
+    ...     ISourcePackageNameSet)
+    >>> from lp.translations.interfaces.pofile import IPOFile
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distributionset = getUtility(IDistributionSet)
@@ -251,7 +253,8 @@ This is the new header we are going to apply.
 
 We can get an ITranslationHeaderData from the file format importer.
 
-    >>> from canonical.launchpad.interfaces import ITranslationImporter
+    >>> from lp.translations.interfaces.translationimporter import (
+    ...     ITranslationImporter)
     >>> translation_importer = getUtility(ITranslationImporter)
     >>> format_importer = translation_importer.getTranslationFormatImporter(
     ...     pofile.potemplate.source_file_format)
@@ -368,9 +371,9 @@ Do some needed imports.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces import IProductSet
-    >>> from canonical.launchpad.interfaces import ITranslationGroupSet
-    >>> from canonical.launchpad.interfaces import TranslationPermission
-    >>> from canonical.launchpad.database import POFile
+    >>> from lp.translations.interfaces.translationgroup import (
+    ...     ITranslationGroupSet, TranslationPermission)
+    >>> from lp.translations.model.pofile import POFile
     >>> from canonical.launchpad.ftests import login
     >>> person_set = getUtility(IPersonSet)
 
@@ -1248,7 +1251,8 @@ object. It implements the ITranslationFileData interface which is a
 common file format in-memory to convert from one file format to
 another.
 
-    >>> from canonical.launchpad.interfaces import ITranslationFileData
+    >>> from lp.translations.interfaces.translationcommonformat import (
+    ...     ITranslationFileData)
     >>> evolution_sourcepackagename = sourcepackagenameset['evolution']
     >>> ubuntu = distributionset['ubuntu']
     >>> hoary = ubuntu['hoary']

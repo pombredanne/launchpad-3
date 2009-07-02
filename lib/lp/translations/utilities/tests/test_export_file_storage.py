@@ -8,7 +8,7 @@ from cStringIO import StringIO
 from tarfile import TarFile
 import unittest
 
-from lp.translations.utilities import ExportFileStorage
+from lp.translations.utilities.translation_export import ExportFileStorage
 from canonical.testing import LaunchpadZopelessLayer
 
 

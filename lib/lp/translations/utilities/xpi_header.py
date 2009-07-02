@@ -12,7 +12,8 @@ from StringIO import StringIO
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ITranslationHeaderData
+from lp.translations.interfaces.translationcommonformat import (
+    ITranslationHeaderData)
 from lp.translations.interfaces.translationimporter import (
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 

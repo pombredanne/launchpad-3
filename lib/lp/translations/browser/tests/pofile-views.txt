@@ -7,10 +7,13 @@ First, we need some imports.
     >>> from StringIO import StringIO
     >>> from zope.publisher.browser import FileUpload
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.database import (
+    >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage, DummyTranslationMessage)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ITranslationImportQueue, IPOTemplateSet, IDistributionSet,
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     ITranslationImportQueue)
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from canonical.launchpad.layers import TranslationsLayer
 
@@ -236,7 +239,7 @@ situations, like when this set of actions happen:
 The problem here is that some of the messages on that form are disabled so
 their sequence is 0.
 
-    >>> from canonical.launchpad.database import POTMsgSet
+    >>> from lp.translations.model.potmsgset import POTMsgSet
     >>> potmsgset = POTMsgSet.get(161)
     >>> potmsgset.setSequence(pofile_es.potemplate, 0)
     >>> potmsgset.getSequence(pofile_es.potemplate)

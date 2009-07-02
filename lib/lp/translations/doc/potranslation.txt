@@ -1,10 +1,9 @@
-
 POTranslation
 =============
 
 This is the class that holds the text of translations in the database.
 
-    >>> from canonical.launchpad.database import POTranslation
+    >>> from lp.translations.model.potranslation import POTranslation
 
 Creating one is easy.
 

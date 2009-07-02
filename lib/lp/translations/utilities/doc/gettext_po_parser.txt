@@ -3,7 +3,8 @@
 The PO parser handles GNU gettext format human readable files.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import ITranslationHeaderData
+    >>> from lp.translations.interfaces.translationcommonformat import (
+    ...     ITranslationHeaderData)
     >>> from lp.translations.utilities.gettext_po_parser import (
     ...     POHeader, POParser)
 

@@ -7,14 +7,14 @@ from POTemplate down to POTranslation.
 
 Get a PO template.
 
-    >>> from canonical.launchpad.database import POTemplate
+    >>> from lp.translations.model.potemplate import POTemplate
     >>> template = POTemplate.get(1)
     >>> template.name == 'evolution-2.2'
     True
 
 Check that the PO template has a certain message ID.
 
-    >>> from canonical.launchpad.database import POMsgID
+    >>> from lp.translations.model.pomsgid import POMsgID
     >>> pomsgid = POMsgID.byMsgid('evolution addressbook')
     >>> template.hasMessageID(pomsgid, None)
     True
@@ -71,7 +71,8 @@ Check that this submission is the published one
 
 Test the origin enum column.
 
-    >>> from canonical.launchpad.interfaces import RosettaTranslationOrigin
+    >>> from lp.translations.interfaces.translationmessage import (
+    ...     RosettaTranslationOrigin)
     >>> message.origin == RosettaTranslationOrigin.SCM
     True
 

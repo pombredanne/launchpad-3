@@ -109,7 +109,8 @@ will be held for review by the translation's managers.
 If Evolution's translation is set to Closed mode, Joe will not be able
 to submit suggestions.
 
-    >>> from canonical.launchpad.interfaces import TranslationPermission
+    >>> from lp.translations.interfaces.translationgroup import (
+    ...     TranslationPermission)
     >>> evolution.translationpermission = TranslationPermission.CLOSED
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/'

@@ -12,7 +12,10 @@ were updated since the export date for the associate FULL export.
     >>> from zope.component import getUtility
     >>> from zope.interface import providedBy
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILanguagePack, ILanguagePackSet,
+    ...     IDistributionSet)
+    >>> from lp.translations.interfaces.languagepack import (
+    ...     ILanguagePack,
+    ...     ILanguagePackSet,
     ...     LanguagePackType)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.librarian.interfaces import ILibrarianClient

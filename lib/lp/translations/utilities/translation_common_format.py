@@ -11,9 +11,10 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-    ITranslationFileData, ITranslationMessageData,
+from lp.translations.interfaces.translationimporter import (
     TranslationFormatSyntaxError)
+from lp.translations.interfaces.translationcommonformat import (
+    ITranslationFileData, ITranslationMessageData)
 
 
 class TranslationFileData:

@@ -79,7 +79,7 @@
             interface="lp.translations.interfaces.translationcommonformat.ITranslationMessageData"/>
     </class>
     <securedutility
-        class="lp.translations.utilities.TranslationExporter"
+        class="lp.translations.utilities.translation_export.TranslationExporter"
         provides="lp.translations.interfaces.translationexporter.ITranslationExporter">
         <allow
             interface="lp.translations.interfaces.translationexporter.ITranslationExporter"/>
@@ -225,7 +225,7 @@
             interface="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguageSet"/>
     </securedutility>
     <securedutility
-        class="lp.translations.utilities.TranslationImporter"
+        class="lp.translations.utilities.translation_import.TranslationImporter"
         provides="lp.translations.interfaces.translationimporter.ITranslationImporter">
         <allow
             interface="lp.translations.interfaces.translationimporter.ITranslationImporter"/>

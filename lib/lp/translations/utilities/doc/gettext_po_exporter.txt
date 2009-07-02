@@ -3,7 +3,8 @@
 To export translation files from Rosetta, the data must be displayed in po
 file fomrat which is a text file format.
 
-    >>> from canonical.launchpad.interfaces import TranslationConstants
+    >>> from lp.translations.interfaces.translations import (
+    ...     TranslationConstants)
     >>> from lp.translations.utilities.gettext_po_exporter import (
     ...     comments_text_representation, export_translation_message)
     >>> from lp.translations.utilities.translation_common_format import (

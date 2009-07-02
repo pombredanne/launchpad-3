@@ -7,9 +7,7 @@ import unittest
 from lp.translations.interfaces.translationimporter import (
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from lp.translations.interfaces.translations import TranslationConstants
-from lp.translations.utilities import gettext_po_parser
-from lp.translations.utilities.gettext_po_parser import (
-    POParser)
+import lp.translations.utilities.gettext_po_parser as gettext_po_parser
 
 DEFAULT_HEADER = '''
 msgid ""
@@ -20,7 +18,7 @@ msgstr ""
 class POBasicTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.parser = POParser()
+        self.parser = gettext_po_parser.POParser()
 
     def testEmptyFile(self):
         # The parser reports an empty file as an error.

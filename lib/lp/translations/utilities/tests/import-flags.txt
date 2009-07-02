@@ -14,9 +14,9 @@ We'll be going through usual steps of the PO file lifetime:
 == Helper imports ==
 
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IProductSet)
-    >>> from canonical.launchpad.database import POTemplateSubset
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')

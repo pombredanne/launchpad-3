@@ -6,9 +6,11 @@ We need to get a POTMsgSet object to performe this test.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import TranslationMessage
+    >>> from lp.translations.model.translationmessage import (
+    ...     TranslationMessage)
+    >>> from lp.translations.interfaces.potmsgset import IPOTMsgSet
     >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IPOTMsgSet, IProductSet)
+    ...     ILanguageSet, IPersonSet, IProductSet)
 
     >>> potemplate = factory.makePOTemplate()
     >>> potmsgset = factory.makePOTMsgSet(potemplate=potemplate, singular="bla")
@@ -610,7 +612,8 @@ translation for exactly the same English string, but in a different
 translation template.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPOTemplateSet, IProductSet)
+    ...     IDistributionSet, IProductSet)
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 Suggestions between modules depend also on whether the other translation
 template is available to all users or should be ignored because
@@ -1028,7 +1031,8 @@ However, this one doesn't show up as external suggestion for Spanish.
 Finally, the new `IPOTMsgSet` should have an entry in the
 `TranslationTemplateItem` table once we assign a sequence number.
 
-    >>> from canonical.launchpad.database import TranslationTemplateItem
+    >>> from lp.translations.model.translationtemplateitem import (
+    ...     TranslationTemplateItem)
 
 First, we need a helper function to check whether the potmsgset exists
 in the table or not.

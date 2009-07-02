@@ -9,7 +9,7 @@ from operator import attrgetter
 from cStringIO import StringIO
 from zope.interface.verify import verifyObject
 
-from lp.translations.utilities import (
+from lp.translations.utilities.translation_export import (
     TranslationExporter, ExportedTranslationFile)
 from lp.translations.interfaces.translationexporter import (
     IExportedTranslationFile,

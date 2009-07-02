@@ -4,7 +4,9 @@ On this section, we are going to test the view class for an
 ITranslationMessage object.
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import POFile, TranslationMessage
+    >>> from lp.translations.model.pofile import POFile
+    >>> from lp.translations.model.translationmessage import (
+    ...     TranslationMessage)
     >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp import canonical_url
 
@@ -153,7 +155,7 @@ We will use this helper function to simplify the test:
     # available options to test.
     >>> from sqlobject import SQLObjectNotFound
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.database import POMsgID
+    >>> from lp.translations.model.pomsgid import POMsgID
     >>> def changeMsgID(new_msgid):
     ...     potmsgset = removeSecurityProxy(subview.context.potmsgset)
     ...     try:
@@ -397,7 +399,8 @@ ITranslationMessage.
     >>> from zope.component import getUtility
     >>> from lp.translations.browser.translationmessage import (
     ...     TranslationMessageSuggestions)
-    >>> from canonical.launchpad.interfaces import IPersonSet, IPOTemplateSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 We are going to work with Evolution's evolution-2.2 template.
 

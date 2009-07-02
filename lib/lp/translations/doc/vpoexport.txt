@@ -6,8 +6,8 @@ VPOExport and VPOExportSet classes act as a Python interface to those
 tables.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IVPOExportSet)
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.translations.interfaces.vpoexport import IVPOExportSet
 
     >>> vpoexportset = getUtility(IVPOExportSet)
     >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']

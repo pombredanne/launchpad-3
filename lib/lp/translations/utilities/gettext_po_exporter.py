@@ -17,9 +17,13 @@ import os
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-    ITranslationFormatExporter, TranslationConstants, TranslationFileFormat)
-from lp.translations.utilities import TranslationMessageData
+from lp.translations.interfaces.translationexporter import (
+    ITranslationFormatExporter)
+from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
+from lp.translations.utilities.translation_common_format import (
+    TranslationMessageData)
 from lp.translations.utilities.translation_export import (
     ExportFileStorage)
 

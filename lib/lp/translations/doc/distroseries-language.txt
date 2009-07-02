@@ -8,7 +8,8 @@ will work with spanish in Hoary first.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistroSeriesSet, IDistributionSet, ILanguageSet,
+    ...     IDistroSeriesSet, IDistributionSet, ILanguageSet)
+    >>> from lp.translations.interfaces.distroserieslanguage import (
     ...     IDistroSeriesLanguage)
     >>> distroseriesset = getUtility(IDistroSeriesSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
@@ -79,7 +80,8 @@ hoary_spanish.pofiles is hidding as expected.
 
 We also have DummyDistroSeriesLanguages.
 
-    >>> from canonical.launchpad.database import DummyDistroSeriesLanguage
+    >>> from lp.translations.model.distroserieslanguage import (
+    ...     DummyDistroSeriesLanguage)
     >>> amharic = getUtility(ILanguageSet)['am']
     >>> hoary_amharic = hoary.getDistroSeriesLanguageOrDummy(amharic)
     >>> print hoary_amharic.__class__
