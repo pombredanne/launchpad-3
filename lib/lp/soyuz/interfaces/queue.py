@@ -92,7 +92,8 @@ class PackageUploadStatus(DBEnumeratedType):
     of a DistroSeries. These are managed via the Upload table
     and related tables and eventually (assuming a successful upload into the
     DistroSeries) the effects are published via the PackagePublishing and
-    SourcePackagePublishing tables.  """
+    SourcePackagePublishing tables.
+    """
 
     NEW = DBItem(0, """
         New
@@ -102,7 +103,7 @@ class PackageUploadStatus(DBEnumeratedType):
         here until someone with the right role in the DistroSeries checks
         and either accepts or rejects the upload. If the upload is accepted
         then entries will be made in the overrides tables and further
-        uploads will bypass this state """)
+        uploads will bypass this state. """)
 
     UNAPPROVED = DBItem(1, """
         Unapproved
@@ -112,13 +113,13 @@ class PackageUploadStatus(DBEnumeratedType):
         technical point of view; it has yet to be approved for inclusion in
         this DistroSeries. One use of this state may be for security
         releases where you want the security team of a DistroSeries to
-        approve uploads.  """)
+        approve uploads.""")
 
     ACCEPTED = DBItem(2, """
         Accepted
 
         An upload in this state has passed all the checks required of it and
-        is ready to have its publishing records created.  """)
+        is ready to have its publishing records created.""")
 
     DONE = DBItem(3, """
         Done
@@ -127,7 +128,7 @@ class PackageUploadStatus(DBEnumeratedType):
         needs them and is fully processed into the DistroSeries. This state
         exists so that a logging and/or auditing tool can pick up accepted
         uploads and create entries in a journal or similar before removing
-        the queue item.  """)
+        the queue item.""")
 
     REJECTED = DBItem(4, """
         Rejected
@@ -136,7 +137,7 @@ class PackageUploadStatus(DBEnumeratedType):
         not passed the requirements (technical or human) for entry into the
         DistroSeries it was targetting. As for the 'done' state, this state
         is present to allow logging tools to record the rejection and then
-        clean up any subsequently unnecessary records.  """)
+        clean up any subsequently unnecessary records.""")
 
 
 class IPackageUpload(Interface):

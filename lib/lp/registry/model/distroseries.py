@@ -1284,6 +1284,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):
         """See `IDistroSeries`."""
+        # XXX Julian 2009-07-02 bug=394645
+        # This method is partially deprecated by getPackageUploads(),
+        # see the bug for more info.
 
         default_clauses = ["""
             packageupload.distroseries = %s""" % sqlvalues(self)]

@@ -1709,6 +1709,7 @@ class PackageUploadSet:
     def getAll(self, distroseries, created_since_date=None, status=None,
                archive=None, pocket=None, custom_type=None):
         """See `IPackageUploadSet`."""
+        # XXX Julian 2009-07-02 bug=394645
         # This method is an incremental deprecation of
         # IDistroSeries.getQueueItems(). It's basically re-writing it
         # using Storm queries instead of SQLObject, but not everything

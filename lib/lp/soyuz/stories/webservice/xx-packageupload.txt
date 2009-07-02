@@ -74,4 +74,3 @@ which is a list of URLs to librarian files:
     ...     print entry['custom_file_urls']
     custom1, custom2
     [u'http://.../custom1', u'http://.../custom2']
-
