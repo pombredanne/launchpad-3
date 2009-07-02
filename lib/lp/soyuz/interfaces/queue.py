@@ -510,6 +510,14 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
+    def publish_STATIC_TRANSLATIONS(logger):
+        """Publish this custom item as a static translations tarball.
+
+        This is currently a no-op as we don't publish these files, they only
+        reside in the librarian for later retrieval using the webservice.
+        """
+
+
 class IPackageUploadSet(Interface):
     """Represents a set of IPackageUploads"""
 
@@ -539,6 +547,17 @@ class IPackageUploadSet(Interface):
         :param signing_key: `IGPGKey` of the user requesting this copy.
 
         :return: an `IPackageUpload` record in NEW state.
+        """
+
+    def findSourceUpload(name, version, archive, distribution):
+        """Return a `PackageUpload` for a matching source.
+
+        :param name: a string with the exact source name.
+        :param version: a string with the exact source version.
+        :param archive: source upload target `IArchive`.
+        :param distribution: source upload target `IDistribution`.
+
+        :return: a matching `IPackageUpload` object.
         """
 
     def getBuildByBuildIDs(build_ids):
@@ -670,4 +689,10 @@ class PackageUploadCustomFormat(DBEnumeratedType):
 
         A raw-ddtp-tarball contains all the translated package description
         indexes for a component.
+        """)
+
+    STATIC_TRANSLATIONS = DBItem(4, """
+        raw-translations-static
+
+        A tarball containing raw (Gnome) help file translations.
         """)

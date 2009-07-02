@@ -255,6 +255,8 @@ class CustomUploadFile(NascentUploadFile):
         'raw-translations': PackageUploadCustomFormat.ROSETTA_TRANSLATIONS,
         'raw-dist-upgrader': PackageUploadCustomFormat.DIST_UPGRADER,
         'raw-ddtp-tarball': PackageUploadCustomFormat.DDTP_TARBALL,
+        'raw-translations-static':
+            PackageUploadCustomFormat.STATIC_TRANSLATIONS,
         }
 
     @property

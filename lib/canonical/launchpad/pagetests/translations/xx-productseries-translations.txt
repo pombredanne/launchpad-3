@@ -170,7 +170,8 @@ When the owner now visits the upload page for trunk, there's a notice.
     This project is not configured to use Launchpad for translations.
     </...>
     You can change this in the
-    <a...> project settings</a>.
+    <a...> project settings</a>. (<a...>Getting started with translating your
+    project in Launchpad</a>)
 
 The notice links to the project settings where the option can be set.
 
@@ -188,7 +189,8 @@ An administrator also sees the notice.
     This project is not configured to use Launchpad for translations.
     </...>
     You can change this in the
-    <a...> project settings</a>.
+    <a...> project settings</a>. (<a...>Getting started with translating your
+    project in Launchpad</a>)
 
 A Translations admin who is neither a Launchpad admin nor the project
 owner (and so won't be able to change the project's settings) sees the
@@ -223,4 +225,3 @@ notice but not the link to the project's settings.
     <...>
     This project is not configured to use Launchpad for translations.
     </strong>
-

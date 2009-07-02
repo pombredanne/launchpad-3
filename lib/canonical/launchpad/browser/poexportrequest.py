@@ -24,7 +24,7 @@ class BaseExportView(LaunchpadView):
 
     @cachedproperty
     def uses_translations(self):
-        return len(self.context.getCurrentTranslationTemplates()) > 0
+        return bool(self.context.getCurrentTranslationTemplates().any())
 
     def getDefaultFormat(self):
         """Overridable: default file format to offer."""

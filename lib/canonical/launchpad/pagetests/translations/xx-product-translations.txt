@@ -48,7 +48,8 @@ translation, or link the product to a translatable package.
     >>> print find_main_content(registrant.contents)
     <...How to start using Launchpad Translations...
     This project is not configured to use Launchpad for translations...
-    You can change this in the <a ...>project settings</a>.
+    You can change this in the <a ...>project settings</a>. (<a ...>Getting
+    started with translating your project in Launchpad</a>)
     ...
     To set up gnomebaker for translation in Launchpad, you need to upload a
     translation template for one of its release series.

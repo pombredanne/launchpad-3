@@ -1,4 +1,6 @@
-= Staging migration =
+=================
+Staging migration
+=================
 
 Every once in a while we copy production's database over to staging so that
 testing can be done there on the real database, but without any chance of
@@ -8,24 +10,30 @@ production's Mailman directories so that the mailing lists all stay consistent
 scripts/mlist-sync.py.
 
 
-== Synchronization ==
+Synchronization
+===============
 
 It's actually fairly difficult to recreate what happens during the staging
 sync, but we can get close.  Start off by creating a few mailing lists.  When
 the mailing lists are created, messages get sent to the members of the team
 informing them of their new list.  We can ignore these.
 
-    >>> from canonical.launchpad.ftests import (
-    ...     login, logout, mailinglists_helper)
+    >>> from canonical.launchpad.ftests import login, logout
 
     >>> login('foo.bar@canonical.com')
-    >>> team_one = mailinglists_helper.new_team('staging-one')
-    >>> team_two = mailinglists_helper.new_team('staging-two')
+    >>> from zope.component import getUtility
+
+    >>> owner = factory.makePerson()
+    >>> team_one = factory.makeTeam(owner=owner, name='staging-one')
+    >>> team_two = factory.makeTeam(owner=owner, name='staging-two')
     >>> transaction.commit()
     >>> logout()
-    >>> browser = Browser('no-priv@canonical.com:test')
 
-    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> browser = Browser('%s:%s' %
+    ...     (owner._preferredemail_cached.email,
+    ...      owner._password_cleartext_cached))
+
+    >>> from lp.services.mailman.testing import helpers
     >>> helpers.apply_for_list(browser, 'staging-one')
     >>> helpers.apply_for_list(browser, 'staging-two')
 
@@ -97,7 +105,7 @@ A bunch of messages are sent to the mailing lists.
     ...     smtpd_watcher.wait_for_mbox_delivery('fourth-injection')
 
     >>> from operator import itemgetter
-    >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
+    >>> for message in sorted(smtpd, key=itemgetter('sender')):
     ...     print message['sender']
     staging-one-bounces+anne.person=example.com@lists.launchpad.dev
     staging-one-bounces+anne.person=example.com@lists.launchpad.dev
@@ -157,7 +165,7 @@ Mailman data was copied).  In this case, we just delete the list from Mailman.
 That way if the list is created in Launchpad on staging, the Mailman list will
 also be created.
 
-    >>> from canonical.launchpad.mailman.testing import sync
+    >>> from lp.services.mailman.testing import sync
     >>> sync_details = sync.prepare_for_sync()
 
 Our simulation now has a staging database that has been copied, but the
@@ -220,7 +228,8 @@ web_page_url attributes for these lists should not point to 'prod'.
         staging-two@lists.launchpad.dev
 
 
-== Clean up ==
+Clean up
+========
 
     >>> sync_details.cleanup()
     >>> runmailman.start_mailman(

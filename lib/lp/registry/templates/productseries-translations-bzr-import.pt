@@ -32,17 +32,18 @@
     <tal:admin_or_owner condition="context/product/required:launchpad.Edit">
       You can change this in the
       <a tal:attributes="href view/product_edit_url">
-        project settings</a>.
+        project settings</a>. (<a href="/+help/getting-started-for-your-project.html" target="help">Getting started with translating your project in Launchpad</a>)
     </tal:admin_or_owner>
   </p>
 
   <tal:rosetta condition="context/product/official_rosetta">
   <p>
     You can ask Launchpad for a one-time import of all the translation files
-    (templates and translations) that it finds in 
+    (templates and translations) that it finds in
     <strong><tal:series replace="structure view/series_title">
       Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
-      
+      (<a href="https://help.launchpad.net/Translations/ImportPolicy">Read the
+      translations import policy</a>)
   </p>
   <p tal:condition="not:view/has_imports_enabled" id="settings-display">
   <img src="/@@/info" class="inline-icon" />

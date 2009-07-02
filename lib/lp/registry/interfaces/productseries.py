@@ -22,7 +22,8 @@ from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers)
+    IHasAppointedDriver, IHasDrivers)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone)
 from lp.registry.interfaces.person import IPerson
