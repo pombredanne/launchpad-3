@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'HasTranslationTemplatesMixin',
     'POTemplate',
     'POTemplateSet',
     'POTemplateSubset',
@@ -20,6 +21,8 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
+from storm.expr import Alias, SQL
+from storm.store import Store
 from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -41,15 +44,24 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateSharingSubset, IPOTemplateSubset,
+    IHasTranslationTemplates,
+    IPOTemplate,
+    IPOTemplateSet,
+    IPOTemplateSharingSubset,
+    IPOTemplateSubset,
     LanguageNotFound)
-from lp.translations.interfaces.translationcommonformat import ITranslationFileData
-from lp.translations.interfaces.translationexporter import ITranslationExporter
-from lp.translations.interfaces.translationfileformat import TranslationFileFormat
+from lp.translations.interfaces.translationcommonformat import (
+    ITranslationFileData)
+from lp.translations.interfaces.translationexporter import (
+    ITranslationExporter)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter, TranslationFormatInvalidInputError,
+    ITranslationImporter,
+    TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError)
-from lp.translations.interfaces.translationimportqueue import RosettaImportStatus
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
 from lp.translations.interfaces.vpotexport import IVPOTExportSet
 from lp.translations.interfaces.potmsgset import BrokenTextError
 from lp.translations.utilities import TranslationMessageData
@@ -1369,3 +1381,49 @@ class POTemplateToTranslationFileDataAdapter:
             messages.append(msgset)
 
         return messages
+
+
+class HasTranslationTemplatesMixin:
+    """Methods related to objects having translation templates."""
+    implements(IHasTranslationTemplates)
+
+    def getCurrentTranslationTemplates(self, just_ids=False):
+        """See `IHasTranslationTemplates`."""
+        raise NotImplementedError('This must be provided when subclassing.')
+
+    def getCurrentTranslationFiles(self, just_ids=False):
+        """See `IHasTranslationTemplates`."""
+        # XXX 2009-06-30 Danilo: until Storm can do find() on
+        # ResultSets (bug #338255), we need to manually get a select
+        # and extend it with another condition.
+        current_templates = (
+            self.getCurrentTranslationTemplates()._get_select())
+        for column in current_templates.columns:
+            if column.name == 'id':
+                columns = [column]
+                break
+        assert len(columns) == 1, (
+            'There is no ID column in getCurrentTranslationTemplates '
+            'select query.')
+        current_templates.columns = columns
+        templates = Alias(current_templates, 'potemplates')
+
+        if just_ids:
+            looking_for = POFile.id
+        else:
+            looking_for = POFile
+        store = Store.of(self)
+        if store is None:
+            # If self is a non-DB object like SourcePackage,
+            # it keeps current store in self._store.
+            store = self._store
+        return store.using(POFile, templates).find(
+            looking_for, POFile.potemplate==SQL('potemplates.id'))
+
+    def getObsoleteTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        raise NotImplementedError('This must be provided when subclassing.')
+
+    def getTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        raise NotImplementedError('This must be provided when subclassing.')

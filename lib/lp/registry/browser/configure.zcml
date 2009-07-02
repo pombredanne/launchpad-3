@@ -544,7 +544,7 @@
         facet="overview"
         class="lp.registry.browser.project.ProjectAddProductView"
         permission="launchpad.AnyPerson"
-        template="../templates/product-add-from-project.pt"/>
+        template="../templates/product-new.pt"/>
     <browser:addform
         name="+linkbounty"
         for="lp.registry.interfaces.project.IProject"

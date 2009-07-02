@@ -22,13 +22,13 @@ from lp.translations.interfaces.potmsgset import (
 from lp.translations.interfaces.translationfileformat import TranslationFileFormat
 from lp.translations.interfaces.translationmessage import TranslationConflict
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import ZopelessDatabaseLayer
 
 
 class TestTranslationSharedPOTMsgSets(unittest.TestCase):
     """Test discovery of translation suggestions."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         """Set up context to test in."""
@@ -538,7 +538,7 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
 class TestPOTMsgSetSuggestionsDismissal(unittest.TestCase):
     """Test dimissal of translation suggestions."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def _setDateCreated(self, tm):
         removeSecurityProxy(tm).date_created = self.now()
@@ -682,7 +682,7 @@ class TestPOTMsgSetSuggestionsDismissal(unittest.TestCase):
 class TestPOTMsgSetTranslationMessageConstraints(unittest.TestCase):
     """Test how translation message constraints work."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def gen_now(self):
         now = datetime.now(pytz.UTC)

@@ -23,8 +23,8 @@ from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
-    IHasOwner)
+    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
