@@ -208,7 +208,8 @@ class VPOExportSet:
                                         component=None, languagepack=None):
         """See `IVPOExport`."""
         return self.get_distroseries_pofiles(
-            series, date, component, languagepack).count(POFile.id, distinct=True)
+            series, date, component, languagepack).count(
+                POFile.id, distinct=True)
 
 
 class VPOExport:
