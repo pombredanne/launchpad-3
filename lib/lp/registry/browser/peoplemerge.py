@@ -19,7 +19,8 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus, IEmailAddressSet
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp.interfaces import ILaunchBag
