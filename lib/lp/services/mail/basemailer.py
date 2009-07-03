@@ -87,6 +87,8 @@ class BaseMailer:
         """Add any appropriate attachments to a MailController.
 
         Default implementation does nothing.
+        :param ctrl: The MailController to add attachments to.
+        :param email: The email address of the recipient.
         """
         pass
 
