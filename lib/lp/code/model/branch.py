@@ -466,6 +466,9 @@ class Branch(SQLBase):
                     spec_link.destroySelf))
         for series in self.associatedProductSeries():
             alteration_operations.append(ClearSeriesBranch(series, self))
+        for series in self.getProductSeriesPushingTranslations():
+            alteration_operations.append(
+                ClearSeriesTranslationsBranch(series, self))
 
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
@@ -510,6 +513,14 @@ class Branch(SQLBase):
         return Store.of(self).find(
             ProductSeries,
             ProductSeries.branch == self)
+
+    def getProductSeriesPushingTranslations(self):
+        """See `IBranch`."""
+        # Imported here to avoid circular import.
+        from lp.registry.model.productseries import ProductSeries
+        return Store.of(self).find(
+            ProductSeries,
+            ProductSeries.translations_branch == self)
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
@@ -876,6 +887,21 @@ class ClearSeriesBranch(DeletionOperation):
     def __init__(self, series, branch):
         DeletionOperation.__init__(
             self, series, _('This series is linked to this branch.'))
+        self.branch = branch
+
+    def __call__(self):
+        if self.affected_object.branch == self.branch:
+            self.affected_object.branch = None
+        self.affected_object.syncUpdate()
+
+
+class ClearSeriesTranslationsBranch(DeletionOperation):
+    """Deletion operation that clears a series' translations branch."""
+
+    def __init__(self, series, branch):
+        DeletionOperation.__init__(
+            self, series,
+            _('This series exports its translations to this branch.'))
         self.branch = branch
 
     def __call__(self):

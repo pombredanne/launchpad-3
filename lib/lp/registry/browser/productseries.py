@@ -1,10 +1,11 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """View classes for `IProductSeries`."""
 
 __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
+    'LinkTranslationsBranchView',
     'ProductSeriesBreadcrumbBuilder',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
@@ -892,6 +893,27 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the product series page."""
+
+
+class LinkTranslationsBranchView(LaunchpadEditFormView):
+    """View to set the series' translations export branch."""
+
+    schema = IProductSeries
+    field_names = ['translations_branch']
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Translations export branch updated.')
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the settings page."""
 
 
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
