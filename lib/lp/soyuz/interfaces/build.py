@@ -452,12 +452,20 @@ class IBuildSet(Interface):
         sourcepackagename matches (SQL LIKE).
         """
 
-    def getBuildsForArchive(archive, status=None, name=None, pocket=None):
+    def getBuildsForArchive(archive, status=None, name=None, pocket=None,
+                            arch_tag=None):
         """Return build records targeted to a given IArchive.
 
-        If status is provided, only builders with that status will
-        be returned. If name is passed, return only build which the
-        sourcepackagename matches (SQL LIKE).
+        :param archive: The archive for which builds will be returned.
+        :param status: If status is provided, only builders with that
+            status will be returned.
+        :param name: If name is passed, return only build which the
+            sourcepackagename matches (SQL LIKE).
+        :param pocket: If pocket is provided only builds for that pocket
+            will be returned.
+        :param arch_tag: If arch_tag is provided, only builds for that
+            architecture will be returned.
+        :return: a `ResultSet` representing the requested builds.
         """
 
     def getBuildsByArchIds(arch_ids, status=None, name=None, pocket=None):

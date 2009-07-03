@@ -7,7 +7,7 @@ from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -86,6 +86,53 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         depwait_build.updateDependencies()
         self.assertEquals(depwait_build.dependencies, '')
+
+
+class TestBuildSetGetBuildsForArchive(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Publish some builds for the test archive."""
+        super(TestBuildSetGetBuildsForArchive, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # Create three builds for the publisher's default
+        # distroseries.
+        self.builds = []
+        gedit_src_hist = self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
+        self.builds += gedit_src_hist.createMissingBuilds()
+
+        firefox_src_hist = self.publisher.getPubSource(
+            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED)
+        self.builds += firefox_src_hist.createMissingBuilds()
+
+        gtg_src_hist = self.publisher.getPubSource(
+            sourcename="getting-things-gnome",
+            status=PackagePublishingStatus.PUBLISHED)
+        self.builds += gtg_src_hist.createMissingBuilds()
+
+        # Short-cuts for our tests.
+        self.build_set = getUtility(IBuildSet)
+        self.archive = self.publisher.distroseries.main_archive
+
+    def testGetBuildsForArchiveNoParams(self):
+        # All builds should be returned when called without filtering
+        builds = self.build_set.getBuildsForArchive(self.archive)
+        num_results = builds.count()
+        self.assertEquals(3, num_results, "Expected 3 builds but "
+                                          "got %s" % num_results)
+
+    def testGetBuildsForArchiveByArchTag(self):
+        # Results can be filtered by architecture tag.
+        self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
+        builds = self.build_set.getBuildsForArchive(self.archive,
+                                                    arch_tag="i386")
+        num_results = builds.count()
+        self.assertEquals(2, num_results, "Expected 2 builds but "
+                                          "got %s" % num_results)
 
 
 def test_suite():

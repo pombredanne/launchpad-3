@@ -820,7 +820,8 @@ class BuildSet:
             )
 
     def _handleOptionalParams(
-        self, queries, tables, status=None, name=None, pocket=None):
+        self, queries, tables, status=None, name=None, pocket=None,
+        arch_tag=None):
         """Construct query clauses needed/shared by all getBuild..() methods.
 
         :param queries: container to which to add any resulting query clauses.
@@ -831,6 +832,8 @@ class BuildSet:
             query clause if present.
         :param pocket: optional pocket for which to add a query clause if
             present.
+        :param arch_tag: optional architecture tag for which to add a
+            query clause if present.
         """
         # Add query clause that filters on build state if the latter is
         # provided.
@@ -841,6 +844,14 @@ class BuildSet:
         if pocket:
             queries.append('pocket=%s' % sqlvalues(pocket))
 
+        # Add query clause that filters on architecture tag if provided.
+        if arch_tag is not None:
+            queries.append('''
+                Build.distroarchseries = DistroArchSeries.id AND
+                DistroArchSeries.architecturetag = %s
+            ''' % sqlvalues(arch_tag))
+            tables.extend(['DistroArchSeries'])
+
         # Add query clause that filters on source package release name if the
         # latter is provided.
         if name is not None:
@@ -850,7 +861,6 @@ class BuildSet:
                 AND SourcepackageName.name LIKE '%%' || %s || '%%'
             ''' % quote_like(name))
             tables.extend(['SourcePackageRelease', 'SourcePackageName'])
-
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
                             user=None):
@@ -882,13 +892,13 @@ class BuildSet:
                             orderBy=["-Build.datebuilt", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
-                            pocket=None):
+                            pocket=None, arch_tag=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
 
         self._handleOptionalParams(
-            queries, clauseTables, status, name, pocket)
+            queries, clauseTables, status, name, pocket, arch_tag)
 
         # Ordering according status
         # * SUPERSEDED & All by -datecreated
