@@ -123,9 +123,14 @@ def merge_potmsgsets(potemplates):
 
     for representative, potmsgsets in subordinates.iteritems():
         # Merge each subordinate POTMsgSet into its representative.
+        seen_potmsgsets = set([representative])
         for subordinate in potmsgsets:
-            assert subordinate != representative, (
-                "A POTMsgSet was found subordinate to itself.")
+            if subordinate in seen_potmsgsets:
+                # We've already done this one when we found it in a more
+                # representative template.
+                continue
+
+            seen_potmsgsets.add(subordinate)
 
             original_template = None
 

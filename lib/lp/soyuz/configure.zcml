@@ -179,6 +179,7 @@
                 sources
                 builds
                 customfiles
+                custom_file_urls
                 date_created
                 sourcepackagerelease
                 contains_source

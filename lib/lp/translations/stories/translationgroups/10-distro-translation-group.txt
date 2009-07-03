@@ -47,7 +47,7 @@ Let's post to the form, setting the translation group to polyglot and
 closed permissions.
 
     >>> ubuntu_owner_browser.getControl(
-    ...     'Translation Permission System').displayValue = ['Closed']
+    ...     'Translation permissions policy').displayValue = ['Closed']
     >>> print ubuntu_owner_browser.getControl(
     ...     'Translation group').displayOptions
     ['(no value)', 'Single-language Translators',
@@ -76,4 +76,3 @@ page.
     ...     find_tag_by_id(anon_browser.contents, 'translation-permissions'))
     Ubuntu is translated by The PolyGlot Translation Group
     with Closed permissions...
-

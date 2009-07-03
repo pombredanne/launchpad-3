@@ -57,6 +57,8 @@ class Verifier:
             self.start_id = pofile.id + 1
             try:
                 self._verify(pofile)
+            except (KeyboardInterrupt, SystemExit):
+                raise
             except Exception, error:
                 # Verification failed for this POFile.  Don't bail out: if
                 # there's a pattern of failure, we'll want to report that and

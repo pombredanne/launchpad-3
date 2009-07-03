@@ -622,13 +622,25 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
-    def makePackageBranch(self, sourcepackage=None, **kwargs):
+    def makePackageBranch(self, sourcepackage=None, distroseries=None,
+                          sourcepackagename=None, **kwargs):
         """Make a package branch on an arbitrary package.
 
         See `makeBranch` for more information on arguments.
+
+        You can pass in either `sourcepackage` or one or both of
+        `distroseries` and `sourcepackagename`, but not combinations or all of
+        them.
         """
+        assert not(sourcepackage is not None and distroseries is not None), (
+            "Don't pass in both sourcepackage and distroseries")
+        assert not(sourcepackage is not None
+                   and sourcepackagename is not None), (
+            "Don't pass in both sourcepackage and sourcepackagename")
         if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage()
+            sourcepackage = self.makeSourcePackage(
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries)
         return self.makeBranch(sourcepackage=sourcepackage, **kwargs)
 
     def makePersonalBranch(self, owner=None, **kwargs):
@@ -1257,7 +1269,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             expires=expires, restricted=restricted)
         return library_file_alias
 
-    def makeDistribution(self, name=None, displayname=None):
+    def makeDistribution(self, name=None, displayname=None, owner=None,
+                         members=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString()
@@ -1267,8 +1280,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         description = self.getUniqueString()
         summary = self.getUniqueString()
         domainname = self.getUniqueString()
-        owner = self.makePerson()
-        members = self.makeTeam(owner)
+        if owner is None:
+            owner = self.makePerson()
+        if members is None:
+            members = self.makeTeam(owner)
         return getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
             members, owner)
@@ -1317,7 +1332,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
-        
+
         :param distribution: Supply IDistribution, defaults to a new one
             made with makeDistribution().
         :param owner: Supper IPerson, defaults to a new one made with

@@ -69,6 +69,23 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         self.assertEqual(trunk_messages, [trunk_potmsgset])
         self.assertEqual(trunk_messages, stable_messages)
 
+    def test_merge_potmsgsets_is_idempotent(self):
+        # merge_potmsgsets can be run again on a situation it's
+        # produced.  It will produce the same situation.
+        trunk_potmsgset = self.factory.makePOTMsgSet(
+            self.trunk_template, singular='foo', sequence=1)
+        stable_potmsgset = self.factory.makePOTMsgSet(
+            self.stable_template, singular='foo', sequence=1)
+
+        merge_potmsgsets(self.templates)
+        merge_potmsgsets(self.templates)
+
+        trunk_messages = list(self.trunk_template.getPOTMsgSets(False))
+        stable_messages = list(self.stable_template.getPOTMsgSets(False))
+
+        self.assertEqual(trunk_messages, [trunk_potmsgset])
+        self.assertEqual(trunk_messages, stable_messages)
+
     def test_unmatchedPOTMsgSetsDoNotShare(self):
         # Only identically-keyed potmsgsets get merged.
         trunk_potmsgset = self.factory.makePOTMsgSet(
