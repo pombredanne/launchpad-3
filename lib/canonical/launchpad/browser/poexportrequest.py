@@ -12,6 +12,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.poexportrequest import (
     IPOExportRequestSet)
+from canonical.launchpad.interfaces.potemplate import (
+    IHasTranslationTemplates)
 from canonical.launchpad.interfaces.translationexporter import (
     ITranslationExporter)
 from canonical.launchpad.interfaces.translationfileformat import (
@@ -28,7 +30,23 @@ class BaseExportView(LaunchpadView):
 
     def getDefaultFormat(self):
         """Overridable: default file format to offer."""
-        raise NotImplementedError
+        if not IHasTranslationTemplates.providedBy(self.context):
+            raise NotImplementedError(
+                'Subclass not implementing `IHasTranslationsTemplates` '
+                'interface.  Either override getDefaultFormat implementation '
+                'or implement `IHasTranslationsTemplates`.')
+
+        templates = self.context.getCurrentTranslationTemplates()
+        if not bool(templates.any()):
+            return None
+        formats = self.context.getTranslationTemplateFormats()
+        format = formats[0]
+        if len(formats) > 1:
+            self.request.response.addInfoNotification(
+                "This package has templates with different native "
+                "file formats.  If you proceed, all translations will be "
+                "exported in the single format you specify.")
+        return format
 
     def processForm(self):
         """Overridable: what templates and translations are being requested?
@@ -39,7 +57,11 @@ class BaseExportView(LaunchpadView):
             the list of requested pofiles.
         c. Redirect and return `None`.
         """
-        raise NotImplementedError
+        translation_templates = self.context.getCurrentTranslationTemplates()
+        pofiles = self.context.getCurrentTranslationFiles()
+        if not bool(pofiles.any()):
+            pofiles = None
+        return (translation_templates, pofiles)
 
     def modifyFormat(self, format):
         """ Optional overridable: do any other controls modify the format?

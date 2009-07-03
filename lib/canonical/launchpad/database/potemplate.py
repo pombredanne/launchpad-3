@@ -1411,3 +1411,12 @@ class HasTranslationTemplatesMixin:
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         raise NotImplementedError('This must be provided when subclassing.')
+
+    def getTranslationTemplateFormats(self):
+        """See `IHasTranslationTemplates`."""
+        formats_query = self.getCurrentTranslationTemplates().order_by(
+            'source_file_format').config(distinct=True)
+        formats = helpers.shortlist(
+            formats_query.values(POTemplate.source_file_format),
+            10)
+        return formats

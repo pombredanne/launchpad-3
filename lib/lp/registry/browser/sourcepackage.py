@@ -132,30 +132,8 @@ class SourcePackageTranslationsMenu(NavigationMenu):
 
 
 class SourcePackageTranslationsExportView(BaseExportView):
-    """Request tarball export of all translations for source package.
-    """
-
-    def processForm(self):
-        """Process form submission requesting translations export."""
-        templates = list(
-            self.context.getCurrentTranslationTemplates(just_ids=True))
-        pofiles = list(self.context.getCurrentTranslationFiles(just_ids=True))
-        if len(pofiles) > 0:
-            pofiles = None
-        return (templates, pofiles)
-
-    def getDefaultFormat(self):
-        templates = self.context.getCurrentTranslationTemplates()
-        if not bool(templates.any()):
-            return None
-        format = templates[0].source_file_format
-        for template in templates:
-            if template.source_file_format != format:
-                self.request.response.addInfoNotification(
-                    "This package has templates with different native "
-                    "file formats.  If you proceed, all translations will be "
-                    "exported in the single format you specify.")
-        return format
+    """Request tarball export of all translations for source package."""
+    pass
 
 
 class SourcePackageView(BuildRecordsView, TranslationsMixin):
