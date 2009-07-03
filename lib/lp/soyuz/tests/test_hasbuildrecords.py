@@ -15,13 +15,19 @@ from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
-class TestCaseWithPublishedBuilds(TestCaseWithFactory):
-    """Adds a SoyuzTestPublisher instance during setup."""
+class TestHasBuildRecordsInterface(TestCaseWithFactory):
+    """Tests the implementation of IHasBuildRecords by the
+       Distribution content class by default.
+
+       Inherit and set self.context to another content class to test
+       other implementations.
+    """
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestCaseWithPublishedBuilds, self).setUp()
+        """Use `SoyuzTestPublisher` to publish some sources in archives."""
+        super(TestHasBuildRecordsInterface, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
 
@@ -41,16 +47,9 @@ class TestCaseWithPublishedBuilds(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
         self.builds += gtg_src_hist.createMissingBuilds()
 
-
-class TestHasBuildRecordsInterface(TestCaseWithPublishedBuilds):
-    """Tests the implementation of IHasBuildRecords by the
-       Distribution content class by default.
-
-       Inherit and set self.context to another content class to test it.
-    """
-    def setUp(self):
-        """Use `SoyuzTestPublisher` to publish some sources in archives."""
-        super(TestHasBuildRecordsInterface, self).setUp()
+        # Target one of the builds to hppa so that we have three builds
+        # in total, two of which are i386 and one hppa.
+        self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
 
         self.context = self.publisher.distroseries.distribution
 
@@ -67,9 +66,6 @@ class TestHasBuildRecordsInterface(TestCaseWithPublishedBuilds):
 
     def testGetBuildRecordsFilterByArchTag(self):
         # Build records can be filtered by architecture tag.
-
-        # Target one of the builds to hppa
-        self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
         builds = self.context.getBuildRecords(arch_tag="i386")
         num_results = builds.count()
         self.assertEquals(2, num_results, "Expected 2 builds but "
