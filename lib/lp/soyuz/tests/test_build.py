@@ -6,9 +6,11 @@ import unittest
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
+from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -88,13 +90,13 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.assertEquals(depwait_build.dependencies, '')
 
 
-class TestBuildSetGetBuildsForArchive(TestCaseWithFactory):
+class TestBuildSetMethodsBase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Publish some builds for the test archive."""
-        super(TestBuildSetGetBuildsForArchive, self).setUp()
+        super(TestBuildSetMethodsBase, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
 
@@ -116,6 +118,13 @@ class TestBuildSetGetBuildsForArchive(TestCaseWithFactory):
 
         # Short-cuts for our tests.
         self.build_set = getUtility(IBuildSet)
+
+
+class TestBuildSetGetBuildsForArchive(TestBuildSetMethodsBase):
+
+    def setUp(self):
+        """Publish some builds for the test archive."""
+        super(TestBuildSetGetBuildsForArchive, self).setUp()
         self.archive = self.publisher.distroseries.main_archive
 
     def testGetBuildsForArchiveNoParams(self):
@@ -129,6 +138,42 @@ class TestBuildSetGetBuildsForArchive(TestCaseWithFactory):
         # Results can be filtered by architecture tag.
         self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
         builds = self.build_set.getBuildsForArchive(self.archive,
+                                                    arch_tag="i386")
+        num_results = builds.count()
+        self.assertEquals(2, num_results, "Expected 2 builds but "
+                                          "got %s" % num_results)
+
+
+class TestBuildSetGetBuildsForBuilder(TestBuildSetMethodsBase):
+
+    def setUp(self):
+        super(TestBuildSetGetBuildsForBuilder, self).setUp()
+
+        # Create a 386 builder
+        owner = self.factory.makePerson()
+        processor_family = ProcessorFamilySet().getByProcessorName('386')
+        processor = processor_family.processors[0]
+        builder_set = getUtility(IBuilderSet)
+
+        self.builder = builder_set.new(
+            processor, 'http://example.com', 'Newbob', 'New Bob the Builder',
+            'A new and improved bob.', owner)
+
+        # Ensure that our builds were all built by the test builder.
+        for build in self.builds:
+            build.builder = self.builder
+
+    def testGetBuildsForBuilderNoParams(self):
+        # All builds should be returned when called without filtering
+        builds = self.build_set.getBuildsForBuilder(self.builder.id)
+        num_results = builds.count()
+        self.assertEquals(3, num_results, "Expected 3 builds but "
+                                          "got %s" % num_results)
+
+    def testGetBuildsForBuilderByArchTag(self):
+        # Results can be filtered by architecture tag.
+        self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
+        builds = self.build_set.getBuildsForBuilder(self.builder.id,
                                                     arch_tag="i386")
         num_results = builds.count()
         self.assertEquals(2, num_results, "Expected 2 builds but "
