@@ -87,7 +87,7 @@ def make_mint_distro_with_branches(factory):
     The mint distro has a team: mint-team, which has Albert, Bob, and Charlie
     as members.
 
-    There are three different source packages:
+    There are four different source packages:
         twisted, zope, bzr, python
     """
     albert, bob, charlie = [
