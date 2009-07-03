@@ -7,6 +7,7 @@ from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -116,6 +117,23 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         # Ensure that our builds were all built by the test builder.
         for build in self.builds:
             build.builder = self.context
+
+
+class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
+    """Test the DistroArchSeries implementation of IHasBuildRecords."""
+    def setUp(self):
+        super(TestSourcePackageHasBuildRecords, self).setUp()
+
+        gedit_name = self.builds[0].sourcepackagerelease.sourcepackagename
+        self.context = SourcePackage(
+            gedit_name,
+            self.builds[0].distroarchseries.distroseries)
+
+        # Convert the other two builds to be builds of
+        # gedit as well so that the one source package (gedit) will have
+        # three builds.
+        self.builds[1].sourcepackagerelease.sourcepackagename = gedit_name
+        self.builds[2].sourcepackagerelease.sourcepackagename = gedit_name
 
 
 def test_suite():

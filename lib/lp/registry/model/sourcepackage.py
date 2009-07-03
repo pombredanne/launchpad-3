@@ -24,6 +24,7 @@ from lp.code.model.branch import Branch
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -507,6 +508,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # records returned here (private builds are only in PPA right
         # now and this method only returns records for SPRs in a
         # distribution).
+        # We also ignore the name parameter (required as part of the
+        # IHasBuildRecords interface) and use our own name.
 
         """See `IHasBuildRecords`"""
         clauseTables = ['SourcePackageRelease',
@@ -524,13 +527,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                         self.distroseries,
                         self.distribution.all_distro_archive_ids)]
 
-        # XXX cprov 2006-09-25: It would be nice if we could encapsulate
-        # the chunk of code below (which deals with the optional paramenters)
-        # and share it with IBuildSet.getBuildsByArchIds()
-        from lp.soyuz.interfaces.build import IBuildSet
+        # We re-use the optional-parameter handling provided by IBuildSet
+        # here, but pass None for the name argument as we've already
+        # matched on exact source package name.
         build_set = getUtility(IBuildSet)
         build_set.handleOptionalParamsForBuildQueries(
-            condition_clauses, clauseTables, build_state, name, pocket,
+            condition_clauses, clauseTables, build_state, None, pocket,
             arch_tag)
 
         # exclude gina-generated and security (dak-made) builds
