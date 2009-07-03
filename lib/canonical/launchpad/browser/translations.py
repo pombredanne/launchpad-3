@@ -58,13 +58,6 @@ class TranslationsMixin:
             getUtility(ILaunchpadCelebrities).lp_translations,
             rootsite='answers')
 
-    @cachedproperty
-    def answers_question_url(self):
-        return canonical_url(
-            getUtility(ILaunchpadCelebrities).lp_translations,
-            rootsite='answers', view_name='+addquestion')
-
-
 class RosettaApplicationView(TranslationsMixin):
 
     def __init__(self, context, request):
