@@ -500,8 +500,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertTrue(shared_translation.is_current)
         self.assertTrue(new_translation.is_current)
 
-    def test_updateTranslation_divergence_equal_translation(self):
-        """Test that equal diverging translations works as expected."""
+    def test_updateTranslation_divergence_indentical_translation(self):
+        """Test that identical diverging translations works as expected."""
         # Create the POFile in *all* sharing potemplates.
         sr_pofile_devel = self.factory.makePOFile('sr',
                                                   self.devel_potemplate,
@@ -528,7 +528,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
 
         # Now we create a diverged translation in the stable series that
-        # matches the diverged message in the devel series.
+        # is identical to the diverged message in the devel series.
         diverged_translation_stable = self.potmsgset.updateTranslation(
             pofile=sr_pofile_stable, submitter=sr_pofile_stable.owner,
             new_translations=[u'Diverged'], is_imported=False,
