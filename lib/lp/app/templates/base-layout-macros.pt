@@ -156,8 +156,7 @@
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
       devmode modules/canonical.config/config/devmode;
-      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};
-  >
+      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};">
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
