@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces.translations import (
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from lp.testing import TestCaseWithFactory
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
@@ -497,7 +498,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree.commit('rev1')
         tree2 = tree.bzrdir.sprout('tree2').open_workingtree()
         tree2.commit('rev2a', rev_id='rev2a-id', committer='foo@')
-        tree2.commit('rev3', rev_id='rev3-id', authors=['bar@', 'baz@'])
+        tree2.commit('rev3', rev_id='rev3-id',
+                     authors=['bar@', 'baz@blaine.com'])
         tree.merge_from_branch(tree2.branch)
         tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
         tree3.commit('rev2b', rev_id='rev2b-id', committer='qux@')
@@ -542,7 +544,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.addCleanup(job.bzr_branch.unlock)
         graph = job.bzr_branch.repository.get_graph()
         revision_ids = ['rev2a-id', 'rev3-id', 'rev2b-id']
-        self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
+        self.assertEqual(set(['foo@', 'bar@', 'baz@blaine.com', 'qux@']),
                          job.getAuthors(revision_ids, graph))
 
     def test_getAuthors_with_ghost(self):
@@ -552,7 +554,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         graph = job.bzr_branch.repository.get_graph()
         self.addCleanup(job.bzr_branch.unlock)
         revision_ids = ['rev2a-id', 'rev3-id', 'rev2b-id', 'rev2c-id']
-        self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
+        self.assertEqual(set(['foo@', 'bar@', 'baz@blaine.com', 'qux@']),
                          job.getAuthors(revision_ids, graph))
 
     def test_getRevisionMessage(self):
@@ -572,12 +574,16 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_getRevisionMessage_with_merge_authors(self):
         """Merge authors are included after the main bzr log."""
+        person = self.factory.makePerson(name='baz',
+            displayname='Basil Blaine',
+            email='baz@blaine.com',
+            email_address_status=EmailAddressStatus.VALIDATED)
         job = self.makeRevisionsAddedWithMergeCommit()
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
-        'Merge authors:\n'
+        u'Merge authors:\n'
         '  bar@\n'
-        '  baz@\n'
+        '  Basil Blaine (baz)\n'
         '  foo@\n'
         '  qux@\n'
         '------------------------------------------------------------\n'
@@ -595,7 +601,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual(
         'Merge authors:\n'
         '  bar@\n'
-        '  baz@\n'
+        '  baz@blaine.com\n'
         '  foo@\n'
         '  qux@\n'
         '------------------------------------------------------------\n'
@@ -619,7 +625,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual(
         'Merge authors:\n'
         '  bar@\n'
-        '  baz@\n'
+        '  baz@blaine.com\n'
         '  foo@\n'
         '  qux@\n'
         'Related merge proposals:\n'
@@ -652,7 +658,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual(
         'Merge authors:\n'
         '  bar@\n'
-        '  baz@\n'
+        '  baz@blaine.com\n'
         '  foo@\n'
         '  qux@\n'
         'Related merge proposals:\n'
@@ -684,7 +690,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual(
         'Merge authors:\n'
         '  bar@\n'
-        '  baz@\n'
+        '  baz@blaine.com\n'
         '  foo@\n'
         '  qux@\n'
         'Related merge proposals:\n'
