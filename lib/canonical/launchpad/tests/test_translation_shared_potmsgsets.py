@@ -500,15 +500,15 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertTrue(shared_translation.is_current)
         self.assertTrue(new_translation.is_current)
 
-    def test_updateTranslation_divergence_indentical_translation(self):
+    def test_updateTranslation_divergence_identical_translation(self):
         """Test that identical diverging translations works as expected."""
         # Create the POFile in *all* sharing potemplates.
         sr_pofile_devel = self.factory.makePOFile('sr',
                                                   self.devel_potemplate,
                                                   create_sharing=True)
         serbian = sr_pofile_devel.language
-        sr_pofile_stable = self.stable_potemplate.getPOFileByLang(
-                                                                serbian.code)
+        sr_pofile_stable = (
+            self.stable_potemplate.getPOFileByLang(serbian.code))
 
         # We can't use factory methods here because they depend on
         # updateTranslation itself.  So, a bit more boiler-plate than
@@ -548,15 +548,15 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(self.stable_potemplate,
                           stable_translation.potemplate)
 
-    def test_updateTranslation_divergence_shared_indentical_translation(self):
+    def test_updateTranslation_divergence_shared_identical_translation(self):
         """Test that identical diverging translations works as expected."""
         # Create the POFile in *all* sharing potemplates.
         sr_pofile_devel = self.factory.makePOFile('sr',
                                                   self.devel_potemplate,
                                                   create_sharing=True)
         serbian = sr_pofile_devel.language
-        sr_pofile_stable = self.stable_potemplate.getPOFileByLang(
-                                                                serbian.code)
+        sr_pofile_stable = (
+            self.stable_potemplate.getPOFileByLang(serbian.code))
 
         # We can't use factory methods here because they depend on
         # updateTranslation itself.  So, a bit more boiler-plate than
