@@ -30,8 +30,13 @@
           condition="series/active">
         <tr>
           <td class="section-heading" colspan="4"
-              tal:content="series/displayname">
-            Karmic
+              >
+            <tal:name replace="series/displayname">
+              Karmic
+            </tal:name> &mdash;
+            <tal:state replace="series/status/title">
+              Stable
+            </tal:state>
           </td>
         </tr>
         <tr class="thead">
@@ -67,8 +72,31 @@
       </tal:series-branches>
       </tbody>
     </tal:distro-series>
-
   </table>
+
+  <div class="related">
+    <h2>Nearby</h2>
+    <ul>
+    <tal:distro-series repeat="group view/groups">
+      <tal:series-branches
+          define="series group/distroseries"
+          condition="not: series/active">
+        <li>
+          <a tal:attributes="href group/package/fmt:url"
+             tal:content="series/displayname">
+            Experimental
+          </a>
+          (<tal:count replace="group/total-count-string"/>)
+          - <tal:state replace="series/status/title"/>
+        </li>
+      </tal:series-branches>
+    </tal:distro-series>
+    <li><a tal:attributes="href context/fmt:url/+branches">
+      All branches for the <tal:name replace="context/title"/>
+    </a></li>
+    </ul>
+  </div>
+
 </div>
 
 </body>

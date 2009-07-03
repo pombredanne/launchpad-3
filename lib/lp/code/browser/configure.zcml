@@ -800,7 +800,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         layer="canonical.launchpad.layers.CodeLayer"
-        name="+branches"/>
+        name="+code-index"/>
 
     <browser:url
         for="lp.code.interfaces.diff.IPreviewDiff"

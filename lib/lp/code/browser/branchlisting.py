@@ -27,6 +27,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+from operator import attrgetter
 
 import simplejson
 from storm.expr import Asc, Desc
@@ -1507,10 +1508,13 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
 
         The list is ordered so the most recent distro series is first.
 
-        The list contains dicts.  The dict has three values:
+        The list contains dicts.  The dict has the values:
           * distroseries - a `IDistroSeries` object
           * branches - an ordered list of branches
           * more-branch-count - a count of additional branches
+          * package - the `ISourcePackage` for the distroseries,
+              sourcepackagename pair
+          * total-count-string - a string saying the number of branches.
 
         The branches list will contain at most five branches.  If there are
         non-official branches associated with the distroseries, then there
@@ -1530,11 +1534,16 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
                 branches, more_count = series_branches_map[series]
                 sourcepackage = sp_factory.new(
                     self.context.sourcepackagename, series)
+                num_branches = len(branches) + more_count
+                num_branches_text = get_plural_text(
+                    num_branches, "branch", "branches")
+                count_string = "%s %s" % (num_branches, num_branches_text)
                 result.append(
                     {'distroseries': series,
                      'branches': self.decoratedBranches(branches),
                      'more-branch-count': more_count,
                      'package': sourcepackage,
+                     'total-count-string': count_string,
                      })
         return result
 
