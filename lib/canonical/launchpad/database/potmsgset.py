@@ -488,7 +488,9 @@ class POTMsgSet(SQLBase):
         :param pluralforms: The number of pluralforms to compare.
         """
         clauses = ['potmsgset = %s' % sqlvalues(self),
-                   'language = %s' % sqlvalues(pofile.language)]
+                   'language = %s' % sqlvalues(pofile.language),
+                   '(potemplate IS NULL OR potemplate = %s)' % sqlvalues(
+                                                        pofile.potemplate)]
         if pofile.variant is None:
             clauses.append('variant IS NULL')
         else:

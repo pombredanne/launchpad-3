@@ -500,6 +500,54 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertTrue(shared_translation.is_current)
         self.assertTrue(new_translation.is_current)
 
+    def test_updateTranslation_divergence_equal_translation(self):
+        """Test that equal diverging translations works as expected."""
+        # Create the POFile in *all* sharing potemplates.
+        sr_pofile_devel = self.factory.makePOFile('sr',
+                                                  self.devel_potemplate,
+                                                  create_sharing=True)
+        serbian = sr_pofile_devel.language
+        sr_pofile_stable = self.stable_potemplate.getPOFileByLang(
+                                                                serbian.code)
+
+        # We can't use factory methods here because they depend on
+        # updateTranslation itself.  So, a bit more boiler-plate than
+        # usual.
+
+        # Let's create a shared, current translation.
+        shared_translation = self.potmsgset.updateTranslation(
+            pofile=sr_pofile_devel, submitter=sr_pofile_devel.owner,
+            new_translations=[u'Shared'], is_imported=False,
+            lock_timestamp=datetime.now(pytz.UTC))
+
+        # And let's create a diverged translation on the devel series by
+        # passing `force_diverged` parameter to updateTranslation call.
+        diverged_translation_devel = self.potmsgset.updateTranslation(
+            pofile=sr_pofile_devel, submitter=sr_pofile_devel.owner,
+            new_translations=[u'Diverged'], is_imported=False,
+            lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
+
+        # Now we create a diverged translation in the stable series that
+        # matches the diverged message in the devel series.
+        diverged_translation_stable = self.potmsgset.updateTranslation(
+            pofile=sr_pofile_stable, submitter=sr_pofile_stable.owner,
+            new_translations=[u'Diverged'], is_imported=False,
+            lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
+
+        # This will create a new, diverged message with the same translation
+        # but linked to the other potemplate.
+        devel_translation = self.potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, serbian)
+        self.assertEquals(diverged_translation_devel, devel_translation)
+        self.assertEquals(self.devel_potemplate,
+                          devel_translation.potemplate)
+
+        stable_translation = self.potmsgset.getCurrentTranslationMessage(
+            self.stable_potemplate, serbian)
+        self.assertEquals(diverged_translation_stable, stable_translation)
+        self.assertEquals(self.stable_potemplate,
+                          stable_translation.potemplate)
+
     def test_updateTranslation_convergence(self):
         """Test that converging translations works as expected."""
         sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
@@ -689,7 +737,7 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         """Set up context to test in."""
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
-        super(TestPOTMsgSetTranslationMessageConstraints, self).setUp()
+        super(TestPOTMsgSetCornerCases, self).setUp()
 
         self.pofile = self.factory.makePOFile('sr')
         self.potemplate = self.pofile.potemplate
@@ -851,54 +899,6 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertTrue(tm2.potemplate is None)
         self.assertFalse(tm1.is_current)
         self.assertFalse(tm1.is_imported)
-
-    def test_updateTranslation_equal_diverged(self):
-        """Test that equal diverging translations works as expected."""
-        # Create the POFile in *all* sharing potemplates.
-        sr_pofile_devel = self.factory.makePOFile('sr',
-                                                  self.devel_potemplate,
-                                                  create_sharing=True)
-        serbian = sr_pofile_devel.language
-        sr_pofile_stable = self.stable_potemplate.getPOFileByLang(
-                                                                serbian.code)
-
-        # We can't use factory methods here because they depend on
-        # updateTranslation itself.  So, a bit more boiler-plate than
-        # usual.
-
-        # Let's create a shared, current translation.
-        shared_translation = self.potmsgset.updateTranslation(
-            pofile=sr_pofile_devel, submitter=sr_pofile_devel.owner,
-            new_translations=[u'Shared'], is_imported=False,
-            lock_timestamp=datetime.now(pytz.UTC))
-
-        # And let's create a diverged translation on the devel series by
-        # passing `force_diverged` parameter to updateTranslation call.
-        diverged_translation_devel = self.potmsgset.updateTranslation(
-            pofile=sr_pofile_devel, submitter=sr_pofile_devel.owner,
-            new_translations=[u'Diverged'], is_imported=False,
-            lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
-
-        # Now we create a diverged translation in the stable series that
-        # matches the diverged message in the devel series.
-        diverged_translation_stable = self.potmsgset.updateTranslation(
-            pofile=sr_pofile_stable, submitter=sr_pofile_stable.owner,
-            new_translations=[u'Diverged'], is_imported=False,
-            lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
-
-        # This will create a new, diverged message with the same translation
-        # but linked to the other potemplate.
-        devel_translation = self.potmsgset.getCurrentTranslationMessage(
-            self.devel_potemplate, serbian)
-        self.assertEquals(diverged_translation_devel, devel_translation)
-        self.assertEquals(self.devel_potemplate,
-                          devel_translation.potemplate)
-
-        stable_translation = self.potmsgset.getCurrentTranslationMessage(
-            self.stable_potemplate, serbian)
-        self.assertEquals(diverged_translation_stable, stable_translation)
-        self.assertEquals(self.stable_potemplate,
-                          stable_translation.potemplate)
 
 
 def test_suite():
