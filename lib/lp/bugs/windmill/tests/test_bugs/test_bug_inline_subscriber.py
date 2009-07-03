@@ -85,7 +85,7 @@ def test_inline_subscriber():
                '//div[@class="yui-picker-search-box"]/button')
     search_result_xpath = (u'//table[contains(@class, "yui-picker") '
                             'and not(contains(@class, "yui-picker-hidden"))]'
-                            '//ul[@class="yui-picker-results"]/li[2]/span')
+                            '//ul[@class="yui-picker-results"]/li[1]/span')
     client.waits.forElement(
         xpath=search_result_xpath, timeout=FOR_ELEMENT)
     client.click(xpath=search_result_xpath)
@@ -104,7 +104,7 @@ def test_inline_subscriber():
                '//div[@class="yui-picker-search-box"]/button')
     search_result_xpath = (u'//table[contains(@class, "yui-picker") '
                             'and not(contains(@class, "yui-picker-hidden"))]'
-                            '//ul[@class="yui-picker-results"]/li[2]/span')
+                            '//ul[@class="yui-picker-results"]/li[1]/span')
     client.waits.forElement(
         xpath=search_result_xpath, timeout=FOR_ELEMENT)
     client.click(xpath=search_result_xpath)
