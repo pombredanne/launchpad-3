@@ -47,10 +47,6 @@ class TestHasBuildRecordsInterface(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
         self.builds += gtg_src_hist.createMissingBuilds()
 
-        # Target one of the builds to hppa so that we have three builds
-        # in total, two of which are i386 and one hppa.
-        self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
-
         self.context = self.publisher.distroseries.distribution
 
     def testProvidesHasBuildRecords(self):
@@ -66,6 +62,11 @@ class TestHasBuildRecordsInterface(TestCaseWithFactory):
 
     def testGetBuildRecordsFilterByArchTag(self):
         # Build records can be filtered by architecture tag.
+
+        # Target one of the builds to hppa so that we have three builds
+        # in total, two of which are i386 and one hppa.
+        self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
+
         builds = self.context.getBuildRecords(arch_tag="i386")
         num_results = builds.count()
         self.assertEquals(2, num_results, "Expected 2 builds but "

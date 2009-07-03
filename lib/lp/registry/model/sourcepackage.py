@@ -503,7 +503,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return not self.__eq__(other)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None, arch_tag=None):
+                        arch_tag=None, user=None):
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now and this method only returns records for SPRs in a

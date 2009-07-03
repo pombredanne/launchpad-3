@@ -772,6 +772,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # Find out the distroarchseries in question.
         arch_ids = []
+        # Concatenate architectures list since they are distinct.
         if arch_tag is None:
             for series in self.serieses:
                 arch_ids += [arch.id for arch in series.architectures]

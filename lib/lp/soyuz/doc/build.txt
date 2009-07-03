@@ -575,7 +575,7 @@ data from the database for a given set of builds:
 XXX: Michael Nelson 20090701 bug=394276
 The documentation for IHasBuildRecords is now in
 lp/soyuz/doc/hasbuildrecords.txt. The following implementation tests should
-be converted to unit-tests in lib/soyuz/tests/test_has_build_records.py.
+be converted to unit-tests in lib/soyuz/tests/test_hasbuildrecords.py.
 
 We can find recent and pending builds for a given distrarchoseries.
 
