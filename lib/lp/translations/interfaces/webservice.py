@@ -3,4 +3,6 @@
 """All the interfaces that are exposed through the webservice."""
 
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, ITranslationImportQueueEntry)
+    IHasTranslationImports,
+    ITranslationImportQueue,
+    ITranslationImportQueueEntry)
