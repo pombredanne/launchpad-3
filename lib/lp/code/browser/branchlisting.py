@@ -201,6 +201,10 @@ class BranchListingItem(BranchBadges):
         return self.context.codebrowse_url(
             'revision', str(self.context.revision_count))
 
+    def __repr__(self):
+        # For testing purposes.
+        return '<BranchListingItem %r (%d)>' % (self.unique_name, self.id)
+
 
 class BranchListingSort(EnumeratedType):
     """Choices for how to sort branch listings."""
@@ -286,87 +290,29 @@ class IBranchListingFilter(Interface):
         default=BranchListingSort.LIFECYCLE)
 
 
-class BranchListingBatchNavigator(TableBatchNavigator):
-    """Batch up the branch listings."""
-    implements(IBranchBatchNavigator)
+class BranchListingItemsMixin:
+    """Mixin class to create BranchListingItems."""
 
-    def __init__(self, view):
-        TableBatchNavigator.__init__(
-            self, view.getVisibleBranchesForUser(), view.request,
-            columns_to_show=view.extra_columns,
-            size=config.launchpad.branchlisting_batch_size)
-        self.view = view
-        self.column_count = 4 + len(view.extra_columns)
-        self._now = datetime.now(pytz.UTC)
+    # Requires the following attributes:
+    #   visible_branches_for_view
+    def __init__(self, user):
         self._dev_series_map = {}
+        self._now = datetime.now(pytz.UTC)
+        self.view_user = user
 
-    @cachedproperty
-    def branch_sparks(self):
-        return simplejson.dumps([
-                ('b-%s' % (count+1),
-                 canonical_url(branch, view_name='+spark'))
-                for count, branch
-                in enumerate(self._branches_for_current_batch)
-                ])
-
-    @cachedproperty
-    def _branches_for_current_batch(self):
-        branches = list(self.currentBatch())
-        # XXX: TimPenhey 2009-04-08 bug=324546
-        # Until there is an API to do this nicely, shove the launchpad.view
-        # permission into the request cache directly.
-        request = self.view.request
-        precache_permission_for_objects(request, 'launchpad.View', branches)
-        return branches
-
-    @cachedproperty
-    def branch_ids_with_bug_links(self):
-        """Return a set of branch ids that should show bug badges."""
-        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-            self._branches_for_current_batch, self.view.user)
-        return set(bug_branch.branch.id for bug_branch in bug_branches)
-
-    @cachedproperty
-    def branch_ids_with_spec_links(self):
-        """Return a set of branch ids that should show blueprint badges."""
-        spec_branches = getUtility(
-            ISpecificationBranchSet).getSpecificationBranchesForBranches(
-            self._branches_for_current_batch, self.view.user)
-        return set(spec_branch.branch.id for spec_branch in spec_branches)
-
-    @cachedproperty
-    def branch_ids_with_merge_proposals(self):
-        """Return a set of branches that should show merge proposal badges.
-
-        Branches have merge proposals badges if they've been proposed for
-        merging into another branch (source branches)
-        """
-        proposals = (
-            self.view._getCollection()
-            .visibleByUser(self.view.user)
-            .getMergeProposals(for_branches=self._branches_for_current_batch))
-        return set(proposal.source_branch.id for proposal in proposals)
-
-    @cachedproperty
-    def tip_revisions(self):
-        """Return a set of branch ids that should show blueprint badges."""
-        revisions = getUtility(IRevisionSet).getTipRevisionsForBranches(
-            self._branches_for_current_batch)
-        if revisions is None:
-            revision_map = {}
-        else:
-            # Key the revisions by revision id.
-            revision_map = dict((revision.revision_id, revision)
-                                for revision in revisions)
-        # Return a dict keyed on branch id.
-        return dict((branch.id, revision_map.get(branch.last_scanned_id))
-                     for branch in self._branches_for_current_batch)
+    def getBranchCollection(self):
+        """Should be a user restricted branch collection for the view."""
+        raise NotImplementedError(self.getBranchCollection)
 
     @cachedproperty
     def product_series_map(self):
-        """Return a map of branch id to a list of product series."""
+        """Return a map of branch id to a list of product series.
+
+        While this code is still valid with package branches is it a query
+        that isn't needed.
+        """
         series_resultset = getUtility(IProductSeriesSet).getSeriesForBranches(
-            self._branches_for_current_batch)
+            self.visible_branches_for_view)
         result = {}
         for series in series_resultset:
             result.setdefault(series.branch.id, []).append(series)
@@ -390,6 +336,10 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def getDevFocusBranch(self, branch):
         """Get the development focus branch that relates to `branch`."""
+        # XXX: 2009-07-02 TimPenhey spec=package-branches We need to determine
+        # here what constitutes a dev focus branch for package branches, and
+        # that perhaps this should also refer to targets instead of using
+        # product.
         if branch.product is None:
             return None
         try:
@@ -398,6 +348,48 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             result = branch.product.development_focus.branch
             self._dev_series_map[branch.product] = result
             return result
+
+    @cachedproperty
+    def branch_ids_with_bug_links(self):
+        """Return a set of branch ids that should show bug badges."""
+        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+            self.visible_branches_for_view, self.view_user)
+        return set(bug_branch.branch.id for bug_branch in bug_branches)
+
+    @cachedproperty
+    def branch_ids_with_spec_links(self):
+        """Return a set of branch ids that should show blueprint badges."""
+        spec_branches = getUtility(
+            ISpecificationBranchSet).getSpecificationBranchesForBranches(
+            self.visible_branches_for_view, self.view_user)
+        return set(spec_branch.branch.id for spec_branch in spec_branches)
+
+    @cachedproperty
+    def branch_ids_with_merge_proposals(self):
+        """Return a set of branches that should show merge proposal badges.
+
+        Branches have merge proposals badges if they've been proposed for
+        merging into another branch (source branches).
+        """
+        branches = self.visible_branches_for_view
+        collection = self.getBranchCollection()
+        proposals = collection.getMergeProposals(for_branches=branches)
+        return set(proposal.source_branch.id for proposal in proposals)
+
+    @cachedproperty
+    def tip_revisions(self):
+        """Return a set of branch ids that should show blueprint badges."""
+        revisions = getUtility(IRevisionSet).getTipRevisionsForBranches(
+            self.visible_branches_for_view)
+        if revisions is None:
+            revision_map = {}
+        else:
+            # Key the revisions by revision id.
+            revision_map = dict((revision.revision_id, revision)
+                                for revision in revisions)
+        # Return a dict keyed on branch id.
+        return dict((branch.id, revision_map.get(branch.last_scanned_id))
+                     for branch in self.visible_branches_for_view)
 
     def _createItem(self, branch):
         last_commit = self.tip_revisions[branch.id]
@@ -411,10 +403,52 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             show_blueprint_badge, is_dev_focus,
             associated_product_series, show_mp_badge)
 
+    def decoratedBranches(self, branches):
+        """Return the decorated branches for the branches passed in."""
+        return [self._createItem(branch) for branch in branches]
+
+
+class BranchListingBatchNavigator(TableBatchNavigator,
+                                  BranchListingItemsMixin):
+    """Batch up the branch listings."""
+    implements(IBranchBatchNavigator)
+
+    def __init__(self, view):
+        TableBatchNavigator.__init__(
+            self, view.getVisibleBranchesForUser(), view.request,
+            columns_to_show=view.extra_columns,
+            size=config.launchpad.branchlisting_batch_size)
+        BranchListingItemsMixin.__init__(self, view.user)
+        self.view = view
+        self.column_count = 4 + len(view.extra_columns)
+
+    def getBranchCollection(self):
+        """See `BranchListingItemsMixin`."""
+        return self.view._getCollection().visibleByUser(self.view.user)
+
+    @cachedproperty
+    def branch_sparks(self):
+        return simplejson.dumps([
+                ('b-%s' % (count+1),
+                 canonical_url(branch, view_name='+spark'))
+                for count, branch
+                in enumerate(self.visible_branches_for_view)
+                ])
+
+    @cachedproperty
+    def visible_branches_for_view(self):
+        branches = list(self.currentBatch())
+        # XXX: TimPenhey 2009-04-08 bug=324546
+        # Until there is an API to do this nicely, shove the launchpad.view
+        # permission into the request cache directly.
+        request = self.view.request
+        precache_permission_for_objects(request, 'launchpad.View', branches)
+        return branches
+
+    @cachedproperty
     def branches(self):
         """Return a list of BranchListingItems."""
-        return [self._createItem(branch)
-                for branch in self._branches_for_current_batch]
+        return self.decoratedBranches(self.visible_branches_for_view)
 
     @cachedproperty
     def multiple_pages(self):
