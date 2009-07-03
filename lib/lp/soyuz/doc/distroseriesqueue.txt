@@ -1117,3 +1117,37 @@ IPackageUpload.realiseUpload().
    >>> print delayed_copy.status.name
    DONE
 
+As mentioned above, delayed copies wait in the ACCEPTED upload queue
+until they get processed, resulting in the corresponding publishing
+records.
+
+For that period of time, between creation and processing, a
+delayed-copy existence is not apparent in the publishing domain and
+creating a duplicated delayed-copy is perfectly possible.
+
+   >>> dup_delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+   ...     ubuntu.main_archive, breezy_autotest,
+   ...     PackagePublishingPocket.RELEASE, testing_key)
+
+   >>> unused = dup_delayed_copy.addSource(a_source_release)
+
+Although it cannot be accepted.
+
+   >>> dup_delayed_copy.acceptFromCopy()
+   Traceback (most recent call last):
+   ...
+   QueueInconsistentStateError: The source pmount - 0.1-2 is already
+   accepted in ubuntu/breezy-autotest and you cannot upload the same
+   version within the same distribution. You have to modify the source
+   version and re-upload.
+
+For detecting conflicting delayed copies we have to inspect the
+ACCEPTED and DONE queue for uploads of sources matching a given
+(name, version) pair in a publishing context, archive and
+distribution.
+
+   >>> conflict = getUtility(IPackageUploadSet).findSourceUpload(
+   ...     'pmount', '0.1-2', ubuntu.main_archive, ubuntu)
+
+   >>> conflict.id == delayed_copy.id
+   True

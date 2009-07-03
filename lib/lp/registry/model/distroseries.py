@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeries',
     'DistroSeriesSet',
+    'SeriesMixin',
     ]
 
 import logging
@@ -87,7 +88,7 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
 from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
+    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet, ISeriesMixin)
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
@@ -114,9 +115,24 @@ from canonical.launchpad.webapp.interfaces import (
     TranslationUnavailable)
 
 
+class SeriesMixin:
+    """See `ISeriesMixin`."""
+    implements(ISeriesMixin)
+
+    @property
+    def active(self):
+        return self.status in [
+            DistroSeriesStatus.DEVELOPMENT,
+            DistroSeriesStatus.FROZEN,
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED
+            ]
+
+
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
-                   HasMilestonesMixin, StructuralSubscriptionTargetMixin):
+                   HasMilestonesMixin, SeriesMixin,
+                   StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,
@@ -293,15 +309,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def supported(self):
         return self.status in [
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED
-            ]
-
-    @property
-    def active(self):
-        return self.status in [
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.FROZEN,
             DistroSeriesStatus.CURRENT,
             DistroSeriesStatus.SUPPORTED
             ]
