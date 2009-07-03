@@ -20,7 +20,7 @@ from zope.interface import implements
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.components.rosettastats import RosettaStats
+from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.model.pofile import POFile, DummyPOFile
 from lp.translations.model.translator import Translator
 from lp.translations.interfaces.distroserieslanguage import (

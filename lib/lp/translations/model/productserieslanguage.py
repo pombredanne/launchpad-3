@@ -15,7 +15,7 @@ from zope.interface import implements
 from storm.expr import Sum
 from storm.store import Store
 
-from canonical.launchpad.components.rosettastats import RosettaStats
+from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.interfaces.productserieslanguage import (

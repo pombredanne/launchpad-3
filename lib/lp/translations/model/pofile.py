@@ -27,7 +27,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 from canonical.launchpad import helpers
-from canonical.launchpad.components.rosettastats import RosettaStats
+from lp.translations.utilities.rosettastats import RosettaStats
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.translations.model.potmsgset import POTMsgSet

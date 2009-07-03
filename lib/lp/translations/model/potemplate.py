@@ -34,7 +34,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
-from canonical.launchpad.components.rosettastats import RosettaStats
+from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
 from lp.translations.model.pofile import POFile, DummyPOFile
