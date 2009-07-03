@@ -84,7 +84,7 @@ Icons for each type (purpose) of archive we support. Starting with
 personal package archives (PPAs).
 
     >>> print test_tales("ppa/image:icon", ppa=sabdfl.archive)
-    <img ... src="/@@/package-source" />
+    <img ... src="/@@/ppa-icon" />
 
 Then distribution main archives (primary, partner and debug).
 
