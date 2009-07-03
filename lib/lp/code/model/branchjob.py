@@ -517,24 +517,19 @@ class RevisionsAddedJob(BranchJobDerived):
         """
         self.bzr_branch.lock_read()
         try:
-            info = RevisionInfo(self.bzr_branch, revno, revision_id)
-            outf = StringIO()
-            lf = log_formatter('long', to_file=outf)
-            show_log(self.bzr_branch,
-                     lf,
-                     start_revision=info,
-                     end_revision=info,
-                     verbose=True)
             graph = self.bzr_branch.repository.get_graph()
             merged_revisions = self.getMergedRevisionIDs(revision_id, graph)
             authors = list(sorted(self.getAuthors(merged_revisions, graph)))
             def person_id(person):
                 return '%s (%s)' % (person.displayname, person.name)
+            outf = StringIO()
             if len(authors) > 0:
-                outf.write('Merge authors: ')
-                outf.write(', '.join(authors[:5]))
+                outf.write('Merge authors:\n')
+                author_text = '\n'.join(
+                    '  %s' % author for author in authors[:5])
+                outf.write(author_text)
                 if len(authors) > 5:
-                    outf.write('...')
+                    outf.write('...\n')
                 outf.write('\n')
             bmps = list(self.findRelatedBMP(merged_revisions))
             if len(bmps) > 0:
@@ -551,6 +546,13 @@ class RevisionsAddedJob(BranchJobDerived):
                     outf.write('  review: %s - %s\n' %
                         (review.comment.vote.title,
                          person_id(review.reviewer)))
+            info = RevisionInfo(self.bzr_branch, revno, revision_id)
+            lf = log_formatter('long', to_file=outf)
+            show_log(self.bzr_branch,
+                     lf,
+                     start_revision=info,
+                     end_revision=info,
+                     verbose=True)
         finally:
             self.bzr_branch.unlock()
         return outf.getvalue()
