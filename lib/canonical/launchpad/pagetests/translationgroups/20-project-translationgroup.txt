@@ -42,7 +42,7 @@ Let's post to the form, setting the translation group to polyglot and
 closed permissions.
 
     >>> gnome_owner_browser.getControl(
-    ...     'Translation Permission System').displayValue = ['Closed']
+    ...     'Translation permissions policy').displayValue = ['Closed']
     >>> print gnome_owner_browser.getControl(
     ...     'Translation group').displayOptions
     ['(no value)', 'Single-language Translators',
@@ -78,4 +78,3 @@ in the relevant portlet.
     >>> gnome_owner_browser.title
     '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d
     Launchpad translation group'
-

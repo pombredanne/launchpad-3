@@ -21,7 +21,7 @@ as the translation group for the netapplet product...
     >>> admin_browser.getControl('Translation group').displayValue = [
     ...     'Just a testing team']
     >>> admin_browser.getControl(
-    ...     'Translation Permission System').displayValue = ['Structured']
+    ...     'Translation permissions policy').displayValue = ['Structured']
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.title
     Translations of Network Applet in Launchpad
@@ -33,7 +33,7 @@ as the translation group for the netapplet product...
     >>> admin_browser.getControl('Translation group').displayValue = [
     ...     'Just a testing team']
     >>> admin_browser.getControl(
-    ...     'Translation Permission System').displayValue = ['Structured']
+    ...     'Translation permissions policy').displayValue = ['Structured']
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.title
     Set translation group for The GNOME Project
@@ -81,4 +81,3 @@ case, the 'No Privileges' account) to translate directly.
     >>> print content
     <...
     ...Translating into French...
-
