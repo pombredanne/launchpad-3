@@ -265,5 +265,3 @@ templates of the parent series.
     >>> print sorted([template.name for template in dartempls])
     [u'template1', u'template2']
 
-We need to force a DB reset because the changes are done from an external
-script and the test system is not able to detect the database changes.
