@@ -373,7 +373,7 @@ class BranchListingItemsMixin:
         """Return a set of branches that should show merge proposal badges.
 
         Branches have merge proposals badges if they've been proposed for
-        merging into another branch (source branches)
+        merging into another branch (source branches).
         """
         branches = self.visible_branches_for_view
         collection = self.getBranchCollection()
