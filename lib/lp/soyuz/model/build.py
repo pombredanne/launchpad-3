@@ -863,12 +863,13 @@ class BuildSet:
             tables.extend(['SourcePackageRelease', 'SourcePackageName'])
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
-                            user=None):
+                            user=None, arch_tag=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
 
-        self._handleOptionalParams(queries, clauseTables, status, name)
+        self._handleOptionalParams(
+            queries, clauseTables, status, name, arch_tag=arch_tag)
 
         # This code MUST match the logic in the Build security adapter,
         # otherwise users are likely to get 403 errors, or worse.
