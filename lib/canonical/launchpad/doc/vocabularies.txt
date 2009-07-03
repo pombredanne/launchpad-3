@@ -461,7 +461,7 @@ BranchVocabulary with respect to the tokens and privacy awareness.
 
 Here's a vocabulary for all hosted branches owned by the current user.
 
-    >>> from lp.code.interfaces.branch import BranchType
+    >>> from lp.code.enums import BranchType
 
     >>> a_user = factory.makePerson(name='a-branching-user')
     >>> product1 = factory.makeProduct(name='product-one')

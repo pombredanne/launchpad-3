@@ -73,7 +73,8 @@ from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 
-from lp.code.interfaces.branch import BranchType, IBranch
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (

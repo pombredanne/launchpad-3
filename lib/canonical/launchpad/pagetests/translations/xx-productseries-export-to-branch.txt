@@ -71,7 +71,7 @@ After setting the branch, the form returns to the settings page.
 It shows the changed setting.
 
     >>> print extract_text(get_translations_branch_paragraph(owner_browser))
-    Exporting translations to branch: ~...
+    Exporting translations to branch: lp:...
 
 The notice links to the branch, and to the page where the setting can be
 changed.
@@ -94,7 +94,7 @@ changed.
     <div ...>
     <h2>Automatic translations commits</h2>
     <ul>
-    <li><a href="/.../trunk">... Series: trunk</a></li>
+    <li><a href=".../trunk">... trunk series</a></li>
     </ul>
     </div>
 
