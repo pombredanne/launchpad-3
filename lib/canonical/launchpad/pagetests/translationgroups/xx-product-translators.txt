@@ -13,14 +13,3 @@ The translation work for a product can be assigned to a translation group.
     Select the translation group that will be managing...
     ...The Evolution Groupware Application...
     ...
-
-To create a new translation group, the user has to go to the answers page
-for Launchpad translations and submit a question.
-
-    >>> answers_link = admin_browser.getLink(
-    ... url='http://answers.launchpad.dev/rosetta/+addquestion')
-    >>> answers_link is not None
-    True
-    >>> answers_link.click()
-    >>> admin_browser.title
-    'Ask a question about Launchpad Translations'
