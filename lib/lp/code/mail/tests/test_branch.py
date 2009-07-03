@@ -2,7 +2,6 @@
 
 """Tests for Branch-related mailings"""
 
-import re
 from unittest import TestLoader
 
 from canonical.testing import DatabaseFunctionalLayer
