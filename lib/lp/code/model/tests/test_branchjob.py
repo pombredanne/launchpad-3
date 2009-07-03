@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces.translations import (
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from lp.testing import TestCaseWithFactory
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
@@ -497,7 +498,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree.commit('rev1')
         tree2 = tree.bzrdir.sprout('tree2').open_workingtree()
         tree2.commit('rev2a', rev_id='rev2a-id', committer='foo@')
-        tree2.commit('rev3', rev_id='rev3-id', authors=['bar@', 'baz@'])
+        tree2.commit('rev3', rev_id='rev3-id',
+                     authors=['bar@', 'baz@blaine.com'])
         tree.merge_from_branch(tree2.branch)
         tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
         tree3.commit('rev2b', rev_id='rev2b-id', committer='qux@')
@@ -542,7 +544,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.addCleanup(job.bzr_branch.unlock)
         graph = job.bzr_branch.repository.get_graph()
         revision_ids = ['rev2a-id', 'rev3-id', 'rev2b-id']
-        self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
+        self.assertEqual(set(['foo@', 'bar@', 'baz@blaine.com', 'qux@']),
                          job.getAuthors(revision_ids, graph))
 
     def test_getAuthors_with_ghost(self):
@@ -552,7 +554,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         graph = job.bzr_branch.repository.get_graph()
         self.addCleanup(job.bzr_branch.unlock)
         revision_ids = ['rev2a-id', 'rev3-id', 'rev2b-id', 'rev2c-id']
-        self.assertEqual(set(['foo@', 'bar@', 'baz@', 'qux@']),
+        self.assertEqual(set(['foo@', 'bar@', 'baz@blaine.com', 'qux@']),
                          job.getAuthors(revision_ids, graph))
 
     def test_getRevisionMessage(self):
@@ -572,23 +574,36 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_getRevisionMessage_with_merge_authors(self):
         """Merge authors are included after the main bzr log."""
+        person = self.factory.makePerson(name='baz',
+            displayname='Basil Blaine',
+            email='baz@blaine.com',
+            email_address_status=EmailAddressStatus.VALIDATED)
         job = self.makeRevisionsAddedWithMergeCommit()
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
+        u'Merge authors:\n'
+        '  bar@\n'
+        '  Basil Blaine (baz)\n'
+        '  foo@\n'
+        '  qux@\n'
         '------------------------------------------------------------\n'
         'revno: 2 [merge]\n'
         'committer: J. Random Hacker <jrandom@example.org>\n'
         'branch nick: nicholas\n'
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
-        '  rev2d\n'
-        'Merge authors: bar@, baz@, foo@, qux@\n', message)
+        '  rev2d\n', message)
 
     def test_getRevisionMessage_with_merge_authors_and_authors(self):
         """Merge authors are separate from normal authors."""
         job = self.makeRevisionsAddedWithMergeCommit(authors=['quxx'])
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
         '------------------------------------------------------------\n'
         'revno: 2 [merge]\n'
         'author: quxx\n'
@@ -596,8 +611,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'branch nick: nicholas\n'
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
-        '  rev2d\n'
-        'Merge authors: bar@, baz@, foo@, qux@\n', message)
+        '  rev2d\n', message)
 
     def test_getRevisionMessage_with_related_BMP(self):
         """Information about related proposals is displayed."""
@@ -609,50 +623,21 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         bmp.source_branch.last_scanned_id = 'rev3-id'
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
-        '------------------------------------------------------------\n'
-        'revno: 2 [merge]\n'
-        'committer: J. Random Hacker <jrandom@example.org>\n'
-        'branch nick: nicholas\n'
-        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
-        'message:\n'
-        '  rev2d\n'
-        'Merge authors: bar@, baz@, foo@, qux@\n'
-        'Related merge proposals:\n'
-        '  %s\n'
-        '  proposed by: J. Random Hacker (jrandom)\n' % canonical_url(bmp),
-            message)
-
-    def test_getRevisionMessage_with_related_approved_BMP(self):
-        """The approver is shown for approved proposals."""
-        job = self.makeRevisionsAddedWithMergeCommit()
-        hacker = self.factory.makePerson(displayname='J. Random Hacker',
-                                         name='jrandom')
-        reviewer = self.factory.makePerson(displayname='J. Random Reviewer',
-                                           name='jrandom2')
-        other = self.factory.makePerson(displayname='Other Reviewer',
-                                        name='other')
-        job.branch.reviewer = reviewer
-        bmp = self.factory.makeBranchMergeProposal(target_branch=job.branch,
-                                                   registrant=hacker)
-        bmp.approveBranch(reviewer, 'rev3-id')
-        bmp.source_branch.last_scanned_id = 'rev3-id'
-        bmp.createComment(other, 'foo', vote=CodeReviewVote.NEEDS_FIXING)
-        message = job.getRevisionMessage('rev2d-id', 1)
-        self.assertEqual(
-        '------------------------------------------------------------\n'
-        'revno: 2 [merge]\n'
-        'committer: J. Random Hacker <jrandom@example.org>\n'
-        'branch nick: nicholas\n'
-        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
-        'message:\n'
-        '  rev2d\n'
-        'Merge authors: bar@, baz@, foo@, qux@\n'
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
         'Related merge proposals:\n'
         '  %s\n'
         '  proposed by: J. Random Hacker (jrandom)\n'
-        '  approved by: J. Random Reviewer (jrandom2)\n'
-        '  review: Needs Fixing - Other Reviewer (other)\n'
-            % canonical_url(bmp), message)
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2d\n' % canonical_url(bmp), message)
 
     def test_getRevisionMessage_with_related_rejected_BMP(self):
         """The reviewer is shown for non-approved proposals."""
@@ -668,18 +653,21 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         bmp.source_branch.last_scanned_id = 'rev3-id'
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
+        'Related merge proposals:\n'
+        '  %s\n'
+        '  proposed by: J. Random Hacker (jrandom)\n'
         '------------------------------------------------------------\n'
         'revno: 2 [merge]\n'
         'committer: J. Random Hacker <jrandom@example.org>\n'
         'branch nick: nicholas\n'
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
-        '  rev2d\n'
-        'Merge authors: bar@, baz@, foo@, qux@\n'
-        'Related merge proposals:\n'
-        '  %s\n'
-        '  proposed by: J. Random Hacker (jrandom)\n'
-            % canonical_url(bmp), message)
+        '  rev2d\n' % canonical_url(bmp), message)
 
     def test_email_format(self):
         """Contents of the email are as expected."""
