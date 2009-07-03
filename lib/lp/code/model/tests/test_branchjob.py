@@ -41,7 +41,7 @@ from lp.code.bzr import (
     REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel, CodeReviewVote)
+    CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
     IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
