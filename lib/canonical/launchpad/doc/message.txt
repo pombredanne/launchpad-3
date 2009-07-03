@@ -521,9 +521,10 @@ Finally, let's test the goldilocks message, where the date is just right:
 
 == Unknown encoding ==
 
-Some mail clients send messages with the character set specified as x-unknown.
-Python's email package doesn't handle these well and raises a LookupError, but
-Message.fromEmail() tries parsing them as latin-1, which often works.
+Some mail clients (Pine, for example) send messages with the character set
+specified as x-unknown. Python's email package doesn't handle these well and
+raises a LookupError, but Message.fromEmail() tries parsing them as latin-1,
+which often works.
 
     >>> import os.path
     >>> msg_path = os.path.join(
