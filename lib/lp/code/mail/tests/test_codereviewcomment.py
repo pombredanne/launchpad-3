@@ -214,6 +214,37 @@ class TestCodeReviewComment(TestCaseWithFactory):
         first, diff, image = msg.get_payload()
         self.assertEqual([diff], mailer.attachments)
 
+    def makeCommentAndParticipants(self):
+        proposer = self.factory.makePerson(
+            email='proposer@email.com', displayname='Proposer')
+        bmp = self.factory.makeBranchMergeProposal(registrant=proposer)
+        commenter = self.factory.makePerson(
+            email='commenter@email.com', displayname='Commenter')
+        comment = bmp.createComment(commenter, 'hello')
+        return comment
+
+    def test_getToAddresses_no_parent(self):
+        comment = self.makeCommentAndParticipants()
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        to = mailer._getToAddresses(
+            comment.message.owner, 'comment@gmail.com')
+        self.assertEqual(['Proposer <proposer@email.com>'], to)
+        to = mailer._getToAddresses(
+            comment.branch_merge_proposal.registrant, 'propose@gmail.com')
+        self.assertEqual(['Proposer <propose@gmail.com>'], to)
+
+    def test_getToAddresses_with_parent(self):
+        comment = self.makeCommentAndParticipants()
+        second_commenter = self.factory.makePerson(
+            email='commenter2@email.com', displayname='Commenter2')
+        reply = comment.branch_merge_proposal.createComment(
+            second_commenter, 'hello2', parent=comment)
+        mailer = CodeReviewCommentMailer.forCreation(reply)
+        to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
+        self.assertEqual(['Commenter <commenter@email.com>'], to)
+        to = mailer._getToAddresses(
+            comment.message.owner, 'comment@gmail.com')
+        self.assertEqual(['Commenter <comment@gmail.com>'], to)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
