@@ -5,6 +5,7 @@ import unittest
 
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -32,7 +33,6 @@ class TestCaseWithPublishedBuilds(TestCaseWithFactory):
 
         gtg_src_hist = self.publisher.getPubSource(
             sourcename="getting-things-gnome",
-            architecturehintlist="i386",
             status=PackagePublishingStatus.PUBLISHED)
         self.builds += gtg_src_hist.createMissingBuilds()
 
@@ -49,6 +49,10 @@ class TestHasBuildRecordsInterface(TestCaseWithPublishedBuilds):
 
         self.context = self.publisher.distroseries.distribution
 
+    def testProvidesHasBuildRecords(self):
+        # Ensure that the context does in fact provide IHasBuildRecords
+        self.assertProvides(self.context, IHasBuildRecords)
+
     def testGetBuildRecordsNoArgs(self):
         # getBuildRecords() called without any arguments returns all builds.
         builds = self.context.getBuildRecords()
@@ -63,13 +67,12 @@ class TestHasBuildRecordsInterface(TestCaseWithPublishedBuilds):
         self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
         builds = self.context.getBuildRecords(arch_tag="i386")
         num_results = builds.count()
-        self.assertEquals(2, num_results, "Expected 2 build but "
+        self.assertEquals(2, num_results, "Expected 2 builds but "
                                           "got %s" % num_results)
 
 
 class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
-    """Test the DistroSeries implementation of IHasBuildRecords.
-    """
+    """Test the DistroSeries implementation of IHasBuildRecords."""
     def setUp(self):
         super(TestDistroSeriesHasBuildRecords, self).setUp()
 
@@ -77,12 +80,19 @@ class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
 
 
 class TestDistroArchSeriesHasBuildRecords(TestHasBuildRecordsInterface):
-    """Test the DistroArchSeries implementation of IHasBuildRecords.
-    """
+    """Test the DistroArchSeries implementation of IHasBuildRecords."""
     def setUp(self):
         super(TestDistroArchSeriesHasBuildRecords, self).setUp()
 
         self.context = self.publisher.distroseries['i386']
+
+
+class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
+    """Test the DistroArchSeries implementation of IHasBuildRecords."""
+    def setUp(self):
+        super(TestArchiveHasBuildRecords, self).setUp()
+
+        self.context = self.publisher.distroseries.main_archive
 
 
 def test_suite():
