@@ -3,10 +3,14 @@
 
 import unittest
 
+from zope.component import getUtility
+
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -93,6 +97,25 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
         super(TestArchiveHasBuildRecords, self).setUp()
 
         self.context = self.publisher.distroseries.main_archive
+
+
+class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
+    """Test the DistroArchSeries implementation of IHasBuildRecords."""
+    def setUp(self):
+        super(TestBuilderHasBuildRecords, self).setUp()
+
+        # Create a 386 builder
+        owner = self.factory.makePerson()
+        processor_family = ProcessorFamilySet().getByProcessorName('386')
+        processor = processor_family.processors[0]
+        builder_set = getUtility(IBuilderSet)
+        self.context = builder_set.new(
+            processor, 'http://example.com', 'Newbob', 'New Bob the Builder',
+            'A new and improved bob.', owner)
+
+        # Ensure that our builds were all built by the test builder.
+        for build in self.builds:
+            build.builder = self.context
 
 
 def test_suite():
