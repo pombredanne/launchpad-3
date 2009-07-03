@@ -242,28 +242,14 @@
 
       <div class="portlet">
         <h2>Series and milestones</h2>
-        <p>A "release series" is major release that would typically have a number
-      of "point releases" associated with it.</p>
-        <div class="series"
-             tal:repeat="series view/sorted_active_series_list">
 
-          <div tal:define="is_focus series/is_development_focus"
-               tal:attributes="
-                               class python:is_focus and 'highlighted' or 'unhighlighted'">
-            <metal:series use-macro="series/@@+macros/detailed_display" />
-          </div>
-        </div>
+        <iframe
+          metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
         <div
            class="actions"
            tal:content="structure overview_menu/series_add/render"
         />
-
-        <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
-
-        <div style="float: right">
-          <a href="+series">&#x00BB; Series timeline</a>
-          <a href="+milestones">&#x00BB; Milestone history</a>
-        </div>
+        <a href="+series">&#x00BB; View full history</a>
       </div>
 
       <tal:contrib replace="structure context/@@+portlet-top-contributors" />

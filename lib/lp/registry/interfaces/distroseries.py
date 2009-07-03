@@ -24,7 +24,8 @@ from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers)
+    IHasAppointedDriver, IHasDrivers)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import IHasMilestones
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
@@ -137,9 +138,21 @@ class IDistroSeriesEditRestricted(Interface):
         """Create a new milestone for this DistroSeries."""
 
 
+class ISeriesMixin(Interface):
+    """Methods & properties shared between distro & product series."""
+
+    active = exported(
+        Bool(
+            title=_("Active"),
+            description=_(
+                "Whether or not this series is stable and supported, or "
+                "under current development. This excludes series which "
+                "are experimental or obsolete.")))
+
+
 class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                           IBugTarget, ISpecificationGoal, IHasMilestones,
-                          IHasBuildRecords):
+                          IHasBuildRecords, ISeriesMixin):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
@@ -320,14 +333,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             title=_("Supported"),
             description=_(
                 "Whether or not this series is currently supported.")))
-
-    active = exported(
-        Bool(
-            title=_("Active"),
-            description=_(
-                "Whether or not this series is stable and supported, or "
-                "under current development. This excludes series which "
-                "are experimental or obsolete.")))
 
     def isUnstable():
         """Whether or not a distroseries is unstable.

@@ -289,6 +289,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             hide_email_addresses=hide_email_addresses)
         person = removeSecurityProxy(person)
         email = removeSecurityProxy(email)
+        person._password_cleartext_cached = password
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')

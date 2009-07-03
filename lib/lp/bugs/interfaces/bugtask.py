@@ -922,7 +922,7 @@ class BugTaskSearchParams:
 
     For a more thorough treatment, check out:
 
-        lib/canonical/launchpad/doc/bugtask.txt
+        lib/lp/bugs/doc/bugtask-search.txt
     """
 
     product = None
@@ -940,7 +940,15 @@ class BugTaskSearchParams:
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
                  bug_commenter=None, omit_targeted=False,
-                 date_closed=None, affected_user=None):
+                 date_closed=None, affected_user=None, hardware_bus=None,
+                 hardware_vendor_id=None, hardware_product_id=None,
+                 hardware_driver_name=None, hardware_driver_package_name=None,
+                 hardware_owner_is_bug_reporter=None,
+                 hardware_owner_is_affected_by_bug=False,
+                 hardware_owner_is_subscribed_to_bug=False,
+                 hardware_is_linked_to_bug=False
+                 ):
+
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -970,6 +978,17 @@ class BugTaskSearchParams:
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
         self.affected_user = affected_user
+        self.hardware_bus = hardware_bus
+        self.hardware_vendor_id = hardware_vendor_id
+        self.hardware_product_id = hardware_product_id
+        self.hardware_driver_name = hardware_driver_name
+        self.hardware_driver_package_name = hardware_driver_package_name
+        self.hardware_owner_is_bug_reporter = hardware_owner_is_bug_reporter
+        self.hardware_owner_is_affected_by_bug = (
+            hardware_owner_is_affected_by_bug)
+        self.hardware_owner_is_subscribed_to_bug = (
+            hardware_owner_is_subscribed_to_bug)
+        self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1034,7 +1053,14 @@ class BugTaskSearchParams:
                        omit_duplicates=True, omit_targeted=None,
                        status_upstream=None, milestone_assignment=None,
                        milestone=None, component=None, nominated_for=None,
-                       sourcepackagename=None, has_no_package=None):
+                       sourcepackagename=None, has_no_package=None,
+                       hardware_bus=None, hardware_vendor_id=None,
+                       hardware_product_id=None, hardware_driver_name=None,
+                       hardware_driver_package_name=None,
+                       hardware_owner_is_bug_reporter=None,
+                       hardware_owner_is_affected_by_bug=False,
+                       hardware_owner_is_subscribed_to_bug=False,
+                       hardware_is_linked_to_bug=False):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1086,6 +1112,21 @@ class BugTaskSearchParams:
         if has_no_package:
             search_params.sourcepackagename = NULL
         search_params.nominated_for = nominated_for
+
+        search_params.hardware_bus = hardware_bus
+        search_params.hardware_vendor_id = hardware_vendor_id
+        search_params.hardware_product_id = hardware_product_id
+        search_params.hardware_driver_name = hardware_driver_name
+        search_params.hardware_driver_package_name = (
+            hardware_driver_package_name)
+        search_params.hardware_owner_is_bug_reporter = (
+            hardware_owner_is_bug_reporter)
+        search_params.hardware_owner_is_affected_by_bug = (
+            hardware_owner_is_affected_by_bug)
+        search_params.hardware_owner_is_subscribed_to_bug = (
+            hardware_owner_is_subscribed_to_bug)
+        search_params.hardware_is_linked_to_bug = (
+            hardware_is_linked_to_bug)
 
         return search_params
 

@@ -35,7 +35,8 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
-from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
@@ -622,9 +623,12 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         if not target.bugtracker:
             return None
         else:
+            bug = self.context.bug
+            title = bug.title
+            description = u"Originally reported at:\n  %s\n\n%s" % (
+                canonical_url(bug), bug.description)
             return target.bugtracker.getBugFilingAndSearchLinks(
-                target.remote_product, self.context.bug.title,
-                self.context.bug.description)
+                target.remote_product, title, description)
 
 
 class BugTrackerCreationStep(AlsoAffectsStep):

@@ -11,7 +11,7 @@ he is not a designated translator.
     ...     'http://translations.launchpad.dev/ubuntu/+settings')
 
     >>> admin_browser.getControl(
-    ...     'Translation Permission System').value = ['RESTRICTED']
+    ...     'Translation permissions policy').value = ['RESTRICTED']
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/ubuntu/+settings

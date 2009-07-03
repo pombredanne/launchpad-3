@@ -19,7 +19,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from lazr.enum import DBEnumeratedType, DBItem
 
 
@@ -75,28 +75,16 @@ class TranslationPermission(DBEnumeratedType):
 class IHasTranslationGroup(Interface):
     translationgroup = Choice(
         title = _("Translation group"),
-        description = _("The translation group associated with this object."
-            " This group is made up of a set of translators for all the"
-            " languages approved by the group manager. These translators then"
-            " have permission to edit the groups translation files, based on"
-            " the permission system selected below."),
+        description = _("The translation group that helps review "
+            " translations for this project or distribution. The group's "
+            " role depends on the permissions policy selected below."),
         required=False,
         vocabulary='TranslationGroup')
 
     translationpermission = Choice(
-        title=_("Translation Permission System"),
-        description=_("The permissions this group requires for translators.  "
-            "If 'Open', anybody can edit translations in any language.  "
-            "If 'Structured', members of the translation group can edit "
-            "translations for their languages, and others can make "
-            "suggestions; translations for which the translation group "
-            "assigns no reviewer or translation team are completely open.  "
-            "If 'Restricted', translation group members can edit "
-            "translations and any user can make suggestions for those "
-            "translations, but translations to languages that aren't "
-            "covered by the translation group are closed and accept no "
-            "suggestions.  Finally, if 'Closed', only translation group "
-            "members can enter any translations at all."),
+        title=_("Translation permissions policy"),
+        description=_("The policy this project or distribution uses to "
+            " balance openness and control for their translations."),
         required=True,
         vocabulary=TranslationPermission)
 
