@@ -547,10 +547,6 @@ class RevisionsAddedJob(BranchJobDerived):
                 outf.write('  %s\n' % canonical_url(bmp))
                 proposer = bmp.registrant
                 outf.write('  proposed by: %s\n' % proposer.unique_displayname)
-                if (bmp.reviewer is not None and bmp.queue_status ==
-                    BranchMergeProposalStatus.CODE_APPROVED):
-                    outf.write('  approved by: %s\n' %
-                               bmp.reviewer.unique_displayname)
                 for review in bmp.votes:
                     outf.write('  review: %s - %s\n' %
                         (review.comment.vote.title,
