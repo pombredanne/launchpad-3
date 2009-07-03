@@ -37,7 +37,6 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp import canonical_url
 from lp.code.bzr import (
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
-from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
@@ -546,7 +545,8 @@ class RevisionsAddedJob(BranchJobDerived):
             for bmp in bmps:
                 outf.write('  %s\n' % canonical_url(bmp))
                 proposer = bmp.registrant
-                outf.write('  proposed by: %s\n' % proposer.unique_displayname)
+                outf.write('  proposed by: %s\n' %
+                           proposer.unique_displayname)
                 for review in bmp.votes:
                     outf.write('  review: %s - %s\n' %
                         (review.comment.vote.title,
