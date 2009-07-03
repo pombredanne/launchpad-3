@@ -48,6 +48,8 @@ def runWindmill():
 
     This function exits once windmill has terminated.
     """
+    # The windmill main function will interpret the command-line arguments 
+    # for us.
     windmill.bin.windmill_bin.main()
 
 
