@@ -35,6 +35,8 @@ class VPOExportSet:
 
     implements(IVPOExportSet)
 
+    # Names of columns that are selected and passed (in this order) to
+    # the VPOExport constructor.
     column_names = [
         'POTMsgSet.id',
         'TranslationTemplateItem.sequence',
@@ -68,7 +70,13 @@ class VPOExportSet:
     sort_columns = ', '.join(sort_column_names)
 
     def _select(self, pofile, where=None, ignore_obsolete=True):
-        # Prefetch all POTMsgSets in one go.
+        """Select translation message data.
+
+        Diverged messages come before shared ones.  The exporter relies
+        on this.
+        """
+
+        # Prefetch all POTMsgSets for this template in one go.
         potmsgsets = {}
         for potmsgset in pofile.potemplate.getPOTMsgSets(ignore_obsolete):
             potmsgsets[potmsgset.id] = potmsgset
@@ -136,8 +144,6 @@ class VPOExportSet:
 
     def get_pofile_changed_rows(self, pofile):
         """See `IVPOExportSet`."""
-        where = "sequence <> 0 AND is_imported IS FALSE"
-
         return self._select(pofile, where="is_imported IS FALSE")
 
     def get_distroseries_pofiles(self, series, date=None, component=None,
@@ -237,6 +243,7 @@ class VPOExport:
     context = None
 
     def __init__(self, *args):
+        """Store raw data as given in `VPOExport.column_names`."""
         (self.potmsgset_id,
          self.sequence,
          self.comment,

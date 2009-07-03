@@ -107,28 +107,23 @@ between the two templates.
 
     >>> potmsgset1 = factory.makePOTMsgSet(trunk_template, '1', sequence=1)
     >>> potmsgset2 = factory.makePOTMsgSet(trunk_template, '2', sequence=2)
-    >>> for number, msgset in enumerate([potmsgset1, potmsgset2]):
-    ...     new_tti = TranslationTemplateItem(
-    ...         potemplate=stable_template, sequence=number+1,
-    ...         potmsgset=msgset)
+    >>> potmsgset1.setSequence(stable_template, 1)
+    >>> potmsgset2.setSequence(stable_template, 2)
 
 The templates are translated to Dutch.
+
+Of the translations, one message is diverged for trunk and the other is
+diverged for stable.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> trunk_pofile = factory.makePOFile('nl', potemplate=trunk_template)
     >>> stable_pofile = factory.makePOFile('nl', potemplate=stable_template)
     >>> message1 = factory.makeTranslationMessage(
     ...     pofile=removeSecurityProxy(trunk_pofile), potmsgset=potmsgset1,
-    ...     translations=['een'])
+    ...     translations=['een'], force_diverged=True)
     >>> message2 = factory.makeTranslationMessage(
-    ...     pofile=removeSecurityProxy(trunk_pofile), potmsgset=potmsgset2,
-    ...     translations=['twee'])
-
-Of the translations, one message is diverged for trunk and the other is
-diverged for stable.
-
-    >>> removeSecurityProxy(message1).potemplate = trunk_template
-    >>> removeSecurityProxy(message2).potemplate = stable_template
+    ...     pofile=removeSecurityProxy(stable_pofile), potmsgset=potmsgset2,
+    ...     translations=['twee'], force_diverged=True)
 
 When we export trunk, only the trunk message shows up.
 
