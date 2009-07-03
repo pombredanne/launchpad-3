@@ -480,8 +480,12 @@ class POTMsgSet(SQLBase):
         return potranslations
 
     def _findTranslationMessage(self, pofile, potranslations, pluralforms):
-        """Find a message for this `pofile` exactly matching given
-        `translations` strings comparing only `pluralforms` of them.
+        """Find a message for this `pofile`.
+
+        The returned message matches exactly the given `translations` strings
+        comparing only `pluralforms` of them.
+        :param potranslations: A list of translation strings.
+        :param pluralforms: The number of pluralforms to compare.
         """
         clauses = ['potmsgset = %s' % sqlvalues(self),
                    'language = %s' % sqlvalues(pofile.language)]
