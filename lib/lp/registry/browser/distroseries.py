@@ -53,6 +53,7 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -117,6 +118,10 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             return None
         else:
             return self.context.last_delta_language_pack_exported.file
+
+    @stepthrough('+upload')
+    def traverse_queue(self, id):
+        return getUtility(IPackageUploadSet).get(id)
 
 
 class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):

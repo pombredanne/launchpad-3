@@ -1528,7 +1528,7 @@ class POFileToTranslationFileDataAdapter:
             rows = getUtility(IVPOExportSet).get_pofile_rows(pofile)
 
         messages = []
-        diverged_messages = []
+        diverged_messages = set()
         for row in rows:
             assert row.pofile == pofile, 'Got a row for a different IPOFile.'
             assert row.sequence != 0 or row.is_imported, (
@@ -1536,7 +1536,7 @@ class POFileToTranslationFileDataAdapter:
 
             msg_key = (row.msgid_singular, row.msgid_plural, row.context)
             if row.diverged is not None:
-                diverged_messages.append(msg_key)
+                diverged_messages.add(msg_key)
             else:
                 # If we are exporting a shared message, make sure we
                 # haven't added a diverged one to the list already.

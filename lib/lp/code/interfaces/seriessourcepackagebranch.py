@@ -61,6 +61,13 @@ class IFindOfficialBranchLinks(Interface):
         :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
         """
 
+    def findForDistributionSourcePackage(distrosourcepackage):
+        """Get the links to branches for a distribution source package.
+
+        :param distrosourcepackage: An `IDistributionSourcePackage`.
+        :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
+        """
+
 
 class IMakeOfficialBranchLinks(Interface):
     """A set of links from source packages in distribution suites to branches.
