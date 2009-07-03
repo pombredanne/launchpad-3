@@ -819,30 +819,19 @@ class BuildSet:
                 IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
-    def _handleOptionalParams(
+    def handleOptionalParamsForBuildQueries(
         self, queries, tables, status=None, name=None, pocket=None,
         arch_tag=None):
-        """Construct query clauses needed/shared by all getBuild..() methods.
+        """See `IBuildSet`."""
 
-        :param queries: container to which to add any resulting query clauses.
-        :param tables: container to which to add joined tables.
-        :param status: optional build state for which to add a query clause if
-            present.
-        :param name: optional source package release name for which to add a
-            query clause if present.
-        :param pocket: optional pocket for which to add a query clause if
-            present.
-        :param arch_tag: optional architecture tag for which to add a
-            query clause if present.
-        """
         # Add query clause that filters on build state if the latter is
         # provided.
         if status is not None:
-            queries.append('buildstate=%s' % sqlvalues(status))
+            queries.append('Build.buildstate=%s' % sqlvalues(status))
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
-            queries.append('pocket=%s' % sqlvalues(pocket))
+            queries.append('Build.pocket=%s' % sqlvalues(pocket))
 
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
@@ -868,7 +857,7 @@ class BuildSet:
         queries = []
         clauseTables = []
 
-        self._handleOptionalParams(
+        self.handleOptionalParamsForBuildQueries(
             queries, clauseTables, status, name, arch_tag=arch_tag)
 
         # This code MUST match the logic in the Build security adapter,
@@ -898,7 +887,7 @@ class BuildSet:
         queries = []
         clauseTables = []
 
-        self._handleOptionalParams(
+        self.handleOptionalParamsForBuildQueries(
             queries, clauseTables, status, name, pocket, arch_tag)
 
         # Ordering according status
@@ -967,7 +956,7 @@ class BuildSet:
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        self._handleOptionalParams(
+        self.handleOptionalParamsForBuildQueries(
             condition_clauses, clauseTables, status, name, pocket)
 
         # Only pick builds from the distribution's main archive to

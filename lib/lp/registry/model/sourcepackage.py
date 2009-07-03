@@ -502,7 +502,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return not self.__eq__(other)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None):
+                        user=None, arch_tag=None):
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now and this method only returns records for SPRs in a
@@ -527,20 +527,17 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
         # and share it with IBuildSet.getBuildsByArchIds()
+        from lp.soyuz.interfaces.build import IBuildSet
+        build_set = getUtility(IBuildSet)
+        build_set.handleOptionalParamsForBuildQueries(
+            condition_clauses, clauseTables, build_state, name, pocket,
+            arch_tag)
 
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
             "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
-
-        if build_state is not None:
-            condition_clauses.append("Build.buildstate=%s"
-                                     % sqlvalues(build_state))
-
-        if pocket:
-            condition_clauses.append(
-                "Build.pocket = %s" % sqlvalues(pocket))
 
         # Ordering according status
         # * NEEDSBUILD & BUILDING by -lastscore
