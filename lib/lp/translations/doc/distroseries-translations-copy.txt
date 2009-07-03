@@ -191,9 +191,6 @@ the new series will be available in the script.
 The script fails as long as the defer_translation_imports flag is not
 set.
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-    >>> LaunchpadTestSetup(dbuser='rosettaadmin').setUp()
-
     >>> from canonical.launchpad.ftests.script import run_script
     >>> returnvalue, output, error_output = run_script(
     ...     'scripts/copy-translations-from-parent.py',
@@ -268,4 +265,5 @@ templates of the parent series.
     >>> print sorted([template.name for template in dartempls])
     [u'template1', u'template2']
 
-
+We need to force a DB reset because the changes are done from an external
+script and the test system is not able to detect the database changes.
