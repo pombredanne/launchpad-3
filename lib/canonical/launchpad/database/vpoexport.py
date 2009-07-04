@@ -10,18 +10,24 @@ __all__ = [
     'VPOExport'
     ]
 
-from storm.locals import Or
+from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues, cursor
-from lp.services.worlddata.model.language import Language
+from storm.expr import And, Or
+from storm.store import Store
+
+from canonical.database.sqlbase import quote, sqlvalues
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from lp.soyuz.model.component import Component
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.model.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.interfaces import IStore, IVPOExportSet, IVPOExport
+from canonical.launchpad.interfaces.translations import TranslationConstants
+from lp.soyuz.model.sourcepackagerelease import (
+    SourcePackageRelease)
+from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
 
 
 class VPOExportSet:
@@ -29,72 +35,101 @@ class VPOExportSet:
 
     implements(IVPOExportSet)
 
-    VIEW_NAME_PREFIX = 'POExport.' 
+    # Names of columns that are selected and passed (in this order) to
+    # the VPOExport constructor.
     column_names = [
-        'potemplate',
-        'template_header',
-        'pofile',
-        'language',
-        'variant',
-        'translation_file_comment',
-        'translation_header',
-        'is_translation_header_fuzzy',
-        'potmsgset',
-        'sequence',
-        'comment',
-        'source_comment',
-        'file_references',
-        'flags_comment',
-        'context',
-        'msgid_singular',
-        'msgid_plural',
-        'is_current',
-        'is_imported',
-        'diverged',
-        'translation0',
-        'translation1',
-        'translation2',
-        'translation3',
-        'translation4',
-        'translation5',
+        'POTMsgSet.id',
+        'TranslationTemplateItem.sequence',
+        'TranslationMessage.comment',
+        'msgid_singular.msgid',
+        'msgid_plural.msgid',
+        'TranslationMessage.is_current',
+        'TranslationMessage.is_imported',
+        'TranslationMessage.potemplate',
+        'potranslation0.translation',
+        'potranslation1.translation',
+        'potranslation2.translation',
+        'potranslation3.translation',
+        'potranslation4.translation',
+        'potranslation5.translation',
     ]
-    columns = ', '.join([ VIEW_NAME_PREFIX + name for name in column_names])
+    columns = ', '.join(column_names)
 
     # Obsolete translations are marked with a sequence number of 0, so they
     # would get sorted to the front of the file during export. To avoid that,
     # sequence numbers of 0 are translated to NULL and ordered to the end
     # with NULLS LAST so that they appear at the end of the file.
-    # TODO: henninge 2008-10-01 spec=message-sharing-switchover: This will
-    # change when message sharing is implemented, according to jtv.
     sort_column_names = [
-        VIEW_NAME_PREFIX+'potemplate',
-        VIEW_NAME_PREFIX+'language',
-        VIEW_NAME_PREFIX+'variant',
-        VIEW_NAME_PREFIX+'diverged NULLS LAST',
+        'TranslationMessage.potemplate NULLS LAST',
         'CASE '
-            'WHEN '+VIEW_NAME_PREFIX+'sequence = 0 THEN NULL '
-            'ELSE '+VIEW_NAME_PREFIX+'sequence '
+            'WHEN TranslationTemplateItem.sequence = 0 THEN NULL '
+            'ELSE TranslationTemplateItem.sequence '
         'END NULLS LAST',
-        VIEW_NAME_PREFIX+'id',
+        'TranslationMessage.id',
     ]
     sort_columns = ', '.join(sort_column_names)
 
-    def _select(self, join=None, where=None):
-        query = 'SELECT %s FROM POExport' % self.columns
+    def _select(self, pofile, where=None, ignore_obsolete=True):
+        """Select translation message data.
 
-        if join is not None:
-            query += ''.join([' JOIN ' + s for s in join])
+        Diverged messages come before shared ones.  The exporter relies
+        on this.
+        """
 
-        if where is not None:
-            query += ' WHERE %s' % where
+        # Prefetch all POTMsgSets for this template in one go.
+        potmsgsets = {}
+        for potmsgset in pofile.potemplate.getPOTMsgSets(ignore_obsolete):
+            potmsgsets[potmsgset.id] = potmsgset
 
+        main_select = "SELECT %s" % self.columns
+        query = main_select + """
+            FROM POTMsgSet
+            JOIN TranslationTemplateItem ON
+                TranslationTemplateItem.potemplate = %s AND
+                TranslationTemplateItem.potmsgset = POTMsgSet.id
+            LEFT JOIN TranslationMessage ON (
+                TranslationMessage.potmsgset =
+                    TranslationTemplateItem.potmsgset AND
+                TranslationMessage.is_current IS TRUE AND
+                TranslationMessage.language = %s
+                )
+            LEFT JOIN POMsgID AS msgid_singular ON
+                msgid_singular.id = POTMsgSet.msgid_singular
+            LEFT JOIN POMsgID msgid_plural ON
+                msgid_plural.id = POTMsgSet.msgid_plural
+            """ % sqlvalues(pofile.potemplate, pofile.language)
+
+        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+            alias = "potranslation%d" % form
+            field = "TranslationMessage.msgstr%d" % form
+            query += "LEFT JOIN POTranslation AS %s ON %s.id = %s\n" % (
+                    alias, alias, field)
+
+        conditions = [
+            "(TranslationMessage.potemplate IS NULL OR "
+                 "TranslationMessage.potemplate = %s)" % quote(
+                    pofile.potemplate),
+            ]
+
+        if pofile.variant:
+            conditions.append("TranslationMessage.variant = %s" % quote(
+                pofile.variant))
+        else:
+            conditions.append("TranslationMessage.variant IS NULL")
+
+        if ignore_obsolete:
+            conditions.append("TranslationTemplateItem.sequence <> 0")
+
+        if where:
+            conditions.append("(%s)" % where)
+
+        query += "WHERE %s" % ' AND '.join(conditions)
         query += ' ORDER BY %s' % self.sort_columns
 
-        cur = cursor()
-        cur.execute(query)
-
-        for row in cur.fetchall():
-            yield VPOExport(*row)
+        for row in Store.of(pofile).execute(query):
+            export_data = VPOExport(*row)
+            export_data.setRefs(pofile, potmsgsets)
+            yield export_data
 
     def get_pofile_rows(self, pofile):
         """See `IVPOExportSet`."""
@@ -102,37 +137,14 @@ class VPOExportSet:
         # they must either be in the current template (sequence != 0, so not
         # "obsolete") or be in the current imported version of the translation
         # (is_imported), or both.
-        where = """
-            potemplate = %s AND
-            language = %s AND
-            (sequence <> 0 OR is_imported)
-            """ % sqlvalues(pofile.potemplate, pofile.language)
-
-        if pofile.variant:
-            where += ' AND variant = %s' % sqlvalues(
-                pofile.variant.encode('UTF-8'))
-        else:
-            where += ' AND variant is NULL'
-
-        return self._select(where=where)
+        return self._select(
+            pofile, ignore_obsolete=False,
+            where="TranslationTemplateItem.sequence <> 0 OR "
+                "is_imported IS TRUE")
 
     def get_pofile_changed_rows(self, pofile):
         """See `IVPOExportSet`."""
-        where = """
-            potemplate = %s AND
-            language = %s AND
-            sequence <> 0 AND
-            is_current IS TRUE AND
-            is_imported IS FALSE
-            """ % sqlvalues(pofile.potemplate, pofile.language)
-
-        if pofile.variant:
-            where += ' AND variant = %s' % sqlvalues(
-                pofile.variant.encode('UTF-8'))
-        else:
-            where += ' AND variant is NULL'
-
-        return self._select(where=where)
+        return self._select(pofile, where="is_imported IS FALSE")
 
     def get_distroseries_pofiles(self, series, date=None, component=None,
                                  languagepack=None):
@@ -141,10 +153,15 @@ class VPOExportSet:
         Selects `POFiles` based on the 'series', last modified 'date',
         archive 'component', and whether it belongs to a 'languagepack'
         """
+        tables = [
+            POFile,
+            POTemplate,
+            ]
+
         conditions = [
-            POTemplate.id == POFile.potemplateID,
             POTemplate.distroseries == series,
             POTemplate.iscurrent == True,
+            POFile.potemplate == POTemplate.id,
             ]
 
         if date is not None:
@@ -155,10 +172,10 @@ class VPOExportSet:
         if component is not None:
             conditions.extend([
                 SourcePackagePublishingHistory.distroseries == series,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id,
-                SourcePackagePublishingHistory.componentID == Component.id,
-                POTemplate.sourcepackagenameID ==
+                SourcePackagePublishingHistory.sourcepackagerelease ==
+                     SourcePackageRelease.id,
+                SourcePackagePublishingHistory.component == Component.id,
+                POTemplate.sourcepackagename ==
                     SourcePackageRelease.sourcepackagenameID,
                 Component.name == component,
                 SourcePackagePublishingHistory.dateremoved == None,
@@ -168,16 +185,17 @@ class VPOExportSet:
         if languagepack:
             conditions.append(POTemplate.languagepack == True)
 
-        query = IStore(POFile).find(POFile, *conditions)
-        query = query.config(distinct=True)
+        # Use the slave store.  We may want to write to the distroseries
+        # to register a language pack, but not to the translation data
+        # we retrieve for it.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        query = store.using(*tables).find(POFile, And(*conditions))
 
         # Order by POTemplate.  Caching in the export scripts can be
         # much more effective when consecutive POFiles belong to the
         # same POTemplate, e.g. they'll have the same POTMsgSets.
-        query = query.order_by(
-            POFile.potemplateID, POFile.languageID, POFile.variant)
-
-        return query
+        sort_list = [POFile.potemplateID, POFile.languageID, POFile.variant]
+        return query.order_by(sort_list).config(distinct=True)
 
     def get_distroseries_pofiles_count(self, series, date=None,
                                         component=None, languagepack=None):
@@ -187,28 +205,34 @@ class VPOExportSet:
 
 
 class VPOExport:
-    """Present Rosetta PO files in a form suitable for exporting them
-    efficiently.
-    """
-
+    """Present translations in a form suitable for efficient export."""
     implements(IVPOExport)
 
+    productseries = None
+    sourcepackagename = None
+    distroseries = None
+    potemplate = None
+    template_header = None
+    languagepack = None
+    pofile = None
+    language = None
+    variant = None
+    translation_file_comment = None
+    translation_header = None
+    is_translation_header_fuzzy = None
+
+    potmsgset_id = None
+    potmsgset = None
+    source_comment = None
+    file_references = None
+    flags_comment = None
+    context = None
+
     def __init__(self, *args):
-        (potemplate,
-         self.template_header,
-         pofile,
-         language,
-         self.variant,
-         self.translation_file_comment,
-         self.translation_header,
-         self.is_translation_header_fuzzy,
-         potmsgset,
+        """Store raw data as given in `VPOExport.column_names`."""
+        (self.potmsgset_id,
          self.sequence,
          self.comment,
-         self.source_comment,
-         self.file_references,
-         self.flags_comment,
-         self.context,
          self.msgid_singular,
          self.msgid_plural,
          self.is_current,
@@ -221,15 +245,34 @@ class VPOExport:
          self.translation4,
          self.translation5) = args
 
-        self.potemplate = POTemplate.get(potemplate)
-        self.potmsgset = POTMsgSet.get(potmsgset)
-        self.language = Language.get(language)
-        if pofile is None:
-            self.pofile = None
+    def setRefs(self, pofile, potmsgsets_lookup):
+        """Store various object references.
+
+        :param pofile: the `POFile` that this export is for.
+        :param potmsgsets_lookup: a dict mapping numeric ids to `POTMsgSet`s.
+            This saves the ORM the job of fetching them one by one as other
+            objects refer to them.
+        """
+        template = pofile.potemplate
+        if template.productseries is not None:
+            self.productseries = template.productseries.id
         else:
-            self.pofile = POFile.get(pofile)
-            if self.potmsgset.is_translation_credit:
-                # Translation credits doesn't have plural forms so we only
-                # update the singular one.
-                self.translation0 = self.pofile.prepareTranslationCredits(
-                    self.potmsgset)
+            self.sourcepackagename = template.sourcepackagename.id
+            self.distroseries = template.distroseries.id
+
+        self.potemplate = template
+        self.template_header = template.header
+
+        self.pofile = pofile
+        self.language = pofile.language
+        self.variant = pofile.variant
+
+        potmsgset = potmsgsets_lookup[self.potmsgset_id]
+        self.potmsgset = potmsgset
+        self.source_comment = potmsgset.sourcecomment
+        self.file_references = potmsgset.filereferences
+        self.flags_comment = potmsgset.flagscomment
+        self.context = potmsgset.context
+
+        if potmsgset.is_translation_credit:
+            self.translation0 = pofile.prepareTranslationCredits(potmsgset)

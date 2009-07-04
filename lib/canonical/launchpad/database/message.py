@@ -422,7 +422,7 @@ class MessageSet:
                 # specified, default to latin-1 to prevent
                 # UnicodeDecodeErrors.
                 charset = part.get_content_charset()
-                if charset is None:
+                if charset is None or str(charset).lower() == 'x-unknown':
                     charset = 'latin-1'
 
                 content = content.decode(charset, 'replace')
