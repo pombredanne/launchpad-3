@@ -170,6 +170,11 @@ class VPOExportSet:
                 POFile.date_changed > date))
 
         if component is not None:
+            tables.extend([
+                SourcePackagePublishingHistory,
+                SourcePackageRelease,
+                Component,
+                ])
             conditions.extend([
                 SourcePackagePublishingHistory.distroseries == series,
                 SourcePackagePublishingHistory.sourcepackagerelease ==
