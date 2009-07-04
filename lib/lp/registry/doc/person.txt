@@ -8,7 +8,9 @@ not Launchpad users.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IProductSet, IEmailAddressSet,
-    ...     IHasStanding, IHasTranslationImports)
+    ...     IHasStanding)
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     IHasTranslationImports)
 
 Any Person object (either a person or a team) implements IPerson...
 
