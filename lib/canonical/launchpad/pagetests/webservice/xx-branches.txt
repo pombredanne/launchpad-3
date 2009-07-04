@@ -15,7 +15,6 @@ The branches collection also offers operations to get a particular branch.
     >>> from lp.code.enums import BranchType
     >>> login(ANONYMOUS)
     >>> branch = factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
-    >>> branch_id = branch.id
     >>> branch_url = branch.url
     >>> branch_unique_name = branch.unique_name
     >>> logout()
