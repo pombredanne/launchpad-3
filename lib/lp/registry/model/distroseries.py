@@ -34,10 +34,10 @@ from canonical.database.sqlbase import (
     quote, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
-from canonical.launchpad.database.pofiletranslator import (
+from lp.translations.model.pofiletranslator import (
     POFileTranslator)
-from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.potemplate import POTemplate
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import POTemplate
 from canonical.launchpad.interfaces import IStore
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.model.binarypackagename import BinaryPackageName
