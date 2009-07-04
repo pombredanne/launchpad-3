@@ -202,6 +202,12 @@ initscript-start:
 stop: build
 	bin/killservice librarian buildsequencer launchpad mailman
 
+# This is a stripped down version of the "stop" target for use on
+# production servers - removes running 'make build' because we have
+# already run this as part of starting the service, so not needed here.
+initscript-stop:
+	bin/killservice librarian buildsequencer launchpad mailman
+
 shutdown: scheduleoutage stop
 	$(RM) +maintenancetime.txt
 
