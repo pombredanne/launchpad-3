@@ -30,10 +30,10 @@ class Branches:
         """See `IBranches`."""
         return getUtility(IBranchLookup).getByUrl(url)
 
-    def getBranches(user, limit=50):
+    def getBranches(self, limit=50):
         """See `IBranches`."""
-        user_branches = getUtility(IAllBranches).visibleByUser(user)
-        branches = user_branches.scanned().getBranches()
+        anon_branches = getUtility(IAllBranches).visibleByUser(None)
+        branches = anon_branches.scanned().getBranches()
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         branches.config(limit=limit)

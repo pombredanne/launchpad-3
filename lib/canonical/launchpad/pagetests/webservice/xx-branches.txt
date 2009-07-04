@@ -5,7 +5,7 @@ The set of branches in Launchpad is represented by the collection found at
 
     >>> branches = webservice.get('/branches').jsonBody()
     >>> len(branches['entries'])
-    0
+    1
 
 
 == Custom operations ==
@@ -25,5 +25,5 @@ The branches collection also offers operations to get a particular branch.
 
     >>> found_branch = webservice.get(
     ...     '/branches?ws.op=getByUrl&url=%s' % branch_url).jsonBody()
-    >>> found_branch['id'] == branch['id']
+    >>> found_branch['unique_name'] == branch_unique_name
     True

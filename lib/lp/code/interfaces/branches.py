@@ -9,9 +9,8 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
-    call_with, collection_default_content, export_as_webservice_collection,
-    export_read_operation, operation_parameters, operation_returns_entry,
-    REQUEST_USER)
+    collection_default_content, export_as_webservice_collection,
+    export_read_operation, operation_parameters, operation_returns_entry)
 
 from zope.schema import TextLine
 from zope.interface import Interface
@@ -50,7 +49,6 @@ class IBranches(Interface):
         Return None if no match was found.
         """
 
-    @call_with(user=REQUEST_USER)
     @collection_default_content()
-    def getBranches(user, limit=50):
+    def getBranches(limit=50):
         """Return a collection of branches."""

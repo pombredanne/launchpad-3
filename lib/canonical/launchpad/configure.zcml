@@ -32,6 +32,12 @@
     />
 
   <browser:url
+     for="lp.code.interfaces.branches.IBranches"
+     path_expression="string:branches"
+     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:url
     for="canonical.launchpad.interfaces.IDistributionSet"
     path_expression="string:distros"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
