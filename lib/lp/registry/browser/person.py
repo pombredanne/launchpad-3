@@ -147,7 +147,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.interfaces.pofiletranslator import (
+from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslatorSet)
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
@@ -189,10 +189,10 @@ from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.launchpad.interfaces.translationrelicensingagreement import (
+from lp.translations.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
     TranslationRelicensingAgreementOptions)
-from canonical.launchpad.interfaces.translationsperson import (
+from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 
 from lp.bugs.browser.bugtask import BugTaskSearchListingView

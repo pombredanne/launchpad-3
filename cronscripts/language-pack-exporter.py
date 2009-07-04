@@ -10,7 +10,7 @@ import _pythonpath
 
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
-from canonical.launchpad.scripts.language_pack import export_language_pack
+from lp.translations.scripts.language_pack import export_language_pack
 
 
 class RosettaLangPackExporter(LaunchpadCronScript):
