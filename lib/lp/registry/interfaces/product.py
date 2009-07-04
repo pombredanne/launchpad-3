@@ -60,7 +60,7 @@ from lp.registry.interfaces.project import IProject
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator

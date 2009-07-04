@@ -29,7 +29,10 @@ from canonical.launchpad.interfaces import (
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
+    IWebServiceApplication)
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationsoverview import (
+    ITranslationsOverview)
 from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
     IHWVendorIDSet, ParameterError)
