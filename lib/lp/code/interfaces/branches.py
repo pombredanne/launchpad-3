@@ -26,7 +26,6 @@ class IBranches(Interface):
 
     @operation_parameters(
         unique_name=TextLine(title=_('Branch unique name'), required=True))
-    # Actually IBranch. See _schema_circular_imports.
     @operation_returns_entry(IBranch)
     @export_read_operation()
     def getByUniqueName(unique_name):
@@ -37,7 +36,6 @@ class IBranches(Interface):
 
     @operation_parameters(
         url=TextLine(title=_('Branch URL'), required=True))
-    # Actually IBranch. See _schema_circular_imports.
     @operation_returns_entry(IBranch)
     @export_read_operation()
     def getByUrl(url):
