@@ -32,7 +32,7 @@
     />
 
   <browser:url
-     for="lp.code.interfaces.branches.IBranches"
+     for="lp.code.interfaces.branch.IBranchSet"
      path_expression="string:branches"
      parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />

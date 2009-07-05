@@ -50,7 +50,7 @@ from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
-from lp.code.interfaces.branches import IBranches
+from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import InvalidNamespace
 from lp.code.interfaces.linkedbranch import (
@@ -571,7 +571,7 @@ class LaunchpadRootNavigation(Navigation):
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
-        'branches': IBranches,
+        'branches': IBranchSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
         'builders': IBuilderSet,
