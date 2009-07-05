@@ -495,16 +495,6 @@
     <allow interface="lp.code.interfaces.branch.IBranchCloud"/>
   </securedutility>
 
-  <!-- Branches -->
-  <class class="lp.code.model.branches.Branches">
-    <allow interface="lp.code.interfaces.branches.IBranches"/>
-  </class>
-  <securedutility
-     class="lp.code.model.branches.Branches"
-     provides="lp.code.interfaces.branches.IBranches">
-    <allow interface="lp.code.interfaces.branches.IBranches"/>
-  </securedutility>
-
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
