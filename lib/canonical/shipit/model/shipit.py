@@ -1,6 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
-
+# Copyright 2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0102
 
 __metaclass__ = type
