@@ -19,7 +19,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launchpad.scripts.gettext_check_messages import (
+from lp.translations.scripts.gettext_check_messages import (
     GettextCheckMessages)
 
 
