@@ -539,11 +539,16 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
 
     def hasAnyBranchesVisibleByUser(self):
         """Does the context have any branches that are visible to the user?"""
-        return self._branches(None).count() > 0
+        return self.branch_count > 0
 
     def _getCollection(self):
         """Override this to say what branches will be in the listing."""
         raise NotImplementedError(self._getCollection)
+
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return self._getCollection().visibleByUser(self.user).count()
 
     def _branches(self, lifecycle_status):
         """Return a sequence of branches.
@@ -1123,11 +1128,6 @@ class ProductBranchListingView(BranchListingView):
         return getUtility(IAllBranches).inProduct(self.context)
 
     @cachedproperty
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
-
-    @cachedproperty
     def development_focus_branch(self):
         dev_focus_branch = self.context.development_focus.branch
         if dev_focus_branch is None:
@@ -1380,11 +1380,6 @@ class BaseSourcePackageBranchesView(BranchListingView):
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
 
-    @cachedproperty
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
-
     @property
     def initial_values(self):
         values = super(BaseSourcePackageBranchesView, self).initial_values
@@ -1427,11 +1422,6 @@ class SourcePackageBranchesView(BranchListingView):
 
     def _getCollection(self):
         return getUtility(IAllBranches).inSourcePackage(self.context)
-
-    @cachedproperty
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
 
     def _numBranchesInPackage(self, package):
         branches = IBranchTarget(package).collection
