@@ -1,15 +1,19 @@
-= Product Pages =
+=============
+Product Pages
+=============
 
 The browser module for product has many view classes that should be
 tested in this pages test.  As it is this test is pretty sparse.
 
 
-== Product View ==
+Product View
+============
 
 The page at /product_name includes overview information about the product.
 
 
-=== Effective Driver ===
+Effective Driver
+----------------
 
 The `effective_driver` property on the view shows the product driver,
 if one exists.  If the product does not have a driver, then the driver
@@ -64,7 +68,9 @@ after a new view is obtained.
     >>> print view.effective_driver.name
     cprov
 
-=== Displaying Commercial Subscription Information ===
+
+Displaying Commercial Subscription Information
+----------------------------------------------
 
 Only project maintainers, Launchpad administrators, and Launchpad
 Commercial members are to see commercial subscription information on
@@ -107,7 +113,8 @@ And for an anonymous user it is false.
     False
 
 
-== Reviewing a projects licensing ==
+Reviewing a project's licensing
+===============================
 
 Launchpad commercial members and Launchpad admins can review a project's
 licenses.
@@ -283,7 +290,8 @@ the project must be reviewed again
     True
 
 
-== Adding a product series ==
+Adding a product series
+=======================
 
 Drivers, which include project driver and owners can access the
 +addseries view.
@@ -300,3 +308,48 @@ Drivers, which include project driver and owners can access the
     >>> view = create_view(firefox, name='+addseries')
     >>> check_permission('launchpad.Driver', view)
     True
+
+
+Programming languages
+=====================
+
+When the product has no programming languages specified, nothing is displayed
+on the index page.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> view.programming_language_details['show']
+    False
+
+Only project owners can edit the programming languages inline.
+
+    >>> view.programming_language_details['edit']
+    False
+
+But if the project owner logs in, they will see the programming language
+details, so that they can edit them.
+
+    >>> login_person(firefox.owner)
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> view.programming_language_details['show']
+    True
+
+Still though, no programming languages are specified so there isn't any text
+to display.
+
+    >>> print view.programming_language_details['text']
+    None
+
+But the owner can edit this.
+
+    >>> view.programming_language_details['edit']
+    True
+
+Once the programming languages are specified though, they are returned in the
+details.
+
+    >>> firefox.programminglang = 'C++'
+    >>> transaction.commit()
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.programming_language_details['text']
+    C++
