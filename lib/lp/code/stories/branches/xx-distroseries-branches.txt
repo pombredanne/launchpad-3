@@ -1,7 +1,7 @@
-= Branch listings for distributions =
+= Branch listings for distroseries =
 
-All source package branches are associated with a distribution series, and
-hence a distribution.
+All source package branches are associated with a distribution series and a
+source package name.
 
     >>> login('admin@canonical.com')
     >>> mint = factory.makeDistribution(name='mint')
@@ -11,8 +11,9 @@ hence a distribution.
     >>> branch = factory.makePackageBranch(
     ...     distroseries=stable, sourcepackagename=twisted, owner=eric,
     ...     name='old')
+    >>> zope = factory.makeSourcePackageName('zope')
     >>> branch = factory.makePackageBranch(
-    ...     distroseries=stable, sourcepackagename=twisted, owner=eric,
+    ...     distroseries=stable, sourcepackagename=zope, owner=eric,
     ...     name='new')
     >>> logout()
 
@@ -25,14 +26,15 @@ The code tab is now enabled at the distribution series level.
     * Code - http://code.launchpad.dev/mint/stable
     ...
 
-Going to this page shows us a listing ordered by most recently changed first.
+Going to this page shows us a listing of all branches associated with that
+distribution series ordered by most recently changed first.
 
     >>> browser.open('http://code.launchpad.dev/mint/stable')
     >>> contents = browser.contents
     >>> print_tag_with_id(contents, 'branchtable')
     Name   Status   Last Modified  Last Commit
-    lp://dev/~eric/mint/stable/twisted/new   Development  ...
     lp://dev/~eric/mint/stable/twisted/old      Development ...
+    lp://dev/~eric/mint/stable/zope/new         Development ...
     ...
     >>> ordering_control = browser.getControl(name='field.sort_by')
     >>> print ordering_control.displayValue
