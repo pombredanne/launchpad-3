@@ -1040,8 +1040,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             'áří, but uploaded version has different '
             'contents. See more information about this error in '
             'https://help.launchpad.net/Packaging/UploadErrors.\n'
-            'File bar_1.0-1.diff.gz already exists in unicode PPA name: áří, '
-            'but uploaded version has different contents. See more '
+            'File bar_1.0-1.diff.gz already exists in unicode PPA name: '
+            'áří, but uploaded version has different contents. See more '
             'information about this error in '
             'https://help.launchpad.net/Packaging/UploadErrors.\n'
             'Files specified in DSC are broken or missing, skipping package '
@@ -1054,8 +1054,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         body = body.get_payload(decode=True)
 
         self.assertTrue(
-            "File bar_1.0.orig.tar.gz already exists in unicode PPA name: áří"
-            in body)
+            "File bar_1.0.orig.tar.gz already exists in unicode PPA name: "
+            "áří" in body)
 
 
     def testPPAConflictingOrigFiles(self):
