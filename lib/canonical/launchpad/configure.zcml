@@ -22,6 +22,7 @@
   <include package="lp.code" />
 
   <include package="lp.soyuz" />
+  <include package="lp.translations" />
   <include package="lp.blueprints" />
   <include package="lp.services.comments" />
 

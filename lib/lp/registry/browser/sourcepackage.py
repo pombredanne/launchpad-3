@@ -21,13 +21,13 @@ from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
-from canonical.launchpad.browser.poexportrequest import BaseExportView
+from lp.translations.browser.poexportrequest import BaseExportView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from canonical.launchpad.browser.translations import TranslationsMixin
+from lp.translations.browser.translations import TranslationsMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.packaging import IPackaging
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.webapp import (
@@ -124,7 +124,7 @@ class SourcePackageTranslationsMenu(NavigationMenu):
     @enabled_with_permission('launchpad.ExpensiveRequest')
     def translationdownload(self):
         text = 'Download'
-        enabled = bool(self.context.getCurrentTranslationTemplates())
+        enabled = bool(self.context.getCurrentTranslationTemplates().any())
         return Link('+export', text, icon='download', enabled=enabled)
 
     def overview(self):
@@ -137,15 +137,16 @@ class SourcePackageTranslationsExportView(BaseExportView):
 
     def processForm(self):
         """Process form submission requesting translations export."""
-        templates = self.context.getCurrentTranslationTemplates()
-        pofiles = []
-        for template in templates:
-            pofiles += list(template.pofiles)
+        templates = list(
+            self.context.getCurrentTranslationTemplates(just_ids=True))
+        pofiles = list(self.context.getCurrentTranslationFiles(just_ids=True))
+        if len(pofiles) > 0:
+            pofiles = None
         return (templates, pofiles)
 
     def getDefaultFormat(self):
         templates = self.context.getCurrentTranslationTemplates()
-        if not templates:
+        if not bool(templates.any()):
             return None
         format = templates[0].source_file_format
         for template in templates:
@@ -252,6 +253,10 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
+
+    @property
+    def potemplates(self):
+        return list(self.context.getCurrentTranslationTemplates())
 
     @property
     def search_name(self):

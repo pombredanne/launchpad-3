@@ -43,8 +43,8 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
-from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
-from canonical.launchpad.database.potemplate import POTemplate
+from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.potemplate import POTemplate
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.karma import KarmaContextMixin
@@ -68,7 +68,7 @@ from lp.answers.model.question import (
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -91,7 +91,7 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from canonical.launchpad.webapp.interfaces import (
@@ -688,7 +688,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def translatable_packages(self):
         """See `IProduct`."""
         packages = set(package for package in self.sourcepackages
-                       if len(package.getCurrentTranslationTemplates()) > 0)
+                       if bool(
+                           package.getCurrentTranslationTemplates().any())
+                       )
         # Sort packages by distroseries.name and package.name
         return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 
@@ -697,7 +699,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         translatable_product_series = set(
             product_series for product_series in self.serieses
-            if len(product_series.getCurrentTranslationTemplates()) > 0)
+            if bool(product_series.getCurrentTranslationTemplates().any()))
         return sorted(
             translatable_product_series,
             key=operator.attrgetter('datecreated'))
@@ -963,7 +965,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         series_list.insert(0, self.development_focus)
         series_list.reverse()
         return [series.getTimeline(include_inactive=include_inactive)
-                for series in series_list]
+                for series in series_list
+                if include_inactive or series.active]
 
 
 class ProductSet:
