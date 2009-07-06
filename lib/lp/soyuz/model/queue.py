@@ -698,14 +698,14 @@ class PackageUpload(SQLBase):
         class PPARejectedMessage:
             """PPA rejected message."""
             template = get_email_template('ppa-upload-rejection.txt')
-            SUMMARY = summary_text
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            SUMMARY = sanitize_string(summary_text)
+            CHANGESFILE = sanitize_string("".join(changes_lines))
             USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
             template = get_email_template('upload-rejection.txt')
-            SUMMARY = summary_text
+            SUMMARY = sanitize_string(summary_text)
             CHANGESFILE = sanitize_string(changes['changes'])
             CHANGEDBY = ''
             ORIGIN = ''

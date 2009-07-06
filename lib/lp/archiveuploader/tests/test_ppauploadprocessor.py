@@ -1028,18 +1028,35 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             PackageUploadStatus.DONE)
 
         # The same 'bar' version will fail due to the conflicting
-        # 'orig.tar.gz' contents.
+        # file contents.
         upload_dir = self.queueUpload("bar_1.0-1-ppa-orig", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
+        # The error message should be sane, and not one about unicode
+        # errors.
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            u'File bar_1.0.orig.tar.gz already exists in unicode PPA name: '
+            'File bar_1.0.orig.tar.gz already exists in unicode PPA name: '
             'áří, but uploaded version has different '
             'contents. See more information about this error in '
-            'https://help.launchpad.net/Packaging/UploadErrors.\nFiles '
-            'specified in DSC are broken or missing, skipping package '
+            'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            'File bar_1.0-1.diff.gz already exists in unicode PPA name: áří, '
+            'but uploaded version has different contents. See more '
+            'information about this error in '
+            'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            'Files specified in DSC are broken or missing, skipping package '
             'unpack verification.')
+
+        # Also, the email generated should be sane.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
+
+        self.assertTrue(
+            "File bar_1.0.orig.tar.gz already exists in unicode PPA name: áří"
+            in body)
+
 
     def testPPAConflictingOrigFiles(self):
         """When available, the official 'orig.tar.gz' restricts PPA uploads.
