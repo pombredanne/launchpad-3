@@ -114,8 +114,9 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
             is called.
         :param archive_purpose: used to filter the results to certain
             archive purposes. Defaults to PPA.
-        :returns: A `ResultSet` of non-unique `IArchive` with the archive
-            most recently uploaded to first.
+        :returns: A `ResultSet` of non-unique `IArchive` ordered by the
+            soyuz karma for this package of the person who uploaded the
+            package in the related archive.
         """
 
     latest_overall_publication = Attribute(
