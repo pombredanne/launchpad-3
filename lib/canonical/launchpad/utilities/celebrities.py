@@ -117,10 +117,12 @@ class LaunchpadCelebrities:
     janitor = CelebrityDescriptor(IPersonSet, 'janitor')
     katie = CelebrityDescriptor(IPersonSet, 'katie')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
-    launchpad_beta_testers = CelebrityDescriptor(IPersonSet, 'launchpad-beta-testers')
+    launchpad_beta_testers = CelebrityDescriptor(
+        IPersonSet, 'launchpad-beta-testers')
     launchpad_developers = CelebrityDescriptor(IPersonSet, 'launchpad')
     lp_translations = CelebrityDescriptor(IProductSet, 'rosetta')
-    mailing_list_experts = CelebrityDescriptor(IPersonSet, 'mailing-list-experts')
+    mailing_list_experts = CelebrityDescriptor(
+        IPersonSet, 'mailing-list-experts')
     obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
     ppa_key_guard = CelebrityDescriptor(IPersonSet, 'ppa-key-guard')
     registry_experts = CelebrityDescriptor(IPersonSet, 'registry')
