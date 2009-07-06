@@ -18,7 +18,7 @@ from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
 
-from storm.locals import SQL, Join
+from storm.locals import Join, SQL
 from storm.store import Store
 
 from zope.component import getUtility
@@ -47,28 +47,28 @@ from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, PocketChroot)
 from lp.soyuz.model.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
-from canonical.launchpad.database.distroserieslanguage import (
+from lp.translations.model.distroserieslanguage import (
     DistroSeriesLanguage, DummyDistroSeriesLanguage)
 from lp.soyuz.model.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
-from canonical.launchpad.database.distroseries_translations_copy import (
+from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations)
 from lp.services.worlddata.model.language import Language
-from canonical.launchpad.database.languagepack import LanguagePack
+from lp.translations.model.languagepack import LanguagePack
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.soyuz.model.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.person import Person
-from canonical.launchpad.database.potemplate import (
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadQueue)
+from lp.soyuz.model.queue import PackageUpload, PackageUploadQueue
 from lp.soyuz.model.section import Section
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -76,7 +76,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -89,16 +89,16 @@ from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries, IDistroSeriesSet, ISeriesMixin)
-from canonical.launchpad.interfaces.languagepack import LanguagePackType
+from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, ICanPublishPackages, PackagePublishingPocket,
     PackagePublishingStatus, pocketsuffix)
-from lp.soyuz.interfaces.queue import IHasQueueItems
+from lp.soyuz.interfaces.queue import IHasQueueItems, IPackageUploadSet
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
 from lp.registry.interfaces.sourcepackagename import (
@@ -230,9 +230,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def enabled_architectures(self):
-        # Avoiding circular imports.
-        from canonical.launchpad.database.librarian import (
-            LibraryFileAlias)
         store = Store.of(self)
         origin = [
             DistroArchSeries,
@@ -1287,9 +1284,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return PackageUploadQueue(self, state)
 
+    def getPackageUploads(self, created_since_date=None, status=None,
+                          archive=None, pocket=None, custom_type=None):
+        """See `IDistroSeries`."""
+        return getUtility(IPackageUploadSet).getAll(
+            self, created_since_date, status, archive, pocket, custom_type)
+
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):
         """See `IDistroSeries`."""
+        # XXX Julian 2009-07-02 bug=394645
+        # This method is partially deprecated by getPackageUploads(),
+        # see the bug for more info.
 
         default_clauses = ["""
             packageupload.distroseries = %s""" % sqlvalues(self)]

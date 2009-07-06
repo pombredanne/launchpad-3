@@ -105,9 +105,9 @@
         <allow
             interface="canonical.launchpad.interfaces.IHasQueueItems"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <allow
             interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
         <require
@@ -800,7 +800,7 @@
             <allow
                 interface="lp.registry.interfaces.person.ITeamPublic"/>
             <allow
-                interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+                interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
             <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
             <allow
@@ -1051,7 +1051,7 @@
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
@@ -1292,9 +1292,9 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <require
             permission="launchpad.Edit"
             set_attributes="product name owner driver summary branch translations_branch status releasefileglob translations_autoimport_mode"/>
@@ -1356,7 +1356,7 @@
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
@@ -1478,9 +1478,9 @@
         <allow
             interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
 
         <!-- IQuestionTarget -->
 
