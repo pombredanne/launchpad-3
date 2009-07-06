@@ -99,7 +99,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.widgets.popup import PersonPickerWidget, VocabularyPickerWidget
+from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
@@ -869,6 +869,29 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, 'title',
             canonical_url(self.context, view_name='+edit'),
             id="product-title", title="Edit this title")
+        self.languages_edit_widget = TextLineEditorWidget(
+            self.context, 'programminglang',
+            canonical_url(self.context, view_name='+edit'),
+            id='programminglang', title='Edit programming languages',
+            default='Not yet specified', tag='span',
+            public_attribute='programming_language')
+
+    @property
+    def programming_language_details(self):
+        """Details about the programming languages.
+
+        Return a dictionary containing information for displaying the
+        programming languages.
+        """
+        return dict(
+            text=self.context.programminglang,
+            # Show the field if programming languages are set, or if the user
+            # is the project owner.
+            show=(self.context.programminglang or
+                  self.user == self.context.owner),
+            # Only the project owner can edit this field.
+            edit=self.user == self.context.owner,
+            )
 
     @property
     def show_license_status(self):

@@ -43,10 +43,10 @@ class TextLineEditorWidget:
     #   trigger: the trigger (button) HTML code
     #   value: the current field value
     WIDGET_TEMPLATE = dedent(u"""\
-        <h1 id="%(id)s"><span
+        <%(tag)s id="%(id)s"><span
             class="yui-editable_text-text">%(value)s</span>
             %(trigger)s
-        </h1>
+        </%(tag)s>
         %(activation_script)s
         """)
 
@@ -65,7 +65,7 @@ class TextLineEditorWidget:
             });
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
-                  patch: '%(attribute)s',
+                  patch: '%(public_attribute)s',
                   resource: '%(context_url)s'}});
             widget.render();
         });
@@ -73,7 +73,8 @@ class TextLineEditorWidget:
         """)
 
 
-    def __init__(self, context, attribute, edit_url, id=None, title="Edit"):
+    def __init__(self, context, attribute, edit_url, id=None, title="Edit",
+                 default='', tag='h1', public_attribute=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -83,10 +84,20 @@ class TextLineEditorWidget:
         :param id: The HTML id to use for this widget. Automatically
             generated if this is not provided.
         :param title: The string to use as the link title. Defaults to 'Edit'.
+        :param default: Default to use when attribute is missing or None.
+        :param tag: The HTML tag to use.
+        :param public_attribute: If given, the name of the attribute in the
+            public webservice API.
         """
         self.context = context
         self.attribute = attribute
         self.edit_url = edit_url
+        self.default = default
+        self.tag = tag
+        if public_attribute is None:
+            self.public_attribute = attribute
+        else:
+            self.public_attribute = public_attribute
         if id is None:
             self.id = self._generate_id()
         else:
@@ -101,16 +112,21 @@ class TextLineEditorWidget:
 
     def __call__(self):
         """Return the HTML to include to render the widget."""
+        value = getattr(self.context, self.attribute, self.default)
+        if value is None:
+            value = self.default
         params = {
             'activation_script': '',
             'trigger': '',
             'edit_url': self.edit_url,
             'id': self.id,
             'title': self.title,
-            'value': cgi.escape(getattr(self.context, self.attribute)),
+            'value': cgi.escape(value),
             'context_url': canonical_url(
                 self.context, path_only_if_possible=True),
             'attribute': self.attribute,
+            'tag': self.tag,
+            'public_attribute': self.public_attribute,
             }
         # Only display the trigger link and the activation script if
         # the user can write the attribute.
@@ -146,8 +162,6 @@ class InlineEditPickerWidget:
         :param show_remove_button: Show remove button below search box.
         :param show_assign_me_button: Show assign-me button below search box.
         :param remove_button_text: Override default button text: "Remove"
-
-
         """
         self.context = context
         self.request = request
