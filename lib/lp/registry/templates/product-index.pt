@@ -140,10 +140,8 @@
          tal:define="details view/programming_language_details"
          tal:condition="details/show" />
         <table>
-        <tr><td><strong>Programming Languages:</strong></td>
-            <td><span tal:content="structure view/languages_edit_widget" />
-            </td>
-        </tr></table>
+        <strong>Programming Languages:</strong>
+        <span tal:content="structure view/languages_edit_widget" />
 
       <p id="owner" tal:condition="context/owner">
         <strong>Maintainer:</strong> <tal:link replace="structure context/owner/fmt:link" />
