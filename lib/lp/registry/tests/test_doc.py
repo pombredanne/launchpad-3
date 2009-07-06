@@ -162,6 +162,10 @@ special = {
         '../doc/sourcepackage.txt',
         layer=LaunchpadFunctionalLayer,
         setUp=setUp, tearDown=tearDown),
+    'distribution-sourcepackage.txt': LayeredDocFileSuite(
+        '../doc/distribution-sourcepackage.txt',
+        layer=LaunchpadZopelessLayer,
+        setUp=setUp, tearDown=tearDown),
     }
 
 

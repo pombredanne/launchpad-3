@@ -62,36 +62,7 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
         self.soyuz_karma_category = KarmaCategory.byName('soyuz')
         self.karma_cache_manager = getUtility(IKarmaCacheManager)
 
-    def testWithoutKarma(self):
-        # Results are only returned if the relevant source package release
-        # was created by someone with karma for the package.
-        related_archives = self.source_package.findRelatedArchives()
-
-        self.assertEqual(0, related_archives.count())
-
-    def testOnlyReturnArchivesRelatingPackagesWithKarma(self):
-        # Add some karma for the beta PPA uploader and ensure that the
-        # beta PPA is returned.
-        transaction.commit()
-        self.layer.switchDbUser('karma')
-        karma_cache_entry = self.karma_cache_manager.new(
-            200, self.person_beta.id, self.soyuz_karma_category.id,
-            distribution_id = self.distribution.id,
-            sourcepackagename_id = self.source_package.sourcepackagename.id)
-        transaction.commit()
-        self.layer.switchDbUser('launchpad')
-
-        related_archives = self.source_package.findRelatedArchives()
-        related_archive_names = [
-            archive.name for archive in related_archives]
-
-        self.assertEqual(related_archive_names, ['gedit-beta'])
-
-    def test_order_by_soyuz_package_karma(self):
-        # Returned archives are ordered by the soyuz karma of the
-        # package uploaders for the particular package
-
-        # Add more karma for person_nightly for this package.
+        # Add slightly more soyuz karma for person_nightly for this package.
         transaction.commit()
         self.layer.switchDbUser('karma')
         self.karma_cache_manager.new(
@@ -104,6 +75,10 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
             sourcepackagename_id = self.source_package.sourcepackagename.id)
         transaction.commit()
         self.layer.switchDbUser('launchpad')
+
+    def test_order_by_soyuz_package_karma(self):
+        # Returned archives are ordered by the soyuz karma of the
+        # package uploaders for the particular package
 
         related_archives = self.source_package.findRelatedArchives()
         related_archive_names = [
@@ -132,6 +107,17 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
             'gedit-beta',
             'gedit-nightly',
             ])
+
+    def test_require_package_karma(self):
+        # Only archives where the related package was created by a person
+        # with the required soyuz karma for this package.
+
+        related_archives = self.source_package.findRelatedArchives(
+            require_package_karma=201)
+        related_archive_names = [
+            archive.name for archive in related_archives]
+
+        self.assertEqual(related_archive_names, ['gedit-nightly'])
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

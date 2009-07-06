@@ -216,39 +216,62 @@ A distribution source package can also find which archives
 versions of a given source package have been published in.
 
     # First create some PPAs.
-    >>> ppa_nightly = factory.makeArchive(name="nightly",
-    ...                                   distribution=ubuntu)
-    >>> ppa_beta = factory.makeArchive(name="beta",
-    ...                                distribution=ubuntu)
-
-    # Next publish some sources in them.
     >>> login('foo.bar@canonical.com')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> publisher = SoyuzTestPublisher()
     >>> publisher.prepareBreezyAutotest()
+    >>> ubuntu_test = publisher.distroseries.distribution
+    >>> ppa_nightly = factory.makeArchive(name="nightly",
+    ...                                   distribution=ubuntu_test)
+    >>> ppa_beta = factory.makeArchive(name="beta",
+    ...                                distribution=ubuntu_test)
 
-    >>> from datetime import datetime
-    >>> import pytz
+    # Next publish some sources in them.
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> gedit_nightly_src_hist = publisher.getPubSource(
     ...     sourcename="gedit", archive=ppa_nightly,
-    ...     date_uploaded=datetime(2010, 12 ,1, tzinfo=pytz.UTC),
+    ...     creator=ppa_nightly.owner,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> gedit_beta_src_hist = publisher.getPubSource(
     ...     sourcename="gedit", archive=ppa_beta,
-    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     creator=ppa_beta.owner,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> gedit_main_src_hist = publisher.getPubSource(
-    ...     sourcename="gedit", archive=ubuntu.main_archive,
-    ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
+    ...     sourcename="gedit", archive=ubuntu_test.main_archive,
+    ...     creator=ppa_nightly.owner,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
+    # Give the creators of the above source packages some soyuz
+    # karma for their efforts.
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from lp.registry.interfaces.karma import IKarmaCacheManager
+    >>> from lp.registry.model.karma import KarmaCategory
+    >>> soyuz_category = KarmaCategory.byName('soyuz')
+    >>> sourcepackagerelease = gedit_nightly_src_hist.sourcepackagerelease
+    >>> gedit_name = sourcepackagerelease.sourcepackagename
+    >>> ppa_beta_owner_id = ppa_beta.owner.id
+    >>> ppa_nightly_owner_id = ppa_nightly.owner.id
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('karma')
+    >>> karmacachemanager = getUtility(IKarmaCacheManager)
+    >>> cache_entry = karmacachemanager.new(
+    ...     200, ppa_beta_owner_id, soyuz_category.id,
+    ...     distribution_id=ubuntu_test.id,
+    ...     sourcepackagename_id=gedit_name.id)
+    >>> cache_entry = karmacachemanager.new(
+    ...     201, ppa_nightly_owner_id, soyuz_category.id,
+    ...     distribution_id=ubuntu_test.id,
+    ...     sourcepackagename_id=gedit_name.id)
+    >>> import transaction
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-The results of findRelatedArchives() are sorted so that archive with the
-most recent upload is first:
+The results of findRelatedArchives() are sorted so that archive containing
+the package created by the person with the greatest soyuz karma for that
+package is first:
 
-    >>> gedit_beta_src = ubuntu.getSourcePackage('gedit')
-    >>> ppa_versions_for_gedit = gedit_beta_src.findRelatedArchives()
+    >>> gedit_src = ubuntu_test.getSourcePackage('gedit')
+    >>> ppa_versions_for_gedit = gedit_src.findRelatedArchives()
     >>> for ppa in ppa_versions_for_gedit:
     ...     print ppa.displayname
     PPA named nightly for Person...
@@ -257,7 +280,7 @@ most recent upload is first:
 You can choose to exclude a certain archive from the results - useful
 if you want to find all *other* related archives:
 
-    >>> ppa_versions_for_gedit = gedit_beta_src.findRelatedArchives(
+    >>> ppa_versions_for_gedit = gedit_src.findRelatedArchives(
     ...     exclude_archive=ppa_nightly)
     >>> for ppa in ppa_versions_for_gedit:
     ...     print ppa.displayname
@@ -266,10 +289,10 @@ if you want to find all *other* related archives:
 Although findRelatedArchives() defaults to PPAs, it can be used to find
 packages in other archives too:
 
-    >>> archive_versions_for_gedit = gedit_beta_src.findRelatedArchives(
+    >>> archive_versions_for_gedit = gedit_src.findRelatedArchives(
     ...     archive_purpose=None)
     >>> for archive in archive_versions_for_gedit:
     ...     print archive.displayname
-    Primary Archive for Ubuntu Linux
     PPA named nightly for Person...
+    Primary Archive for Ubuntu Test
     PPA named beta for Person...

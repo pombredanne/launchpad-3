@@ -220,7 +220,8 @@ class DistributionSourcePackage(BugTargetBase,
 
     def findRelatedArchives(self,
                             exclude_archive=None,
-                            archive_purpose=ArchivePurpose.PPA):
+                            archive_purpose=ArchivePurpose.PPA,
+                            require_package_karma=0):
         """See `IDistributionSourcePackage`."""
 
         extra_args = []
@@ -232,6 +233,12 @@ class DistributionSourcePackage(BugTargetBase,
         # Filter by archive purpose where appropriate
         if archive_purpose is not None:
             extra_args.append(Archive.purpose == archive_purpose)
+
+        # Include only those archives containing the source package released
+        # by a person with karma for this source package greater than that
+        # specified.
+        if require_package_karma > 0:
+            extra_args.append(KarmaCache.karmavalue >= require_package_karma)
 
         soyuz_category_id = KarmaCategory.byName('soyuz')
 
