@@ -47,23 +47,23 @@ from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, PocketChroot)
 from lp.soyuz.model.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
-from canonical.launchpad.database.distroserieslanguage import (
+from lp.translations.model.distroserieslanguage import (
     DistroSeriesLanguage, DummyDistroSeriesLanguage)
 from lp.soyuz.model.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
-from canonical.launchpad.database.distroseries_translations_copy import (
+from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations)
 from lp.services.worlddata.model.language import Language
-from canonical.launchpad.database.languagepack import LanguagePack
+from lp.translations.model.languagepack import LanguagePack
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.soyuz.model.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.person import Person
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.database.potemplate import (
+from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate)
 from lp.soyuz.model.publishing import (
@@ -76,7 +76,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -89,10 +89,10 @@ from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries, IDistroSeriesSet, ISeriesMixin)
-from canonical.launchpad.interfaces.languagepack import LanguagePackType
+from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
