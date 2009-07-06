@@ -74,7 +74,9 @@ check_sourcecode_merge: build check
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
-check: build
+# Clean before running the test suite, since the build might fail depending
+# what source changes happened. (e.g. apidoc depends on interfaces)
+check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
