@@ -41,7 +41,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, In, Join, Lower, Not, Or, SQL
+from storm.expr import And, In, Join, LeftJoin, Lower, Not, Or, SQL
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -61,11 +61,13 @@ from lp.bugs.model.bugtarget import HasBugsBase
 from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
 from lp.services.worlddata.model.language import Language
+from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
 from lp.registry.model.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
+from canonical.launchpad.database.translator import Translator
 from canonical.launchpad.event.interfaces import (
     IJoinTeamEvent, ITeamInvitationEvent)
 from canonical.launchpad.helpers import (
@@ -789,6 +791,178 @@ class Person(
         if prejoin_people:
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
+
+    def _composePOFileReviewerJoins(self):
+        """Compose certain Storm joins for common `POFile` queries.
+
+        Returns a list of Storm joins for a query on `POFile`.  The
+        joins will involve `Distribution`, `DistroSeries`, `POFile`,
+        `Product`, `ProductSeries`, `Project`, `TranslationGroup`,
+        `TranslationTeam`, and `Translator`.
+
+        The joins will restrict the ultimate query to `POFile`s
+        distributions that use Launchpad for translations, which have a
+        translation group and for which `self` is a reviewer.
+
+        The added joins may make the overall query non-distinct, so be
+        sure to enforce distinctness.
+        """
+        # Avoid circular imports.
+        from canonical.launchpad.database.pofile import POFile
+        from canonical.launchpad.database.potemplate import POTemplate
+        from canonical.launchpad.database.translationgroup import (
+            TranslationGroup)
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        from lp.registry.model.project import Project
+
+        POTemplateJoin = Join(POTemplate, And(
+            POTemplate.id == POFile.potemplateID,
+            POTemplate.iscurrent == True))
+
+        # This is a weird and complex diamond join.  Both DistroSeries
+        # and ProductSeries are left joins, but one of them will
+        # ultimately lead to a TranslationGroup.  In the case of
+        # ProductSeries it may lead to up to two: one for the Product
+        # and one for the Project.
+        DistroSeriesJoin = LeftJoin(
+            DistroSeries, DistroSeries.id == POTemplate.distroseriesID)
+        # If there's a DistroSeries, it should be the distro's
+        # translation focus.
+        # The check for translationgroup here is not necessary, but
+        # should give the query planner some extra selectivity to narrow
+        # down the query more aggressively.
+        DistroJoin = LeftJoin(Distribution, And(
+            Distribution.id == DistroSeries.distributionID,
+            Distribution.official_rosetta == True,
+            Distribution.translationgroup != None,
+            Distribution.translation_focusID == DistroSeries.id))
+
+        ProductSeriesJoin = LeftJoin(
+            ProductSeries, ProductSeries.id == POTemplate.productseriesID)
+        ProductJoin = LeftJoin(Product, And(
+            Product.id == ProductSeries.productID,
+            Product.official_rosetta == True))
+
+        ProjectJoin = LeftJoin(Project, Project.id == Product.projectID)
+
+        # Restrict to translations this person is a reviewer for.
+        GroupJoin = Join(TranslationGroup, Or(
+            TranslationGroup.id == Product.translationgroupID,
+            TranslationGroup.id == Distribution.translationgroupID,
+            TranslationGroup.id == Project.translationgroupID))
+        TranslatorJoin = Join(Translator, And(
+            Translator.translationgroupID == TranslationGroup.id,
+            Translator.languageID == POFile.languageID))
+
+        # Check for translation-team membership.  Use alias for
+        # TeamParticipation; the query may want to include other
+        # instances of that table.  It's just a linking table so the
+        # query won't be interested in its actual contents anyway.
+        Reviewership = ClassAlias(TeamParticipation, 'Reviewership')
+        TranslationTeamJoin = Join(Reviewership, And(
+            Reviewership.teamID == Translator.translatorID,
+            Reviewership.personID == self.id))
+
+        return [
+            POFile,
+            POTemplateJoin,
+            DistroSeriesJoin,
+            DistroJoin,
+            ProductSeriesJoin,
+            ProductJoin,
+            ProjectJoin,
+            GroupJoin,
+            TranslatorJoin,
+            TranslationTeamJoin,
+            ]
+
+    def _composePOFileTranslatorJoin(self, expected_presence,
+                                     no_older_than=None):
+        """Compose join condition for `POFileTranslator`.
+
+        Checks for a `POFileTranslator` record matching a `POFile` and
+        `Person` in a join.
+
+        :param expected_presence: whether the `POFileTranslator` record
+            is to be present, or absent.  The join will enforce presence
+            through a regular inner join, or absence by an outer join
+            with a condition that the record not be present.
+        :param no_older_than: optional cutoff date.  `POFileTranslator`
+            records older than this date are not considered.
+        :return: a tuple of the join, and a condition to be checked by
+            the query.  Combine it with the query's other conditions
+            using `And`.
+        """
+        # Avoid circular imports.
+        from canonical.launchpad.database.pofile import POFile
+        from canonical.launchpad.database.pofiletranslator import (
+            POFileTranslator)
+
+        join_condition = And(
+            POFileTranslator.personID == self.id,
+            POFileTranslator.pofileID == POFile.id)
+
+        if no_older_than is not None:
+            join_condition = And(
+                join_condition,
+                POFileTranslator.date_last_touched >= no_older_than)
+
+        if expected_presence:
+            # A regular inner join enforces this.  No need for an extra
+            # condition; the join does it more efficiently.
+            return Join(POFileTranslator, join_condition), True
+        else:
+            # Check for absence.  Usually the best way to check for this
+            # is an outer join plus a condition that the outer join
+            # match no record.
+            return (
+                LeftJoin(POFileTranslator, join_condition),
+                POFileTranslator.id == None)
+
+    def getReviewableTranslationFiles(self, no_older_than=None):
+        """See `IPerson`."""
+        # Avoid circular import.
+        from canonical.launchpad.database.pofile import POFile
+
+        if self.isTeam():
+            # A team as such does not work on translations.  Skip the
+            # search for ones the team has worked on.
+            return []
+
+        tables = self._composePOFileReviewerJoins()
+
+        # Consider only translations that this person is a reviewer for.
+        translator_join, translator_condition = (
+            self._composePOFileTranslatorJoin(True, no_older_than))
+        tables.append(translator_join)
+
+        conditions = And(POFile.unreviewed_count > 0, translator_condition)
+
+        source = Store.of(self).using(*tables)
+        query = source.find(POFile, conditions)
+        return query.config(distinct=True).order_by(POFile.date_changed)
+
+    def suggestReviewableTranslationFiles(self, no_older_than=None):
+        """See `IPerson`."""
+        # Avoid circular import.
+        from canonical.launchpad.database.pofile import POFile
+
+        tables = self._composePOFileReviewerJoins()
+
+        # Pick files that this person has no recent POFileTranslator entry
+        # for.
+        translator_join, translator_condition = (
+            self._composePOFileTranslatorJoin(False, no_older_than))
+        tables.append(translator_join)
+
+        conditions = And(POFile.unreviewed_count > 0, translator_condition)
+
+        source = Store.of(self).using(*tables)
+        query = source.find(POFile, conditions)
+        return query.config(distinct=True).order_by(POFile.id)
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions

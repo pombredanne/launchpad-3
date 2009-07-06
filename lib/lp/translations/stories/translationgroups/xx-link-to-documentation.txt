@@ -82,8 +82,8 @@ the documentation url through the edit view.
     >>> test_browser.getControl('Change').click()
     >>> print test_browser.url
     http://translations.launchpad.dev/~name12
-    >>> translator_listing = find_tags_by_class(
-    ...     test_browser.contents, 'listing')[1]
+    >>> translator_listing = find_tag_by_id(
+    ...     test_browser.contents, 'translation-group-memberships')
     >>> print extract_text(translator_listing)
     Translation group
     Language

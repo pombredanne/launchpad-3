@@ -1199,6 +1199,14 @@
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-review-table"
+            facet="translations"
+            class="lp.registry.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-review-table.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
             name="+licensing"
             facet="translations"
             class="lp.registry.browser.person.PersonTranslationRelicensingView"
@@ -1220,6 +1228,14 @@
             class="lp.registry.browser.person.PersonSpecFeedbackView"
             permission="zope.Public"
             template="../templates/person-specfeedback.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-review"
+            facet="translations"
+            class="lp.registry.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-review.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+specworkload"

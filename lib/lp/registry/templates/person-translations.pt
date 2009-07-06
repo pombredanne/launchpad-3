@@ -13,8 +13,36 @@
 <body>
 
 <div metal:fill-slot="main">
+  <h1>Translations related to <tal:name content="context/displayname" /></h1>
 
-  <h1>Applications and packages translated</h1>
+  <tal:me condition="view/person_includes_me">
+    <tal:reviewer condition="view/person_is_reviewer">
+      <div id="translations-to-review-section">
+        <div style="max-width:800px">
+          <span style="float:right">
+            <a href="http://help.launchpad.net/Translations/Reviewing">
+              Why is this important?
+            </a>
+          </span>
+        </div>
+        <h2>Translations you need to review</h2>
+        <metal:translations-to-review
+          tal:replace="structure context/@@+translations-to-review-table" />
+        <span style="float:right"
+              tal:condition="python: view.num_projects_and_packages_to_review > 1">
+          <a href="+translations-to-review">
+            See all
+            <tal:num tal:replace="view/num_projects_and_packages_to_review">
+              16
+            </tal:num> unreviewed translations
+          </a>
+        </span>
+      </div>
+    </tal:reviewer>
+  </tal:me>
+
+
+  <h2 id="translation-history-header">Applications and packages translated</h2>
 
   <tal:block define="history view/batchnav/currentBatch">
 
@@ -91,7 +119,7 @@
     <span tal:replace="context/displayname">Mark Shuttleworth</span> is
     a member of the following translation groups:
 
-      <table class="listing">
+      <table class="listing" id="translation-group-memberships">
         <thead>
           <tr>
             <th>Translation group</th>

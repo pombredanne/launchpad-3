@@ -1311,6 +1311,27 @@ class IPersonViewRestricted(Interface):
         If no orderby is provided, Person.sortingColumns is used.
         """
 
+    def getReviewableTranslationFiles(no_older_than=None):
+        """List `POFile`s this person should be able to review.
+
+        These are translations that this person has worked on in the
+        (relatively recent) past and is a reviewer for.
+
+        :param no_older_than: Optional cutoff date.  Translations that
+            this person hasn't contributed to since this date will be
+            ignored.
+        :return: a sequence of `POFile`s ordered by age of oldest
+            unreviewed `TranslationMessage` (oldest first).
+        """
+
+    def suggestReviewableTranslationFiles(maximum):
+        """Suggest `POFile`s this person could review.
+
+        Unlike `getReviewableTranslationFiles`, this method looks for
+        arbitrary translations that the person has not worked on in the
+        recent past.
+        """
+
 
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
