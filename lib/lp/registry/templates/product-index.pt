@@ -139,7 +139,6 @@
       <p id="product-languages"
          tal:define="details view/programming_language_details"
          tal:condition="details/show" />
-        <table>
         <strong>Programming Languages:</strong>
         <span tal:content="structure view/languages_edit_widget" />
 
