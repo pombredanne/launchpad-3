@@ -10,4 +10,10 @@
         template="../templates/base-layout-macros.pt"
         permission="zope.Public"
         />
+    <browser:page
+        name="base_layout"
+        for="*"
+        permission="zope.Public"
+        template="../templates/base-layout.pt"
+        />
 </configure>
