@@ -21,9 +21,17 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.interfaces import (
-    IProductSet, IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet,
-    IPOTemplateSet, ILaunchpadCelebrities, RosettaTranslationOrigin)
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin)
+
+
 
 logger_name = 'remove-upstream-translations'
 

@@ -21,7 +21,8 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet,
+    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet)
+    >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
     >>> distroseriesset = getUtility(IDistroSeriesSet)
 
