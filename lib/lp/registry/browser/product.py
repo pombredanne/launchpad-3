@@ -874,8 +874,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             canonical_url(self.context, view_name='+edit'),
             id='programminglang', title='Edit programming languages',
             default='Not yet specified', tag='span',
-            public_attribute='programming_language',
-            bounding_box='product-languages')
+            public_attribute='programming_language')
 
     @property
     def programming_language_details(self):

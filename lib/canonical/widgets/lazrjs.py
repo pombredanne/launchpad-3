@@ -60,7 +60,9 @@ class TextLineEditorWidget:
     ACTIVATION_TEMPLATE = dedent(u"""\
         <script>
         YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
-            var widget = new Y.EditableText(%(config)s);
+            var widget = new Y.EditableText({
+                contentBox: '#%(id)s',
+            });
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
                   patch: '%(public_attribute)s',
@@ -72,8 +74,7 @@ class TextLineEditorWidget:
 
 
     def __init__(self, context, attribute, edit_url, id=None, title="Edit",
-                 default='', tag='h1', public_attribute=None,
-                 bounding_box=None):
+                 default='', tag='h1', public_attribute=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -87,14 +88,12 @@ class TextLineEditorWidget:
         :param tag: The HTML tag to use.
         :param public_attribute: If given, the name of the attribute in the
             public webservice API.
-        :param bounding_box: Optional boundingBox for the editor widget.
         """
         self.context = context
         self.attribute = attribute
         self.edit_url = edit_url
         self.default = default
         self.tag = tag
-        self.bounding_box = bounding_box
         if public_attribute is None:
             self.public_attribute = attribute
         else:
@@ -128,7 +127,6 @@ class TextLineEditorWidget:
             'attribute': self.attribute,
             'tag': self.tag,
             'public_attribute': self.public_attribute,
-            'config': self._make_config(),
             }
         # Only display the trigger link and the activation script if
         # the user can write the attribute.
@@ -136,13 +134,6 @@ class TextLineEditorWidget:
             params['trigger'] = self.TRIGGER_TEMPLATE % params
             params['activation_script'] = self.ACTIVATION_TEMPLATE % params
         return self.WIDGET_TEMPLATE % params
-
-    def _make_config(self):
-        """Return the strictly formatted cfg for the editor widget."""
-        configuration = dict(contentBox='#' + self.id)
-        if self.bounding_box is not None:
-            configuration['boundingBox'] = self.bounding_box
-        return simplejson.dumps(configuration)
 
 
 class InlineEditPickerWidget:
