@@ -138,15 +138,15 @@ the list of authentication levels.
     ...     % urlencode(params))
     >>> json_token = simplejson.loads(json_browser.contents)
     >>> sorted(json_token.keys())
-    [u'access_levels', u'oauth_token', u'oauth_token_consumer']
+    ['access_levels', 'oauth_token', 'oauth_token_consumer']
 
     >>> sorted((level['value'], level['title'])
     ...        for level in json_token['access_levels'])
-    [(u'READ_PRIVATE', u'Read Anything'),
-     (u'READ_PUBLIC', u'Read Non-Private Data'),
-     (u'UNAUTHORIZED', u'No Access'),
-     (u'WRITE_PRIVATE', u'Change Anything'),
-     (u'WRITE_PUBLIC', u'Change Non-Private Data')]
+    [('READ_PRIVATE', 'Read Anything'),
+     ('READ_PUBLIC', 'Read Non-Private Data'),
+     ('UNAUTHORIZED', 'No Access'),
+     ('WRITE_PRIVATE', 'Change Anything'),
+     ('WRITE_PUBLIC', 'Change Non-Private Data')]
 
     >>> json_browser.open(
     ...     ("http://launchpad.dev/+authorize-token?%s"
@@ -154,8 +154,8 @@ the list of authentication levels.
     >>> json_token = simplejson.loads(json_browser.contents)
     >>> sorted((level['value'], level['title'])
     ...        for level in json_token['access_levels'])
-    [(u'READ_PRIVATE', u'Read Anything'),
-     (u'UNAUTHORIZED', u'No Access')]
+    [('READ_PRIVATE', 'Read Anything'),
+     ('UNAUTHORIZED', 'No Access')]
 
 Once the user authorizes the application to access Launchpad on his
 behalf, we issue a redirect to the given oauth_callback (if it was
