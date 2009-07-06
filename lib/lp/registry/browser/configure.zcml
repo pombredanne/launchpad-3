@@ -2203,6 +2203,13 @@
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+link-translations-branch"
+        class="lp.registry.browser.productseries.LinkTranslationsBranchView"
+        template="../templates/productseries-link-translations-branch.pt"
+        facet="translations"
+        permission="launchpad.Edit"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
         name="+filebug"
         class="lp.registry.browser.productseries.ProductSeriesFileBugRedirect"
         permission="zope.Public"/>

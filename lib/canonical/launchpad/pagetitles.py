@@ -1131,6 +1131,9 @@ productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_linkbranch = ContextTitle('Link an existing branch to %s')
 
+productseries_link_translations_branch = ContextTitle(
+    "Set translations export branch for %s")
+
 productseries_index = ContextTitle('%s')
 
 productseries_delete = ContextTitle('Delete %s')

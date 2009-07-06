@@ -497,6 +497,15 @@ class BranchView(LaunchpadView, FeedsMixin):
             return False
         return self.context.target.collection.getBranches().count() > 1
 
+    def translations_sources(self):
+        """Anything that automatically exports its translations here.
+
+        Produces a list, so that the template can easily check whether
+        there are any translations sources.
+        """
+        # Actually only ProductSeries currently do that.
+        return list(self.context.getProductSeriesPushingTranslations())
+
 
 class DecoratedMergeProposal:
     """Provide some additional attributes to a normal branch merge proposal.

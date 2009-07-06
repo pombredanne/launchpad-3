@@ -414,6 +414,17 @@
     </div>
   </div>
 
+  <div
+    id="translations-sources"
+    tal:define="translations_sources view/translations_sources"
+    tal:condition="translations_sources">
+    <h2>Automatic translations commits</h2>
+    <ul>
+      <tal:sources-list repeat="source translations_sources">
+        <li tal:content="structure source/fmt:link">~foo/example/branch</li>
+      </tal:sources-list>
+    </ul>
+  </div>
 
   <div id="recent-revisions">
   <h2 style="clear: both">Recent revisions</h2>

@@ -13,6 +13,12 @@
     />
 
   <utility
+    name="HostedBranchRestrictedOnOwner"
+    component="canonical.launchpad.vocabularies.HostedBranchRestrictedOnOwnerVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    />
+
+  <utility
     name="BranchRestrictedOnProduct"
     component="canonical.launchpad.vocabularies.BranchRestrictedOnProductVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
