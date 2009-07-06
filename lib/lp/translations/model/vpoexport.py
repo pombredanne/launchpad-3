@@ -168,30 +168,22 @@ class VPOExportSet:
                 POFile.date_changed > date))
 
         if component is not None:
-            tables.append(SourcePackagePublishingHistory)
-            conditions.append(
-                SourcePackagePublishingHistory.distroseries == series)
-
-            tables.append(SourcePackageRelease)
-            conditions.append(
+            tables.extend([
+                SourcePackagePublishingHistory,
+                SourcePackageRelease,
+                Component,
+                ])
+            conditions.extend([
+                SourcePackagePublishingHistory.distroseries == series,
                 SourcePackagePublishingHistory.sourcepackagerelease ==
-                     SourcePackageRelease.id)
-
-            tables.append(Component)
-            conditions.append(
-                SourcePackagePublishingHistory.component == Component.id)
-
-            conditions.append(
+                     SourcePackageRelease.id,
+                SourcePackagePublishingHistory.component == Component.id,
                 POTemplate.sourcepackagename ==
-                    SourcePackageRelease.sourcepackagenameID)
-
-            conditions.append(Component.name == component)
-
-            conditions.append(
-                SourcePackagePublishingHistory.dateremoved == None)
-
-            conditions.append(
-                SourcePackagePublishingHistory.archive == series.main_archive)
+                    SourcePackageRelease.sourcepackagenameID,
+                Component.name == component,
+                SourcePackagePublishingHistory.dateremoved == None,
+                SourcePackagePublishingHistory.archive == series.main_archive,
+                ])
 
         if languagepack:
             conditions.append(POTemplate.languagepack == True)
@@ -212,8 +204,7 @@ class VPOExportSet:
                                         component=None, languagepack=None):
         """See `IVPOExport`."""
         return self.get_distroseries_pofiles(
-            series, date, component, languagepack).count(
-                POFile.id, distinct=True)
+            series, date, component, languagepack).count()
 
 
 class VPOExport:
