@@ -76,11 +76,11 @@
       use-macro="context/@@+main-template-macros/load-javascript" />
 
     <script type="text/javascript">
-      YUI().use('node', function(Y) {
+      YUI().use('node', 'lp', function(Y) {
           Y.on('load', function(e) {
               sortables_init();
               initInlineHelp();
-              activateCollapsibles();
+              Y.lp.activate_collapsibles();
               activateFoldables();
               activateConstrainBugExpiration();
           }, window);
