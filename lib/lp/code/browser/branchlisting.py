@@ -7,7 +7,9 @@ __metaclass__ = type
 __all__ = [
     'BranchBadges',
     'BranchListingView',
+    'DistributionBranchListingView',
     'DistributionSourcePackageBranchesView',
+    'DistroSeriesBranchListingView',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -1381,6 +1383,34 @@ class DistributionSourcePackageBranchesView(BranchListingView):
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
             self.context)
+
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return self._getCollection().visibleByUser(self.user).count()
+
+
+class DistributionBranchListingView(BranchListingView):
+    """A general listing of all branches in the distribution."""
+
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).inDistribution(self.context)
+
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return self._getCollection().visibleByUser(self.user).count()
+
+
+class DistroSeriesBranchListingView(BranchListingView):
+    """A general listing of all branches in the distro source package."""
+
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).inDistroSeries(self.context)
 
     @cachedproperty
     def branch_count(self):
