@@ -1375,47 +1375,43 @@ class ProjectBranchesView(BranchListingView):
         return message % self.context.displayname
 
 
-class DistributionSourcePackageBranchesView(BranchListingView):
-    """A general listing of all branches in the distro source package."""
+class BaseSourcePackageBranchesView(BranchListingView):
+    """A simple base view for package branch listings."""
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return self._getCollection().visibleByUser(self.user).count()
+
+    @property
+    def initial_values(self):
+        values = super(BaseSourcePackageBranchesView, self).initial_values
+        values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+        return values
+
+
+class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
+    """A general listing of all branches in the distro source package."""
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
             self.context)
 
-    @cachedproperty
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
 
-
-class DistributionBranchListingView(BranchListingView):
+class DistributionBranchListingView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distribution."""
-
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistribution(self.context)
 
-    @cachedproperty
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
 
-
-class DistroSeriesBranchListingView(BranchListingView):
+class DistroSeriesBranchListingView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distro source package."""
-
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistroSeries(self.context)
-
-    @cachedproperty
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
 
 
 class SourcePackageBranchesView(BranchListingView):
