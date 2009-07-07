@@ -189,7 +189,7 @@
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"
         name="+templates"
-        template="../templates/object-templates.pt" />
+        template="../../translations/templates/object-templates.pt" />
     <browser:page
         name="+help-translate-button"
         facet="translations"
@@ -2013,10 +2013,6 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs-index"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         facet="overview"
@@ -2073,27 +2069,6 @@
         <browser:page
             name="+code-summary"
             template="../templates/productseries-codesummary.pt"/>
-    </browser:pages>
-    <browser:page
-        name="+translations"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.translations.browser.translations.TranslationsRedirectView"
-        permission="zope.Public"/>
-    <browser:pages
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.registry.browser.productseries.ProductSeriesView"
-        permission="zope.Public"
-        layer="canonical.launchpad.layers.TranslationsLayer" >
-        <browser:page
-            name="+translations"
-            facet="translations"
-            template="../templates/productseries-translations.pt"
-            />
-        <browser:page
-            name="+languages"
-            facet="translations"
-            template="../templates/productseries-translations-languages.pt"
-            />
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -2159,48 +2134,6 @@
         permission="launchpad.Edit"
         template="../templates/productseries-packaging.pt">
                 </browser:page>
-    <browser:pages
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.registry.browser.productseries.ProductSeriesView"
-        facet="translations"
-        permission="launchpad.Edit"
-        layer="canonical.launchpad.layers.TranslationsLayer">
-        <browser:page
-            name="+translations-upload"
-            template="../templates/productseries-translations-upload.pt"/>
-    </browser:pages>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+imports"
-        class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
-        facet="translations"
-        permission="zope.Public"
-        template="../../translations/templates/hastranslationimports-index.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+translations-settings"
-        class="lp.registry.browser.productseries.ProductSeriesTranslationsSettingsView"
-        facet="translations"
-        permission="launchpad.Edit"
-        template="../templates/productseries-translations-settings.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+templates"
-        class="lp.registry.browser.productseries.ProductSeriesTemplatesView"
-        facet="translations"
-        permission="launchpad.Edit"
-        template="../templates/object-templates.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+request-bzr-import"
-        class="lp.registry.browser.productseries.ProductSeriesTranslationsBzrImportView"
-        facet="translations"
-        permission="launchpad.Edit"
-        template="../templates/productseries-translations-bzr-import.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+filebug"
@@ -2234,14 +2167,6 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="canonical.launchpad.browser.AskAQuestionButtonView"
         permission="zope.Public"/>
-    <browser:page
-        name="+export"
-        facet="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        permission="launchpad.AnyPerson"
-        template="../templates/productseries-export.pt"
-        class="lp.registry.browser.productseries.ProductSeriesTranslationsExportView"/>
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeriesSet"
         path_expression="string:series"
@@ -2252,8 +2177,7 @@
             ProductSeriesOverviewMenu
             ProductSeriesBugsMenu
             ProductSeriesOverviewNavigationMenu
-            ProductSeriesSpecificationsMenu
-            ProductSeriesTranslationsMenu"
+            ProductSeriesSpecificationsMenu"
         module="lp.registry.browser.productseries"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
