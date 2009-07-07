@@ -467,6 +467,21 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
+    @property
+    def package_creator(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.creator
+
+    @property
+    def package_maintainer(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.maintainer
+
+    @property
+    def package_signer(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.dscsigningkey.owner
+
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
