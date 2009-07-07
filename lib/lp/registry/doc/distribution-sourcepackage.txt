@@ -243,7 +243,6 @@ versions of a given source package have been published in.
 
     # Give the creators of the above source packages some soyuz
     # karma for their efforts.
-    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> from lp.registry.interfaces.karma import IKarmaCacheManager
     >>> from lp.registry.model.karma import KarmaCategory
     >>> soyuz_category = KarmaCategory.byName('soyuz')
@@ -252,6 +251,8 @@ versions of a given source package have been published in.
     >>> ppa_beta_owner_id = ppa_beta.owner.id
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
     >>> transaction.commit()
+
+    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('karma')
     >>> karmacachemanager = getUtility(IKarmaCacheManager)
     >>> cache_entry = karmacachemanager.new(

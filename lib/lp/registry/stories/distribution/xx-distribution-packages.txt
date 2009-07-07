@@ -148,17 +148,48 @@ archive as well as some new PPAs.
     # Then publish netapplet to both PPAs
     >>> netapplet_nightly_pub_breezy = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ppa_nightly,
-    ...     date_uploaded=datetime(2010, 12 ,1, tzinfo=pytz.UTC),
+    ...     creator=ppa_nightly.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.2n3')
     >>> netapplet_beta_pub_breezy = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ppa_beta,
-    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     creator=ppa_beta.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.1')
     >>> netapplet_beta_pub_hoary = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ppa_beta,
-    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     creator=ppa_beta.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.0',
     ...     distroseries=ubuntutest['hoary-test'])
+
+    # Give the creators of the above source packages some soyuz
+    # karma for their efforts.
+    >>> from lp.registry.interfaces.karma import IKarmaCacheManager
+    >>> from lp.registry.model.karma import KarmaCategory
+    >>> soyuz_category = KarmaCategory.byName('soyuz')
+    >>> sourcepackagerelease = netapplet_nightly_pub_breezy.sourcepackagerelease
+    >>> netapplet_name = sourcepackagerelease.sourcepackagename
+    >>> ppa_beta_owner_id = ppa_beta.owner.id
+    >>> ppa_nightly_owner_id = ppa_nightly.owner.id
+    >>> transaction.commit()
+
+    # XXX: Michael Nelson 2009-07-07 bug=396419. Currently there is no
+    # test api call to switchDbUser that works for non-zopeless layers.
+    # When bug 396419 is fixed, we can instead use
+    # DatabaseLayer.switchDbUser() instead of reconnect_stores()
+    >>> from canonical.testing.layers import reconnect_stores
+    >>> reconnect_stores('karmacacheupdater')
+    >>> from zope.component import getUtility
+    >>> karmacachemanager = getUtility(IKarmaCacheManager)
+    >>> cache_entry = karmacachemanager.new(
+    ...     200, ppa_beta_owner_id, soyuz_category.id,
+    ...     distribution_id=ubuntutest.id,
+    ...     sourcepackagename_id=netapplet_name.id)
+    >>> cache_entry = karmacachemanager.new(
+    ...     201, ppa_nightly_owner_id, soyuz_category.id,
+    ...     distribution_id=ubuntutest.id,
+    ...     sourcepackagename_id=netapplet_name.id)
+    >>> transaction.commit()
+    >>> reconnect_stores('launchpad')
+
     >>> logout()
 
 A /$DISTRO/+source/$PACKAGE page shows for a given source package all
