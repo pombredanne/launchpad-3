@@ -48,6 +48,7 @@
       <div
         tal:define="link context_menu/subscription"
         tal:condition="link/enabled"
+        id="selfsubscriptioncontainer"
         >
         <a id="selfsubscription"
            class="sprite add"
