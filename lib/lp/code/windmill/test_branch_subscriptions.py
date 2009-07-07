@@ -24,23 +24,32 @@ def test_branch_subscription_ajax_load():
     client.open(
         url=windmill.settings['TEST_URL'] + '/~sabdfl/firefox/release--0.9.1')
     client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
+    client.asserts.assertText(id=u'selfsubscription',
+        validator='Subscribe yourself')
     client.asserts.assertText(id=u'none-subscribers',
         validator=u'No subscribers.')
 
     client.click(id=u'selfsubscription')
-    client.waits.forPageLoad(timeout=u'100000')
-    client.click(id=u'field.actions.subscribe')
+    client.waits.forElement(id=u'yui-pretty-overlay-modal')
+    client.click(xpath=u'//button[@name="field.actions.change"]')
 
     client.waits.forElement(id=u'editsubscription-icon-name16',
         timeout=u'10000')
     client.asserts.assertText(id=u'subscriber-name16',
         validator=u'Foo Bar')
+    client.asserts.assertText(id=u'selfsubscription',
+        validator=u'Edit your subscription')
+
+
+    # And now to unsubscribe
     client.click(id=u'editsubscription-icon-name16')
 
     client.waits.forPageLoad(timeout=u'100000')
     client.click(id=u'field.actions.unsubscribe')
 
     client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
+    client.asserts.assertText(id=u'selfsubscription',
+        validator='Subscribe yourself')
     client.asserts.assertText(id=u'none-subscribers',
         validator=u'No subscribers.')
 
