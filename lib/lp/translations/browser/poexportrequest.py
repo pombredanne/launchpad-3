@@ -53,8 +53,8 @@ class BaseExportView(LaunchpadView):
 
         Overridable in a child class.  Must do one of:
         a. Add an error notification to the page and return `None`
-        b. Return a tuple of two iterables, of requested templates and
-           of requested pofiles.
+        b. Return a tuple of two iterables or None, of requested templates
+           and of requested pofiles.
         c. Redirect and return `None`.
         """
         if not IHasTranslationTemplates.providedBy(self.context):

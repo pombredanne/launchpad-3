@@ -137,7 +137,7 @@ class HasTranslationTemplatesMixin(TestCaseWithFactory):
         all_formats = self.container.getTranslationTemplateFormats()
         self.assertEquals([], all_formats)
 
-
+        # With one template, that template's format is returned.
         template1 = self.createTranslationTemplate("one")
         template1.source_file_format = TranslationFileFormat.PO
         all_formats = self.container.getTranslationTemplateFormats()
