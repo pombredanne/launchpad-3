@@ -533,8 +533,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # here, but pass None for the name argument as we've already
         # matched on exact source package name.
         BuildSet().handleOptionalParamsForBuildQueries(
-            condition_clauses, clauseTables, build_state, None, pocket,
-            arch_tag)
+            condition_clauses, clauseTables, build_state, name=None,
+            pocket=pocket, arch_tag=arch_tag)
 
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null

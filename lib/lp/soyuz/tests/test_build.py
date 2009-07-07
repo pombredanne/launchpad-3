@@ -90,13 +90,13 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.assertEquals(depwait_build.dependencies, '')
 
 
-class TestBuildSetMethodsBase(TestCaseWithFactory):
+class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Publish some builds for the test archive."""
-        super(TestBuildSetMethodsBase, self).setUp()
+        super(BaseTestCaseWithThreeBuilds, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
 
@@ -116,38 +116,40 @@ class TestBuildSetMethodsBase(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
         self.builds += gtg_src_hist.createMissingBuilds()
 
-        # Short-cuts for our tests.
-        self.build_set = getUtility(IBuildSet)
 
-
-class TestBuildSetGetBuildsForArchive(TestBuildSetMethodsBase):
+class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
 
     def setUp(self):
         """Publish some builds for the test archive."""
         super(TestBuildSetGetBuildsForArchive, self).setUp()
-        self.archive = self.publisher.distroseries.main_archive
 
-    def testGetBuildsForArchiveNoParams(self):
+        # Short-cuts for our tests.
+        self.archive = self.publisher.distroseries.main_archive
+        self.build_set = getUtility(IBuildSet)
+
+    def test_getBuildsForArchive_no_params(self):
         # All builds should be returned when called without filtering
         builds = self.build_set.getBuildsForArchive(self.archive)
-        num_results = builds.count()
-        self.assertEquals(3, num_results, "Expected 3 builds but "
-                                          "got %s" % num_results)
+        self.assertContentEqual(builds, self.builds)
 
-    def testGetBuildsForArchiveByArchTag(self):
+    def test_getBuildsForArchive_by_arch_tag(self):
         # Results can be filtered by architecture tag.
-        self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
+        i386_builds = self.builds[:]
+        hppa_build = i386_builds.pop()
+        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
+
         builds = self.build_set.getBuildsForArchive(self.archive,
                                                     arch_tag="i386")
-        num_results = builds.count()
-        self.assertEquals(2, num_results, "Expected 2 builds but "
-                                          "got %s" % num_results)
+        self.assertContentEqual(builds, i386_builds)
 
 
-class TestBuildSetGetBuildsForBuilder(TestBuildSetMethodsBase):
+class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
 
     def setUp(self):
         super(TestBuildSetGetBuildsForBuilder, self).setUp()
+
+        # Short-cuts for our tests.
+        self.build_set = getUtility(IBuildSet)
 
         # Create a 386 builder
         owner = self.factory.makePerson()
@@ -163,21 +165,20 @@ class TestBuildSetGetBuildsForBuilder(TestBuildSetMethodsBase):
         for build in self.builds:
             build.builder = self.builder
 
-    def testGetBuildsForBuilderNoParams(self):
+    def test_getBuildsForBuilder_no_params(self):
         # All builds should be returned when called without filtering
         builds = self.build_set.getBuildsForBuilder(self.builder.id)
-        num_results = builds.count()
-        self.assertEquals(3, num_results, "Expected 3 builds but "
-                                          "got %s" % num_results)
+        self.assertContentEqual(builds, self.builds)
 
-    def testGetBuildsForBuilderByArchTag(self):
+    def test_getBuildsForBuilder_by_arch_tag(self):
         # Results can be filtered by architecture tag.
-        self.builds[0].distroarchseries = self.publisher.distroseries['hppa']
+        i386_builds = self.builds[:]
+        hppa_build = i386_builds.pop()
+        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
+
         builds = self.build_set.getBuildsForBuilder(self.builder.id,
                                                     arch_tag="i386")
-        num_results = builds.count()
-        self.assertEquals(2, num_results, "Expected 2 builds but "
-                                          "got %s" % num_results)
+        self.assertContentEqual(builds, i386_builds)
 
 
 def test_suite():
