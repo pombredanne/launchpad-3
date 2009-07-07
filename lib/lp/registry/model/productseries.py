@@ -19,6 +19,7 @@ from zope.interface import implements
 from storm.locals import And, Desc
 from storm.store import Store
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -34,7 +35,9 @@ from lp.registry.model.milestone import (
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.potemplate import (
+    HasTranslationTemplatesMixin,
+    POTemplate)
 from lp.registry.model.productrelease import ProductRelease
 from canonical.launchpad.database.productserieslanguage import (
     ProductSeriesLanguage)
@@ -77,6 +80,7 @@ def landmark_key(landmark):
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
+                    HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin):
     """A series of product releases."""
     implements(
@@ -163,7 +167,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
-        return sorted(drivers, key=lambda x: x.browsername)
+        return sorted(drivers, key=lambda x: x.displayname)
 
     @property
     def bug_supervisor(self):
@@ -431,27 +435,30 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                                      orderBy=['-priority','name'])
         return shortlist(result, 300)
 
-    def _getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            productseries = %s AND
-            productseries = ProductSeries.id AND
-            iscurrent IS TRUE AND
-            ProductSeries.product = Product.id AND
-            Product.official_rosetta IS TRUE
-            ''' % sqlvalues(self),
-            orderBy=['-priority','name'],
-            clauseTables = ['ProductSeries', 'Product'])
-        return result
+        # Avoid circular imports.
+        from lp.registry.model.product import Product
 
-    def getCurrentTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        return shortlist(self._getCurrentTranslationTemplates(), 300)
+        store = Store.of(self)
+        if just_ids:
+            looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
 
-    @property
+        result = store.find(
+            looking_for,
+            POTemplate.iscurrent == True,
+            POTemplate.productseries == self,
+            ProductSeries.id == self.id,
+            ProductSeries.product == Product.id,
+            Product.official_rosetta == True)
+        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
+
+    @cachedproperty
     def potemplate_count(self):
         """See `IProductSeries`."""
-        return self._getCurrentTranslationTemplates().count()
+        return self.getCurrentTranslationTemplates().count()
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

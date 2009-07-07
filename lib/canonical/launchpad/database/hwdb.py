@@ -338,7 +338,7 @@ class HWSubmissionSet:
 
         device_tables, device_clauses = (
             make_submission_device_statistics_clause(
-                bus, vendor_id, product_id, driver_name, package_name, True))
+                bus, vendor_id, product_id, driver_name, package_name, False))
         submission_ids = Select(
             columns=[HWSubmissionDevice.submissionID],
             tables=device_tables, where=And(*device_clauses))
@@ -351,8 +351,8 @@ class HWSubmissionSet:
         return (submissions_with_device, all_submissions)
 
     def numSubmissionsWithDevice(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distro_target=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distro_target=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         submissions_with_device_select, all_submissions_select = (
@@ -366,8 +366,8 @@ class HWSubmissionSet:
                 all_submissions.get_one()[0])
 
     def numOwnersOfDevice(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distro_target=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distro_target=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         submitters_with_device_select, all_submitters_select = (
@@ -1099,13 +1099,13 @@ class HWSubmissionDeviceSet:
             HWSubmissionDevice, HWSubmissionDevice.id == id).one()
 
     def numDevicesInSubmissions(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distro_target=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distro_target=None):
         """See `IHWSubmissionDeviceSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         tables, where_clauses = make_submission_device_statistics_clause(
-            bus, vendor_id, product_id, driver_name, package_name, True)
+            bus, vendor_id, product_id, driver_name, package_name, False)
 
         distro_tables, distro_clauses = make_distro_target_clause(
             distro_target)

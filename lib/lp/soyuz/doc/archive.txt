@@ -1915,6 +1915,24 @@ be able to view the private team archive:
     there-we-go
     ultimate-copy
 
+
+== Getting publishing records across a set of Archives ==
+
+The IArchiveSet utility provides a getPublicationsInArchives() method
+that can be used to find the current publishing records for a source
+package in the provided list of archives for a specific distribution.
+
+    >>> pubs = archive_set.getPublicationsInArchives(
+    ...     firefox_source_pub.sourcepackagerelease.sourcepackagename,
+    ...     [ubuntu.main_archive],
+    ...     firefox_source_pub.distroseries.distribution)
+    >>> for pub in pubs:
+    ...     print "%s - %s in %s" % (
+    ...         pub.source_package_name,
+    ...         pub.source_package_version,
+    ...         pub.archive.displayname)
+    mozilla-firefox - 0.9 in Primary Archive for Ubuntu Linux
+
 == Archive Permission Checking ==
 
 IArchive has two public methods, canUpload() and canAdministerQueue()
@@ -1951,6 +1969,49 @@ Cprov does not have permission, however.
 
     >>> ubuntu.main_archive.canUpload(cprov, mozilla)
     False
+
+canUpload() also works in the same way for PPAs.  By default, it allows
+anyone in the PPA owning team to upload.
+
+    >>> cprov_archive.canUpload(cprov)
+    True
+
+    >>> cprov_archive.canUpload(carlos)
+    False
+
+We can also create an ArchivePermission entry for carlos to be able to upload
+to cprov's PPA, even though he is not the owner.
+
+    >>> discard = cprov_archive.newComponentUploader(
+    ...     carlos, "main")
+
+Carlos can now upload to cprov's PPA:
+
+    >>> cprov_archive.canUpload(carlos)
+    True
+
+Note that when creating a new permission, trying to specify a component other
+than 'main' results in an exception being raised, because components are not
+really applicable for PPAs.  'main' is used because *something* needs to be
+specified to satisfy database constraints, and it makes the most sense since
+that's the component that PPA packages are published in.  In the future,
+packagesets will replace components entirely as the ACL mechanism, so this
+anacronism can be removed.
+
+    >>> cprov_archive.newComponentUploader(
+    ...     carlos, "universe")
+    Traceback (most recent call last):
+    ...
+    InvalidComponent: Component for PPAs should be 'main'
+
+You'll get the same error if you use a component object that's not main.
+
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> cprov_archive.newComponentUploader(
+    ...     carlos, universe)
+    Traceback (most recent call last):
+    ...
+    InvalidComponent: Component for PPAs should be 'main'
 
 
 == Rebuild archives ==

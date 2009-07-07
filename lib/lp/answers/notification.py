@@ -231,6 +231,18 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
                 indent + 'Project: %s => %s' % (
                 old_question.target.displayname, question.target.displayname))
 
+        if question.assignee != old_question.assignee:
+            if old_question.assignee is None:
+                old_assignee = None
+            else:
+                old_assignee = old_question.assignee.displayname
+            if question.assignee is None:
+                assignee = None
+            else:
+                assignee = question.assignee.displayname
+            info_fields.append(indent + 'Assignee: %s => %s' % (
+               old_assignee, assignee))
+
         old_bugs = set(old_question.bugs)
         bugs = set(question.bugs)
         for linked_bug in bugs.difference(old_bugs):
