@@ -221,10 +221,10 @@ versions of a given source package have been published in.
     >>> publisher = SoyuzTestPublisher()
     >>> publisher.prepareBreezyAutotest()
     >>> ubuntu_test = publisher.distroseries.distribution
-    >>> ppa_nightly = factory.makeArchive(name="nightly",
-    ...                                   distribution=ubuntu_test)
-    >>> ppa_beta = factory.makeArchive(name="beta",
-    ...                                distribution=ubuntu_test)
+    >>> ppa_nightly = factory.makeArchive(
+    ...     name="nightly", distribution=ubuntu_test)
+    >>> ppa_beta = factory.makeArchive(
+    ...     name="beta", distribution=ubuntu_test)
 
     # Next publish some sources in them.
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
