@@ -337,7 +337,16 @@ class DistroArchSeriesSet:
         return DistroArchSeries.select().count()
 
     def getIdsForArchitectures(self, architectures, arch_tag=None):
-        """See `IDistributionSet`."""
+        """Filter architectures and return the ids.
+
+        This method is not exposed via the public interface as it is
+        used simply to keep trusted code DRY.
+
+        :param architectures: an iterable of architectures to process.
+        :param arch_tag: an optional architecture tag with which to filter
+            the results.
+        :return: a list of the ids of the architectures matching arch_tag.
+        """
         # If arch_tag was not provided, just return the ids without
         # filtering.
         if arch_tag is None:

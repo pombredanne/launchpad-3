@@ -44,7 +44,8 @@ from lp.registry.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.distroarchseries import (
+    DistroArchSeries, DistroArchSeriesSet)
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.model.distroseriespackagecache import (
     DistroSeriesPackageCache)
@@ -82,7 +83,6 @@ from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.launchpad import (
@@ -783,12 +783,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # now).
 
         # Find out the distroarchseries in question.
-        # Note: the list() seems to be required to ensure that the type
-        # of the returned list is actually list rather than
-        # zope.security.proxy.
-        distroarchseries_set = getUtility(IDistroArchSeriesSet)
-        arch_ids = list(distroarchseries_set.getIdsForArchitectures(
-            self.architectures, arch_tag))
+        arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
+            self.architectures, arch_tag)
 
         # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
