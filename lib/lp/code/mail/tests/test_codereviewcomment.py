@@ -220,6 +220,9 @@ class TestCodeReviewComment(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal(registrant=proposer)
         commenter = self.factory.makePerson(
             email='commenter@email.com', displayname='Commenter')
+        bmp.source_branch.subscribe(commenter,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
         comment = bmp.createComment(commenter, 'hello')
         return comment
 
@@ -232,6 +235,14 @@ class TestCodeReviewComment(TestCaseWithFactory):
         to = mailer._getToAddresses(
             comment.branch_merge_proposal.registrant, 'propose@gmail.com')
         self.assertEqual(['Proposer <propose@gmail.com>'], to)
+
+    def test_generateEmail_addresses(self):
+        comment = self.makeCommentAndParticipants()
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        ctrl = mailer.generateEmail('commenter@email.com',
+                                    comment.message.owner)
+        self.assertEqual(['Proposer <proposer@email.com>'], ctrl.to_addrs)
+        self.assertEqual(['commenter@email.com'], ctrl.real_to)
 
     def test_getToAddresses_with_parent(self):
         comment = self.makeCommentAndParticipants()
