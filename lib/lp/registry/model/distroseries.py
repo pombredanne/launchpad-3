@@ -87,6 +87,7 @@ from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries, IDistroSeriesSet, ISeriesMixin)
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
@@ -985,15 +986,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # now).
 
         # Find out the distroarchseries in question.
-        from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
         distroarchseries_set = getUtility(IDistroArchSeriesSet)
 
         # Note: the list() seems to be required to ensure that the type
         # of the returned list is actually list rather than
         # zope.security.proxy.
-        arch_ids = list(
-            distroarchseries_set.getIdsForArchitectures(
-                self.architectures, arch_tag))
+        arch_ids = list(distroarchseries_set.getIdsForArchitectures(
+            self.architectures, arch_tag))
 
         # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
