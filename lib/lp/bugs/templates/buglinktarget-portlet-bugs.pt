@@ -10,10 +10,8 @@
     <div class="portletBody portletContent">
 
       <ul>
-        <li class="bug" tal:repeat="link links">
-          <a tal:attributes="href link/bug/fmt:url">#<span
-             tal:replace="link/bug/id">122</span>:
-            <span tal:replace="link/title">foo bar baz</span></a>
+        <li tal:repeat="link links">
+          <a tal:replace="structure link/bug/fmt:link"></a>
         </li>
       </ul>
 
