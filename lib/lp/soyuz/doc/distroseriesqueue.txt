@@ -885,6 +885,87 @@ Similarly for binaries:
     restricted/web/Extra
 
 
+== Queue items retrieval ==
+
+IPackageUploadSet.getPackageUploads() returns an optionally filtered list of
+PackageUpload records for the supplied distroseries.
+
+    >>> warty = distro['warty']
+    >>> warty.getPackageUploads().count()
+    1
+
+Filtering by status:
+
+    >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
+    >>> warty.getPackageUploads(
+    ...     status=PackageUploadStatus.DONE).count()
+    1
+
+Filtering by archive:
+
+    >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+    >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+    ...     warty.distribution, ArchivePurpose.PARTNER)
+    >>> warty.getPackageUploads(archive=partner_archive).count()
+    0
+
+Filtering by pocket:
+
+    >>> warty.getPackageUploads(
+    ...     pocket=PackagePublishingPocket.RELEASE).count()
+    1
+
+Filtering by custom_type.  We need to add some custom uploads to show this.
+
+    >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+    >>> static_xlat = PackageUploadCustomFormat.STATIC_TRANSLATIONS
+    >>> def add_static_xlat_upload():
+    ...     upload = warty.createQueueEntry(
+    ...         pocket=PackagePublishingPocket.RELEASE,
+    ...         changesfilename="test", changesfilecontent="test",
+    ...         archive=warty.main_archive)
+    ...     arbitrary_file = factory.makeLibraryFileAlias()
+    ...     custom = upload.addCustom(arbitrary_file, static_xlat)
+
+    >>> add_static_xlat_upload()
+
+    >>> print warty.getPackageUploads(
+    ...     custom_type=static_xlat).count()
+    1
+
+There is also a created_since_date filter that will only return packages
+uploaded since the timestamp specified.  This is most useful when retrieving
+static translation files.  Static translation files are Gnome help files that
+are stripped from built packages and uploaded with the binary as a custom file.
+Providing the timestamp of the last one returned in the previous call is a
+convenient way to continue from where the caller left off.
+
+Add another custom upload.
+
+    >>> add_static_xlat_upload()
+    >>> uploads = warty.getPackageUploads(custom_type=static_xlat)
+    >>> print uploads.count()
+    2
+
+Commit a transaction to ensure new DB objects get a later timestamp.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> last_custom_time = uploads[1].date_created
+    >>> add_static_xlat_upload()
+    >>> uploads = warty.getPackageUploads(
+    ...     created_since_date=last_custom_time, custom_type=static_xlat)
+
+Only the just-created file is returned:
+
+    >>> uploads.count()
+    1
+
+    >>> uploads[0].date_created > last_custom_time
+    True
+
+
 == Queue Manipulation ==
 
 Two convenience methods exist, acceptFromQueue and rejectFromQueue that will
