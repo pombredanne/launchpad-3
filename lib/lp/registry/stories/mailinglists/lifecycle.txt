@@ -627,13 +627,12 @@ A team with an active mailing list cannot be merged with another team.
 
     >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
     >>> admin_browser.getControl('Duplicated Team').value = 'antelopes'
-    >>> admin_browser.getControl('Target Team').value = 'bassists'
+    >>> admin_browser.getControl('Target Team').value = 'guadamen'
     >>> admin_browser.getControl('Merge').click()
     >>> for message in get_feedback_messages(admin_browser.contents):
     ...     print message
-    There are 2 errors.
+    There is 1 error.
     antelopes is associated with a Launchpad mailing list; we can't merge it.
-    Constraint not satisfied
 
 But if the mailing list for the team being merge has been purged, then the
 merge is allowed.
