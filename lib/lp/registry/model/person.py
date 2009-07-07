@@ -2764,6 +2764,426 @@ class PersonSet:
         skip.append(
             (decorator_table.lower(), person_pointer_column.lower()))
 
+    def _mergeBranches(self, cur, from_id, to_id):
+        cur.execute('''
+            SELECT product, name FROM Branch WHERE owner = %(to_id)d
+            ''' % vars())
+        possible_conflicts = set(tuple(r) for r in cur.fetchall())
+        cur.execute('''
+            SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
+            ORDER BY id
+            ''' % vars())
+        for id, product, name in list(cur.fetchall()):
+            new_name = name
+            suffix = 1
+            while (product, new_name) in possible_conflicts:
+                new_name = '%s-%d' % (name, suffix)
+                suffix += 1
+            possible_conflicts.add((product, new_name))
+            new_name = new_name.encode('US-ASCII')
+            name = name.encode('US-ASCII')
+            cur.execute('''
+                UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
+                WHERE owner = %(from_id)s AND name = %(name)s
+                    AND (%(product)s IS NULL OR product = %(product)s)
+                ''', dict(to_id=to_id, from_id=from_id,
+                          name=name, new_name=new_name, product=product))
+
+    def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
+        # Update MailingListSubscription. Note that no remaining records
+        # will have email_address set, as we assert earlier that the
+        # from_person has no email addresses.
+        # Update records that don't conflict.
+        cur.execute('''
+            UPDATE MailingListSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+                AND mailing_list NOT IN (
+                    SELECT mailing_list
+                    FROM MailingListSubscription
+                    WHERE person=%(to_id)d
+                    )
+            ''' % vars())
+        # Then trash the remainders.
+        cur.execute('''
+            DELETE FROM MailingListSubscription WHERE person=%(from_id)d
+            ''' % vars())
+
+    def _mergeBranchSubscription(self, cur, from_id, to_id):
+        # Update only the BranchSubscription that will not conflict.
+        cur.execute('''
+            UPDATE BranchSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND branch NOT IN
+                (
+                SELECT branch
+                FROM BranchSubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM BranchSubscription WHERE person=%(from_id)d
+            ''' % vars())
+
+    def _mergeBountySubscriptions(self, cur, from_id, to_id):
+        # Update only the BountySubscriptions that will not conflict.
+        cur.execute('''
+            UPDATE BountySubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND bounty NOT IN
+                (
+                SELECT bounty
+                FROM BountySubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM BountySubscription WHERE person=%(from_id)d
+            ''' % vars())
+
+    def _mergeBugAffectsPerson(self, cur, from_id, to_id):
+        # Update only the BugAffectsPerson that will not conflict
+        cur.execute('''
+            UPDATE BugAffectsPerson
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND bug NOT IN
+                (
+                SELECT bug
+                FROM BugAffectsPerson
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM BugAffectsPerson WHERE person=%(from_id)d
+            ''' % vars())
+
+    def _mergeAnswerContact(self, cur, from_id, to_id):
+        # Update only the AnswerContacts that will not conflict.
+        cur.execute('''
+            UPDATE AnswerContact
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+                AND distribution IS NULL
+                AND product NOT IN (
+                    SELECT product
+                    FROM AnswerContact
+                    WHERE person = %(to_id)d
+                    )
+            ''' % vars())
+        cur.execute('''
+            UPDATE AnswerContact
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+                AND distribution IS NOT NULL
+                AND (distribution, sourcepackagename) NOT IN (
+                    SELECT distribution,sourcepackagename
+                    FROM AnswerContact
+                    WHERE person = %(to_id)d
+                    )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM AnswerContact WHERE person=%(from_id)d
+            ''' % vars())
+
+    def _mergeQuestionSubscription(self, cur, from_id, to_id):
+        # Update only the QuestionSubscriptions that will not conflict.
+        cur.execute('''
+            UPDATE QuestionSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND question NOT IN
+                (
+                SELECT question
+                FROM QuestionSubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM QuestionSubscription WHERE person=%(from_id)d
+            ''' % vars())
+
+    def _mergeMentoringOffer(self, cur, from_id, to_id):
+        # Update only the MentoringOffers that will not conflict.
+        cur.execute('''
+            UPDATE MentoringOffer
+            SET owner=%(to_id)d
+            WHERE owner=%(from_id)d
+                AND bug NOT IN (
+                    SELECT bug
+                    FROM MentoringOffer
+                    WHERE owner = %(to_id)d)
+                AND specification NOT IN (
+                    SELECT specification
+                    FROM MentoringOffer
+                    WHERE owner = %(to_id)d)
+            ''' % vars())
+        cur.execute('''
+            UPDATE MentoringOffer
+            SET team=%(to_id)d
+            WHERE team=%(from_id)d
+                AND bug NOT IN (
+                    SELECT bug
+                    FROM MentoringOffer
+                    WHERE team = %(to_id)d)
+                AND specification NOT IN (
+                    SELECT specification
+                    FROM MentoringOffer
+                    WHERE team = %(to_id)d)
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM MentoringOffer
+            WHERE owner=%(from_id)d OR team=%(from_id)d
+            ''' % vars())
+
+    def _mergeBugNotificationRecipient(self, cur, from_id, to_id):
+        # Update BugNotificationRecipient entries that will not conflict.
+        cur.execute('''
+            UPDATE BugNotificationRecipient
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND bug_notification NOT IN (
+                SELECT bug_notification FROM BugNotificationRecipient
+                WHERE person=%(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM BugNotificationRecipient
+            WHERE person=%(from_id)d
+            ''' % vars())
+
+    def _mergePackageBugSupervisor(self, cur, from_id, to_id):
+        # Update PackageBugSupervisor entries.
+        cur.execute('''
+            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)d
+            WHERE bug_supervisor=%(from_id)d
+            ''' % vars())
+
+    def _mergeSpecificationFeedback(self, cur, from_id, to_id):
+        # Update the SpecificationFeedback entries that will not conflict
+        # and trash the rest.
+
+        # First we handle the reviewer.
+        cur.execute('''
+            UPDATE SpecificationFeedback
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d AND specification NOT IN
+                (
+                SELECT specification
+                FROM SpecificationFeedback
+                WHERE reviewer = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM SpecificationFeedback WHERE reviewer=%(from_id)d
+            ''' % vars())
+
+        # And now we handle the requester.
+        cur.execute('''
+            UPDATE SpecificationFeedback
+            SET requester=%(to_id)d
+            WHERE requester=%(from_id)d AND specification NOT IN
+                (
+                SELECT specification
+                FROM SpecificationFeedback
+                WHERE requester = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM SpecificationFeedback WHERE requester=%(from_id)d
+            ''' % vars())
+
+    def _mergeSpecificationSubscription(self, cur, from_id, to_id):
+        # Update the SpecificationSubscription entries that will not conflict
+        # and trash the rest
+        cur.execute('''
+            UPDATE SpecificationSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND specification NOT IN
+                (
+                SELECT specification
+                FROM SpecificationSubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM SpecificationSubscription WHERE person=%(from_id)d
+            ''' % vars())
+
+    def _mergeSprintAttendance(self, cur, from_id, to_id):
+        # Update only the SprintAttendances that will not conflict
+        cur.execute('''
+            UPDATE SprintAttendance
+            SET attendee=%(to_id)d
+            WHERE attendee=%(from_id)d AND sprint NOT IN
+                (
+                SELECT sprint
+                FROM SprintAttendance
+                WHERE attendee = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM SprintAttendance WHERE attendee=%(from_id)d
+            ''' % vars())
+
+    def _mergePOSubscription(self, cur, from_id, to_id):
+        # Update only the POSubscriptions that will not conflict
+        cur.execute('''
+            UPDATE POSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id
+                    FROM POSubscription AS a, POSubscription AS b
+                    WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                    AND a.language = b.language
+                    AND a.potemplate = b.potemplate
+                    )
+            ''' % vars())
+
+    def _mergePOExportRequest(self, cur, from_id, to_id):
+        # Update only the POExportRequests that will not conflict
+        # and trash the rest
+        cur.execute('''
+            UPDATE POExportRequest
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM POExportRequest AS a, POExportRequest AS b
+                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                AND a.potemplate = b.potemplate
+                AND a.pofile = b.pofile
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM POExportRequest WHERE person=%(from_id)d
+            ''' % vars())
+
+    def _mergeTranslationMessage(self, cur, from_id, to_id):
+        # Update the TranslationMessage. They should not conflict since each
+        # of them are independent
+        cur.execute('''
+            UPDATE TranslationMessage
+            SET submitter=%(to_id)d
+            WHERE submitter=%(from_id)d
+            ''' % vars())
+        cur.execute('''
+            UPDATE TranslationMessage
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d
+            ''' % vars())
+
+    def _mergeTranslationImportQueueEntry(self, cur, from_id, to_id):
+        # Update only the TranslationImportQueueEntry that will not conflict
+        # and trash the rest
+        cur.execute('''
+            UPDATE TranslationImportQueueEntry
+            SET importer=%(to_id)d
+            WHERE importer=%(from_id)d AND id NOT IN (
+                SELECT a.id
+                FROM TranslationImportQueueEntry AS a,
+                     TranslationImportQueueEntry AS b
+                WHERE a.importer = %(from_id)d AND b.importer = %(to_id)d
+                AND a.distroseries = b.distroseries
+                AND a.sourcepackagename = b.sourcepackagename
+                AND a.productseries = b.productseries
+                AND a.path = b.path
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM TranslationImportQueueEntry WHERE importer=%(from_id)d
+            ''' % vars())
+
+    def _mergeCodeReviewVote(self, cur, from_id, to_id):
+        # Update only the CodeReviewVote that will not conflict,
+        # and leave conflicts as noise
+        cur.execute('''
+            UPDATE CodeReviewVote
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM CodeReviewVote AS a, CodeReviewVote AS b
+                WHERE a.reviewer = %(from_id)d AND b.reviewer = %(to_id)d
+                AND a.branch_merge_proposal = b.branch_merge_proposal
+                )
+            ''' % vars())
+
+    def _mergeWebServiceBan(self, cur, from_id, to_id):
+        # Update only the WebServiceBan that will not conflict
+        cur.execute('''
+            UPDATE WebServiceBan
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM WebServiceBan AS a, WebServiceBan AS b
+                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                AND ( (a.ip IS NULL AND b.ip IS NULL) OR (a.ip = b.ip) )
+                )
+            ''' % vars())
+        # And delete the rest
+        cur.execute('''
+            DELETE FROM WebServiceBan WHERE person=%(from_id)d
+            ''' % vars())
+
+    def _mergeTeamMembership(self, cur, from_id, to_id):
+        # Transfer active team memberships
+        approved = TeamMembershipStatus.APPROVED
+        admin = TeamMembershipStatus.ADMIN
+        cur.execute(
+            'SELECT team, status FROM TeamMembership WHERE person = %s '
+            'AND status IN (%s,%s)'
+            % sqlvalues(from_id, approved, admin))
+        for team_id, status in cur.fetchall():
+            cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
+                        'AND team = %s'
+                        % sqlvalues(to_id, team_id))
+            result = cur.fetchone()
+            if result:
+                current_status = result[0]
+                # Now we can safely delete from_person's membership record,
+                # because we know to_person has a membership entry for this
+                # team, so may only need to change its status.
+                cur.execute(
+                    'DELETE FROM TeamMembership WHERE person = %s '
+                    'AND team = %s' % sqlvalues(from_id, team_id))
+
+                if current_status == admin.value:
+                    # to_person is already an administrator of this team, no
+                    # need to do anything else.
+                    continue
+                # to_person is either an approved or an inactive member,
+                # while from_person is either admin or approved. That means we
+                # can safely set from_person's membership status on
+                # to_person's membership.
+                assert status in (approved.value, admin.value)
+                cur.execute(
+                    'UPDATE TeamMembership SET status = %s WHERE person = %s '
+                    'AND team = %s' % sqlvalues(status, to_id, team_id))
+            else:
+                # to_person is not a member of this team. just change
+                # from_person with to_person in the membership record.
+                cur.execute(
+                    'UPDATE TeamMembership SET person = %s WHERE person = %s '
+                    'AND team = %s'
+                    % sqlvalues(to_id, from_id, team_id))
+
+        cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
+                    'AND person != team' % sqlvalues(from_id))
+        for team_id in cur.fetchall():
+            cur.execute(
+                'SELECT team FROM TeamParticipation WHERE person = %s '
+                'AND team = %s' % sqlvalues(to_id, team_id))
+            if not cur.fetchone():
+                cur.execute(
+                    'UPDATE TeamParticipation SET person = %s WHERE '
+                    'person = %s AND team = %s'
+                    % sqlvalues(to_id, from_id, team_id))
+            else:
+                cur.execute(
+                    'DELETE FROM TeamParticipation WHERE person = %s AND '
+                    'team = %s' % sqlvalues(from_id, team_id))
+
     def merge(self, from_person, to_person):
         """See `IPersonSet`."""
         # Sanity checks
@@ -2791,8 +3211,6 @@ class PersonSet:
 
         # Get a database cursor.
         cur = cursor()
-
-        references = list(postgresql.listReferences(cur, 'person', 'id'))
 
         # These table.columns will be skipped by the 'catch all'
         # update performed later
@@ -2822,6 +3240,8 @@ class PersonSet:
             ('vote', 'person'),
             ('translationrelicensingagreement', 'person'),
             ]
+
+        references = list(postgresql.listReferences(cur, 'person', 'id'))
 
         # Sanity check. If we have an indirect reference, it must
         # be ON DELETE CASCADE. We only have one case of this at the moment,
@@ -2859,319 +3279,55 @@ class PersonSet:
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.
-        cur.execute('''
-            SELECT product, name FROM Branch WHERE owner = %(to_id)d
-            ''' % vars())
-        possible_conflicts = set(tuple(r) for r in cur.fetchall())
-        cur.execute('''
-            SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
-            ORDER BY id
-            ''' % vars())
-        for id, product, name in list(cur.fetchall()):
-            new_name = name
-            suffix = 1
-            while (product, new_name) in possible_conflicts:
-                new_name = '%s-%d' % (name, suffix)
-                suffix += 1
-            possible_conflicts.add((product, new_name))
-            new_name = new_name.encode('US-ASCII')
-            name = name.encode('US-ASCII')
-            cur.execute('''
-                UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
-                WHERE owner = %(from_id)s AND name = %(name)s
-                    AND (%(product)s IS NULL OR product = %(product)s)
-                ''', dict(to_id=to_id, from_id=from_id,
-                          name=name, new_name=new_name, product=product))
+        self._mergeBranches(cur, from_id, to_id)
         skip.append(('branch','owner'))
 
-        # Update MailingListSubscription. Note that no remaining records
-        # will have email_address set, as we assert earlier that the
-        # from_person has no email addresses.
-        # Update records that don't conflict.
-        cur.execute('''
-            UPDATE MailingListSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
-                AND mailing_list NOT IN (
-                    SELECT mailing_list
-                    FROM MailingListSubscription
-                    WHERE person=%(to_id)d
-                    )
-            ''' % vars())
-        # Then trash the remainders.
-        cur.execute('''
-            DELETE FROM MailingListSubscription WHERE person=%(from_id)d
-            ''' % vars())
+        self._mergeMailingListSubscriptions(cur, from_id, to_id)
         skip.append(('mailinglistsubscription', 'person'))
 
-        # Update only the BranchSubscription that will not conflict.
-        cur.execute('''
-            UPDATE BranchSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND branch NOT IN
-                (
-                SELECT branch
-                FROM BranchSubscription
-                WHERE person = %(to_id)d
-                )
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM BranchSubscription WHERE person=%(from_id)d
-            ''' % vars())
+        self._mergeBranchSubscription(cur, from_id, to_id)
         skip.append(('branchsubscription', 'person'))
 
-        # Update only the BountySubscriptions that will not conflict.
-        cur.execute('''
-            UPDATE BountySubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND bounty NOT IN
-                (
-                SELECT bounty
-                FROM BountySubscription
-                WHERE person = %(to_id)d
-                )
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM BountySubscription WHERE person=%(from_id)d
-            ''' % vars())
+        self._mergeBountySubscriptions(cur, from_id, to_id)
         skip.append(('bountysubscription', 'person'))
 
-        # Update only the BugAffectsPerson that will not conflict
-        cur.execute('''
-            UPDATE BugAffectsPerson
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND bug NOT IN
-                (
-                SELECT bug
-                FROM BugAffectsPerson
-                WHERE person = %(to_id)d
-                )
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM BugAffectsPerson WHERE person=%(from_id)d
-            ''' % vars())
+        self._mergeBugAffectsPerson(cur, from_id, to_id)
         skip.append(('bugaffectsperson', 'person'))
 
-        # Update only the AnswerContacts that will not conflict.
-        cur.execute('''
-            UPDATE AnswerContact
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
-                AND distribution IS NULL
-                AND product NOT IN (
-                    SELECT product
-                    FROM AnswerContact
-                    WHERE person = %(to_id)d
-                    )
-            ''' % vars())
-        cur.execute('''
-            UPDATE AnswerContact
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
-                AND distribution IS NOT NULL
-                AND (distribution, sourcepackagename) NOT IN (
-                    SELECT distribution,sourcepackagename
-                    FROM AnswerContact
-                    WHERE person = %(to_id)d
-                    )
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM AnswerContact WHERE person=%(from_id)d
-            ''' % vars())
+        self._mergeAnswerContact(cur, from_id, to_id)
         skip.append(('answercontact', 'person'))
 
-        # Update only the QuestionSubscriptions that will not conflict.
-        cur.execute('''
-            UPDATE QuestionSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND question NOT IN
-                (
-                SELECT question
-                FROM QuestionSubscription
-                WHERE person = %(to_id)d
-                )
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM QuestionSubscription WHERE person=%(from_id)d
-            ''' % vars())
+        self._mergeQuestionSubscription(cur, from_id, to_id)
         skip.append(('questionsubscription', 'person'))
 
-        # Update only the MentoringOffers that will not conflict.
-        cur.execute('''
-            UPDATE MentoringOffer
-            SET owner=%(to_id)d
-            WHERE owner=%(from_id)d
-                AND bug NOT IN (
-                    SELECT bug
-                    FROM MentoringOffer
-                    WHERE owner = %(to_id)d)
-                AND specification NOT IN (
-                    SELECT specification
-                    FROM MentoringOffer
-                    WHERE owner = %(to_id)d)
-            ''' % vars())
-        cur.execute('''
-            UPDATE MentoringOffer
-            SET team=%(to_id)d
-            WHERE team=%(from_id)d
-                AND bug NOT IN (
-                    SELECT bug
-                    FROM MentoringOffer
-                    WHERE team = %(to_id)d)
-                AND specification NOT IN (
-                    SELECT specification
-                    FROM MentoringOffer
-                    WHERE team = %(to_id)d)
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM MentoringOffer
-            WHERE owner=%(from_id)d OR team=%(from_id)d
-            ''' % vars())
+        self._mergeMentoringOffer(cur, from_id, to_id)
         skip.append(('mentoringoffer', 'owner'))
         skip.append(('mentoringoffer', 'team'))
 
-        # Update BugNotificationRecipient entries that will not conflict.
-        cur.execute('''
-            UPDATE BugNotificationRecipient
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND bug_notification NOT IN (
-                SELECT bug_notification FROM BugNotificationRecipient
-                WHERE person=%(to_id)d
-                )
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM BugNotificationRecipient
-            WHERE person=%(from_id)d
-            ''' % vars())
+        self._mergeBugNotificationRecipient(cur, from_id, to_id)
         skip.append(('bugnotificationrecipient', 'person'))
 
-        # Update PackageBugSupervisor entries.
-        cur.execute('''
-            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)d
-            WHERE bug_supervisor=%(from_id)d
-            ''' % vars())
+        self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
-        # Update the SpecificationFeedback entries that will not conflict
-        # and trash the rest.
-
-        # First we handle the reviewer.
-        cur.execute('''
-            UPDATE SpecificationFeedback
-            SET reviewer=%(to_id)d
-            WHERE reviewer=%(from_id)d AND specification NOT IN
-                (
-                SELECT specification
-                FROM SpecificationFeedback
-                WHERE reviewer = %(to_id)d
-                )
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM SpecificationFeedback WHERE reviewer=%(from_id)d
-            ''' % vars())
+        self._mergeSpecificationFeedback(cur, from_id, to_id)
         skip.append(('specificationfeedback', 'reviewer'))
-
-        # And now we handle the requester.
-        cur.execute('''
-            UPDATE SpecificationFeedback
-            SET requester=%(to_id)d
-            WHERE requester=%(from_id)d AND specification NOT IN
-                (
-                SELECT specification
-                FROM SpecificationFeedback
-                WHERE requester = %(to_id)d
-                )
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM SpecificationFeedback WHERE requester=%(from_id)d
-            ''' % vars())
         skip.append(('specificationfeedback', 'requester'))
 
-        # Update the SpecificationSubscription entries that will not conflict
-        # and trash the rest
-        cur.execute('''
-            UPDATE SpecificationSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND specification NOT IN
-                (
-                SELECT specification
-                FROM SpecificationSubscription
-                WHERE person = %(to_id)d
-                )
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM SpecificationSubscription WHERE person=%(from_id)d
-            ''' % vars())
+        self._mergeSpecificationSubscription(cur, from_id, to_id)
         skip.append(('specificationsubscription', 'person'))
 
-        # Update only the SprintAttendances that will not conflict
-        cur.execute('''
-            UPDATE SprintAttendance
-            SET attendee=%(to_id)d
-            WHERE attendee=%(from_id)d AND sprint NOT IN
-                (
-                SELECT sprint
-                FROM SprintAttendance
-                WHERE attendee = %(to_id)d
-                )
-            ''' % vars())
-        # and delete those left over
-        cur.execute('''
-            DELETE FROM SprintAttendance WHERE attendee=%(from_id)d
-            ''' % vars())
+        self._mergeSprintAttendance(cur, from_id, to_id)
         skip.append(('sprintattendance', 'attendee'))
 
-        # Update only the POSubscriptions that will not conflict
-        cur.execute('''
-            UPDATE POSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id
-                    FROM POSubscription AS a, POSubscription AS b
-                    WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                    AND a.language = b.language
-                    AND a.potemplate = b.potemplate
-                    )
-            ''' % vars())
+        self._mergePOSubscription(cur, from_id, to_id)
         skip.append(('posubscription', 'person'))
 
-        # Update only the POExportRequests that will not conflict
-        # and trash the rest
-        cur.execute('''
-            UPDATE POExportRequest
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id FROM POExportRequest AS a, POExportRequest AS b
-                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                AND a.potemplate = b.potemplate
-                AND a.pofile = b.pofile
-                )
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM POExportRequest WHERE person=%(from_id)d
-            ''' % vars())
+        self._mergePOExportRequest(cur, from_id, to_id)
         skip.append(('poexportrequest', 'person'))
 
-        # Update the TranslationMessage. They should not conflict since each
-        # of them are independent
-        cur.execute('''
-            UPDATE TranslationMessage
-            SET submitter=%(to_id)d
-            WHERE submitter=%(from_id)d
-            ''' % vars())
+        self._mergeTranslationMessage(cur, from_id, to_id)
         skip.append(('translationmessage', 'submitter'))
-        cur.execute('''
-            UPDATE TranslationMessage
-            SET reviewer=%(to_id)d
-            WHERE reviewer=%(from_id)d
-            ''' % vars())
         skip.append(('translationmessage', 'reviewer'))
 
         # Handle the POFileTranslator cache by doing nothing. As it is
@@ -3179,25 +3335,7 @@ class PersonSet:
         # for us when we updated the source tables.
         skip.append(('pofiletranslator', 'person'))
 
-        # Update only the TranslationImportQueueEntry that will not conflict
-        # and trash the rest
-        cur.execute('''
-            UPDATE TranslationImportQueueEntry
-            SET importer=%(to_id)d
-            WHERE importer=%(from_id)d AND id NOT IN (
-                SELECT a.id
-                FROM TranslationImportQueueEntry AS a,
-                     TranslationImportQueueEntry AS b
-                WHERE a.importer = %(from_id)d AND b.importer = %(to_id)d
-                AND a.distroseries = b.distroseries
-                AND a.sourcepackagename = b.sourcepackagename
-                AND a.productseries = b.productseries
-                AND a.path = b.path
-                )
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM TranslationImportQueueEntry WHERE importer=%(from_id)d
-            ''' % vars())
+        self._mergeTranslationImportQueueEntry(cur, from_id, to_id)
         skip.append(('translationimportqueueentry', 'importer'))
 
         # XXX cprov 2007-02-22 bug=87098:
@@ -3208,33 +3346,10 @@ class PersonSet:
         # and removing the old one from disk.
         skip.append(('archive', 'owner'))
 
-        # Update only the CodeReviewVote that will not conflict
-        cur.execute('''
-            UPDATE CodeReviewVote
-            SET reviewer=%(to_id)d
-            WHERE reviewer=%(from_id)d AND id NOT IN (
-                SELECT a.id FROM CodeReviewVote AS a, CodeReviewVote AS b
-                WHERE a.reviewer = %(from_id)d AND b.reviewer = %(to_id)d
-                AND a.branch_merge_proposal = b.branch_merge_proposal
-                )
-            ''' % vars())
-        # And leave conflicts as noise
+        self._mergeCodeReviewVote(cur, from_id, to_id)
         skip.append(('codereviewvote', 'reviewer'))
 
-        # Update only the WebServiceBan that will not conflict
-        cur.execute('''
-            UPDATE WebServiceBan
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id FROM WebServiceBan AS a, WebServiceBan AS b
-                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                AND ( (a.ip IS NULL AND b.ip IS NULL) OR (a.ip = b.ip) )
-                )
-            ''' % vars())
-        # And delete the rest
-        cur.execute('''
-            DELETE FROM WebServiceBan WHERE person=%(from_id)d
-            ''' % vars())
+        self._mergeWebServiceBan(cur, from_id, to_id)
         skip.append(('webserviceban', 'person'))
 
         # Sanity check. If we have a reference that participates in a
@@ -3258,62 +3373,7 @@ class PersonSet:
                 src_tab, src_col, to_person.id, src_col, from_person.id
                 ))
 
-        # Transfer active team memberships
-        approved = TeamMembershipStatus.APPROVED
-        admin = TeamMembershipStatus.ADMIN
-        cur.execute(
-            'SELECT team, status FROM TeamMembership WHERE person = %s '
-            'AND status IN (%s,%s)'
-            % sqlvalues(from_person, approved, admin))
-        for team_id, status in cur.fetchall():
-            cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
-                        'AND team = %s'
-                        % sqlvalues(to_person, team_id))
-            result = cur.fetchone()
-            if result:
-                current_status = result[0]
-                # Now we can safely delete from_person's membership record,
-                # because we know to_person has a membership entry for this
-                # team, so may only need to change its status.
-                cur.execute(
-                    'DELETE FROM TeamMembership WHERE person = %s '
-                    'AND team = %s' % sqlvalues(from_person, team_id))
-
-                if current_status == admin.value:
-                    # to_person is already an administrator of this team, no
-                    # need to do anything else.
-                    continue
-                # to_person is either an approved or an inactive member,
-                # while from_person is either admin or approved. That means we
-                # can safely set from_person's membership status on
-                # to_person's membership.
-                assert status in (approved.value, admin.value)
-                cur.execute(
-                    'UPDATE TeamMembership SET status = %s WHERE person = %s '
-                    'AND team = %s' % sqlvalues(status, to_person, team_id))
-            else:
-                # to_person is not a member of this team. just change
-                # from_person with to_person in the membership record.
-                cur.execute(
-                    'UPDATE TeamMembership SET person = %s WHERE person = %s '
-                    'AND team = %s'
-                    % sqlvalues(to_person, from_person, team_id))
-
-        cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
-                    'AND person != team' % sqlvalues(from_person))
-        for team_id in cur.fetchall():
-            cur.execute(
-                'SELECT team FROM TeamParticipation WHERE person = %s '
-                'AND team = %s' % sqlvalues(to_person, team_id))
-            if not cur.fetchone():
-                cur.execute(
-                    'UPDATE TeamParticipation SET person = %s WHERE '
-                    'person = %s AND team = %s'
-                    % sqlvalues(to_person, from_person, team_id))
-            else:
-                cur.execute(
-                    'DELETE FROM TeamParticipation WHERE person = %s AND '
-                    'team = %s' % sqlvalues(from_person, team_id))
+        self._mergeTeamMembership(cur, from_id, to_id)
 
         # Flag the person as merged
         cur.execute('''
