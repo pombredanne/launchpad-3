@@ -62,6 +62,7 @@ class TextLineEditorWidget:
         YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
+                accept_empty: %(accept_empty)s
             });
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
@@ -74,7 +75,8 @@ class TextLineEditorWidget:
 
 
     def __init__(self, context, attribute, edit_url, id=None, title="Edit",
-                 default='', tag='h1', public_attribute=None):
+                 default='', tag='h1', public_attribute=None,
+                 accept_empty=False):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -88,12 +90,17 @@ class TextLineEditorWidget:
         :param tag: The HTML tag to use.
         :param public_attribute: If given, the name of the attribute in the
             public webservice API.
+        :param accept_empty: Whether the field accepts empty input or not.
         """
         self.context = context
         self.attribute = attribute
         self.edit_url = edit_url
         self.default = default
         self.tag = tag
+        if accept_empty:
+            self.accept_empty = 'true'
+        else:
+            self.accept_empty = 'false'
         if public_attribute is None:
             self.public_attribute = attribute
         else:
@@ -127,6 +134,7 @@ class TextLineEditorWidget:
             'attribute': self.attribute,
             'tag': self.tag,
             'public_attribute': self.public_attribute,
+            'accept_empty': self.accept_empty,
             }
         # Only display the trigger link and the activation script if
         # the user can write the attribute.

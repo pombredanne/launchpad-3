@@ -874,24 +874,12 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             canonical_url(self.context, view_name='+edit'),
             id='programminglang', title='Edit programming languages',
             default='Not yet specified', tag='span',
-            public_attribute='programming_language')
-
-    @property
-    def programming_language_details(self):
-        """Details about the programming languages.
-
-        Return a dictionary containing information for displaying the
-        programming languages.
-        """
-        return dict(
-            text=self.context.programminglang,
-            # Show the field if programming languages are set, or if the user
-            # is the project owner.
-            show=(self.context.programminglang or
-                  self.user == self.context.owner),
-            # Only the project owner can edit this field.
-            edit=self.user == self.context.owner,
-            )
+            public_attribute='programming_language',
+            accept_empty=True)
+        print self.context.programminglang, self.user, self.context.owner
+        self.show_programming_languages = bool(
+            self.context.programminglang or
+            self.user == self.context.owner)
 
     @property
     def show_license_status(self):

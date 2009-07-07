@@ -318,12 +318,7 @@ on the index page.
 
     >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.programming_language_details['show']
-    False
-
-Only project owners can edit the programming languages inline.
-
-    >>> view.programming_language_details['edit']
+    >>> view.show_programming_languages
     False
 
 But if the project owner logs in, they will see the programming language
@@ -331,25 +326,16 @@ details, so that they can edit them.
 
     >>> login_person(firefox.owner)
     >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.programming_language_details['show']
+    >>> view.show_programming_languages
     True
 
-Still though, no programming languages are specified so there isn't any text
-to display.
-
-    >>> print view.programming_language_details['text']
-    None
-
-But the owner can edit this.
-
-    >>> view.programming_language_details['edit']
-    True
-
-Once the programming languages are specified though, they are returned in the
-details.
+Once the programming languages are specified though, even users who aren't the
+owner will see the list.
 
     >>> firefox.programminglang = 'C++'
     >>> transaction.commit()
+
+    >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(firefox, name='+index')
-    >>> print view.programming_language_details['text']
-    C++
+    >>> view.show_programming_languages
+    True

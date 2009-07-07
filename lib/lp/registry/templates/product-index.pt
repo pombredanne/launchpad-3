@@ -136,11 +136,11 @@
         </p>
       </tal:launchpad_usage>
 
-      <p id="product-languages"
-         tal:define="details view/programming_language_details"
-         tal:condition="details/show" />
+      <span tal:condition="view/show_programming_languages">
+      <p id="product-languages" />
         <strong>Programming Languages:</strong>
         <span tal:content="structure view/languages_edit_widget" />
+     </span>
 
       <p id="owner" tal:condition="context/owner">
         <strong>Maintainer:</strong> <tal:link replace="structure context/owner/fmt:link" />
