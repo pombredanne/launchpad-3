@@ -822,7 +822,22 @@ class BuildSet:
     def handleOptionalParamsForBuildQueries(
         self, queries, tables, status=None, name=None, pocket=None,
         arch_tag=None):
-        """See `IBuildSet`."""
+        """Construct query clauses needed/shared by all getBuild..() methods.
+
+        This method is not exposed via the public interface as it is only
+        used by trusted code.
+
+        :param queries: container to which to add any resulting query clauses.
+        :param tables: container to which to add joined tables.
+        :param status: optional build state for which to add a query clause if
+            present.
+        :param name: optional source package release name for which to add a
+            query clause if present.
+        :param pocket: optional pocket for which to add a query clause if
+            present.
+        :param arch_tag: optional architecture tag for which to add a
+            query clause if present.
+        """
 
         # Add query clause that filters on build state if the latter is
         # provided.

@@ -521,22 +521,6 @@ class IBuildSet(Interface):
         :rtype: ``dict``.
         """
 
-    def handleOptionalParamsForBuildQueries(queries, tables, status=None,
-                                            name=None, pocket=None,
-                                            arch_tag=None):
-        """Construct query clauses needed/shared by all getBuild..() methods.
-
-        :param queries: container to which to add any resulting query clauses.
-        :param tables: container to which to add joined tables.
-        :param status: optional build state for which to add a query clause if
-            present.
-        :param name: optional source package release name for which to add a
-            query clause if present.
-        :param pocket: optional pocket for which to add a query clause if
-            present.
-        :param arch_tag: optional architecture tag for which to add a
-            query clause if present.
-        """
 
 class IBuildRescoreForm(Interface):
     """Form for rescoring a build."""

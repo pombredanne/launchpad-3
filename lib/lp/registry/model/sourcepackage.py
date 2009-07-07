@@ -25,7 +25,7 @@ from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.build import Build, BuildSet
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from lp.soyuz.model.distroseriessourcepackagerelease import (
@@ -529,11 +529,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                         self.distroseries,
                         self.distribution.all_distro_archive_ids)]
 
-        # We re-use the optional-parameter handling provided by IBuildSet
+        # We re-use the optional-parameter handling provided by BuildSet
         # here, but pass None for the name argument as we've already
         # matched on exact source package name.
-        build_set = getUtility(IBuildSet)
-        build_set.handleOptionalParamsForBuildQueries(
+        BuildSet().handleOptionalParamsForBuildQueries(
             condition_clauses, clauseTables, build_state, None, pocket,
             arch_tag)
 
