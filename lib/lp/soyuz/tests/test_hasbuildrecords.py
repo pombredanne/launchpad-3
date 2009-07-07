@@ -10,10 +10,8 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_build import BaseTestCaseWithThreeBuilds
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
     """Tests the implementation of IHasBuildRecords by the

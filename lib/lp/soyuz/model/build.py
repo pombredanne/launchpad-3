@@ -825,7 +825,7 @@ class BuildSet:
         """Construct query clauses needed/shared by all getBuild..() methods.
 
         This method is not exposed via the public interface as it is only
-        used by trusted code.
+        used to DRY-up trusted code.
 
         :param queries: container to which to add any resulting query clauses.
         :param tables: container to which to add joined tables.
