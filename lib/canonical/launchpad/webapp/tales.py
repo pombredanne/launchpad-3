@@ -32,12 +32,17 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IDistribution, IFAQSet,
-    IProduct, IProject, IDistributionSourcePackage, ISprint, LicenseStatus, NotFoundError)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, NotFoundError)
+from lp.answers.interfaces.faq import IFAQSet
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.bugs.interfaces.bug import IBug, IBugSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from lp.registry.interfaces.product import IProduct, LicenseStatus
+from lp.registry.interfaces.project import IProject
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
@@ -961,7 +966,8 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     def icon(self, view_name):
         """Return the URL for the person's icon."""
-        custom_icon = ObjectImageDisplayAPI(self._context)._get_custom_icon_url()
+        custom_icon = ObjectImageDisplayAPI(
+            self._context)._get_custom_icon_url()
         if custom_icon is None:
             css_class = ObjectImageDisplayAPI(self._context).sprite_css()
             return '<span class="' + css_class + '"></span>'
@@ -993,7 +999,8 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            return '<span class="sprite team">%s</span>' % cgi.escape(self.hidden)
+            return '<span class="sprite team">%s</span>' % cgi.escape(
+                self.hidden)
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
 
     def displayname(self, view_name, rootsite=None):
@@ -1109,7 +1116,8 @@ class PillarFormatterAPI(CustomizableFormatter):
         html = super(PillarFormatterAPI, self).link(view_name)
         if IProduct.providedBy(self._context):
             product = self._context
-            custom_icon = ObjectImageDisplayAPI(product)._get_custom_icon_url()
+            custom_icon = ObjectImageDisplayAPI(
+                product)._get_custom_icon_url()
             url = canonical_url(product, view_name=view_name)
             summary = self._make_link_summary()
             if custom_icon is None:
@@ -1473,7 +1481,8 @@ class SpecificationBranchFormatterAPI(CustomizableFormatter):
         return formatter._get_icon()
 
     def sprite_css(self):
-        return queryAdapter(self._context.specification, IPathAdapter, 'image').sprite_css()
+        return queryAdapter(
+            self._context.specification, IPathAdapter, 'image').sprite_css()
 
 
 class BugTrackerFormatterAPI(ObjectFormatterAPI):
@@ -2684,8 +2693,9 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 person_formatter = PersonFormatterAPI(person)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
-                text = text.replace(address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
-                    canonical_url(person), css_sprite, address))
+                text = text.replace(
+                    address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
+                        canonical_url(person), css_sprite, address))
         return text
 
     def lower(self):
@@ -3003,7 +3013,7 @@ class PageMacroDispatcher:
     @property
     def _template(self):
         """Return the ViewPageTemplateFile used by layout."""
-        if self.context.__pagetype__ in self. _3_0_pagetypes:
+        if self.context.__pagetype__ in self._3_0_pagetypes:
             return self.base
         else:
             return self.master

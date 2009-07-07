@@ -27,10 +27,11 @@ define it in the pagetitles module.
     ...     template = ViewPageTemplateFile('testfiles/main-side.pt')
     ...     page_title = 'Test base-layout: main_side'
 
-The main_side layout uses all features of the defined features. The example
-template uses the epilogue, main, and side slots. The global search and the
-applications tabs are present. The main and side content are positioned
-using the "yui-t4", "yui-main", "yui-b", and "yui-b side" classes.
+The main_side layout uses all the defined features of the base-layout
+template. The example template uses the epilogue, main, and side slots. The
+global search and the applications tabs are present. The main and side
+content are positioned using the "yui-t4", "yui-main", "yui-b", and
+"yui-b side" classes.
 
     >>> view = MainSideView(user, request)
     >>> print view.render()
@@ -123,7 +124,7 @@ content to take up all the horizontal space.
     </html> ...
 
 The search template is intended for pages that provide search in the main
-content area, so the global search is no needed. The epilogue and main
+content area, so the global search is not needed. The epilogue and main
 slots are rendered, as are the application tabs.
 
     >>> class SearchView(LaunchpadView):
