@@ -365,8 +365,9 @@ the merge proposal)
 
 == POTemplates and so on ==
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPOTemplateSet, ITranslationGroupSet)
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> from lp.translations.interfaces.translationgroup import (
+    ...     ITranslationGroupSet)
 
 Most Rosetta pages hang off IPOTemplateSubset objects, of which there are two
 varieties: distribution and upstream.

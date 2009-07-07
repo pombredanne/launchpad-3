@@ -19,7 +19,6 @@ from zope.interface import implements
 from storm.locals import And, Desc
 from storm.store import Store
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -34,24 +33,25 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.potemplate import (
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate)
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.productserieslanguage import (
+from lp.translations.model.productserieslanguage import (
     ProductSeriesLanguage)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packaging import PackagingType
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
@@ -63,7 +63,7 @@ from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
@@ -81,7 +81,7 @@ def landmark_key(landmark):
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
                     HasTranslationTemplatesMixin,
-                    StructuralSubscriptionTargetMixin):
+                    StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
     implements(
         IProductSeries, IHasTranslationTemplates,
@@ -455,7 +455,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             Product.official_rosetta == True)
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
-    @cachedproperty
+    @property
     def potemplate_count(self):
         """See `IProductSeries`."""
         return self.getCurrentTranslationTemplates().count()

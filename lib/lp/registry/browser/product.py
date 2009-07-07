@@ -35,6 +35,8 @@ __all__ = [
     'ProductTranslationsMenu',
     'ProductView',
     'SortSeriesMixin',
+    'ProjectAddStepOne',
+    'ProjectAddStepTwo',
     ]
 
 
@@ -61,7 +63,7 @@ from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
@@ -86,7 +88,7 @@ from lp.registry.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.browser.translations import TranslationsMixin
+from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -97,7 +99,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.widgets.popup import PersonPickerWidget, VocabularyPickerWidget
+from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
@@ -1519,6 +1521,7 @@ class ProjectAddStepOne(StepView):
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
+    heading = "Register a project in Launchpad"
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
@@ -1526,9 +1529,19 @@ class ProjectAddStepOne(StepView):
     step_description = 'Project basics'
     search_results_count = 0
 
+    @property
+    def _next_step(self):
+        """Define the next step.
+
+        Subclasses can override this method to avoid having to override the
+        more complicated `main_action` method for customization.  The actual
+        property `next_step` must not be set before `main_action` is called.
+        """
+        return ProjectAddStepTwo
+
     def main_action(self, data):
         """See `MultiStepView`."""
-        self.next_step = ProjectAddStepTwo
+        self.next_step = self._next_step
         self.request.form['displayname'] = data['displayname']
         self.request.form['name'] = data['name'].lower()
         self.request.form['summary'] = data['summary']
@@ -1543,14 +1556,12 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
+    heading = "Register a project in Launchpad"
 
     product = None
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
-
-    custom_widget('project', VocabularyPickerWidget,
-                  header="Select a project group")
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
 
@@ -1632,7 +1643,21 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Register %s (%s) in Launchpad' % (
-            self.request.form['displayname'], self.request.form['name'])
+                self.request.form['displayname'], self.request.form['name'])
+
+    def create_product(self, data):
+        """Create the product from the user data."""
+        project = data.get('project', None)
+        return getUtility(IProductSet).createProduct(
+            owner=self.user,
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            displayname=data['displayname'],
+            licenses=data['licenses'],
+            license_info=data['license_info'],
+            project=project
+            )
 
     def main_action(self, data):
         """See `MultiStepView`."""
@@ -1644,15 +1669,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
             data['owner'] = self.user
             data['license_reviewed'] = False
 
-        self.product = getUtility(IProductSet).createProduct(
-            owner=self.user,
-            name=data['name'],
-            title=data['title'],
-            summary=data['summary'],
-            displayname=data['displayname'],
-            licenses=data['licenses'],
-            license_info=data['license_info'])
-
+        self.product = self.create_product(data)
         self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.next_url = canonical_url(self.product)
@@ -1724,7 +1741,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         by oldOwner of the product.
 
         """
-        from zope.security.proxy import removeSecurityProxy
         import_queue = getUtility(ITranslationImportQueue)
         for entry in import_queue.getAllEntries(target=product):
             if entry.importer == oldOwner:

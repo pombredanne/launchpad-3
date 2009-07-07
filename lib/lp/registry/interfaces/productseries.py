@@ -13,7 +13,7 @@ __all__ = [
     'NoSuchProductSeries',
     ]
 
-from zope.schema import Choice, Datetime, Int, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
@@ -22,14 +22,15 @@ from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers)
+    IHasAppointedDriver, IHasDrivers)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone)
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -39,9 +40,11 @@ from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad import _
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+
 from lazr.restful.declarations import (
     export_as_webservice_entry, export_factory_operation, export_operation_as,
-    export_read_operation, exported, rename_parameters_as)
+    export_read_operation, exported, operation_parameters,
+    rename_parameters_as)
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -280,9 +283,12 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
 
+    @operation_parameters(
+        include_inactive=Bool(title=_("Include inactive"),
+                              required=False, default=False))
     @export_read_operation()
     @export_operation_as('get_timeline')
-    def getTimeline():
+    def getTimeline(include_inactive):
         """Return basic timeline data useful for creating a diagram."""
 
 

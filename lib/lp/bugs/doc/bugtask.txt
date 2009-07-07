@@ -1155,6 +1155,7 @@ it can also be invoked directly.
 
     >>> thunderbird.name = 'thunderbird'
     >>> thunderbird.displayname = 'Mozilla Thunderbird'
+    >>> transaction.commit()
 
     >>> upstream_task.bugtargetdisplayname
     u'Mozilla Thunderbird NG'

@@ -12,16 +12,14 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
+  <include package="lp.app" />
   <include package="lp.bugs" />
-
   <include package="lp.registry" />
-
   <include package="lp.answers" />
   <include package="lp.coop.answersbugs" />
-
   <include package="lp.code" />
-
   <include package="lp.soyuz" />
+  <include package="lp.translations" />
   <include package="lp.blueprints" />
   <include package="lp.services.comments" />
 
@@ -29,6 +27,12 @@
     for="canonical.launchpad.interfaces.IPersonSet"
     path_expression="string:people"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:url
+     for="lp.code.interfaces.branch.IBranchSet"
+     path_expression="string:branches"
+     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
   <browser:url
