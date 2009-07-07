@@ -729,7 +729,7 @@ class PackageUpload(SQLBase):
             attach_changes = True
 
         self._handleCommonBodyContent(message, changes)
-        if message.SUMMARY is None:
+        if summary_text is None:
             message.SUMMARY = 'Rejected by archive administrator.'
 
         body = message.template % message.__dict__
