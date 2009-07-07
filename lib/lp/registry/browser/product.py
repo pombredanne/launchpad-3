@@ -876,7 +876,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             default='Not yet specified', tag='span',
             public_attribute='programming_language',
             accept_empty=True)
-        print self.context.programminglang, self.user, self.context.owner
         self.show_programming_languages = bool(
             self.context.programminglang or
             self.user == self.context.owner)
