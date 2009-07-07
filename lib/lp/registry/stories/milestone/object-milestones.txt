@@ -166,7 +166,7 @@ the distribution:
     Hierarchy: Launchpad > Debian
     Tabs:
     * Overview (selected) - http://launchpad.dev/debian
-    * Code - not linked
+    * Code - http://code.launchpad.dev/debian
     * Bugs - http://bugs.launchpad.dev/debian
     * Blueprints - http://blueprints.launchpad.dev/debian
     * Translations - http://translations.launchpad.dev/debian

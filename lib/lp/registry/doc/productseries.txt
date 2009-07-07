@@ -9,7 +9,9 @@ ProductSeries.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IHasTranslationImports, IPersonSet, IProductSeries, IProductSet)
+    ...     IPersonSet, IProductSeries, IProductSet)
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     IHasTranslationImports)
     >>> from canonical.database.sqlbase import flush_database_updates
 
 First, get a product that has some ProductSeries in the sample data.

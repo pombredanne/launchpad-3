@@ -33,17 +33,14 @@ from lp.soyuz.browser.distroarchseries import *
 from lp.soyuz.browser.distroarchseriesbinarypackage import *
 from lp.soyuz.browser.distroarchseriesbinarypackagerelease import *
 from lp.soyuz.browser.distroseriesbinarypackage import *
-from canonical.launchpad.browser.distroserieslanguage import *
 from lp.soyuz.browser.distroseriessourcepackagerelease import *
 from lp.answers.browser.faq import *
 from lp.answers.browser.faqcollection import *
 from lp.answers.browser.faqtarget import *
 from lp.registry.browser.featuredproject import *
 from canonical.launchpad.browser.feeds import *
-from canonical.launchpad.browser.hastranslationimports import *
 from canonical.launchpad.browser.hwdb import *
 from lp.registry.browser.karma import *
-from canonical.launchpad.browser.language import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.launchpadstatistic import *
 from canonical.launchpad.browser.librarian import *
@@ -57,7 +54,6 @@ from canonical.launchpad.browser.packagerelationship import *
 from canonical.launchpad.browser.packaging import *
 from lp.registry.browser.peoplemerge import *
 from lp.registry.browser.poll import *
-from canonical.launchpad.browser.productserieslanguage import *
 from lp.soyuz.browser.publishedpackage import *
 from lp.soyuz.browser.publishing import *
 from lp.answers.browser.question import *
@@ -76,8 +72,4 @@ from lp.blueprints.browser.sprintspecification import *
 from lp.registry.browser.team import *
 from lp.registry.browser.teammembership import *
 from canonical.launchpad.browser.temporaryblobstorage import *
-from canonical.launchpad.browser.translationgroup import *
-from canonical.launchpad.browser.translationimportqueue import *
-from canonical.launchpad.browser.translations import *
-from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.widgets import *
