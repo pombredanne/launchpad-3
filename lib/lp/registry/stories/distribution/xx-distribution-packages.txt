@@ -126,16 +126,12 @@ archive as well as some new PPAs.
 
     # Publish the source 'netapplet' in the breezy-autotest and
     #  main archive.
-    >>> from datetime import datetime
-    >>> import pytz
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> netapplet_pub_breezy = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ubuntutest.main_archive,
-    ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
     ...     status=PackagePublishingStatus.PUBLISHED, version='1.3.1')
     >>> netapplet_pub_hoary = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ubuntutest.main_archive,
-    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
     ...     status=PackagePublishingStatus.PUBLISHED, version='1.0.1a',
     ...     distroseries=ubuntutest['hoary-test'])
 
