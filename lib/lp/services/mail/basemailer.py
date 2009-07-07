@@ -64,7 +64,7 @@ class BaseMailer:
         body = self._getBody(email)
         ctrl = MailController(
             self.from_address, to_addresses, subject, body, headers,
-            real_to=[email])
+            envelope_to=[email])
         self._addAttachments(ctrl)
         return ctrl
 

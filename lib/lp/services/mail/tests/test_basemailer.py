@@ -40,8 +40,8 @@ class TestBaseMailer(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def test_generateEmail_sets_real_to(self):
-        """BaseMailer.generateEmail sets MailController.real_to.
+    def test_generateEmail_sets_envelope_to(self):
+        """BaseMailer.generateEmail sets MailController.envelope_to.
 
         The only item in the list is the supplied email address.
         """
@@ -51,7 +51,7 @@ class TestBaseMailer(TestCaseWithFactory):
         mailer = BaseMailerSubclass('subject', None, recipients,
                                     'from@example.com')
         ctrl = mailer.generateEmail('to@example.com', fake_to)
-        self.assertEqual(['to@example.com'], ctrl.real_to)
+        self.assertEqual(['to@example.com'], ctrl.envelope_to)
         self.assertEqual(['Example To <to@example.com>'], ctrl.to_addrs)
 
     def test_generateEmail_uses_getToAddresses(self):

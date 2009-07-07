@@ -242,7 +242,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         ctrl = mailer.generateEmail('commenter@email.com',
                                     comment.message.owner)
         self.assertEqual(['Proposer <proposer@email.com>'], ctrl.to_addrs)
-        self.assertEqual(['commenter@email.com'], ctrl.real_to)
+        self.assertEqual(['commenter@email.com'], ctrl.envelope_to)
 
     def test_getToAddresses_with_parent(self):
         comment = self.makeCommentAndParticipants()

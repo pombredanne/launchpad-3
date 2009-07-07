@@ -162,9 +162,9 @@ class TestMailController(TestCase):
             'inline; filename="README"', attachment['Content-Disposition'])
 
     def test_sendUsesRealTo(self):
-        """MailController.real_to is provided as to_addrs."""
+        """MailController.envelope_to is provided as to_addrs."""
         ctrl = MailController('from@example.com', 'to@example.com', 'subject',
-                              'body', real_to=['to@example.org'])
+                              'body', envelope_to=['to@example.org'])
         sendmail_kwargs = {}
         def fake_sendmail(message, to_addrs=None, bulk=True):
             sendmail_kwargs.update(locals())
