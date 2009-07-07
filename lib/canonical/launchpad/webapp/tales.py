@@ -2990,7 +2990,7 @@ class PageMacroDispatcher:
                 heading=False,
                 pageheading=False,
                 portlets=False),
-       'search':
+       'searchless':
             LayoutElements(
                 actionsmenu=False,
                 applicationborder=False,
@@ -3006,7 +3006,7 @@ class PageMacroDispatcher:
     _3_0_pagetypes = [
         'main_side',
         'main_only',
-        'search',
+        'searchless',
         'locationless',
         ]
 
