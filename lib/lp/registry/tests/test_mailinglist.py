@@ -25,8 +25,8 @@ class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
         # pending member and one active member.
         TestCaseWithFactory.setUp(self)
         login('foo.bar@canonical.com')
-        former_member = self.former_member = self.factory.makePerson()
-        pending_member = self.former_member = self.factory.makePerson()
+        former_member = self.factory.makePerson()
+        pending_member = self.factory.makePerson()
         active_member = self.active_member = self.factory.makePerson()
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'test-mailinglist', 'team-owner')
