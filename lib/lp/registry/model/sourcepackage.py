@@ -24,13 +24,15 @@ from lp.code.model.branch import Branch
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.build import Build, BuildSet
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.potemplate import (
+    HasTranslationTemplatesMixin,
+    POTemplate)
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.answers.model.question import (
@@ -148,7 +150,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
-                    HasTranslationImportsMixin):
+                    HasTranslationImportsMixin, HasTranslationTemplatesMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -502,11 +504,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return not self.__eq__(other)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None):
+                        arch_tag=None, user=None):
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now and this method only returns records for SPRs in a
         # distribution).
+        # We also ignore the name parameter (required as part of the
+        # IHasBuildRecords interface) and use our own name.
 
         """See `IHasBuildRecords`"""
         clauseTables = ['SourcePackageRelease',
@@ -524,23 +528,18 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                         self.distroseries,
                         self.distribution.all_distro_archive_ids)]
 
-        # XXX cprov 2006-09-25: It would be nice if we could encapsulate
-        # the chunk of code below (which deals with the optional paramenters)
-        # and share it with IBuildSet.getBuildsByArchIds()
+        # We re-use the optional-parameter handling provided by BuildSet
+        # here, but pass None for the name argument as we've already
+        # matched on exact source package name.
+        BuildSet().handleOptionalParamsForBuildQueries(
+            condition_clauses, clauseTables, build_state, name=None,
+            pocket=pocket, arch_tag=arch_tag)
 
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
             "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
-
-        if build_state is not None:
-            condition_clauses.append("Build.buildstate=%s"
-                                     % sqlvalues(build_state))
-
-        if pocket:
-            condition_clauses.append(
-                "Build.pocket = %s" % sqlvalues(pocket))
 
         # Ordering according status
         # * NEEDSBUILD & BUILDING by -lastscore
@@ -581,18 +580,27 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             sourcepackagename=self.sourcepackagename)
         return shortlist(result.orderBy(['-priority', 'name']), 300)
 
-    def getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            sourcepackagename = %s AND
-            iscurrent IS TRUE AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            Distribution.official_rosetta IS TRUE
-            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
-            clauseTables = ['DistroSeries', 'Distribution'])
-        return shortlist(result.orderBy(['-priority', 'name']), 300)
+        # Avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.distribution import Distribution
+
+        store = Store.of(self.sourcepackagename)
+        if just_ids:
+            looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
+
+        result = store.find(
+            looking_for,
+            POTemplate.iscurrent == True,
+            POTemplate.distroseries == self.distroseries,
+            POTemplate.sourcepackagename == self.sourcepackagename,
+            DistroSeries.id == self.distroseries.id,
+            DistroSeries.distribution == Distribution.id,
+            Distribution.official_rosetta == True)
+        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

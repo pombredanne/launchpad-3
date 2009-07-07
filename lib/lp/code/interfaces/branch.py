@@ -63,8 +63,8 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from canonical.launchpad.interfaces.launchpad import (
-    IHasOwner, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
     ITableBatchNavigator, NameLookupFailed)
