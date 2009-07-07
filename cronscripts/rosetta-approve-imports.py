@@ -8,7 +8,7 @@ import _pythonpath
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.scripts.po_import import AutoApproveProcess
+from lp.translations.scripts.po_import import AutoApproveProcess
 from lp.services.scripts.base import LaunchpadCronScript
 
 

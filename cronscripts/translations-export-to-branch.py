@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = []
 
 import _pythonpath
-from canonical.launchpad.scripts.translations_to_branch import (
+from lp.translations.scripts.translations_to_branch import (
     ExportTranslationsToBranch)
 
 

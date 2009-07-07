@@ -19,7 +19,7 @@ Ubuntu distribution...
     >>> browser.getControl('Content').displayValue = ['CD Image']
     >>> browser.getControl('HTTP URL').value = http_url
     >>> browser.getControl('Create Mirror').click()
- 
+
     >>> browser.url
     'http://launchpad.dev/ubuntu/+mirror/my.cdmirror.com-release'
     >>> print extract_text(find_tag_by_id(browser.contents, 'mirror-details'))
@@ -33,7 +33,7 @@ The CD mirror page has the same application tabs as the CD Mirrors index.
     Hierarchy: Launchpad > Ubuntu
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu
-    * Code - not linked
+    * Code - http://code.launchpad.dev/ubuntu
     * Bugs - http://bugs.launchpad.dev/ubuntu
     ...
     Main heading: Ubuntu mirror "My.cdmirror.com-release"

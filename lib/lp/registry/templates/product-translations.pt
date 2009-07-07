@@ -69,7 +69,7 @@
           </strong>
           <tal:admin_or_owner condition="context/required:launchpad.Edit">
             You can change this in the
-            <a tal:attributes="href string:+edit">project settings</a>.
+            <a tal:attributes="href string:+edit">project settings</a>. (<a href="/+help/getting-started-for-your-project.html" target="help">Getting started with translating your project in Launchpad</a>)
           </tal:admin_or_owner>
         </p>
         <tal:registrantoradmin

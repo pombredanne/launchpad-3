@@ -59,6 +59,7 @@ __all__ = [
     'rollback',
     'SQLBase',
     'sqlvalues',
+    'StupidCache',
     'ZopelessTransactionManager',]
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
@@ -107,11 +108,6 @@ class StupidCache:
 
     def get_cached(self):
         return self._cache.keys()
-
-
-# Monkey patch the cache into storm.store to override the standard
-# cache implementation for all stores.
-storm.store.Cache = StupidCache
 
 
 def _get_sqlobject_store():
@@ -352,6 +348,19 @@ class ZopelessTransactionManager(object):
         if connection._state == storm.database.STATE_CONNECTED:
             if connection._raw_connection is not None:
                 connection._raw_connection.close()
+
+            # This method assumes that calling transaction.abort() will
+            # call rollback() on the store, but this is no longer the
+            # case as of jamesh's fix for bug 230977; Stores are not
+            # registered with the transaction manager until they are
+            # used. While storm doesn't provide an API which does what
+            # we want, we'll go under the covers and emit the
+            # register-transaction event ourselves. This method is
+            # only called by the test suite to kill the existing
+            # connections so the Store's reconnect with updated
+            # connection settings.
+            store._event.emit('register-transaction')
+
             connection._raw_connection = None
             connection._state = storm.database.STATE_DISCONNECTED
         transaction.abort()
@@ -688,24 +697,24 @@ def flush_database_caches():
 
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
-    def wrapped(*args, **kwargs):
+    def block_implicit_flushes_decorator(*args, **kwargs):
         store = _get_sqlobject_store()
         store.block_implicit_flushes()
         try:
             return func(*args, **kwargs)
         finally:
             store.unblock_implicit_flushes()
-    return mergeFunctionMetadata(func, wrapped)
+    return mergeFunctionMetadata(func, block_implicit_flushes_decorator)
 
 
 def reset_store(func):
     """Function decorator that resets the main store."""
-    def wrapped(*args, **kwargs):
+    def reset_store_decorator(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         finally:
             _get_sqlobject_store().reset()
-    return mergeFunctionMetadata(func, wrapped)
+    return mergeFunctionMetadata(func, reset_store_decorator)
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid

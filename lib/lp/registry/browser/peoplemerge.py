@@ -19,7 +19,8 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus, IEmailAddressSet
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -191,6 +192,13 @@ class AdminTeamMergeView(AdminMergeBaseView):
 
     def validate(self, data):
         """Check there are no mailing lists associated with the dupe team."""
+
+        # If errors have already been discovered there is no need to continue,
+        # especially since some of our expected data may be missing in the
+        # case of user-entered invalid data.
+        if len(self.errors) > 0:
+            return
+
         super(AdminTeamMergeView, self).validate(data)
         mailing_list = getUtility(IMailingListSet).get(
             data['dupe_person'].name)
