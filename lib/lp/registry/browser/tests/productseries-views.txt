@@ -40,7 +40,7 @@ For these tasks we need to log in.
 The ProductSeries is setup to sync translations from a branch but no branch
 has been linked to the ProductSeries yet.
 
-    >>> from canonical.launchpad.interfaces.translations import (
+    >>> from lp.translations.interfaces.translations import (
     ...     TranslationsBranchImportMode)
     >>> productseries = factory.makeProductSeries()
     >>> productseries.translations_autoimport_mode = (
