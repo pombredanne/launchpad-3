@@ -179,13 +179,16 @@ Launchpad for bug tracking) information about that product will also be
 displayed.
 
     >>> admin_browser.open('http://launchpad.dev/test-group/+newproduct')
-    >>> admin_browser.getControl('Name:', index=0).value = 'testy'
-    >>> admin_browser.getControl('Display Name:').value = 'Testy Product'
-    >>> admin_browser.getControl('Title:').value = 'A Product for Testing'
-    >>> admin_browser.getControl('Summary:').value = 'Used for testing'
+    >>> admin_browser.getControl(name='field.name', index=0).value = 'testy'
+    >>> admin_browser.getControl(name='field.displayname').value = 'Testy Product'
+    >>> admin_browser.getControl(name='field.title').value = 'A Product for Testing'
+    >>> admin_browser.getControl(name='field.summary').value = 'Used for testing'
+    >>> admin_browser.getControl('Continue').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/test-group/+newproduct
+
     >>> admin_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
-    >>> admin_browser.getControl(name='field.license_info').value = 'foo'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Complete Registration').click()
     >>> admin_browser.url
     'http://launchpad.dev/testy'
 
@@ -279,13 +282,16 @@ If we add a second product to the project, this too will be shown on the
 filebug page:
 
     >>> admin_browser.open('http://launchpad.dev/test-group/+newproduct')
-    >>> admin_browser.getControl('Name:', index=0).value = 'second-test'
-    >>> admin_browser.getControl('Display Name:').value = 'Another product'
-    >>> admin_browser.getControl('Title:').value = 'For Testing'
-    >>> admin_browser.getControl('Summary:').value = 'Used for testing'
+    >>> admin_browser.getControl(name='field.name', index=0).value = 'second-test'
+    >>> admin_browser.getControl(name='field.displayname').value = 'Another product'
+    >>> admin_browser.getControl(name='field.title').value = 'For Testing'
+    >>> admin_browser.getControl(name='field.summary').value = 'Used for testing'
+    >>> admin_browser.getControl('Continue').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/test-group/+newproduct
+
     >>> admin_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
-    >>> admin_browser.getControl(name='field.license_info').value = 'foo'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Complete Registration').click()
     >>> admin_browser.url
     'http://launchpad.dev/second-test'
 

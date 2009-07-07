@@ -132,6 +132,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/picker.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/timeline.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
@@ -205,17 +207,17 @@
                       links cache/links;
                       objects cache/objects;">
     <script tal:repeat="key links"
-      tal:content="structure string:LP.client.links['${key}'] =
+      tal:content="string:LP.client.links['${key}'] =
                    '${links/?key/fmt:api_url}';">
     </script>
     <script tal:repeat="key objects"
-      tal:content="structure string:LP.client.cache['${key}'] =
+      tal:content="string:LP.client.cache['${key}'] =
                    ${objects/?key/webservice:json};">
     </script>
   </tal:cache>
 
   <script tal:condition="context/webservice:is_entry"
-    tal:content="structure string:LP.client.cache['context'] =
+    tal:content="string:LP.client.cache['context'] =
                  ${context/webservice:json};">
   </script>
 </metal:lp-client-cache>

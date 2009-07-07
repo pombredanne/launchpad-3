@@ -62,7 +62,7 @@ branches that they are subscribed to or are the owner of.
 
     >>> no_priv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> print_recently_registered_branches(no_priv_browser)
-    '...~no-priv/landscape/testing-branch...<img...src="/@@/private"...'
+    '...~no-priv/landscape/testing-branch...<span...class="sprite private"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
@@ -75,8 +75,8 @@ developer.
     >>> landscape_dev_browser = setupBrowser(
     ...     auth='Basic test@canonical.com:test')
     >>> print_recently_registered_branches(landscape_dev_browser)
-    '...~name12/landscape/feature-x...<img...src="/@@/private"...'
-    '...~landscape-developers/landscape/trunk...<img...src="/@@/private"...'
+    '...~name12/landscape/feature-x...<span...class="sprite private"...'
+    '...~landscape-developers/landscape/trunk...<span...class="sprite private"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
@@ -84,9 +84,9 @@ developer.
 Launchpad administrators are able to see all private branches.
 
     >>> print_recently_registered_branches(admin_browser)
-    '...~no-priv/landscape/testing-branch...<img...src="/@@/private"...'
-    '...~name12/landscape/feature-x...<img...src="/@@/private"...'
-    '...~landscape-developers/landscape/trunk...<img...src="/@@/private"...'
+    '...~no-priv/landscape/testing-branch...<span...class="sprite private"...'
+    '...~name12/landscape/feature-x...<span...class="sprite private"...'
+    '...~landscape-developers/landscape/trunk...<span...class="sprite private"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
 
@@ -259,4 +259,4 @@ But normal people can't.
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'branch-details'))
     No revision control details recorded for
-    The Landscape Project Series: trunk.
+    The Landscape Project trunk series.

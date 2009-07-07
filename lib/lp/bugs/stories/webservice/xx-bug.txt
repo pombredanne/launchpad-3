@@ -1,10 +1,12 @@
-= Introduction =
+Introduction
+============
 
 Bugs are some of the more complex objects in Launchpad. They have a
 lot of state and many relationships to other objects.
 
 
-== Bugs themselves ==
+Bugs themselves
+---------------
 
 At the top level we provide a collection of bugs.
 
@@ -211,7 +213,8 @@ the web UI. It is impossible, for example, to create circular relationships.
   HTTP/1.1 209 Content Returned...
 
 
-== Bugs as message targets ==
+Bugs as message targets
+-----------------------
 
 Each bug has a collection of messages.
 
@@ -266,7 +269,8 @@ We can add a new message to a bug by calling the newMessage method.
   subject: u'A new message'
 
 
-== Bug tasks ==
+Bug tasks
+---------
 
 Each bug may be associated with one or more bug tasks. Much of the
 data in a bug task is derived from the bug.
@@ -540,7 +544,8 @@ will return something more useful.
     "id": ...  "title": "Test bug"...
 
 
-== Bug subscriptions ==
+Bug subscriptions
+-----------------
 
 We can get the collection of subscriptions to a bug.
 
@@ -658,7 +663,81 @@ Salgado is the webservice user and cannot unsubscribe SteveA.
     False
 
 
-== Bug Watches ==
+Unsubscribing From Duplicates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If a user is subscribed via a duplicate, the user can unsubscribe from the
+main bug and be unsubscribed from the duplicate as well.
+
+bug_six is a duplicate of bug_five.
+
+    >>> bug_five = webservice.get('/bugs/5').jsonBody()
+    >>> bug_six['duplicate_of_link'] == bug_five['self_link']
+    True
+
+To demonstrate unsubscribing from duplicates, first subscribe the
+web service user himself (Salgado) so he has permission to unsubscribe
+himself.
+
+    >>> print webservice.named_post(
+    ...     bug_six['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~salgado'))
+    HTTP/1.1 200 Ok...
+
+bug_six now has one subscriber, Salgado.
+
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> for entry in bug_six_subscriptions['entries']:
+    ...     print entry['person_link']
+    http://.../~salgado
+
+Unsubscribe from bug_five, the primary bug, to unsubscribe from both
+it and its duplicate, bug_six.
+
+    >>> print webservice.named_post(
+    ...     bug_five['self_link'], 'unsubscribeFromDupes')
+    HTTP/1.1 200 Ok...
+
+Now bug_six has no subscibers.
+
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> print bug_six_subscriptions['total_size']
+    0
+
+Unsubscribing from duplicates is also supported for teams.
+To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
+
+    >>> print webservice.named_post(
+    ...     bug_six['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    HTTP/1.1 200 Ok...
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> for entry in bug_six_subscriptions['entries']:
+    ...     print entry['person_link']
+    http://.../~ubuntu-team
+
+Now, a team member can unsubscribe from bug_five to be unsubscribed
+from both it and the duplicate (bug_six).  Use the previously created
+member_webservice, which is for an Ubuntu Team member.
+
+    >>> print member_webservice.named_post(
+    ...     bug_five['self_link'], 'unsubscribeFromDupes',
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    HTTP/1.1 200 Ok...
+
+Now again, bug_six has no subscibers.
+
+    >>> bug_six_subscriptions = webservice.get(
+    ...     bug_six['subscriptions_collection_link']).jsonBody()
+    >>> print bug_six_subscriptions['total_size']
+    0
+
+
+Bug Watches
+-----------
 
 Bugs can have bug watches associated with them. Each bugwatch can also
 be optionally associated with one of the bugtasks in a bug, in which
@@ -763,7 +842,8 @@ Following the redirect, we can see the new bug watch:
   url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876'
 
 
-== Bug Trackers ==
+Bug Trackers
+------------
 
   >>> bug_tracker = webservice.get(bug_watch['bug_tracker_link']).jsonBody()
 
@@ -856,7 +936,8 @@ Admins can, however.
     active: False...
 
 
-== Bug attachments ==
+Bug attachments
+---------------
 
 Bug 1 has no attachments:
 
@@ -1001,7 +1082,8 @@ But we can remove the attachment altogether.
   ---
 
 
-== Searching for bugs ==
+Searching for bugs
+------------------
 
 Bug targets expose the searchTasks method, which provides a search interface
 for bug tasks, similar to the advanced search form on the web interface.
@@ -1132,8 +1214,144 @@ the advanced search interface.
     http://.../ubuntu/+source/linux-source-2.6.15/+bug/10
     http://.../ubuntu/+source/thunderbird/+bug/9
 
+Hardware related bug tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-== Affected users ==
+We can search for bugs related to a given hardware device. We must
+specify a device by its bus, vendor and product IDs and the kind
+of link between a bug and a HWDB submission.
+
+We can search for bugs reported by owners of the PCI device (0x10de,
+0x045d).
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+We can further limit the search to devices controlled by a given driver.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_bug_reporter=True,
+    ...     hardware_driver_name='ahci').jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_driver_name='nonsense',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+We can search for bugs related to any hardware device controlled by a
+given driver.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+We can limit the search to devices controlled by a driver from a given
+package.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
+    ...     hardware_driver_package_name='linux-image-2.6.24-19-generic',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
+    ...     hardware_driver_package_name='nonsense',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+Instead of searching for bugs reported by the owner of a given device,
+we can look for bugs where a device owner is affected by a bug...
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_affected_by_bug=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+    >>> login(ANONYMOUS)
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> sample_person_webservice = webservice_for_person(
+    ...     sample_person, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> sample_person_webservice.named_post(
+    ...     'http://api.launchpad.dev/beta/bugs/2', 'markUserAffected',
+    ...     affected=True).jsonBody()
+
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_affected_by_bug=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+...or for bugs to which owners of a given device are subscribed...
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_subscribed_to_bug=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9
+
+...or for bugs which are directly linked to a HWDB submission containing
+a given device.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_is_linked_to_bug=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+    >>> bug_ten = webservice.get('/bugs/10').jsonBody()
+    >>> sample_submission = webservice.get(
+    ...     '/+hwdb/+submission/sample-submission').jsonBody()
+    >>> print webservice.named_post(
+    ...     bug_ten['self_link'], 'linkHWSubmission',
+    ...     submission=sample_submission['self_link'])
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_is_linked_to_bug=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10
+
+
+Affected users
+--------------
 
 It is possible to mark a bug as affecting the user using the web service.
 
@@ -1164,7 +1382,8 @@ It is possible to mark a bug as affecting the user using the web service.
     False
 
 
-== CVEs ==
+CVEs
+----
 
 CVEs and how they relate to Launchpad bugs can be accessed using the API.
 
@@ -1274,7 +1493,8 @@ Add a new task to the bug.
     ...
 
 
-== HWDB submissions ==
+HWDB submissions
+----------------
 
 We can create a link between a HWDB submission and a bug by calling
 bug.linkHWSubmission().

@@ -166,7 +166,7 @@ the distribution:
     Hierarchy: Launchpad > Debian
     Tabs:
     * Overview (selected) - http://launchpad.dev/debian
-    * Code - not linked
+    * Code - http://code.launchpad.dev/debian
     * Bugs - http://bugs.launchpad.dev/debian
     * Blueprints - http://blueprints.launchpad.dev/debian
     * Translations - http://translations.launchpad.dev/debian
@@ -240,8 +240,8 @@ Next, we'll target each bug to the 1.0 milestone:
 
 Observe that both bugs are listed in the 1.0 milestone listing:
 
-    >>> browser.open('http://launchpad.dev/firefox')
-    >>> browser.getLink('Milestone history').click()
+    >>> browser.open('http://launchpad.dev/firefox/trunk')
+    >>> browser.getLink('All milestones').click()
     >>> browser.getLink(milestone_regex).click()
     >>> print browser.title
     Mozilla Firefox 1.0
@@ -319,31 +319,30 @@ Mozilla Firefox product, to complement the existing series "1.0":
     >>> browser.getControl('Summary').value = 'The Firefox 2.0 Series'
     >>> browser.getControl('Register Series').click()
     >>> print browser.title
-    Overview of Mozilla Firefox Series: 2.0
+    Mozilla Firefox 2.0 series
 
 We'll also create a new test milestone within the "trunk" series:
 
-    >>> browser.open('http://launchpad.dev/firefox')
-    >>> browser.getLink('trunk').click()
+    >>> browser.open('http://launchpad.dev/firefox/trunk')
     >>> print browser.title
-    Overview of Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
 
     >>> browser.getLink('Create milestone').click()
     >>> print browser.title
-    Add new milestone for Mozilla Firefox Series: trunk
+    Add new milestone for Mozilla Firefox trunk series
 
     >>> milestone = 'test-milestone'
     >>> browser.getControl('Name').value = milestone
     >>> browser.getControl('Date Targeted').value = '2100-08-08'
     >>> browser.getControl('Register Milestone').click()
     >>> print browser.title
-    Overview of Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'series_trunk'))
-    Version "Codename"               Expected     Released      Summary
-    Mozilla Firefox 0.9.2 ...        Set          2004-10-16    ...
-    Mozilla Firefox test-milestone   2100-08-08   Release now
-    ...
+    Version "Codename"              Expected        Released                    Summary
+    Mozilla Firefox 0.9.2...        Set             Change details 2004-10-16   This was a...
+    Mozilla Firefox...              Set             Change details 2004-10-16   Release...
+    Mozilla Firefox test-milestone  2100-08-08      Create release Release now  ...
 
     >>> browser.getLink('test-milestone').click()
     >>> print browser.title
@@ -420,8 +419,7 @@ Observe that both bug tasks are now listed in the test milestone listing:
 Each bugtask has one or more badges.
 
     >>> print bug_table.findAll('tr')[1]
-    <tr>...Test Bug 1...<img ... alt="milestone test-milestone"
-                             ... src="/@@/milestone" />...
+    <tr>...Test Bug 1...<a...alt="milestone test-milestone"...class="sprite milestone">...
 
 
 === Bugs targeted to development focus series ===

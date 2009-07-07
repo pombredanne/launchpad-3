@@ -138,7 +138,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from lp.registry.model.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
@@ -202,7 +202,7 @@ def validate_person_visibility(person, attr, value):
     # If transitioning to a non-public visibility, check for existing
     # relationships that could leak data.
     if value != PersonVisibility.PUBLIC:
-        warning = person.visibility_consistency_warning
+        warning = person.visibilityConsistencyWarning(value)
         if warning is not None:
             raise ImmutableVisibilityError(warning)
 
@@ -226,6 +226,8 @@ class Person(
     _sortingColumnsForSetOperations = SQLConstant(
         "person_sort_key(displayname, name)")
     _defaultOrder = sortingColumns
+    _visibility_warning_marker = object()
+    _visibility_warning_cache = _visibility_warning_marker
 
     account = ForeignKey(dbName='account', foreignKey='Account', default=None)
 
@@ -565,10 +567,10 @@ class Person(
             mail_text = get_email_template('person-location-modified.txt')
             mail_text = mail_text % {
                 'actor': user.name,
-                'actor_browsername': user.browsername,
+                'actor_browsername': user.displayname,
                 'person': self.name}
             subject = '%s updated your location and time zone' % (
-                user.browsername)
+                user.displayname)
             getUtility(IPersonNotificationSet).addNotification(
                 self, subject, mail_text)
 
@@ -641,11 +643,6 @@ class Person(
     def unique_displayname(self):
         """See `IPerson`."""
         return "%s (%s)" % (self.displayname, self.name)
-
-    @property
-    def browsername(self):
-        """See `IPersonPublic`."""
-        return self.displayname
 
     @property
     def has_any_specifications(self):
@@ -1400,7 +1397,7 @@ class Person(
     @property
     def title(self):
         """See `IPerson`."""
-        return self.browsername
+        return self.displayname
 
     @property
     def allmembers(self):
@@ -1734,19 +1731,22 @@ class Person(
         else:
             return True
 
-    @property
-    def visibility_consistency_warning(self):
+    def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
 
         A private-membership team cannot be connected to other
         objects, since it may be possible to infer the membership.
         """
+        if self._visibility_warning_cache != self._visibility_warning_marker:
+            return self._visibility_warning_cache
+
         cur = cursor()
         references = list(postgresql.listReferences(cur, 'person', 'id'))
         # These tables will be skipped since they do not risk leaking
         # team membership information, except StructuralSubscription
         # which will be checked further down to provide a clearer warning.
-        skip = [
+        # Note all of the table names and columns must be all lowercase.
+        skip = set([
             ('emailaddress', 'person'),
             ('gpgkey', 'owner'),
             ('ircid', 'person'),
@@ -1769,7 +1769,21 @@ class Person(
             # Skip mailing lists because if the mailing list is purged, it's
             # not a problem.  Do this check separately below.
             ('mailinglist', 'team')
-            ]
+            ])
+
+        # Private teams may participate in more areas of Launchpad than
+        # Private Membership teams.  The following relationships are allowable
+        # for Private teams and thus should be skipped.
+        if new_value == PersonVisibility.PRIVATE:
+            skip.update([('bugsubscription', 'person'),
+                         ('bugtask', 'assignee'),
+                         ('branch', 'owner'),
+                         ('branchsubscription', 'person'),
+                         ('branchvisibilitypolicy', 'team'),
+                         ('archive', 'owner'),
+                         ('archivesubscriber', 'subscriber'),
+                         ])
+
         warnings = set()
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
             if (src_tab, src_col) in skip:
@@ -1783,43 +1797,48 @@ class Person(
                     article = 'a'
                 warnings.add('%s %s' % (article, src_tab))
 
-        # Add warnings for subscriptions in StructuralSubscription table
-        # describing which kind of object is being subscribed to.
-        cur.execute("""
-            SELECT
-                count(product) AS product_count,
-                count(productseries) AS productseries_count,
-                count(project) AS project_count,
-                count(milestone) AS milestone_count,
-                count(distribution) AS distribution_count,
-                count(distroseries) AS distroseries_count,
-                count(sourcepackagename) AS sourcepackagename_count
-            FROM StructuralSubscription
-            WHERE subscriber=%d LIMIT 1
-            """ % self.id)
+        # Private teams may have structural subscription, so the following
+        # test is not applied to them.
+        if new_value != PersonVisibility.PRIVATE:
+            # Add warnings for subscriptions in StructuralSubscription table
+            # describing which kind of object is being subscribed to.
+            cur.execute("""
+                SELECT
+                    count(product) AS product_count,
+                    count(productseries) AS productseries_count,
+                    count(project) AS project_count,
+                    count(milestone) AS milestone_count,
+                    count(distribution) AS distribution_count,
+                    count(distroseries) AS distroseries_count,
+                    count(sourcepackagename) AS sourcepackagename_count
+                FROM StructuralSubscription
+                WHERE subscriber=%d LIMIT 1
+                """ % self.id)
 
-        row = cur.fetchone()
-        for count, warning in zip(row, [
-                'a project subscriber',
-                'a project series subscriber',
-                'a project subscriber',
-                'a milestone subscriber',
-                'a distribution subscriber',
-                'a distroseries subscriber',
-                'a source package subscriber']):
-            if count > 0:
-                warnings.add(warning)
+            row = cur.fetchone()
+            for count, warning in zip(row, [
+                    'a project subscriber',
+                    'a project series subscriber',
+                    'a project subscriber',
+                    'a milestone subscriber',
+                    'a distribution subscriber',
+                    'a distroseries subscriber',
+                    'a source package subscriber']):
+                if count > 0:
+                    warnings.add(warning)
 
-        # Non-purged mailing list check.
-        mailing_list = getUtility(IMailingListSet).get(self.name)
-        if (mailing_list is not None and
-            mailing_list.status != MailingListStatus.PURGED):
-            warnings.add('a mailing list')
+        # Non-purged mailing list check for transitioning to or from PUBLIC.
+        if PersonVisibility.PUBLIC in [self.visibility, new_value]:
+            mailing_list = getUtility(IMailingListSet).get(self.name)
+            if (mailing_list is not None and
+                mailing_list.status != MailingListStatus.PURGED):
+                warnings.add('a mailing list')
 
         # Compose warning string.
         warnings = sorted(warnings)
+
         if len(warnings) == 0:
-            return None
+            self._visibility_warning_cache = None
         else:
             if len(warnings) == 1:
                 message = warnings[0]
@@ -1827,8 +1846,10 @@ class Person(
                 message = '%s and %s' % (
                     ', '.join(warnings[:-1]),
                     warnings[-1])
-            return ('This team cannot be made private since it is referenced'
-                    ' by %s.' % message)
+            self._visibility_warning_cache = (
+                'This team cannot be converted to %s since it is '
+                'referenced by %s.' % (new_value, message))
+        return self._visibility_warning_cache
 
     @property
     def member_memberships(self):
@@ -3377,7 +3398,12 @@ class PersonSet:
         subscriber_ids = [
             subscription.subscriberID for subscription in subscriptions]
         if len(subscriber_ids) > 0:
-            list(Person.select("id IN %s" % sqlvalues(subscriber_ids)))
+            # Pull in ValidPersonCache records in addition to Person
+            # records to warm up the cache.
+            list(IStore(Person).find(
+                    (Person, ValidPersonCache),
+                    In(Person.id, subscriber_ids),
+                    ValidPersonCache.id == Person.id))
 
         subscribers = set()
         for subscription in subscriptions:

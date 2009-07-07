@@ -73,7 +73,7 @@
         <table class="listing sortable">
           <thead>
             <tr>
-              <th>Owner</th>
+              <th>PPA name</th>
               <th>Description</th>
               <th>Sources</th>
               <th>Binaries</th>

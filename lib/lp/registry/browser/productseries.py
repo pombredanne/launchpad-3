@@ -43,8 +43,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.translations import TranslationsMixin
+from lp.translations.browser.poexportrequest import BaseExportView
+from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from lp.code.interfaces.codeimport import (
     ICodeImportSet)
@@ -52,15 +52,15 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.productserieslanguage import (
+from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
-from canonical.launchpad.interfaces.translationimporter import (
+from lp.translations.interfaces.translationimporter import (
     ITranslationImporter)
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
@@ -77,7 +77,8 @@ from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
-from lp.registry.browser import get_status_counts, RegistryDeleteViewMixin
+from lp.registry.browser import (
+    get_status_counts, MilestoneOverlayMixin, RegistryDeleteViewMixin)
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -189,10 +190,12 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         """Return a link to set the bazaar branch for this series."""
         if self.context.branch is None:
             text = 'Link to branch'
+            icon = 'add'
         else:
             text = "Change branch"
+            icon = 'edit'
         summary = 'The code branch that for this series.'
-        return Link('+linkbranch', text, summary, icon='add')
+        return Link('+linkbranch', text, summary, icon=icon)
 
     def ubuntupkg(self):
         """Return a link to link this series to an ubuntu sourcepackage."""
@@ -225,7 +228,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def subscribe(self):
         """Return a link to subscribe to bug mail."""
         text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='add')
+        return Link('+subscribe', text, icon='edit')
 
 
 class ProductSeriesBugsMenu(ApplicationMenu):
@@ -368,14 +371,15 @@ class ProductSeriesTranslationsExportView(BaseExportView):
         """Process form submission requesting translations export."""
         pofiles = []
         translation_templates = self.context.getCurrentTranslationTemplates()
-        for translation_template in translation_templates:
-            pofiles += list(translation_template.pofiles)
+        pofiles = self.context.getCurrentTranslationFiles()
+        if not bool(pofiles.any()):
+            pofiles = None
         return (translation_templates, pofiles)
 
     def getDefaultFormat(self):
         """Return the default template format."""
         templates = self.context.getCurrentTranslationTemplates()
-        if len(templates) == 0:
+        if not bool(templates.any()):
             return None
         return templates[0].source_file_format
 
@@ -402,7 +406,8 @@ def get_series_branch_error(product, branch):
 # this becomes maintainable and form validation handled for us.
 # Currently, the pages just return 'System Error' as they trigger database
 # constraints.
-class ProductSeriesView(LaunchpadView, TranslationsMixin):
+class ProductSeriesView(LaunchpadView, TranslationsMixin,
+                        MilestoneOverlayMixin):
     """A view to show a series with translations."""
     def initialize(self):
         """See `LaunchpadFormView`."""
@@ -410,11 +415,11 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         self.has_errors = False
 
         # Whether there is more than one PO template.
-        self.has_multiple_templates = len(
-            self.context.getCurrentTranslationTemplates()) > 1
+        self.has_multiple_templates = (
+            self.context.getCurrentTranslationTemplates().count() > 1)
 
-        # let's find out what source package is associated with this
-        # productseries in the current release of ubuntu
+        # Let's find out what source package is associated with this
+        # productseries in the current release of ubuntu.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.curr_ubuntu_series = ubuntu.currentseries
         self.setUpPackaging()
@@ -745,6 +750,22 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
             all_specifications = all_specifications.union(
                 list(milestone.specifications))
         return get_status_counts(all_specifications, 'implementation_status')
+
+    @property
+    def milestone_table_class(self):
+        """The milestone table will be unseen if there are no milestones."""
+        if len(self.released_and_active_milestones) > 0:
+            return 'listing'
+        else:
+            # The page can remove the 'unseen' class to make the table
+            # visible.
+            return 'listing unseen'
+
+    @property
+    def milestone_row_uri_template(self):
+        return (
+            '%s/+milestone/{name}/+productseries-table-row' %
+            canonical_url(self.context.product, path_only_if_possible=True))
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):

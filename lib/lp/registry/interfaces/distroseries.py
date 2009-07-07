@@ -19,18 +19,20 @@ from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
-    Description, PublicPersonChoice, Summary, Title)
+    ContentNameField, Description, PublicPersonChoice, Summary, Title)
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.languagepack import ILanguagePack
+from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers)
+    IHasAppointedDriver, IHasDrivers)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import IHasMilestones
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
@@ -39,7 +41,8 @@ from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
     export_read_operation, exported, operation_parameters,
-    operation_returns_entry, webservice_error)
+    operation_returns_collection_of, operation_returns_entry,
+    webservice_error)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
@@ -108,6 +111,27 @@ class DistroSeriesStatus(DBEnumeratedType):
         """)
 
 
+class DistroSeriesNameField(ContentNameField):
+    """A class to ensure `IDistroSeries` has unique names."""
+    errormessage = _("%s is already in use by another series.")
+
+    @property
+    def _content_iface(self):
+        """See `IField`."""
+        return IDistroSeries
+
+    def _getByName(self, name):
+        """See `IField`."""
+        try:
+            if self._content_iface.providedBy(self.context):
+                return self.context.distribution.getSeries(name)
+            else:
+                return self.context.getSeries(name)
+        except NoSuchDistroSeries:
+            # The name is available for the new series.
+            return None
+
+
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
 
@@ -115,16 +139,29 @@ class IDistroSeriesEditRestricted(Interface):
         """Create a new milestone for this DistroSeries."""
 
 
+class ISeriesMixin(Interface):
+    """Methods & properties shared between distro & product series."""
+
+    active = exported(
+        Bool(
+            title=_("Active"),
+            description=_(
+                "Whether or not this series is stable and supported, or "
+                "under current development. This excludes series which "
+                "are experimental or obsolete.")))
+
+
 class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                           IBugTarget, ISpecificationGoal, IHasMilestones,
-                          IHasBuildRecords):
+                          IHasBuildRecords, ISeriesMixin):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
     name = exported(
-        TextLine(
+        DistroSeriesNameField(
             title=_("Name"), required=True,
-            description=_("The name of this series.")))
+            description=_("The name of this series."),
+            constraint=name_validator))
     displayname = exported(
         TextLine(
             title=_("Display name"), required=True,
@@ -298,14 +335,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             description=_(
                 "Whether or not this series is currently supported.")))
 
-    active = exported(
-        Bool(
-            title=_("Active"),
-            description=_(
-                "Whether or not this series is stable and supported, or "
-                "under current development. This excludes series which "
-                "are experimental or obsolete.")))
-
     def isUnstable():
         """Whether or not a distroseries is unstable.
 
@@ -388,6 +417,57 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getTranslatableSourcePackages():
         """Return a list of Source packages in this distribution series
         that can be translated.
+        """
+
+    @operation_parameters(
+        created_since_date=Datetime(
+            title=_("Created Since Timestamp"),
+            description=_("Return items that are more recent than this "
+                          "timestamp."),
+            required=False),
+        status=Choice(
+            # Really PackageUploadCustomFormat, patched in
+            # _schema_circular_imports.py
+            vocabulary=DBEnumeratedType,
+            title=_("Package Upload Status"),
+            description=_("Return only items that have this status."),
+            required=False),
+        archive=Reference(
+            # Really IArchive, patched in _schema_circular_imports.py
+            schema=Interface,
+            title=_("Archive"),
+            description=_("Return only items for this archive."),
+            required=False),
+        pocket=Choice(
+            # Really PackagePublishingPocket, patched in
+            # _schema_circular_imports.py
+            vocabulary=DBEnumeratedType,
+            title=_("Pocket"),
+            description=_("Return only items targeted to this pocket"),
+            required=False),
+        custom_type=Choice(
+            # Really PackageUploadCustomFormat, patched in
+            # _schema_circular_imports.py
+            vocabulary=DBEnumeratedType,
+            title=_("Custom Type"),
+            description=_("Return only items with custom files of this "
+                          "type."),
+            required=False),
+        )
+    # Really IPackageUpload, patched in _schema_circular_imports.py
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPackageUploads(created_since_date, status, archive, pocket,
+                          custom_type):
+        """Get package upload records for this distribution series.
+
+        :param created_since_date: If specified, only returns items uploaded
+            since the timestamp supplied.
+        :param status: Filter results by this `PackageUploadStatus`
+        :param archive: Filter results for this `IArchive`
+        :param pocket: Filter results by this `PackagePublishingPocket`
+        :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :return: A result set containing `IPackageUpload`
         """
 
     def checkTranslationsViewable():

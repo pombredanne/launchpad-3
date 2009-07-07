@@ -135,6 +135,7 @@
           <th tal:condition="view/display_target_column">In</th>
           <th tal:condition="view/display_sourcepackage_column"
               >Source Package</th>
+          <th>Assignee</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -156,7 +157,7 @@
           <td class="amount"
               tal:content="question/id"
               >42</td>
-          <td class="question">
+          <td class="questionTITLE">
             <a href="#"
                tal:content="question/title"
                tal:attributes="href question/fmt:url">
@@ -182,6 +183,11 @@
           <td tal:condition="view/display_sourcepackage_column"
               tal:content="structure python:view.formatSourcePackageName(question)"
               >mozilla-firefox</td>
+          <td>
+            <a tal:condition="question/assignee"
+              tal:replace="structure question/assignee/fmt:link">Sample Person</a>
+            <tal:unassigned
+              condition="not: question/assignee">&mdash;</tal:unassigned></td>
           <td class="questionstatus"
               tal:content="question/status/title"
               tal:attributes="class string:questionstatus${question/status/name}"

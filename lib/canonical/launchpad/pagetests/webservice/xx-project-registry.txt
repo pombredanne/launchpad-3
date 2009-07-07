@@ -363,8 +363,14 @@ Similarly the date_created attribute cannot be modified.
 "get_timeline" returns a lightweight representation of the project's
 hierarchy of series, milestones, and releases.
 
+    >>> patch = {'status': 'Obsolete'}
+    >>> print webservice.patch(
+    ...     '/firefox/trunk', 'application/json', dumps(patch))
+    HTTP/1.1 209 Content Returned...
     >>> timeline = webservice.named_get(
-    ...     firefox['self_link'], "get_timeline").jsonBody()
+    ...     firefox['self_link'],
+    ...     "get_timeline",
+    ...     include_inactive=True).jsonBody()
     >>> print pretty(timeline)
     [{u'is_development_focus': False,
       u'landmarks': [{u'code_name': u'First Stable Release',
@@ -734,7 +740,7 @@ virtual host.
     self_link: u'http://.../babadoo/foobadoo'
     status: u'Active Development'
     summary: u'Foobadoo support for Babadoo'
-    title: u'Babadoo Series: foobadoo'
+    title: u'Babadoo foobadoo series'
 
 "get_timeline" returns a lightweight representation of the series'
 milestones and releases.

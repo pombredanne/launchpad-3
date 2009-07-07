@@ -48,8 +48,12 @@
       <div
         tal:define="link context_menu/subscription"
         tal:condition="link/enabled"
-        tal:content="structure link/render"
-        />
+        >
+        <a id="selfsubscription"
+           class="sprite add"
+           tal:attributes="href link/url"
+           tal:content="link/text" />
+      </div>
       <div
         tal:define="link context_menu/add_subscriber"
         tal:condition="link/enabled"
@@ -57,21 +61,58 @@
         />
       </div>
       <h2>Subscribers</h2>
-      <dl tal:condition="view/subscriptions" id="subscriptions">
-        <tal:subscribers tal:repeat="subscription view/subscriptions">
-          <dt class="subscriber">
-            <img src="/@@/yes" />
-            <tal:subscriber tal:replace="structure subscription/person/fmt:link" />
-              <a tal:attributes="href subscription/fmt:url"
-                tal:condition="subscription/editable">
-                <img src="/@@/edit" alt="Edit subscription"/>
-              </a>
-          </dt>
-        </tal:subscribers>
-      </dl>
-      <p tal:condition="not:view/subscriptions">
-        No subscribers.
+      <p id="subscriber-list">
+        <noscript>
+          Please enable javascript to view branch subscribers.
+        </noscript>
       </p>
+      <div id="subscribers-portlet-spinner"
+          style="text-align: center; display: none;">
+        <img src="/@@/spinner" />
+      </div>
     </div>
   </div>
+  <tal:script
+    replace="structure
+    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
+    <!--
+
+    YUI().use('io-base', 'node', function(Y) {
+
+    if(Y.UA.ie) {
+        Y.get('#subscriber-list').set('innerHTML',
+            'Could not load subscribers, javascript is disabled.');
+        return;
+    }
+
+    Y.on('domready', function() {
+        update_subscriber_list();
+    });
+
+    /*
+     * Update the subscriber list via Ajax.
+     */
+    function update_subscriber_list() {
+
+        Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
+        Y.io('+branch-portlet-subscriber-content', {
+            on: {
+                complete: function(id, response) {
+                    Y.get('#subscribers-portlet-spinner').setStyle(
+                        'display', 'none');
+                    Y.get('#subscriber-list').set(
+                        'innerHTML', response.responseText);
+
+                    var element = Y.get('.menu-link-subscription');
+                    if (element.get('innerHTML') == 'Edit your subscription') {
+                        element.setStyle('display', 'none');
+                    }
+                }}});
+    }
+
+    });
+    -->
+  <tal:script replace="structure string:&lt;/script&gt;" />
+
+
 </div>

@@ -18,7 +18,6 @@ __all__ = [
     ]
 
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -33,26 +32,28 @@ from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.browser.queue import QueueItemsView
-from canonical.launchpad.browser.translations import TranslationsMixin
+from lp.translations.browser.translations import TranslationsMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from canonical.launchpad.interfaces.distroserieslanguage import (
+from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
+from canonical.launchpad.webapp.launchpadform import (
+    LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -118,6 +119,10 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         else:
             return self.context.last_delta_language_pack_exported.file
 
+    @stepthrough('+upload')
+    def traverse_queue(self, id):
+        return getUtility(IPackageUploadSet).get(id)
+
 
 class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IDistroSeries`."""
@@ -129,7 +134,8 @@ class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
 class DistroSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroSeries
-    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+    enable_only = ['overview', 'branches', 'bugs', 'specifications',
+                   'translations']
 
 
 class DistroSeriesOverviewMenu(ApplicationMenu):
@@ -382,6 +388,10 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         """Return the sourcepackages that lack a link to a productseries."""
         return self.context.getUnlinkedTranslatableSourcePackages()
 
+    @property
+    def potemplates(self):
+        return list(self.context.getCurrentTranslationTemplates())
+
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
 
@@ -496,21 +506,25 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class DistroSeriesAddView(AddView):
-    __used_for__ = IDistroSeries
+class DistroSeriesAddView(LaunchpadFormView):
+    """A view to creat an `IDistrobutionSeries`."""
+    schema = IDistroSeries
+    field_names = [
+        'name', 'displayname', 'title', 'summary', 'description', 'version',
+        'parent_series']
+    label = "Register a new series"
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
+    @property
+    def page_title(self):
+        """The page title."""
+        return 'Register a series in %s' % self.context.displayname
 
-    def createAndAdd(self, data):
+    @action(_('Create Series'), name='create')
+    def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
         owner = getUtility(ILaunchBag).user
 
         assert owner is not None
-
         distroseries = self.context.newSeries(
             name = data['name'],
             displayname = data['displayname'],
@@ -522,11 +536,12 @@ class DistroSeriesAddView(AddView):
             owner = owner
             )
         notify(ObjectCreatedEvent(distroseries))
-        self._nextURL = data['name']
+        self.next_url = canonical_url(distroseries)
         return distroseries
 
-    def nextURL(self):
-        return self._nextURL
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):

@@ -179,19 +179,17 @@
       <tr>
         <td tal:content="structure view/widgets/status" />
         <td title="Changeable only by a project maintainer or bug supervisor">
-          <img
+          <span
             tal:condition="not:view/userCanEditImportance"
-            alt=""
-            src="/@@/read-only"
+            class="sprite read-only"
           />
           <tal:widget content="structure view/widgets/importance" />
         </td>
         <td tal:condition="view/widgets/milestone"
             title="Changeable only by a project maintainer or bug supervisor">
-          <img
+          <span
             tal:condition="not:view/userCanEditMilestone"
-            alt=""
-            src="/@@/read-only"
+            class="sprite read-only"
           />
           <tal:widget content="structure view/widgets/milestone" />
         </td>

@@ -308,20 +308,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
         self.assertEqual(queue_root.distroseries.name, "farty")
 
-    def testNamedPPAUploadWithNonexistentName(self):
-        """Test PPA uploads to a named PPA location that doesn't exist."""
-        upload_dir = self.queueUpload("bar_1.0-1", "~name16/BADNAME/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        # There's no way of knowing that the BADNAME part is a ppa_name
-        # during the parallel run period, so it can only assume it's a
-        # bad distribution name.
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find PPA named 'BADNAME' for 'name16'\n"
-            "Further error processing not possible because of a "
-            "critical previous error.")
-
     def testPPAPublisherOverrides(self):
         """Check that PPA components override to main at publishing time,
 
@@ -481,56 +467,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # addresses for maintainer and changed-by which must be ignored.
         self.assertEmail()
 
-    def testUploadToUnknownPPA(self):
-        """Upload to a unknown PPA.
-
-        Upload gets processed as if it was targeted to the ubuntu PRIMARY
-        archive, however it is rejected, since it could not find the
-        specified PPA.
-
-        A rejection notification is sent to the uploader without the PPA
-        notification header, because it can't be calculated.
-        """
-        upload_dir = self.queueUpload("bar_1.0-1", "~spiv/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find PPA named 'ppa' for 'spiv'\n"
-            "Further error processing not "
-            "possible because of a critical previous error.")
-
-    def testUploadToDisabledPPA(self):
-        """Upload to a disabled PPA.
-
-        Upload gets processed as if it was targeted to the ubuntu PRIMARY
-        archive, however it is rejected since the PPA is disabled.
-        A rejection notification is sent to the uploader.
-        """
-        spiv = getUtility(IPersonSet).getByName("spiv")
-        spiv_archive = getUtility(IArchiveSet).new(
-            owner=spiv, distribution=self.ubuntu,
-            purpose=ArchivePurpose.PPA)
-        spiv_archive.enabled = False
-        self.layer.commit()
-
-        upload_dir = self.queueUpload("bar_1.0-1", "~spiv/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            'PPA for Andrew Bennetts is disabled\n'
-            'Further error processing '
-            'not possible because of a critical previous error.')
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "PPA for Andrew Bennetts is disabled",
-            "If you don't understand why your files were rejected please "
-                 "send an email",
-            ("to %s for help (requires membership)."
-             % config.launchpad.users_address),
-            ]
-        self.assertEmail(contents, ppa_header=None)
-
     def testPPADistroSeriesOverrides(self):
         """It's possible to override target distroserieses of PPA uploads.
 
@@ -635,14 +571,27 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.rejection_message,
             "Signer has no upload rights to this PPA.")
 
-    def testPPAPartnerUploadFails(self):
-        """Upload a partner package to a PPA and ensure it's rejected."""
+    def testPPAPartnerUpload(self):
+        """Upload a partner package to a PPA and ensure it's not rejected."""
         upload_dir = self.queueUpload("foocomm_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
+        # Check it's been successfully accepted.
         self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA does not support partner uploads.")
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
+
+        # We rely on the fact that the component on the source package
+        # release is unmodified, only the publishing component is
+        # changed to 'main'.  This allows the package to get copied to
+        # the main archive later where it would be published using the
+        # source's component if the standard auto-overrides don't match
+        # an existing publication.
+        pub_sources = self.name16.archive.getPublishedSources(name='foocomm')
+        [pub_foocomm] = pub_sources
+        self.assertEqual(
+            pub_foocomm.sourcepackagerelease.component.name, 'partner')
+        self.assertEqual(pub_foocomm.component.name, 'main')
 
     def testUploadSignedByNonUbuntero(self):
         """Check if a non-ubuntero can upload to his PPA."""
@@ -676,81 +625,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
-
-    def testUploadToAMismatchingDistribution(self):
-        """Check if we only accept uploads to the Archive.distribution."""
-        upload_dir = self.queueUpload("bar_1.0-1", "~cprov/ubuntutest")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find PPA named 'ubuntutest' for 'cprov'\n"
-            "Further error processing not possible because of a "
-            "critical previous error.")
-
-    def testUploadToUnknownDistribution(self):
-        """Upload to unknown distribution gets proper rejection email."""
-        upload_dir = self.queueUpload("bar_1.0-1", "biscuit")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find distribution 'biscuit'\n"
-            "Further error "
-            "processing not possible because of a critical previous error.")
-
-    def testUploadWithMismatchingPPANotation(self):
-        """Upload with mismatching PPA notation results in rejection email."""
-        upload_dir = self.queueUpload("bar_1.0-1", "biscuit/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find distribution 'biscuit'\n"
-            "Further error "
-            "processing not possible because of a critical previous error.")
-
-    def testUploadToUnknownPerson(self):
-        """Upload to unknown person gets proper rejection email."""
-        upload_dir = self.queueUpload("bar_1.0-1", "~orange/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-             "Could not find person 'orange'\n"
-             "Further error processing not "
-             "possible because of a critical previous error.")
-
-    def testUploadWithMismatchingPath(self):
-        """Upload with mismating path gets proper rejection email."""
-        upload_dir = self.queueUpload(
-            "bar_1.0-1", "ubuntu/one/two/three/four")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "Path mismatch 'ubuntu/one/two/three/four'. Use "
-            "~<person>/<ppa_name>/<distro>[/distroseries]/[files] for PPAs "
-            "and <distro>/[files] for normal uploads.\n"
-            "Further error processing "
-            "not possible because of a critical previous error.")
-
-    def testUploadWithBadDistroseries(self):
-        """Test uploading with a bad distroseries in the changes file.
-
-        Uploading with a broken distroseries should not generate a message
-        with a code exception in the email rejection.  It should warn about
-        the bad distroseries only.
-        """
-        upload_dir = self.queueUpload(
-            "bar_1.0-1_bad_distroseries", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            'Unable to find distroseries: flangetrousers\n'
-            'Further error '
-            'processing not possible because of a critical previous error.')
 
     def testMixedUpload(self):
         """Mixed PPA uploads are rejected with a appropriate message."""
@@ -806,7 +680,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         queue_items = self.breezy.getQueueItems(
             name="debian-installer",
-            status=PackagePublishingStatus.PUBLISHED,
+            status=PackageUploadStatus.ACCEPTED,
             archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
@@ -952,6 +826,46 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             str(error),
             "Cannot build any of the architectures requested: i386")
+
+    def testUploadPathErrorIntendedForHumans(self):
+        # PPA upload path errors are augmented with documentation
+        # references and get included in the rejection email along
+        # with a reference to the 'launchpad-users' mailinglist and
+        # the reason why the message was sent to the current
+        # recipients.
+        upload_dir = self.queueUpload("bar_1.0-1", "~boing/ppa")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        rejection_message = (
+            self.uploadprocessor.last_processed_upload.rejection_message)
+        self.assertEqual(
+            ["Launchpad failed to process the upload path '~boing/ppa':",
+             '',
+             "Could not find person or team named 'boing'.",
+             '',
+             'It is likely that you have a configuration problem with '
+                 'dput/dupload.',
+             'Please check the documentation at '
+                 'https://help.launchpad.net/Packaging/PPA#Uploading '
+                 'and update your configuration.',
+             '',
+             'Further error processing not possible because of a critical '
+                 'previous error.',
+             ],
+            rejection_message.splitlines())
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Could not find person or team named 'boing'",
+            "https://help.launchpad.net/Packaging/PPA#Uploading",
+            "If you don't understand why your files were rejected please "
+                "send an email",
+            ("to %s for help (requires membership)."
+             % config.launchpad.users_address),
+            "You are receiving this email because you are the uploader "
+                "of the above",
+            "PPA package.",
+            ]
+        self.assertEmail(contents, ppa_header=None)
 
 
 class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):

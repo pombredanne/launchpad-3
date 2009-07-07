@@ -164,7 +164,7 @@
     <browser:page
         name="+translations"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.translations.TranslationsRedirectView"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -194,7 +194,7 @@
         name="+help-translate-button"
         facet="translations"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.translations.HelpTranslateButtonView"
+        class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -207,7 +207,7 @@
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+imports"
-        class="canonical.launchpad.browser.HasTranslationImportsView"
+        class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
         facet="translations"
         permission="zope.Public"
         template="../templates/hastranslationimports-index.pt"
@@ -478,7 +478,7 @@
     <browser:page
         name="+translations"
         for="lp.registry.interfaces.project.IProject"
-        class="canonical.launchpad.browser.TranslationsRedirectView"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.project.IProject"
@@ -491,7 +491,7 @@
         name="+help-translate-button"
         facet="translations"
         for="lp.registry.interfaces.project.IProject"
-        class="canonical.launchpad.browser.HelpTranslateButtonView"
+        class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.project.IProject"
@@ -544,7 +544,7 @@
         facet="overview"
         class="lp.registry.browser.project.ProjectAddProductView"
         permission="launchpad.AnyPerson"
-        template="../templates/product-add-from-project.pt"/>
+        template="../templates/product-new.pt"/>
     <browser:addform
         name="+linkbounty"
         for="lp.registry.interfaces.project.IProject"
@@ -1187,7 +1187,7 @@
         <browser:page
             name="+translations"
             for="lp.registry.interfaces.person.IPerson"
-            class="canonical.launchpad.browser.TranslationsRedirectView"
+            class="lp.translations.browser.translations.TranslationsRedirectView"
             permission="zope.Public"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
@@ -1208,7 +1208,7 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+imports"
-            class="canonical.launchpad.browser.HasTranslationImportsView"
+            class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
             facet="translations"
             permission="zope.Public"
             template="../templates/hastranslationimports-index.pt"
@@ -1719,7 +1719,7 @@
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+imports"
-        class="canonical.launchpad.browser.HasTranslationImportsView"
+        class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
         facet="translations"
         permission="zope.Public"
         template="../templates/hastranslationimports-index.pt"
@@ -1728,12 +1728,12 @@
         name="+help-translate-button"
         facet="translations"
         for="lp.registry.interfaces.product.IProduct"
-        class="canonical.launchpad.browser.HelpTranslateButtonView"
+        class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
         name="+translations"
         for="lp.registry.interfaces.product.IProduct"
-        class="canonical.launchpad.browser.TranslationsRedirectView"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
@@ -1764,7 +1764,7 @@
         <browser:page
             name="+timeline-graph"
             facet="overview"
-            template="../templates/product-timeline-graph.pt"/>
+            template="../templates/object-timeline-graph.pt"/>
         <browser:page
             name="+packages"
             facet="overview"
@@ -2022,8 +2022,8 @@
         facet="overview"
         permission="zope.Public">
         <browser:page
-            name="+index"
-            template="../templates/productseries-index.pt"/>
+            name="+timeline-graph"
+            template="../templates/object-timeline-graph.pt"/>
         <browser:page
             name="+macros"
             template="../templates/productseries-macros.pt"/>
@@ -2052,6 +2052,9 @@
         facet="overview"
         permission="zope.Public">
         <browser:page
+            name="+index"
+            template="../templates/productseries-index.pt"/>
+        <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"/>
     </browser:pages>
@@ -2074,7 +2077,7 @@
     <browser:page
         name="+translations"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="canonical.launchpad.browser.TranslationsRedirectView"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -2169,7 +2172,7 @@
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+imports"
-        class="canonical.launchpad.browser.HasTranslationImportsView"
+        class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
         facet="translations"
         permission="zope.Public"
         template="../templates/hastranslationimports-index.pt"
@@ -2466,21 +2469,14 @@
             name="+reassign"
             template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
     </browser:pages>
-    <browser:addform
+    <browser:page
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDistribution"
-        schema="canonical.launchpad.interfaces.IDistroSeries"
-        label="Register a new series"
-        fields="name displayname title summary description version parent_series"
-        content_factory="canonical.launchpad.database.DistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../../../canonical/launchpad/templates/launchpad-addform.pt">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget"/>
-    </browser:addform>
+        template="../templates/distroseries-add.pt">
+    </browser:page>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"
@@ -2507,7 +2503,7 @@
     <browser:page
         name="+translations"
         for="lp.registry.interfaces.distribution.IDistribution"
-        class="canonical.launchpad.browser.TranslationsRedirectView"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -2521,7 +2517,7 @@
         name="+help-translate-button"
         facet="translations"
         for="lp.registry.interfaces.distribution.IDistribution"
-        class="canonical.launchpad.browser.HelpTranslateButtonView"
+        class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:editform
         name="+settings"
@@ -2535,7 +2531,7 @@
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         name="+imports"
-        class="canonical.launchpad.browser.HasTranslationImportsView"
+        class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
         facet="translations"
         permission="zope.Public"
         template="../templates/hastranslationimports-index.pt"
@@ -2655,7 +2651,7 @@
     <browser:page
         name="+translations"
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        class="canonical.launchpad.browser.TranslationsRedirectView"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
@@ -2678,7 +2674,7 @@
     <browser:page
         name="+translate"
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        class="canonical.launchpad.browser.TranslateRedirectView"
+        class="lp.translations.browser.translations.TranslateRedirectView"
         permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
@@ -2711,7 +2707,7 @@
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         name="+imports"
-        class="canonical.launchpad.browser.HasTranslationImportsView"
+        class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
         facet="translations"
         permission="zope.Public"
         template="../templates/hastranslationimports-index.pt"
@@ -2890,4 +2886,10 @@
         for="lp.registry.interfaces.productrelease.IProductReleaseFile"
         permission="zope.Public"
         template="../templates/productreleasefile-macros.pt" />
+    <browser:page
+        for="*"
+        name="+timeline-macros"
+        template="../templates/timeline-macros.pt"
+        permission="zope.Public"
+        />
 </configure>

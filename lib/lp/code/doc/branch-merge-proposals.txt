@@ -30,8 +30,8 @@ method on a branch.  Junk branches cannot have landing targets.
 All merge proposals have to be registered by a Person.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBranchSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> person_set = getUtility(IPersonSet)
     >>> login('test@canonical.com')
@@ -400,7 +400,7 @@ The user that marked the branch as merged can also be recorded.
     >>> merge_proposal.markAsMerged(1234, now.next(), reporter)
     >>> merge_proposal.merged_revno
     1234
-    >>> print merge_proposal.merge_reporter.browsername
+    >>> print merge_proposal.merge_reporter.displayname
     Mark Shuttleworth
     >>> print merge_proposal.queue_status.title
     Merged
@@ -443,7 +443,7 @@ that revision.
     >>> merge_proposal.markAsMerged(1, now.next(), reporter)
     >>> print merge_proposal.date_merged
     2005-03-09 15:40:00+00:00
-    >>> print merge_proposal.merge_reporter.browsername
+    >>> print merge_proposal.merge_reporter.displayname
     Mark Shuttleworth
 
 
@@ -452,7 +452,8 @@ that revision.
 The BranchMergeProposal must implement the IBranchMergeProposal interface.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IBranchMergeProposal
+    >>> from lp.code.interfaces.branchmergeproposal import (
+    ...     IBranchMergeProposal)
     >>> verifyObject(IBranchMergeProposal, merge_proposal)
     True
 

@@ -44,36 +44,23 @@ method for RequestTracker._logIn().
 RT instances require that we log in to be able to export statuses for
 their tickets. The RequestTracker ExternalBugTracker class has a
 credentials property which returns a dict of credentials based on the
-hostname of the current remote RT instance. We can demonstrate this by
-extending RequestTracker.
-
-    >>> class CredentialRequestTracker(RequestTracker):
-    ...     credentials_map = {
-    ...         'example.com': {
-    ...             'user': 'spam',
-    ...             'pass': 'ham'},
-    ...         'otherexample.com': {
-    ...             'user': 'eggs',
-    ...             'pass': 'spam'}}
-
-The different hosts will have different credentials properties.
-
-    >>> rt_one = CredentialRequestTracker('http://example.com/rt')
-    >>> rt_one.credentials
-    {'user': 'spam', 'pass': 'ham'}
-
-    >>> rt_two = CredentialRequestTracker('http://otherexample.com/rt')
-    >>> rt_two.credentials
-    {'user': 'eggs', 'pass': 'spam'}
+hostname of the current remote RT instance.
 
 The default username and password for RT instances are 'guest' and
 'guest'. The credentials property for an RT instance that we don't have
 specific credentials for will return the default credentials.
 
-    >>> rt_three = CredentialRequestTracker('http://foobar.com')
-    >>> rt_three.credentials
+    >>> rt_one = RequestTracker('http://foobar.com')
+    >>> rt_one.credentials
     {'user': 'guest', 'pass': 'guest'}
 
+However, if the RT instance is one for which we have a username and
+password, those credentials will be retrieved from the Launchpad
+configuration files. rt.example.com is known to Launchpad.
+
+    >>> rt_two = RequestTracker('http://rt.example.com')
+    >>> rt_two.credentials
+    {'user': 'zaphod', 'pass': 'pangalacticgargleblaster'}
 
 == Status Conversion ==
 
@@ -191,7 +178,7 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
 Our RequestTracker ExternalBugTracker can now process, and retrieve a
 remote status for, the bug watch that we have created.
 
-    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = BugWatchUpdater(txn)

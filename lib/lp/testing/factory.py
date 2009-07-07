@@ -32,7 +32,6 @@ from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
-from canonical.librarian.interfaces import ILibrarianClient
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -55,11 +54,11 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
@@ -290,6 +289,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             hide_email_addresses=hide_email_addresses)
         person = removeSecurityProxy(person)
         email = removeSecurityProxy(email)
+        person._password_cleartext_cached = password
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')
@@ -622,13 +622,25 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
-    def makePackageBranch(self, sourcepackage=None, **kwargs):
+    def makePackageBranch(self, sourcepackage=None, distroseries=None,
+                          sourcepackagename=None, **kwargs):
         """Make a package branch on an arbitrary package.
 
         See `makeBranch` for more information on arguments.
+
+        You can pass in either `sourcepackage` or one or both of
+        `distroseries` and `sourcepackagename`, but not combinations or all of
+        them.
         """
+        assert not(sourcepackage is not None and distroseries is not None), (
+            "Don't pass in both sourcepackage and distroseries")
+        assert not(sourcepackage is not None
+                   and sourcepackagename is not None), (
+            "Don't pass in both sourcepackage and sourcepackagename")
         if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage()
+            sourcepackage = self.makeSourcePackage(
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries)
         return self.makeBranch(sourcepackage=sourcepackage, **kwargs)
 
     def makePersonalBranch(self, owner=None, **kwargs):
@@ -1008,6 +1020,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             msgid = self.makeUniqueRFC822MsgId()
         if body is None:
             body = self.getUniqueString('body')
+        charset = 'ascii'
+        try:
+            body = body.encode(charset)
+        except UnicodeEncodeError:
+            charset = 'utf-8'
+            body = body.encode(charset)
         mail['Message-Id'] = msgid
         mail['Date'] = formatdate()
         if signing_context is not None:
@@ -1033,6 +1051,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         body_part['Content-type'] = 'text/plain'
         if force_transfer_encoding:
             encode_base64(body_part)
+        body_part.set_charset(charset)
         mail.parsed_string = mail.as_string()
         return mail
 
@@ -1236,16 +1255,22 @@ class LaunchpadObjectFactory(ObjectFactory):
         syncUpdate(series)
         return series
 
-    def makeLibraryFileAlias(self, log_data=None):
+    def makeLibraryFileAlias(self, filename=None, content=None,
+                             content_type='text/plain', restricted=False,
+                             expires=None):
         """Make a library file, and return the alias."""
-        if log_data is None:
-            log_data = self.getUniqueString()
-        filename = self.getUniqueString('filename')
-        log_alias_id = getUtility(ILibrarianClient).addFile(
-            filename, len(log_data), StringIO(log_data), 'text/plain')
-        return getUtility(ILibraryFileAliasSet)[log_alias_id]
+        if filename is None:
+            filename = self.getUniqueString('filename')
+        if content is None:
+            content = self.getUniqueString()
+        library_file_alias_set = getUtility(ILibraryFileAliasSet)
+        library_file_alias = library_file_alias_set.create(
+            filename, len(content), StringIO(content), content_type,
+            expires=expires, restricted=restricted)
+        return library_file_alias
 
-    def makeDistribution(self, name=None, displayname=None):
+    def makeDistribution(self, name=None, displayname=None, owner=None,
+                         members=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString()
@@ -1255,8 +1280,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         description = self.getUniqueString()
         summary = self.getUniqueString()
         domainname = self.getUniqueString()
-        owner = self.makePerson()
-        members = self.makeTeam(owner)
+        if owner is None:
+            owner = self.makePerson()
+        if members is None:
+            members = self.makeTeam(owner)
         return getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
             members, owner)
@@ -1305,7 +1332,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
-        
+
         :param distribution: Supply IDistribution, defaults to a new one
             made with makeDistribution().
         :param owner: Supper IPerson, defaults to a new one made with
@@ -1369,12 +1396,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code, potemplate=None, owner=None,
-                   variant=None):
+                   variant=None, create_sharing=False):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
         return potemplate.newPOFile(language_code, variant,
-                                    requester=potemplate.owner)
+                                    requester=potemplate.owner,
+                                    create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       context=None, sequence=None):

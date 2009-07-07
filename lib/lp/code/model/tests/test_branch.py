@@ -9,6 +9,7 @@ from unittest import TestLoader
 
 from pytz import UTC
 
+from storm.locals import Store
 from sqlobject import SQLObjectNotFound
 
 import transaction
@@ -23,7 +24,8 @@ from lp.code.model.branch import (
     ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
     DeleteCodeImport, DeletionCallable, DeletionOperation,
     update_trigger_modified_fields)
-from lp.code.model.branchjob import BranchDiffJob
+from lp.code.model.branchjob import (
+    BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob)
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.bugs.model.bugbranch import BugBranch
@@ -341,8 +343,8 @@ class TestBranch(TestCaseWithFactory):
 
     def test_needsUpgrading_branch_format_unrecognized(self):
         # A branch has a needs_upgrading attribute that returns whether or not
-        # a branch needs to be upgraded or not.  If the format is unrecognized,
-        # we don't try to upgrade it.
+        # a branch needs to be upgraded or not.  If the format is
+        # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
             branch_format=BranchFormat.UNRECOGNIZED)
         self.assertFalse(branch.needs_upgrading)
@@ -491,9 +493,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         # unsubscribe the branch owner here.
         self.branch.unsubscribe(self.branch.owner)
 
-    def tearDown(self):
-        logout()
-
     def test_deletable(self):
         """A newly created branch can be deleted without any problems."""
         self.assertEqual(self.branch.canBeDeleted(), True,
@@ -613,6 +612,20 @@ class TestBranchDeletion(TestCaseWithFactory):
         branch.destroySelf()
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
+
+    def test_createsJobToReclaimSpace(self):
+        # When a branch is deleted from the database, a job to remove the
+        # branch from disk as well.
+        branch = self.factory.makeAnyBranch()
+        branch_id = branch.id
+        store = Store.of(branch)
+        branch.destroySelf()
+        jobs = store.find(
+            BranchJob,
+            BranchJob.job_type == BranchJobType.RECLAIM_BRANCH_SPACE)
+        self.assertEqual(
+            [branch_id],
+            [ReclaimBranchSpaceJob(job).branch_id for job in jobs])
 
 
 class TestBranchDeletionConsequences(TestCase):

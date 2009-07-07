@@ -1,15 +1,5 @@
 = Helper Functions =
 
-A quick helper function to list the subscribed people.
-
-    >>> def print_subscribers(contents):
-    ...     subscriptions = find_tag_by_id(contents, 'subscriptions')
-    ...     if subscriptions == None:
-    ...         print subscriptions
-    ...         return
-    ...     for subscriber in subscriptions.fetch('dt'):
-    ...         print extract_text(subscriber.renderContents())
-
 Another to print the informational message.
 
     >>> def print_informational_message(contents):
@@ -35,10 +25,6 @@ link "Subscribe" from a branch's page.
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
 
-Initially there should be no subscribers.
-
-    >>> print_subscribers(browser.contents)
-    None
     >>> browser.getLink('Subscribe').click()
 
 At this stage the defaults that are set for subscriptions
@@ -58,11 +44,6 @@ just subscribed.
     Only send notifications for branch attribute changes such
     as name, description and whiteboard.
     Send email about any code review activity for this branch.
-
-There should be only one person subscribed to the branch now.
-
-    >>> print_subscribers(browser.contents)
-    No Privileges Person
 
 Now, press the back button, and post the subscription form again. We
 should see a message that we are already subscribed.
@@ -96,9 +77,6 @@ informational message for us to see.
     Limit the generated diff to 5000 lines.
     Send email about any code review activity for this branch.
 
-    >>> print_subscribers(browser.contents)
-    No Privileges Person
-
 The page to edit a person's subscription also allows the user to
 unsubscribe.
 
@@ -110,8 +88,6 @@ shown to the user.
 
     >>> print_informational_message(browser.contents)
     You have unsubscribed from this branch.
-    >>> print_subscribers(browser.contents)
-    None
 
 Clicking the back button and then clicking on either Change or
 Unsubscribe will give a message that we are not subscribed.
@@ -172,8 +148,6 @@ specify the person to subscribe.  The person field is required.
     and new revisions added to the branch.
     Limit the generated diff to 5000 lines.
     Send email about any code review activity for this branch.
-    >>> print_subscribers(browser.contents)
-    Mark Shuttleworth
 
 Subscribing a team is as simple as putting in the team name.
 
@@ -210,56 +184,4 @@ Sample Person is a member of Landscape Developers.
     and new revisions added to the branch.
     Limit the generated diff to 1000 lines.
     Send email about any code review activity for this branch.
-
-    >>> anon_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-    >>> print_subscribers(anon_browser.contents)
-    Landscape Developers
-    Mark Shuttleworth
-
-Launchpad administrators can edit anyones branch subsription.
-
-    >>> admin_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-    >>> print_subscribers(admin_browser.contents)
-    Landscape Developers
-    Mark Shuttleworth
-
-== Editing a team subscription ==
-
-In order to edit a team subscription the logged in user needs to be
-a member of the team that is subscribed.  There is a link shown in
-the subscriptions portlet to edit the subscription of a team that
-the logged in user is a member of.
-
-XXX: thumper 2007-06-11
-There should be a central user subscriptions page.  This could then
-be used to traverse to the branch subscriptions instead of through
-the branch itself.
-
-    >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-    >>> print_subscribers(browser.contents)
-    Landscape Developers
-    Mark Shuttleworth
-
-    >>> browser.getLink(url='+subscription/landscape').click()
-    >>> main_content = find_main_content(browser.contents)
-    >>> print extract_text(main_content.h1)
-    Edit subscription to branch for Landscape Developers
-
-From this page the branch subscription can be altered...
-
-    >>> browser.getControl('Notification Level').displayValue = [
-    ...     'No email']
-    >>> browser.getControl('Change').click()
-
-... or unsubscribed from.
-
-    >>> browser.getLink(url='+subscription/landscape').click()
-    >>> browser.getControl('Unsubscribe').click()
-    >>> print_informational_message(browser.contents)
-    Landscape Developers has been unsubscribed from this branch.
-    >>> print_subscribers(browser.contents)
-    Mark Shuttleworth
 

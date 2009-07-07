@@ -22,26 +22,31 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugSet, InvalidBugTargetType)
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
+    IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
-from lp.code.interfaces.codehosting import (
-    IBranchFileSystemApplication, IBranchPullerApplication)
+    IWebServiceApplication)
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationsoverview import (
+    ITranslationsOverview)
 from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
     IHWVendorIDSet, ParameterError)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.bugs.interfaces.bug import (
+    CreateBugParams, IBugSet, InvalidBugTargetType)
+from lp.code.interfaces.codehosting import (
+    IBranchFileSystemApplication, IBranchPullerApplication)
+from lp.code.interfaces.codeimportscheduler import (
+    ICodeImportSchedulerApplication)
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lazr.restful import ServiceRootResource
 
 
@@ -275,8 +280,9 @@ class HWDBApplication:
                 '`distroarchseries` can be present.')
 
     def numSubmissionsWithDevice(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
         """See `IHWDBApplication`."""
         submissions_with_device, all_submissions = (
             getUtility(IHWSubmissionSet).numSubmissionsWithDevice(
@@ -289,8 +295,9 @@ class HWDBApplication:
             }
 
     def numOwnersOfDevice(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
         """See `IHWDBApplication`."""
         owners, all_submitters = (
             getUtility(IHWSubmissionSet).numOwnersOfDevice(
@@ -303,8 +310,9 @@ class HWDBApplication:
             }
 
     def numDevicesInSubmissions(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
         """See `IHWDBApplication`."""
         return getUtility(IHWSubmissionDeviceSet).numDevicesInSubmissions(
                 bus, vendor_id, product_id, driver_name, package_name,

@@ -195,7 +195,7 @@ The last commit on this branch has the revision number 6.
 We remove the last revision from the branch. This is similar to what
 "bzr uncommit" does.
 
-    >>> from canonical.launchpad.interfaces import IBranchRevisionSet
+    >>> from lp.code.interfaces.branchrevision import IBranchRevisionSet
     >>> getUtility(IBranchRevisionSet).delete(revno_6.id)
 
 Afterwards, the last commit on the branch has revision number 5.
@@ -207,7 +207,7 @@ Note that while the BranchRevision object linking the revision to the
 branch has been destroyed, the associated revision object is not (it
 may be referenced by some other branch):
 
-    >>> from canonical.launchpad.interfaces import IRevisionSet
+    >>> from lp.code.interfaces.revision import IRevisionSet
     >>> revision = getUtility(IRevisionSet).getByRevisionId(
     ...     'foo@localhost-20051031170357-1301ad6d387feb23')
     >>> print revision.revision_id

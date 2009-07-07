@@ -415,9 +415,9 @@ package.
     >>> print sp.direct_packaging
     None
     >>> print hoary_firefox_one.direct_packaging.productseries.title
-    Mozilla Firefox Series: 1.0
+    Mozilla Firefox 1.0 series
     >>> print warty_firefox.direct_packaging.productseries.title
-    Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
 
 If multiple product series link to a sourcepackage, direct_packaging
 returns the last packaging added:
@@ -432,7 +432,7 @@ returns the last packaging added:
     ...     packaging=PackagingType.PRIME,
     ...     owner=foobar)
     >>> print hoary_firefox_one.direct_packaging.productseries.title
-    Mozilla Firefox Series: trunk
+    Mozilla Firefox trunk series
 
 
 == Release History ==
@@ -524,7 +524,7 @@ returned from 'distinctreleases' is ordered by descending source version.
 SourcePackage implements IHasTranslationImports interface:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)
     True

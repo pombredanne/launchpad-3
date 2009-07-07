@@ -121,14 +121,13 @@ class TeamFormMixin:
         ]
     private_prefix = PRIVATE_TEAM_PREFIX
 
-    @property
-    def _validate_visibility_consistency(self):
+    def _validateVisibilityConsistency(self, value):
         """Perform a consistency check regarding visibility.
 
         This property must be overridden if the current context is not an
         IPerson.
         """
-        return self.context.visibility_consistency_warning
+        return self.context.visibilityConsistencyWarning(value)
 
     @property
     def _visibility(self):
@@ -140,13 +139,12 @@ class TeamFormMixin:
         return self.context.name
 
     def validate(self, data):
-        if 'visibility' in data:
-            visibility = data['visibility']
-        else:
-            visibility = self._visibility
+        visibility = data.get('visibility', self._visibility)
         if visibility != PersonVisibility.PUBLIC:
-            if 'visibility' in data:
-                warning = self._validate_visibility_consistency
+            if visibility != self._visibility:
+                # If the user is attempting to change the team visibility
+                # ensure that there are no constraints being violated.
+                warning = self._validateVisibilityConsistency(visibility)
                 if warning is not None:
                     self.setFieldError('visibility', warning)
             if (data['subscriptionpolicy']
@@ -599,6 +597,10 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         processes that would otherwise manifest only as mysterious
         failures and inconsistencies.
         """
+        contact_admin = (
+            'Please '
+            '<a href="https://answers.launchpad.net/launchpad/+faq/197">'
+            'contact a Launchpad administrator</a> for further assistance.')
 
         if (self.mailing_list is None or
             self.mailing_list.status == MailingListStatus.PURGED):
@@ -612,10 +614,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
                      "a few minutes.")
         elif self.mailing_list.status == MailingListStatus.DECLINED:
             return _("The application for this team's mailing list has been "
-                     'declined. Please '
-                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
-                     'contact a Launchpad administrator</a> for further '
-                     'assistance.')
+                     'declined. ' + contact_admin)
         elif self.mailing_list.status == MailingListStatus.ACTIVE:
             return None
         elif self.mailing_list.status == MailingListStatus.DEACTIVATING:
@@ -623,10 +622,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         elif self.mailing_list.status == MailingListStatus.INACTIVE:
             return _("This team's mailing list has been deactivated.")
         elif self.mailing_list.status == MailingListStatus.FAILED:
-            return _("This team's mailing list could not be created. Please "
-                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
-                     'contact a Launchpad administrator</a> for further '
-                     'assistance.')
+            return _("This team's mailing list could not be created. " +
+                     contact_admin)
         elif self.mailing_list.status == MailingListStatus.MODIFIED:
             return _("An update to this team's mailing list is pending "
                      "and has not yet taken effect.")
@@ -635,11 +632,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
                      "being applied.")
         elif self.mailing_list.status == MailingListStatus.MOD_FAILED:
             return _("This team's mailing list is in an inconsistent state "
-                     'because a change to its configuration was not applied. '
-                     'Please '
-                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
-                     'contact a Launchpad administrator</a> for further '
-                     'assistance.')
+                     'because a change to its configuration was not '
+                     'applied. ' + contact_admin)
         else:
             raise AssertionError(
                 "Unknown mailing list status: %s" % self.mailing_list.status)
@@ -826,8 +820,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
 
         self.next_url = canonical_url(team)
 
-    @property
-    def _validate_visibility_consistency(self):
+    def _validateVisibilityConsistency(self, value):
         """See `TeamFormMixin`."""
         return None
 
@@ -905,8 +898,8 @@ class TeamMemberAddView(LaunchpadFormView):
                           " members.")
             elif newmember in self.context.activemembers:
                 error = _("%s (%s) is already a member of %s." % (
-                    newmember.browsername, newmember.name,
-                    self.context.browsername))
+                    newmember.displayname, newmember.name,
+                    self.context.displayname))
 
         if error:
             self.setFieldError("newmember", error)

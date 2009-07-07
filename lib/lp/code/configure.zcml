@@ -331,6 +331,7 @@
                     private
                     registrant
                     owner
+                    description
                     author
                     reviewer
                     code_reviewer
@@ -405,13 +406,14 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
+                    getUpgradeFormat
                     isBranchMergeable
                     "/>
     <require
         permission="launchpad.Edit"
         attributes="destroySelf setPrivate"
         set_attributes="name url mirror_status_message
-                        owner author product lifecycle_status
+                        owner author description product lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
                         last_scanned last_scanned_id revision_count branch_type
@@ -474,7 +476,7 @@
   <!-- BranchVisibilityPolicy -->
 
   <class class="lp.code.model.branchvisibilitypolicy.BranchVisibilityTeamPolicy">
-    <allow interface="canonical.launchpad.interfaces.IBranchVisibilityTeamPolicy"/>
+    <allow interface="lp.code.interfaces.branchvisibilitypolicy.IBranchVisibilityTeamPolicy"/>
   </class>
 
   <!-- BranchDelta -->
@@ -492,6 +494,7 @@
       provides="lp.code.interfaces.branch.IBranchCloud">
     <allow interface="lp.code.interfaces.branch.IBranchCloud"/>
   </securedutility>
+
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
@@ -601,6 +604,10 @@
     <allow interface="lp.code.interfaces.branchjob.IRosettaUploadJob"/>
     <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
   </class>
+  <class class="lp.code.model.branchjob.ReclaimBranchSpaceJob">
+    <allow interface="lp.code.interfaces.branchjob.IReclaimBranchSpaceJob"/>
+    <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
+  </class>
   <securedutility
       component="lp.code.model.branchjob.BranchDiffJob"
       provides="lp.code.interfaces.branchjob.IBranchDiffJobSource">
@@ -621,37 +628,44 @@
       provides="lp.code.interfaces.branchjob.IRosettaUploadJobSource">
     <allow interface="lp.code.interfaces.branchjob.IRosettaUploadJobSource"/>
   </securedutility>
+  <securedutility
+      component="lp.code.model.branchjob.ReclaimBranchSpaceJob"
+      provides="lp.code.interfaces.branchjob.IReclaimBranchSpaceJobSource">
+    <allow interface="lp.code.interfaces.branchjob.IReclaimBranchSpaceJobSource"/>
+  </securedutility>
 
   <!-- CodeImport -->
 
   <class class="lp.code.model.codeimport.CodeImport">
     <implements interface="lp.code.interfaces.codeimport.ICodeImport"/>
-    <allow attributes="
-                    id
-                    date_created
-                    branch
-                    registrant
-                    owner
-                    assignee
-                    product
-                    series
-                    review_status
-                    rcs_type
-                    cvs_root
-                    cvs_module
-                    svn_branch_url
-                    git_repo_url
-                    date_last_successful
-                    source_product_series
-                    update_interval
-                    effective_update_interval
-                    import_job
-                    results
-                    consecutive_failure_count
-                    getImportDetailsForDisplay"/>
+    <allow attributes="id
+                       date_created
+                       branch
+                       registrant
+                       owner
+                       assignee
+                       product
+                       series
+                       review_status
+                       rcs_type
+                       cvs_root
+                       cvs_module
+                       svn_branch_url
+                       git_repo_url
+                       date_last_successful
+                       source_product_series
+                       update_interval
+                       effective_update_interval
+                       import_job
+                       results
+                       consecutive_failure_count
+                       getImportDetailsForDisplay"/>
     <require
-        permission="launchpad.Edit"
-        attributes="updateFromData"/>
+       permission="launchpad.AnyPerson"
+       attributes="tryFailingImportAgain"/>
+    <require
+       permission="launchpad.Edit"
+       attributes="updateFromData"/>
 
     <!-- ICodeImport has no set_schema, because all modifications should be
          done through methods that create CodeImportEvent objects when
@@ -744,30 +758,30 @@
   </class>
 
   <class class="lp.code.model.revision.Revision">
-    <allow interface="canonical.launchpad.interfaces.IRevision"/>
+    <allow interface="lp.code.interfaces.revision.IRevision"/>
   </class>
 
   <class class="lp.code.model.revision.RevisionAuthor">
-    <allow interface="canonical.launchpad.interfaces.IRevisionAuthor"/>
+    <allow interface="lp.code.interfaces.revision.IRevisionAuthor"/>
   </class>
 
   <class class="lp.code.model.revision.RevisionParent">
-    <allow interface="canonical.launchpad.interfaces.IRevisionParent" />
+    <allow interface="lp.code.interfaces.revision.IRevisionParent" />
   </class>
 
   <class class="lp.code.model.revision.RevisionProperty">
-    <allow interface="canonical.launchpad.interfaces.IRevisionProperty" />
+    <allow interface="lp.code.interfaces.revision.IRevisionProperty" />
   </class>
 
   <!-- RevisionSet -->
   <class class="lp.code.model.revision.RevisionSet">
-    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
+    <allow interface="lp.code.interfaces.revision.IRevisionSet" />
   </class>
 
   <securedutility
       class="lp.code.model.revision.RevisionSet"
-      provides="canonical.launchpad.interfaces.IRevisionSet" >
-    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
+      provides="lp.code.interfaces.revision.IRevisionSet" >
+    <allow interface="lp.code.interfaces.revision.IRevisionSet" />
   </securedutility>
 
   <!-- Linked branches -->
@@ -795,8 +809,6 @@
       interface="lp.code.interfaces.diff.IStaticDiffSource" />
   </securedutility>
 
-  <!-- Most of the interfaces are registered through
-       canonical.launchpad.interfaces right now  -->
-  <webservice:register module="lp.code.interfaces.diff" />
+  <webservice:register module="lp.code.interfaces.webservice" />
 
 </configure>
