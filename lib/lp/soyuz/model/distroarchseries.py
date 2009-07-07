@@ -336,6 +336,16 @@ class DistroArchSeriesSet:
     def count(self):
         return DistroArchSeries.select().count()
 
+    def getIdsForArchitectures(self, architectures, arch_tag=None):
+        """See `IDistributionSet`."""
+        # If arch_tag was not provided, just return the ids without
+        # filtering.
+        if arch_tag is None:
+            return [arch.id for arch in architectures]
+        else:
+            return [arch.id for arch in architectures
+                        if arch_tag == arch.architecturetag]
+
 
 class PocketChroot(SQLBase):
     implements(IPocketChroot)

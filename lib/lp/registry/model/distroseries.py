@@ -985,15 +985,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # now).
 
         # Find out the distroarchseries in question.
-        if arch_tag is None:
-            arch_ids = [arch.id for arch in self.architectures]
-        else:
-            arch_ids = [arch.id for arch in self.architectures
-                            if arch_tag == arch.architecturetag]
+        from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
+        distroarchseries_set = getUtility(IDistroArchSeriesSet)
+
+        # Note: the list() seems to be required to ensure that the type
+        # of the returned list is actually list rather than
+        # zope.security.proxy.
+        arch_ids = list(
+            distroarchseries_set.getIdsForArchitectures(
+                self.architectures, arch_tag))
 
         # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
-            arch_ids, build_state, name, pocket)
+            list(arch_ids), build_state, name, pocket)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,

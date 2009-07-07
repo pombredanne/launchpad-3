@@ -771,15 +771,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # now).
 
         # Find out the distroarchseries in question.
+        from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
+        distroarchseries_set = getUtility(IDistroArchSeriesSet)
         arch_ids = []
+
         # Concatenate architectures list since they are distinct.
-        if arch_tag is None:
-            for series in self.serieses:
-                arch_ids += [arch.id for arch in series.architectures]
-        else:
-            for series in self.serieses:
-                arch_ids += [arch.id for arch in series.architectures
-                                 if arch_tag == arch.architecturetag]
+        for series in self.serieses:
+            arch_ids += list(
+                distroarchseries_set.getIdsForArchitectures(
+                    series.architectures, arch_tag))
 
         # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(

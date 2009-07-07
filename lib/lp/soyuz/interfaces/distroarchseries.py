@@ -172,6 +172,14 @@ class IDistroArchSeriesSet(Interface):
     def get(distroarchseries_id):
         """Return the IDistroArchSeries to the given distroarchseries_id."""
 
+    def getIdsForArchitectures(architectures, arch_tag=None):
+        """Filter architectures and return the ids.
+
+        :param architectures: an iterable of architectures to process.
+        :param arch_tag: an optional architecture tag with which to filter
+            the results.
+        :return: a list of the ids of the architectures matching arch_tag.
+        """
 
 class IPocketChroot(Interface):
     """PocketChroot Table Interface"""
