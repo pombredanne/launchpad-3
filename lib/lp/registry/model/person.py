@@ -138,7 +138,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from lp.registry.model.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
