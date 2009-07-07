@@ -331,6 +331,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
     @property
+    def architectures(self):
+        """See `IDistribution`."""
+        architectures = []
+
+        # Concatenate architectures list since they are distinct.
+        for series in self.serieses:
+            architectures += series.architectures
+
+        return architectures
+
+    @property
     def mentoring_offers(self):
         """See `IDistribution`"""
         via_specs = MentoringOffer.select("""
