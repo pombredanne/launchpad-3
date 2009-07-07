@@ -18,4 +18,4 @@ test_programming_languages_edit = widgets.InlineEditorWidgetTest(
     new_value='C++',
     name='test_proglang_inline_edit',
     suite=__name__,
-    user=lpuser.FOO_BAR)
+    user=lpuser.SAMPLE_PERSON)

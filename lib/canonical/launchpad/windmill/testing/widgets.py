@@ -8,6 +8,7 @@ __all__ = []
 
 from windmill.authoring import WindmillTestClient
 
+from canonical.launchpad.windmill.testing import constants
 from canonical.launchpad.windmill.testing import lpuser
 
 
@@ -55,17 +56,17 @@ class InlineEditorWidgetTest:
         self.user.ensure_login(client)
 
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         widget_base = u"//%s[@id='%s']" % (self.widget_tag, self.widget_id)
         client.waits.forElement(
-            xpath=widget_base + '/a', timeout=u'8000')
+            xpath=widget_base + '/a', timeout=constants.FOR_ELEMENT)
         client.asserts.assertText(
             xpath=widget_base + '/span[1]', validator=self.expected_value)
         client.click(xpath=widget_base + '/a')
         client.waits.forElement(
-            xpath=widget_base + '/a', timeout=u'8000')
+            xpath=widget_base + '/a', timeout=constants.FOR_ELEMENT)
         client.waits.forElement(
-            xpath=widget_base + '//textarea', timeout=u'8000')
+            xpath=widget_base + '//textarea', timeout=constants.FOR_ELEMENT)
         client.type(
             xpath=widget_base + '//textarea', text=self.new_value)
         client.click(xpath=widget_base + '//button[1]')
@@ -76,7 +77,7 @@ class InlineEditorWidgetTest:
 
         # And make sure it's actually saved on the server.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertNode(
             xpath=widget_base + '/span[1]')
         client.asserts.assertText(
@@ -89,7 +90,9 @@ def _search_picker_widget(client, search_text, result_index):
     search_box_xpath = (u"//table[contains(@class, 'yui-picker') "
                          "and not(contains(@class, 'yui-picker-hidden'))]"
                          "//input[@class='yui-picker-search']")
-    client.waits.forElement(xpath=search_box_xpath, timeout=u'20000')
+    client.waits.forElement(
+        xpath=search_box_xpath,
+        timeout=constants.FOR_ELEMENT)
     client.type(text=search_text, xpath=search_box_xpath)
     client.click(
         xpath=u"//table[contains(@class, 'yui-picker') "
@@ -100,7 +103,7 @@ def _search_picker_widget(client, search_text, result_index):
                      "and not(contains(@class, 'yui-picker-hidden'))]"
                      "//ul[@class='yui-picker-results']/li[%d]/span"
                      % result_index)
-    client.waits.forElement(xpath=item_xpath, timeout=u'20000')
+    client.waits.forElement(xpath=item_xpath, timeout=constants.FOR_ELEMENT)
     client.click(xpath=item_xpath)
 
 
@@ -140,14 +143,16 @@ class InlinePickerWidgetSearchTest:
 
         # Load page.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Click on edit button.
         button_xpath = (
             u"//span[@id='%s']"
              "/button[not(contains(@class, 'yui-activator-hidden'))]"
              % self.activator_id)
-        client.waits.forElement(xpath=button_xpath, timeout=u'20000')
+        client.waits.forElement(
+            xpath=button_xpath,
+            timeout=constants.FOR_ELEMENT)
         client.click(xpath=button_xpath)
 
         # Search picker.
@@ -162,12 +167,12 @@ class InlinePickerWidgetSearchTest:
 
         # Reload the page to verify that the selected value is persisted.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Verify update, again.
         client.waits.forElement(
             xpath=u"//span[@id='%s']//a" % self.activator_id,
-            timeout=u'20000')
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertText(
             xpath=u"//span[@id='%s']//a" % self.activator_id,
             validator=self.new_value)
@@ -285,7 +290,7 @@ class FormPickerWidgetTest:
 
         # Load page.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Click on "Choose" link to show picker for the given field.
         client.click(id=self.choose_link_id)
