@@ -6,8 +6,10 @@ software. It can be part of a Project or it can be standalone.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IHasTranslationImports, IProductSet, IProduct, IPersonSet,
+    ...     IProductSet, IProduct, IPersonSet,
     ...     NotFoundError)
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
@@ -535,7 +537,7 @@ testing this, we need to log in as a translations administrator.
 
 We'll also create new templates, so we need IPOTemplateSet:
 
-    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
 Firefox has two series, but no translatable series either:

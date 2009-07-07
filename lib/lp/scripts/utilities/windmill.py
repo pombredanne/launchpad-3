@@ -9,15 +9,10 @@ is started.  This allows one to invoke the windmill script multiple
 time directly.
 """
 
-import os
 import sys
 import time
 
-here = os.path.dirname(os.path.realpath(__file__))
-
 import atexit
-import signal
-import subprocess
 from canonical.config import config
 from canonical.testing.layers import (
     BaseLayer,
@@ -25,6 +20,9 @@ from canonical.testing.layers import (
     LibrarianLayer,
     GoogleServiceLayer,
     LayerProcessController)
+
+import windmill.bin.windmill_bin
+
 
 def setUpLaunchpad():
     """Set-up the Launchpad app-server against which windmill tests are run.
@@ -50,17 +48,9 @@ def runWindmill():
 
     This function exits once windmill has terminated.
     """
-    windmill_cmdline = [
-        os.path.join(
-            here, os.pardir, os.pardir, os.pardir, os.pardir, 
-            'bin', 'windmill'),
-        ]
-    windmill_cmdline.extend(sys.argv[1:])
-    windmill = subprocess.Popen(windmill_cmdline, close_fds=True)
-    try:
-        windmill.wait()
-    except KeyboardInterrupt:
-        os.kill(windmill.pid, signal.SIGTERM)
+    # The windmill main function will interpret the command-line arguments 
+    # for us.
+    windmill.bin.windmill_bin.main()
 
 
 def waitForInterrupt():
