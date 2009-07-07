@@ -198,12 +198,10 @@ class Branch(SQLBase):
 
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
-        bug = removeSecurityProxy(bug)
         return bug.linkBranch(self, registrant)
 
     def unlinkBug(self, bug, user):
         """See `IBranch`."""
-        bug = removeSecurityProxy(bug)
         return bug.unlinkBranch(self, user)
 
     spec_links = SQLMultipleJoin('SpecificationBranch',
@@ -212,12 +210,10 @@ class Branch(SQLBase):
 
     def linkSpecification(self, spec, registrant):
         """See `IBranch`."""
-        spec = removeSecurityProxy(spec)
         return spec.linkBranch(self, registrant)
 
     def unlinkSpecification(self, spec, user):
         """See `IBranch`."""
-        spec = removeSecurityProxy(spec)
         return spec.unlinkBranch(self, user)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)

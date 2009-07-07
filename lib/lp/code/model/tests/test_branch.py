@@ -1557,7 +1557,7 @@ class TestBranchBugLinks(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        self.user = self.factory.makePerson()
 
     def test_bug_link(self):
         # Branches can be linked to bugs through the Branch interface.
@@ -1574,7 +1574,6 @@ class TestBranchBugLinks(TestCaseWithFactory):
 
     def test_bug_unlink(self):
         # Branches can be unlinked from the bug as well.
-        user = getUtility(IPersonSet).getByEmail('test@canonical.com')
         branch = self.factory.makeAnyBranch()
         bug = self.factory.makeBug()
         branch.linkBug(bug, self.user)
@@ -1593,7 +1592,7 @@ class TestBranchSpecLinks(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        self.user = self.factory.makePerson()
 
     def test_spec_link(self):
         # Branches can be linked to specs through the Branch interface.
