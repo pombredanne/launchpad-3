@@ -177,10 +177,10 @@ Directly after the distro releases, the three latest PPA uploads of
 this source package are displayed.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'ppa_packaging'))
-    PPA named nightly for Person-name2 (Person-name2):
-      Breezy Badger Autotest (0.8.2n3)
-    PPA named beta for Person-name5 (Person-name5):
-      Breezy Badger Autotest (0.8.1), Hoary Mock (0.8.0)
+    PPA named nightly for Person-name2 owned by Person-name2
+      Versions: Breezy Badger Autotest (0.8.2n3)
+    PPA named beta for Person-name5 owned by Person-name5
+      Versions: Breezy Badger Autotest (0.8.1), Hoary Mock (0.8.0)
 
 A link to further PPA searches is also included.
 
@@ -188,7 +188,7 @@ A link to further PPA searches is also included.
     ...     url='http://launchpad.dev/ubuntutest/+ppas?'
     ...         'name_filter=netapplet')
     >>> link.text
-    "...unsupported and untrusted versions of..."
+    "...more untrusted versions of..."
 
 /$DISTRO/+source/$PACKAGE pages contain a version history that lists
 each published version of a package with its changelog entry for that

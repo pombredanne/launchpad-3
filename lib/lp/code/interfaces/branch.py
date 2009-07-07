@@ -44,9 +44,9 @@ from zope.schema import (
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, operation_parameters,
-    operation_returns_entry, REQUEST_USER)
+    call_with, collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
 
@@ -64,8 +64,8 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from canonical.launchpad.interfaces.launchpad import (
-    IHasOwner, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
     ITableBatchNavigator, NameLookupFailed)
@@ -937,6 +937,8 @@ class IBranch(IHasOwner, IHasBranchTarget):
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
+    export_as_webservice_collection(IBranch)
+
     def countBranchesWithAssociatedBugs():
         """Return the number of branches that have bugs associated.
 
@@ -1029,6 +1031,33 @@ class IBranchSet(Interface):
         """
         # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
         # to change for source package branches.
+
+    @operation_parameters(
+        unique_name=TextLine(title=_('Branch unique name'), required=True))
+    @operation_returns_entry(IBranch)
+    @export_read_operation()
+    def getByUniqueName(unique_name):
+        """Find a branch by its ~owner/product/name unique name.
+
+        Return None if no match was found.
+        """
+
+    @operation_parameters(
+        url=TextLine(title=_('Branch URL'), required=True))
+    @operation_returns_entry(IBranch)
+    @export_read_operation()
+    def getByUrl(url):
+        """Find a branch by URL.
+
+        Either from the external specified in Branch.url, from the URL on
+        http://bazaar.launchpad.net/ or the lp: URL.
+
+        Return None if no match was found.
+        """
+
+    @collection_default_content()
+    def getBranches(limit=50):
+        """Return a collection of branches."""
 
 
 class IBranchDelta(Interface):

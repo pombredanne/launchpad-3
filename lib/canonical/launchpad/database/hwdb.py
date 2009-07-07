@@ -28,6 +28,8 @@ __all__ = [
     'HWVendorIDSet',
     'HWVendorName',
     'HWVendorNameSet',
+    'make_submission_device_statistics_clause',
+    '_userCanAccessSubmissionStormClause',
     ]
 
 import re
@@ -957,7 +959,10 @@ class HWDriverSet:
     def all_package_names(self):
         """See `IHWDriverSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(HWDriverPackageName)
+        # XXX Abel Deuring 2009-06-19 The clause package_name != None
+        # can be removed once bug #306265 is fixed.
+        result = store.find(HWDriverPackageName,
+                            HWDriverPackageName.package_name != None)
         result.order_by(HWDriverPackageName.package_name)
         return result
 
@@ -1274,4 +1279,3 @@ def _userCanAccessSubmissionStormClause(user):
                 HWSubmission.private))
         has_access = HWSubmission.ownerID.is_in(subselect)
         return Or(public, has_access)
-

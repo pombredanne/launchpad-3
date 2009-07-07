@@ -2122,8 +2122,9 @@ release pocket, but to do so we must have edit permissions on the archive.
 Let's log in as sabdfl and it will work:
 
     >>> login("mark@hbd.com")
+
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
-    [u'package1', u'package2']
+
     >>> [sabdfl_one] = sabdfl.archive.getPublishedSources(name="package1")
     >>> print sabdfl_one.sourcepackagerelease.version
     1.1

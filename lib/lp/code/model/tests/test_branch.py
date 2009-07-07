@@ -9,6 +9,7 @@ from unittest import TestLoader
 
 from pytz import UTC
 
+from storm.locals import Store
 from sqlobject import SQLObjectNotFound
 
 import transaction
@@ -23,7 +24,8 @@ from lp.code.model.branch import (
     ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
     DeleteCodeImport, DeletionCallable, DeletionOperation,
     update_trigger_modified_fields)
-from lp.code.model.branchjob import BranchDiffJob
+from lp.code.model.branchjob import (
+    BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob)
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.bugs.model.bugbranch import BugBranch
@@ -45,7 +47,6 @@ from lp.code.enums import (
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     CannotDeleteBranch)
-from lp.code.interfaces.branchjob import IReclaimBranchSpaceJobSource
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
@@ -617,9 +618,14 @@ class TestBranchDeletion(TestCaseWithFactory):
         # branch from disk as well.
         branch = self.factory.makeAnyBranch()
         branch_id = branch.id
+        store = Store.of(branch)
         branch.destroySelf()
-        jobs = getUtility(IReclaimBranchSpaceJobSource).iterReady()
-        self.assertEqual([branch.id], [job.branch_id for job in jobs])
+        jobs = store.find(
+            BranchJob,
+            BranchJob.job_type == BranchJobType.RECLAIM_BRANCH_SPACE)
+        self.assertEqual(
+            [branch_id],
+            [ReclaimBranchSpaceJob(job).branch_id for job in jobs])
 
 
 class TestBranchDeletionConsequences(TestCase):

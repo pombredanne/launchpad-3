@@ -16,12 +16,17 @@ from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
 from bzrlib.upgrade import upgrade
+
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
+
 import simplejson
+
 from sqlobject import ForeignKey, StringCol
-from storm.expr import And
+from storm.expr import And, SQL
+
 import transaction
+
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
@@ -36,7 +41,7 @@ from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.database.translationbranchapprover import (
+from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
@@ -45,18 +50,21 @@ from lp.code.interfaces.branchjob import (
     IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
     IReclaimBranchSpaceJobSource, IRevisionMailJob, IRevisionMailJobSource,
     IRosettaUploadJob, IRosettaUploadJobSource)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from lp.code.mail.branch import BranchMailer
-from canonical.launchpad.translationformat.translation_import import (
+from lp.translations.utilities.translation_import import (
     TranslationImporter)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-# Use at most the first 100 characters of the commit message.
+
+# Use at most the first 100 characters of the commit message for the subject
+# the mail describing the revision.
 SUBJECT_COMMIT_MESSAGE_LENGTH = 100
+
 
 class BranchJobType(DBEnumeratedType):
     """Values that ICodeImportJob.state can take."""
@@ -98,6 +106,7 @@ class BranchJobType(DBEnumeratedType):
         from disk.
         """)
 
+
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
 
@@ -117,8 +126,11 @@ class BranchJob(SQLBase):
     def metadata(self):
         return simplejson.loads(self._json_data)
 
-    def __init__(self, branch, job_type, metadata):
+    def __init__(self, branch, job_type, metadata, **job_args):
         """Constructor.
+
+        Extra keyword parameters are used to construct the underlying Job
+        object.
 
         :param branch: The database branch this job relates to.
         :param job_type: The BranchJobType of this job.
@@ -127,7 +139,7 @@ class BranchJob(SQLBase):
         """
         json_data = simplejson.dumps(metadata)
         SQLBase.__init__(
-            self, job=Job(), branch=branch, job_type=job_type,
+            self, job=Job(**job_args), branch=branch, job_type=job_type,
             _json_data=json_data)
 
     def destroySelf(self):
@@ -734,7 +746,9 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
         metadata = {'branch_id': branch_id}
         # The branch_job has a branch of None, as there is no branch left in
         # the database to refer to.
-        branch_job = BranchJob(None, cls.class_job_type, metadata)
+        start = SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '7 days'")
+        branch_job = BranchJob(
+            None, cls.class_job_type, metadata, scheduled_start=start)
         return cls(branch_job)
 
     @property
