@@ -153,7 +153,7 @@ hierarchy. Instead, the hierarchy stops at the distribution series.
     Hierarchy: Launchpad > Ubuntu > 5.04
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
-    * Code - not linked
+    * Code - http://code.launchpad.dev/ubuntu/hoary
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary
     * Blueprints - http://blueprints.launchpad.dev/ubuntu/hoary
     * Translations - http://translations.launchpad.dev/ubuntu/hoary
@@ -172,11 +172,7 @@ Instead, the hierarchy stops at the distribution series.
     Hierarchy: Launchpad > Ubuntu > 5.04
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
-    * Code - not linked
-    * Bugs - http://bugs.launchpad.dev/ubuntu/hoary
-    * Blueprints - http://blueprints.launchpad.dev/ubuntu/hoary
-    * Translations - http://translations.launchpad.dev/ubuntu/hoary
-    * Answers - not linked
+    ...
     Main heading: Binary Package "pmount" in The Hoary Hedgehog Release for
     i386 (x86)
 
@@ -202,11 +198,7 @@ themselves. Instead, the hierarchy stops at the distribution series.
     Hierarchy: Launchpad > Ubuntu > 5.04
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
-    * Code - not linked
-    * Bugs - http://bugs.launchpad.dev/ubuntu/hoary
-    * Blueprints - http://blueprints.launchpad.dev/ubuntu/hoary
-    * Translations - http://translations.launchpad.dev/ubuntu/hoary
-    * Answers - not linked
+    ...
     Main heading: pmount 0.1-1 (i386 binary) in ubuntu hoary
 
 But they do link back to the pages for both the distribution series

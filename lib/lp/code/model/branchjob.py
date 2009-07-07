@@ -45,7 +45,7 @@ from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.database.translationbranchapprover import (
+from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
@@ -54,12 +54,12 @@ from lp.code.interfaces.branchjob import (
     IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
     IReclaimBranchSpaceJobSource, IRevisionMailJob, IRevisionMailJobSource,
     IRosettaUploadJob, IRosettaUploadJobSource)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from lp.code.mail.branch import BranchMailer
-from canonical.launchpad.translationformat.translation_import import (
+from lp.translations.utilities.translation_import import (
     TranslationImporter)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)

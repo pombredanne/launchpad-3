@@ -30,7 +30,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.validators import LaunchpadValidationError
