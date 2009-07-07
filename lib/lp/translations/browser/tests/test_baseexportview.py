@@ -6,8 +6,10 @@ import unittest
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import ZopelessDatabaseLayer
-from lp.registry.browser.sourcepackage import SourcePackageTranslationsExportView
-from lp.registry.browser.productseries import ProductSeriesTranslationsExportView
+from lp.registry.browser.sourcepackage import (
+    SourcePackageTranslationsExportView)
+from lp.registry.browser.productseries import (
+    ProductSeriesTranslationsExportView)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.testing import TestCaseWithFactory
@@ -33,7 +35,7 @@ class BaseExportViewMixin(TestCaseWithFactory):
         self.assertFalse(self.view.uses_translations)
 
     def test_uses_translations_obsolete_templates(self):
-        # With an obsolete template, it's not considered as using translations.
+        # With an obsolete template, it's not considered to use translations.
         template = self.createTranslationTemplate("obsolete")
         template.iscurrent = False
         self.assertFalse(self.view.uses_translations)
@@ -133,8 +135,8 @@ class TestProductSeries(BaseExportViewMixin):
         super(TestProductSeries, self).setUp()
         self.container = self.factory.makeProductSeries()
         self.container.product.official_rosetta = True
-        self.view = ProductSeriesTranslationsExportView(self.container,
-                                                        LaunchpadTestRequest())
+        self.view = ProductSeriesTranslationsExportView(
+            self.container, LaunchpadTestRequest())
 
 
 class TestSourcePackage(BaseExportViewMixin):
@@ -151,8 +153,8 @@ class TestSourcePackage(BaseExportViewMixin):
         super(TestSourcePackage, self).setUp()
         self.container = self.factory.makeSourcePackage()
         self.container.distroseries.distribution.official_rosetta = True
-        self.view = SourcePackageTranslationsExportView(self.container,
-                                                        LaunchpadTestRequest())
+        self.view = SourcePackageTranslationsExportView(
+            self.container, LaunchpadTestRequest())
 
 
 def test_suite():
