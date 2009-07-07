@@ -5,7 +5,7 @@
   <div metal:fill-slot="heading">
     <ul style="margin-top: 0">
       <li>
-         <span class="info">
+         <span class="sprite info">
            The following people will be notified of changes:
          </span>
       </li>
