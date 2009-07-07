@@ -719,7 +719,10 @@ class TeamMailingListSubscribersView(LaunchpadView):
     def renderTable(self):
         html = ['<table id="subscribers" style="max-width: 80em">']
         items = self.subscribers.currentBatch()
-        columns = min(int(math.ceil(len(items) / 10.0)), self.max_columns)
+        # When there are more than 10 items, we use multiple columns, but
+        # never more columns than self.max_columns.
+        columns = int(math.ceil(len(items) / 10.0))
+        columns = min(columns, self.max_columns)
         rows = int(math.ceil(len(items) / float(columns)))
         for i in range(0, rows):
             html.append('<tr>')
