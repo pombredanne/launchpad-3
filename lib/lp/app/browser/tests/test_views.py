@@ -9,8 +9,7 @@ import unittest
 
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from canonical.testing import DatabaseFunctionalLayer
 
 
 here = os.path.dirname(os.path.realpath(__file__))

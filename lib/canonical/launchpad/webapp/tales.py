@@ -42,7 +42,6 @@ from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
-from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, urlappend
 from lazr.uri import URI
@@ -942,7 +941,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
         custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
         if custom_icon is None:
-            css_class= ObjectImageDisplayAPI(person).sprite_css()
+            css_class = ObjectImageDisplayAPI(person).sprite_css()
             return (u'<a href="%s" class="%s">%s</a>') % (
                 url, css_class, cgi.escape(person.displayname))
         else:
@@ -1114,7 +1113,7 @@ class PillarFormatterAPI(CustomizableFormatter):
             url = canonical_url(product, view_name=view_name)
             summary = self._make_link_summary()
             if custom_icon is None:
-                css_class= ObjectImageDisplayAPI(product).sprite_css()
+                css_class = ObjectImageDisplayAPI(product).sprite_css()
                 html = (u'<a href="%s" class="%s">%s</a>') % (
                     url, css_class, summary)
             else:
