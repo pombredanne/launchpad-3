@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """View class for requesting translation exports."""
 
@@ -12,6 +12,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.translations.interfaces.poexportrequest import (
     IPOExportRequestSet)
+from lp.translations.interfaces.potemplate import (
+    IHasTranslationTemplates)
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter)
 from lp.translations.interfaces.translationfileformat import (
@@ -27,25 +29,50 @@ class BaseExportView(LaunchpadView):
         return bool(self.context.getCurrentTranslationTemplates().any())
 
     def getDefaultFormat(self):
-        """Overridable: default file format to offer."""
-        raise NotImplementedError
+        """Overridable: return default file format to use for the export."""
+        if not IHasTranslationTemplates.providedBy(self.context):
+            raise NotImplementedError(
+                'Subclass not implementing `IHasTranslationsTemplates` '
+                'interface.  Either override getDefaultFormat implementation '
+                'or implement `IHasTranslationsTemplates`.')
+
+        templates = self.context.getCurrentTranslationTemplates()
+        if not bool(templates.any()):
+            return None
+        formats = self.context.getTranslationTemplateFormats()
+        format = formats[0]
+        if len(formats) > 1:
+            self.request.response.addInfoNotification(
+                "This package has templates with different native "
+                "file formats.  If you proceed, all translations will be "
+                "exported in the single format you specify.")
+        return format
 
     def processForm(self):
-        """Overridable: what templates and translations are being requested?
+        """Return templates and translations requested to be exported.
 
-        Override in child class.  Must do one of:
+        Overridable in a child class.  Must do one of:
         a. Add an error notification to the page and return `None`
-        b. Return a tuple of two lists: the list of requested templates and
-            the list of requested pofiles.
+        b. Return a tuple of two iterables or None, of requested templates
+           and of requested pofiles.
         c. Redirect and return `None`.
         """
-        raise NotImplementedError
+        if not IHasTranslationTemplates.providedBy(self.context):
+            raise NotImplementedError(
+                'Subclass not implementing `IHasTranslationsTemplates` '
+                'interface.  Either override getDefaultFormat implementation '
+                'or implement `IHasTranslationsTemplates`.')
+
+        translation_templates = self.context.getCurrentTranslationTemplates()
+        pofiles = self.context.getCurrentTranslationFiles()
+        if not bool(pofiles.any()):
+            pofiles = None
+        return (translation_templates, pofiles)
 
     def modifyFormat(self, format):
-        """ Optional overridable: do any other controls modify the format?
+        """Optional overridable: return format used to export `format` files.
 
-        :param format: The name of the reported format or None if it could
-            not be determined.
+        :param format: What file format to look up an exportable format for.
         :returns: The modified format.
         """
         return format

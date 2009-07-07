@@ -366,22 +366,7 @@ class ProductSeriesTranslationsExportView(BaseExportView):
     Only complete downloads are supported for now; there is no option to
     select languages, and templates are always included.
     """
-
-    def processForm(self):
-        """Process form submission requesting translations export."""
-        pofiles = []
-        translation_templates = self.context.getCurrentTranslationTemplates()
-        pofiles = self.context.getCurrentTranslationFiles()
-        if not bool(pofiles.any()):
-            pofiles = None
-        return (translation_templates, pofiles)
-
-    def getDefaultFormat(self):
-        """Return the default template format."""
-        templates = self.context.getCurrentTranslationTemplates()
-        if not bool(templates.any()):
-            return None
-        return templates[0].source_file_format
+    pass
 
 
 def get_series_branch_error(product, branch):
