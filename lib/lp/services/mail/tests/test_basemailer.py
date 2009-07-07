@@ -10,7 +10,6 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.testing import TestCaseWithFactory
 from lp.services.mail.basemailer import BaseMailer
-from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
 
 class FakeSubscription:

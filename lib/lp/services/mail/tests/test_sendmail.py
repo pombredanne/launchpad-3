@@ -6,9 +6,7 @@ import unittest
 
 from zope.testing.doctest import DocTestSuite
 
-from canonical.testing import LaunchpadZopelessLayer
 from lp.testing import TestCase
-from lp.testing.mail_helpers import pop_notifications
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
 
