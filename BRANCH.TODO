@@ -2,10 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
- - Add a new module for this? (if there's somewhere suitably generic we
-   can use that instead).
- - Add a function to that module, Y.foo.activate_collapsibles().
- - That function should replicate the end-result of
-   activateCollapsibles() so that we can just swap the new one in for
-   the old one.

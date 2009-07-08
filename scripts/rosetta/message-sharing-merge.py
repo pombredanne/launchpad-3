@@ -6,6 +6,9 @@ __metaclass__ = type
 
 import _pythonpath
 
+from lp.translations.scripts.message_sharing_migration import (
+    MessageSharingMerge)
+
 # This script merges POTMsgSets for sharing POTemplates.  This involves
 # deleting records that we'd never delete otherwise.  So before running,
 # make sure rosettaadmin has the privileges to delete POTMsgSets and
@@ -13,9 +16,6 @@ import _pythonpath
 #
 # GRANT DELETE ON POTMsgSET TO rosettaadmin;
 # GRANT DELETE ON  TranslationTemplateItem TO rosettaadmin; 
-
-from canonical.launchpad.scripts.message_sharing_migration import (
-    MessageSharingMerge)
 
 
 if __name__ == '__main__':

@@ -384,9 +384,9 @@ class NascentUpload:
         try:
             callable()
         except UploadError, error:
-            self.reject(str(error))
+            self.reject("".join(error.args).encode("utf8"))
         except UploadWarning, error:
-            self.warn(str(error))
+            self.warn("".join(error.args).encode("utf8"))
 
     def run_and_collect_errors(self, callable):
         """Run 'special' callable that generates a list of errors/warnings.
@@ -406,9 +406,9 @@ class NascentUpload:
         """
         for error in callable():
             if isinstance(error, UploadError):
-                self.reject(str(error))
+                self.reject("".join(error.args).encode("utf8"))
             elif isinstance(error, UploadWarning):
-                self.warn(str(error))
+                self.warn("".join(error.args).encode("utf8"))
             else:
                 raise AssertionError(
                     "Unknown error occurred: %s" % str(error))
