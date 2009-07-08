@@ -6,14 +6,11 @@ Run the doctests and pagetests.
 import logging
 import os
 import transaction
-import unittest
 
-from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import (
-    DatabaseLayer, DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
+    DatabaseLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 from lp.registry.tests import mailinglists_helper
 from lp.services.testing import build_test_suite
@@ -161,6 +158,10 @@ special = {
     'sourcepackage.txt': LayeredDocFileSuite(
         '../doc/sourcepackage.txt',
         layer=LaunchpadFunctionalLayer,
+        setUp=setUp, tearDown=tearDown),
+    'distribution-sourcepackage.txt': LayeredDocFileSuite(
+        '../doc/distribution-sourcepackage.txt',
+        layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown),
     }
 

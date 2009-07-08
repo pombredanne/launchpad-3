@@ -644,6 +644,8 @@
                     findCvesInText
                     newMessage
                     linkMessage
+                    linkBranch
+                    unlinkBranch
                     addAttachment
                     unsubscribeFromDupes
                     subscribe
