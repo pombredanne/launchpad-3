@@ -1332,13 +1332,57 @@ class Person(
         tm.sendSelfRenewalNotification()
 
     def deactivateAllMembers(self, comment, reviewer):
-        """Deactivate all members of this team."""
+        """Deactivate all members of this team.
+
+        This method circuments the TeamMembership.setStatus() method
+        to improve performance; therefore, it does not send out any
+        status change noticiations to the team admins.
+
+        :param comment: Explanation of the change.
+        :param reviewer: Person who made the change.
+        """
         assert self.is_team, "This method is only available for teams."
         assert reviewer.inTeam(getUtility(ILaunchpadCelebrities).admin), (
             "Only Launchpad admins can deactivate all members of a team")
-        for membership in self.member_memberships:
-            membership.setStatus(
-                TeamMembershipStatus.DEACTIVATED, reviewer, comment)
+        now = datetime.now(pytz.timezone('UTC'))
+        store = Store.of(self)
+        cur = cursor()
+
+        # Deactivate the approved/admin team members.
+        # XXX: EdwinGrubbs 2009-07-08 bug=397072
+        # There are problems using storm to write an update
+        # statement using DBITems in the comparison.
+        cur.execute("""
+            UPDATE TeamMembership
+            SET status=%(status)s,
+                last_changed_by=%(last_changed_by)s,
+                last_change_comment=%(comment)s,
+                date_last_changed=%(date_last_changed)s
+            WHERE
+                TeamMembership.team = %(team)s
+                AND TeamMembership.status IN %(original_statuses)s
+            """,
+            dict(
+                status=TeamMembershipStatus.DEACTIVATED,
+                last_changed_by=reviewer.id,
+                comment=comment,
+                date_last_changed=now,
+                team=self.id,
+                original_statuses=(
+                    TeamMembershipStatus.ADMIN.value,
+                    TeamMembershipStatus.APPROVED.value)))
+
+        # Since we've updated the database behind Storm's back,
+        # flush its caches.
+        store.invalidate()
+
+        # Remove all members from the TeamParticipation table
+        # except for the team, itself.
+        participants = store.find(
+            TeamParticipation,
+            TeamParticipation.teamID == self.id,
+            TeamParticipation.personID != self.id)
+        participants.remove()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
