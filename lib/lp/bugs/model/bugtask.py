@@ -1640,10 +1640,8 @@ class BugTaskSet:
         if clause:
             extra_clauses.append(clause)
 
-        hw_tables, hw_clauses = self._buildHardwareRelatedClause(params)
-
-        extra_clauses.extend(hw_clauses)
-        clauseTables.extend(hw_tables)
+        hw_clause = self._buildHardwareRelatedClause(params)
+        extra_clauses.append(hw_clause)
 
         orderby_arg = self._processOrderBy(params)
 
@@ -1837,13 +1835,10 @@ class BugTaskSet:
             tables, clauses = make_submission_device_statistics_clause(
                 None, None, None, driver_name, package_name, False)
         else:
-            # make_submission_device_statistics_clause assumes that at least
-            # a driver, a package or a device is specified and thus returns
-            # always at least two tables. Returning these tables without
-            # any associated WHERE clauses leads to a huge cross join.
-            return [], []
+            return '1=1'
 
         tables.append(HWSubmission)
+        tables.append(Bug)
         clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
         bug_link_clauses = []
         if params.hardware_owner_is_bug_reporter:
@@ -1867,7 +1862,7 @@ class BugTaskSet:
             tables.append(HWSubmissionBug)
 
         if len(bug_link_clauses) == 0:
-            return [], []
+            return '1=1'
 
         clauses.append(Or(*bug_link_clauses))
         clauses.append(_userCanAccessSubmissionStormClause(params.user))
@@ -1875,7 +1870,9 @@ class BugTaskSet:
         tables = [convert_storm_clause_to_string(table) for table in tables]
         clauses = ['(%s)' % convert_storm_clause_to_string(clause)
                    for clause in clauses]
-        return tables, clauses
+        clause = 'Bug.id IN (SELECT DISTINCT Bug.id from %s WHERE %s)' % (
+            ', '.join(tables), ' AND '.join(clauses))
+        return clause
 
 
     def search(self, params, *args):
