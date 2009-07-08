@@ -32,7 +32,8 @@ class TestRevisionCache(TestCaseWithFactory):
         self.assertEqual(0, results.count())
 
     def makeCachedRevision(self, revision=None, product=None,
-                           distroseries=None, sourcepackagename=None):
+                           distroseries=None, sourcepackagename=None,
+                           private=False):
         # A factory method for RevisionCache objects.
         if revision is None:
             revision = self.factory.makeRevision()
@@ -40,6 +41,7 @@ class TestRevisionCache(TestCaseWithFactory):
         cached.product = product
         cached.distroseries = distroseries
         cached.sourcepackagename = sourcepackagename
+        cached.private = private
         return cached
 
     def test_simple_total_count(self):
@@ -64,6 +66,29 @@ class TestRevisionCache(TestCaseWithFactory):
             sourcepackagename=source_package.sourcepackagename)
         cache = getUtility(IRevisionCache)
         self.assertEqual(1, cache.count())
+
+    def test_private_revisions(self):
+        # Private flags are honour.ed when only requesting public revisions.
+        # If a revision is in both public and private branches, then there are
+        # two entried in the revision cache for it, and it will be retrieved
+        # in a revision query
+        revision = self.factory.makeRevision()
+        # Put that revision in both a public and private branch.
+        self.makeCachedRevision(revision, private=False)
+        self.makeCachedRevision(revision, private=True)
+        # Make a random public cached revision.
+        public_revision = self.makeCachedRevision().revision
+        # Make a private cached revision.
+        self.makeCachedRevision(private=True)
+
+        cache = getUtility(IRevisionCache)
+        # Counting all revisions gets public and private revisions.
+        self.assertEqual(3, cache.count())
+        # Limiting to public revisions does not get the private revisions.
+        self.assertEqual(2, cache.public().count())
+        self.assertEqual(
+            sorted([revision, public_revision]),
+            sorted(cache.public().getRevisions()))
 
 
 def test_suite():

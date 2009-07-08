@@ -64,6 +64,9 @@ class IRevisionCollection(Interface):
     def inDistributionSourcePackage(distro_source_package):
         """Restrict to branches in a 'package' for a 'distribution'."""
 
+    def public():
+        """Restrict to revisions that are publicly visible."""
+
     def authoredBy(person):
         """Restrict the collection to branches owned by 'person'."""
 

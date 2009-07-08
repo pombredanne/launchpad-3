@@ -54,3 +54,8 @@ class GenericRevisionCollection:
         result_set = self.store.find(Revision, expressions)
         result_set.config(distinct=True)
         return result_set
+
+    def public(self):
+        """See `IRevisionCollection`."""
+        return self._filterBy(
+            [RevisionCache.private == False])
