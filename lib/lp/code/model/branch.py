@@ -197,7 +197,9 @@ class Branch(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='branch', orderBy='id')
 
-    linked_bugs = None
+    linked_bugs = SQLRelatedJoin(
+        'Bug', joinColumn='branch', otherColumn='bug',
+        intermediateTable='BugBranch', orderBy='id')
 
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
