@@ -527,6 +527,12 @@ class IBranch(IHasOwner, IHasBranchTarget):
             readonly=True,
             value_type=Reference(schema=Interface))) # Really IBugBranch
 
+    linked_bugs = exported(
+        CollectionField(
+            title=_("The bugs linked to this branch."),
+        readonly=True,
+        value_type=Reference(schema=Interface))) # Really IBug
+
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         bug=Reference(schema=Interface)) # Really IBug

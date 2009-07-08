@@ -63,6 +63,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
+IBranch['linked_bugs'].value_type.schema = IBug
 IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
 IBranch['getSubscription'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription

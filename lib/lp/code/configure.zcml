@@ -351,6 +351,7 @@
                     revision_count
                     warehouse_url
                     bug_branches
+                    linked_bugs
                     linkBug
                     unlinkBug
                     related_bugs
