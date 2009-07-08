@@ -28,7 +28,8 @@ from lp.soyuz.adapters.packagelocation import (
     build_package_location)
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import BuildSetStatus
+from lp.soyuz.interfaces.build import (
+    BuildStatus, BuildSetStatus)
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     active_publishing_status)
@@ -599,6 +600,8 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     # If binaries are included in the copy we include binary custom files.
     if include_binaries:
         for build in source.getBuilds():
+            if build.buildstate != BuildStatus.FULLYBUILT:
+                continue
             delayed_copy.addBuild(build)
             original_build_upload = build.package_upload
             for custom in original_build_upload.customfiles:

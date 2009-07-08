@@ -254,18 +254,12 @@ class SoyuzTestPublisher:
             binarypackagerelease = self.uploadBinaryForBuild(
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
-                provides, pre_depends, enhances, breaks, format)
+                provides, pre_depends, enhances, breaks, format,
+                changes_file_content)
             pub_binaries = self.publishBinaryInArchive(
                 binarypackagerelease, archive, status, pocket,
                 scheduleddeletiondate, dateremoved)
             published_binaries.extend(pub_binaries)
-            package_upload = self.addPackageUpload(
-                archive, distroseries, pocket,
-                changes_file_content=changes_file_content,
-                changes_file_name='%s_%s_%s.changes' %
-                    (binaryname, binarypackagerelease.version,
-                     build.arch_tag))
-            package_upload.addBuild(build)
 
         return sorted(
             published_binaries, key=operator.attrgetter('id'), reverse=True)
@@ -275,7 +269,8 @@ class SoyuzTestPublisher:
         summary="summary", description="description", shlibdep=None,
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
-        breaks=None, format=BinaryPackageFormat.DEB):
+        breaks=None, format=BinaryPackageFormat.DEB,
+        changes_file_content='anything'):
         """Return the corresponding `BinaryPackageRelease`."""
         sourcepackagerelease = build.sourcepackagerelease
         distroarchseries = build.distroarchseries
@@ -320,6 +315,16 @@ class SoyuzTestPublisher:
             restricted=build.archive.private)
         binarypackagerelease.addFile(alias)
 
+        # Create the corresponding build upload.
+        package_upload = self.addPackageUpload(
+            build.archive, build.distroarchseries.distroseries,
+            build.pocket, changes_file_content=changes_file_content,
+            changes_file_name='%s_%s_%s.changes' %
+            (binaryname, binarypackagerelease.version,
+             build.arch_tag))
+        package_upload.addBuild(build)
+        package_upload.setAccepted()
+
         # Adjust the build record in way it looks complete.
         build.buildstate = BuildStatus.FULLYBUILT
         build.datebuilt = datetime.datetime(
@@ -345,6 +350,9 @@ class SoyuzTestPublisher:
         scheduleddeletiondate=None, dateremoved=None):
         """Return the corresponding BinaryPackagePublishingHistory."""
         distroarchseries = binarypackagerelease.build.distroarchseries
+
+        # Mark the upload as DONE
+        binarypackagerelease.build.package_upload.setDone()
 
         # Publish the binary.
         if binarypackagerelease.architecturespecific:
