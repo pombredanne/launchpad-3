@@ -30,7 +30,7 @@ BugBranch links a bug and a branch.
 Adding a branch to a bug returns an IBugBranch.
 
     >>> user = getUtility(IPersonSet).getByEmail("no-priv@canonical.com")
-    >>> bug_branch = bug.addBranch(branch, user)
+    >>> bug_branch = bug.linkBranch(branch, user)
 
     >>> flush_database_updates()
 
@@ -45,13 +45,13 @@ sample data.
     No Privileges Person
 
     >>> [bug_branch.branch.name for bug_branch in
-    ...  bug.bug_branches]
+    ...  bug.linked_branches]
     [u'release-0.9.2']
 
 Trying to add a branch that is already linked to a bug will simply
 return the existing BugBranch.
 
-    >>> bug_branch_two = bug.addBranch(branch, user)
+    >>> bug_branch_two = bug.linkBranch(branch, user)
     >>> bug_branch_two == bug_branch
     True
 
@@ -64,7 +64,7 @@ You can check if a branch is linked to a bug:
     >>> bug_two.hasBranch(branch)
     False
     >>> branch = getUtility(IBranchLookup).get(1)
-    >>> bug_branch_three = bug.addBranch(branch, user)
+    >>> bug_branch_three = bug.linkBranch(branch, user)
 
 
 If we make the bug private, no-priv won't be allowed to edit neither the
@@ -86,19 +86,19 @@ bug nor the BugBranch.
     True
     >>> login('no-priv@canonical.com')
 
-You can unlink a branch from a bug using removeBranch().
+You can unlink a branch from a bug using unlinkBranch().
 
     >>> bug.hasBranch(branch)
     True
-    >>> bug.removeBranch(branch, getUtility(ILaunchBag).user)
+    >>> bug.unlinkBranch(branch, getUtility(ILaunchBag).user)
     >>> bug.hasBranch(branch)
     False
 
-Calling removeBranch() once again is a noop.
+Calling unlinkBranch() once again is a noop.
 
-    >>> bug.removeBranch(branch, getUtility(ILaunchBag).user)
+    >>> bug.unlinkBranch(branch, getUtility(ILaunchBag).user)
 
-    >>> bug_branch = bug.addBranch(branch, user)
+    >>> bug_branch = bug.linkBranch(branch, user)
 
 
 == Bugs Related to Branches ==

@@ -57,6 +57,8 @@ from lp.soyuz.interfaces.publishing import (
     ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingPocket, PackagePublishingStatus)
 from lp.soyuz.interfaces.packageset import IPackageset
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
@@ -86,11 +88,6 @@ IHasBranches['getBranches'].queryTaggedValue(
 IHasMergeProposals['getMergeProposals'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
         IBranchMergeProposal
-
-# IBug
-
-IBug['addBranch'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBugBranch
 
 # IBugTask
 
@@ -135,9 +132,6 @@ ISourcePackage['setBranch'].queryTaggedValue(
 ISourcePackage['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
-
-ISpecification['linkBranch'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ISpecificationBranch
 
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
@@ -215,6 +209,17 @@ patch_reference_property(
     IDistroSeries, 'main_archive', IArchive)
 patch_reference_property(
     IDistroSeries, 'distribution', IDistribution)
+patch_choice_parameter_type(
+    IDistroSeries, 'getPackageUploads', 'status', PackageUploadStatus)
+patch_choice_parameter_type(
+    IDistroSeries, 'getPackageUploads', 'pocket', PackagePublishingPocket)
+patch_choice_parameter_type(
+    IDistroSeries, 'getPackageUploads', 'custom_type',
+    PackageUploadCustomFormat)
+patch_plain_parameter_type(
+    IDistroSeries, 'getPackageUploads', 'archive', IArchive)
+patch_collection_return_type(
+    IDistroSeries, 'getPackageUploads', IPackageUpload)
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
@@ -228,3 +233,8 @@ patch_plain_parameter_type(
     IPackageset, 'getSourcesSharedBy', 'other_package_set', IPackageset)
 patch_plain_parameter_type(
     IPackageset, 'getSourcesNotSharedBy', 'other_package_set', IPackageset)
+
+# IPackageUpload
+IPackageUpload['pocket'].vocabulary = PackagePublishingPocket
+patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
+patch_reference_property(IPackageUpload, 'archive', IArchive)

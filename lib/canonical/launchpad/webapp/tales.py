@@ -683,7 +683,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def _hasBugBranch(self):
         """Return whether the bug has a branch linked to it."""
-        return self._context.bug.bug_branches.count() > 0
+        return self._context.bug.linked_branches.count() > 0
 
     def _hasSpecification(self):
         """Return whether the bug is linked to a specification."""
@@ -774,7 +774,7 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
             badges += self.icon_template % (
                 "mentoring", "Mentoring offered", "sprite mentoring")
 
-        if self._context.branch_links.count() > 0:
+        if self._context.linked_branches.count() > 0:
             badges += self.icon_template % (
                 "branch", "Branch is available", "sprite branch")
 
@@ -870,7 +870,7 @@ class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
         icon_map = {
             ArchivePurpose.PRIMARY: '/@@/distribution',
             ArchivePurpose.PARTNER: '/@@/distribution',
-            ArchivePurpose.PPA: '/@@/package-source',
+            ArchivePurpose.PPA: '/@@/ppa-icon',
             ArchivePurpose.COPY: '/@@/distribution',
             ArchivePurpose.DEBUG: '/@@/distribution',
             }
@@ -2696,6 +2696,7 @@ class FormattersAPI:
                 text = text.replace(
                     address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
                         canonical_url(person), css_sprite, address))
+
         return text
 
     def lower(self):

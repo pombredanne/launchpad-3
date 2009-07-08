@@ -43,8 +43,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.translations import TranslationsMixin
+from lp.translations.browser.poexportrequest import BaseExportView
+from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from lp.code.interfaces.codeimport import (
     ICodeImportSet)
@@ -52,15 +52,15 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.productserieslanguage import (
+from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
-from canonical.launchpad.interfaces.translationimporter import (
+from lp.translations.interfaces.translationimporter import (
     ITranslationImporter)
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
@@ -366,22 +366,7 @@ class ProductSeriesTranslationsExportView(BaseExportView):
     Only complete downloads are supported for now; there is no option to
     select languages, and templates are always included.
     """
-
-    def processForm(self):
-        """Process form submission requesting translations export."""
-        pofiles = []
-        translation_templates = self.context.getCurrentTranslationTemplates()
-        pofiles = self.context.getCurrentTranslationFiles()
-        if not bool(pofiles.any()):
-            pofiles = None
-        return (translation_templates, pofiles)
-
-    def getDefaultFormat(self):
-        """Return the default template format."""
-        templates = self.context.getCurrentTranslationTemplates()
-        if not bool(templates.any()):
-            return None
-        return templates[0].source_file_format
+    pass
 
 
 def get_series_branch_error(product, branch):

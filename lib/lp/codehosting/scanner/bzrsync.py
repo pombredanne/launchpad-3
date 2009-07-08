@@ -112,7 +112,6 @@ class BzrSync:
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
-        self.trans_manager.begin()
         self.setFormats(bzr_branch)
         db_ancestry, db_history, db_branch_revision_map = (
             self.retrieveDatabaseAncestry())
@@ -137,7 +136,6 @@ class BzrSync:
         self.insertBranchRevisions(bzr_branch, revids_to_insert)
         self.trans_manager.commit()
         # Synchronize the RevisionCache for this branch.
-        self.trans_manager.begin()
         getUtility(IRevisionSet).updateRevisionCacheForBranch(self.db_branch)
         self.trans_manager.commit()
 
@@ -153,7 +151,6 @@ class BzrSync:
         # not been updated. Since this has no ill-effect, and can only err on
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
-        self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
         notify(
             events.ScanCompleted(
