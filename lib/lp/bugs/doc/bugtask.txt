@@ -1243,7 +1243,7 @@ If a mentoring offer gets made...
 ... or a branch gets linked to the bug...
 
     >>> branch = factory.makeAnyBranch()
-    >>> bug_three.addBranch(branch, no_priv)
+    >>> bug_three.linkBranch(branch, no_priv)
     <BugBranch at ...>
 
 ... the properties for the bugtasks reflect this.

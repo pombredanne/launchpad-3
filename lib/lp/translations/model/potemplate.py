@@ -1283,7 +1283,8 @@ class POTemplateSharingSubset(object):
             assert self.sourcepackagename is not None, (
                    "Need sourcepackagename to select from distribution.")
 
-        return self._iterate_potemplates("^%s$" % potemplate_name)
+        escaped_potemplate_name = re.escape(potemplate_name)
+        return self._iterate_potemplates("^%s$" % escaped_potemplate_name)
 
     def groupEquivalentPOTemplates(self, name_pattern=None):
         """See IPOTemplateSharingSubset."""

@@ -53,8 +53,8 @@ class BaseExportView(LaunchpadView):
 
         Overridable in a child class.  Must do one of:
         a. Add an error notification to the page and return `None`
-        b. Return a tuple of two iterables, of requested templates and
-           of requested pofiles.
+        b. Return a tuple of two iterables or None, of requested templates
+           and of requested pofiles.
         c. Redirect and return `None`.
         """
         if not IHasTranslationTemplates.providedBy(self.context):
@@ -70,7 +70,7 @@ class BaseExportView(LaunchpadView):
         return (translation_templates, pofiles)
 
     def modifyFormat(self, format):
-        """Optional overridable: return a format used to export `format` files.
+        """Optional overridable: return format used to export `format` files.
 
         :param format: What file format to look up an exportable format for.
         :returns: The modified format.
