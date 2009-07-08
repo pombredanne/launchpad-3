@@ -358,8 +358,9 @@ alphabetically by 'architecturetag'.
 DistroArchSeriesSet Methods
 ===========================
 
-The `IDistroArchSeriesSet` utility provides some helper methods, such as
-getIdsForArchitectures(), which will filter an iterable of DistroArchSerieses
+The `DistroArchSeriesSet` class provides a helper method
+getIdsForArchitectures() - not exposed through the `IDistroArchSeriesSet` 
+interface - which will filter an iterable of DistroArchSerieses
 using an optional arch_tag and return a list of their IDs.
 
     >>> architectures = [
