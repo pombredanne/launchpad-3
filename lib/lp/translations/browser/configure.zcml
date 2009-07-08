@@ -630,7 +630,7 @@
     </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.translations.browser.productseries.ProductSeriesView"
+        class="lp.translations.browser.productseries.ProductSeriesUploadView"
         permission="launchpad.Edit"
         layer="canonical.launchpad.layers.TranslationsLayer">
         <browser:page

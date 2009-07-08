@@ -4,12 +4,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductSeriesFacets',
     'ProductSeriesTemplatesView',
     'ProductSeriesTranslationsBzrImportView',
     'ProductSeriesTranslationsExportView',
     'ProductSeriesTranslationsMenu',
     'ProductSeriesTranslationsSettingsView',
+    'ProductSeriesUploadView',
     'ProductSeriesView',
     ]
 
@@ -144,13 +144,19 @@ class ProductSeriesTranslationsMixin(object):
                              view_name="+edit")
 
 
-class ProductSeriesView(LaunchpadView, TranslationsMixin):
-    """A view to show a series with translations."""
+class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
+    """A view for uploading translations into productseries."""
     def initialize(self):
         """See `LaunchpadFormView`."""
-        # Whether there is more than one PO template.
-        self.has_multiple_templates = (
-            self.context.getCurrentTranslationTemplates().count() > 1)
+        self.form = self.request.form
+        self.processForm()
+
+    def processForm(self):
+        """Process a form if it was submitted."""
+        if not self.request.method == "POST":
+            # The form was not posted, we don't do anything.
+            return
+        self.translationsUpload()
 
     def translationsUpload(self):
         """Upload new translatable resources related to this IProductSeries.
@@ -291,6 +297,15 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
             self.request.response.addWarningNotification(
                 "Upload failed because the file you uploaded was not"
                 " recognised as a file that can be imported.")
+
+
+class ProductSeriesView(LaunchpadView, TranslationsMixin):
+    """A view to show a series with translations."""
+    def initialize(self):
+        """See `LaunchpadFormView`."""
+        # Whether there is more than one PO template.
+        self.has_multiple_templates = (
+            self.context.getCurrentTranslationTemplates().count() > 1)
 
     @property
     def productserieslanguages(self):

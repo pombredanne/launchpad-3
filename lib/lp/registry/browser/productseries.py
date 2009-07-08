@@ -20,11 +20,6 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
-    'ProductSeriesTemplatesView',
-    'ProductSeriesTranslationsBzrImportView',
-    'ProductSeriesTranslationsExportView',
-    'ProductSeriesTranslationsMenu',
-    'ProductSeriesTranslationsSettingsView',
     'ProductSeriesView',
     ]
 
@@ -347,26 +342,9 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         if not self.request.method == "POST":
             # The form was not posted, we don't do anything.
             return
-
-        dispatch_table = {
-            'set_ubuntu_pkg': self.setCurrentUbuntuPackage,
-            'translations_upload': self.translationsUpload,
-        }
-        dispatch_to = [(key, method)
-                        for key,method in dispatch_table.items()
-                        if key in self.form
-                      ]
-        if len(dispatch_to) == 0:
-            # None of the know forms have been submitted.
-            # XXX CarlosPerelloMarin 2005-11-29 bug=5244:
-            # This 'if' should be removed.
-            return
-        if len(dispatch_to) != 1:
-            raise AssertionError(
-                "There should be only one command in the form",
-                dispatch_to)
-        key, method = dispatch_to[0]
-        method()
+        assert 'set_ubuntu_pkg' in self.form, (
+            "This can handle POST requests only for 'set_ubuntu_pkg' form.")
+        self.setCurrentUbuntuPackage()
 
     def setUpPackaging(self):
         """Ensure that the View class correctly reflects the packaging of
