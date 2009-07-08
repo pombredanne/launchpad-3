@@ -6,19 +6,15 @@
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <div metal:fill-slot="main">
       <div><a href="/people">People and teams</a></div>
-      <h1>Merge Launchpad accounts</h1>
 
-  <div metal:define-macro="addform">
+      <div metal:use-macro="context/@@launchpad_form/form">
 
-    <form action="." tal:attributes="action request/URL" method="post"
-          enctype="multipart/form-data">
-
-      <div metal:define-macro="formbody">
-
+        <tal:extra_info metal:fill-slot="extra_info">
         <p>
           To merge two Launchpad accounts:
         </p>
@@ -42,28 +38,10 @@
              >feedback@launchpad.net</a>. The Launchpad administrators will
           tend to your request as soon as possible.
         </p>
-
-        <p tal:define="status view/update"
-           tal:condition="status"
-           tal:content="status" />
-
-        <p tal:condition="view/errors">
-          There are <strong tal:content="view/errors/count:len"
-                            >6</strong> input errors.
-        </p>
-
-        <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+        </tal:extra_info>
 
       </div>
-      <div class="actions">
-          <input type='submit' value='Submit'
-            name='UPDATE_SUBMIT' />
-      </div>
 
-    </form>
-  </div>
-
-  </div>
+    </div>
   </body>
-
 </html>
