@@ -125,14 +125,16 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
 
     Returns the `Message-Id`.
     """
-    ctrl = MailController(from_addr, to_addrs, subject, body, headers)
-    return ctrl.send(bulk=bulk)
+    ctrl = MailController(from_addr, to_addrs, subject, body, headers,
+                          bulk=bulk)
+    return ctrl.send()
 
 
 class MailController(object):
     """Message generation interface closer to peoples' mental model."""
 
-    def __init__(self, from_addr, to_addrs, subject, body, headers=None):
+    def __init__(self, from_addr, to_addrs, subject, body, headers=None,
+                 bulk=True):
         self.from_addr = from_addr
         if zisinstance(to_addrs, basestring):
             to_addrs = [to_addrs]
@@ -142,6 +144,7 @@ class MailController(object):
         if headers is None:
             headers = {}
         self.headers = headers
+        self.bulk = bulk
         self.attachments = []
 
     def addAttachment(self, content, content_type='application/octet-stream',
@@ -206,8 +209,8 @@ class MailController(object):
         msg['Subject'] = self.subject
         return msg
 
-    def send(self, bulk=True):
-        return sendmail(self.makeMessage(), bulk=bulk)
+    def send(self):
+        return sendmail(self.makeMessage(), bulk=self.bulk)
 
 
 def simple_sendmail_from_person(
