@@ -60,7 +60,7 @@ from lp.registry.interfaces.project import IProject
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -316,7 +316,7 @@ class IProductCommercialRestricted(Interface):
             title=_("Project approved"),
             description=_(
                 "The project is legitimate and its license appears valid. "
-                "Not application to 'Other/Proprietary'.")))
+                "Not applicable to 'Other/Proprietary'.")))
 
 
 class IProductPublic(
@@ -686,9 +686,12 @@ class IProductPublic(
         this Product.
         """
 
+    @operation_parameters(
+        include_inactive=Bool(title=_("Include inactive"),
+                              required=False, default=False))
     @export_read_operation()
     @export_operation_as('get_timeline')
-    def getTimeline():
+    def getTimeline(include_inactive):
         """Return basic timeline data useful for creating a diagram."""
 
 

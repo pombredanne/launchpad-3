@@ -9,6 +9,7 @@ from unittest import TestLoader
 
 from pytz import UTC
 
+from storm.locals import Store
 from sqlobject import SQLObjectNotFound
 
 import transaction
@@ -23,7 +24,8 @@ from lp.code.model.branch import (
     ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
     DeleteCodeImport, DeletionCallable, DeletionOperation,
     update_trigger_modified_fields)
-from lp.code.model.branchjob import BranchDiffJob
+from lp.code.model.branchjob import (
+    BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob)
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.bugs.model.bugbranch import BugBranch
@@ -45,7 +47,6 @@ from lp.code.enums import (
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     CannotDeleteBranch)
-from lp.code.interfaces.branchjob import IReclaimBranchSpaceJobSource
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
@@ -529,7 +530,7 @@ class TestBranchDeletion(TestCaseWithFactory):
             owner=self.user, title='Firefox bug', comment='blah')
         params.setBugTarget(product=self.product)
         bug = getUtility(IBugSet).createBug(params)
-        bug.addBranch(self.branch, self.user)
+        bug.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a bug is not deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
@@ -617,9 +618,14 @@ class TestBranchDeletion(TestCaseWithFactory):
         # branch from disk as well.
         branch = self.factory.makeAnyBranch()
         branch_id = branch.id
+        store = Store.of(branch)
         branch.destroySelf()
-        jobs = getUtility(IReclaimBranchSpaceJobSource).iterReady()
-        self.assertEqual([branch.id], [job.branch_id for job in jobs])
+        jobs = store.find(
+            BranchJob,
+            BranchJob.job_type == BranchJobType.RECLAIM_BRANCH_SPACE)
+        self.assertEqual(
+            [branch_id],
+            [ReclaimBranchSpaceJob(job).branch_id for job in jobs])
 
 
 class TestBranchDeletionConsequences(TestCase):
@@ -741,8 +747,8 @@ class TestBranchDeletionConsequences(TestCase):
     def test_branchWithBugRequirements(self):
         """Deletion requirements for a branch with a bug are right."""
         bug = self.factory.makeBug()
-        bug.addBranch(self.branch, self.branch.owner)
-        self.assertEqual({bug.bug_branches[0]:
+        bug.linkBranch(self.branch, self.branch.owner)
+        self.assertEqual({bug.linked_branches[0]:
             ('delete', _('This bug is linked to this branch.'))},
             self.branch.deletionRequirements())
 
@@ -750,8 +756,8 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a branch with a bug."""
         bug1 = self.factory.makeBug()
         bug2 = self.factory.makeBug()
-        bug1.addBranch(self.branch, self.branch.owner)
-        bug_branch1 = bug1.bug_branches[0]
+        bug1.linkBranch(self.branch, self.branch.owner)
+        bug_branch1 = bug1.linked_branches[0]
         bug_branch1_id = bug_branch1.id
         self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound, BugBranch.get, bug_branch1_id)
@@ -1145,7 +1151,7 @@ class BranchDateLastModified(TestCaseWithFactory):
         params.setBugTarget(product=branch.product)
         bug = getUtility(IBugSet).createBug(params)
 
-        bug.addBranch(branch, branch.owner)
+        bug.linkBranch(branch, branch.owner)
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 

@@ -23,6 +23,39 @@ We need to be logged into the security model in order to get any further
     ...    datadir, getPolicy, mock_logger_quiet)
 
 
+== NascentUploadFile base class ==
+
+(This base class has many checks in it that are not yet documented here.)
+
+=== Forbidden character check ===
+Some characters are forbidden in filenames as per Debian packaging policy, and
+this check is performed by the checkNameIsTaintFree() method.  It raises an
+UploadError if there is an invalid character found.
+
+Construct the base object with just enough data to do the check:
+
+    >>> from lp.archiveuploader.nascentuploadfile import NascentUploadFile
+    >>> upload_file = NascentUploadFile(
+    ...     "fake/path/to/file/package-1.1.2-3:0ubuntu4", None, 1,
+    ...     "section", None, None, None)
+
+The filename tries to use an epoch in an invalid way:
+
+    >>> upload_file.checkNameIsTaintFree()
+    Traceback (most recent call last):
+    ...
+    UploadError: Invalid character(s) in filename: 'package-X.X.X-3:0ubuntu4'.
+
+
+With a good filename, no exception is raised.
+
+    >>> upload_file = NascentUploadFile(
+    ...     "fake/path/to/file/package-1.1.2-1ubuntu1", None, 1,
+    ...     "section", None, None, None)
+
+    >>> upload_file.checkNameIsTaintFree()
+
+
 == ChangesFile  ==
 
 A changesfile contains manifest of what is included (ou should be
