@@ -14,6 +14,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.code.interfaces.revisioncache import IRevisionCollection
 from lp.code.model.revision import Revision, RevisionCache
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
 
 
@@ -77,3 +78,9 @@ class GenericRevisionCollection:
         return self._filterBy(
             [RevisionCache.distroseries == package.distroseries,
              RevisionCache.sourcepackagename == package.sourcepackagename])
+
+    def inDistribution(self, distribution):
+        """See `IRevisionCollection`."""
+        return self._filterBy(
+            [DistroSeries.distribution == distribution,
+             RevisionCache.distroseries == DistroSeries.id])

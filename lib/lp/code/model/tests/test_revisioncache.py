@@ -133,8 +133,30 @@ class TestRevisionCache(TestCaseWithFactory):
         revision_cache = getUtility(IRevisionCache).inSourcePackage(
             sourcepackage)
         self.assertRevisionsEqual([rev1, rev2], revision_cache)
-        
-        
+
+    def test_in_distribution(self):
+        # Check inDistribution limits to those revisions associated with
+        # distribution series related to the distro.
+        distroseries1 = self.factory.makeDistroRelease()
+        distro = distroseries1.distribution
+        distroseries2 = self.factory.makeDistroRelease(distribution=distro)
+        # Two revisions associated with sourcepackages in the series for the
+        # distro.
+        rev1 = self.makeCachedRevision(
+            package=self.factory.makeSourcePackage(
+                distroseries=distroseries1))
+        rev2 = self.makeCachedRevision(
+            package=self.factory.makeSourcePackage(
+                distroseries=distroseries2))
+        # Make two other revisions, on in a different product, and another
+        # general one.
+        self.makeCachedRevision(package=self.factory.makeSourcePackage())
+        self.makeCachedRevision()
+        revision_cache = getUtility(IRevisionCache).inDistribution(distro)
+        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 
