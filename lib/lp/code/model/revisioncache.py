@@ -14,6 +14,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.code.interfaces.revisioncache import IRevisionCollection
 from lp.code.model.revision import Revision, RevisionCache
+from lp.registry.model.product import Product
 
 
 class GenericRevisionCollection:
@@ -64,3 +65,9 @@ class GenericRevisionCollection:
         """See `IRevisionCollection`."""
         return self._filterBy(
             [RevisionCache.product == product])
+
+    def inProject(self, project):
+        """See `IRevisionCollection`."""
+        return self._filterBy(
+            [RevisionCache.product == Product.id,
+             Product.project == project])
