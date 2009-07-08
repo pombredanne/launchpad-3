@@ -1928,6 +1928,10 @@ body.tab-branches table.listing .section-heading {
   color: #d18b39;
 }
 
+body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead {
+  color: #666666;
+}
+
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
 table.diff {
    white-space: pre-wrap;

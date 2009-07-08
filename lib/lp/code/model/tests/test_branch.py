@@ -530,7 +530,7 @@ class TestBranchDeletion(TestCaseWithFactory):
             owner=self.user, title='Firefox bug', comment='blah')
         params.setBugTarget(product=self.product)
         bug = getUtility(IBugSet).createBug(params)
-        bug.addBranch(self.branch, self.user)
+        bug.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a bug is not deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
@@ -755,8 +755,8 @@ class TestBranchDeletionConsequences(TestCase):
     def test_branchWithBugRequirements(self):
         """Deletion requirements for a branch with a bug are right."""
         bug = self.factory.makeBug()
-        bug.addBranch(self.branch, self.branch.owner)
-        self.assertEqual({bug.bug_branches[0]:
+        bug.linkBranch(self.branch, self.branch.owner)
+        self.assertEqual({bug.linked_branches[0]:
             ('delete', _('This bug is linked to this branch.'))},
             self.branch.deletionRequirements())
 
@@ -764,8 +764,8 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a branch with a bug."""
         bug1 = self.factory.makeBug()
         bug2 = self.factory.makeBug()
-        bug1.addBranch(self.branch, self.branch.owner)
-        bug_branch1 = bug1.bug_branches[0]
+        bug1.linkBranch(self.branch, self.branch.owner)
+        bug_branch1 = bug1.linked_branches[0]
         bug_branch1_id = bug_branch1.id
         self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound, BugBranch.get, bug_branch1_id)
@@ -1159,7 +1159,7 @@ class BranchDateLastModified(TestCaseWithFactory):
         params.setBugTarget(product=branch.product)
         bug = getUtility(IBugSet).createBug(params)
 
-        bug.addBranch(branch, branch.owner)
+        bug.linkBranch(branch, branch.owner)
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 

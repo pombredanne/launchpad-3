@@ -6,6 +6,8 @@ import unittest
 
 from canonical.testing import ZopelessDatabaseLayer
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.testing import TestCaseWithFactory, verifyObject
 
 
@@ -127,6 +129,41 @@ class HasTranslationTemplatesMixin(TestCaseWithFactory):
         self.assertEquals(
             set([pofile_sr.id, pofile_es.id]),
             current_translations_ids)
+
+    def test_getTranslationTemplateFormats(self):
+        # Check that translation_template_formats works properly.
+
+        # With no templates, empty list is returned.
+        all_formats = self.container.getTranslationTemplateFormats()
+        self.assertEquals([], all_formats)
+
+        # With one template, that template's format is returned.
+        template1 = self.createTranslationTemplate("one")
+        template1.source_file_format = TranslationFileFormat.PO
+        all_formats = self.container.getTranslationTemplateFormats()
+        self.assertEquals(
+            [TranslationFileFormat.PO],
+            all_formats)
+
+        # With multiple templates of the same format, that
+        # format is still returned only once.
+        template2 = self.createTranslationTemplate("two")
+        template2.source_file_format = TranslationFileFormat.PO
+        all_formats = self.container.getTranslationTemplateFormats()
+        self.assertEquals(
+            [TranslationFileFormat.PO],
+            all_formats)
+
+        # With another template of a different format,
+        # we get that format in a returned list.
+        template3 = self.createTranslationTemplate("three")
+        template3.source_file_format = TranslationFileFormat.XPI
+        all_formats = self.container.getTranslationTemplateFormats()
+
+        # Items are sorted by the format values, PO==1 < XPI==3.
+        self.assertEquals(
+            [TranslationFileFormat.PO, TranslationFileFormat.XPI],
+            all_formats)
 
 
 class TestProductSeries(HasTranslationTemplatesMixin):
