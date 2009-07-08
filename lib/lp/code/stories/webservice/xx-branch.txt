@@ -106,7 +106,6 @@ time goes on.
     >>> pprint_entry(fooix_trunk)
     branch_format: None
     branch_type: u'Hosted'
-    bug_branches_collection_link: u'.../~eric/fooix/trunk/bug_branches'
     bzr_identity: u'lp://dev/~eric/fooix/trunk'
     control_format: None
     date_created: ...
@@ -121,6 +120,7 @@ time goes on.
     last_scanned: None
     last_scanned_id: None
     lifecycle_status: u'Development'
+    linked_bugs_collection_link: u'http://.../~eric/fooix/trunk/linked_bugs'
     mirror_status_message: None
     name: u'trunk'
     owner_link: u'.../~eric'
