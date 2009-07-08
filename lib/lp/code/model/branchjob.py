@@ -24,6 +24,7 @@ import simplejson
 
 from sqlobject import ForeignKey, StringCol
 from storm.expr import And, SQL
+from storm.locals import Store
 
 import transaction
 
@@ -33,9 +34,12 @@ from zope.interface import classProvides, implements
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.webapp import canonical_url
 from lp.code.bzr import (
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
 from lp.code.model.branch import Branch
+from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
@@ -461,6 +465,49 @@ class RevisionsAddedJob(BranchJobDerived):
             self.branch, revno, self.from_address, message, diff_text,
             subject)
 
+    def getMergedRevisionIDs(self, revision_id, graph):
+        """Determine which revisions were merged by this revision.
+
+        :param revision_id: ID of the revision to examine.
+        :param graph: a bzrlib.graph.Graph.
+        :return: a set of revision IDs.
+        """
+        parents = graph.get_parent_map([revision_id])[revision_id]
+        merged_revision_ids = set()
+        for merge_parent in parents[1:]:
+            merged = graph.find_difference(parents[0], merge_parent)[1]
+            merged_revision_ids.update(merged)
+        return merged_revision_ids
+
+    def getAuthors(self, revision_ids, graph):
+        """Determine authors of the revisions merged by this revision.
+
+        Ghost revisions are skipped.
+        :param revision_ids: The revision to examine.
+        :return: a set of author commit-ids
+        """
+        present_ids = graph.get_parent_map(revision_ids).keys()
+        present_revisions = self.bzr_branch.repository.get_revisions(
+            present_ids)
+        authors = set()
+        for revision in present_revisions:
+            authors.update(revision.get_apparent_authors())
+        return authors
+
+    def findRelatedBMP(self, revision_ids):
+        """Find merge proposals related to the revision-ids and branch.
+
+        Only proposals whose source branch last-scanned-id is in the set of
+        revision-ids and whose target_branch is the BranchJob branch are
+        returned.
+        """
+        store = Store.of(self.branch)
+        result = store.find(BranchMergeProposal,
+                            BranchMergeProposal.target_branch==self.branch.id,
+                            BranchMergeProposal.source_branch==Branch.id,
+                            Branch.last_scanned_id.is_in(revision_ids))
+        return result
+
     def getRevisionMessage(self, revision_id, revno):
         """Return the log message for a revision.
 
@@ -468,14 +515,44 @@ class RevisionsAddedJob(BranchJobDerived):
         :param revno: The revno of the revision in the branch.
         :return: The log message entered for this revision.
         """
-        info = RevisionInfo(self.bzr_branch, revno, revision_id)
-        outf = StringIO()
-        lf = log_formatter('long', to_file=outf)
-        show_log(self.bzr_branch,
-                 lf,
-                 start_revision=info,
-                 end_revision=info,
-                 verbose=True)
+        self.bzr_branch.lock_read()
+        try:
+            info = RevisionInfo(self.bzr_branch, revno, revision_id)
+            outf = StringIO()
+            lf = log_formatter('long', to_file=outf)
+            show_log(self.bzr_branch,
+                     lf,
+                     start_revision=info,
+                     end_revision=info,
+                     verbose=True)
+            graph = self.bzr_branch.repository.get_graph()
+            merged_revisions = self.getMergedRevisionIDs(revision_id, graph)
+            authors = list(sorted(self.getAuthors(merged_revisions, graph)))
+            def person_id(person):
+                return '%s (%s)' % (person.displayname, person.name)
+            if len(authors) > 0:
+                outf.write('Merge authors: ')
+                outf.write(', '.join(authors[:5]))
+                if len(authors) > 5:
+                    outf.write('...')
+                outf.write('\n')
+            bmps = list(self.findRelatedBMP(merged_revisions))
+            if len(bmps) > 0:
+                outf.write('Related merge proposals:\n')
+            for bmp in bmps:
+                outf.write('  %s\n' % canonical_url(bmp))
+                proposer = bmp.registrant
+                outf.write('  proposed by: %s\n' % person_id(proposer))
+                if (bmp.reviewer is not None and bmp.queue_status ==
+                    BranchMergeProposalStatus.CODE_APPROVED):
+                    outf.write('  approved by: %s\n' %
+                               person_id(bmp.reviewer))
+                for review in bmp.votes:
+                    outf.write('  review: %s - %s\n' %
+                        (review.comment.vote.title,
+                         person_id(review.reviewer)))
+        finally:
+            self.bzr_branch.unlock()
         return outf.getvalue()
 
 
