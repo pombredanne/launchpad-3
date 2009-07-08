@@ -717,7 +717,7 @@ class TeamMailingListSubscribersView(LaunchpadView):
             self.context.mailing_list.getSubscribers(), self.request)
 
     def renderTable(self):
-        html = ['<table id="subscribers" style="max-width: 80em">']
+        html = ['<table style="max-width: 80em">']
         items = self.subscribers.currentBatch()
         # When there are more than 10 items, we use multiple columns, but
         # never more columns than self.max_columns.

@@ -10,15 +10,16 @@
   i18n:domain="launchpad"
 >
 
-  <body>
+<body>
 
-    <div metal:fill-slot="main">
+  <div metal:fill-slot="main">
 
-      <h1>Team Mailing List Subscribers</h1>
+    <h1>Team Mailing List Subscribers</h1>
 
+    <div id="subscribers">
       <tal:has-mailinglist condition="context/mailing_list">
-        <p>The following people are subscribed to the team mailing list and will
-        receive email messages sent to the list.</p>
+        <p>The following people are subscribed to the team mailing list and
+        will receive email messages sent to the list.</p>
         <tal:subscribers replace="structure view/renderTable" />
         <br />
         <tal:navigation replace="structure view/subscribers/@@+navigation-links-lower" />
@@ -27,8 +28,9 @@
         <p>This team does not have a mailing list.</p>
         <p><a href="+mailinglist">Configure</a> the team's mailing list.</p>
       </tal:no_mailing_list>
-
     </div>
 
-  </body>
+  </div>
+
+</body>
 </html>
