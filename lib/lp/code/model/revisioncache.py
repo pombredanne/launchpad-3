@@ -7,15 +7,19 @@ __all__ = [
     'GenericRevisionCollection',
     ]
 
+from datetime import datetime, timedelta
+
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.code.interfaces.revisioncache import IRevisionCollection
-from lp.code.model.revision import Revision, RevisionCache
+from lp.code.model.revision import Revision, RevisionAuthor, RevisionCache
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamParticipation
 
 
 class GenericRevisionCollection:
@@ -51,7 +55,10 @@ class GenericRevisionCollection:
 
     def getRevisions(self):
         """See `IRevisionCollection`."""
-        expressions = [RevisionCache.revision == Revision.id]
+        epoch = datetime.now(pytz.UTC) - timedelta(days=30)
+        expressions = [
+            RevisionCache.revision == Revision.id,
+            RevisionCache.revision_date >= epoch]
         expressions.extend(self._filter_expressions)
         result_set = self.store.find(Revision, expressions)
         result_set.config(distinct=True)
@@ -91,10 +98,22 @@ class GenericRevisionCollection:
             [RevisionCache.distroseries == distro_series])
 
     def inDistributionSourcePackage(self, distro_source_package):
-        """Restrict to branches in a 'package' for a 'distribution'."""
+        """See `IRevisionCollection`."""
         distribution = distro_source_package.distribution
         sourcepackagename = distro_source_package.sourcepackagename
         return self._filterBy(
             [DistroSeries.distribution == distribution,
              RevisionCache.distroseries == DistroSeries.id,
              RevisionCache.sourcepackagename == sourcepackagename])
+
+    def authoredBy(self, person):
+        """See `IRevisionCollection`."""
+        if person.is_team:
+            query = [
+                TeamParticipation.team == person,
+                RevisionAuthor.personID == TeamParticipation.personID]
+        else:
+            query = [RevisionAuthor.person == person]
+
+        query.append(RevisionCache.revision_author == RevisionAuthor.id)
+        return self._filterBy(query)

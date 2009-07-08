@@ -7,6 +7,7 @@ __metaclass__ = type
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -63,6 +64,11 @@ class TestRevisionCache(TestCaseWithFactory):
             revision, package=self.factory.makeSourcePackage())
         cache = getUtility(IRevisionCache)
         self.assertEqual(1, cache.count())
+
+    def test_revisions_bound_by_date(self):
+        # Only revisions in the last 30 days are returned, even if the
+        # revision cache table hasn't been trimmed lately.
+        self.fail('not done yet')
 
     def assertRevisionsEqual(self, expected_revisions, revision_collection):
         # Check that the revisions returned from the revision collection match
@@ -213,8 +219,49 @@ class TestRevisionCache(TestCaseWithFactory):
         revision_cache = revision_cache.inDistributionSourcePackage(dsp)
         self.assertRevisionsEqual([rev1, rev2], revision_cache)
 
+    def makePersonAndLinkedRevision(self, name, email):
+        """Make a person and a revision that is linked to them."""
+        person = self.factory.makePerson(name=name, email=email)
+        revision = self.factory.makeRevision(
+            author=("%s <%s>" % (name, email)))
+        # Link up the revision author and person.  This is normally a
+        # protected method, so remove the security proxy.
+        removeSecurityProxy(revision.revision_author).person = person
+        rev = self.makeCachedRevision(revision)
+        return person, rev
 
-        
+    def test_authored_by_individual(self):
+        # Check that authoredBy appropriatly limits revisions to those
+        # authored by the individual specified.
+        eric, rev1 = self.makePersonAndLinkedRevision(
+            "eric", "eric@example.com")
+        # Make a second revision by eric.
+        rev2 = self.makeCachedRevision(
+            self.factory.makeRevision(rev1.revision_author.name))
+        # Other revisions have other authors.
+        self.makeCachedRevision()
+        revision_cache = getUtility(IRevisionCache).authoredBy(eric)
+        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+
+    def test_authored_by_team(self):
+        # Check that authoredBy appropriatly limits revisions to those
+        # authored by individuals of a team.  Since we want to add members to
+        # the team, and don't want security checks, we remove the security
+        # proxy from the team.
+        team = removeSecurityProxy(self.factory.makeTeam())
+        eric, rev1 = self.makePersonAndLinkedRevision(
+            "eric", "eric@example.com")
+        team.addMember(eric, team.teamowner)
+        # Now make another revision by someone else in the team.
+        bob, rev2 = self.makePersonAndLinkedRevision(
+            "bob", "bob@example.com")
+        team.addMember(bob, team.teamowner)
+        # Other revisions have other authors.
+        self.makeCachedRevision()
+        revision_cache = getUtility(IRevisionCache).authoredBy(team)
+        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 
