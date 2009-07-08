@@ -63,11 +63,21 @@ def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     # XXX StuartBishop 2005-03-19:
     # These checks need to be migrated upstream if this bug
     # still exists in modern Z3.
-    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
-            and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     assert zisinstance(from_addr, basestring), 'Invalid From: %r' % from_addr
     assert zisinstance(subject, basestring), 'Invalid Subject: %r' % subject
     assert zisinstance(body, basestring), 'Invalid body: %r' % body
+
+
+def do_paranoid_envelope_to_validation(to_addrs):
+    """Ensure the envelope_to addresses are valid.
+
+    This is extracted from do_paranoid_email_content_validation, so that
+    it can be applied to the actual envelope_to addresses, not the
+    to header.  The to header and envelope_to addresses may vary
+    independently, and the to header cannot break Z3.
+    """
+    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
+            and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
@@ -281,6 +291,8 @@ def sendmail(message, to_addrs=None, bulk=True):
         to_addrs = get_addresses_from_header(message['to'])
         if message['cc']:
             to_addrs = to_addrs + get_addresses_from_header(message['cc'])
+
+    do_paranoid_envelope_to_validation(to_addrs)
 
     # Add a Message-Id: header if it isn't already there
     if 'message-id' not in message:
