@@ -24,7 +24,6 @@ __all__ = [
 
 import sha
 import sets
-from email.Encoders import encode_base64
 from email.Utils import getaddresses, make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
@@ -161,7 +160,6 @@ class MailController(object):
             disposition_kwargs['filename'] = filename
         attachment.add_header(
             'Content-Disposition', disposition, **disposition_kwargs)
-        encode_base64(attachment)
         self.attachments.append(attachment)
 
     def makeMessage(self):
