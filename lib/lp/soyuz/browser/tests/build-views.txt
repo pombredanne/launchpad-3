@@ -197,3 +197,27 @@ is True:
     >>> cprov_failed_build_view.has_done_upload
     True
 
+= BuildRecordsView =
+
+The BuildRecordsView can also be used to filter by architecture tag.
+
+    >>> view = create_initialized_view(
+    ...     hoary, name="+builds", form={'build_state': 'all'})
+    >>> view.setupBuildList()
+    >>> for build in view.complete_builds:
+    ...     print build.arch_tag
+    i386
+    i386
+    i386
+    hppa
+    i386
+
+    >>> view = create_initialized_view(
+    ...     hoary, name="+builds", form={
+    ...         'build_state': 'all',
+    ...         'arch_tag': 'hppa',
+    ...         })
+    >>> view.setupBuildList()
+    >>> for build in view.complete_builds:
+    ...     print build.arch_tag
+    hppa
