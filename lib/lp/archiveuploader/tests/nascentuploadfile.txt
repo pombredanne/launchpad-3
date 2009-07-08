@@ -44,7 +44,7 @@ The filename tries to use an epoch in an invalid way:
     >>> upload_file.checkNameIsTaintFree()
     Traceback (most recent call last):
     ...
-    UploadError: Invalid character(s) in filename: 'package-X.X.X-3:0ubuntu4'.
+    UploadError: Invalid character(s) in filename: 'package-1.1.2-3:0ubuntu4'.
 
 
 With a good filename, no exception is raised.
