@@ -2945,6 +2945,7 @@ INSERT INTO karmacategory (id, name, title, summary) VALUES (3, 'translations', 
 INSERT INTO karmacategory (id, name, title, summary) VALUES (6, 'specs', 'Specification Tracking', 'This category includes all karma associated with the Launchpad specification tracking system.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'answers', 'Answer Tracker', 'This is the category for all karma associated with helping with users questions in the Launchpad Answer Tracker. Help solve users problems to earn this karma.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (8, 'code', 'Bazaar Branches', 'This category for all karma associated with branches and the links between branches and other Launchpad entities.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (9, 'soyuz', 'Soyuz', 'This category is for all karma associated with Soyuz actions.');
 
 
 ALTER TABLE karmacategory ENABLE TRIGGER ALL;

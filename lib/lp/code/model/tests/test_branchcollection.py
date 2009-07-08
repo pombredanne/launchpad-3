@@ -175,6 +175,44 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         collection = self.all_branches.inSourcePackage(branch.sourcepackage)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_in_distribution(self):
+        # 'inDistribution' returns a new collection that only has branches
+        # that are source package branches associated with distribution series
+        # for the distribution specified.
+        series_one = self.factory.makeDistroRelease()
+        distro = series_one.distribution
+        series_two = self.factory.makeDistroRelease(distribution=distro)
+        # Make two branches in the same distribution, but different series and
+        # source packages.
+        branch = self.factory.makePackageBranch(distroseries=series_one)
+        branch2 = self.factory.makePackageBranch(distroseries=series_two)
+        # Another branch in a different distribution.
+        branch3 = self.factory.makePackageBranch()
+        # And a product branch.
+        branch4 = self.factory.makeProductBranch()
+        collection = self.all_branches.inDistribution(distro)
+        self.assertEqual(
+            sorted([branch, branch2]), sorted(collection.getBranches()))
+
+    def test_in_distro_series(self):
+        # 'inDistroSeries' returns a new collection that only has branches
+        # that are source package branches associated with the distribution
+        # series specified.
+        series_one = self.factory.makeDistroRelease()
+        series_two = self.factory.makeDistroRelease(
+            distribution=series_one.distribution)
+        # Make two branches in the same distroseries, but different source
+        # packages.
+        branch = self.factory.makePackageBranch(distroseries=series_one)
+        branch2 = self.factory.makePackageBranch(distroseries=series_one)
+        # Another branch in a different series.
+        branch3 = self.factory.makePackageBranch(distroseries=series_two)
+        # And a product branch.
+        branch4 = self.factory.makeProductBranch()
+        collection = self.all_branches.inDistroSeries(series_one)
+        self.assertEqual(
+            sorted([branch, branch2]), sorted(collection.getBranches()))
+
     def test_in_distribution_source_package(self):
         # 'inDistributionSourcePackage' returns a new collection that only has
         # branches for the source package across any distroseries of the
