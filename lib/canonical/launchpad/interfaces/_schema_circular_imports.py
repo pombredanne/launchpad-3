@@ -89,11 +89,6 @@ IHasMergeProposals['getMergeProposals'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
         IBranchMergeProposal
 
-# IBug
-
-IBug['addBranch'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBugBranch
-
 # IBugTask
 
 IBugTask['findSimilarBugs'].queryTaggedValue(
@@ -137,9 +132,6 @@ ISourcePackage['setBranch'].queryTaggedValue(
 ISourcePackage['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
-
-ISpecification['linkBranch'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ISpecificationBranch
 
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
