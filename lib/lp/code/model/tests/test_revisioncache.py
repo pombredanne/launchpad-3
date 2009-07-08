@@ -32,15 +32,15 @@ class TestRevisionCache(TestCaseWithFactory):
         self.assertEqual(0, results.count())
 
     def makeCachedRevision(self, revision=None, product=None,
-                           distroseries=None, sourcepackagename=None,
-                           private=False):
+                           package=None, private=False):
         # A factory method for RevisionCache objects.
         if revision is None:
             revision = self.factory.makeRevision()
         cached = RevisionCache(revision)
         cached.product = product
-        cached.distroseries = distroseries
-        cached.sourcepackagename = sourcepackagename
+        if package is not None:
+            cached.distroseries = package.distroseries
+            cached.sourcepackagename = package.sourcepackagename
         cached.private = private
         return revision
 
@@ -54,16 +54,13 @@ class TestRevisionCache(TestCaseWithFactory):
     def test_revision_in_multiple_namespaces_counted_once(self):
         # A revision that is in multiple namespaces is only counted once.
         revision = self.factory.makeRevision()
-        product = self.factory.makeProduct()
-        source_package = self.factory.makeSourcePackage()
         # Make a cached revision of a revision in a junk branch.
         self.makeCachedRevision(revision)
         # Make the same revision appear in a product.
-        self.makeCachedRevision(revision, product=product)
+        self.makeCachedRevision(revision, product=self.factory.makeProduct())
         # And the same revision in a source package.
         self.makeCachedRevision(
-            revision, distroseries=source_package.distroseries,
-            sourcepackagename=source_package.sourcepackagename)
+            revision, package=self.factory.makeSourcePackage())
         cache = getUtility(IRevisionCache)
         self.assertEqual(1, cache.count())
 
@@ -121,6 +118,20 @@ class TestRevisionCache(TestCaseWithFactory):
         self.makeCachedRevision(product=self.factory.makeProduct())
         self.makeCachedRevision()
         revision_cache = getUtility(IRevisionCache).inProject(project)
+        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+
+    def test_in_source_package(self):
+        # Revisions associated with a particular source package are available
+        # using the inSourcePackage method.
+        sourcepackage = self.factory.makeSourcePackage()
+        rev1 = self.makeCachedRevision(package=sourcepackage)
+        rev2 = self.makeCachedRevision(package=sourcepackage)
+        # Make two other revisions, on in a different product, and another
+        # general one.
+        self.makeCachedRevision(package=self.factory.makeSourcePackage())
+        self.makeCachedRevision()
+        revision_cache = getUtility(IRevisionCache).inSourcePackage(
+            sourcepackage)
         self.assertRevisionsEqual([rev1, rev2], revision_cache)
         
         

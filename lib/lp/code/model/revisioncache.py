@@ -71,3 +71,9 @@ class GenericRevisionCollection:
         return self._filterBy(
             [RevisionCache.product == Product.id,
              Product.project == project])
+
+    def inSourcePackage(self, package):
+        """See `IRevisionCollection`."""
+        return self._filterBy(
+            [RevisionCache.distroseries == package.distroseries,
+             RevisionCache.sourcepackagename == package.sourcepackagename])
