@@ -31,10 +31,16 @@ class TestRevisionCache(TestCaseWithFactory):
         results = store.find(RevisionCache)
         self.assertEqual(0, results.count())
 
-    def makeCachedRevision(self):
+    def makeCachedRevision(self, revision=None, product=None,
+                           distroseries=None, sourcepackagename=None):
         # A factory method for RevisionCache objects.
-        revision = self.factory.makeRevision()
-        return RevisionCache(revision)
+        if revision is None:
+            revision = self.factory.makeRevision()
+        cached = RevisionCache(revision)
+        cached.product = product
+        cached.distroseries = distroseries
+        cached.sourcepackagename = sourcepackagename
+        return cached
 
     def test_simple_total_count(self):
         # Test that the count does in fact count the revisions we add.
@@ -42,6 +48,22 @@ class TestRevisionCache(TestCaseWithFactory):
             self.makeCachedRevision()
         cache = getUtility(IRevisionCache)
         self.assertEqual(4, cache.count())
+
+    def test_revision_in_multiple_namespaces_counted_once(self):
+        # A revision that is in multiple namespaces is only counted once.
+        revision = self.factory.makeRevision()
+        product = self.factory.makeProduct()
+        source_package = self.factory.makeSourcePackage()
+        # Make a cached revision of a revision in a junk branch.
+        self.makeCachedRevision(revision)
+        # Make the same revision appear in a product.
+        self.makeCachedRevision(revision, product=product)
+        # And the same revision in a source package.
+        self.makeCachedRevision(
+            revision, distroseries=source_package.distroseries,
+            sourcepackagename=source_package.sourcepackagename)
+        cache = getUtility(IRevisionCache)
+        self.assertEqual(1, cache.count())
 
 
 def test_suite():

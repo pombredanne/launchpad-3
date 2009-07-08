@@ -51,4 +51,6 @@ class GenericRevisionCollection:
         """See `IRevisionCollection`."""
         expressions = [RevisionCache.revision == Revision.id]
         expressions.extend(self._filter_expressions)
-        return self.store.find(Revision, expressions)
+        result_set = self.store.find(Revision, expressions)
+        result_set.config(distinct=True)
+        return result_set
