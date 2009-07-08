@@ -29,8 +29,7 @@
           define="series group/distroseries"
           condition="series/active">
         <tr>
-          <td class="section-heading" colspan="4"
-              >
+          <td class="section-heading" colspan="4">
             <tal:name replace="series/displayname">
               Karmic
             </tal:name> &mdash;

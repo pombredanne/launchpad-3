@@ -1416,7 +1416,7 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
         return branches
 
     def _getOfficialBranches(self):
-        """Get all the official branchs for the disro source package.
+        """Get all the official branches for the distro source package.
 
         Return a dict of distro series to a list of branches.
 
@@ -1504,7 +1504,7 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
 
     @cachedproperty
     def groups(self):
-        """Return a list of dicts containg series and branches.
+        """Return a list of dicts containing series and branches.
 
         The list is ordered so the most recent distro series is first.
 
@@ -1518,7 +1518,6 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
 
         The branches list will contain at most five branches.  If there are
         non-official branches associated with the distroseries, then there
-
         will always be some non-official branches shown in the summary even if
         there are five different official branches (for the different
         pockets).
