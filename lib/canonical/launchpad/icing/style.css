@@ -1778,6 +1778,12 @@ a.update-retry {
     padding-left: 1em;
 }
 
+/* Brand the related PPA versions with the PPA icon (not currently
+   in the sprite image.) */
+div#related-ppa-versions {
+    padding:8px 0 8px 32px;
+    background:url('/@@/ppa-large') 0 0 no-repeat;
+}
 dl#ppa_packaging dd {
     margin-left: 16px;
 }
