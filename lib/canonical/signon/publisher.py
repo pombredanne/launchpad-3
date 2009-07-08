@@ -15,7 +15,6 @@ from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
     AccountPrincipalMixin, LaunchpadBrowserRequest,
     VirtualHostRequestPublicationFactory)
-from canonical.launchpad.webapp.vhosts import allvhosts
 
 from canonical.signon.interfaces.openidserver import IOpenIDApplication
 from canonical.signon.layers import (

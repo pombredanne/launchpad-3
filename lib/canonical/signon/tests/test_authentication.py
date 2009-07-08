@@ -6,8 +6,6 @@ __metaclass__ = type
 
 import unittest
 
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
-
 from canonical.config import config
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import login
