@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """View classes for `IProductSeries`."""
 
 __metaclass__ = type
@@ -378,10 +378,9 @@ class ProductSeriesTranslationsExportView(BaseExportView):
 
     def getDefaultFormat(self):
         """Return the default template format."""
-        templates = self.context.getCurrentTranslationTemplates()
-        if not bool(templates.any()):
-            return None
-        return templates[0].source_file_format
+        for template in self.context.getCurrentTranslationTemplates():
+            return template.source_file_format
+        return None
 
 
 def get_series_branch_error(product, branch):
@@ -413,10 +412,6 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin,
         """See `LaunchpadFormView`."""
         self.form = self.request.form
         self.has_errors = False
-
-        # Whether there is more than one PO template.
-        self.has_multiple_templates = (
-            self.context.getCurrentTranslationTemplates().count() > 1)
 
         # Let's find out what source package is associated with this
         # productseries in the current release of ubuntu.

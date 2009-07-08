@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Browser views for sourcepackages."""
 
@@ -124,7 +124,7 @@ class SourcePackageTranslationsMenu(NavigationMenu):
     @enabled_with_permission('launchpad.ExpensiveRequest')
     def translationdownload(self):
         text = 'Download'
-        enabled = bool(self.context.getCurrentTranslationTemplates().any())
+        enabled = self.context.has_current_translation_templates
         return Link('+export', text, icon='download', enabled=enabled)
 
     def overview(self):

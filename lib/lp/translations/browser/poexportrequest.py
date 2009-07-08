@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """View class for requesting translation exports."""
 
@@ -24,7 +24,7 @@ class BaseExportView(LaunchpadView):
 
     @cachedproperty
     def uses_translations(self):
-        return bool(self.context.getCurrentTranslationTemplates().any())
+        return self.context.has_current_translation_templates
 
     def getDefaultFormat(self):
         """Overridable: default file format to offer."""

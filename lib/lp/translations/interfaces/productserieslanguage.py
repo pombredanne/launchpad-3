@@ -42,10 +42,6 @@ class IProductSeriesLanguage(IRosettaStats):
         "language. This includes only the real pofiles where translations "
         "exist.")
 
-    pofiles_or_dummies = Attribute(
-        "Return a full complement of po files and dummy pofiles, one for "
-        "each PO Template in the series.")
-
 
 class IProductSeriesLanguageSet(Interface):
     """The set of productserieslanguages."""

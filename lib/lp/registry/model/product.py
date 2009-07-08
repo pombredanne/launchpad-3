@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -163,8 +163,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin, OfficialBugTagTargetMixin,
-              HasBranchesMixin, HasMergeProposalsMixin):
+              HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
+              HasMergeProposalsMixin):
 
     """A Product."""
 
@@ -684,10 +684,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def translatable_packages(self):
         """See `IProduct`."""
-        packages = set(package for package in self.sourcepackages
-                       if bool(
-                           package.getCurrentTranslationTemplates().any())
-                       )
+        packages = set(
+            package
+            for package in self.sourcepackages
+            if package.has_current_translation_templates)
+
         # Sort packages by distroseries.name and package.name
         return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 
@@ -695,8 +696,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def translatable_series(self):
         """See `IProduct`."""
         translatable_product_series = set(
-            product_series for product_series in self.serieses
-            if bool(product_series.getCurrentTranslationTemplates().any()))
+            product_series
+            for product_series in self.serieses
+            if product_series.has_current_translation_templates)
         return sorted(
             translatable_product_series,
             key=operator.attrgetter('datecreated'))

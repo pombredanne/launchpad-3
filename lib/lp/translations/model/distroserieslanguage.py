@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0231
 
 """An implementation of DistroSeriesLanguage objects."""
@@ -65,24 +65,9 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
             prejoins=["potemplate.sourcepackagename"],
             orderBy=['-POTemplate.priority', 'POFile.id'])
 
-    @property
-    def po_files_or_dummies(self):
-        """See IDistroSeriesLanguage."""
-        pofiles = list(self.pofiles)
-        # Note that only self.pofiles actually prejoins anything in;
-        # this means that we issue additional queries for
-        # SourcePackageName for every DummyPOFile when displaying the
-        # list of templates per distribution series.
-        translated_pots = set(pofile.potemplate for pofile in pofiles)
-        all_pots = set(self.distroseries.getCurrentTranslationTemplates())
-        untranslated_pots = all_pots - translated_pots
-        dummies = [DummyPOFile(pot, self.language)
-                   for pot in untranslated_pots]
-
-        return sorted(pofiles + dummies,
-                      key=lambda x: (-x.potemplate.priority,
-                                     x.potemplate.name,
-                                     x.potemplate.id))
+    def getPOFilesFor(self, potemplates):
+        """See `IDistroSeriesLanguage`."""
+        return self.distroseries.getPOFilesFor(potemplates, self.language)
 
     @property
     def translators(self):
@@ -158,6 +143,9 @@ class DummyDistroSeriesLanguage(RosettaStats):
     def __init__(self, distroseries, language):
         assert 'en' != language.code, (
             'English is not a translatable language.')
+
+        super(DummyDistroSeriesLanguage, self).__init__()
+
         self.id = None
         self.language = language
         self.distroseries = distroseries
@@ -172,18 +160,16 @@ class DummyDistroSeriesLanguage(RosettaStats):
 
     @property
     def pofiles(self):
-        """We need to pretend that we have pofiles, so we will use
-        DummyPOFile's."""
-        pofiles = []
-        for potemplate in self.distroseries.getCurrentTranslationTemplates():
-            pofiles.append(DummyPOFile(potemplate, self.language))
-        return pofiles
+        """See `IDistroSeriesLanguage`."""
+        templates = self.distroseries.getCurrentTranslationTemplates()
+        language = self.language
+        return [DummyPOFile(template, language) for template in templates]
 
-    @property
-    def po_files_or_dummies(self):
-        """In this case they are all dummy pofiles since we are a dummy
-        ourselves."""
-        return self.pofiles
+    def getPOFilesFor(self, potemplates):
+        """See `IDistroSeriesLanguage`."""
+        templates = list(potemplates)
+        language = self.language
+        return [DummyPOFile(template, language) for template in templates]
 
     def currentCount(self, language=None):
         return 0
