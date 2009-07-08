@@ -545,9 +545,19 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             dbuser=self.script_name.replace('-','_'),
             test_args=test_args)
 
+    def add_my_options(self):
+        self.parser.add_option("-x", "--experimental", dest="experimental",
+            default=False, action="store_true",
+            help="Run experimental jobs. Normally this is just for staging.")
+
     def main(self):
         failure_count = 0
-        for tunable_loop in self.tunable_loops:
+        if self.options.experimental:
+            tunable_loops = (
+                self.tunable_loops + self.experimental_tunable_loops)
+        else:
+            tunable_loops = self.tunable_loops
+        for tunable_loop in tunable_loops:
             self.logger.info("Running %s" % tunable_loop.__name__)
             tunable_loop = tunable_loop(log=self.logger)
             if self._maximum_chunk_size is not None:
@@ -576,6 +586,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
         ]
+    experimental_tunable_loops = []
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -586,6 +597,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         HWSubmissionEmailLinker,
         MailingListSubscriptionPruner,
         ]
-    tunable_loops = [
+    experimental_tunable_loops = [
         PersonPruner,
         ]

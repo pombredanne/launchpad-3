@@ -65,16 +65,16 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.runHourly()
 
-    def runDaily(self, maximum_chunk_size=2):
+    def runDaily(self, maximum_chunk_size=2, test_args=[]):
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
-        collector = DailyDatabaseGarbageCollector(test_args=[])
+        collector = DailyDatabaseGarbageCollector(test_args=test_args)
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
 
-    def runHourly(self, maximum_chunk_size=2):
+    def runHourly(self, maximum_chunk_size=2, test_args=[]):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
-        collector = HourlyDatabaseGarbageCollector(test_args=[])
+        collector = HourlyDatabaseGarbageCollector(test_args=test_args)
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
@@ -366,7 +366,7 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.assertEqual(mailing_list.getSubscription(person), None)
 
-    def test_DeleteUnlinkedPersonEntries(self):
+    def test_PersonPruner(self):
         personset = getUtility(IPersonSet)
         # Switch the DB user because the garbo_daily user isn't allowed to
         # create person entries.
@@ -382,9 +382,17 @@ class TestGarbo(TestCaseWithFactory):
             2008, 01, 01, tzinfo=UTC)
         transaction.commit()
 
-        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        # Normally, the garbage collector will do nothing because the
+        # PersonPruner is experimental
         self.runDaily()
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-new'), None)
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-old'), None)
 
+        # When we run the garbage collector with experimental jobs turned
+        # on, the old unlinked Person is removed.
+        self.runDaily(test_args=['--experimental'])
         self.assertIsNot(
             personset.getByName('test-unlinked-person-new'), None)
         self.assertIs(personset.getByName('test-unlinked-person-old'), None)
