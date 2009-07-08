@@ -1,9 +1,8 @@
 = Merging Teams =
 
-There's a separate page for merging teams.  In the case of teams,
-though, we can't merge teams with active members, so the user will first
-have to confirm that the members should be deactivated before the teams
-are merged.
+There's a separate page for merging teams.  We can't merge teams with
+active members, so the user will first have to confirm that the
+members should be deactivated before the teams are merged.
 
     >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
     >>> admin_browser.getControl('Duplicated Team').value = (
@@ -91,4 +90,3 @@ Nor can we merge a person into a team or a team into a person.
     # admins and they're supposed to know what they're doing.
     >>> print get_feedback_messages(admin_browser.contents)
     [u'There is 1 error.', u'Constraint not satisfied']
-

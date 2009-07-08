@@ -14,7 +14,6 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -49,9 +48,6 @@ class BugSubscriptionAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
-
-    def validate_widgets(self, data, names=None):
-        super(BugSubscriptionAddView, self).validate_widgets(data, names)
 
 
 class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
