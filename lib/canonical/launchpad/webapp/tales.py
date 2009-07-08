@@ -32,13 +32,17 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IDistribution, IFAQSet,
-    IProduct, IProject, IDistributionSourcePackage, ISprint, LicenseStatus,
-    NotFoundError)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, NotFoundError)
+from lp.answers.interfaces.faq import IFAQSet
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.bugs.interfaces.bug import IBug, IBugSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from lp.registry.interfaces.product import IProduct, LicenseStatus
+from lp.registry.interfaces.project import IProject
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
@@ -2690,8 +2694,7 @@ class FormattersAPI:
                 person_formatter = PersonFormatterAPI(person)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
-                    address,
-                    '<a href="%s" class="%s">&nbsp;%s</a>' % (
+                    address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
                         canonical_url(person), css_sprite, address))
 
         return text
@@ -2849,6 +2852,7 @@ class PageMacroDispatcher:
     implements(ITraversable)
 
     master = ViewPageTemplateFile('../templates/main-template.pt')
+    base = ViewPageTemplateFile('../../../lp/app/templates/base-layout.pt')
 
     def __init__(self, context):
         # The context of this object is a view object.
@@ -2882,7 +2886,7 @@ class PageMacroDispatcher:
         if pagetype not in self._pagetypes:
             raise TraversalError('unknown pagetype: %s' % pagetype)
         self.context.__pagetype__ = pagetype
-        return self.master.macros['master']
+        return self._template.macros['master']
 
     def haspage(self, layoutelement):
         pagetype = getattr(self.context, '__pagetype__', None)
@@ -2935,7 +2939,6 @@ class PageMacroDispatcher:
                 portlets=True,
                 navigationtabs=True),
         'onecolumn':
-            # XXX 20080130 mpt: Should eventually become the new 'default'.
             LayoutElements(
                 actionsmenu=False,
                 applicationborder=True,
@@ -2970,4 +2973,48 @@ class PageMacroDispatcher:
                 portlets=False),
        'freeform':
             LayoutElements(),
+       'main_side':
+            LayoutElements(
+                actionsmenu=False,
+                applicationborder=False,
+                applicationtabs=True,
+                globalsearch=True,
+                heading=False,
+                pageheading=False,
+                portlets=True),
+       'main_only':
+            LayoutElements(
+                actionsmenu=False,
+                applicationborder=False,
+                applicationtabs=True,
+                globalsearch=True,
+                heading=False,
+                pageheading=False,
+                portlets=False),
+       'searchless':
+            LayoutElements(
+                actionsmenu=False,
+                applicationborder=False,
+                applicationtabs=True,
+                globalsearch=False,
+                heading=False,
+                pageheading=False,
+                portlets=False),
+       'locationless':
+            LayoutElements(),
         }
+
+    _3_0_pagetypes = [
+        'main_side',
+        'main_only',
+        'searchless',
+        'locationless',
+        ]
+
+    @property
+    def _template(self):
+        """Return the ViewPageTemplateFile used by layout."""
+        if self.context.__pagetype__ in self._3_0_pagetypes:
+            return self.base
+        else:
+            return self.master
