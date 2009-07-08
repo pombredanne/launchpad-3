@@ -84,3 +84,17 @@ class GenericRevisionCollection:
         return self._filterBy(
             [DistroSeries.distribution == distribution,
              RevisionCache.distroseries == DistroSeries.id])
+
+    def inDistroSeries(self, distro_series):
+        """See `IRevisionCollection`."""
+        return self._filterBy(
+            [RevisionCache.distroseries == distro_series])
+
+    def inDistributionSourcePackage(self, distro_source_package):
+        """Restrict to branches in a 'package' for a 'distribution'."""
+        distribution = distro_source_package.distribution
+        sourcepackagename = distro_source_package.sourcepackagename
+        return self._filterBy(
+            [DistroSeries.distribution == distribution,
+             RevisionCache.distroseries == DistroSeries.id,
+             RevisionCache.sourcepackagename == sourcepackagename])

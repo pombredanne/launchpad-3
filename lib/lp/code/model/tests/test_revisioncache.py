@@ -155,8 +155,66 @@ class TestRevisionCache(TestCaseWithFactory):
         revision_cache = getUtility(IRevisionCache).inDistribution(distro)
         self.assertRevisionsEqual([rev1, rev2], revision_cache)
 
+    def test_in_distro_series(self):
+        # Check that inDistroSeries limits the revisions to those in the
+        # distroseries specified.
+        distroseries1 = self.factory.makeDistroRelease()
+        distro = distroseries1.distribution
+        distroseries2 = self.factory.makeDistroRelease(distribution=distro)
+        # Two revisions associated with sourcepackages in the distro series we
+        # care about.
+        rev1 = self.makeCachedRevision(
+            package=self.factory.makeSourcePackage(
+                distroseries=distroseries1))
+        rev2 = self.makeCachedRevision(
+            package=self.factory.makeSourcePackage(
+                distroseries=distroseries1))
+        # Make some other revisions.  Same distro, different series.
+        self.makeCachedRevision(
+            package=self.factory.makeSourcePackage(
+                distroseries=distroseries2))
+        # Different distro source package revision.
+        self.makeCachedRevision(package=self.factory.makeSourcePackage())
+        # Some other revision.
+        self.makeCachedRevision()
+        revision_cache = getUtility(IRevisionCache).inDistroSeries(
+            distroseries1)
+        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+
+    def test_in_distribution_source_package(self):
+        # Check that inDistributionSourcePackage limits to revisions in
+        # different distro series for the same source package name.
+        distroseries1 = self.factory.makeDistroRelease()
+        distro = distroseries1.distribution
+        distroseries2 = self.factory.makeDistroRelease(distribution=distro)
+        # Two revisions associated with the same sourcepackagename in the
+        # distro series we care about.
+        sourcepackagename = self.factory.makeSourcePackageName()
+        rev1 = self.makeCachedRevision(
+            package=self.factory.makeSourcePackage(
+                distroseries=distroseries1,
+                sourcepackagename=sourcepackagename))
+        rev2 = self.makeCachedRevision(
+            package=self.factory.makeSourcePackage(
+                distroseries=distroseries2,
+                sourcepackagename=sourcepackagename))
+        # Make some other revisions.  Same distroseries, different source
+        # package.
+        self.makeCachedRevision(
+            package=self.factory.makeSourcePackage(
+                distroseries=distroseries1))
+        # Different distro source package revision.
+        self.makeCachedRevision(package=self.factory.makeSourcePackage())
+        # Some other revision.
+        self.makeCachedRevision()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distro, sourcepackagename=sourcepackagename)
+        revision_cache = getUtility(IRevisionCache)
+        revision_cache = revision_cache.inDistributionSourcePackage(dsp)
+        self.assertRevisionsEqual([rev1, rev2], revision_cache)
 
 
+        
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 
