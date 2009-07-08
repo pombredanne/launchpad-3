@@ -29,6 +29,9 @@ class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
         """Return the `IOpenIDApplication`."""
         return getUtility(IOpenIDApplication)
 
+    def maybeNotifyReadOnlyMode(self, request):
+        """SSO doesn't care about read-only mode."""
+        pass
 
 class IdBrowserRequest(LaunchpadBrowserRequest):
     implements(IdLayer)
