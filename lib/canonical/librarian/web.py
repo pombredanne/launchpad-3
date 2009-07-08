@@ -7,6 +7,10 @@ from datetime import datetime
 import time
 
 from twisted.web import resource, static, util, server, proxy
+try:
+    NoResource = resource.NoResource
+except AttributeError:
+    from twisted.web.error import NoResource
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
@@ -26,7 +30,7 @@ defaultResource = static.Data("""
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
-fourOhFour = resource.NoResource('No such resource')
+fourOhFour = NoResource('No such resource')
 
 
 class NotFound(Exception):
