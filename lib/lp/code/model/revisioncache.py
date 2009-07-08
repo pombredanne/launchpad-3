@@ -59,3 +59,8 @@ class GenericRevisionCollection:
         """See `IRevisionCollection`."""
         return self._filterBy(
             [RevisionCache.private == False])
+
+    def inProduct(self, product):
+        """See `IRevisionCollection`."""
+        return self._filterBy(
+            [RevisionCache.product == product])

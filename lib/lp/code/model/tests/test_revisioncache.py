@@ -42,7 +42,7 @@ class TestRevisionCache(TestCaseWithFactory):
         cached.distroseries = distroseries
         cached.sourcepackagename = sourcepackagename
         cached.private = private
-        return cached
+        return revision
 
     def test_simple_total_count(self):
         # Test that the count does in fact count the revisions we add.
@@ -67,6 +67,13 @@ class TestRevisionCache(TestCaseWithFactory):
         cache = getUtility(IRevisionCache)
         self.assertEqual(1, cache.count())
 
+    def assertRevisionsEqual(self, expected_revisions, revision_collection):
+        # Check that the revisions returned from the revision collection match
+        # the expected revisions.
+        self.assertEqual(
+            sorted(expected_revisions),
+            sorted(revision_collection.getRevisions()))
+
     def test_private_revisions(self):
         # Private flags are honour.ed when only requesting public revisions.
         # If a revision is in both public and private branches, then there are
@@ -77,7 +84,7 @@ class TestRevisionCache(TestCaseWithFactory):
         self.makeCachedRevision(revision, private=False)
         self.makeCachedRevision(revision, private=True)
         # Make a random public cached revision.
-        public_revision = self.makeCachedRevision().revision
+        public_revision = self.makeCachedRevision()
         # Make a private cached revision.
         self.makeCachedRevision(private=True)
 
@@ -86,9 +93,20 @@ class TestRevisionCache(TestCaseWithFactory):
         self.assertEqual(3, cache.count())
         # Limiting to public revisions does not get the private revisions.
         self.assertEqual(2, cache.public().count())
-        self.assertEqual(
-            sorted([revision, public_revision]),
-            sorted(cache.public().getRevisions()))
+        self.assertRevisionsEqual([revision, public_revision], cache.public())
+
+    def test_in_product(self):
+        # Revisions in a particular product can be restricted using the
+        # inProduct method.
+        product = self.factory.makeProduct()
+        rev1 = self.makeCachedRevision(product=product)
+        rev2 = self.makeCachedRevision(product=product)
+        # Make two other revisions, on in a different product, and another
+        # general one.
+        self.makeCachedRevision(product=self.factory.makeProduct())
+        self.makeCachedRevision()
+        revision_cache = getUtility(IRevisionCache).inProduct(product)
+        self.assertRevisionsEqual([rev1, rev2], revision_cache)
 
 
 def test_suite():
