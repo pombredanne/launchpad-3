@@ -34,6 +34,7 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
 from lp.registry.model.mailinglist import MailingListSubscription
+from lp.registry.model.person import Person
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -410,23 +411,27 @@ class MailingListSubscriptionPruner(TunableLoop):
         transaction.commit()
 
 
-class DeleteUnlinkedPersonEntries(TunableLoop):
+class PersonPruner(TunableLoop):
 
     maximum_chunk_size = 1000
 
     def __init__(self, log):
-        super(DeleteUnlinkedPersonEntries, self).__init__(log)
+        super(PersonPruner, self).__init__(log)
         self.offset = 0
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(Person)
+        self.log.debug("Creating LinkedPeople temporary table.")
         self.store.execute(
             "CREATE TEMPORARY TABLE LinkedPeople(person integer primary key)")
         # Prefill with Person entries created after our OpenID provider
         # started creating personless accounts on signup.
+        self.log.debug(
+            "Populating LinkedPeople with post-OpenID created Person.")
         self.store.execute("""
             INSERT INTO LinkedPeople
             SELECT id FROM Person
             WHERE datecreated > '2009-04-01'
             """)
+        transaction.commit()
         for (from_table, from_column, to_table, to_column, uflag, dflag) in (
                 postgresql.listReferences(cursor(), 'person', 'id')):
             # Skip things that don't link to Person.id or that link to it from
@@ -435,28 +440,46 @@ class DeleteUnlinkedPersonEntries(TunableLoop):
             if (to_table != 'person' or to_column != 'id'
                 or from_table in ('teamparticipation', 'emailaddress')):
                 continue
+            self.log.debug(
+                "Populating LinkedPeople from %s.%s"
+                % (from_table, from_column))
             self.store.execute("""
                 INSERT INTO LinkedPeople
-                SELECT %(from_column)s AS person
+                SELECT DISTINCT %(from_column)s AS person
                 FROM %(from_table)s
                 WHERE %(from_column)s IS NOT NULL
-                EXCEPT
+                EXCEPT ALL
                 SELECT person FROM LinkedPeople
                 """ % dict(from_table=from_table, from_column=from_column))
+            transaction.commit()
 
+        self.log.debug("Creating UnlinkedPeople temporary table.")
         self.store.execute("""
             CREATE TEMPORARY TABLE UnlinkedPeople(
                 id serial primary key, person integer);
-            INSERT INTO UnlinkedPeople(person)
-                (SELECT id FROM Person
-                 WHERE teamowner IS NULL
-                    AND id NOT IN (SELECT person FROM LinkedPeople));
+            """)
+        self.log.debug("Populating UnlinkedPeople.")
+        self.store.execute("""
+            INSERT INTO UnlinkedPeople (person) (
+                SELECT id AS person FROM Person
+                WHERE teamowner IS NULL
+                EXCEPT ALL
+                SELECT person FROM LinkedPeople);
+            """)
+        transaction.commit()
+        self.log.debug("Indexing UnlinkedPeople.")
+        self.store.execute("""
             CREATE UNIQUE INDEX unlinkedpeople__person__idx ON
                 UnlinkedPeople(person);
+            """)
+        self.log.debug("Analyzing UnlinkedPeople.")
+        self.store.execute("""
             ANALYZE UnlinkedPeople;
             """)
+        self.log.debug("Counting UnlinkedPeople.")
         self.max_offset = self.store.execute(
             "SELECT MAX(id) FROM UnlinkedPeople").get_one()[0]
+        self.log.info("%d Person records to remove.")
         # Don't keep any locks open - we might block.
         transaction.commit()
 
@@ -499,8 +522,8 @@ class DeleteUnlinkedPersonEntries(TunableLoop):
             # during the run. It is unlikely to occur, so just ignore it again.
             # Everything will clear up next run.
             transaction.abort()
-            self.log.debug(
-                "Failed to delete %d unlinked people. Try again next time."
+            self.log.warning(
+                "Failed to delete %d Person records. Left for next time."
                 % chunk_size)
 
 
@@ -564,5 +587,5 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         MailingListSubscriptionPruner,
         ]
     tunable_loops = [
-        DeleteUnlinkedPersonEntries,
+        PersonPruner,
         ]
