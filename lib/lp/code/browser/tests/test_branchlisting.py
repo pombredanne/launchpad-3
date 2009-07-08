@@ -104,17 +104,17 @@ class TestSourcePackageBranchesView(TestCaseWithFactory):
         request = LaunchpadTestRequest()
         view = SourcePackageBranchesView(packages["2.0"], request)
         self.assertEqual(
-            [dict(series_name=packages["3.0"].distroseries.name,
+            [dict(series_name=packages["3.0"].distroseries.displayname,
                   package=packages["3.0"], linked=True,
                   num_branches='0 branches',
                   dev_focus_css='sourcepackage-dev-focus',
                   ),
-             dict(series_name=packages["2.0"].distroseries.name,
+             dict(series_name=packages["2.0"].distroseries.displayname,
                   package=packages["2.0"], linked=False,
                   num_branches='0 branches',
                   dev_focus_css='sourcepackage-not-dev-focus',
                   ),
-             dict(series_name=packages["1.0"].distroseries.name,
+             dict(series_name=packages["1.0"].distroseries.displayname,
                   package=packages["1.0"], linked=True,
                   num_branches='0 branches',
                   dev_focus_css='sourcepackage-not-dev-focus',
