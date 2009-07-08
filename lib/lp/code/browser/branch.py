@@ -267,7 +267,7 @@ class BranchContextMenu(ContextMenu):
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
     def link_bug(self):
-        if self.context.related_bugs:
+        if self.context.linked_bugs:
             text = 'Link to another bug report'
         else:
             text = 'Link to a bug report'

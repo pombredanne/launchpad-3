@@ -80,14 +80,14 @@
   <h2>Bugs</h2>
 
   <div id="bug-links">
-  <tal:has-bugs condition="context/related_bugs">
-    <div tal:repeat="bug context/related_bugs" class="indented">
+  <tal:has-bugs condition="context/linked_bugs">
+    <div tal:repeat="bug context/linked_bugs" class="indented">
       <img src="/@@/bug" alt="" />
       <a tal:attributes="href bug/fmt:url"
          tal:content="bug/title" />
     </div>
   </tal:has-bugs>
-  <tal:has-bugs condition="not: context/related_bugs">
+  <tal:has-bugs condition="not: context/linked_bugs">
     <p>This branch is not associated with any bugs at this time.</p>
   </tal:has-bugs>
   </div>

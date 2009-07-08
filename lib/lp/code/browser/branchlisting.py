@@ -97,7 +97,7 @@ class BranchBadges(HasBadgeBase):
     def isBugBadgeVisible(self):
         """Show a bug badge if the branch is linked to bugs."""
         # Only show the badge if at least one bug is visible by the user.
-        for bug in self.context.related_bugs:
+        for bug in self.context.linked_bugs:
             # Stop on the first visible one.
             if check_permission('launchpad.View', bug):
                 return True

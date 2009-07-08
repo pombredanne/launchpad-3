@@ -555,10 +555,6 @@ class IBranch(IHasOwner, IHasBranchTarget):
         :param user: IPerson unlinking the bug.
         """
 
-    related_bugs = Attribute(
-        "The bugs related to this branch, likely branches on which "
-        "some work has been done to fix this bug.")
-
     # Specification attributes
     spec_links = exported(
         CollectionField(

@@ -354,7 +354,6 @@
                     linked_bugs
                     linkBug
                     unlinkBug
-                    related_bugs
                     spec_links
                     linkSpecification
                     unlinkSpecification
