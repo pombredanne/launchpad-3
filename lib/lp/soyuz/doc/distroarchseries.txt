@@ -368,9 +368,8 @@ using an optional arch_tag and return a list of their IDs.
     ...     factory.makeDistroArchSeries(architecturetag='i986'),
     ...     factory.makeDistroArchSeries(architecturetag='powerpc'),
     ... ]
-    >>> from lp.soyuz.interfaces.distroarchseries import (
-    ...     IDistroArchSeriesSet)
-    >>> distroarchseries_set = getUtility(IDistroArchSeriesSet)
+    >>> from lp.soyuz.model.distroarchseries import DistroArchSeriesSet
+    >>> distroarchseries_set = DistroArchSeriesSet()
 
     >>> arch_ids = distroarchseries_set.getIdsForArchitectures(architectures)
     >>> len(arch_ids)
