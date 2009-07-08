@@ -81,6 +81,14 @@ check: clean build
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
 
+jscheck: build
+	# Run all JavaScript integration tests.  The test runner takes care of
+	# setting up the test environment.
+	@echo
+	@echo "Running the JavaScript integration test suite"
+	@echo
+	${PY} utilities/test-all-windmills.py
+
 check_mailman: build
 	# Run all tests, including the Mailman integration
 	# tests. test_on_merge.py takes care of setting up the database.

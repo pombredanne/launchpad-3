@@ -653,6 +653,13 @@
         name="+branches"
         template="../templates/distributionsourcepackage-branches.pt"/>
     <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.code.browser.branchlisting.GroupedDistributionSourcePackageBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+code-index"
+        template="../templates/distributionsourcepackage-branches-grouped.pt"/>
+    <browser:page
         for="lp.registry.interfaces.project.IProject"
         class="lp.code.browser.branchlisting.ProjectBranchesView"
         facet="branches"
@@ -807,7 +814,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         layer="canonical.launchpad.layers.CodeLayer"
-        name="+branches"/>
+        name="+code-index"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"

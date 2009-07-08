@@ -227,7 +227,7 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        if self.context.bug.bug_branches.count() > 0:
+        if self.context.bug.linked_branches.count() > 0:
             text = 'Link another branch'
         else:
             text = 'Link a related branch'
