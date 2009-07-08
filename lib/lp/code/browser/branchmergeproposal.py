@@ -43,6 +43,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.browser.branch import DecoratedBug
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from lp.code.enums import (
@@ -400,7 +401,13 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         """Return whether or not the merge proposal has a linked bug or spec.
         """
         branch = self.context.source_branch
-        return branch.bug_branches or branch.spec_links
+        return branch.linked_bugs or branch.spec_links
+
+    @cachedproperty
+    def linked_bugs(self):
+        """Return DecoratedBugs linked to the source branch."""
+        branch = self.context.source_branch
+        return [DecoratedBug(bug, branch) for bug in branch.linked_bugs]
 
 
 class DecoratedCodeReviewVoteReference:

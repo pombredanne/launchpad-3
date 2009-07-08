@@ -385,10 +385,12 @@ class Branch(SQLBase):
         return bazaar_identity(
             self, self.associatedProductSeries(), is_dev_focus)
 
+    # TODO: remove this method.  Reviewer, don't let me land this without
+    # killing this method.
     @property
     def related_bugs(self):
         """See `IBranch`."""
-        return [bug_branch.bug for bug_branch in self.bug_branches]
+        return [bug for bug in self.linked_bugs]
 
     @property
     def warehouse_url(self):

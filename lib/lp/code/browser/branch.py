@@ -21,6 +21,7 @@ __all__ = [
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
+    'DecoratedBug',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
@@ -66,6 +67,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
+from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
 from lp.code.enums import BranchType, UICreatableBranchType
 from lp.code.interfaces.branch import (
@@ -290,6 +292,25 @@ class BranchContextMenu(ContextMenu):
         return Link('+edit-import', text, icon='edit', enabled=True)
 
 
+class DecoratedBug:
+    """Provide some additional attributes to a normal bug."""
+    delegates(IBug)
+
+    def __init__(self, context, branch):
+        self.context = context
+        self.branch = branch
+
+    @property
+    def bugtask(self):
+        """Return the bugtask for the branch project, or the default bugtask.
+        """
+        task = self.context.getBugTask(self.branch.target.context)
+        if task is None:
+            # Just choose the first task for the bug.
+            task = self.context.bugtasks[0]
+        return task
+
+
 class BranchView(LaunchpadView, FeedsMixin):
 
     __used_for__ = IBranch
@@ -445,6 +466,12 @@ class BranchView(LaunchpadView, FeedsMixin):
     def show_candidate_more_link(self):
         """Only show the link if there are more than five."""
         return len(self.landing_candidates) > 5
+
+    @cachedproperty
+    def linked_bugs(self):
+        """Return a list of DecoratedBugs linked to the branch."""
+        return [DecoratedBug(bug, self.context)
+            for bug in self.context.linked_bugs]
 
     @cachedproperty
     def latest_code_import_results(self):
