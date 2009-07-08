@@ -274,6 +274,11 @@ a[onclick], .collapsible legend a, a.js-action               {color: #093;}
 a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
 a.js-action:active {color: #093;}
 
+/* The js-action class is also used for non-links, for example, with
+ * expand/collapse sections. */
+.widget-hd.js-action {color: #093; cursor:pointer}
+.widget-hd.js-action:hover {text-decoration: underline;}
+
 /* Help links */
 a.help {
   border-bottom: 1px dotted #03a;
@@ -1584,6 +1589,15 @@ div#branch-description {
     margin-top: 1em;
 }
 
+/* Timeline Graph */
+div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
+  visibility: hidden;
+}
+
+div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
+  visibility: visible;
+}
+
 /* The top-most Person portlet, Contact Details, is allowed to float up and
 beside the mugshot. */
 #contact-details {clear: none;}
@@ -1764,20 +1778,18 @@ a.update-retry {
     padding-left: 1em;
 }
 
-/* Information about related PPAs presented in a box */
-.informational.ppa {
-    background: #FAFAFA;
-    border: solid #666;
-    border-width: 1px 2px 2px 1px;
-    color: black;
-    margin: 0 auto 10px auto;
-    padding: 0 10px 10px 20px;
-    width: 80%;
+dl#ppa_packaging dd {
+    margin-left: 16px;
 }
-.informational.ppa::before {
-    content: url(/@@/ppa-large);
+#related-ppa-versions .widget-bd {
+    margin-left: 2em;
+}
+/* Ensure that when we add the lazr-closed class via js that the
+ * slider body will not be visible. */
+#related-ppa-versions .widget-bd.lazr-closed {
+    height: 0px;
+    overflow: hidden;
     display: block;
-    margin: -15px 0 -6px -35px;
 }
 
 /* Archive subscription confirmation should be transparent
@@ -1914,6 +1926,10 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 
 body.tab-branches table.listing .section-heading {
   color: #d18b39;
+}
+
+body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead {
+  color: #666666;
 }
 
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }

@@ -23,14 +23,34 @@
     <!-- The test suite -->
     <script type="text/javascript"
       src="test_subscriber.js"></script>
+
+    <!-- Pretty up the sample html -->
+    <style type="text/css">
+      div#sample {margin:15px; width:200px; border:1px solid #999; padding:10px;}
+    </style>
   </head>
   <body class="yui-skin-sam">
     <!-- Example markup required by test suite -->
+  <div id="sample">
+    <div class="section">
+      <div class="subscribed-true dup-subscribed-false">
+          <a href="+subscribe"
+              class="menu-link-subscription sprite remove js-action">Unsubscribe
+          </a>
+      </div>
+      <div>
+        <a href="+addsubscriber"
+          class="menu-link-addsubscriber sprite add js-action">Subscribe
+          someone else
+        </a>
+      </div>
+    </div>
+
     <div class="section" id="subscribers-direct">
       <h2>Subscribers</h2>
       <div id="subscribers-links">
         <div class="subscriber-tester">
-          <a href="/%7Etester" name="JS Test User"
+          <a href="/~tester" name="JS Test User"
             title="Subscribed by Launchpad Janitor">
             <span class="sprite person"></span>
             JS Test User
@@ -43,9 +63,35 @@
               id="unsubscribe-icon-tester">
           </a>
         </div>
+
+        <div class="subscriber-some-team">
+          <a href="/~some-team" name="Some Team"
+            title="Subscribed by Launchpad Janitor">
+            <span class="sprite team"></span>
+            Some Team
+          </a>
+
+          <a href="+subscribe"
+            class="subscribed-true dup-subscribed-false"
+            id="unsubscribe-some-team" title="Unsubscribe Some Team">
+            <img class="unsub-icon" src="../../../images/remove.png"
+              id="unsubscribe-icon-some-team">
+          </a>
+        </div>
       </div>
     </div>
 
+    <div id="subscribers-from-duplicates" class="section">
+      <h2>From duplicates</h2>
+      <div class="subscriber-duper" id="dupe-subscriber-duper">
+         <a href="/~duper" name="Duper Dude"
+            title="Subscribed by JS Test User">
+              <span class="sprite person"></span>
+              Duper Dude
+            </a>
+      </div>
+    </div>
+  </div>
 
     <!-- The test output -->
     <div id="log"></div>

@@ -28,7 +28,7 @@ This takes us to the branch listing for that source package
 
     >>> browser.open(source_package_url)
     >>> print browser.title
-    Branches of foo in distro series
+    Branches of foo in distro Series
 
 Both of the branches we made appear in the listing.
 
@@ -64,9 +64,9 @@ distribution.
 
     >>> browser.open(distro_source_package_listing)
     >>> print_branches(browser)
-    lp://dev/~owner1/distro/series/foo/branch1 ...
     lp://dev/~owner1/distro/next/foo/branch3 ...
     lp://dev/~owner2/distro/series/foo/branch2 ...
+    lp://dev/~owner1/distro/series/foo/branch1 ...
 
 
 The code tab is enabled for distribution source packages.

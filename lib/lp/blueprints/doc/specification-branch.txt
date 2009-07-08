@@ -16,7 +16,7 @@ the Ubuntu media-integrity-check specifcation has a branch link:
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> spec = ubuntu.getSpecification('media-integrity-check')
 
-    >>> for branchlink in spec.branch_links:
+    >>> for branchlink in spec.linked_branches:
     ...     print branchlink.branch.unique_name
     ~name12/+junk/junk.dev
 
@@ -34,7 +34,7 @@ The branch link records the person who created the link as the registrant.
 
 Now the branch has two branch links:
 
-    >>> for branchlink in spec.branch_links:
+    >>> for branchlink in spec.linked_branches:
     ...     print branchlink.branch.unique_name
     ~name12/+junk/junk.dev
     ~name12/+junk/junk.contrib
@@ -57,6 +57,6 @@ Finally, the branch link can be removed using its destroySelf()
 method:
 
     >>> branchlink.destroySelf()
-    >>> for branchlink in spec.branch_links:
+    >>> for branchlink in spec.linked_branches:
     ...     print branchlink.branch.unique_name
     ~name12/+junk/junk.dev

@@ -17,7 +17,8 @@ The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistribution, IDistributionSet)
-    >>> from canonical.launchpad.interfaces import IHasTranslationImports
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     IHasTranslationImports)
     >>> distroset = getUtility(IDistributionSet)
 
 To retrieve a specific distribution, use IDistributionSet.get:

@@ -1,0 +1,49 @@
+People Merge Pages
+==================
+
+There are a number of views for merging people and teams.
+
+Team Merges
+-----------
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> login("foo.bar@canonical.com")
+
+A team (name21) can be merged into another (ubuntu-team).
+
+    >>> print person_set.getByName('name21').displayname
+    Hoary Gnome Team
+    >>> print person_set.getByName('ubuntu-team').displayname
+    Ubuntu Team
+
+    >>> form={'field.dupe_person' : 'name21',
+    ...       'field.target_person' : 'ubuntu-team',
+    ...       'field.actions.merge' : 'Merge'}
+    >>> view = create_initialized_view(
+    ...     person_set, '+adminteammerge',
+    ...     form=form)
+    >>> len(view.errors)
+    0
+
+The old team is now renamed but the target team remains.
+
+    >>> print person_set.getByName('name21')
+    None
+    >>> print person_set.getByName('ubuntu-team').displayname
+    Ubuntu Team
+
+Attempting to merge a non-existent team results in an error.
+
+    >>> form={'field.dupe_person' : 'not-a-real-team',
+    ...       'field.target_person' : 'another-fake-team',
+    ...       'field.actions.merge' : 'Merge'}
+    >>> view = create_initialized_view(
+    ...     person_set, '+adminteammerge',
+    ...     form=form)
+    >>> len(view.errors)
+    2
+    >>> for error in view.errors:
+    ...     print error[0]
+    Invalid value
+    Invalid value
