@@ -954,6 +954,43 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertFalse(tm1.is_current)
         self.assertFalse(tm1.is_imported)
 
+    def test_updateTranslation_SharedImportedToSharedImported(self):
+        # Corner case for bug #394224:
+        # Adding a shared and a diverged imported message "tm1" and "tm2".
+        # "tm1" is the current message.
+        # On importing "tm2" again, we need to make it shared while marking
+        # "tm1" to be not imported because two imported shared translations
+        # at the same time would trigger a database constraint.
+        tm1 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=True, force_shared=True)
+        tm2 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
+            is_imported=True, force_diverged=True)
+        tm2.is_current = False
+
+        self.assertEquals(None, tm1.potemplate)
+        self.assertEquals(self.pofile.potemplate, tm2.potemplate)
+
+        self.assertTrue(tm1.is_current)
+        self.assertFalse(tm2.is_current)
+
+        self.assertTrue(tm1.is_imported)
+        self.assertTrue(tm2.is_imported)
+
+        self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
+            is_imported=False)
+
+        self.assertEquals(None, tm1.potemplate)
+        self.assertEquals(None, tm2.potemplate)
+
+        self.assertFalse(tm1.is_current)
+        self.assertTrue(tm2.is_current)
+
+        self.assertFalse(tm1.is_imported)
+        self.assertTrue(tm2.is_imported)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
