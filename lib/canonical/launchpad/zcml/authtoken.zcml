@@ -6,13 +6,6 @@
 
 <facet facet="overview">
 
-    <!-- AuthToken -->
-    <class class="canonical.signon.model.authtoken.AuthToken">
-        <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IAuthToken" />
-    </class>
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IAuthToken"
         name="+index" />
@@ -55,17 +48,6 @@
         permission="zope.Public"
         template="../templates/logintoken-newaccount.pt"
         />
-
-    <!-- AuthTokenSet -->
-    <class class="canonical.signon.model.authtoken.AuthTokenSet">
-        <allow interface="canonical.launchpad.interfaces.IAuthTokenSet" />
-    </class>
-
-    <securedutility
-        class="canonical.signon.model.authtoken.AuthTokenSet"
-        provides="canonical.launchpad.interfaces.IAuthTokenSet">
-        <allow interface="canonical.launchpad.interfaces.IAuthTokenSet" />
-    </securedutility>
 
     <browser:navigation
         module="canonical.launchpad.browser.authtoken"
