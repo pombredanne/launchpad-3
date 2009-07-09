@@ -212,10 +212,10 @@
             <span tal:content="structure spec/image:icon" />
           </td>
           <td>
-            <a tal:content="spec/title/fmt:shorten/60"
+            <a tal:content="spec/title/fmt:shorten/100"
                tal:attributes="
                    href spec/fmt:url;
-                   title spec/name">Foo Bar Baz</a>
+                   title spec/summary/fmt:shorten/400">Foo Bar Baz</a>
             <img src="/@@/info" alt="Informational"
                  tal:condition="spec/informational" />
           </td>
