@@ -397,7 +397,7 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     @property
     def show_arch_selector(self):
-        """Display the architectur selector.
+        """Display the architecture selector.
 
         See `BuildRecordsView` for further details."""
         return True

@@ -20,6 +20,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin, ProxiedLibraryFileAlias)
+from canonical.lazr.utils import safe_hasattr
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
@@ -296,7 +297,7 @@ class BuildRecordsView(LaunchpadView):
         self.complete_builds = setupCompleteBuilds(
             self.batchnav.currentBatch())
 
-    @cachedproperty
+    @property
     def arch_tag(self):
         """Return the architecture tag from the request."""
         arch_tag = self.request.get('arch_tag', None)
@@ -310,7 +311,7 @@ class BuildRecordsView(LaunchpadView):
         """Return the architecture options for the context."""
         # Guard against contexts that cannot tell us the available
         # distroarchserieses.
-        if hasattr(self.context, 'architectures') is False:
+        if safe_hasattr(self.context, 'architectures') is False:
             return []
 
         # Grab all the architecture tags for the context.
@@ -319,8 +320,7 @@ class BuildRecordsView(LaunchpadView):
 
         # We cannot assume that the arch_tags will be distinct, so
         # create a distinct and sorted list:
-        arch_tags = list(set(arch_tags))
-        arch_tags.sort()
+        arch_tags = sorted(set(arch_tags))
 
         # Create the initial 'all architectures' option.
         if self.arch_tag is None:
