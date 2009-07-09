@@ -25,8 +25,7 @@ from canonical.database.sqlbase import StupidCache
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore,
-    IDatabasePolicy, IStoreSelector,
+    DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy, IStoreSelector,
     MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore, SLAVE_FLAVOR)
 from contrib.generationalcache import GenerationalCache
 
@@ -160,6 +159,8 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
     Selects the DEFAULT_FLAVOR based on the request.
     """
     def __init__(self, request):
+        # The super constructor is a no-op.
+        # pylint: disable-msg=W0231
         self.request = request
 
     def install(self):

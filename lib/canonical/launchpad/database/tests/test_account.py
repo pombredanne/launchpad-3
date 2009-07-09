@@ -12,11 +12,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, IAccountSet)
-from canonical.launchpad.interfaces.authtoken import (
-    IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
     IPerson, PersonCreationRationale)

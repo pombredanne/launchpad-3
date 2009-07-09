@@ -9,8 +9,6 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.testing import TestCaseWithFactory
-
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.webapp.interfaces import IStoreSelector

@@ -7,10 +7,7 @@ __all__ = []
 
 import unittest
 
-from zope.component import getAdapter, getUtility
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-
-from lazr.restful.interfaces import IWebServiceConfiguration
+from zope.component import getUtility
 
 from lp.testing import TestCase
 
