@@ -201,6 +201,29 @@ class TestPollingTaskSource(TestCase):
         deferred.callback('foo')
         self.assertEqual(['foo'], tasks_called)
 
+    def test_only_one_producer_call_at_once(self):
+        # If the task producer returns a Deferred, it will not be called again
+        # until that deferred has fired, even if takes longer than the
+        # 'interval'
+        tasks_called = []
+        produced_deferreds = []
+        def producer():
+            deferred = Deferred()
+            produced_deferreds.append(deferred)
+            return deferred
+        clock = Clock()
+        interval = self.factory.getUniqueInteger()
+        task_source = self.makeTaskSource(
+            task_producer=producer, interval=interval, clock=clock)
+        task_source.start(AppendingTaskConsumer(tasks_called))
+        # The call to start calls producer.  It returns a deferred which has
+        # not been fired.
+        self.assertEqual(len(produced_deferreds), 1)
+        # If 'interval' seconds passes and the deferred has still not fired
+        # the producer is not called again.
+        clock.advance(interval)
+        self.assertEqual(len(produced_deferreds), 1)
+
     def test_producer_errors_call_taskProductionFailed(self):
         # If the producer raises an error, then we call taskProductionFailed
         # on the task consumer.
