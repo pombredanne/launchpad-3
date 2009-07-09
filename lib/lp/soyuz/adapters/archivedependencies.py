@@ -160,16 +160,14 @@ def get_sources_list_for_building(build):
     sources_list_lines = _get_sources_list_for_dependencies(
         deps, build.distroarchseries)
 
-    # Append external sources_list lines if they exist.
-    extra_config_key = '%s_%s' % (
+    # Append external sources_list lines for this archive if it's
+    # specified in the configuration.
+    archive_config_key = 'ppa.%s_%s' % (
         build.archive.owner.name, build.archive.name)
-    # XXX cprov 2009-07-09: valid_name() allows '-', '+' and '.',
-    # they are all replaced by '_' which can possibly result in conflicts.
-    extra_config_key = re.sub('\+|\.|\-', '_', extra_config_key)
-    extra_config = getattr(config.ppa, extra_config_key, None)
-    if extra_config is not None:
-        for extra_dep in extra_config.dependencies.splitlines():
-            line = extra_dep % (
+    if archive_config_key in config:
+        archive_config = config[archive_config_key]
+        for archive_dep in archive_config.dependencies.splitlines():
+            line = archive_dep % (
                 {'series': build.distroarchseries.distroseries.name})
             sources_list_lines.append(line)
 

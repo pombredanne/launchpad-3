@@ -416,14 +416,9 @@ assigned to one or more 'external' build dependencies additionally to
 the internal ones.
 
 There is a configuration category called 'ppa' which can be extended
-for any hosted PPA. They are optional and to be used should be named
-as following:
+for any hosted PPA. They are named as following:
 
  [ppa.<owner_name>_<ppa_name>]
-
-Both, <owner_name> and <ppa_name> may contain '+', '-' and '.' and
-these characters should be replaced by '_' in the configuration
-section name.
 
 The 'ppa' categories contain the 'dependencies' field, which is a
 multi-line string listing the external dependencies in the debian
