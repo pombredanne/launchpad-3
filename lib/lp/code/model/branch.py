@@ -58,6 +58,7 @@ from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet)
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      InvalidBranchMergeProposal)
@@ -196,9 +197,25 @@ class Branch(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='branch', orderBy='id')
 
+    def linkBug(self, bug, registrant):
+        """See `IBranch`."""
+        return bug.linkBranch(self, registrant)
+
+    def unlinkBug(self, bug, user):
+        """See `IBranch`."""
+        return bug.unlinkBranch(self, user)
+
     spec_links = SQLMultipleJoin('SpecificationBranch',
         joinColumn='branch',
         orderBy='id')
+
+    def linkSpecification(self, spec, registrant):
+        """See `IBranch`."""
+        return spec.linkBranch(self, registrant)
+
+    def unlinkSpecification(self, spec, user):
+        """See `IBranch`."""
+        return spec.unlinkBranch(self, user)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_last_modified = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -978,6 +995,23 @@ class BranchSet:
             Desc(Branch.date_created), Desc(Branch.id))
         latest_branches.config(limit=quantity)
         return latest_branches
+
+    def getByUniqueName(self, unique_name):
+        """See `IBranchSet`."""
+        return getUtility(IBranchLookup).getByUniqueName(unique_name)
+
+    def getByUrl(self, url):
+        """See `IBranchSet`."""
+        return getUtility(IBranchLookup).getByUrl(url)
+
+    def getBranches(self, limit=50):
+        """See `IBranchSet`."""
+        anon_branches = getUtility(IAllBranches).visibleByUser(None)
+        branches = anon_branches.scanned().getBranches()
+        branches.order_by(
+            Desc(Branch.date_last_modified), Desc(Branch.id))
+        branches.config(limit=limit)
+        return branches
 
 
 class BranchCloud:

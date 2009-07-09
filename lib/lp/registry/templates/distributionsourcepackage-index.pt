@@ -103,7 +103,7 @@
     <div class="widget-bd">
       <p>The following <strong>unsupported</strong> and 
          <strong>untrusted</strong> Personal Archives (PPAs) provide
-         the most recently uploaded packages of
+         packages of
          '<span tal:replace="context/name" />':</p>
       <dl id="ppa_packaging">
         <tal:definition tal:repeat="ppa_version ppa_versions">

@@ -13,6 +13,7 @@ __all__ = [
 from datetime import datetime, timedelta
 from textwrap import dedent
 
+from storm.cache import Cache
 from storm.zope.interfaces import IZStorm
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
@@ -20,12 +21,14 @@ from zope.interface import implements, alsoProvides
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.config import config, dbconfig
+from canonical.database.sqlbase import StupidCache
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore,
     IDatabasePolicy, IStoreSelector,
     MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore, SLAVE_FLAVOR)
+from contrib.generationalcache import GenerationalCache
 
 
 def _now():
@@ -38,6 +41,18 @@ def _now():
 
 # Can be tweaked by the test suite to simulate replication lag.
 _test_lag = None
+
+
+def storm_cache_factory():
+    """Return a Storm Cache of the type and size specified in dbconfig."""
+    if dbconfig.storm_cache == 'generational':
+        return GenerationalCache(int(dbconfig.storm_cache_size))
+    elif dbconfig.storm_cache == 'stupid':
+        return StupidCache(int(dbconfig.storm_cache_size))
+    elif dbconfig.storm_cache == 'default':
+        return Cache(int(dbconfig.storm_cache_size))
+    else:
+        assert False, "Unknown storm_cache %s." % dbconfig.storm_cache
 
 
 class BaseDatabasePolicy:
@@ -61,15 +76,29 @@ class BaseDatabasePolicy:
 
         config_section = self.config_section or dbconfig.getSectionName()
 
+        store_name = '%s-%s-%s' % (config_section, name, flavor)
+        # XXX stub 2009-06-25 bug=392011: zstorm.get seems to be broken
+        # and does not return None if no Store is available. We have
+        # no way of knowing if the returned Store existed previously,
+        # which makes it difficult to do any post-instantiation setup.
         store = getUtility(IZStorm).get(
-            '%s-%s-%s' % (config_section, name, flavor),
-            'launchpad:%s-%s-%s' % (config_section, name, flavor))
+            store_name, 'launchpad:%s' % store_name)
+        if not getattr(store, '_lp_store_initialized', False):
+            # No existing Store. Create a new one and tweak its defaults.
 
-        # Attach our marker interfaces so our adapters don't lie.
-        if flavor == MASTER_FLAVOR:
-            alsoProvides(store, IMasterStore)
-        else:
-            alsoProvides(store, ISlaveStore)
+            # XXX stub 2009-06-25 bug=391996: The default Storm
+            # Cache is useless to a project like Launchpad. Because we
+            # are using ZStorm to manage our Stores there is no API
+            # available to change the default. Instead, we monkey patch.
+            store._cache = storm_cache_factory()
+
+            # Attach our marker interfaces so our adapters don't lie.
+            if flavor == MASTER_FLAVOR:
+                alsoProvides(store, IMasterStore)
+            else:
+                alsoProvides(store, ISlaveStore)
+
+            store._lp_store_initialized = True
 
         return store
 

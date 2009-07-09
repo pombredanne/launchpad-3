@@ -15,8 +15,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import classProvides, implements
 from zope.component import getUtility
 
-from storm.expr import And
-from storm.store import Store
+from storm.locals import And, Desc, In, Select, SQL, Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
@@ -30,9 +29,10 @@ from lp.soyuz.model.distributionsourcepackagerelease import (
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.potemplate import (
+from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate)
+from canonical.launchpad.interfaces import IStore
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.answers.model.question import (
@@ -41,13 +41,13 @@ from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranch)
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.packaging import PackagingType
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from lp.answers.interfaces.questioncollection import (
@@ -317,26 +317,22 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
         The results are ordered by descending version.
         """
-        query = """
-            SourcePackagePublishingHistory.distroseries = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.archive IN %s
-        """ % sqlvalues(self.distroseries, self.sourcepackagename,
-                        self.distribution.all_distro_archive_ids)
+        subselect = Select(
+            SourcePackageRelease.id, And(
+                SourcePackagePublishingHistory.distroseries ==
+                    self.distroseries,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id,
+                SourcePackageRelease.sourcepackagename ==
+                    self.sourcepackagename,
+                In(SourcePackagePublishingHistory.archiveID,
+                    self.distribution.all_distro_archive_ids)))
 
-        clauseTables = ['SourcePackagePublishingHistory']
-        order_const = "debversion_sort_key(SourcePackageRelease.version)"
-
-        # Selecting ordered distinct `SourcePackageReleases` requires us
-        # to 'selectAlso' the ordering index (the debversion_sort_key).
-        releases = SourcePackageRelease.select(
-            query, clauseTables=clauseTables,
-            distinct=True, selectAlso=order_const,
-            orderBy=[SQLConstant(order_const + " DESC")])
-
-        return releases
+        return IStore(SourcePackageRelease).find(
+            SourcePackageRelease,
+            In(SourcePackageRelease.id, subselect)
+            ).order_by(Desc(
+                SQL("debversion_sort_key(SourcePackageRelease.version)")))
 
     @property
     def name(self):

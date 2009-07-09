@@ -562,6 +562,8 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
+                    linkBranch
+                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -589,7 +591,7 @@
                     displayname
                     activity
                     initial_message
-                    bug_branches
+                    linked_branches
                     watches
                     cves
                     cve_links
@@ -642,8 +644,6 @@
                     findCvesInText
                     newMessage
                     linkMessage
-                    addBranch
-                    removeBranch
                     addAttachment
                     unsubscribeFromDupes
                     subscribe
