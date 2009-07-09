@@ -407,3 +407,57 @@ Similarly an extension of the BACKPORTS environment can be set.
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
+
+
+== External build dependencies ==
+
+Via a static configuration change, any PPA hosted in launchpad can be
+assigned to one or more 'external' build dependencies additionally to
+the internal ones.
+
+There is a configuration category called 'ppa' which can be extended
+for any hosted PPA. They are optional and to be used should be named
+as following:
+
+ [ppa.<owner_name>_<ppa_name>]
+
+Both, <owner_name> and <ppa_name> may contain '+', '-' and '.' and
+these characters should be replaced by '_' in the configuration
+section name.
+
+The 'ppa' categories contain the 'dependencies' field, which is a
+multi-line string listing the external dependencies in the debian
+sources_list format.
+
+ deb [user:pass@]<host>[/path] %(series)s[-pocket] [components]
+
+The '%(series)s' part is replaced on-the-fly with the series name for
+the build record being dispatched.
+
+We will create a configuration for Celso's PPA.
+
+    >>> from canonical.config import config
+    >>> cprov_deps = """
+    ... [ppa.cprov_ppa]
+    ... dependencies: deb user:pass@repository %(series)s public private
+    ...               deb user:pass@repository %(series)s-extra public private
+    ... """
+    >>> config.push('test_deps', cprov_deps)
+
+Configuration in place, now builds in Celso's PPA will use the
+external dependencies.
+
+    >>> print_building_sources_list(a_build)
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb user:pass@repository hoary public private
+    deb user:pass@repository hoary-extra public private
+
+Tests done, we can remove the extra configuration content we've added.
+
+    >>> unused = config.pop('test_deps')

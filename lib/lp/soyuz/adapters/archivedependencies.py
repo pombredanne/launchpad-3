@@ -35,7 +35,9 @@ __all__ = [
     'pocket_dependencies',
     ]
 
+import re
 
+from canonical.config import config
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, ALLOW_RELEASE_BUILDS)
 from lp.soyuz.interfaces.publishing import (
@@ -155,8 +157,23 @@ def get_sources_list_for_building(build):
              get_components_for_building(build))
             )
 
-    return _get_sources_list_for_dependencies(deps, build.distroarchseries)
+    sources_list_lines = _get_sources_list_for_dependencies(
+        deps, build.distroarchseries)
 
+    # Append external sources_list lines if they exist.
+    extra_config_key = '%s_%s' % (
+        build.archive.owner.name, build.archive.name)
+    # XXX cprov 2009-07-09: valid_name() allows '-', '+' and '.',
+    # they are all replaced by '_' which can possibly result in conflicts.
+    extra_config_key = re.sub('\+|\.|\-', '_', extra_config_key)
+    extra_config = getattr(config.ppa, extra_config_key, None)
+    if extra_config is not None:
+        for extra_dep in extra_config.dependencies.splitlines():
+            line = extra_dep % (
+                {'series': build.distroarchseries.distroseries.name})
+            sources_list_lines.append(line)
+
+    return sources_list_lines
 
 def _has_published_binaries(archive, distroarchseries, pocket):
     """Whether or not the archive dependency has published binaries."""
