@@ -304,12 +304,7 @@ class DecoratedBug:
     def bugtask(self):
         """Return the bugtask for the branch project, or the default bugtask.
         """
-        task = self.context.getBugTask(self.branch.target.context)
-        if task is None:
-            # Just choose the first task for the bug.
-            task = self.context.bugtasks[0]
-        return task
-
+        return self.branch.target.getBugTask(self.context)
 
 class BranchView(LaunchpadView, FeedsMixin):
 
