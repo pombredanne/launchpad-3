@@ -479,8 +479,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Create the extra permissions. We're making an extra team and
         # adding it to cprov's upload permission, plus name12.
         cprov = getUtility(IPersonSet).getByName("cprov")
-        email="contact@example.com"
-        name="Team"
+        email = "contact@example.com"
+        name = "Team"
         team = self.factory.makeTeam(email=email, displayname=name)
         name12 = getUtility(IPersonSet).getByName("name12")
         cprov.archive.newComponentUploader(name12, "main")
@@ -495,7 +495,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         team_email = "%s <%s>" % (team.displayname, team.preferredemail.email)
 
         # We expect the recipients to be:
-        #  - the package signer (name16),
+        #  - the package signer (name15),
         #  - the team in the extra permissions,
         #  - name12 who is in the extra permissions.
         expected_recipients = (
