@@ -17,7 +17,6 @@ from canonical.launchpad.interfaces.authtoken import (
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import IStoreSelector
-from canonical.signon.dbpolicy import SSODatabasePolicy
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
     IPerson, PersonCreationRationale)
@@ -165,28 +164,6 @@ class EmailManagementTests(TestCaseWithFactory):
             EmailAddressStatus.OLD)
         transaction.commit()
         self.assertContentEqual(account.guessed_emails, [new_email])
-
-
-class EmailManagementWithSSODatabasePolicyTests(EmailManagementTests):
-    """Test email management interfaces for `IAccount` with SSO db policy."""
-
-    def setUp(self):
-        # Configure database policy to match single sign on server.
-        super(EmailManagementWithSSODatabasePolicyTests, self).setUp()
-        getUtility(IStoreSelector).push(SSODatabasePolicy())
-
-    def tearDown(self):
-        getUtility(IStoreSelector).pop()
-        super(EmailManagementWithSSODatabasePolicyTests, self).tearDown()
-
-    def test_getUnvalidatedEmails(self):
-        account = self.factory.makeAccount("Test Account")
-        token = getUtility(IAuthTokenSet).new(
-            account, account.preferredemail.email,
-            u"unvalidated-email@example.org", LoginTokenType.VALIDATEEMAIL,
-            None)
-        self.assertEqual(account.getUnvalidatedEmails(),
-                         [u"unvalidated-email@example.org"])
 
 
 def test_suite():
