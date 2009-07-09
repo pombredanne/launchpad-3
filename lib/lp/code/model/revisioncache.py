@@ -10,6 +10,7 @@ __all__ = [
 from datetime import datetime, timedelta
 
 import pytz
+from storm.expr import Desc
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -51,7 +52,7 @@ class GenericRevisionCollection:
 
     def count(self):
         """See `IRevisionCollection`."""
-        return self.getRevisions().count()
+        return self.getRevisions().order_by().count()
 
     def getRevisions(self):
         """See `IRevisionCollection`."""
@@ -62,6 +63,7 @@ class GenericRevisionCollection:
         expressions.extend(self._filter_expressions)
         result_set = self.store.find(Revision, expressions)
         result_set.config(distinct=True)
+        result_set.order_by(Desc(Revision.revision_date))
         return result_set
 
     def public(self):

@@ -4,8 +4,10 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
 import unittest
 
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -14,7 +16,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.model.revision import RevisionCache
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, time_counter
 
 
 class TestRevisionCache(TestCaseWithFactory):
@@ -68,7 +70,15 @@ class TestRevisionCache(TestCaseWithFactory):
     def test_revisions_bound_by_date(self):
         # Only revisions in the last 30 days are returned, even if the
         # revision cache table hasn't been trimmed lately.
-        self.fail('not done yet')
+        tc = time_counter(
+            origin=datetime.now(pytz.UTC) - timedelta(days=27),
+            delta=timedelta(days=-2))
+        # Make four cached revisions spanning 33, 31, 29, and 27 days ago.
+        for i in range(4):
+            self.makeCachedRevision(
+                revision=self.factory.makeRevision(revision_date=tc.next()))
+        cache = getUtility(IRevisionCache)
+        self.assertEqual(2, cache.count())
 
     def assertRevisionsEqual(self, expected_revisions, revision_collection):
         # Check that the revisions returned from the revision collection match
