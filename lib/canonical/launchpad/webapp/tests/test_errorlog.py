@@ -34,6 +34,7 @@ from canonical.launchpad.webapp.errorlog import (
     _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from lazr.restful.declarations import webservice_error
+from lp.services.osutils import remove_tree
 from lp.testing import TestCase
 
 
@@ -743,8 +744,7 @@ class TestOopsLoggingHandler(TestCase):
         self.error_utility = ErrorReportingUtility()
         self.logger.addHandler(
             OopsLoggingHandler(error_utility=self.error_utility))
-        self.addCleanup(
-            shutil.rmtree, self.error_utility.error_dir, ignore_errors=True)
+        self.addCleanup(remove_tree, self.error_utility.error_dir)
 
     def test_exception_records_oops(self):
         # When OopsLoggingHandler is a handler for a logger, any exceptions
