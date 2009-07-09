@@ -323,7 +323,6 @@ class SoyuzTestPublisher:
             (binaryname, binarypackagerelease.version,
              build.arch_tag))
         package_upload.addBuild(build)
-        package_upload.setAccepted()
 
         # Adjust the build record in way it looks complete.
         build.buildstate = BuildStatus.FULLYBUILT
@@ -350,9 +349,6 @@ class SoyuzTestPublisher:
         scheduleddeletiondate=None, dateremoved=None):
         """Return the corresponding BinaryPackagePublishingHistory."""
         distroarchseries = binarypackagerelease.build.distroarchseries
-
-        # Mark the upload as DONE
-        binarypackagerelease.build.package_upload.setDone()
 
         # Publish the binary.
         if binarypackagerelease.architecturespecific:
