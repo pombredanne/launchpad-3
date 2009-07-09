@@ -130,6 +130,28 @@
     </div>
   </tal:bug-tasks>
 
+  <tal:script
+    replace="structure
+    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
+    <!--
+
+    YUI().use('io-base', 'node', 'code.branchlinks', function(Y) {
+
+    if(Y.UA.ie) {
+        // TODO: set some sort of graceful fallback here.
+        return;
+    }
+
+    Y.on('domready', function() {
+        Y.code.branchlinks.connect_link_to_bug();
+        Y.code.branchlinks.connect_remove_bug();
+    });
+
+    });
+    -->
+  <tal:script replace="structure string:&lt;/script&gt;" />
+
+
 </metal:branch-bug-links>
 
 <metal:spec-branch-links define-macro="spec-branch-links">
@@ -166,6 +188,7 @@
        </dd></dl>
        </div>
     </div>
+
   </tal:spec-tasks>
 
 </metal:spec-branch-links>
