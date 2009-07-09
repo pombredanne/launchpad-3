@@ -20,7 +20,7 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.signon.authtoken import AuthToken
+from canonical.signon.model.authtoken import AuthToken
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.signon.model.openidserver import OpenIDRPSummary
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore

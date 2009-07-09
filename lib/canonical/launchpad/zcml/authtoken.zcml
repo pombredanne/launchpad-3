@@ -7,7 +7,7 @@
 <facet facet="overview">
 
     <!-- AuthToken -->
-    <class class="canonical.signon.authtoken.AuthToken">
+    <class class="canonical.signon.model.authtoken.AuthToken">
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IAuthToken" />
@@ -57,12 +57,12 @@
         />
 
     <!-- AuthTokenSet -->
-    <class class="canonical.signon.authtoken.AuthTokenSet">
+    <class class="canonical.signon.model.authtoken.AuthTokenSet">
         <allow interface="canonical.launchpad.interfaces.IAuthTokenSet" />
     </class>
 
     <securedutility
-        class="canonical.signon.authtoken.AuthTokenSet"
+        class="canonical.signon.model.authtoken.AuthTokenSet"
         provides="canonical.launchpad.interfaces.IAuthTokenSet">
         <allow interface="canonical.launchpad.interfaces.IAuthTokenSet" />
     </securedutility>
