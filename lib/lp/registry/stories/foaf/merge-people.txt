@@ -6,7 +6,7 @@ people to merge two profiles into a single one, if they find there's more
 than one profile representing themselves.
 
 Here we will merge the profile named 'foo' into the one named 'no-priv'.
-    
+
     # First we'll create the 'foo' profile because it doesn't exist yet.
     >>> login('foo.bar@canonical.com')
     >>> foo = factory.makePerson(name='foo', email='foo@baz.com')
