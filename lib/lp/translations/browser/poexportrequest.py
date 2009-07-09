@@ -54,7 +54,7 @@ class BaseExportView(LaunchpadView):
         Overridable in a child class.  Must do one of:
         a. Add an error notification to the page and return `None`
         b. Return a tuple of two iterables or None, of requested templates
-           and of requested pofiles.
+           and of requested pofiles IDs.
         c. Redirect and return `None`.
         """
         if not IHasTranslationTemplates.providedBy(self.context):
@@ -63,12 +63,12 @@ class BaseExportView(LaunchpadView):
                 'interface.  Either override getDefaultFormat implementation '
                 'or implement `IHasTranslationsTemplates`.')
 
-        translation_templates = (
+        translation_templates_ids = (
             self.context.getCurrentTranslationTemplates(just_ids=True))
-        pofiles = self.context.getCurrentTranslationFiles(just_ids=True)
-        if not bool(pofiles.any()):
-            pofiles = None
-        return (translation_templates, pofiles)
+        pofiles_ids = self.context.getCurrentTranslationFiles(just_ids=True)
+        if not bool(pofiles_ids.any()):
+            pofiles_ids = None
+        return (translation_templates_ids, pofiles_ids)
 
     def modifyFormat(self, format):
         """Optional overridable: return format used to export `format` files.

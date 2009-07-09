@@ -105,23 +105,21 @@ class BaseExportViewMixin(TestCaseWithFactory):
         # Adding a PO file to this template makes it returned.
         pofile_sr = self.factory.makePOFile('sr', potemplate=template1)
         templates, translations = self.view.processForm()
-        self.assertEquals([pofile_sr.id], list(translations))
+        self.assertContentEqual([pofile_sr.id], translations)
 
         # If there are two PO files on the same template, they are
-        # both returned in an unordered fashion (so, we use set()).
+        # both returned.
         pofile_es = self.factory.makePOFile('es', potemplate=template1)
         templates, translations = self.view.processForm()
-        self.assertEquals(
-            set([pofile_sr.id, pofile_es.id]),
-            set(translations))
+        self.assertContentEqual([pofile_sr.id, pofile_es.id], translations)
 
         # With more than one template, PO files from both are returned.
         template2 = self.createTranslationTemplate("two", priority=2)
         pofile_sr2 = self.factory.makePOFile('sr', potemplate=template2)
         templates, translations = self.view.processForm()
-        self.assertEquals(
-            set([pofile_sr.id, pofile_es.id, pofile_sr2.id]),
-            set(translations))
+        self.assertContentEqual(
+            [pofile_sr.id, pofile_es.id, pofile_sr2.id],
+            translations)
 
 
 class TestProductSeries(BaseExportViewMixin):
