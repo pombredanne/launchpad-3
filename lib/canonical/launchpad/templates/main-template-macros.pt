@@ -123,6 +123,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/formoverlay/formoverlay.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lazr_js}/choiceedit/choiceedit.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/effects/effects.js"></script>
 
     <script type="text/javascript"
@@ -197,6 +199,10 @@
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
       string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
+      />
+  <link rel="stylesheet" type="text/css"
+      tal:attributes="href
+      string:${icingroot}/lazr/build/choiceedit/assets/choiceedit-core.css"
       />
 </metal:launchpad-stylesheet>
 
