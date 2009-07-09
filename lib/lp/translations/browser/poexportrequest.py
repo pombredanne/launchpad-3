@@ -63,8 +63,9 @@ class BaseExportView(LaunchpadView):
                 'interface.  Either override getDefaultFormat implementation '
                 'or implement `IHasTranslationsTemplates`.')
 
-        translation_templates = self.context.getCurrentTranslationTemplates()
-        pofiles = self.context.getCurrentTranslationFiles()
+        translation_templates = (
+            self.context.getCurrentTranslationTemplates(just_ids=True))
+        pofiles = self.context.getCurrentTranslationFiles(just_ids=True)
         if not bool(pofiles.any()):
             pofiles = None
         return (translation_templates, pofiles)

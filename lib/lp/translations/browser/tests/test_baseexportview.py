@@ -88,13 +88,13 @@ class BaseExportViewMixin(TestCaseWithFactory):
         # With a template, a ResultSet is returned for it.
         template1 = self.createTranslationTemplate("one", priority=1)
         templates, translations = self.view.processForm()
-        self.assertEquals([template1], list(templates))
+        self.assertEquals([template1.id], list(templates))
 
         # With more than one template, they are both returned
         # ordered by decreasing priority.
         template2 = self.createTranslationTemplate("two", priority=2)
         templates, translations = self.view.processForm()
-        self.assertEquals([template2, template1], list(templates))
+        self.assertEquals([template2.id, template1.id], list(templates))
 
     def test_processForm_translations(self):
         # With a template, but no PO files, None is returned for translations.
@@ -105,20 +105,22 @@ class BaseExportViewMixin(TestCaseWithFactory):
         # Adding a PO file to this template makes it returned.
         pofile_sr = self.factory.makePOFile('sr', potemplate=template1)
         templates, translations = self.view.processForm()
-        self.assertEquals([pofile_sr], list(translations))
+        self.assertEquals([pofile_sr.id], list(translations))
 
         # If there are two PO files on the same template, they are
         # both returned in an unordered fashion (so, we use set()).
         pofile_es = self.factory.makePOFile('es', potemplate=template1)
         templates, translations = self.view.processForm()
-        self.assertEquals(set([pofile_sr, pofile_es]), set(translations))
+        self.assertEquals(
+            set([pofile_sr.id, pofile_es.id]),
+            set(translations))
 
         # With more than one template, PO files from both are returned.
         template2 = self.createTranslationTemplate("two", priority=2)
         pofile_sr2 = self.factory.makePOFile('sr', potemplate=template2)
         templates, translations = self.view.processForm()
         self.assertEquals(
-            set([pofile_sr, pofile_es, pofile_sr2]),
+            set([pofile_sr.id, pofile_es.id, pofile_sr2.id]),
             set(translations))
 
 
