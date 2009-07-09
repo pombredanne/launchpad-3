@@ -977,6 +977,13 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         lazy_bin = self.test_publisher.uploadBinaryForBuild(
             build_i386, 'lazy-bin')
         self.test_publisher.publishBinaryInArchive(lazy_bin, source.archive)
+        changes_file_name = '%s_%s_%s.changes' % (
+            lazy_bin.name, lazy_bin.version, build_i386.arch_tag)
+        package_upload = self.test_publisher.addPackageUpload(
+            ppa, build_i386.distroarchseries.distroseries,
+            build_i386.pocket, changes_file_content='anything',
+            changes_file_name=changes_file_name)
+        package_upload.addBuild(build_i386)
 
         return source
 
