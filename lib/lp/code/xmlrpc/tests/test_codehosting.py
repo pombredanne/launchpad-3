@@ -564,7 +564,8 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
             '/' + branch.target.default_stacked_on_branch.unique_name)
 
     def test_private_default_stacked_not_returned_for_mirrored_branch(self):
-        # XXX write me
+        # We don't stack mirrored branches on a private default stacked on
+        # branch.
         product = self.factory.makeProduct()
         default_branch = self.factory.makeProductBranch(
             product=product, private=True)
