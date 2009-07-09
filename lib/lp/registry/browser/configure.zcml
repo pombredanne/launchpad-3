@@ -1383,7 +1383,6 @@
             template="../templates/team-map.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.team.TeamMailingListSubscribersView"
             permission="zope.Public"
             name="+mailing-list-subscribers"
             template="../templates/team-mailinglist-subscribers.pt"/>
