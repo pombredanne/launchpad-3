@@ -451,34 +451,54 @@ def delete_unwanted_files(con):
     cur.execute("SELECT max(id) from LibraryFileContent")
     max_id = cur.fetchone()[0]
 
-    # Build a set containing all stored LibraryFileContent ids
-    # that we want to keep.
+    # Build a set containing all stored LibraryFileContent ids that we
+    # want to keep. Results are ordered so we don't have to suck them
+    # all in at once.
     cur.execute("""
         SELECT id FROM LibraryFileContent
         WHERE deleted IS FALSE OR datecreated
             > CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '1 day'::interval
+        ORDER BY id
         """)
-    all_ids = set(row[0] for row in cur.fetchall())
+
+    def get_next_wanted_content_id():
+        result = cur.fetchone()
+        if result is None:
+            return None
+        else:
+            return result[0]
 
     count = 0
+    next_wanted_content_id = get_next_wanted_content_id()
+
     for content_id in range(1, max_id+1):
-        if content_id in all_ids:
-            continue # Linked in the db - do nothing
+        while (next_wanted_content_id is not None
+                and content_id > next_wanted_content_id):
+            next_wanted_content_id = get_next_wanted_content_id()
+
+        if (next_wanted_content_id is not None
+                and next_wanted_content_id == content_id):
+            file_wanted = True
+        else:
+            file_wanted = False
+
         path = get_file_path(content_id)
+        path_exists = os.path.exists(path)
 
-        if not os.path.exists(path):
-            continue # Exists neither on disk nor in the database - do nothing
-
-        one_day = 24 * 60 * 60
-        if time() - os.path.getctime(path) < one_day:
-            log.debug(
-                "File %d not removed - created too recently" % content_id)
-            continue # File created too recently - do nothing
-
-        # File uploaded a while ago but not in the database - remove it
-        log.debug("Deleting %s" % path)
-        os.remove(path)
-        count += 1
+        if file_wanted and not path_exists:
+            log.error(
+                "LibraryFileContent %d exists in the db but on disk at %s"
+                % (content_id, path))
+        elif path_exists and not file_wanted:
+            one_day = 24 * 60 * 60
+            if time() - os.path.getctime(path) < one_day:
+                log.debug(
+                    "File %d not removed - created too recently" % content_id)
+            else:
+                # File uploaded a while ago but no longer wanted - remove it
+                log.debug("Deleting %s" % path)
+                os.remove(path)
+                count += 1
 
     log.info(
             "Deleted %d files from disk that where no longer referenced "
