@@ -952,6 +952,68 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
             [custom_file],
             [custom.libraryfilealias for custom in delayed_copy.customfiles])
 
+    def createPartiallyBuiltDelayedCopyContext(self):
+        """Allow tests on delayed-copies of partially built sources.
+
+        Create an architecture-specific source publication in a private PPA
+        capable of building for i386 and hppa architectures.
+
+        Upload and publish only the i386 binary, letting the hppa build
+        in pending status.
+        """
+        self.test_publisher.prepareBreezyAutotest()
+
+        ppa = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        ppa.buildd_secret = 'x'
+        ppa.private = True
+        ppa.require_virtualized = False
+
+        source = self.test_publisher.getPubSource(
+            archive=ppa, architecturehintlist='any')
+
+        [build_hppa, build_i386] = source.createMissingBuilds()
+        lazy_bin = self.test_publisher.uploadBinaryForBuild(
+            build_i386, 'lazy-bin')
+        self.test_publisher.publishBinaryInArchive(lazy_bin, source.archive)
+        changes_file_name = '%s_%s_%s.changes' % (
+            lazy_bin.name, lazy_bin.version, build_i386.arch_tag)
+        package_upload = self.test_publisher.addPackageUpload(
+            ppa, build_i386.distroarchseries.distroseries,
+            build_i386.pocket, changes_file_content='anything',
+            changes_file_name=changes_file_name)
+        package_upload.addBuild(build_i386)
+
+        return source
+
+    def test_do_delayed_copy_of_partially_built_sources(self):
+        # delayed-copies of partially built sources are allowed and only
+        # the FULLYBUILT builds are copied.
+        source = self.createPartiallyBuiltDelayedCopyContext()
+
+        # Setup and execute the delayed copy procedure.
+        copy_archive = self.test_publisher.ubuntutest.main_archive
+        copy_series = source.distroseries
+        copy_pocket = PackagePublishingPocket.RELEASE
+
+        # Make new libraryfiles available by committing the transaction.
+        self.layer.txn.commit()
+
+        # Perform the delayed-copy including binaries.
+        delayed_copy = _do_delayed_copy(
+            source, copy_archive, copy_series, copy_pocket, True)
+
+        # Only the i386 build is included in the delayed-copy.
+        # For the record, later on, when the delayed-copy gets processed,
+        # a new hppa build record will be created in the destination
+        # archive context. Also after this point, the same delayed-copy
+        # request will be denied by `CopyChecker`.
+        [build_hppa, build_i386] = source.getBuilds()
+        self.assertEquals(
+            [build_i386],
+            [pub.build for pub in delayed_copy.builds])
+
 
 class CopyPackageScriptTestCase(unittest.TestCase):
     """Test the copy-package.py script."""
