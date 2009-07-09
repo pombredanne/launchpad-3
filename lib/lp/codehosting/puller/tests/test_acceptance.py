@@ -425,21 +425,21 @@ class TestBranchPuller(PullerBranchTestCase):
 
         self.assertMirrored(db_branch, source_branch=tree.branch)
 
-    def dont_test_mirror_empty(self):
+    def test_mirror_empty(self):
         # Run the puller on an empty pull queue.
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
 
-    def dont_test_records_script_activity(self):
+    def test_records_script_activity(self):
         # A record gets created in the ScriptActivity table.
         script_activity_set = getUtility(IScriptActivitySet)
         self.assertIs(
-            script_activity_set.getLastActivity("branch-puller-hosted"),
+            script_activity_set.getLastActivity("branch-puller"),
             None)
         self.runPuller()
         transaction.abort()
         self.assertIsNot(
-            script_activity_set.getLastActivity("branch-puller-hosted"),
+            script_activity_set.getLastActivity("branch-puller"),
             None)
 
     # Possible tests to add:

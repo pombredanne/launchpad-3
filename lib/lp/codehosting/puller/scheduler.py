@@ -16,7 +16,6 @@ __all__ = [
 import os
 from StringIO import StringIO
 import socket
-import sys
 
 from twisted.internet import defer, error, reactor
 from twisted.protocols.basic import NetstringReceiver, NetstringParseError
@@ -26,7 +25,8 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
 from canonical.cachedproperty import cachedproperty
-from lp.codehosting.vfs import branch_id_to_path
+from canonical.twistedsupport.task import (
+    ParallelLimitedTaskConsumer, PollingTaskSource)
 from lp.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from lp.codehosting.puller import get_lock_id_for_branch_id
@@ -274,7 +274,7 @@ class PullerMaster:
         'scripts/mirror-branch.py')
     protocol_class = PullerMonitorProtocol
 
-    def __init__(self, branch_id, source_url, unique_name, branch_type,
+    def __init__(self, branch_id, source_url, unique_name, branch_type_name,
                  default_stacked_on_url, logger, client,
                  available_oops_prefixes):
         """Construct a PullerMaster object.
@@ -300,7 +300,7 @@ class PullerMaster:
         self.source_url = source_url.strip()
         self.destination_url = 'lp-mirrored:///%s' % (unique_name,)
         self.unique_name = unique_name
-        self.branch_type = branch_type
+        self.branch_type_name = branch_type_name
         self.default_stacked_on_url = default_stacked_on_url
         self.logger = logger
         self.branch_puller_endpoint = client
@@ -332,7 +332,7 @@ class PullerMaster:
         command = [
             interpreter, self.path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), str(self.unique_name),
-            self.branch_type.name, self.oops_prefix,
+            self.branch_type_name, self.oops_prefix,
             self.default_stacked_on_url]
         self.logger.debug("executing %s", command)
         env = os.environ.copy()
@@ -417,7 +417,7 @@ class JobScheduler:
         self.branch_puller_endpoint = branch_puller_endpoint
         self.logger = logger
         self.actualLock = None
-        self.name = 'branch-puller-upload'
+        self.name = 'branch-puller'
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
 
     @cachedproperty
@@ -433,20 +433,14 @@ class JobScheduler:
 
     def _turnJobTupleIntoTask(self, job_tuple):
         if len(job_tuple) == 0:
-            print 'did not get job'
+            print 'wibble'
+            if self.consumer._worker_count == 0:
+                self.consumer._terminationDeferred.callback(None)
             return None
         (branch_id, pull_url, unique_name,
          default_stacked_on_url, branch_type_name) = job_tuple
-        print 'got job', job_tuple
-        from lp.code.enums import BranchType
-        branch_type = {
-            'HOSTED': BranchType.HOSTED,
-            'MIRRORED': BranchType.MIRRORED,
-            'IMPORTED': BranchType.IMPORTED
-            }[branch_type_name]
-
         master = PullerMaster(
-            branch_id, pull_url, unique_name, branch_type,
+            branch_id, pull_url, unique_name, branch_type_name,
             default_stacked_on_url, self.logger,
             self.branch_puller_endpoint, self.available_oops_prefixes)
         return master.run
@@ -458,9 +452,8 @@ class JobScheduler:
         return deferred
 
     def run(self):
-        from canonical.twistedsupport.task import (
-            ParallelLimitedTaskConsumer, PollingTaskSource)
         consumer = ParallelLimitedTaskConsumer(config.supermirror.maximum_workers)
+        self.consumer = consumer
         source = PollingTaskSource(10, self._poll)
         deferred = consumer.consume(source)
         deferred.addCallback(self._finishedRunning)
