@@ -1111,7 +1111,7 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
             text = 'unmerged proposals'
         return Link('+approvedmerges', text)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit', site='mainsite')

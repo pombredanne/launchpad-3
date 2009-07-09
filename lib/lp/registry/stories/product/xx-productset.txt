@@ -26,17 +26,27 @@ The unprivileged person cannot navigate directly to the link.
       ...
     Unauthorized:...
 
-A member of the Launchpad commercial team may successfully access the
+A member of the Launchpad registry experts team may successfully access the
 +review-licenses via the link.
 
-    >>> commercial_browser = setupBrowser(
-    ...     auth='Basic commercial-member@canonical.com:test')
-    >>> commercial_browser.open(
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> celebs.registry_experts.addMember(nopriv, nopriv)
+    >>> logout()
+
+    >>> registry_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
+    >>> registry_browser.open(
     ...     'http://launchpad.dev/projects/')
-    >>> commercial_browser.getLink("Review projects").click()
-    >>> commercial_browser.url
+    >>> registry_browser.getLink("Review projects").click()
+    >>> registry_browser.url
     'http://launchpad.dev/projects/+review-licenses'
-    >>> commercial_browser.title
+    >>> registry_browser.title
     'Review projects'
 
 
@@ -47,7 +57,7 @@ be left unspecified to get results with either value.
 
     >>> for name in ('active', 'license_reviewed', 'has_zero_licenses',
     ...              'license_info_is_empty'):
-    ...     control = commercial_browser.getControl(name='field.%s' % name)
+    ...     control = registry_browser.getControl(name='field.%s' % name)
     ...     for option in control.displayOptions:
     ...         print option.decode('utf-8').encode('ascii', 'replace'),
     ...     print
@@ -60,37 +70,37 @@ The default form values will search for active projects that have not
 been reviewed and that have an Other/Open-Source or Other/Proprietary
 license.
 
-    >>> commercial_browser.getControl(name='field.active').value
+    >>> registry_browser.getControl(name='field.active').value
     ['True']
-    >>> commercial_browser.getControl(name='field.license_reviewed').value
+    >>> registry_browser.getControl(name='field.license_reviewed').value
     ['False']
-    >>> commercial_browser.getControl(name='field.licenses').value
+    >>> registry_browser.getControl(name='field.licenses').value
     ['OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE']
 
 If there are no products that match the search conditions, a warning
 message will be displayed.
 
-    >>> commercial_browser.getControl(name='field.active').value = ['False']
-    >>> commercial_browser.getControl(name='search').click()
-    >>> find_tags_by_class(commercial_browser.contents, 'warning message')
+    >>> registry_browser.getControl(name='field.active').value = ['False']
+    >>> registry_browser.getControl(name='search').click()
+    >>> find_tags_by_class(registry_browser.contents, 'warning message')
     [<div...No items found with these search options...
 
 If enough projects are found, the results are paginated. A link
 is provided for each product pointint to its +review-license page.
 
-    >>> commercial_browser.getControl(name='field.active').value = ['True']
-    >>> commercial_browser.getControl(name='field.licenses').value = []
-    >>> commercial_browser.getControl(
+    >>> registry_browser.getControl(name='field.active').value = ['True']
+    >>> registry_browser.getControl(name='field.licenses').value = []
+    >>> registry_browser.getControl(
     ...     name='field.license_info_is_empty').value = ['Empty']
-    >>> commercial_browser.getControl(name='field.created_before').value = (
+    >>> registry_browser.getControl(name='field.created_before').value = (
     ...     '2007-01-01')
-    >>> commercial_browser.getControl(name='search').click()
-    >>> pagination = find_tags_by_class(commercial_browser.contents,
+    >>> registry_browser.getControl(name='search').click()
+    >>> pagination = find_tags_by_class(registry_browser.contents,
     ...                                 'batch-navigation-index')
     >>> text_in_elements = pagination[0].findAll(text=True)
     >>> print ' '.join(text.strip() for text in text_in_elements)
     1 ... 10 of 14 results
-    >>> table = find_tag_by_id(commercial_browser.contents, 'product-listing')
+    >>> table = find_tag_by_id(registry_browser.contents, 'product-listing')
     >>> for tr in table.findAll('tr'):
     ...     td_list = tr.findAll('td')
     ...     print td_list[5].a
@@ -104,23 +114,23 @@ is provided for each product pointint to its +review-license page.
     <a href="/thunderbird/+review-license">Review</a>
     <a href="/netapplet/+review-license">Review</a>
     <a href="/landscape/+review-license">Review</a>
-    >>> commercial_browser.getLink('Next').click()
-    >>> print commercial_browser.url
+    >>> registry_browser.getLink('Next').click()
+    >>> print registry_browser.url
     http://launchpad.dev/projects/+review-licenses?field...&start=10
 
 Now, we can click on the Review link, which will take us to the
 $project/+review-license page. Then clicking on the Change button
 will take us back to the page we came from.
 
-    >>> review_link = commercial_browser.getLink(
+    >>> review_link = registry_browser.getLink(
     ...     url='/tomcat/+review-license')
     >>> review_link.text
     'Review'
     >>> review_link.click()
-    >>> print commercial_browser.url
+    >>> print registry_browser.url
     http://launchpad.dev/tomcat/+review-license
-    >>> commercial_browser.getControl(name='field.actions.change').click()
-    >>> print commercial_browser.url
+    >>> registry_browser.getControl(name='field.actions.change').click()
+    >>> print registry_browser.url
     http://launchpad.dev/projects/+review-licenses?field...&start=10
 
 
@@ -202,8 +212,8 @@ The unprivileged user can see "+all".
 
 The commercial user can also view "+all".
 
-    >>> commercial_browser.open('http://launchpad.dev/projects/+all')
-    >>> commercial_browser.title
+    >>> registry_browser.open('http://launchpad.dev/projects/+all')
+    >>> registry_browser.title
     'Upstream projects registered in Launchpad'
 
 == Create a project ==
@@ -216,6 +226,6 @@ The unprivileged user can see "+new".
 
 The commercial user can also view "+new".
 
-    >>> commercial_browser.open('http://launchpad.dev/projects/+new')
-    >>> commercial_browser.title
+    >>> registry_browser.open('http://launchpad.dev/projects/+new')
+    >>> registry_browser.title
     'Register a project in Launchpad'

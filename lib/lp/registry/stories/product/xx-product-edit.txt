@@ -86,12 +86,12 @@ And they can't go directly to the +admin page.
     Traceback (most recent call last):
     ...
     Unauthorized...
-   
+
 But administrators can access the page:
 
     >>> admin_browser.open('http://launchpad.dev/firefox')
     >>> admin_browser.getLink('Administer').click()
-   
+
     >>> admin_browser.url
     'http://launchpad.dev/firefox/+admin'
     >>> admin_browser.title
@@ -272,7 +272,7 @@ again have zero licenses.
 
 == Launchpad developers can use the reviewer whiteboard ==
 
-A member of the Launchpad Developers team can use the reviewer whiteboard on
+A member of the Registry Experts team can use the reviewer whiteboard on
 the +review-license page for storing random notes about a project. At first the
 whiteboard is empty, then we store some insightful notes in it.
 
@@ -283,27 +283,27 @@ whiteboard is empty, then we store some insightful notes in it.
     ...     ILaunchpadCelebrities)
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> celebs = getUtility(ILaunchpadCelebrities)
-    >>> celebs.launchpad_developers.addMember(nopriv, nopriv)
+    >>> celebs.registry_experts.addMember(nopriv, nopriv)
     >>> logout()
-    >>> commercial_browser = setupBrowser(
+    >>> registry_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
-    >>> commercial_browser.open('http://launchpad.dev/firefox/+review-license')
-    >>> commercial_browser.getControl(name='field.reviewer_whiteboard').value
+    >>> registry_browser.open('http://launchpad.dev/firefox/+review-license')
+    >>> registry_browser.getControl(name='field.reviewer_whiteboard').value
     ''
-    >>> commercial_browser.getControl(
+    >>> registry_browser.getControl(
     ...     name='field.reviewer_whiteboard').value = \
     ... """Registered by https://launchpad.net/kurt but orphaned 2007-11-31.
     ... Contacted the upstream maintainer (bart@foo.com) to discuss handing
     ... over this project 2007-12-04."""
-    >>> commercial_browser.getControl(name='field.actions.change').click()
-    >>> commercial_browser.open('http://launchpad.dev/firefox/+review-license')
-    >>> commercial_browser.getControl(name='field.reviewer_whiteboard').value
+    >>> registry_browser.getControl(name='field.actions.change').click()
+    >>> registry_browser.open('http://launchpad.dev/firefox/+review-license')
+    >>> registry_browser.getControl(name='field.reviewer_whiteboard').value
     'Registered by https://launchpad.net/kurt but orphaned...'
 
-A Commercial Admin can also see the project whiteboard on the index page.
+A Registry Expert can also see the project whiteboard on the index page.
 
-   >>> commercial_browser.open('http://launchpad.dev/firefox')
-   >>> contents = find_main_content(commercial_browser.contents)
+   >>> registry_browser.open('http://launchpad.dev/firefox')
+   >>> contents = find_main_content(registry_browser.contents)
    >>> print extract_text(contents.find(id='project-admin-whiteboard'))
    Registered by https://launchpad.net/kurt but orphaned 2007-11-31.
    Contacted the upstream maintainer (bart@foo.com) to discuss handing
@@ -322,12 +322,12 @@ Launchpad Admin, and so cannot see the reviewer whiteboard.
 
 == Deactivate a product ==
 
-The Admins and Commercial Admins can deactivate a project.
+The Admins and Registry Experts can deactivate a project.
 
-    >>> commercial_browser.open('http://launchpad.dev/firefox/+review-license')
-    >>> commercial_browser.getControl(name='field.active').value = False
-    >>> commercial_browser.getControl(name='field.actions.change').click()
-    >>> print commercial_browser.url
+    >>> registry_browser.open('http://launchpad.dev/firefox/+review-license')
+    >>> registry_browser.getControl(name='field.active').value = False
+    >>> registry_browser.getControl(name='field.actions.change').click()
+    >>> print registry_browser.url
     http://launchpad.dev/firefox
 
 The product overview page should show a notice that a product is
@@ -335,8 +335,8 @@ inactive with a link to a form to re-activate it. Admins and
 Commercial Admins can still see the product, but regular users
 can't.
 
-    >>> commercial_browser.open('http://launchpad.dev/firefox/')
-    >>> contents = find_main_content(commercial_browser.contents)
+    >>> registry_browser.open('http://launchpad.dev/firefox/')
+    >>> contents = find_main_content(registry_browser.contents)
     >>> print contents.find(id='project-inactive')
     <p...This project is currently inactive...
     <a...href="+review-license"...
@@ -352,14 +352,14 @@ can't.
 
 The product can then be reactivated.
 
-    >>> commercial_browser.getLink('(change this)').click()
-    >>> print commercial_browser.url
+    >>> registry_browser.getLink('(change this)').click()
+    >>> print registry_browser.url
     http://launchpad.dev/firefox/+review-license
-    >>> commercial_browser.getControl(name='field.active').value = True
-    >>> commercial_browser.getControl(name='field.actions.change').click()
-    >>> print commercial_browser.url
+    >>> registry_browser.getControl(name='field.active').value = True
+    >>> registry_browser.getControl(name='field.actions.change').click()
+    >>> print registry_browser.url
     http://launchpad.dev/firefox/
-    >>> contents = find_main_content(commercial_browser.contents)
+    >>> contents = find_main_content(registry_browser.contents)
     >>> print contents.find(id='project-inactive')
     None
 

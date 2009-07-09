@@ -1112,7 +1112,15 @@ projects ordered by displayname.
 
 The method does not return inactive projects.
 
-    >>> login('commercial-member@canonical.com')
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> celebs.registry_experts.addMember(nopriv, nopriv)
+    >>> logout()
+
+    >>> login('no-priv@canonical.com')
     >>> derby = getUtility(IProductSet).getByName('derby')
     >>> derby.active = False
     >>> for project in sabdfl.getOwnedProjects():
