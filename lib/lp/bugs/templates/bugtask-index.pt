@@ -26,6 +26,13 @@
             Y.bugs.setup_bugtask_index();
         });
       </script>
+      <style>
+        /* Align the "add comment" link to the right of the comment box. */
+        #add-comment-form textarea { width: 100%; max-width=60em;}
+        #add-comment-form { max-width=60em;}
+        #add-comment-form .actions {float: right;}
+        #add-comment-form { padding-bottom: 4em; }
+      </style>
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
@@ -370,7 +377,7 @@
         </tal:comment-list-truncated>
       </tal:comments>
 
-      <div id="mentoring" style="margin-top: 2em;">
+      <div id="mentoring">
         <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
                      condition="mentoring_offers">
           <p>
