@@ -1,4 +1,4 @@
-# Copyright 2005, 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213,F0401,W0611
 
 """Branch interfaces."""
@@ -730,6 +730,15 @@ class IBranch(IHasOwner, IHasBranchTarget):
         A branch may be associated with a product series is either a
         branch.  Also a branch can be associated with more than one product
         series as a branch.
+        """
+
+    def getProductSeriesPushingTranslations():
+        """Return sequence of product series pushing translations here.
+
+        These are any `ProductSeries` that have this branch as their
+        translations_branch.  It should normally be at most one, but
+        there's nothing stopping people from combining translations
+        branches.
         """
 
     # subscription-related methods

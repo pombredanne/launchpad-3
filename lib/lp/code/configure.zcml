@@ -371,6 +371,7 @@
                     canBeDeleted
                     deletionRequirements
                     associatedProductSeries
+                    getProductSeriesPushingTranslations
                     subscribe
                     getSubscription
                     hasSubscription

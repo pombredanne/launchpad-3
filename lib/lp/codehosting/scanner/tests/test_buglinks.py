@@ -11,16 +11,16 @@ from bzrlib.revision import Revision
 import zope.component.event
 from zope.component import getUtility
 
+from canonical.config import config
+from canonical.launchpad.interfaces import (
+    IBugBranchSet, IBugSet, NotFoundError)
+from canonical.testing.layers import LaunchpadZopelessLayer
+
 from lp.codehosting.scanner.buglinks import got_new_revision, BugBranchLinker
 from lp.codehosting.scanner.fixture import make_zope_event_fixture
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
-from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IBugBranchSet, IBugSet, ILaunchpadCelebrities,
-    NotFoundError)
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.testing import TestCase
-from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class RevisionPropertyParsing(TestCase):
@@ -151,6 +151,27 @@ class TestBugLinking(BzrSyncTestCase):
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         self.assertBugBranchLinked(self.bug1, self.db_branch)
+
+    def makePackageBranch(self):
+        LaunchpadZopelessLayer.switchDbUser(self.lp_db_user)
+        try:
+            branch = self.factory.makePackageBranch()
+            branch.sourcepackage.setBranch(
+                PackagePublishingPocket.RELEASE, branch, branch.owner)
+            LaunchpadZopelessLayer.txn.commit()
+        finally:
+            LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        return branch
+
+    def test_linking_bug_to_official_package_branch(self):
+        # We can link a bug to an official package branch. Test added to catch
+        # bug 391303.
+        self.commitRevision(
+            rev_id='rev1',
+            revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
+        branch = self.makePackageBranch()
+        self.syncBazaarBranchToDatabase(self.bzr_branch, branch)
+        self.assertBugBranchLinked(self.bug1, branch)
 
     def test_knownMainlineRevisionsDoesntMakeLink(self):
         """Don't add BugBranches for known mainline revision."""
