@@ -1545,11 +1545,9 @@
                 name="+portlet-stats"
                 template="../templates/people-portlet-stats.pt"/>
         </browser:pages>
-        <browser:addform
+        <browser:page
             name="+requestmerge"
             for="lp.registry.interfaces.person.IPersonSet"
-            schema="lp.registry.interfaces.person.IRequestPeopleMerge"
-            fields="dupeaccount"
             class="canonical.launchpad.browser.RequestPeopleMergeView"
             permission="launchpad.AnyPerson"
             template="../templates/people-requestmerge.pt"/>
