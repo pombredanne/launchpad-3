@@ -119,6 +119,8 @@ class TestLibrarianGarbageCollection(TestCase):
         past = past.replace(tzinfo=utc)
         f1.last_accessed = past
         f2.last_accessed = past
+        f1.date_created = past
+        f2.date_created = past
 
         del f1, f2
 
@@ -159,7 +161,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # This should have committed
         self.ztm.begin()
 
-        # Confirm that the LibaryFileContents are still there
+        # Confirm that the LibaryFileContents are still there.
         c1 = LibraryFileContent.get(c1_id)
         c2 = LibraryFileContent.get(c2_id)
 

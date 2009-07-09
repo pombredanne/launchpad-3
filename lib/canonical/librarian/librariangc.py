@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """Librarian garbage collection routines"""
 
 __metaclass__ = type
@@ -8,7 +8,11 @@ import sys
 from time import time
 import os
 
+from zope.interface import implements
+
 from canonical.config import config
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
+from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
@@ -176,8 +180,11 @@ def merge_duplicates(con):
         con.commit()
 
 
-def delete_unreferenced_aliases(con):
-    """Delete unreferenced LibraryFileAliases and their LibraryFileContent
+class UnreferencedLibraryFileContentPruner:
+    """Delete unreferenced LibraryFileAliases.
+
+    The LibraryFileContent records are left untouched for the code that
+    knows how to delete them and the corresponding files on disk.
 
     This is the second step in a full garbage collection sweep. We determine
     which LibraryFileContent entries are not being referenced by other objects
@@ -190,89 +197,111 @@ def delete_unreferenced_aliases(con):
     must be unreferenced for them to be deleted - a single reference will keep
     the whole set alive.
     """
-    log.info("Deleting unreferenced LibraryFileAliases")
+    implements(ITunableLoop)
 
-    # Generate a set of all our LibraryFileContent ids, except for ones
-    # with expiry dates not yet reached (these lurk in the database until
-    # expired) and those that have been accessed in the last week (currently
-    # in use, so leave them lurking a while longer)
-    cur = con.cursor()
-    cur.execute("""
-        SELECT c.id
-        FROM LibraryFileContent AS c, LibraryFileAlias AS a
-        WHERE c.id = a.content
-        GROUP BY c.id
-        HAVING (max(expires) IS NULL OR max(expires)
-                < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '1 week'::interval
-                )
-            AND (max(last_accessed) IS NULL OR max(last_accessed)
-                < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '1 week'::interval
-                )
-        """)
-    content_ids = set(row[0] for row in cur.fetchall())
-    log.info(
-        "Found %d LibraryFileContent entries possibly unreferenced",
-        len(content_ids)
-        )
+    index = 1 # Index of current batch of rows to remove.
 
-    # Determine what columns link to LibraryFileAlias
-    # references = [(table, column), ...]
-    references = [
-        tuple(ref[:2])
-        for ref in listReferences(cur, 'libraryfilealias', 'id')
-        if ref[0] != 'libraryfiledownloadcount'
-        ]
-    assert len(references) > 10, 'Database introspection returned nonsense'
-    log.info("Found %d columns referencing LibraryFileAlias", len(references))
+    con = None # Database connection to use
 
-    # Remove all referenced LibraryFileContent ids from content_ids
-    for table, column in references:
+    def __init__(self, con):
+        self.con = con
+
+        log.info("Deleting unreferenced LibraryFileAliases")
+
+        cur = con.cursor()
+
+        # Start with a list of all unexpired and recently accessed content
+        # - we don't remove them even if they are unlinked.
+        # We currently don't remove stuff until it has been expired for
+        # more than one week, but we will change this if disk space becomes
+        # short and it actually will make a noticeable difference.
+        # Note that ReferencedLibraryFileContent will contain duplicates -
+        # duplicates are the exception so we are better off filtering them
+        # once at the end rather than when we load the data into the temporary
+        # file.
+        cur.execute("DROP TABLE IF EXISTS ReferencedLibraryFileContent")
         cur.execute("""
-            SELECT DISTINCT LibraryFileContent.id
-            FROM LibraryFileContent, LibraryFileAlias, %(table)s
-            WHERE LibraryFileContent.id = LibraryFileAlias.content
-                AND LibraryFileAlias.id = %(table)s.%(column)s
-            """ % vars())
-        referenced_ids = set(row[0] for row in cur.fetchall())
-        log.info(
-                "Found %d distinct LibraryFileAlias references in %s(%s)",
-                len(referenced_ids), table, column
-                )
-        content_ids.difference_update(referenced_ids)
-        log.debug(
-                "Now only %d LibraryFileContents possibly unreferenced",
-                len(content_ids)
-                )
-
-    # Delete unreferenced LibraryFileAliases. Note that this will raise a
-    # database exception if we screwed up and attempt to delete an alias that
-    # is still referenced.
-    content_ids = list(content_ids)
-    for i in range(0, len(content_ids), BATCH_SIZE):
-        in_content_ids = ','.join(
-            (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE]))
-        # First a sanity check to ensure we aren't removing anything we
-        # shouldn't be.
-        cur.execute("""
-            SELECT COUNT(*)
+            SELECT LibraryFileAlias.content
+            INTO TEMPORARY TABLE ReferencedLibraryFileContent
             FROM LibraryFileAlias
-            WHERE content in (%(in_content_ids)s)
-                AND (
-                    expires + '1 week'::interval
-                        > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                    OR last_accessed + '1 week'::interval
-                        > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                    )
-            """ % vars())
-        assert cur.fetchone()[0] == 0, "Logic error - sanity check failed"
-        log.debug(
-                "Deleting all LibraryFileAlias references to "
-                "LibraryFileContents %s", in_content_ids
-                )
-        cur.execute("""
-            DELETE FROM LibraryFileAlias WHERE content IN (%(in_content_ids)s)
-            """ % vars())
+            WHERE
+                expires >
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+                OR last_accessed >
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+                OR date_created >
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
+            """)
         con.commit()
+
+        # Determine what columns link to LibraryFileAlias
+        # references = [(table, column), ...]
+        references = [
+            tuple(ref[:2])
+            for ref in listReferences(cur, 'libraryfilealias', 'id')
+            if ref[0] != 'libraryfiledownloadcount'
+            ]
+        assert len(references) > 10, (
+            'Database introspection returned nonsense')
+        log.info(
+            "Found %d columns referencing LibraryFileAlias", len(references))
+
+        # Find all relevant LibraryFileAlias references and fill in
+        # ReferencedLibraryFileContent
+        for table, column in references:
+            log.debug("Getting references from %s.%s." % (table, column))
+            cur.execute("""
+                INSERT INTO ReferencedLibraryFileContent
+                SELECT LibraryFileAlias.content
+                FROM LibraryFileAlias, %(table)s
+                WHERE LibraryFileAlias.id = %(table)s.%(column)s
+                """ % {'table': table, 'column': column})
+            con.commit()
+
+        log.info("Calculating expired unreferenced LibraryFileContent set.")
+        cur.execute("DROP TABLE IF EXISTS UnreferencedLibraryFileContent")
+        cur.execute("""
+            CREATE TEMPORARY TABLE UnreferencedLibraryFileContent (
+                id serial PRIMARY KEY,
+                content integer UNIQUE)
+            """)
+        cur.execute("""
+            INSERT INTO UnreferencedLibraryFileContent (content)
+            SELECT id AS content FROM LibraryFileContent
+            EXCEPT
+            SELECT content FROM ReferencedLibraryFileContent
+            """)
+        cur.execute("DROP TABLE ReferencedLibraryFileContent")
+        cur.execute("SELECT max(id) FROM UnreferencedLibraryFileContent")
+        self.max_id = cur.fetchone()[0]
+        log.info("%d unferenced LibraryFileContent to remove." % self.max_id)
+        con.commit()
+
+    def isDone(self):
+        return self.index > self.max_id
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+        cur = self.con.cursor()
+        cur.execute("""
+            DELETE FROM LibraryFileAlias
+            USING (
+                SELECT content FROM UnreferencedLibraryFileContent
+                WHERE id BETWEEN %s AND %s
+                ) AS UnreferencedLibraryFileContent
+            WHERE LibraryFileAlias.content
+                = UnreferencedLibraryFileContent.content
+            """, (self.index, self.index + chunk_size - 1))
+        log.info("Deleted %d LibraryFileAlias records." % cur.rowcount)
+        self.con.commit()
+        self.index += chunk_size
+
+
+def delete_unreferenced_aliases(con):
+    "Run the UnreferencedLibraryFileContentPruner."
+    loop_tuner = DBLoopTuner(
+        UnreferencedLibraryFileContentPruner(con), 5, log=log)
+    loop_tuner.run()
 
 
 def delete_unreferenced_content(con):
