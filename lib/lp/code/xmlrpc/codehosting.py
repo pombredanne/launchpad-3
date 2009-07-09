@@ -98,6 +98,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         """See `IBranchPuller`."""
         branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull()
         if branch is not None:
+            branch = removeSecurityProxy(branch)
             default_branch = branch.target.default_stacked_on_branch
             if default_branch is None:
                 default_branch_name = ''
