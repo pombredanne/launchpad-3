@@ -426,16 +426,18 @@ sources_list format.
 
  deb [user:pass@]<host>[/path] %(series)s[-pocket] [components]
 
-The '%(series)s' part is replaced on-the-fly with the series name for
-the build record being dispatched.
+The '%(series)s' part is optional and will be replaced on-the-fly with
+the series name for the build record being dispatched.
 
 We will create a configuration for Celso's PPA.
 
     >>> from canonical.config import config
     >>> cprov_deps = """
     ... [ppa.cprov_ppa]
-    ... dependencies: deb user:pass@repository %(series)s public private
-    ...               deb user:pass@repository %(series)s-extra public private
+    ... dependencies:
+    ...   deb http://user:pass@repository zoing everything
+    ...   deb http://user:pass@repository %(series)s public private
+    ...   deb http://user:pass@repository %(series)s-extra public
     ... """
     >>> config.push('test_deps', cprov_deps)
 
@@ -450,8 +452,9 @@ external dependencies.
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb user:pass@repository hoary public private
-    deb user:pass@repository hoary-extra public private
+    deb http://user:pass@repository hoary public private
+    deb http://user:pass@repository hoary-extra public
+    deb http://user:pass@repository zoing everything
 
 Tests done, we can remove the extra configuration content we've added.
 
