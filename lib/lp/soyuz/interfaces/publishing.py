@@ -572,6 +572,28 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             description=_("A URL for this source publication's changes file "
                           "for the source upload.")))
 
+    package_creator = exported(
+        Reference(
+            IPerson,
+            title=_('Package Creator'),
+            description=_('The IPerson who created the source package.'),
+            required=False, readonly=True,
+        ))
+    package_maintainer = exported(
+        Reference(
+            IPerson,
+            title=_('Package Maintainer'),
+            description=_('The IPerson who maintains the source package.'),
+            required=False, readonly=True,
+        ))
+    package_signer = exported(
+        Reference(
+            IPerson,
+            title=_('Package Signer'),
+            description=_('The IPerson who signed the source package.'),
+            required=False, readonly=True,
+        ))
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
