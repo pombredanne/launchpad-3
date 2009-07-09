@@ -869,13 +869,20 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, 'title',
             canonical_url(self.context, view_name='+edit'),
             id="product-title", title="Edit this title")
+        if self.context.programminglang is None:
+            additional_arguments = dict(
+                default_text='Not yet specified',
+                initial_value='',
+                )
+        else:
+            additional_arguments = {}
         self.languages_edit_widget = TextLineEditorWidget(
             self.context, 'programminglang',
             canonical_url(self.context, view_name='+edit'),
             id='programminglang', title='Edit programming languages',
-            default='Not yet specified', tag='span',
-            public_attribute='programming_language',
-            accept_empty=True)
+            tag='span', public_attribute='programming_language',
+            accept_empty=True,
+            **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
             self.user == self.context.owner)

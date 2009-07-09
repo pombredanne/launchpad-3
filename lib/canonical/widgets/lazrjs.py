@@ -62,7 +62,8 @@ class TextLineEditorWidget:
         YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
-                accept_empty: %(accept_empty)s
+                accept_empty: %(accept_empty)s,
+                initial_value: '%(initial_value)s'
             });
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
@@ -75,10 +76,9 @@ class TextLineEditorWidget:
 
 
     def __init__(self, context, attribute, edit_url, id=None, title="Edit",
-                 default='', tag='h1', public_attribute=None,
-                 accept_empty=False):
+                 tag='h1', public_attribute=None, accept_empty=False,
+                 default_text=None, initial_value=None):
         """Create a widget wrapper.
-
         :param context: The object that is being edited.
         :param attribute: The name of the attribute being edited.
         :param edit_url: The URL to use for editing when the user isn't logged
@@ -86,16 +86,18 @@ class TextLineEditorWidget:
         :param id: The HTML id to use for this widget. Automatically
             generated if this is not provided.
         :param title: The string to use as the link title. Defaults to 'Edit'.
-        :param default: Default to use when attribute is missing or None.
         :param tag: The HTML tag to use.
         :param public_attribute: If given, the name of the attribute in the
             public webservice API.
         :param accept_empty: Whether the field accepts empty input or not.
+        :param default_text: Text to show in the unedited field, if the
+            parameter value is missing or None.
+        :param initial_value: Use this text for the initial edited field value
+            instead of the attribute's current value.
         """
         self.context = context
         self.attribute = attribute
         self.edit_url = edit_url
-        self.default = default
         self.tag = tag
         if accept_empty:
             self.accept_empty = 'true'
@@ -110,6 +112,8 @@ class TextLineEditorWidget:
         else:
             self.id = id
         self.title = title
+        self.default_text = default_text
+        self.initial_value = initial_value
 
     @classmethod
     def _generate_id(cls):
@@ -119,9 +123,10 @@ class TextLineEditorWidget:
 
     def __call__(self):
         """Return the HTML to include to render the widget."""
-        value = getattr(self.context, self.attribute, self.default)
+        # We really don't like None here.
+        value = getattr(self.context, self.attribute, self.default_text)
         if value is None:
-            value = self.default
+            value = self.default_text
         params = {
             'activation_script': '',
             'trigger': '',
@@ -135,6 +140,7 @@ class TextLineEditorWidget:
             'tag': self.tag,
             'public_attribute': self.public_attribute,
             'accept_empty': self.accept_empty,
+            'initial_value': self.initial_value,
             }
         # Only display the trigger link and the activation script if
         # the user can write the attribute.
