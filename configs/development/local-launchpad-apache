@@ -14,6 +14,15 @@ RewriteLock /var/tmp/rewrite-lock
   ProxyPass / http://localhost:8087/ retry=1
 </VirtualHost>
 
+<VirtualHost 127.0.0.88:80>
+  ServerName lists.launchpad.dev
+  Alias  /   /var/tmp/mailman/mhonarc/
+  <Directory /var/tmp/mailman/mhonarc>
+    AllowOverride None
+    DirectoryIndex maillist.html
+  </Directory>
+</VirtualHost>
+
 <VirtualHost 127.0.0.99:80>
   ServerName bazaar.launchpad.dev
   LogLevel debug
