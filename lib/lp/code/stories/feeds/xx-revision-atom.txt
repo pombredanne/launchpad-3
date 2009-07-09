@@ -60,8 +60,6 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     >>> revision_set = getUtility(IRevisionSet)
     >>> revision_set.updateRevisionCacheForBranch(fooey_branch)
     >>> revision_set.updateRevisionCacheForBranch(fooix_branch)
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
     >>> logout()
 
 
