@@ -254,12 +254,18 @@ class SoyuzTestPublisher:
             binarypackagerelease = self.uploadBinaryForBuild(
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
-                provides, pre_depends, enhances, breaks, format,
-                changes_file_content)
+                provides, pre_depends, enhances, breaks, format)
             pub_binaries = self.publishBinaryInArchive(
                 binarypackagerelease, archive, status, pocket,
                 scheduleddeletiondate, dateremoved)
             published_binaries.extend(pub_binaries)
+            package_upload = self.addPackageUpload(
+                archive, distroseries, pocket,
+                changes_file_content=changes_file_content,
+                changes_file_name='%s_%s_%s.changes' %
+                    (binaryname, binarypackagerelease.version,
+                     build.arch_tag))
+            package_upload.addBuild(build)
 
         return sorted(
             published_binaries, key=operator.attrgetter('id'), reverse=True)
@@ -269,8 +275,7 @@ class SoyuzTestPublisher:
         summary="summary", description="description", shlibdep=None,
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
-        breaks=None, format=BinaryPackageFormat.DEB,
-        changes_file_content='anything'):
+        breaks=None, format=BinaryPackageFormat.DEB):
         """Return the corresponding `BinaryPackageRelease`."""
         sourcepackagerelease = build.sourcepackagerelease
         distroarchseries = build.distroarchseries
@@ -314,15 +319,6 @@ class SoyuzTestPublisher:
             filename, filecontent=filecontent,
             restricted=build.archive.private)
         binarypackagerelease.addFile(alias)
-
-        # Create the corresponding build upload.
-        package_upload = self.addPackageUpload(
-            build.archive, build.distroarchseries.distroseries,
-            build.pocket, changes_file_content=changes_file_content,
-            changes_file_name='%s_%s_%s.changes' %
-            (binaryname, binarypackagerelease.version,
-             build.arch_tag))
-        package_upload.addBuild(build)
 
         # Adjust the build record in way it looks complete.
         build.buildstate = BuildStatus.FULLYBUILT
