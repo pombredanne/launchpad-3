@@ -11,7 +11,6 @@ __all__ = [
     'TeamEditView',
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
-    'TeamMailingListSubscribersView',
     'TeamMapView',
     'TeamMapData',
     'TeamMemberAddView',
@@ -20,7 +19,6 @@ __all__ = [
 
 from urllib import quote
 from datetime import datetime
-import math
 import pytz
 
 from zope.app.form.browser import TextAreaWidget
@@ -43,11 +41,9 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -704,38 +700,6 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
              not requester.inTeam(celebrities.mailing_list_experts))):
             return False
         return self.getListInState(*PURGE_STATES) is not None
-
-
-class TeamMailingListSubscribersView(LaunchpadView):
-    """The list of people subscribed to a team's mailing list."""
-
-    max_columns = 4
-
-    @cachedproperty
-    def subscribers(self):
-        return BatchNavigator(
-            self.context.mailing_list.getSubscribers(), self.request)
-
-    def renderTable(self):
-        html = ['<table style="max-width: 80em">']
-        items = self.subscribers.currentBatch()
-        # When there are more than 10 items, we use multiple columns, but
-        # never more columns than self.max_columns.
-        columns = int(math.ceil(len(items) / 10.0))
-        columns = min(columns, self.max_columns)
-        rows = int(math.ceil(len(items) / float(columns)))
-        for i in range(0, rows):
-            html.append('<tr>')
-            for j in range(0, columns):
-                index = i + (j * rows)
-                if index >= len(items):
-                    break
-                subscriber_link = PersonFormatterAPI(items[index]).link(None)
-                html.append(
-                    '<td style="width: 20em">%s</td>' % subscriber_link)
-            html.append('</tr>')
-        html.append('</table>')
-        return '\n'.join(html)
 
 
 class TeamMailingListModerationView(MailingListTeamBaseView):
