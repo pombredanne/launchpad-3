@@ -54,6 +54,22 @@ class TestRevisionCache(TestCaseWithFactory):
         cache = getUtility(IRevisionCache)
         self.assertEqual(4, cache.count())
 
+    def test_revision_ordering(self):
+        # Revisions are returned most recent first.
+        tc = time_counter(
+            origin=datetime.now(pytz.UTC) - timedelta(days=15),
+            delta=timedelta(days=1))
+        # Make four cached revisions spanning 15, 14, 13 and 12 days ago.
+        # Create from oldest to newest, then check that the ordering from the
+        # query is the reverse order.
+        revisions = [
+            self.makeCachedRevision(
+                revision=self.factory.makeRevision(revision_date=tc.next()))
+            for i in range(4)]
+        revisions.reverse()
+        cache = getUtility(IRevisionCache)
+        self.assertEqual(revisions, list(cache.getRevisions()))
+
     def test_revision_in_multiple_namespaces_counted_once(self):
         # A revision that is in multiple namespaces is only counted once.
         revision = self.factory.makeRevision()
