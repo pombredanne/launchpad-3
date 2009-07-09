@@ -10,6 +10,7 @@ import unittest
 from zope.component import getAdapter, getUtility
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
+from lazr.restful.interfaces import IWebServiceConfiguration
 from canonical.config import config
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.layers import (
@@ -25,7 +26,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore,
     SLAVE_FLAVOR)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.tests import DummyConfigurationTestCase
 from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
 
 
@@ -179,7 +179,7 @@ class SSODatabasePolicyTestCase(BaseDatabasePolicyTestCase):
                 self.getDBUser(store_selector.get(store, DEFAULT_FLAVOR)))
 
 
-class LayerDatabasePolicyTestCase(DummyConfigurationTestCase):
+class LayerDatabasePolicyTestCase(TestCase):
     layer = FunctionalLayer
 
     def test_FeedsLayer_uses_SlaveDatabasePolicy(self):
@@ -201,8 +201,9 @@ class LayerDatabasePolicyTestCase(DummyConfigurationTestCase):
         XXX 20090320 Stuart Bishop bug=297052: This doesn't scale of course
             and will meltdown when the API becomes popular.
         """
-        server_url = ('http://api.launchpad.dev/'
-                      + self.config.service_version_uri_prefix)
+        api_prefix = getUtility(
+            IWebServiceConfiguration).service_version_uri_prefix
+        server_url = 'http://api.launchpad.dev/%s' % api_prefix
         request = LaunchpadTestRequest(SERVER_URL=server_url)
         setFirstLayer(request, WebServiceLayer)
         policy = IDatabasePolicy(request)
