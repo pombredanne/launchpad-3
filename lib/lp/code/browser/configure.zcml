@@ -338,9 +338,6 @@
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt"/>
         <browser:page
-            name="+associations"
-            template="../templates/branch-associations.pt"/>
-        <browser:page
             name="+landing-candidates"
             template="../templates/branch-landing-candidates.pt"/>
         <browser:page

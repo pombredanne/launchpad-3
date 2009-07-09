@@ -3,7 +3,6 @@
 """Security policies for using content objects."""
 
 __metaclass__ = type
-# Need AuthorizationBase here because canonical.shipit.security imports it.
 __all__ = ['AuthorizationBase']
 
 from zope.app.error.interfaces import IErrorReportingUtility

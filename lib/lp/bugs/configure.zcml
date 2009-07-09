@@ -559,9 +559,12 @@
                     subscriptions
                     syncUpdate
                     date_last_updated
+                    getBugTask
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
+                    linkBranch
+                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -611,7 +614,6 @@
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
-                    getBugTask
                     canBeNominatedFor
                     getNominationFor
                     getNominations
@@ -642,8 +644,6 @@
                     findCvesInText
                     newMessage
                     linkMessage
-                    linkBranch
-                    unlinkBranch
                     addAttachment
                     unsubscribeFromDupes
                     subscribe

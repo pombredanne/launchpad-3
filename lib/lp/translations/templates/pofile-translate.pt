@@ -142,7 +142,7 @@
               <img src="/@@/info" alt="Information" />
               <span class="important-notice"
                   tal:condition="view/translation_group/translation_guide_url">
-                Before translating, make sure to go through
+                Before translating, be sure to go through
                 <a tal:content="string:${view/translation_group/title}
                                 instructions"
                    tal:attributes="href
@@ -162,7 +162,7 @@
               </span>
               <span class="important-notice"
                   tal:condition="not:view/translation_group/translation_guide_url">
-                Before translating, make sure to go through
+                Before translating, be sure to go through
                 <a class="style-guide-url"
                    tal:content="string:${view/translation_team/translator/displayname}
                                 guidelines"
