@@ -298,7 +298,6 @@ class PullerMaster:
         """
         self.branch_id = branch_id
         self.source_url = source_url.strip()
-        path = branch_id_to_path(branch_id)
         self.destination_url = 'lp-mirrored:///%s' % (unique_name,)
         self.unique_name = unique_name
         self.branch_type = branch_type

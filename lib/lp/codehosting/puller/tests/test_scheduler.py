@@ -78,8 +78,7 @@ class TestJobScheduler(unittest.TestCase):
             os.unlink(self.masterlock)
 
     def makeJobScheduler(self):
-        return scheduler.JobScheduler(
-            None, logging.getLogger(), BranchType.HOSTED)
+        return scheduler.JobScheduler(None, logging.getLogger())
 
     def testManagerCreatesLocks(self):
         manager = self.makeJobScheduler()

@@ -108,7 +108,6 @@ class TestBranchPuller(PullerBranchTestCase):
              '',
              'Error:',
              stderr])
-        print message
         self.assertEqual(0, retcode, message)
         self.assertEqualDiff('', stdout)
         self.assertEqualDiff('', stderr)
