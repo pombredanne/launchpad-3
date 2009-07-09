@@ -562,6 +562,8 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
+                    linkBranch
+                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -642,8 +644,6 @@
                     findCvesInText
                     newMessage
                     linkMessage
-                    linkBranch
-                    unlinkBranch
                     addAttachment
                     unsubscribeFromDupes
                     subscribe
