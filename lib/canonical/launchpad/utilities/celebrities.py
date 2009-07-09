@@ -109,6 +109,7 @@ class LaunchpadCelebrities:
     bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
     bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
     buildd_admin = CelebrityDescriptor(IPersonSet, 'launchpad-buildd-admins')
+    canonical = CelebrityDescriptor(IPersonSet, 'canonical')
     commercial_admin = CelebrityDescriptor(IPersonSet, 'commercial-admins')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
     debian = CelebrityDescriptor(IDistributionSet, 'debian')

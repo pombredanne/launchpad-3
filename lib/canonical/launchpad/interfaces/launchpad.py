@@ -101,6 +101,7 @@ class ILaunchpadCelebrities(Interface):
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     buildd_admin = Attribute("The Build Daemon administrator.")
+    canonical = Attribute("The Canonical team.")
     commercial_admin = Attribute("The Launchpad Commercial team.")
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
