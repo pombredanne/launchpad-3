@@ -110,8 +110,3 @@ class BranchLinkToBugView(LaunchpadFormView):
             return
 
         link_bug = data['bug']
-        for bug in self.context.related_bugs:
-            if bug == link_bug:
-                self.setFieldError(
-                    'bug',
-                    'Bug #%s is already linked to this branch' % bug.id)
