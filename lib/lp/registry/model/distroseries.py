@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeries',
     'DistroSeriesSet',
+    'SeriesMixin',
     ]
 
 import logging
@@ -17,7 +18,7 @@ from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
 
-from storm.locals import SQL, Join
+from storm.locals import Desc, Join, SQL
 from storm.store import Store
 
 from zope.component import getUtility
@@ -33,6 +34,11 @@ from canonical.database.sqlbase import (
     quote, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from lp.translations.model.pofiletranslator import (
+    POFileTranslator)
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import POTemplate
+from canonical.launchpad.interfaces import IStore
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -46,26 +52,28 @@ from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, PocketChroot)
 from lp.soyuz.model.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
-from canonical.launchpad.database.distroserieslanguage import (
+from lp.translations.model.distroserieslanguage import (
     DistroSeriesLanguage, DummyDistroSeriesLanguage)
 from lp.soyuz.model.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
-from canonical.launchpad.database.distroseries_translations_copy import (
+from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations)
 from lp.services.worlddata.model.language import Language
-from canonical.launchpad.database.languagepack import LanguagePack
+from lp.translations.model.languagepack import LanguagePack
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.soyuz.model.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.person import Person
-from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from lp.translations.model.potemplate import (
+    HasTranslationTemplatesMixin,
+    POTemplate)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadQueue)
+from lp.soyuz.model.queue import PackageUpload, PackageUploadQueue
 from lp.soyuz.model.section import Section
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -73,7 +81,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -85,17 +93,17 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
 from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
-from canonical.launchpad.interfaces.languagepack import LanguagePackType
+    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet, ISeriesMixin)
+from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, ICanPublishPackages, PackagePublishingPocket,
     PackagePublishingStatus, pocketsuffix)
-from lp.soyuz.interfaces.queue import IHasQueueItems
+from lp.soyuz.interfaces.queue import IHasQueueItems, IPackageUploadSet
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
 from lp.registry.interfaces.sourcepackagename import (
@@ -110,10 +118,26 @@ from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
+from lp.services.worlddata.model.language import Language
+
+
+class SeriesMixin:
+    """See `ISeriesMixin`."""
+    implements(ISeriesMixin)
+
+    @property
+    def active(self):
+        return self.status in [
+            DistroSeriesStatus.DEVELOPMENT,
+            DistroSeriesStatus.FROZEN,
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED
+            ]
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasTranslationImportsMixin, HasMilestonesMixin,
+                   HasTranslationImportsMixin, HasTranslationTemplatesMixin,
+                   HasMilestonesMixin, SeriesMixin,
                    StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
@@ -212,9 +236,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def enabled_architectures(self):
-        # Avoiding circular imports.
-        from canonical.launchpad.database.librarian import (
-            LibraryFileAlias)
         store = Store.of(self)
         origin = [
             DistroArchSeries,
@@ -294,15 +315,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def supported(self):
         return self.status in [
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED
-            ]
-
-    @property
-    def active(self):
-        return self.status in [
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.FROZEN,
             DistroSeriesStatus.CURRENT,
             DistroSeriesStatus.SUPPORTED
             ]
@@ -611,19 +623,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         # first find the set of all languages for which we have pofiles in
         # the distribution that are visible and not English
-        langidset = set(
-            language.id for language in Language.select('''
-                Language.visible IS TRUE AND
-                Language.id = POFile.language AND
-                Language.code <> 'en' AND
-                POFile.potemplate = POTemplate.id AND
-                POTemplate.distroseries = %s AND
-                POTemplate.iscurrent IS TRUE
-                ''' % sqlvalues(self.id),
-                orderBy=['code'],
-                distinct=True,
-                clauseTables=['POFile', 'POTemplate'])
-            )
+        langidset = set(IStore(Language).find(
+            Language.id,
+            Language.visible == True,
+            Language.id == POFile.languageID,
+            Language.code <> 'en',
+            POFile.potemplateID == POTemplate.id,
+            POTemplate.distroseries == self,
+            POTemplate.iscurrent == True).config(distinct=True))
+
         # now run through the existing DistroSeriesLanguages for the
         # distroseries, and update their stats, and remove them from the
         # list of languages we need to have stats for
@@ -1069,21 +1077,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def updateCompletePackageCache(self, archive, log, ztm, commit_chunk=500):
         """See `IDistroSeries`."""
         # Get the set of package names to deal with.
-        bpns = list(BinaryPackageName.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(self, archive),
-            distinct=True,
-            clauseTables=['BinaryPackagePublishingHistory',
-                          'DistroArchSeries',
-                          'BinaryPackageRelease']))
+        bpns = IStore(BinaryPackageName).find(
+            BinaryPackageName,
+            DistroArchSeries.distroseries == self,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.archive == archive,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackagePublishingHistory.dateremoved == None).config(
+                distinct=True)
 
         number_of_updates = 0
         chunk_size = 0
@@ -1103,20 +1107,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
 
         # get the set of published binarypackagereleases
-        bprs = BinaryPackageRelease.select("""
-            BinaryPackageRelease.binarypackagename = %s AND
-            BinaryPackageRelease.id =
-                BinaryPackagePublishingHistory.binarypackagerelease AND
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(binarypackagename, self, archive),
-            orderBy='-datecreated',
-            clauseTables=['BinaryPackagePublishingHistory',
-                          'DistroArchSeries'],
-            distinct=True)
+        bprs = IStore(BinaryPackageRelease).find(
+            BinaryPackageRelease,
+            BinaryPackageRelease.binarypackagename == binarypackagename,
+            BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseries == self,
+            BinaryPackagePublishingHistory.archive == archive,
+            BinaryPackagePublishingHistory.dateremoved == None)
+        bprs = bprs.order_by(Desc(BinaryPackageRelease.datecreated))
+        bprs = bprs.config(distinct=True)
+
         if bprs.count() == 0:
             log.debug("No binary releases found.")
             return
@@ -1278,9 +1281,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return PackageUploadQueue(self, state)
 
+    def getPackageUploads(self, created_since_date=None, status=None,
+                          archive=None, pocket=None, custom_type=None):
+        """See `IDistroSeries`."""
+        return getUtility(IPackageUploadSet).getAll(
+            self, created_since_date, status, archive, pocket, custom_type)
+
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):
         """See `IDistroSeries`."""
+        # XXX Julian 2009-07-02 bug=394645
+        # This method is partially deprecated by getPackageUploads(),
+        # see the bug for more info.
 
         default_clauses = ["""
             packageupload.distroseries = %s""" % sqlvalues(self)]
@@ -1577,22 +1589,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getPOFileContributorsByLanguage(self, language):
         """See `IDistroSeries`."""
-        contributors = Person.select("""
-            POFileTranslator.person = Person.id AND
-            POFileTranslator.pofile = POFile.id AND
-            POFile.language = %s AND
-            POFile.potemplate = POTemplate.id AND
-            POTemplate.distroseries = %s AND
-            POTemplate.iscurrent = TRUE"""
-                % sqlvalues(language, self),
-            clauseTables=["POFileTranslator", "POFile", "POTemplate"],
-            distinct=True,
-            # XXX: kiko 2006-10-19:
-            # We can't use Person.sortingColumns because this is a
-            # distinct query. To use it we'd need to add the sorting
-            # function to the column results and then ignore it -- just
-            # like selectAlso does, ironically.
-            orderBy=["Person.displayname", "Person.name"])
+        contributors = IStore(Person).find(
+            Person,
+            POFileTranslator.personID == Person.id,
+            POFile.id == POFileTranslator.pofileID,
+            POFile.language == language,
+            POTemplate.id == POFile.potemplateID,
+            POTemplate.distroseries == self,
+            POTemplate.iscurrent == True)
+        contributors = contributors.order_by(*Person._storm_sortingColumns)
+        contributors = contributors.config(distinct=True)
         return contributors
 
     def getPendingPublications(self, archive, pocket, is_careful):
@@ -1691,18 +1697,25 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                      orderBy=['-priority', 'name'])
         return shortlist(result, 2000)
 
-    def getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            iscurrent IS TRUE AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            Distribution.official_rosetta IS TRUE
-            ''' % sqlvalues(self),
-            clauseTables = ['DistroSeries', 'Distribution'],
-            orderBy=['-priority', 'name'])
-        return shortlist(result, 2000)
+        # Avoid circular imports.
+        from lp.registry.model.distribution import Distribution
+
+        store = Store.of(self)
+        if just_ids:
+            looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
+
+        result = store.find(
+            looking_for,
+            POTemplate.iscurrent == True,
+            POTemplate.distroseries == self,
+            DistroSeries.id == self.id,
+            DistroSeries.distribution == Distribution.id,
+            Distribution.official_rosetta == True)
+        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

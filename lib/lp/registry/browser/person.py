@@ -147,7 +147,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.interfaces.pofiletranslator import (
+from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslatorSet)
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
@@ -189,10 +189,10 @@ from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.launchpad.interfaces.translationrelicensingagreement import (
+from lp.translations.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
     TranslationRelicensingAgreementOptions)
-from canonical.launchpad.interfaces.translationsperson import (
+from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -223,7 +223,8 @@ from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
-from canonical.launchpad.webapp.menu import structured, NavigationMenu
+from canonical.launchpad.webapp.menu import (
+    get_current_view, structured, NavigationMenu)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from lazr.uri import URI, InvalidURIError
@@ -1047,7 +1048,12 @@ class PPANavigationMenuMixIn:
     def ppas(self):
         target = '#ppas'
         text = 'Personal Package Archives'
-        return Link(target, text)
+        view = get_current_view()
+        if isinstance(view, PersonView):
+            enabled = view.should_show_ppa_section
+        else:
+            enabled = True
+        return Link(target, text, enabled=enabled)
 
 
 class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
@@ -2877,6 +2883,25 @@ class PersonView(LaunchpadView, FeedsMixin):
             return 'aside private'
         else:
             return 'aside public'
+
+    @cachedproperty
+    def should_show_ppa_section(self):
+        """Return True if "Personal package archives" is to be shown.
+
+        We display it if:
+        person has viewable ppa or current_user has lp.edit
+        """
+        # If the current user has edit permission, show the section.
+        if check_permission('launchpad.Edit', self.context):
+            return True
+
+        # If the current user is allowed to see any PPAs, show the
+        # section.
+        for ppa in self.context.ppas:
+            if check_permission('launchpad.View', ppa):
+                return True
+
+        return False
 
 
 class EmailAddressVisibleState:
@@ -4710,7 +4735,7 @@ class PersonAnswersMenu(ApplicationMenu):
              'subscribed', 'answer_contact_for']
 
     def answer_contact_for(self):
-        summary = "Projects for which %s is an answer contact for" % (
+        summary = "Projects for which %s is an answer contact" % (
             self.context.displayname)
         return Link('+answer-contact-for', 'Answer contact for', summary)
 

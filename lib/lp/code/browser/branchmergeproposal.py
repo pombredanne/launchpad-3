@@ -139,7 +139,8 @@ class BranchMergeProposalContextMenu(ContextMenu):
     def add_comment(self):
         # Can't add a comment to Merged, Superseded or Rejected.
         enabled = self.context.isMergable()
-        return Link('+comment', 'Add a comment', icon='add', enabled=enabled)
+        return Link('+comment', 'Add a review or comment', icon='add',
+                    enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -421,6 +422,10 @@ class DecoratedCodeReviewVoteReference:
         is_mergable = self.context.branch_merge_proposal.isMergable()
         self.can_change_review = (user == context.reviewer) and is_mergable
         branch = context.branch_merge_proposal.source_branch
+        review_team = context.branch_merge_proposal.target_branch.reviewer
+        reviewer = context.reviewer
+        self.trusted = (reviewer is not None and reviewer.inTeam(
+                        review_team))
         if user is None:
             self.user_can_review = False
         else:

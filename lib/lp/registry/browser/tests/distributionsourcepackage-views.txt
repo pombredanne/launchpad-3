@@ -54,18 +54,55 @@ versions of the package.
     # Publish gedit to both PPAs
     >>> gedit_nightly_src_breezy = publisher.getPubSource(
     ...     sourcename="gedit", archive=ppa_nightly,
-    ...     date_uploaded=datetime(2010, 12 ,1, tzinfo=pytz.UTC),
+    ...     creator=ppa_nightly.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.2n3')
     >>> gedit_beta_src_breezy = publisher.getPubSource(
     ...     sourcename="gedit", archive=ppa_beta,
-    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     creator=ppa_beta.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.1')
     >>> gedit_beta_src_hoary = publisher.getPubSource(
     ...     sourcename="gedit", archive=ppa_beta,
-    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     creator=ppa_nightly.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.0',
     ...     distroseries=ubuntutest.serieses[0])
 
+    # Give the creators of the above source packages some soyuz
+    # karma for their efforts.
+    >>> from lp.registry.interfaces.karma import IKarmaCacheManager
+    >>> from lp.registry.model.karma import KarmaCategory
+    >>> soyuz_category = KarmaCategory.byName('soyuz')
+    >>> sourcepackagerelease = gedit_nightly_src_breezy.sourcepackagerelease
+    >>> gedit_name = sourcepackagerelease.sourcepackagename
+    >>> ppa_beta_owner_id = ppa_beta.owner.id
+    >>> ppa_nightly_owner_id = ppa_nightly.owner.id
+    >>> transaction.commit()
+
+    # XXX: Michael Nelson 2009-07-07 bug=396419. Currently there is no
+    # test api call to switchDbUser that works for non-zopeless layers.
+    # When bug 396419 is fixed, we can instead use
+    # DatabaseLayer.switchDbUser() instead of reconnect_stores()
+    >>> from canonical.testing.layers import reconnect_stores
+    >>> reconnect_stores('karmacacheupdater')
+    >>> from zope.component import getUtility
+    >>> karmacachemanager = getUtility(IKarmaCacheManager)
+    >>> cache_entry = karmacachemanager.new(
+    ...     200, ppa_beta_owner_id, soyuz_category.id,
+    ...     distribution_id=ubuntutest.id,
+    ...     sourcepackagename_id=gedit_name.id)
+    >>> cache_entry = karmacachemanager.new(
+    ...     201, ppa_nightly_owner_id, soyuz_category.id,
+    ...     distribution_id=ubuntutest.id,
+    ...     sourcepackagename_id=gedit_name.id)
+    >>> transaction.commit()
+    >>> reconnect_stores('launchpad')
+
+    # Because our connection has been closed during the reconnect, we
+    # need to get the distro and source package again.
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> ubuntu_gedit = ubuntutest.getSourcePackage('gedit')
+    >>> ubuntu_gedit_view = getMultiAdapter(
+    ...     (ubuntu_gedit, LaunchpadTestRequest()), name="+index")
     >>> for archive_pub in ubuntu_gedit_view.latest_published_ppa_versions:
     ...     print "%s - %s" % (
     ...         archive_pub['archive'].displayname,

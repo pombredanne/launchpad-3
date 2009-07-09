@@ -632,6 +632,34 @@
         name="+branches"
         template="../templates/sourcepackage-branches.pt"/>
     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.code.browser.branchlisting.DistributionBranchListingView"
+        permission="zope.Public"
+        facet="branches"
+        name="+branches"
+        template="../templates/distribution-branches.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.code.browser.branchlisting.DistroSeriesBranchListingView"
+        permission="zope.Public"
+        facet="branches"
+        name="+branches"
+        template="../templates/distribution-branches.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.code.browser.branchlisting.DistributionSourcePackageBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+branches"
+        template="../templates/distributionsourcepackage-branches.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.code.browser.branchlisting.GroupedDistributionSourcePackageBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+code-index"
+        template="../templates/distributionsourcepackage-branches-grouped.pt"/>
+    <browser:page
         for="lp.registry.interfaces.project.IProject"
         class="lp.code.browser.branchlisting.ProjectBranchesView"
         facet="branches"
@@ -780,6 +808,21 @@
 
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        layer="canonical.launchpad.layers.CodeLayer"
+        name="+branches"/>
+
+    <browser:defaultView
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        layer="canonical.launchpad.layers.CodeLayer"
+        name="+code-index"/>
+
+    <browser:defaultView
+        for="lp.registry.interfaces.distribution.IDistribution"
+        layer="canonical.launchpad.layers.CodeLayer"
+        name="+branches"/>
+
+    <browser:defaultView
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
         layer="canonical.launchpad.layers.CodeLayer"
         name="+branches"/>
 

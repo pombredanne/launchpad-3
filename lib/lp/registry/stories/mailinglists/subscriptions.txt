@@ -414,6 +414,34 @@ rosetta admins team has such a list and carlos is the owner.
     >>> browser.getLink('Mailing list subscribers').click()
     >>> print browser.title
     Mailing list subscribers for the Rosetta Administrators team
+    >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
+    The following people are subscribed...
+    Jeff Waugh
+
+    >>> from canonical.config import config
+    >>> config.push('default-batch-size', """
+    ... [launchpad]
+    ... default_batch_size: 1
+    ... """)
+    >>> login('foo.bar@canonical.com')
+    >>> salgado = person_set.getByName('salgado')
+    >>> rosetta_admins = person_set.getByName('rosetta-admins')
+    >>> rosetta_admins.addMember(salgado, reviewer=sabdfl)
+    >>> rosetta_admins.mailing_list.subscribe(salgado)
+    >>> logout()
+    >>> browser.reload()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
+    The following people are subscribed...
+    Guilherme Salgado
+    1 of 2 results...
+
+    >>> browser.getLink('Next').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
+    The following people are subscribed...
+    Jeff Waugh
+    2 of 2 results...
+
+    >>> config_data = config.pop('default-batch-size')
 
 If the team has no mailing list, then the archive and subscribers
 links are not present.

@@ -192,7 +192,8 @@ class NascentUploadFile:
     def checkNameIsTaintFree(self):
         """Verify if the filename contains forbidden characters."""
         if not re_taint_free.match(self.filename):
-            raise UploadError("Tainted filename: '%s'." % (file))
+            raise UploadError(
+                "Invalid character(s) in filename: '%s'." % self.filename)
 
     def checkSizeAndCheckSum(self):
         """Check the md5sum and size of the nascent file.

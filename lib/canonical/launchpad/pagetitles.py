@@ -488,6 +488,8 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
+distribution_branches = ContextTitle('Branches for %s')
+
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_change_mirror_admin = 'Change mirror administrator'
@@ -523,6 +525,10 @@ distribution_index = ContextTitle('%s in Launchpad')
 distribution_builds = ContextTitle('%s builds')
 
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
+
+distributionsourcepackage_branches = ContextTitle('Branches for the %s')
+distributionsourcepackage_branches_grouped = ContextTitle(
+    'Branches for the %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -906,8 +912,7 @@ active_reviews = ContextDisplayName('Pending proposals for %s')
 
 person_archive_subscription = ContextDisplayName('%s')
 
-person_archive_subscriptions = ContextDisplayName(
-    '%s\'s private archive subscriptions')
+person_archive_subscriptions = 'Private PPA subscriptions'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
@@ -1059,8 +1064,6 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-product_add_from_project = 'Register a project in your project group'
-
 product_admin = ContextTitle('Administer %s in Launchpad')
 
 product_bugs = ContextDisplayName('Bugs in %s')
@@ -1085,7 +1088,9 @@ def product_mergeproposals(context, view):
     """Return the view's heading."""
     return view.heading
 
-product_new = 'Register a project in Launchpad'
+def product_new(context, view):
+    """Return the view's heading."""
+    return view.heading
 
 product_new_guided = 'Before you register your project...'
 
