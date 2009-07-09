@@ -1780,9 +1780,14 @@ a.update-retry {
 
 /* Brand the related PPA versions with the PPA icon (not currently
    in the sprite image.) */
-div#related-ppa-versions {
+div#slide-trigger {
     padding:8px 0 8px 32px;
     background:url('/@@/ppa-large') 0 0 no-repeat;
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
+}
+div#slide-trigger:hover {
+    text-decoration: underline
 }
 dl#ppa_packaging dd {
     margin-left: 16px;
