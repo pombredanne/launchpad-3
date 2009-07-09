@@ -277,7 +277,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
 
 
 class IProductProjectReviewRestricted(Interface):
-    """`IProduct` properties which require launchpad.ProjectReview permission."""
+    """`IProduct` properties which require launchpad.ProjectReview."""
 
     qualifies_for_free_hosting = exported(
         Bool(
