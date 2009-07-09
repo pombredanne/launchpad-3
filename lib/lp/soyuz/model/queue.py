@@ -1007,8 +1007,8 @@ class PackageUpload(SQLBase):
             # ArchivePermissions as uploaders for the archive will also
             # get emailed.
             uploaders = [
-                permission.person for
-                permission in self.archive.getUploadersForComponent()]
+                permission.person for permission in
+                    self.archive.getUploadersForComponent()]
             candidate_recipients.extend(uploaders)
 
         # If this is not a PPA, we also consider maintainer and changed-by.
