@@ -719,6 +719,8 @@ class TeamMailingListSubscribersView(LaunchpadView):
     def renderTable(self):
         html = ['<table style="max-width: 80em">']
         items = self.subscribers.currentBatch()
+        assert len(items) > 0, (
+            "Don't call this method if there are no subscribers to show.")
         # When there are more than 10 items, we use multiple columns, but
         # never more columns than self.max_columns.
         columns = int(math.ceil(len(items) / 10.0))
