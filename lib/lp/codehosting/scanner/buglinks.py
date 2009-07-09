@@ -83,7 +83,7 @@ class BugBranchLinker:
             except NotFoundError:
                 pass
             else:
-                bug.addBranch(
+                bug.linkBranch(
                     branch=self.db_branch,
                     registrant=getUtility(ILaunchpadCelebrities).janitor)
 

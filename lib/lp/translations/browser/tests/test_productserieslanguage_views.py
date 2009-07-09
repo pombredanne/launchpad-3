@@ -11,7 +11,7 @@ from lp.translations.browser.productserieslanguage import (
 from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
-from lp.registry.browser.productseries import ProductSeriesView
+from lp.translations.browser.productseries import ProductSeriesView
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory, login_person
 
