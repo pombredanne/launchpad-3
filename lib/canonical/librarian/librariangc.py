@@ -201,6 +201,8 @@ class UnreferencedLibraryFileContentPruner:
 
     index = 1 # Index of current batch of rows to remove.
 
+    total_deleted = 0 # Running total
+
     con = None # Database connection to use
 
     def __init__(self, con):
@@ -243,7 +245,7 @@ class UnreferencedLibraryFileContentPruner:
             ]
         assert len(references) > 10, (
             'Database introspection returned nonsense')
-        log.info(
+        log.debug(
             "Found %d columns referencing LibraryFileAlias", len(references))
 
         # Find all relevant LibraryFileAlias references and fill in
@@ -258,7 +260,7 @@ class UnreferencedLibraryFileContentPruner:
                 """ % {'table': table, 'column': column})
             con.commit()
 
-        log.info("Calculating expired unreferenced LibraryFileContent set.")
+        log.debug("Calculating expired unreferenced LibraryFileContent set.")
         cur.execute("DROP TABLE IF EXISTS UnreferencedLibraryFileContent")
         cur.execute("""
             CREATE TEMPORARY TABLE UnreferencedLibraryFileContent (
@@ -272,13 +274,19 @@ class UnreferencedLibraryFileContentPruner:
             SELECT content FROM ReferencedLibraryFileContent
             """)
         cur.execute("DROP TABLE ReferencedLibraryFileContent")
-        cur.execute("SELECT max(id) FROM UnreferencedLibraryFileContent")
+        cur.execute(
+            "SELECT COALESCE(max(id),0) FROM UnreferencedLibraryFileContent")
         self.max_id = cur.fetchone()[0]
-        log.info("%d unferenced LibraryFileContent to remove." % self.max_id)
+        log.debug("%d unferenced LibraryFileContent to remove." % self.max_id)
         con.commit()
 
     def isDone(self):
-        return self.index > self.max_id
+        if self.index > self.max_id:
+            log.info(
+                "Deleted %d LibraryFileAlias records." % self.total_deleted)
+            return True
+        else:
+            return False
 
     def __call__(self, chunk_size):
         chunk_size = int(chunk_size)
@@ -292,7 +300,9 @@ class UnreferencedLibraryFileContentPruner:
             WHERE LibraryFileAlias.content
                 = UnreferencedLibraryFileContent.content
             """, (self.index, self.index + chunk_size - 1))
-        log.info("Deleted %d LibraryFileAlias records." % cur.rowcount)
+        deleted_rows = cur.rowcount
+        self.total_deleted += deleted_rows
+        log.debug("Deleted %d LibraryFileAlias records." % deleted_rows)
         self.con.commit()
         self.index += chunk_size
 
@@ -352,47 +362,79 @@ def delete_unreferenced_content(con):
         con.commit()
 
 
-def flag_expired_files(connection):
+class FlagExpiredFiles:
     """Flag files past their expiry date as 'deleted' in the database.
 
     Actual removal from disk is not performed here - that is deferred to
     delete_unwanted_files().
     """
-    cur = connection.cursor()
+    implements(ITunableLoop)
 
-    # First get the list of all LibraryFileContent.
-    cur.execute("SELECT id FROM LibraryFileContent WHERE deleted IS FALSE")
-    all_ids = set(row[0] for row in cur.fetchall())
+    index = 1
 
-    # Now the list of unexpired content. May contain some ids not in the
-    # all_ids set if uploads are currently in progress.
-    cur.execute("""
-        SELECT DISTINCT content
-        FROM LibraryFileAlias
-        WHERE expires IS NULL
-            OR expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-        """)
-    unexpired_ids = set(row[0] for row in cur.fetchall())
+    con = None # Database connection to use
 
-    # Destroy our all_ids set to create the set of expired ids.
-    # We do it this way, as we are dealing with large sets and need to
-    # be careful of RAM usage on the production server.
-    all_ids -= unexpired_ids
-    expired_ids = all_ids
-    del all_ids
-    del unexpired_ids
+    total_flagged = 0
 
-    for commit_counter, content_id in enumerate(expired_ids):
-        log.debug("%d is expired." % content_id)
-        cur = connection.cursor()
+    def __init__(self, con):
+        self.con = con
+        cur = con.cursor()
+
+        log.debug("Creating set of expired LibraryFileContent.")
+        cur.execute("DROP TABLE IF EXISTS ExpiredLibraryFileContent")
+        cur.execute("""
+            CREATE TEMPORARY TABLE ExpiredLibraryFileContent
+            (id serial PRIMARY KEY, content integer UNIQUE)
+            """)
+        cur.execute("""
+            INSERT INTO ExpiredLibraryFileContent (content)
+            SELECT id FROM LibraryFileContent WHERE deleted IS FALSE
+            EXCEPT ALL
+            SELECT DISTINCT content
+            FROM LibraryFileAlias
+            WHERE expires IS NULL
+                OR expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            """)
+        cur.execute(
+            "SELECT COALESCE(max(id),0) FROM ExpiredLibraryFileContent")
+        self.max_id = cur.fetchone()[0]
+        log.debug(
+            "%d expired LibraryFileContent to flag for removal."
+            % self.max_id)
+
+    def isDone(self):
+        if self.index > self.max_id:
+            log.info(
+                "Flagged %d expired files for removal."
+                % self.total_flagged)
+            return True
+        else:
+            return False
+
+    def __call__(self, chunksize):
+        chunksize = int(chunksize)
+        cur = self.con.cursor()
         cur.execute("""
             UPDATE LibraryFileContent SET deleted=TRUE
-            WHERE id = %d
-            """ % content_id)
-        if commit_counter % 100 == 0:
-            connection.commit()
-    connection.commit()
-    log.info("Flagged %d expired files for removal." % len(expired_ids))
+            FROM (
+                SELECT content FROM ExpiredLibraryFileContent
+                WHERE id BETWEEN %s AND %s
+                ) AS ExpiredLibraryFileContent
+            WHERE LibraryFileContent.id = ExpiredLibraryFileContent.content
+            """, (self.index, self.index + chunksize - 1))
+        flagged_rows = cur.rowcount
+        log.debug(
+            "Flagged %d expired LibraryFileContent for removal."
+            % flagged_rows)
+        self.total_flagged += flagged_rows
+        self.index += chunksize
+        self.con.commit()
+
+
+def flag_expired_files(connection):
+    """Invoke FlagExpiredFiles."""
+    loop_tuner = DBLoopTuner(FlagExpiredFiles(connection), 5, log=log)
+    loop_tuner.run()
 
 
 def delete_unwanted_files(con):
@@ -439,8 +481,8 @@ def delete_unwanted_files(con):
         count += 1
 
     log.info(
-            "Removed %d from disk that where no longer referenced in the db"
-            % count
+            "Deleted %d files from disk that where no longer referenced "
+            "in the db" % count
             )
 
 
