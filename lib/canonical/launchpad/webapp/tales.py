@@ -32,17 +32,13 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import (
+    IBug, IBugSet, IDistribution, IFAQSet,
+    IProduct, IProject, IDistributionSourcePackage, ISprint, LicenseStatus,
+    NotFoundError)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, NotFoundError)
-from lp.answers.interfaces.faq import IFAQSet
-from lp.blueprints.interfaces.sprint import ISprint
-from lp.bugs.interfaces.bug import IBug, IBugSet
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.registry.interfaces.product import IProduct, LicenseStatus
-from lp.registry.interfaces.project import IProject
+    IHasIcon, IHasLogo, IHasMugshot)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
