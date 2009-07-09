@@ -4,9 +4,9 @@
 
 __metaclass__ = type
 __all__ = [
+    'BaseDatabasePolicy',
     'LaunchpadDatabasePolicy',
     'SlaveDatabasePolicy',
-    'SSODatabasePolicy',
     'MasterDatabasePolicy',
     ]
 
@@ -260,30 +260,6 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         # sl_status gives the best results on the origin node.
         store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
         return store.execute("SELECT replication_lag()").get_one()[0]
-
-
-class SSODatabasePolicy(BaseDatabasePolicy):
-    """`IDatabasePolicy` for the single signon servie.
-
-    Only the auth Master and the main Slave are allowed. Requests for
-    other Stores raise DisallowedStore exceptions.
-    """
-    config_section = 'sso'
-
-    def getStore(self, name, flavor):
-        """See `IDatabasePolicy`."""
-        if name == AUTH_STORE:
-            if flavor == SLAVE_FLAVOR:
-                raise DisallowedStore(name, flavor)
-            flavor = MASTER_FLAVOR
-        elif name == MAIN_STORE:
-            if flavor == MASTER_FLAVOR:
-                raise DisallowedStore(name, flavor)
-            flavor = SLAVE_FLAVOR
-        else:
-            raise DisallowedStore(name, flavor)
-
-        return super(SSODatabasePolicy, self).getStore(name, flavor)
 
 
 class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
