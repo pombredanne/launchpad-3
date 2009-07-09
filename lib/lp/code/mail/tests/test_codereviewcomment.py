@@ -215,6 +215,10 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual([diff], mailer.attachments)
 
     def makeCommentAndParticipants(self):
+        """Create a merge proposal and comment.
+
+        Proposal registered by "Proposer" and comment added by "Commenter".
+        """
         proposer = self.factory.makePerson(
             email='proposer@email.com', displayname='Proposer')
         bmp = self.factory.makeBranchMergeProposal(registrant=proposer)
@@ -227,6 +231,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         return comment
 
     def test_getToAddresses_no_parent(self):
+        """To address for a comment with no parent should be the proposer."""
         comment = self.makeCommentAndParticipants()
         mailer = CodeReviewCommentMailer.forCreation(comment)
         to = mailer._getToAddresses(
@@ -237,6 +242,11 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(['Proposer <propose@gmail.com>'], to)
 
     def test_generateEmail_addresses(self):
+        """The to_addrs but not envelope_to should follow getToAddress.
+
+        We provide false to addresses to make filters happier, but this
+        should not affect the actual recipient list.
+        """
         comment = self.makeCommentAndParticipants()
         mailer = CodeReviewCommentMailer.forCreation(comment)
         ctrl = mailer.generateEmail('commenter@email.com',
@@ -245,6 +255,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(['commenter@email.com'], ctrl.envelope_to)
 
     def test_getToAddresses_with_parent(self):
+        """To address for a reply should be the parent comment author."""
         comment = self.makeCommentAndParticipants()
         second_commenter = self.factory.makePerson(
             email='commenter2@email.com', displayname='Commenter2')

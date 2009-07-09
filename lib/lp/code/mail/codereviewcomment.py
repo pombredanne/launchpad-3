@@ -109,10 +109,17 @@ class CodeReviewCommentMailer(BMPMailer):
         return headers
 
     def _getToAddresses(self, recipient, email):
+        """Provide to addresses as if this were a mailing list.
+
+        CodeReviewComments which are not replies shall list the merge proposer
+        as their to address.  CodeReviewComments which are replies shall list
+        the parent comment's author as their to address.
+        """
         if self.message.parent is None:
             to_person = self.merge_proposal.registrant
         else:
             to_person = self.message.parent.owner
+        # Ensure the to header matches the envelope-to address.
         if to_person == recipient:
             to_email = email
         else:
