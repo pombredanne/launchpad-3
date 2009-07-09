@@ -106,9 +106,9 @@ is created.  When those jobs are run, the email is sent from the registrant.
 An email is sent to subscribers of either branch.
 
     >>> for notification in notifications:
-    ...     print notification['To']
-    Source Subscriber <source@example.com>
-    Target Subscriber <target@example.com>
+    ...     print notification['X-Envelope-To']
+    target@example.com
+    source@example.com
 
     >>> notification = notifications[0]
     >>> print notification['From']
@@ -151,15 +151,16 @@ in the email.
     ...     initial_comment=initial_comment, review_requests=reviewers)
     >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
     >>> _unused_diff = job.run()
-    >>> notifications = pop_notifications()
+    >>> notifications = pop_notifications(
+    ...     sort_key=lambda n: n.get('X-Envelope-To'))
     >>> for notification in notifications:
     ...     print "%s, %s" % (
-    ...         notification['To'],
+    ...         notification['X-Envelope-To'],
     ...         notification['X-Launchpad-Message-Rationale'])
-    Bob the Builder <bob@example.com>, Reviewer
-    Mary Jones <mary@example.com>, Reviewer
-    Source Subscriber <source@example.com>, Subscriber
-    Target Subscriber <target@example.com>, Subscriber
+    bob@example.com, Reviewer
+    mary@example.com, Reviewer
+    source@example.com, Subscriber
+    target@example.com, Subscriber
     >>> notification = notifications[0]
     >>> print notification.get_payload()[0].get_payload(decode=True)
     Eric has proposed merging
