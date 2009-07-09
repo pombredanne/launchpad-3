@@ -7,11 +7,13 @@ Everything in here should be submitted upstream.
 
 __metaclass__ = type
 __all__ = [
+    'add_exception_logging_hook',
     'DenyingServer',
     'ensure_base',
     'get_branch_stacked_on_url',
     'HttpAsLocalTransport',
     'is_branch_stackable',
+    'remove_exception_logging_hook',
     ]
 
 from bzrlib import config
@@ -19,6 +21,7 @@ from bzrlib.errors import (
     NoSuchFile, NotStacked, UnstackableBranchFormat,
     UnstackableRepositoryFormat)
 from bzrlib.remote import RemoteBzrDir
+from bzrlib import trace
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
 
@@ -114,6 +117,41 @@ def ensure_base(transport):
         else:
             from bzrlib.builtins import _create_prefix
             _create_prefix(transport)
+
+
+_hooks = []
+
+_original_log_exception_quietly = trace.log_exception_quietly
+
+
+def _hooked_log_exception_quietly():
+    """Wrapper around `trace.log_exception_quietly` that calls hooks."""
+    _original_log_exception_quietly()
+    for hook in _hooks:
+        hook()
+
+
+def add_exception_logging_hook(hook_function):
+    """Call 'hook_function' when bzr logs an exception.
+
+    :param hook_function: A nullary callable that relies on sys.exc_info()
+        for exception information.
+    """
+    if trace.log_exception_quietly == _original_log_exception_quietly:
+        trace.log_exception_quietly = _hooked_log_exception_quietly
+    _hooks.append(hook_function)
+
+
+def remove_exception_logging_hook(hook_function):
+    """Cease calling 'hook_function' whenever bzr logs an exception.
+
+    :param hook_function: A nullary callable that relies on sys.exc_info()
+        for exception information. It will be removed from the exception
+        logging hooks.
+    """
+    _hooks.remove(hook_function)
+    if len(_hooks) == 0:
+        trace.log_exception_quietly == _original_log_exception_quietly
 
 
 class HttpAsLocalTransport(LocalTransport):
