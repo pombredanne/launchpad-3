@@ -59,7 +59,7 @@ class BaseMailer:
         body = self._getBody(email)
         ctrl = MailController(
             self.from_address, to_address, subject, body, headers)
-        self._addAttachments(ctrl, email)
+        self._addAttachments(ctrl)
         return ctrl
 
     def _getSubject(self, email):
@@ -83,7 +83,7 @@ class BaseMailer:
             headers['Message-Id'] = self.message_id
         return headers
 
-    def _addAttachments(self, ctrl, email):
+    def _addAttachments(self, ctrl):
         """Add any appropriate attachments to a MailController.
 
         Default implementation does nothing.

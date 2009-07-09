@@ -149,7 +149,7 @@ class BMPMailer(BranchMailer):
             headers['In-Reply-To'] = self.merge_proposal.root_message_id
         return headers
 
-    def _addAttachments(self, ctrl, email):
+    def _addAttachments(self, ctrl):
         if self.review_diff is not None:
             ctrl.addAttachment(
                 self.review_diff.diff.text, content_type='text/x-diff',
