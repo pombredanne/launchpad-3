@@ -33,6 +33,7 @@ class SSODatabasePolicyTestCase(BaseDatabasePolicyTestCase):
         BaseDatabasePolicyTestCase.setUp(self)
 
     def test_defaults(self):
+        # Test that the default store are properly set by the policy.
         self.assertCorrectlyProvides(
             getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR),
             ISlaveStore)
@@ -41,6 +42,8 @@ class SSODatabasePolicyTestCase(BaseDatabasePolicyTestCase):
             IMasterStore)
 
     def test_disallowed(self):
+        # Test that the slave flavor is disallowed on the Auth store and
+        # that the master flavor is disallowed on the other stores.
         for store in ALL_STORES:
             if store == AUTH_STORE:
                 disallowed_flavor = SLAVE_FLAVOR
@@ -51,6 +54,7 @@ class SSODatabasePolicyTestCase(BaseDatabasePolicyTestCase):
                 getUtility(IStoreSelector).get, store, disallowed_flavor)
 
     def test_dbusers(self):
+        # Test that the correct dbuser is used for each store.
         store_selector = getUtility(IStoreSelector)
         for store in ALL_STORES:
             if store == AUTH_STORE:
@@ -67,6 +71,7 @@ class SSOLayerDatabaseRegistrationTestCase(TestCase):
     layer = FunctionalLayer
 
     def test_OpenIDLayer_uses_SSODatabasePolicy(self):
+        # Test that the OpenIDLayer uses the SSODatabasePolicy.
         request = LaunchpadTestRequest(
             SERVER_URL='http://openid.launchpad.dev/+openid')
         setFirstLayer(request, OpenIDLayer)
@@ -74,6 +79,7 @@ class SSOLayerDatabaseRegistrationTestCase(TestCase):
         self.assertIsInstance(policy, SSODatabasePolicy)
 
     def test_IdLayer_uses_SSODatabasePolicy(self):
+        # Test that the IdLayer uses the SSODatabasePolicy.
         request = LaunchpadTestRequest(
             SERVER_URL='http://openid.launchpad.dev/+openid')
         setFirstLayer(request, IdLayer)
@@ -81,6 +87,8 @@ class SSOLayerDatabaseRegistrationTestCase(TestCase):
         self.assertIsInstance(policy, SSODatabasePolicy)
 
     def test_read_only_mode_IdLayer_uses_SSODatabasePolicy(self):
+        # Test that the OpenIDLayer in read-only mode uses the 
+        # SSODatabasePolicy.
         config.push('read_only', """
             [launchpad]
             read_only: True""")

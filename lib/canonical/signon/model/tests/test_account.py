@@ -30,6 +30,8 @@ class EmailManagementWithSSODatabasePolicyTests(EmailManagementTests):
         super(EmailManagementWithSSODatabasePolicyTests, self).tearDown()
 
     def test_getUnvalidatedEmails(self):
+        # Test that unvalidated emails can be retrieved using the
+        # SSODatabasePolicy.
         account = self.factory.makeAccount("Test Account")
         token = getUtility(IAuthTokenSet).new(
             account, account.preferredemail.email,
