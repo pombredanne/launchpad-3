@@ -6,9 +6,9 @@ import unittest
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import ZopelessDatabaseLayer
-from lp.registry.browser.sourcepackage import (
+from lp.translations.browser.sourcepackage import (
     SourcePackageTranslationsExportView)
-from lp.registry.browser.productseries import (
+from lp.translations.browser.productseries import (
     ProductSeriesTranslationsExportView)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)

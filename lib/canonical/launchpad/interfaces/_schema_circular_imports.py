@@ -68,11 +68,19 @@ IBranch['getSubscription'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
 IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
+IBranch['linkBug'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+IBranch['linkSpecification'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
 IBranch['product'].schema = IProduct
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
 IBranch['subscriptions'].value_type.schema = IBranchSubscription
+IBranch['unlinkBug'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+IBranch['unlinkSpecification'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment

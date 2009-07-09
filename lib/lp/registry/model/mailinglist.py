@@ -371,6 +371,8 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         store = Store.of(self)
         results = store.find(Person,
+                             TeamParticipation.person == Person.id,
+                             TeamParticipation.team == self.team,
                              MailingListSubscription.person == Person.id,
                              MailingListSubscription.mailing_list == self)
         return results.order_by(Person.displayname)
