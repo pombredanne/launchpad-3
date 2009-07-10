@@ -406,7 +406,7 @@
                        style="font-weight: normal">
                   #<tal:bug-id replace="bug/id">4</tal:bug-id>
                   <a tal:attributes="href bug/fmt:url; id string:bug-${bug/id}-title"
-                     tal:content="bug/title"
+                     tal:content="bug/title" class="duplicate-bug-link"
                      >Bug title here</a>
                 </label>
               </div>
