@@ -17,15 +17,13 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.authtoken import IAuthTokenSet
 from canonical.signon.interfaces.openidserver import (
     IOpenIDApplication, IOpenIDPersistentIdentity)
-from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (
-    Navigation, RedirectionView, stepthrough, stepto)
+    Navigation, stepthrough, stepto)
 from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
 
 

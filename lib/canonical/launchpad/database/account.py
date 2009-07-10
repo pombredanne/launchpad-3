@@ -5,13 +5,11 @@
 __metaclass__ = type
 __all__ = ['Account', 'AccountPassword', 'AccountSet']
 
-import random
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements
 
-from storm.expr import Desc, Or
+from storm.expr import Desc
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -30,8 +28,6 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddress, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.signon.interfaces.openidserver import IOpenIDRPSummarySet
-from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class Account(SQLBase):
