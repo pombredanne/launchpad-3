@@ -633,21 +633,25 @@ happy hacker.
     ...             '%12s: %18s -> %20s (%s)'
     ...             % (person, pset, permission, ptype))
 
-    >>> ignore_this = ap_set.newPackagesetUploader(person1, mozilla_ps)
+    
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> ubuntu_archive = ubuntu.main_archive
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, person1, mozilla_ps)
 
 Now we see that person 'hacker' has upload permissions to the 'mozilla'
 package set.
 
-    >>> permissions = ap_set.packagesetsForUploader(person1)
+    >>> permissions = ap_set.packagesetsForUploader(
+    ...     ubuntu_archive, person1)
     >>> print_permission(permissions)
           hacker:         mozilla ->               UPLOAD (implicit)
 
 The generic checkAuthenticated() method works as well.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> permissions = ap_set.checkAuthenticated(
-    ...     person1, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
+    ...     person1, ubuntu_archive, ArchivePermissionType.UPLOAD,
     ...     mozilla_ps)
     >>> permission = permissions[0]
 
@@ -669,7 +673,8 @@ name.
 
 'hacker' is also listed as one of the 'mozilla' uploaders.
 
-    >>> print_permission(ap_set.uploadersForPackageset(mozilla_ps))
+    >>> print_permission(ap_set.uploadersForPackageset(
+    ...     ubuntu_archive, mozilla_ps))
           hacker:         mozilla ->               UPLOAD (implicit)
 
 Furthermore, 'hacker' will be listed as an uploader for any included
@@ -684,7 +689,8 @@ the 'explicit' flag set.
 When we ask for the 'firefox' uploaders, 'hacker' will not be listed although
 'mozilla' includes 'firefox'.
 
-    >>> print_permission(ap_set.uploadersForPackageset(firefox_ps))
+    >>> print_permission(ap_set.uploadersForPackageset(
+    ...     ubuntu_archive, firefox_ps))
 
 If we ask for uploaders while considering the inclusions between package
 sets, 'hacker' will be listed as an uploader for 'firefox' by virtue of
@@ -693,17 +699,18 @@ uploader for mozilla.
 
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(
-    ...         firefox_ps, direct_permissions=False))
+    ...         ubuntu_archive, firefox_ps, direct_permissions=False))
           hacker:         mozilla ->               UPLOAD (implicit)
 
 If we add a permission for 'firefox' things will stay the same i.e. 'hacker'
 is still listed as an uploader. Please note the different package sets
 ('mozilla' and 'firefox') although we are looking for 'firefox' uploaders.
 
-    >>> ignore_this = ap_set.newPackagesetUploader(person2, firefox_ps)
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, person2, firefox_ps)
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(
-    ...         firefox_ps, direct_permissions=False))
+    ...         ubuntu_archive, firefox_ps, direct_permissions=False))
           hacker:         mozilla ->               UPLOAD (implicit)
          juergen:         firefox ->               UPLOAD (implicit)
 
@@ -717,22 +724,26 @@ an uploader for 'firefox'.
 
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(
-    ...         firefox_ps, direct_permissions=False))
+    ...         ubuntu_archive, firefox_ps, direct_permissions=False))
          juergen:         firefox ->               UPLOAD (implicit)
 
 Ulploaders with explicit permissions will be listed along with the other
 uploaders.
 
     >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
-    >>> ignore_this = ap_set.newPackagesetUploader(sabdfl, firefox_ps, True)
-    >>> print_permission(ap_set.uploadersForPackageset(firefox_ps))
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, sabdfl, firefox_ps, True)
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(ubuntu_archive, firefox_ps))
           sabdfl:         firefox ->               UPLOAD (explicit)
          juergen:         firefox ->               UPLOAD (implicit)
 
 Persons can have both explicit or non-explicit permissions for package sets.
 
-    >>> ignore_this = ap_set.newPackagesetUploader(sabdfl, thunderbird_ps)
-    >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, sabdfl, thunderbird_ps)
+    >>> print_permission(
+    ...     ap_set.packagesetsForUploader(ubuntu_archive, sabdfl))
           sabdfl:         firefox ->               UPLOAD (explicit)
           sabdfl:     thunderbird ->               UPLOAD (implicit)
 
@@ -740,7 +751,7 @@ Attempting to create an explicit permission when a non-explicit one exists
 already will fail.
 
     >>> ignore_this = ap_set.newPackagesetUploader(
-    ...     sabdfl, thunderbird_ps, True)
+    ...     ubuntu_archive, sabdfl, thunderbird_ps, True)
     Traceback (most recent call last):
     ...
     ValueError: Permission for package set 'thunderbird' already exists for
@@ -748,7 +759,8 @@ already will fail.
 
 And the other way around:
 
-    >>> ignore_this = ap_set.newPackagesetUploader(sabdfl, firefox_ps)
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, sabdfl, firefox_ps)
     Traceback (most recent call last):
     ...
     ValueError: Permission for package set 'firefox' already exists for
@@ -756,17 +768,22 @@ And the other way around:
 
 Removing package set based permissions is straight-forward.
 
-    >>> ap_set.deletePackagesetUploader(sabdfl, firefox_ps, True)
-    >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
+    >>> ap_set.deletePackagesetUploader(
+    ...     ubuntu_archive, sabdfl, firefox_ps, True)
+    >>> print_permission(
+    ...     ap_set.packagesetsForUploader(ubuntu_archive, sabdfl))
           sabdfl:     thunderbird ->               UPLOAD (implicit)
 
-    >>> ap_set.deletePackagesetUploader(sabdfl, thunderbird_ps)
-    >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
+    >>> ap_set.deletePackagesetUploader(
+    ...     ubuntu_archive, sabdfl, thunderbird_ps)
+    >>> print_permission(ap_set.packagesetsForUploader(
+    ...     ubuntu_archive, sabdfl))
 
 An attempt to look up package set based permission by something else than
 by a package set (name) results in a failure.
 
-    >>> print_permission(ap_set.uploadersForPackageset(12345))
+    >>> print_permission(ap_set.uploadersForPackageset(
+    ...     ubuntu_archive, 12345))
     Traceback (most recent call last):
     ...
     ValueError: Not a package set: int
@@ -774,14 +791,16 @@ by a package set (name) results in a failure.
 Create a package set based permission for a team.
 
     >>> techboardp = (
-    ...     ap_set.newPackagesetUploader(techboard, kde_ps))
+    ...     ap_set.newPackagesetUploader(
+    ...         ubuntu_archive, techboard, kde_ps))
 
 An attempt to create a new permission for a 'techboard' team member
   * for the same package set
   * but with a conflicting 'explicit' flag value
 will fail.
 
-    >>> ignore_this = ap_set.newPackagesetUploader(person2, kde_ps, True)
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, person2, kde_ps, True)
     Traceback (most recent call last):
     ...
     ValueError: Permission for package set 'kde' already exists for
@@ -791,7 +810,8 @@ An attempt to create the same permission repeatedly should just return
 the existing one.
 
     >>> sameone = (
-    ...     ap_set.newPackagesetUploader(techboard, kde_ps))
+    ...     ap_set.newPackagesetUploader(
+    ...         ubuntu_archive, techboard, kde_ps))
     >>> techboardp.id == sameone.id
     True
 
@@ -799,12 +819,15 @@ Creating a "compatible" permission for person 'juergen' succeeds although
 there is one in place for 'techboard' already (and 'juergen' belongs to
 the 'techboard' team).
 
-    >>> print_permission(ap_set.uploadersForPackageset(kde_ps))
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(ubuntu_archive, kde_ps))
        techboard:             kde ->               UPLOAD (implicit)
 
-    >>> ignore_this = ap_set.newPackagesetUploader(person2, kde_ps)
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, person2, kde_ps)
 
-    >>> print_permission(ap_set.uploadersForPackageset(kde_ps))
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(ubuntu_archive, kde_ps))
          juergen:             kde ->               UPLOAD (implicit)
        techboard:             kde ->               UPLOAD (implicit)
 
@@ -825,14 +848,16 @@ The 'mozilla' package set includes the 'firefox' subset and hence the
 
 'hacker' is authorized to upload to the 'mozilla' package set..
 
-    >>> print_permission(ap_set.uploadersForPackageset(mozilla_ps))
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(ubuntu_archive, mozilla_ps))
           hacker:         mozilla ->               UPLOAD (implicit)
 
 .. and hence listed as a *potential* uploader of the 'mozilla-firefox'
 source package.
 
     >>> print_permission(
-    ...     ap_set.packagesetsForSourceUploader('mozilla-firefox', person1))
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'mozilla-firefox', person1))
           hacker:         mozilla ->               UPLOAD (implicit)
 
 'juergen' is allowed to upload to the 'firefox' package set that includes
@@ -842,39 +867,45 @@ the 'mozilla-firefox' source package name directly ..
       1 -> mozilla-firefox
      26 -> iceweasel
 
-    >>> print_permission(ap_set.uploadersForPackageset(firefox_ps))
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(ubuntu_archive, firefox_ps))
          juergen:         firefox ->               UPLOAD (implicit)
 
 .. and thus also listed as a possible uploader of the 'mozilla-firefox'
 source package.
 
     >>> print_permission(
-    ...     ap_set.packagesetsForSourceUploader('mozilla-firefox', person2))
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'mozilla-firefox', person2))
          juergen:         firefox ->               UPLOAD (implicit)
 
 Fetching the permissions for a non-existent source package name will fail
 as follows:
 
     >>> print_permission(
-    ...     ap_set.packagesetsForSourceUploader('vapour-ware', person2))
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'vapour-ware', person2))
     Traceback (most recent call last):
     ...
     SourceNotFound: No such source package: 'vapour-ware'.
 
 Now for the verdict: is 'hacker' allowed to upload 'mozilla-firefox'?
 
-    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', person1)
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', person1)
     True
 
 How about 'juergen'?
 
-    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', person2)
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', person2)
     True
 
 And the unprivileged user?
 
     >>> unprivileged = getUtility(IPersonSet).getByName("no-priv")
-    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', unprivileged)
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', unprivileged)
     False
 
 So, what we see is that the package set inclusion hierarchy is honored as
@@ -903,25 +934,28 @@ and see how that changes things.
       9 -> specialists-only
 
     >>> ignore_this = ap_set.newPackagesetUploader(
-    ...     unprivileged, specialist_ps, True)
+    ...     ubuntu_archive, unprivileged, specialist_ps, True)
 
 Please note that there's a package set now that includes 'mozilla-firefox'
 and has an explicit permission.
 
     >>> for ps in sort_by_id(ps_set.setsIncludingSource(
     ...     'mozilla-firefox', direct_inclusion=True)):
-    ...     print_permission(ap_set.uploadersForPackageset(ps))
+    ...     print_permission(
+    ...         ap_set.uploadersForPackageset(ubuntu_archive, ps))
          juergen:          firefox ->               UPLOAD (implicit)
          no-priv: specialists-only ->               UPLOAD (explicit)
 
 Is 'hacker' still allowed to upload 'mozilla-firefox'?
 
-    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', person1)
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', person1)
     False
 
 How about 'juergen'?
 
-    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', person2)
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', person2)
     False
 
 Now neither 'hacker' nor 'juergen' are allowed to upload. All non-explicit
@@ -931,7 +965,8 @@ The 'unprivileged' person who holds an explicit permission for the
 'specialists-only' package set (including the 'mozilla-firefox' source)
 is allowed to upload.
 
-    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', unprivileged)
+    >>> ap_set.isSourceUploadAllowed(
+    ...     ubuntu_archive, 'mozilla-firefox', unprivileged)
     True
 
 
