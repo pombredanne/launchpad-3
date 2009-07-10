@@ -722,6 +722,11 @@
             ProductTranslationsMenu"
         module="lp.translations.browser.product"/>
     <browser:page
+        name="+translations"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
+        permission="zope.Public"/>
+    <browser:page
         name="+help-translate-button"
         for="lp.registry.interfaces.product.IProduct"
         class="lp.translations.browser.translations.HelpTranslateButtonView"
@@ -766,7 +771,6 @@
         classes="
             ProjectTranslationsMenu"
         module="lp.translations.browser.project"/>
-
     <browser:page
         name="+translations"
         for="lp.registry.interfaces.project.IProject"
