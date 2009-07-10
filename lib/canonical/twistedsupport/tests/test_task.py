@@ -204,7 +204,7 @@ class TestPollingTaskSource(TestCase):
     def test_only_one_producer_call_at_once(self):
         # If the task producer returns a Deferred, it will not be called again
         # until that deferred has fired, even if takes longer than the
-        # 'interval'
+        # interval we're polling at.
         tasks_called = []
         produced_deferreds = []
         def producer():
@@ -223,6 +223,63 @@ class TestPollingTaskSource(TestCase):
         # the producer is not called again.
         clock.advance(interval)
         self.assertEqual(len(produced_deferreds), 1)
+        # If the task-getting deferred is fired and more time passes, we poll
+        # again.
+        produced_deferreds[0].callback(None)
+        clock.advance(interval)
+        self.assertEqual(len(produced_deferreds), 2)
+
+    def test_taskStarted_deferred_doesnt_delay_polling(self):
+        # If taskStarted returns a deferred, we don't wait for it to fire
+        # before polling again.
+        class DeferredStartingConsumer(NoopTaskConsumer):
+            def taskStarted(self, task):
+                started.append(task)
+                return Deferred()
+        interval = self.factory.getUniqueInteger()
+        clock = Clock()
+        produced = []
+        started = []
+        def producer():
+            value = self.factory.getUniqueInteger()
+            produced.append(value)
+            return value
+        task_source = self.makeTaskSource(
+            task_producer=producer, interval=interval, clock=clock)
+        consumer = DeferredStartingConsumer()
+        task_source.start(consumer)
+        # The call to start polls once and taskStarted is called.
+        self.assertEqual((1, 1), (len(produced), len(started)))
+        # Even though taskStarted returned a deferred which has not yet fired,
+        # we poll again after 'interval' seconds.
+        clock.advance(interval)
+        self.assertEqual((2, 2), (len(produced), len(started)))
+
+    def test_taskProductionFailed_deferred_doesnt_delay_polling(self):
+        # If taskProductionFailed returns a deferred, we don't wait for it to
+        # fire before polling again.
+        class DeferredFailingConsumer(NoopTaskConsumer):
+            def taskProductionFailed(self, reason):
+                failures.append(reason)
+                return Deferred()
+        interval = self.factory.getUniqueInteger()
+        clock = Clock()
+        produced = []
+        failures = []
+        def producer():
+            exc = RuntimeError()
+            produced.append(exc)
+            raise exc
+        task_source = self.makeTaskSource(
+            task_producer=producer, interval=interval, clock=clock)
+        consumer = DeferredFailingConsumer()
+        task_source.start(consumer)
+        # The call to start polls once and taskProductionFailed is called.
+        self.assertEqual((1, 1), (len(produced), len(failures)))
+        # Even though taskProductionFailed returned a deferred which has not
+        # yet fired, we poll again after 'interval' seconds.
+        clock.advance(interval)
+        self.assertEqual((2, 2), (len(produced), len(failures)))
 
     def test_producer_errors_call_taskProductionFailed(self):
         # If the producer raises an error, then we call taskProductionFailed
