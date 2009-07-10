@@ -46,7 +46,7 @@ recently, using the OpenID service.
     >>> from canonical.launchpad.interfaces.account import IAccountSet
     >>> from canonical.signon.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
-    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.signon.dbpolicy import SSODatabasePolicy
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> login(ANONYMOUS)
     >>> getUtility(IStoreSelector).push(SSODatabasePolicy())

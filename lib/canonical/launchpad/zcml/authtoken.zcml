@@ -6,13 +6,6 @@
 
 <facet facet="overview">
 
-    <!-- AuthToken -->
-    <class class="canonical.launchpad.database.authtoken.AuthToken">
-        <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IAuthToken" />
-    </class>
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IAuthToken"
         name="+index" />
@@ -56,28 +49,10 @@
         template="../templates/logintoken-newaccount.pt"
         />
 
-    <!-- AuthTokenSet -->
-    <class class="canonical.launchpad.database.authtoken.AuthTokenSet">
-        <allow interface="canonical.launchpad.interfaces.IAuthTokenSet" />
-    </class>
-
-    <securedutility
-        class="canonical.launchpad.database.authtoken.AuthTokenSet"
-        provides="canonical.launchpad.interfaces.IAuthTokenSet">
-        <allow interface="canonical.launchpad.interfaces.IAuthTokenSet" />
-    </securedutility>
-
     <browser:navigation
         module="canonical.launchpad.browser.authtoken"
         classes="AuthTokenSetNavigation"
         />
-
-    <browser:url
-        for="canonical.launchpad.interfaces.IAuthTokenSet"
-        path_expression="string:token"
-        parent_utility="canonical.signon.interfaces.openidserver.IOpenIDApplication"
-        />
-
 
 </facet>
 

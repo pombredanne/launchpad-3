@@ -480,7 +480,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def package_signer(self):
         """See `ISourcePackagePublishingHistory`."""
-        return self.sourcepackagerelease.dscsigningkey.owner
+        if self.sourcepackagerelease.dscsigningkey is not None:
+            return self.sourcepackagerelease.dscsigningkey.owner
+        return None
 
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
