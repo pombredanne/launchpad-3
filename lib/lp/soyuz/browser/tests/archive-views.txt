@@ -694,8 +694,9 @@ This view contains three properties. The first is a list of the PPAs
 in which the current user has upload/copy rights (see
 `IArchiveSet.getPPAsForUser`).
 
-    >>> [ppa.owner.name for ppa in view.ppas_for_user]
-    [u'cprov']
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for Celso Providelo
 
 The second shows whether or not the current user is allowed to perform
 copies. They must participate in at least one PPA for this to be True.
@@ -716,14 +717,38 @@ PPA, thus he can copy to it, but not to Celso's PPA.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages")
 
-    >>> [ppa.owner.name for ppa in view.ppas_for_user]
-    [u'no-priv']
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for No Privileges Person
 
     >>> view.can_copy
     True
 
     >>> view.can_copy_to_context_ppa
     False
+
+When 'No Privileges Person' gets upload right to Celso's PPA ...
+
+    >>> login('foo.bar@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> discard = cprov.archive.newComponentUploader(no_priv, "main")
+
+He becomes able to copy to the context PPA.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+copy-packages")
+
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+    PPA for No Privileges Person
+
+    >>> view.can_copy
+    True
+
+    >>> view.can_copy_to_context_ppa
+    True
 
 'Foo Bar' user has no PPA, so he cannot perform copies at all.
 
@@ -732,7 +757,7 @@ PPA, thus he can copy to it, but not to Celso's PPA.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages")
 
-    >>> [ppa.owner.name for ppa in view.ppas_for_user]
+    >>> print view.ppas_for_user
     []
 
     >>> view.can_copy
@@ -757,8 +782,10 @@ team he is member of.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages")
 
-    >>> [ppa.owner.name for ppa in view.ppas_for_user]
-    [u'cprov', u'ubuntu-team']
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+    PPA for Ubuntu Team
 
     >>> view.can_copy
     True
@@ -820,14 +847,14 @@ The 'destination_archive' widget behaves differently depending on
 whether or not the user has permission to perform copies to the
 context PPA.
 
-No Privileges user can't copy package to the Celso's PPA, thus
+No Privileges user can't copy package to the Ubuntu Team PPA, thus
 'destination' widget will become required and will fail if an empty
 value is submitted.
 
     >>> login('no-priv@canonical.com')
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+copy-packages",
+    ...     ubuntu_team.archive, name="+copy-packages",
     ...     form={
     ...         'field.destination_archive': '',
     ...         'field.destination_series': '',
@@ -839,6 +866,7 @@ value is submitted.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
+    PPA for Celso Providelo
     PPA for No Privileges Person
 
     >>> print archive_widget.getInputValue()
