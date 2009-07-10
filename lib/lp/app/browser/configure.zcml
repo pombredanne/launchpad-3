@@ -1,0 +1,13 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    xmlns:lp="http://namespaces.canonical.com/lp"
+    i18n_domain="launchpad">
+    <browser:page
+        for="*"
+        name="+base-layout-macros"
+        template="../templates/base-layout-macros.pt"
+        permission="zope.Public"
+        />
+</configure>

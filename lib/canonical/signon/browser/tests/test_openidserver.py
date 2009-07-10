@@ -1,6 +1,6 @@
 # Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
-"""Test harness for Login Service related unit tests."""
+"""Unit tests of Login Service related views."""
 
 __metaclass__ = type
 

@@ -38,11 +38,13 @@
     </ul>
 
     <p tal:condition="context/description">
-      <tal:description content="context/description">A brief paragraph
-        describing the potemplate would go here.</tal:description>
-      <a href="+edit"><img src="/@@/edit"
-                           title="Update this description"
-                           class="inline-icon" /></a>
+      <tal:description
+         content="structure context/description/fmt:text-to-html">
+        A brief paragraph describing the potemplate would go here.
+      </tal:description>
+      <a href="+edit" tal:condition="context/required:launchpad.Edit"
+         ><img src="/@@/edit" title="Update this description"
+               class="inline-icon" /></a>
     </p>
     <p tal:condition="not: context/description">
       This template has no description. <a href="+edit">Create it now!</a>
