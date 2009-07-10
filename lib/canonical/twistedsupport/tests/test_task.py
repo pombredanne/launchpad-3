@@ -255,6 +255,24 @@ class TestPollingTaskSource(TestCase):
         clock.advance(interval)
         self.assertEqual((2, 2), (len(produced), len(started)))
 
+    def test_producer_errors_call_taskProductionFailed(self):
+        # If the producer raises an error, then we call taskProductionFailed
+        # on the task consumer.
+        class LoggingConsumer:
+            def __init__(self):
+                self._task_production_failed_calls = []
+            def taskStarted(slf, task):
+                self.fail("taskStarted should not be called.")
+            def taskProductionFailed(self, reason):
+                self._task_production_failed_calls.append(reason)
+
+        task_source = self.makeTaskSource(task_producer=lambda: 1/0)
+        consumer = LoggingConsumer()
+        task_source.start(consumer)
+        self.assertEqual(1, len(consumer._task_production_failed_calls))
+        reason = consumer._task_production_failed_calls[0]
+        self.assertTrue(reason.check(ZeroDivisionError))
+
     def test_taskProductionFailed_deferred_doesnt_delay_polling(self):
         # If taskProductionFailed returns a deferred, we don't wait for it to
         # fire before polling again.
@@ -280,24 +298,6 @@ class TestPollingTaskSource(TestCase):
         # yet fired, we poll again after 'interval' seconds.
         clock.advance(interval)
         self.assertEqual((2, 2), (len(produced), len(failures)))
-
-    def test_producer_errors_call_taskProductionFailed(self):
-        # If the producer raises an error, then we call taskProductionFailed
-        # on the task consumer.
-        class LoggingConsumer:
-            def __init__(self):
-                self._task_production_failed_calls = []
-            def taskStarted(slf, task):
-                self.fail("taskStarted should not be called.")
-            def taskProductionFailed(self, reason):
-                self._task_production_failed_calls.append(reason)
-
-        task_source = self.makeTaskSource(task_producer=lambda: 1/0)
-        consumer = LoggingConsumer()
-        task_source.start(consumer)
-        self.assertEqual(1, len(consumer._task_production_failed_calls))
-        reason = consumer._task_production_failed_calls[0]
-        self.assertTrue(reason.check(ZeroDivisionError))
 
 
 class TestParallelLimitedTaskConsumer(TestCase):
