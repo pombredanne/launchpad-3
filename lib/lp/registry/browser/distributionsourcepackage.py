@@ -175,8 +175,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
         # we grab the first 20 results and iterate through to find three
         # distinct archives (20 is a magic number being greater than
         # 3 * number of distroseries).
-        related_archives = self.context.findRelatedArchives(
-            require_package_karma=15)
+        related_archives = self.context.findRelatedArchives()
         related_archives.config(limit=20)
         top_three_archives = []
         for archive in related_archives:
