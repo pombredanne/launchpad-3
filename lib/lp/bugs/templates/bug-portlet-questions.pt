@@ -11,7 +11,7 @@
   <div class="portletBody portletContent">
 
     <ul>
-      <li tal:repeat="question context/questions">
+      <li tal:repeat="question context/questions" class="question-row">
         <span tal:content="question/target/displayname"
               tal:attributes="class question/image:sprite_css">Ubuntu</span>:
         <a tal:attributes="href question/fmt:url"
