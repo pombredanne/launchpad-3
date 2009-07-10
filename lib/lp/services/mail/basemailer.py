@@ -65,7 +65,7 @@ class BaseMailer:
         ctrl = MailController(
             self.from_address, to_addresses, subject, body, headers,
             envelope_to=[email])
-        self._addAttachments(ctrl)
+        self._addAttachments(ctrl, email)
         return ctrl
 
     def _getSubject(self, email):
@@ -89,10 +89,12 @@ class BaseMailer:
             headers['Message-Id'] = self.message_id
         return headers
 
-    def _addAttachments(self, ctrl):
+    def _addAttachments(self, ctrl, email):
         """Add any appropriate attachments to a MailController.
 
         Default implementation does nothing.
+        :param ctrl: The MailController to add attachments to.
+        :param email: The email address of the recipient.
         """
         pass
 

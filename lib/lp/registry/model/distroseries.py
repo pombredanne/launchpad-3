@@ -49,7 +49,7 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
-    DistroArchSeries, PocketChroot)
+    DistroArchSeries, DistroArchSeriesSet, PocketChroot)
 from lp.soyuz.model.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
 from lp.translations.model.distroserieslanguage import (
@@ -977,14 +977,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 for pubrecord in result]
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None):
+                        arch_tag=None, user=None):
         """See IHasBuildRecords"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
 
         # Find out the distroarchseries in question.
-        arch_ids = [arch.id for arch in self.architectures]
+        arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
+            self.architectures, arch_tag)
+
         # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)

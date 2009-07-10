@@ -6,17 +6,15 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1><span tal:replace="context/title"/> builds</h1>
-    </metal:heading>
+<body>
 
 <div metal:fill-slot="main">
+  <h1><span tal:replace="context/title"/> builds</h1>
 
-  <div tal:replace="structure context/@@+builds-list"/>    
+    <div tal:replace="structure context/@@+builds-list"/>
 
 </div>
 

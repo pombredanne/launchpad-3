@@ -572,12 +572,12 @@ data from the database for a given set of builds:
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
 
-We can find recent and pending builds for a given distroseries.
+XXX: Michael Nelson 20090701 bug=394276
+The documentation for IHasBuildRecords is now in
+lp/soyuz/doc/hasbuildrecords.txt. The following implementation tests should
+be converted to unit-tests in lib/soyuz/tests/test_hasbuildrecords.py.
 
-    >>> hoary.getBuildRecords().count()
-    5
-
-Or for a given distroarchseries.
+We can find recent and pending builds for a given distrarchoseries.
 
     >>> hoaryi386 = hoary['i386']
     >>> hoaryi386.title
@@ -599,26 +599,6 @@ Exercises IHasBuildRecords abilities for distroarchseriess
     4
 
     >>> hoaryi386.getBuildRecords(
-    ...     pocket=PackagePublishingPocket.UPDATES).count()
-    0
-
-
-Same for distroseries:
-
-    >>> hoary.getBuildRecords().count()
-    5
-
-    >>> hoary.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
-    2
-
-    >>> hoary.getBuildRecords(name='pm').count()
-    2
-
-    >>> hoary.getBuildRecords(
-    ...     pocket=PackagePublishingPocket.RELEASE).count()
-    5
-
-    >>> hoary.getBuildRecords(
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
 
