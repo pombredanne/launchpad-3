@@ -94,7 +94,7 @@
     <a href="+publishinghistory">See full publishing history...</a>
   </p>
 
-  <div tal:define="ppa_versions view/latest_published_ppa_versions"
+  <div tal:define="ppa_versions view/related_ppa_versions"
        tal:condition="ppa_versions" id="related-ppa-versions">
     <div id="slide-trigger">
       <div class="widget-hd">
