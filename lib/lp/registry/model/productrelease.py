@@ -239,7 +239,8 @@ class ProductReleaseSet(object):
 
     def getFilesForReleases(self, releases):
         """See `IProductReleaseSet`."""
-        if len(list(releases)) == 0:
+        releases = list(releases)
+        if len(releases) == 0:
             return ProductReleaseFile.select('1 = 2')
         return ProductReleaseFile.select(
             """ProductReleaseFile.productrelease IN %s""" % (

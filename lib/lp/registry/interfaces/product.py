@@ -661,6 +661,9 @@ class IProductPublic(
     def getRelease(version):
         """Return the release for this product that has the version given."""
 
+    def getMilestonesAndReleases():
+        """Return all the milestones and releases for this product."""
+
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 

@@ -197,7 +197,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def sourcepackages(self):
         """See IProductSeries"""
         from lp.registry.model.sourcepackage import SourcePackage
-        ret = Packaging.selectBy(productseries=self)
+        ret = self.packagings
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distroseries=r.distroseries)
                     for r in ret]
