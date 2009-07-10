@@ -29,9 +29,8 @@
       <style>
         /* Align the "add comment" link to the right of the comment box. */
         #add-comment-form textarea { width: 100%; max-width=60em;}
-        #add-comment-form { max-width=60em;}
+        #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
-        #add-comment-form { padding-bottom: 4em; }
       </style>
     </metal:block>
 
