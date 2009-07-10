@@ -13,14 +13,16 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
-      <script type="text/javascript"
-              tal:define="lp_js string:${icingroot}/build"
-              tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
-      </script>
-      <script type="text/javascript"
-              tal:define="lp_js string:${icingroot}/build"
-              tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
-      </script>
+      <tal:devmode condition="devmode">
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
+        </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
+        </script>
+      </tal:devmode>
       <script type="text/javascript">
         YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
             Y.bugs.setup_bugtask_index();
