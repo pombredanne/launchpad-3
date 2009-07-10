@@ -397,7 +397,7 @@
 
   <div id="related-bugs-and-blueprints">
     <h2>Linked bug reports and blueprints</h2>
-    <div class="actions">
+    <div id="buglinks" class="actions">
       <tal:bugs tal:define="branch context;
                             show_edit python:True;">
         <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
