@@ -124,7 +124,6 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             'branch nick: %s'  % self.bzr_branch.nick,
             'message:\n  second',
             'added:\n  hello.txt',
-            "=3D=3D=3D added file 'hello.txt'",
             ]
         for bit in body_bits:
             self.assertTextIn(bit, recommit_email_body)
