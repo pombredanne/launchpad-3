@@ -1562,6 +1562,22 @@ immediately recognises 'cprov' rights on it.
     PPA for Celso Providelo
     PPA for Launchpad Buildd Admins
 
+The same happens for specific upload rights granted on 3rd-part
+PPAs. When 'No Privileges' gets upload rights to Celso's PPA,
+it gets listed by `getPPAsForUser`.
+
+    >>> for ppa in archive_set.getPPAsForUser(no_priv):
+    ...     print ppa.displayname
+    PPA for No Privileges Person
+
+    >>> cprov_archive.newComponentUploader(no_priv, "main")
+    <ArchivePermission ...>
+
+    >>> for ppa in archive_set.getPPAsForUser(no_priv):
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+    PPA for No Privileges Person
+
 When there is no active PPA for the team a user participates the
 method returns an empty SelectResults.
 
@@ -2012,6 +2028,37 @@ You'll get the same error if you use a component object that's not main.
     Traceback (most recent call last):
     ...
     InvalidComponent: Component for PPAs should be 'main'
+
+As important as the right to upload packages to Celso's PPA, Carlos
+also got the corresponding permissions on it.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login("carlos@canonical.com")
+
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+    >>> check_permission('launchpad.Append', cprov_archive)
+    True
+
+So even if Celso's PPA suddenly becomes private, Carlos rights will be
+preserved.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.buildd_secret = 'x'
+    >>> cprov_archive.private = True
+
+    >>> login("carlos@canonical.com")
+
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+    >>> check_permission('launchpad.Append', cprov_archive)
+    True
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.buildd_secret = ''
+    >>> cprov_archive.private = False
 
 
 == Rebuild archives ==
