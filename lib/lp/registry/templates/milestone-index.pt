@@ -107,6 +107,13 @@
 
         <h2 style="margin-top: 2em;">Download files for this release</h2>
 
+        <p id="how-to-verify" tal:condition="view/download_files">
+          After you've downloaded a file, you can verify its authenticity
+          using its MD5 sum or signature.
+          (<a href="/+help/verify-downloads.html" target="help">How do I
+          verify a download?</a>)
+        </p>
+
         <table id="downloads" class="listing">
           <thead>
             <tr>
