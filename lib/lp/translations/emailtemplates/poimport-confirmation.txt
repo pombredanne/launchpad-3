@@ -6,6 +6,8 @@ On %(dateimport)s (%(elapsedtime)s), you uploaded %(numberofmessages)d
 This mail is to notify you that all translations have now been
 imported.
 
+%(warnings)s
+
 Thank you,
 
 The Launchpad team

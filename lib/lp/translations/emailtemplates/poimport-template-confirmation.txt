@@ -4,6 +4,8 @@ On %(dateimport)s (%(elapsedtime)s), you uploaded a translation template for %(t
 
 The template has now been imported successfully.
 
+%(warnings)s
+
 Thank you,
 
 The Launchpad team

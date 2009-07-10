@@ -345,5 +345,3 @@ plural forms, the file imports just fine.
 
     >>> print entry.status.name
     IMPORTED
-
-

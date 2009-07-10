@@ -415,6 +415,69 @@ error_output.
     msgstr "blah %i"
 
 
+=== Import With Warnings ===
+
+The import may also but produce syntax warnings.  These need not be
+tied to particular messages (they could be in the header, for instance)
+and they don't mean that any messages failed to import.
+
+For example, here's a gettext PO file with two headers.
+
+    >>> pofile_with_warning = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "X-Rosetta-Export-Date: %s\n"
+    ...
+    ... # Second header.  This elicits a warning.
+    ... msgid ""
+    ... msgstr ""
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ...
+    ... msgid "x"
+    ... msgstr "y"
+    ...
+    ... msgid "a"
+    ... msgstr "b"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
+    >>> sumerian_pofile = potemplate.newPOFile('sux')
+    >>> warning_entry = translation_import_queue.addOrUpdateEntry(
+    ...     'sux.po', pofile_with_warning, False, potemplate.owner,
+    ...     productseries=series, potemplate=potemplate,
+    ...     pofile=sumerian_pofile)
+    >>> transaction.commit()
+    >>> warning_entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> (subject, message) = sumerian_pofile.importFromQueue(warning_entry)
+
+The warning is noted in the confirmation email.  Note that this
+particular warning conditioned is recognized fairly late, so the line
+number points at the next message.  There's not much we can do about
+that, but it should help a bit.
+
+    >>> print message
+    Hello ...
+    This mail is to notify you that all translations have now been
+    imported.
+    <BLANKLINE>
+    <BLANKLINE>
+    There were warnings while parsing the file.  These are not
+    fatal, but please correct them if you can.
+    <BLANKLINE>
+    Line 12: We got a second header.
+    <BLANKLINE>
+    Thank you,
+    <BLANKLINE>
+    The Launchpad team
+
+    >>> print warning_entry.error_output
+    There were warnings while parsing the file.  These are not
+    fatal, but please correct them if you can.
+    <BLANKLINE>
+    Line 12: We got a second header.
+
+    >>> warning_entry.setStatus(RosettaImportStatus.DELETED)
+
+
 === Import Without Errors ===
 
 Now, let's import one without errors.
