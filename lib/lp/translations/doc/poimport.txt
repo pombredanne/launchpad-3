@@ -450,7 +450,7 @@ For example, here's a gettext PO file with two headers.
     >>> (subject, message) = sumerian_pofile.importFromQueue(warning_entry)
 
 The warning is noted in the confirmation email.  Note that this
-particular warning conditioned is recognized fairly late, so the line
+particular warning condition is recognized fairly late, so the line
 number points at the next message.  There's not much we can do about
 that, but it should help a bit.
 
