@@ -73,6 +73,7 @@ from lp.code.interfaces.branchcollection import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revisioncache import IRevisionCache
 
 from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
@@ -1165,6 +1166,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initialize(self):
         ProductBranchListingView.initialize(self)
         self.product = self.context
+        revision_cache = getUtility(IRevisionCache)
+        self.revision_cache = revision_cache.inProduct(self.product)
 
     @property
     def form_action(self):
@@ -1177,38 +1180,15 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             'sort_by': BranchListingSort.DEFAULT,
             }
 
-    @cachedproperty
-    def _recent_revisions(self):
-        """Revisions for this project created in the last 30 days."""
-        # The actual number of revisions for any given project are likely
-        # to be small(ish).  We also need to be able to traverse over the
-        # actual revision authors in order to get an accurate count.
-        revisions = list(
-            getUtility(IRevisionSet).getRecentRevisionsForProduct(
-                product=self.context, days=30))
-        # XXX: thumper 2008-04-24
-        # How best to warn if the limit is getting too large?
-        # And how much is too much anyway.
-        return revisions
-
     @property
     def commit_count(self):
         """The number of new revisions in the last 30 days."""
-        return len(self._recent_revisions)
+        return self.revision_cache.count()
 
     @cachedproperty
     def committer_count(self):
         """The number of committers in the last 30 days."""
-        # Record a set of tuples where the first part is a launchpad
-        # person name if know, and the second part is the revision author
-        # text.  Only one part of the tuple will be set.
-        committers = set()
-        for (revision, author) in self._recent_revisions:
-            if author.personID is None:
-                committers.add((None, author.name))
-            else:
-                committers.add((author.personID, None))
-        return len(committers)
+        return self.revision_cache.authorCount()
 
     @cachedproperty
     def _branch_owners(self):
