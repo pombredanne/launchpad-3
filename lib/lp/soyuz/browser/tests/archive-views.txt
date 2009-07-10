@@ -731,7 +731,8 @@ When 'No Privileges Person' gets upload right to Celso's PPA ...
 
     >>> login('foo.bar@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> discard = cprov.archive.newComponentUploader(no_priv, "main")
+    >>> cprov.archive.newComponentUploader(no_priv, "main")
+    <ArchivePermission ...>
 
 He becomes able to copy to the context PPA.
 
