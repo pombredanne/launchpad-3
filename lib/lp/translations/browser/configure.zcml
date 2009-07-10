@@ -674,5 +674,41 @@
         class="lp.translations.browser.productseries.ProductSeriesTranslationsExportView"/>
 
 
+<!-- Person views -->
+
+        <browser:defaultView
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:menus
+            module="lp.translations.browser.person"
+            classes="
+                PersonTranslationsMenu"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+translations"
+            facet="translations"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+licensing"
+            facet="translations"
+            class="
+              lp.translations.browser.person.PersonTranslationRelicensingView"
+            permission="launchpad.Edit"
+            template="../templates/person-translations-relicensing.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            name="+imports"
+            class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
+            facet="translations"
+            permission="zope.Public"
+            template="../templates/hastranslationimports-index.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+
     </facet>
 </configure>
