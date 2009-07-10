@@ -710,5 +710,56 @@
             template="../templates/hastranslationimports-index.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
 
+
+<!-- Product views -->
+
+    <browser:defaultView
+        for="lp.registry.interfaces.product.IProduct"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+translations"/>
+    <browser:menus
+        classes="
+            ProductTranslationsMenu"
+        module="lp.translations.browser.product"/>
+    <browser:page
+        name="+translations"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
+        permission="zope.Public"/>
+    <browser:page
+        name="+help-translate-button"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.translations.browser.translations.HelpTranslateButtonView"
+        permission="zope.Public"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        name="+imports"
+        class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
+        permission="zope.Public"
+        template="../templates/hastranslationimports-index.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:page
+        name="+changetranslators"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.registry.browser.product.ProductChangeTranslatorsView"
+        permission="launchpad.Edit"
+        template="../templates/product-translators.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:pages
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        class="lp.registry.browser.product.ProductView"
+        layer="canonical.launchpad.layers.TranslationsLayer">
+        <browser:page
+            name="+translations"
+            template="../templates/product-translations.pt"/>
+        <browser:page
+            name="+portlet-translatables"
+            template="../templates/product-portlet-translatables.pt"/>
+        <browser:page
+            name="+portlet-obsolete-translatables"
+            template="../templates/product-portlet-obsolete-translatables.pt"/>
+    </browser:pages>
+
     </facet>
 </configure>
