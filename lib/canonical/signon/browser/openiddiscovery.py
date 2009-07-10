@@ -16,7 +16,6 @@ from zope.interface import implements
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
-from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.authtoken import IAuthTokenSet
@@ -27,6 +26,7 @@ from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (
     Navigation, RedirectionView, stepthrough, stepto)
+from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
 
 
 class OpenIDApplicationURL:
@@ -45,24 +45,16 @@ class OpenIDApplicationNavigation(Navigation):
     """Navigation for `IOpenIDApplication`"""
     usedfor = IOpenIDApplication
 
-    def _get_active_identity(self, openid_identifier):
-        """Return the IOpenIDPersistentIdentity if it is active, or None."""
+    @stepthrough('+id')
+    def traverse_id(self, name):
+        """Traverse to persistent OpenID identity URLs."""
         try:
-            account = getUtility(IAccountSet).getByOpenIDIdentifier(
-                openid_identifier)
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(name)
         except LookupError:
             account = None
         if account is None or account.status != AccountStatus.ACTIVE:
             return None
         return IOpenIDPersistentIdentity(account)
-
-    @stepthrough('+id')
-    def traverse_id(self, name):
-        """Traverse to persistent OpenID identity URLs."""
-        if CurrentOpenIDEndPoint.supportsURL(self.request.getURL()):
-            return self._get_active_identity(name)
-        else:
-            raise NotFoundError(name)
 
     @stepto('token')
     def token(self):
@@ -71,28 +63,6 @@ class OpenIDApplicationNavigation(Navigation):
         # to create new accounts and reset their passwords. This can't clash
         # with a person's name because it's a blacklisted name.
         return getUtility(IAuthTokenSet)
-
-    def traverse(self, name):
-        """Traverse to the `IOpenIDPersistentIdentity`.
-
-        If an IOpenIDPersistentIdentity cannot be retrieved, redirect person
-        names to equivalent persistent identity URLs.
-        """
-        if CurrentOpenIDEndPoint.supportsURL(self.request.getURL()):
-            # Retrieve the IOpenIDPersistentIdentity for /nnn/user-name.
-            identifier = '%s/%s' % (name, self.request.stepstogo.consume())
-            identity = self._get_active_identity(identifier)
-            if identity is not None:
-                return identity
-        # Redirect /~user-name to equivalent persistent identity URLs.
-        person = getUtility(IPersonSet).getByName(name)
-        if (person is not None
-            and person.account.status == AccountStatus.ACTIVE):
-            openid_identity = IOpenIDPersistentIdentity(person.account)
-            target = openid_identity.openid_identity_url
-            return RedirectionView(target, self.request, 303)
-        else:
-            raise NotFoundError(name)
 
 
 class XRDSContentNegotiationMixin:

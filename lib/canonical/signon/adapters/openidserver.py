@@ -27,40 +27,16 @@ from lp.registry.interfaces.person import IPerson
 class CurrentOpenIDEndPoint:
     """A utility for working with multiple OpenID End Points."""
 
-    @staticmethod
-    def getVHost():
-        """The name of the vhost for the current request."""
-        request = get_current_browser_request()
-        if OpenIDLayer.providedBy(request):
-            return 'openid'
-        else:
-            return 'id'
-
     @classmethod
     def getServiceURL(cls):
-        """The OpenID server URL (/+openid) for the current request."""
-        return allvhosts.configs[cls.getVHost()].rooturl + '+openid'
-
-    @classmethod
-    def getOldServiceURL(cls):
         """The OpenID server URL (/+openid) for the current request."""
         return allvhosts.configs['openid'].rooturl + '+openid'
 
     @classmethod
     def supportsURL(cls, identity_url):
         """Does the OpenID current vhost support the identity_url?"""
-        if cls.isRequestForOldVHost():
-            root_url = allvhosts.configs['openid'].rooturl
-            return identity_url.startswith(root_url + '+id')
-        else:
-            root_url = allvhosts.configs['id'].rooturl
-            identity_url_re = re.compile(r'%s\d\d\d' % root_url)
-            return identity_url_re.match(identity_url) is not None
-
-    @classmethod
-    def isRequestForOldVHost(cls):
-        """Is the request for the old 'openid' vhost."""
-        return cls.getVHost() == 'openid'
+        root_url = allvhosts.configs['openid'].rooturl
+        return identity_url.startswith(root_url + '+id')
 
 
 class OpenIDPersistentIdentity:
@@ -106,22 +82,12 @@ class OpenIDPersistentIdentity:
     @property
     def openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
-        only_old_identifier = (
-            self.new_openid_identifier is None
-            and self.old_openid_identifier is not None)
-        if (only_old_identifier
-            or CurrentOpenIDEndPoint.isRequestForOldVHost()):
-            return self.old_openid_identity_url
-        else:
-            return self.new_openid_identity_url
+        return self.old_openid_identity_url
 
     @property
     def openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
-        if CurrentOpenIDEndPoint.isRequestForOldVHost():
-            return self.old_openid_identifier
-        else:
-            return self.new_openid_identifier
+        return self.old_openid_identifier
 
 
 @adapter(IPerson)

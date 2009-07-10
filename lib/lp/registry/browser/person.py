@@ -2999,7 +2999,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     @cachedproperty
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return CurrentOpenIDEndPoint.getOldServiceURL()
+        return CurrentOpenIDEndPoint.getServiceURL()
 
     @cachedproperty
     def openid_identity_url(self):
