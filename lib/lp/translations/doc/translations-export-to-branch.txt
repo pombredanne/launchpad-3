@@ -4,6 +4,18 @@ The translations-export-to-branch script visits all ProductSeries with a
 translations_branch set, and for each, exports the series' translations
 to that branch.
 
+    >>> from canonical.launchpad.scripts.tests import run_script
+    >>> ret_code, stdout, stderr = run_script(
+    ...     'cronscripts/translations-export-to-branch.py', [])
+    >>> ret_code
+    0
+    >>> stdout
+    ''
+    >>> print stderr
+    INFO creating lockfile
+    INFO Exporting to translations branches.
+    INFO Processed 0 item(s); 0 failure(s).
+
     >>> from lp.translations.scripts.translations_to_branch import (
     ...     ExportTranslationsToBranch)
 

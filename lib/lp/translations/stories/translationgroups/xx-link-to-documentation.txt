@@ -141,7 +141,7 @@ to said documentation.
     >>> browser.open(evolution_spanish_url)
     >>> notification = get_notification_content(browser)
     >>> print extract_text(notification)
-    Before translating, make sure to go through Just a testing team
+    Before translating, be sure to go through Just a testing team
     instructions.
 
     >>> links = notification.findAll('a')
@@ -154,7 +154,7 @@ Adding the Spanish team documentation URL adds another link.
     >>> browser.open(evolution_spanish_url)
     >>> notification = get_notification_content(browser)
     >>> print extract_text(notification)
-    Before translating, make sure to go through Just a testing team
+    Before translating, be sure to go through Just a testing team
     instructions and Spanish guidelines.
 
     >>> links = notification.findAll('a')
@@ -170,7 +170,7 @@ the narrative is changed a bit to include the full team name.
     >>> browser.open(evolution_spanish_url)
     >>> notification = get_notification_content(browser)
     >>> print extract_text(notification)
-    Before translating, make sure to go through testing Spanish team
+    Before translating, be sure to go through testing Spanish team
     guidelines.
 
     >>> links = notification.findAll('a')

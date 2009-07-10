@@ -34,6 +34,7 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
+from lp.registry.model.karma import KarmaCache, KarmaCategory
 from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
 from canonical.launchpad.database.structuralsubscription import (
@@ -219,7 +220,8 @@ class DistributionSourcePackage(BugTargetBase,
 
     def findRelatedArchives(self,
                             exclude_archive=None,
-                            archive_purpose=ArchivePurpose.PPA):
+                            archive_purpose=ArchivePurpose.PPA,
+                            require_package_karma=0):
         """See `IDistributionSourcePackage`."""
 
         extra_args = []
@@ -232,6 +234,14 @@ class DistributionSourcePackage(BugTargetBase,
         if archive_purpose is not None:
             extra_args.append(Archive.purpose == archive_purpose)
 
+        # Include only those archives containing the source package released
+        # by a person with karma for this source package greater than that
+        # specified.
+        if require_package_karma > 0:
+            extra_args.append(KarmaCache.karmavalue >= require_package_karma)
+
+        soyuz_category_id = KarmaCategory.byName('soyuz')
+
         store = Store.of(self.distribution)
         results = store.find(
             Archive,
@@ -243,14 +253,20 @@ class DistributionSourcePackage(BugTargetBase,
             (SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == self.sourcepackagename,
+            # Next, the joins for the ordering by soyuz karma of the
+            # SPR creator.
+            KarmaCache.person == SourcePackageRelease.creatorID,
+            KarmaCache.category == soyuz_category_id,
+            KarmaCache.distribution == self.distribution,
+            KarmaCache.sourcepackagename == self.sourcepackagename,
             *extra_args
             )
 
         # Note: If and when we later have a field on IArchive to order by,
         # such as IArchive.rank, we will then be able to return distinct
         # results. As it is, we cannot return distinct results while ordering
-        # by SPR.dateuploaded.
-        results.order_by(Desc(SourcePackageRelease.dateuploaded))
+        # by a non-selected column.
+        results.order_by(Desc(KarmaCache.karmavalue))
 
         return results
 
