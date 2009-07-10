@@ -21,6 +21,7 @@ __all__ = [
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
+    'DecoratedBug',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
@@ -66,6 +67,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
+from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
 from lp.code.enums import BranchType, UICreatableBranchType
 from lp.code.interfaces.branch import (
@@ -127,7 +129,7 @@ class BranchNavigation(Navigation):
         """Traverses to an `IBugBranch`."""
         bug = getUtility(IBugSet).get(bugid)
 
-        for bug_branch in bug.bug_branches:
+        for bug_branch in bug.linked_branches:
             if bug_branch.branch == self.context:
                 return bug_branch
 
@@ -265,7 +267,7 @@ class BranchContextMenu(ContextMenu):
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
     def link_bug(self):
-        if self.context.related_bugs:
+        if self.context.linked_bugs:
             text = 'Link to another bug report'
         else:
             text = 'Link to a bug report'
@@ -289,6 +291,20 @@ class BranchContextMenu(ContextMenu):
         text = 'Edit import source or review import'
         return Link('+edit-import', text, icon='edit', enabled=True)
 
+
+class DecoratedBug:
+    """Provide some additional attributes to a normal bug."""
+    delegates(IBug)
+
+    def __init__(self, context, branch):
+        self.context = context
+        self.branch = branch
+
+    @property
+    def bugtask(self):
+        """Return the bugtask for the branch project, or the default bugtask.
+        """
+        return self.branch.target.getBugTask(self.context)
 
 class BranchView(LaunchpadView, FeedsMixin):
 
@@ -445,6 +461,12 @@ class BranchView(LaunchpadView, FeedsMixin):
     def show_candidate_more_link(self):
         """Only show the link if there are more than five."""
         return len(self.landing_candidates) > 5
+
+    @cachedproperty
+    def linked_bugs(self):
+        """Return a list of DecoratedBugs linked to the branch."""
+        return [DecoratedBug(bug, self.context)
+            for bug in self.context.linked_bugs]
 
     @cachedproperty
     def latest_code_import_results(self):

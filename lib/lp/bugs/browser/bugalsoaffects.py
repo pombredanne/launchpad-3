@@ -37,7 +37,7 @@ from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.product import (IProductSet, License)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import (
@@ -694,6 +694,7 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
     field_names = ['bug_url', 'displayname', 'name', 'summary']
     existing_products = None
     MAX_PRODUCTS_TO_DISPLAY = 10
+    licenses = [License.DONT_KNOW]
 
     def _loadProductsUsingBugTracker(self):
         """Find products using the bugtracker wich runs on the given URL.
@@ -795,12 +796,19 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
             # projects using that bugtracker then show only the ones that
             # match the text entered as the project's name
             return
-
+        # Products created through this view have DONT_KNOW licensing.
         product = getUtility(IProductSet).createProduct(
-            self.user, data['name'], data['displayname'], data['displayname'],
-            data['summary'])
+            owner=self.user,
+            name=data['name'],
+            displayname=data['displayname'], title=data['displayname'],
+            summary=data['summary'], licenses=self.licenses,
+            registrant=self.user
+            )
         data['product'] = product
         self._createBugTaskAndWatch(data, set_bugtracker=True)
+        # Now that the product is configured set the owner to be the registry
+        # experts team.
+        product.owner = getUtility(ILaunchpadCelebrities).registry_experts
 
     def _createBugTaskAndWatch(self, data, set_bugtracker=False):
         """Create a bugtask and bugwatch on the chosen product.

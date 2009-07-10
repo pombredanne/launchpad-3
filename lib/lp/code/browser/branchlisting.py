@@ -7,7 +7,10 @@ __metaclass__ = type
 __all__ = [
     'BranchBadges',
     'BranchListingView',
+    'DistributionBranchListingView',
     'DistributionSourcePackageBranchesView',
+    'DistroSeriesBranchListingView',
+    'GroupedDistributionSourcePackageBranchesView',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -26,6 +29,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+from operator import attrgetter
 
 import simplejson
 from storm.expr import Asc, Desc
@@ -42,6 +46,7 @@ from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
+
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
@@ -71,15 +76,16 @@ from lp.code.interfaces.branchcollection import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
-
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks)
 from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
-
 
 def get_plural_text(count, singular, plural):
     """Return 'singular' if 'count' is 1, 'plural' otherwise."""
@@ -95,7 +101,7 @@ class BranchBadges(HasBadgeBase):
     def isBugBadgeVisible(self):
         """Show a bug badge if the branch is linked to bugs."""
         # Only show the badge if at least one bug is visible by the user.
-        for bug in self.context.related_bugs:
+        for bug in self.context.linked_bugs:
             # Stop on the first visible one.
             if check_permission('launchpad.View', bug):
                 return True
@@ -537,11 +543,16 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
 
     def hasAnyBranchesVisibleByUser(self):
         """Does the context have any branches that are visible to the user?"""
-        return self._branches(None).count() > 0
+        return self.branch_count > 0
 
     def _getCollection(self):
         """Override this to say what branches will be in the listing."""
         raise NotImplementedError(self._getCollection)
+
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return self._getCollection().visibleByUser(self.user).count()
 
     def _branches(self, lifecycle_status):
         """Return a sequence of branches.
@@ -1121,11 +1132,6 @@ class ProductBranchListingView(BranchListingView):
         return getUtility(IAllBranches).inProduct(self.context)
 
     @cachedproperty
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
-
-    @cachedproperty
     def development_focus_branch(self):
         dev_focus_branch = self.context.development_focus.branch
         if dev_focus_branch is None:
@@ -1373,19 +1379,193 @@ class ProjectBranchesView(BranchListingView):
         return message % self.context.displayname
 
 
-class DistributionSourcePackageBranchesView(BranchListingView):
-    """A general listing of all branches in the distro source package."""
+class BaseSourcePackageBranchesView(BranchListingView):
+    """A simple base view for package branch listings."""
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+
+    @property
+    def initial_values(self):
+        values = super(BaseSourcePackageBranchesView, self).initial_values
+        values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+        return values
+
+
+class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
+    """A general listing of all branches in the distro source package."""
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
             self.context)
 
+
+class DistributionBranchListingView(BaseSourcePackageBranchesView):
+    """A general listing of all branches in the distribution."""
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).inDistribution(self.context)
+
+
+class DistroSeriesBranchListingView(BaseSourcePackageBranchesView):
+    """A general listing of all branches in the distro source package."""
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).inDistroSeries(self.context)
+
+
+class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
+                                                   BranchListingItemsMixin):
+    """A view that groups branches into distro series."""
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        BranchListingItemsMixin.__init__(self, self.user)
+
+    def getBranchCollection(self):
+        """See `BranchListingItemsMixin`."""
+        return getUtility(IAllBranches).inDistributionSourcePackage(
+            self.context).visibleByUser(self.user)
+
+    def _getBranchDict(self):
+        """Return a dict of branches grouped by distroseries."""
+        branches = {}
+        # We're only interested in active branches.
+        collection = self.getBranchCollection().withLifecycleStatus(
+            *DEFAULT_BRANCH_STATUS_IN_LISTING)
+        for branch in collection.getBranches():
+            branches.setdefault(branch.distroseries, []).append(branch)
+        return branches
+
+    def _getOfficialBranches(self):
+        """Get all the official branches for the distro source package.
+
+        Return a dict of distro series to a list of branches.
+
+        The branches are ordered by official pocket.
+        """
+        link_set = getUtility(IFindOfficialBranchLinks)
+        links = link_set.findForDistributionSourcePackage(self.context)
+        # Remember it is possible that the linked branch is not visible by the
+        # user.  Unlikely, but possible.
+        visible_links = [
+            link for link in links
+            if check_permission('launchpad.View', link.branch)]
+        # Sort into distroseries.
+        distro_links = {}
+        for link in visible_links:
+            distro_links.setdefault(link.distroseries, []).append(link)
+        # For each distro series, we only want the "best" pocket if one branch
+        # is linked to more than one pocket.  Best here means smaller value.
+        official_branches = {}
+        for key, value in distro_links.iteritems():
+            ordered = sorted(value, key=attrgetter('pocket'))
+            seen_branches = set()
+            branches = []
+            for link in ordered:
+                if link.branch not in seen_branches:
+                    branches.append(link.branch)
+                    seen_branches.add(link.branch)
+            official_branches[key] = branches
+        return official_branches
+
+    def _getSeriesBranches(self, official_branches, branches):
+        """Return the "best" five branches."""
+        # Sort the branches by the last modified date, and ignore any that are
+        # official.
+        ordered_branches = sorted(
+            [branch for branch in branches
+             if branch not in official_branches],
+            key=attrgetter('date_last_modified'), reverse=True)
+        num_branches = len(ordered_branches)
+        num_official = len(official_branches)
+        # We want to show at most five branches, with (at most) the most
+        # recently touched three non-official branch.
+        official_count = 5 - min(num_branches, 3)
+        # Top up with non-official branches.
+        branches = official_branches[0:official_count] + ordered_branches
+        # And chop off at 5.
+        branches = branches[0:5]
+
+        more_count = num_branches + num_official - len(branches)
+        return branches, more_count
+
+    @cachedproperty
+    def series_branches_map(self):
+        """Return a dict of tuples for branches in the distroseries.
+
+        The tuple contains the branches, and the 'more_count'.
+        """
+        series_branches = {}
+        all_branches = self._getBranchDict()
+        official_branches = self._getOfficialBranches()
+        for series in self.context.distribution.serieses:
+            if series in all_branches:
+                branches, more_count = self._getSeriesBranches(
+                    official_branches.get(series, []),
+                    all_branches.get(series, []))
+                series_branches[series] = (branches, more_count)
+        return series_branches
+
+    @cachedproperty
+    def visible_branches_for_view(self):
+        """All the branches we are going to show with this view.
+
+        Used by the mixin class to get all the associated bugs, blueprints,
+        and merge proposal links for badges.
+        """
+        visible_branches = []
+        for branches, count in self.series_branches_map.itervalues():
+            visible_branches.extend(branches)
+        return visible_branches
+
     @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
+        return len(self.visible_branches_for_view)
+
+    @cachedproperty
+    def groups(self):
+        """Return a list of dicts containing series and branches.
+
+        The list is ordered so the most recent distro series is first.
+
+        The list contains dicts.  The dict has the values:
+          * distroseries - a `IDistroSeries` object
+          * branches - an ordered list of branches
+          * more-branch-count - a count of additional branches
+          * package - the `ISourcePackage` for the distroseries,
+              sourcepackagename pair
+          * total-count-string - a string saying the number of branches.
+
+        The branches list will contain at most five branches.  If there are
+        non-official branches associated with the distroseries, then there
+        will always be some non-official branches shown in the summary even if
+        there are five different official branches (for the different
+        pockets).
+
+        The official branches are sorted based on PackagePublishingPocket, and
+        the non-official branches are sorted on date last modified.
+        """
+        result = []
+        series_branches_map = self.series_branches_map
+        sp_factory = getUtility(ISourcePackageFactory)
+        for series in self.context.distribution.serieses:
+            if series in series_branches_map:
+                branches, more_count = series_branches_map[series]
+                sourcepackage = sp_factory.new(
+                    self.context.sourcepackagename, series)
+                num_branches = len(branches) + more_count
+                num_branches_text = get_plural_text(
+                    num_branches, "branch", "branches")
+                count_string = "%s %s" % (num_branches, num_branches_text)
+                result.append(
+                    {'distroseries': series,
+                     'branches': self.decoratedBranches(branches),
+                     'more-branch-count': more_count,
+                     'package': sourcepackage,
+                     'total-count-string': count_string,
+                     })
+        return result
 
 
 class SourcePackageBranchesView(BranchListingView):
@@ -1401,11 +1581,6 @@ class SourcePackageBranchesView(BranchListingView):
 
     def _getCollection(self):
         return getUtility(IAllBranches).inSourcePackage(self.context)
-
-    @cachedproperty
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
 
     def _numBranchesInPackage(self, package):
         branches = IBranchTarget(package).collection

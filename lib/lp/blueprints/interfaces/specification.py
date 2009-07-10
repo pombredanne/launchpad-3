@@ -39,6 +39,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.registry.interfaces.role import IHasOwner
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
 from lp.registry.interfaces.project import IProject
@@ -641,7 +642,7 @@ class INewSpecificationTarget(Interface):
 
 
 class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
-    ICanBeMentored):
+    ICanBeMentored, IHasLinkedBranches):
     """A Specification."""
 
     export_as_webservice_entry()
@@ -750,7 +751,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         "All the dependencies, including dependencies of dependencies.")
     all_blocked = Attribute(
         "All specs blocked on this, and those blocked on the blocked ones.")
-    branch_links = Attribute('The entries that link the branches to the spec')
+    linked_branches = Attribute(
+        'The entries that link the branches to the spec.')
 
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '
@@ -874,20 +876,6 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     # branches
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
-
-    @call_with(registrant=REQUEST_USER)
-    @operation_parameters(
-        branch=Reference(schema=IBranch))
-    @operation_returns_entry(Interface) # Really IBugBranch
-    @export_write_operation()
-    def linkBranch(branch, registrant):
-        """Link the given branch to this specification.
-
-        :param branch: The branch to link to this specification.
-        :param registrant: The user making the link.
-        :param summary: Free form text which can be used to describe
-            implementation details.
-        """
 
 
 # Interfaces for containers

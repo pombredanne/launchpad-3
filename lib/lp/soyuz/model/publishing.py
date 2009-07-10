@@ -467,6 +467,21 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
+    @property
+    def package_creator(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.creator
+
+    @property
+    def package_maintainer(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.maintainer
+
+    @property
+    def package_signer(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.dscsigningkey.owner
+
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
@@ -1393,13 +1408,17 @@ class PublishingSet:
         summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
             builds)
 
-        # We only augment the result if we (the SPPH) are ourselves in
-        # the pending/published state and all the builds are fully-built.
+        # We only augment the result if:
+        #   1. we (the SPPH) are ourselves in an active publishing state, and
+        #   2. all the builds are fully-built, and
+        #   3. we are not being published in a rebuild/copy archive (in
+        #      which case the binaries are not currently published anyway)
         # In this case we check to see if they are all published, and if
         # not we return FULLYBUILT_PENDING:
         augmented_summary = summary
         if (source_publication.status in active_publishing_status and
-                summary['status'] == BuildSetStatus.FULLYBUILT):
+                summary['status'] == BuildSetStatus.FULLYBUILT and
+                source_publication.archive.purpose != ArchivePurpose.COPY):
 
             unpublished_builds = list(
                 source_publication.getUnpublishedBuilds())

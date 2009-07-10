@@ -370,7 +370,7 @@ class TestBugChanges(unittest.TestCase):
         # Linking a branch to a bug adds both to the activity log and
         # sends an e-mail notification.
         branch = self.factory.makeBranch()
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         added_activity = {
             'person': self.user,
             'whatchanged': 'branch linked',
@@ -394,7 +394,7 @@ class TestBugChanges(unittest.TestCase):
         self.failUnless(self.bug.is_complete)
         self.saveOldChanges()
         branch = self.factory.makeBranch()
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         expected_activity = {
             'person': self.user,
             'whatchanged': 'branch linked',
@@ -407,16 +407,16 @@ class TestBugChanges(unittest.TestCase):
         # Linking a *private* branch to a bug adds *nothing* to the
         # activity log and does *not* send an e-mail notification.
         branch = self.factory.makeBranch(private=True)
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         self.assertRecordedChange()
 
     def test_unlink_branch(self):
         # Unlinking a branch from a bug adds both to the activity log and
         # sends an e-mail notification.
         branch = self.factory.makeBranch()
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
-        self.bug.removeBranch(branch, self.user)
+        self.bug.unlinkBranch(branch, self.user)
         added_activity = {
             'person': self.user,
             'whatchanged': 'branch unlinked',
@@ -439,9 +439,9 @@ class TestBugChanges(unittest.TestCase):
                 BugTaskStatus.FIXRELEASED, user=self.user)
         self.failUnless(self.bug.is_complete)
         branch = self.factory.makeBranch()
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
-        self.bug.removeBranch(branch, self.user)
+        self.bug.unlinkBranch(branch, self.user)
         expected_activity = {
             'person': self.user,
             'whatchanged': 'branch unlinked',
@@ -454,9 +454,9 @@ class TestBugChanges(unittest.TestCase):
         # Unlinking a *private* branch from a bug adds *nothing* to
         # the activity log and does *not* send an e-mail notification.
         branch = self.factory.makeBranch(private=True)
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
-        self.bug.removeBranch(branch, self.user)
+        self.bug.unlinkBranch(branch, self.user)
         self.assertRecordedChange()
 
     def test_make_private(self):

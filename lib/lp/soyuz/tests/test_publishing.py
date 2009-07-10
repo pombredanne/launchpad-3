@@ -150,7 +150,7 @@ class SoyuzTestPublisher:
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
-                     maintainer=None, date_uploaded=UTC_NOW):
+                     maintainer=None, creator=None, date_uploaded=UTC_NOW):
         """Return a mock source publishing record."""
         if sourcename is None:
             sourcename = self.default_package_name
@@ -165,11 +165,13 @@ class SoyuzTestPublisher:
             archive = distroseries.main_archive
         if maintainer is None:
             maintainer = self.person
+        if creator is None:
+            creator = self.person
 
         spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
             maintainer=maintainer,
-            creator=self.person,
+            creator=creator,
             component=component,
             section=section,
             urgency=urgency,

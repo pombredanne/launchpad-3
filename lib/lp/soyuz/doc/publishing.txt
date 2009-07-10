@@ -12,6 +12,15 @@ interesting one):
     >>> spph.sourcepackagerelease.name, spph.distroseries.name
     (u'pmount', u'hoary')
 
+None of the sources in the sample data are signed, so we can fake one here
+to make sure verifyObject will work.
+
+    >>> from lp.registry.model.gpgkey import GPGKey
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> fake_signer = GPGKey.selectOneBy(owner=name16)
+    >>> spph.sourcepackagerelease.dscsigningkey = fake_signer
+
 Verify if the object follows its interface contracts:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -65,6 +74,17 @@ tiny 2-column content classes and force the users to retrieve those.
     >>> print spph.section_name
     base
 
+Other properties are shortcuts to the source package's properties:
+
+    >>> print spph.package_creator
+    <Person at ... sabdfl (Mark Shuttleworth)>
+
+    >>> print spph.package_maintainer
+    <Person at ... sabdfl (Mark Shuttleworth)>
+
+    >>> print spph.package_signer
+    <Person at ... name16 (Foo Bar)>
+
 There is also a property that returns the changesfile URL.  This is proxied
 through the webapp rather than being a librarian URL because the changesfile
 could be private and thus in the restricted librarian.
@@ -117,6 +137,21 @@ The underlying method being used here is getUnpublishedBuilds():
     ...     print build.title
     hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+Note: if the related archive for this source package publishing is
+a rebuild archive then the status summary will always display
+FULLY_BUILT.
+
+    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> spph.archive.purpose = ArchivePurpose.COPY
+    >>> build_status_summary = spph.getStatusSummaryForBuilds()
+    >>> print_build_status_summary(build_status_summary)
+    FULLYBUILT
+    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+    # Just set the purpose back before continuing on.
+    >>> spph.archive.purpose = ArchivePurpose.PRIMARY
 
 If one of the builds becomes published, it will not appear in the summary:
 
@@ -174,7 +209,6 @@ There are no longer any unpublished builds for the source package:
 
 If a build is deleted, it does not cause the build status summary to change:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from lp.soyuz.interfaces.publishing import IPublishingSet
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> ignored = getUtility(IPublishingSet).requestDeletion([spph], sabdfl)
@@ -241,9 +275,6 @@ Retrieve any SourcePackagePublishingHistory entry.
 
     >>> spph = SourcePackagePublishingHistory.get(10)
 
-    >>> verifyObject(ISourcePackagePublishingHistory, spph)
-    True
-
     >>> print spph.displayname
     alsa-utils 1.0.8-1ubuntu1 in warty
 
@@ -301,7 +332,6 @@ the states DELETED and OBSOLETE respectively.
 requestDeletion requires a removed_by (IPerson) and optionally a
 removal_comment argument.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getUtility
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> modified_spph = spph.requestDeletion(sabdfl, "testing deletion")
