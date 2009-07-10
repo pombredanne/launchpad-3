@@ -33,7 +33,6 @@ from lp.code.browser.branch import BranchView
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
 from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
@@ -240,7 +239,7 @@ class RevisionListingFeed(FeedBase):
 
     def _getRevisionCache(self):
         """Return the revision cache limited to the revision context."""
-        raise NotImplementedError((self._getRevisionCache))
+        raise NotImplementedError(self._getRevisionCache)
 
     def _getItemsWorker(self):
         """Create the list of items.

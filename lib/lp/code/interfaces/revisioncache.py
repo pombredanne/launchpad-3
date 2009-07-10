@@ -19,14 +19,16 @@ class IRevisionCollection(Interface):
     """A collection of revisions.
 
     An `IRevisionCollection` is an immutable collection of revisions. It has
-    two kinds of methods: filter methods and query methods.
+    three kinds of methods: filter methods, query methods, and count methods.
 
-    Query methods get information about the contents of collection. See
-    `IRevisionCollection.getRevisions` and
-    `IRevisionCollection.getRevisionAuthors`.
+    Query methods get information about the contents of collection. At this
+    time we only have `getRevisions` to return `Revision` objects from the
+    cache.
 
-    Filter methods return new IRevisionCollection instances that have some sort
-    of restriction. Examples include `inProduct`, and `arePublic`.
+    Filter methods return new IRevisionCollection instances that have some
+    sort of restriction. Examples include `inProduct`, and `public`.
+
+    Count methods just return a number.
 
     Implementations of this interface are not 'content classes'. That is, they
     do not correspond to a particular row in the database.
@@ -39,36 +41,47 @@ class IRevisionCollection(Interface):
         """The number of revisions in this collection."""
 
     def getRevisions():
-        """Return a result set of all distinct revisions in this collection.
+        """Return a result set of all the revisions in this collection.
+
+        The revisions are ordered with the newer revision_dates before the
+        older ones.
         """
 
     def inProduct(product):
-        """Restrict the collection to branches in 'product'."""
+        """Restrict to revisions in branches in 'product'."""
 
     def inProject(project):
-        """Restrict the collection to branches in 'project'."""
+        """Restrict to revisions in branches in 'project'."""
 
     def inSourcePackage(package):
-        """Restrict the collection to branches in 'package'.
+        """Restrict to revisions in branches in 'package'.
 
         A source package is effectively a sourcepackagename in a distro
         series.
         """
 
     def inDistribution(distribution):
-        """Restrict the collection to branches in 'distribution'."""
+        """Restrict to revisions in branches in 'distribution'.
+        """
 
     def inDistroSeries(distro_series):
-        """Restrict the collection to branches in 'distro_series'."""
+        """Restrict to revisions in branches in 'distro_series'.
+        """
 
     def inDistributionSourcePackage(distro_source_package):
-        """Restrict to branches in a 'package' for a 'distribution'."""
+        """Restrict to revisions in branches in a 'package' for a
+        'distribution'.
+        """
 
     def public():
         """Restrict to revisions that are publicly visible."""
 
     def authoredBy(person):
-        """Restrict the collection to branches owned by 'person'."""
+        """Restrict to revisions authored by 'person'.
+
+        If `person` is a team, then return revisions that are authored by any
+        active participant of that team.
+        """
 
 
 class IRevisionCache(IRevisionCollection):

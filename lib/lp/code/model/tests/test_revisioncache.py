@@ -24,10 +24,6 @@ class TestRevisionCache(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    # Initially the RevisionCache table is completely empty, so we don't need
-    # to clear it out in the setUp.  And these tests that do the counts should
-    # confirm it's emptiness.
-
     def test_initially_empty(self):
         # A test just to confirm that the RevisionCache is empty.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -96,7 +92,8 @@ class TestRevisionCache(TestCaseWithFactory):
         cache = getUtility(IRevisionCache)
         self.assertEqual(2, cache.count())
 
-    def assertRevisionsEqual(self, expected_revisions, revision_collection):
+    def assertCollectionContents(self, expected_revisions,
+                                 revision_collection):
         # Check that the revisions returned from the revision collection match
         # the expected revisions.
         self.assertEqual(
@@ -122,7 +119,7 @@ class TestRevisionCache(TestCaseWithFactory):
         self.assertEqual(3, cache.count())
         # Limiting to public revisions does not get the private revisions.
         self.assertEqual(2, cache.public().count())
-        self.assertRevisionsEqual([revision, public_revision], cache.public())
+        self.assertCollectionContents([revision, public_revision], cache.public())
 
     def test_in_product(self):
         # Revisions in a particular product can be restricted using the
@@ -135,7 +132,7 @@ class TestRevisionCache(TestCaseWithFactory):
         self.makeCachedRevision(product=self.factory.makeProduct())
         self.makeCachedRevision()
         revision_cache = getUtility(IRevisionCache).inProduct(product)
-        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+        self.assertCollectionContents([rev1, rev2], revision_cache)
 
     def test_in_project(self):
         # Revisions across a project group can be determined using the
@@ -150,7 +147,7 @@ class TestRevisionCache(TestCaseWithFactory):
         self.makeCachedRevision(product=self.factory.makeProduct())
         self.makeCachedRevision()
         revision_cache = getUtility(IRevisionCache).inProject(project)
-        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+        self.assertCollectionContents([rev1, rev2], revision_cache)
 
     def test_in_source_package(self):
         # Revisions associated with a particular source package are available
@@ -164,7 +161,7 @@ class TestRevisionCache(TestCaseWithFactory):
         self.makeCachedRevision()
         revision_cache = getUtility(IRevisionCache).inSourcePackage(
             sourcepackage)
-        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+        self.assertCollectionContents([rev1, rev2], revision_cache)
 
     def test_in_distribution(self):
         # Check inDistribution limits to those revisions associated with
@@ -185,7 +182,7 @@ class TestRevisionCache(TestCaseWithFactory):
         self.makeCachedRevision(package=self.factory.makeSourcePackage())
         self.makeCachedRevision()
         revision_cache = getUtility(IRevisionCache).inDistribution(distro)
-        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+        self.assertCollectionContents([rev1, rev2], revision_cache)
 
     def test_in_distro_series(self):
         # Check that inDistroSeries limits the revisions to those in the
@@ -211,7 +208,7 @@ class TestRevisionCache(TestCaseWithFactory):
         self.makeCachedRevision()
         revision_cache = getUtility(IRevisionCache).inDistroSeries(
             distroseries1)
-        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+        self.assertCollectionContents([rev1, rev2], revision_cache)
 
     def test_in_distribution_source_package(self):
         # Check that inDistributionSourcePackage limits to revisions in
@@ -243,7 +240,7 @@ class TestRevisionCache(TestCaseWithFactory):
             distribution=distro, sourcepackagename=sourcepackagename)
         revision_cache = getUtility(IRevisionCache)
         revision_cache = revision_cache.inDistributionSourcePackage(dsp)
-        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+        self.assertCollectionContents([rev1, rev2], revision_cache)
 
     def makePersonAndLinkedRevision(self, name, email):
         """Make a person and a revision that is linked to them."""
@@ -267,7 +264,7 @@ class TestRevisionCache(TestCaseWithFactory):
         # Other revisions have other authors.
         self.makeCachedRevision()
         revision_cache = getUtility(IRevisionCache).authoredBy(eric)
-        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+        self.assertCollectionContents([rev1, rev2], revision_cache)
 
     def test_authored_by_team(self):
         # Check that authoredBy appropriatly limits revisions to those
@@ -285,7 +282,7 @@ class TestRevisionCache(TestCaseWithFactory):
         # Other revisions have other authors.
         self.makeCachedRevision()
         revision_cache = getUtility(IRevisionCache).authoredBy(team)
-        self.assertRevisionsEqual([rev1, rev2], revision_cache)
+        self.assertCollectionContents([rev1, rev2], revision_cache)
 
 
 def test_suite():
