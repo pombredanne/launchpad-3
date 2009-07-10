@@ -753,6 +753,11 @@ class POTMsgSet(SQLBase):
         matching_message = self._findTranslationMessage(
             pofile, potranslations, pofile.plural_forms)
 
+        if matching_message is not None and matching_message.is_imported:
+            # We found an imported message so let's pretend this was an
+            # import from the start to get the same treatment.
+            is_imported = True
+
         if is_imported:
             imported_message = self.getImportedTranslationMessage(
                 pofile.potemplate, pofile.language, pofile.variant)
