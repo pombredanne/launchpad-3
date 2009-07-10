@@ -103,10 +103,10 @@ Calling unlinkBranch() once again is a noop.
 
 == Bugs Related to Branches ==
 
-The bugs related to a branch are accessible via the related_bugs
+The bugs related to a branch are accessible via the linked_bugs
 property.
 
-    >>> sorted([bug.id for bug in branch.related_bugs])
+    >>> sorted([bug.id for bug in branch.linked_bugs])
     [1, 4, 5]
 
 
