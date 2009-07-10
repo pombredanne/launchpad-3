@@ -643,7 +643,7 @@ permissions.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> rebuild_archive = getUtility(IArchiveSet).new(
     ...     owner=person1, purpose=ArchivePurpose.COPY,
-    ...     distribution=ubuntu, name='copy-arch',
+    ...     distribution=ubuntu, name='copy-archive',
     ...     enabled=False, require_virtualized=False)
 
 Since we just created the copy archive there will be no permissions
@@ -688,7 +688,7 @@ archive the copy archive still has no permissions associated with it.
     >>> nothing = ap_set.packagesetsForUploader(rebuild_archive, person1)
     >>> print_permission(nothing)
 
-'juergen' is now getting granted upoad permissions for the same package set
+'juergen' is now getting granted upload permissions for the same package set
 but for the copy archive.
 
     >>> ignore_this = ap_set.newPackagesetUploader(
@@ -696,7 +696,7 @@ but for the copy archive.
 
     >>> print_permission(ap_set.uploadersForPackageset(
     ...     rebuild_archive, mozilla_ps))
-    copy-arch    juergen:      mozilla ->           UPLOAD (implicit)
+    copy-archive    juergen:      mozilla ->           UPLOAD (implicit)
 
 Now 'hacker' may upload packages associated with the 'mozilla' package set
 in the Ubuntu main archive ..
@@ -756,8 +756,8 @@ apply to the Ubuntu archive.
 
     >>> print_permission(ap_set.uploadersForPackageset(
     ...     rebuild_archive, mozilla_ps))
-    copy-arch     hacker:      mozilla ->           UPLOAD (implicit)
-    copy-arch    juergen:      mozilla ->           UPLOAD (implicit)
+    copy-archive     hacker:      mozilla ->           UPLOAD (implicit)
+    copy-archive    juergen:      mozilla ->           UPLOAD (implicit)
 
 Now we delete them..
 
@@ -768,7 +768,7 @@ Now we delete them..
 
     >>> print_permission(ap_set.uploadersForPackageset(
     ...     rebuild_archive, mozilla_ps))
-    copy-arch    juergen:      mozilla ->           UPLOAD (implicit)
+    copy-archive    juergen:      mozilla ->           UPLOAD (implicit)
 
 The analogous permissions for the Ubuntu archive are unaffected by the
 deletion.
