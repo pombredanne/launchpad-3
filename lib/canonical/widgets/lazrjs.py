@@ -79,6 +79,7 @@ class TextLineEditorWidget:
                  tag='h1', public_attribute=None, accept_empty=False,
                  default_text=None, initial_value=None):
         """Create a widget wrapper.
+
         :param context: The object that is being edited.
         :param attribute: The name of the attribute being edited.
         :param edit_url: The URL to use for editing when the user isn't logged
@@ -123,7 +124,8 @@ class TextLineEditorWidget:
 
     def __call__(self):
         """Return the HTML to include to render the widget."""
-        # We really don't like None here.
+        # We can't use the value None because of the cgi.escape() and because
+        # that wouldn't look very good in the ui!
         value = getattr(self.context, self.attribute, self.default_text)
         if value is None:
             value = self.default_text
