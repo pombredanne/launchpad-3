@@ -281,12 +281,16 @@ whiteboard is empty, then we store some insightful notes in it.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+
+    >>> registry_member = factory.makePerson(
+    ...     name='reggie', email='reggie@example.com', password='test')
     >>> celebs = getUtility(ILaunchpadCelebrities)
-    >>> celebs.registry_experts.addMember(nopriv, nopriv)
+    >>> registry = celebs.registry_experts
+    >>> registry.addMember(registry_member, registry.teamowner)
     >>> logout()
+
     >>> registry_browser = setupBrowser(
-    ...     auth='Basic no-priv@canonical.com:test')
+    ...     auth='Basic reggie@example.com:test')
     >>> registry_browser.open('http://launchpad.dev/firefox/+review-license')
     >>> registry_browser.getControl(name='field.reviewer_whiteboard').value
     ''
@@ -363,10 +367,12 @@ The product can then be reactivated.
     >>> print contents.find(id='project-inactive')
     None
 
-Revert name12's team membership.
+Revert team memberships.
 
     >>> login('foo.bar@canonical.com')
-    >>> nopriv.leave(celebs.launchpad_developers)
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> nopriv.leave(celebs.registry_experts)
+    >>> registry_member.leave(celebs.registry_experts)
     >>> logout()
 
 

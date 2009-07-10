@@ -519,13 +519,13 @@ access it.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
-    >>> celebs.registry_experts.addMember(nopriv, nopriv)
+    >>> registry = celebs.registry_experts
+    >>> registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
-    >>> login('no-priv@canonical.com')
+    >>> login_person(registry_member)
     >>> check_permission('launchpad.ProjectReview', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')

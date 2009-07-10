@@ -10,37 +10,22 @@ The page +review-licenses is accessible from the /projects page via
 the "Review licenses" link, which is conditionally available
 based on permissions.
 
-A logged in, unprivileged person cannot see the "Review
-licenses" link.
-
-    >>> user_browser.open('http://launchpad.dev/projects')
-    >>> user_browser.getLink("Review licenses")
-    Traceback (most recent call last):
-      ...
-    LinkNotFoundError
-
-The unprivileged person cannot navigate directly to the link.
-
-    >>> user_browser.open('http://launchpad.dev/projects/+review-licenses')
-    Traceback (most recent call last):
-      ...
-    Unauthorized:...
-
 A member of the Launchpad registry experts team may successfully access the
 +review-licenses via the link.
 
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> registry_member = factory.makePerson(
+    ...     name='reggie', email='reggie@example.com', password='test')
     >>> celebs = getUtility(ILaunchpadCelebrities)
-    >>> celebs.registry_experts.addMember(nopriv, nopriv)
+    >>> registry = celebs.registry_experts
+    >>> registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> registry_browser = setupBrowser(
-    ...     auth='Basic no-priv@canonical.com:test')
+    ...     auth='Basic reggie@example.com:test')
     >>> registry_browser.open(
     ...     'http://launchpad.dev/projects/')
     >>> registry_browser.getLink("Review projects").click()

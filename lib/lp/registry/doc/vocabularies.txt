@@ -1355,18 +1355,17 @@ projects are returned.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
-    >>> celebs.registry_experts.addMember(nopriv, nopriv)
+    >>> registry = celebs.registry_experts
+    >>> registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
-    >>> login('no-priv@canonical.com')
-    >>> no_priv = person_set.getByEmail('no-priv@canonical.com')
-    >>> check_permission('launchpad.ProjectReview', no_priv)
+    >>> login_person(registry_member)
+    >>> check_permission('launchpad.ProjectReview', registry_member)
     True
 
-    >>> comm_proj_vocab = vocabulary_registry.get(no_priv, "CommercialProjects")
+    >>> comm_proj_vocab = vocabulary_registry.get(registry_member, "CommercialProjects")
     >>> print comm_proj_vocab.displayname
     Select a commercial project
 
