@@ -722,11 +722,6 @@
             ProductTranslationsMenu"
         module="lp.translations.browser.product"/>
     <browser:page
-        name="+translations"
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.translations.browser.translations.TranslationsRedirectView"
-        permission="zope.Public"/>
-    <browser:page
         name="+help-translate-button"
         for="lp.registry.interfaces.product.IProduct"
         class="lp.translations.browser.translations.HelpTranslateButtonView"
@@ -760,6 +755,45 @@
             name="+portlet-obsolete-translatables"
             template="../templates/product-portlet-obsolete-translatables.pt"/>
     </browser:pages>
+
+<!-- Project views -->
+
+    <browser:defaultView
+        for="lp.registry.interfaces.project.IProject"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:menus
+        classes="
+            ProjectTranslationsMenu"
+        module="lp.translations.browser.project"/>
+
+    <browser:page
+        name="+translations"
+        for="lp.registry.interfaces.project.IProject"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
+        permission="zope.Public"/>
+    <browser:page
+        for="lp.registry.interfaces.project.IProject"
+        permission="zope.Public"
+        name="+translations"
+        template="../templates/project-translations.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:page
+        name="+help-translate-button"
+        for="lp.registry.interfaces.project.IProject"
+        class="lp.translations.browser.translations.HelpTranslateButtonView"
+        permission="zope.Public"/>
+    <browser:editform
+        name="+changetranslators"
+        for="lp.registry.interfaces.project.IProject"
+        facet="translations"
+        schema="lp.registry.interfaces.project.IProject"
+        fields="translationgroup translationpermission"
+        permission="launchpad.Edit"
+        label="Select a new translation group"
+        template="../templates/project-translators.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+
 
     </facet>
 </configure>

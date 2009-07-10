@@ -421,10 +421,6 @@
         for="lp.registry.interfaces.project.IProject"
         name="+questions"
         layer="canonical.launchpad.layers.AnswersLayer"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.project.IProject"
-        name="+translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:pages
         for="lp.registry.interfaces.project.IProject"
         class="lp.registry.browser.project.ProjectView"
@@ -475,24 +471,6 @@
         permission="zope.Public"
         name="+rdf"
         attribute="__call__"/>
-    <browser:page
-        name="+translations"
-        for="lp.registry.interfaces.project.IProject"
-        class="lp.translations.browser.translations.TranslationsRedirectView"
-        permission="zope.Public"/>
-    <browser:page
-        for="lp.registry.interfaces.project.IProject"
-        permission="zope.Public"
-        name="+translations"
-        facet="translations"
-        template="../templates/project-translations.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:page
-        name="+help-translate-button"
-        facet="translations"
-        for="lp.registry.interfaces.project.IProject"
-        class="lp.translations.browser.translations.HelpTranslateButtonView"
-        permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.project.IProject"
         permission="launchpad.Edit"
@@ -528,16 +506,6 @@
         facet="overview"
         permission="launchpad.Admin"
         template="../templates/project-edit.pt"/>
-    <browser:editform
-        name="+changetranslators"
-        for="lp.registry.interfaces.project.IProject"
-        facet="translations"
-        schema="lp.registry.interfaces.project.IProject"
-        fields="translationgroup translationpermission"
-        permission="launchpad.Edit"
-        label="Select a new translation group"
-        template="../templates/project-translators.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         name="+newproduct"
         for="lp.registry.interfaces.project.IProject"
@@ -643,8 +611,7 @@
             ProjectSeriesSpecificationsMenu
             ProjectSpecificationsMenu
             ProjectSetContextMenu
-            ProjectAnswersMenu
-            ProjectTranslationsMenu"
+            ProjectAnswersMenu"
         module="lp.registry.browser.project"/>
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
