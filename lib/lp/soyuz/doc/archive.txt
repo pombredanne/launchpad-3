@@ -2013,6 +2013,37 @@ You'll get the same error if you use a component object that's not main.
     ...
     InvalidComponent: Component for PPAs should be 'main'
 
+As important as the right to upload packages to Celso's PPA, Carlos
+also got the corresponding permissions on it.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login("carlos@canonical.com")
+
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+    >>> check_permission('launchpad.Append', cprov_archive)
+    True
+
+So even if Celso's PPA suddenly becomes private, Carlos rights will be
+preserved.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.buildd_secret = 'x'
+    >>> cprov_archive.private = True
+
+    >>> login("carlos@canonical.com")
+
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+    >>> check_permission('launchpad.Append', cprov_archive)
+    True
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.buildd_secret = ''
+    >>> cprov_archive.private = False
+
 
 == Rebuild archives ==
 
