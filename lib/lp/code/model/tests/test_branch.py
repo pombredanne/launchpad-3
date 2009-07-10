@@ -1579,12 +1579,11 @@ class TestBranchBugLinks(TestCaseWithFactory):
         bug = self.factory.makeBug()
         branch.linkBug(bug, self.user)
 
-        self.assertEqual(branch.bug_branches.count(), 1)
+        self.assertEqual(branch.linked_bugs.count(), 1)
 
-        bug_branch = branch.bug_branches[0]
+        linked_bug = branch.linked_bugs[0]
 
-        self.assertEqual(bug_branch.bug.id, bug.id)
-        self.assertEqual(bug_branch.branch.id, branch.id)
+        self.assertEqual(linked_bug.id, bug.id)
 
     def test_bug_unlink(self):
         # Branches can be unlinked from the bug as well.
@@ -1592,11 +1591,11 @@ class TestBranchBugLinks(TestCaseWithFactory):
         bug = self.factory.makeBug()
         branch.linkBug(bug, self.user)
 
-        self.assertEqual(branch.bug_branches.count(), 1)
+        self.assertEqual(branch.linked_bugs.count(), 1)
 
         branch.unlinkBug(bug, self.user)
 
-        self.assertEqual(branch.bug_branches.count(), 0)
+        self.assertEqual(branch.linked_bugs.count(), 0)
 
 
 class TestBranchSpecLinks(TestCaseWithFactory):

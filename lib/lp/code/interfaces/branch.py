@@ -520,12 +520,17 @@ class IBranch(IHasOwner, IHasBranchTarget):
         "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
-    bug_branches = exported(
-        CollectionField(
+    bug_branches = CollectionField(
             title=_("The bug-branch link objects that link this branch "
                     "to bugs."),
             readonly=True,
-            value_type=Reference(schema=Interface))) # Really IBugBranch
+            value_type=Reference(schema=Interface)) # Really IBugBranch
+
+    linked_bugs = exported(
+        CollectionField(
+            title=_("The bugs linked to this branch."),
+        readonly=True,
+        value_type=Reference(schema=Interface))) # Really IBug
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
@@ -548,10 +553,6 @@ class IBranch(IHasOwner, IHasBranchTarget):
         :param bug: IBug to unlink.
         :param user: IPerson unlinking the bug.
         """
-
-    related_bugs = Attribute(
-        "The bugs related to this branch, likely branches on which "
-        "some work has been done to fix this bug.")
 
     # Specification attributes
     spec_links = exported(
