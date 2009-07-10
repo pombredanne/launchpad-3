@@ -78,6 +78,16 @@ archive:
     >>> print find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     None
 
+The package counters are not displayed for a copy archive:
+
+    >>> print find_tag_by_id(anon_browser.contents, 'package-counters')
+    None
+
+Neither is the repository-size javascript present:
+
+    >>> print find_tag_by_id(anon_browser.contents, 'repository-size-update')
+    None
+
 Whereas, for a PPA which uses the same template, the sources list is
 present:
 
