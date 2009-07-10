@@ -101,14 +101,15 @@ is created.  When those jobs are run, the email is sent from the registrant.
     ...     registrant, target_branch, review_diff=diff)
     >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
     >>> _unused_diff = job.run()
-    >>> notifications = pop_notifications()
+    >>> notifications = pop_notifications(
+    ...     sort_key=lambda n: n.get('X-Envelope-To'))
 
 An email is sent to subscribers of either branch.
 
     >>> for notification in notifications:
     ...     print notification['X-Envelope-To']
-    target@example.com
     source@example.com
+    target@example.com
 
     >>> notification = notifications[0]
     >>> print notification['From']
