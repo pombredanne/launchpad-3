@@ -282,7 +282,7 @@ class ArchiveContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Append')
     def manage_subscribers(self):
-        text = 'Manage subscriptions'
+        text = 'Manage access'
         link = Link('+subscriptions', text, icon='edit')
 
         # This link should only be available for private archives:

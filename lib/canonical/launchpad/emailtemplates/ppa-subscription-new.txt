@@ -1,11 +1,11 @@
 Hello %(recipient_name)s,
 
-Launchpad: activate your archive subscription
----------------------------------------------
+Launchpad: access to a private archive
+--------------------------------------
 
-%(registrant_name)s has invited you to subscribe to a private software archive hosted by Launchpad.
+%(registrant_name)s has granted you access to a private software archive hosted by Launchpad.
 
-To start downloading and using software from this archive you need to activate your subscription by visiting this link:
+To start downloading and using software from this archive you need to view your access details by visiting this link:
 
 <%(recipient_subscriptions_url)s>
 
