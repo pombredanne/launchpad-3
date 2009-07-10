@@ -417,9 +417,9 @@ error_output.
 
 === Import With Warnings ===
 
-The import may also but produce syntax warnings.  These need not be
-tied to particular messages (they could be in the header, for instance)
-and they don't mean that any messages failed to import.
+The import may also succeed but produce syntax warnings.  These need not
+be tied to particular messages (they could be in the header, for
+instance) and they don't mean that any messages failed to import.
 
 For example, here's a gettext PO file with two headers.
 
