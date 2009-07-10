@@ -773,7 +773,7 @@
             <browser:page
                 name="+changelog"
                 facet="overview"
-                template="../templates/sourcepackage-changelog.pt">
+                template="../templates/sourcepackage-changelog.pt"/>
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
