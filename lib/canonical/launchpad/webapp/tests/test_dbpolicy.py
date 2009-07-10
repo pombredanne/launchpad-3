@@ -10,22 +10,21 @@ import unittest
 from zope.component import getAdapter, getUtility
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
+from lazr.restful.interfaces import IWebServiceConfiguration
 from canonical.config import config
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.layers import (
     FeedsLayer, setFirstLayer, WebServiceLayer)
-from canonical.signon.layers import IdLayer, OpenIDLayer
 from lp.testing import TestCase
 from canonical.launchpad.webapp.dbpolicy import (
     BaseDatabasePolicy, LaunchpadDatabasePolicy, MasterDatabasePolicy,
     ReadOnlyLaunchpadDatabasePolicy, SlaveDatabasePolicy,
-    SlaveOnlyDatabasePolicy, SSODatabasePolicy)
+    SlaveOnlyDatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
     ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore,
     SLAVE_FLAVOR)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.tests import DummyConfigurationTestCase
 from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
 
 
@@ -143,43 +142,7 @@ class LaunchpadDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
         SlaveDatabasePolicyTestCase.setUp(self)
 
 
-class SSODatabasePolicyTestCase(BaseDatabasePolicyTestCase):
-
-    def setUp(self):
-        self.policy = SSODatabasePolicy()
-        BaseDatabasePolicyTestCase.setUp(self)
-
-    def test_defaults(self):
-        self.assertCorrectlyProvides(
-            getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR),
-            ISlaveStore)
-        self.assertCorrectlyProvides(
-            getUtility(IStoreSelector).get(AUTH_STORE, DEFAULT_FLAVOR),
-            IMasterStore)
-
-    def test_disallowed(self):
-        for store in ALL_STORES:
-            if store == AUTH_STORE:
-                disallowed_flavor = SLAVE_FLAVOR
-            else:
-                disallowed_flavor = MASTER_FLAVOR
-            self.failUnlessRaises(
-                DisallowedStore,
-                getUtility(IStoreSelector).get, store, disallowed_flavor)
-
-    def test_dbusers(self):
-        store_selector = getUtility(IStoreSelector)
-        for store in ALL_STORES:
-            if store == AUTH_STORE:
-                user = 'sso_auth'
-            else:
-                user = 'sso_main'
-            self.failUnlessEqual(
-                user,
-                self.getDBUser(store_selector.get(store, DEFAULT_FLAVOR)))
-
-
-class LayerDatabasePolicyTestCase(DummyConfigurationTestCase):
+class LayerDatabasePolicyTestCase(TestCase):
     layer = FunctionalLayer
 
     def test_FeedsLayer_uses_SlaveDatabasePolicy(self):
@@ -201,26 +164,13 @@ class LayerDatabasePolicyTestCase(DummyConfigurationTestCase):
         XXX 20090320 Stuart Bishop bug=297052: This doesn't scale of course
             and will meltdown when the API becomes popular.
         """
-        server_url = ('http://api.launchpad.dev/'
-                      + self.config.service_version_uri_prefix)
+        api_prefix = getUtility(
+            IWebServiceConfiguration).service_version_uri_prefix
+        server_url = 'http://api.launchpad.dev/%s' % api_prefix
         request = LaunchpadTestRequest(SERVER_URL=server_url)
         setFirstLayer(request, WebServiceLayer)
         policy = IDatabasePolicy(request)
         self.assertIsInstance(policy, MasterDatabasePolicy)
-
-    def test_OpenIDLayer_uses_SSODatabasePolicy(self):
-        request = LaunchpadTestRequest(
-            SERVER_URL='http://openid.launchpad.dev/+openid')
-        setFirstLayer(request, OpenIDLayer)
-        policy = IDatabasePolicy(request)
-        self.assertIsInstance(policy, SSODatabasePolicy)
-
-    def test_IdLayer_uses_SSODatabasePolicy(self):
-        request = LaunchpadTestRequest(
-            SERVER_URL='http://openid.launchpad.dev/+openid')
-        setFirstLayer(request, IdLayer)
-        policy = IDatabasePolicy(request)
-        self.assertIsInstance(policy, SSODatabasePolicy)
 
     def test_read_only_mode_uses_ReadOnlyLaunchpadDatabasePolicy(self):
         config.push('read_only', """
@@ -231,19 +181,6 @@ class LayerDatabasePolicyTestCase(DummyConfigurationTestCase):
                 SERVER_URL='http://launchpad.dev')
             policy = IDatabasePolicy(request)
             self.assertIsInstance(policy, ReadOnlyLaunchpadDatabasePolicy)
-        finally:
-            config.pop('read_only')
-
-    def test_read_only_mode_IdLayer_uses_SSODatabasePolicy(self):
-        config.push('read_only', """
-            [launchpad]
-            read_only: True""")
-        try:
-            request = LaunchpadTestRequest(
-                SERVER_URL='http://openid.launchpad.dev/+openid')
-            setFirstLayer(request, IdLayer)
-            policy = IDatabasePolicy(request)
-            self.assertIsInstance(policy, SSODatabasePolicy)
         finally:
             config.pop('read_only')
 

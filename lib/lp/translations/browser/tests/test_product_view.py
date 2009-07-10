@@ -6,7 +6,7 @@ import unittest
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
-from lp.registry.browser.product import ProductView
+from lp.translations.browser.product import ProductView
 from lp.testing import TestCaseWithFactory
 
 
