@@ -38,12 +38,12 @@ serieses.
     Breezy-autotest - (666): main/base
 
 
-Latest published PPA versions
------------------------------
+Related PPA versions
+--------------------
 
-The view includes a latest_published_ppa_versions property which returns
-a list of dictionaries describing 3 PPAs with the most-recently-uploaded
-versions of the package.
+The view includes a related_ppa_versions property which returns
+a list of dictionaries describing 3 PPAs with versions of the same
+package.
 
     # Create two PPAs to which we can publish sources.
     >>> ppa_nightly = factory.makeArchive(name="nightly",
@@ -103,7 +103,7 @@ versions of the package.
     >>> ubuntu_gedit = ubuntutest.getSourcePackage('gedit')
     >>> ubuntu_gedit_view = getMultiAdapter(
     ...     (ubuntu_gedit, LaunchpadTestRequest()), name="+index")
-    >>> for archive_pub in ubuntu_gedit_view.latest_published_ppa_versions:
+    >>> for archive_pub in ubuntu_gedit_view.related_ppa_versions:
     ...     print "%s - %s" % (
     ...         archive_pub['archive'].displayname,
     ...         archive_pub['versions']
