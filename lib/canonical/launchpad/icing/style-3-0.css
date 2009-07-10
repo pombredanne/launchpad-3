@@ -4,6 +4,11 @@ Reset 1.0 and 2.0 portlets and asides.
 Remove this section when the old templates and these declarations are gone.
 
 */
+#maincontent {
+    float: none;
+    width: auto;
+    margin-right: 0;
+    }
 .portlet, .aside {
     clear: auto;
     float: none;
@@ -175,7 +180,7 @@ div.columns div.right div.portlet {
 
 /* Page layout */
 .yui-d0 {
-    margin: 10px;
+    margin: 10px 20px; /* 20px sides are 2.0 backward compatability */
     }
 .yui-t4 .yui-b {
     width: 21%;
@@ -188,7 +193,7 @@ div.columns div.right div.portlet {
     *margin-right: 24%;
     }
 #footer {
-    margin-top: 1em;
+    margin-top: 2em;
     border-top: 1px solid #cdd3dd;
     padding-top: .5em;
     }
@@ -229,12 +234,14 @@ Pixels  Percent
 
 /* Default text presentation */
 html, body {
-    font-family: arial, helvetica, clean, sans-serif;
+    font-family: bitstream vera sans, arial, helvetica, clean, sans-serif;
+    font-size: 93%; /* 2.0 backward compatability */
     }
 h1 {
     clear: none;
     padding-top: 6px; /* An offset fromt he logo. */
     font-size: 197%;
+    margin-bottom: .5em; /* 2.0 backward compatability */
     }
 h2 {
     margin-bottom: .3em;
@@ -243,8 +250,10 @@ h2 {
     }
 p {
     width: auto;
-    max-width: 45em; /* Wrap the text before the eye gets lost. */
     margin-bottom: .8em;
+    }
+p, li, dt, dd, blockquote {
+    max-width: 45em; /* Wrap the text before the eye gets lost. */
     }
 pre, code, samp, tt,
 #bug-description,
@@ -271,7 +280,6 @@ em {
 strong {
     font-weight: bold;
     }
-
 /* Common presentations */
 div.see-all {
     font-size: 123.1%; /* Same as a h2 */
@@ -298,6 +306,7 @@ span.see-all {
     margin: 0 5px 0 0;
     }
 .registered {
+    margin-top: -.5em; /* 2.0 backward compatability */
     font-size: 85%;
     color: #666;
     font-style: italic;
@@ -314,7 +323,7 @@ span.see-all {
     }
 .two-column-list li,
 .two-column-list dl {
-    width: 49%;
+    width: 48%;
     float: left;
     display: inline;
     margin: 0 0.25em .75em 0;
