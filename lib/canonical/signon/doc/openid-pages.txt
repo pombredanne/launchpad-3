@@ -44,19 +44,13 @@ openid_identifier.
     >>> sample_identity.account.displayname
     u'Sample Person'
 
-It also exposes both the new and old openid identifiers.
+It expose the openid identifier and also provides access to the user's
+identity URLs. This is the canonical URL for the XRDS discovery end point.
 
-    >>> sample_identity.new_openid_identifier
-    u'123/name12'
-    >>> sample_identity.old_openid_identifier
+    >>> sample_identity.openid_identifier
     u'+id/name12_oid'
 
-Most importantly, OpenIDPersistentIdentity provides access to the user's
-identity URLs. This is the canonical URL for the XRDS discovery end point. 
-
-    >>> sample_identity.new_openid_identity_url
-    'http://id.launchpad.dev/123/name12'
-    >>> sample_identity.old_openid_identity_url
+    >>> sample_identity.openid_identity_url
     'http://openid.launchpad.dev/+id/name12_oid'
 
 

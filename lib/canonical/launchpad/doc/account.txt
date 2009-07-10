@@ -83,15 +83,6 @@ look up the user.
     >>> print account.displayname
     No Privileges Person
 
-The getByOpenIDIdentifier() method supports the human readable
-openid identifiers.
-
-    >>> account.new_openid_identifier
-    u'123/no-priv'
-    >>> account_2 = account_set.getByOpenIDIdentifier('123/no-priv')
-    >>> account_2 == account
-    True
-
 A LookupError is raised if the identifier is not used by any account.
 
     >>> account_set.getByOpenIDIdentifier('no-such-identifier')
@@ -389,8 +380,6 @@ the account object is synced.
     >>> syncUpdate(new_account)
     >>> len(new_account.openid_identifier) == 7
     True
-    >>> new_account.new_openid_identifier
-    u'.../oid-account'
 
 The IAccountSet object can create a human-readable openid identifier
 using the createOpenIDIdentifier() method. It requires a string argument

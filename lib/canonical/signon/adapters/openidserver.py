@@ -48,46 +48,20 @@ class OpenIDPersistentIdentity:
     def __init__(self, account):
         self.account = account
 
-    # XXX sinzui 2008-09-04 bug=264783:
-    # Remove old_openid_identifier and old_openid_identity_url.
-    # Rename new_openid_identifier => openid_identifier.
-    # Rename new_openid_identity_url => openid_identity_url.
     @property
-    def new_openid_identifier(self):
+    def openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
-        # The account is very restricted.
-        return removeSecurityProxy(self.account).new_openid_identifier
+        identity_root_url = allvhosts.configs['openid'].rooturl
+        return identity_root_url + self.openid_identifier.encode('ascii')
 
     @property
-    def new_openid_identity_url(self):
-        """See `IOpenIDPersistentIdentity`."""
-        identity_root_url = allvhosts.configs['id'].rooturl
-        return identity_root_url + self.new_openid_identifier.encode('ascii')
-
-    @property
-    def old_openid_identifier(self):
+    def openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
         # The account is very restricted.
         token = removeSecurityProxy(self.account).openid_identifier
         if token is None:
             return None
         return '+id/' + token
-
-    @property
-    def old_openid_identity_url(self):
-        """See `IOpenIDPersistentIdentity`."""
-        identity_root_url = allvhosts.configs['openid'].rooturl
-        return identity_root_url + self.old_openid_identifier.encode('ascii')
-
-    @property
-    def openid_identity_url(self):
-        """See `IOpenIDPersistentIdentity`."""
-        return self.old_openid_identity_url
-
-    @property
-    def openid_identifier(self):
-        """See `IOpenIDPersistentIdentity`."""
-        return self.old_openid_identifier
 
 
 @adapter(IPerson)
