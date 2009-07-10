@@ -10,7 +10,7 @@ __all__ = [
 from datetime import datetime, timedelta
 
 import pytz
-from storm.expr import Desc
+from storm.expr import Desc, Func, SQL
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -31,7 +31,9 @@ class GenericRevisionCollection:
     def __init__(self, store=None, filter_expressions=None):
         self._store = store
         if filter_expressions is None:
-            filter_expressions = []
+            epoch = datetime.now(pytz.UTC) - timedelta(days=30)
+            filter_expressions = [
+                RevisionCache.revision_date >= epoch]
         self._filter_expressions = filter_expressions
 
     @property
@@ -52,14 +54,29 @@ class GenericRevisionCollection:
 
     def count(self):
         """See `IRevisionCollection`."""
-        return self.getRevisions().order_by().count()
+        # Don't join in the Revision table if we are just counting unique ids.
+        result_set = self.store.find(
+            RevisionCache.revision_id, self._filter_expressions)
+        result_set.config(distinct=True)
+        return result_set.count()
+
+    def authorCount(self):
+        """See `IRevisionCollection`."""
+        author = Func(
+            'coalesce',
+            RevisionAuthor.personID,
+            SQL(0) - RevisionAuthor.id)
+        expressions = [
+            RevisionCache.revision_author == RevisionAuthor.id]
+        expressions.extend(self._filter_expressions)
+        result_set = self.store.find(author, expressions)
+        result_set.config(distinct=True)
+        return result_set.count()
 
     def getRevisions(self):
         """See `IRevisionCollection`."""
-        epoch = datetime.now(pytz.UTC) - timedelta(days=30)
         expressions = [
-            RevisionCache.revision == Revision.id,
-            RevisionCache.revision_date >= epoch]
+            RevisionCache.revision == Revision.id]
         expressions.extend(self._filter_expressions)
         result_set = self.store.find(Revision, expressions)
         result_set.config(distinct=True)

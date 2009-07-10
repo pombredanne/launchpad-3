@@ -38,6 +38,12 @@ class IRevisionCollection(Interface):
     def count():
         """The number of revisions in this collection."""
 
+    def authorCount():
+        """The number of different people authoring revisions.
+
+        Only revisions in the restricted collection are counted.
+        """
+
     def getRevisions():
         """Return a result set of all distinct revisions in this collection.
         """

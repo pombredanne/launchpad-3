@@ -287,6 +287,23 @@ class TestRevisionCache(TestCaseWithFactory):
         revision_cache = getUtility(IRevisionCache).authoredBy(team)
         self.assertRevisionsEqual([rev1, rev2], revision_cache)
 
+    def test_author_count(self):
+        # The author count should count distinct revision authors.  Revision
+        # authors linked to launchpad people use the person id as the
+        # discriminator.
+
+        # Make two revisions not assigned to anyone, then two revisions with
+        # different revision names linked to the same person.
+        revisions = [
+            self.makeCachedRevision(revision=self.factory.makeRevision())
+            for i in range(4)]
+        # Make revisions [2] and [3] linked to the same person.
+        person = self.factory.makePerson()
+        removeSecurityProxy(revisions[2].revision_author).person = person
+        removeSecurityProxy(revisions[3].revision_author).person = person
+        revision_cache = getUtility(IRevisionCache)
+        self.assertEqual(3, revision_cache.authorCount())
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
