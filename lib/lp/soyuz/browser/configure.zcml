@@ -730,13 +730,6 @@
             facet="overview"
             template="../templates/distribution-archive-list.pt"/>
         <browser:page
-            for="lp.registry.interfaces.distribution.IDistribution"
-            class="lp.registry.browser.distribution.DistributionAllPackagesView"
-            permission="zope.Public"
-            name="+allpackages"
-            facet="overview"
-            template="../templates/distribution-allpackages.pt"/>
-        <browser:page
             for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
             class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageView"
             permission="zope.Public"
@@ -777,6 +770,10 @@
             <browser:page
                 name="+builds-list"
                 template="../templates/builds-list.pt"/>
+            <browser:page
+                name="+changelog"
+                facet="overview"
+                template="../templates/sourcepackage-changelog.pt">
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
@@ -805,10 +802,6 @@
             for="lp.registry.interfaces.distroseries.IDistroSeries"
             class="lp.registry.browser.distroseries.DistroSeriesView"
             permission="zope.Public">
-            <browser:page
-                name="+packaging"
-                facet="overview"
-                template="../templates/distroseries-packaging.pt"/>
             <browser:page
                 name="+builds"
                 facet="overview"

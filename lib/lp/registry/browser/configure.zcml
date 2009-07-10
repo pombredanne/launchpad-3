@@ -94,6 +94,10 @@
         class="lp.registry.browser.distroseries.DistroSeriesView"
         permission="zope.Public">
         <browser:page
+            name="+packaging"
+            facet="overview"
+            template="../templates/distroseries-packaging.pt"/>
+        <browser:page
             name="+filebug"
             facet="bugs"
             attribute="redirectToDistroFileBug"/>
@@ -2110,6 +2114,13 @@
         module="lp.registry.browser.distribution"
         classes="
             DistributionNavigation"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionAllPackagesView"
+        permission="zope.Public"
+        name="+allpackages"
+        facet="overview"
+        template="../templates/distribution-allpackages.pt"/>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
@@ -2457,10 +2468,6 @@
             name="+gethelp"
             facet="answers"
             template="../templates/sourcepackage-gethelp.pt"/>
-        <browser:page
-            name="+changelog"
-            facet="overview"
-            template="../templates/sourcepackage-changelog.pt"/>
         <!-- SourcePackage Portlets -->
         <browser:page
             name="+portlet-details"
