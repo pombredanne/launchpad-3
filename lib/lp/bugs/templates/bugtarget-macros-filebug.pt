@@ -383,6 +383,7 @@
 </metal:bug_reporting_guidelines>
 
 <metal:similar-bugs define-macro="display-similar-bugs">
+  <a id="prefocus-target"></a>
   <ul id="similar-bugs" style="list-style: none; margin-left: 0; margin-bottom: 0">
     <li tal:repeat="bug view/similar_bugs" class="similar-bug">
       <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
@@ -435,6 +436,9 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
+
+                  <a class="view-bug-link" tal:attributes="href bug/fmt:url"
+                  >view this bug</a>
                 </span>
               </div>
 
