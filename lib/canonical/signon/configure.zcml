@@ -8,6 +8,17 @@
 
   <include package=".model" />
   <include package=".adapters" />
-  <include package=".browser" />
-
+  <include package=".browser" /> 
+  <publisher
+      name="openid"
+      factory="canonical.signon.publisher.openid_request_publication_factory"
+      methods="*"
+      mimetypes="*"
+      priority="90" />
+  <publisher
+      name="id"
+      factory="canonical.signon.publisher.id_request_publication_factory"
+      methods="*"
+      mimetypes="*"
+      priority="80" />
 </configure>
