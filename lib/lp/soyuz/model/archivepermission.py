@@ -29,7 +29,6 @@ from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from lp.soyuz.interfaces.packageset import IPackageset
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 from canonical.launchpad.webapp.interfaces import NotFoundError
