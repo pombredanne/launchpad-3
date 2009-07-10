@@ -147,7 +147,12 @@ class BMPMailer(BranchMailer):
         return self.merge_proposal.address
 
     def _getToAddresses(self, recipient, email):
-        """Return the addresses to use for the to header."""
+        """Return the addresses to use for the to header.
+
+        If the email is being sent directly to the recipient, their email
+        address is returned.  Otherwise, the merge proposal and requested
+        reviewers are returned.
+        """
         if self.direct_email:
             return BaseMailer._getToAddresses(self, recipient, email)
         to_addrs = [self.merge_proposal.address]

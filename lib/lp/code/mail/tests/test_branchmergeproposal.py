@@ -101,10 +101,11 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         mailer.sendAll()
 
     def test_to_addrs_includes_reviewers(self):
+        """The addresses for the to header include requested reviewers"""
         request, requester = self.makeReviewRequest()
         bmp = request.merge_proposal
-        bmp.source_branch.subscribe(bmp.registrant,
-            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+        bmp.source_branch.subscribe(
+            bmp.registrant, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(bmp.registrant,
@@ -115,10 +116,11 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
                          set(ctrl.to_addrs))
 
     def test_to_addrs_excludes_team_reviewers(self):
+        """Addresses for the to header exclude requested team reviewers."""
         bmp, subscriber = self.makeProposalWithSubscriber()
         team = self.factory.makeTeam(email='group@team.com')
-        request = CodeReviewVoteReference(branch_merge_proposal=bmp,
-            reviewer=team, registrant=subscriber)
+        request = CodeReviewVoteReference(
+            branch_merge_proposal=bmp, reviewer=team, registrant=subscriber)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(subscriber,
                                     subscriber.preferredemail.email)
