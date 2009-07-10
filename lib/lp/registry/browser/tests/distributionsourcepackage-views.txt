@@ -83,16 +83,11 @@ package.
     # DatabaseLayer.switchDbUser() instead of reconnect_stores()
     >>> from canonical.testing.layers import reconnect_stores
     >>> reconnect_stores('karmacacheupdater')
-    >>> from zope.component import getUtility
-    >>> karmacachemanager = getUtility(IKarmaCacheManager)
-    >>> cache_entry = karmacachemanager.new(
-    ...     200, ppa_beta_owner_id, soyuz_category.id,
-    ...     distribution_id=ubuntutest.id,
-    ...     sourcepackagename_id=gedit_name.id)
-    >>> cache_entry = karmacachemanager.new(
-    ...     201, ppa_nightly_owner_id, soyuz_category.id,
-    ...     distribution_id=ubuntutest.id,
-    ...     sourcepackagename_id=gedit_name.id)
+    >>> from lp.registry.model.karma import KarmaTotalCache
+    >>> cache_entry = KarmaTotalCache(
+    ...     person=ppa_beta_owner_id, karma_total=200)
+    >>> cache_entry = KarmaTotalCache(
+    ...     person=ppa_nightly_owner_id, karma_total=201)
     >>> transaction.commit()
     >>> reconnect_stores('launchpad')
 
