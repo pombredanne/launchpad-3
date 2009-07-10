@@ -127,7 +127,7 @@ class CodeReviewCommentMailer(BMPMailer):
         to = [format_address(to_person.displayname, to_email)]
         return to
 
-    def _addAttachments(self, ctrl):
+    def _addAttachments(self, ctrl, email):
         """Add the attachments from the original message."""
         # Only reattach the display_aliases.
         for attachment in self.attachments:

@@ -1383,6 +1383,7 @@
             template="../templates/team-map.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamMailingListSubscribersView"
             permission="zope.Public"
             name="+mailing-list-subscribers"
             template="../templates/team-mailinglist-subscribers.pt"/>
@@ -1545,11 +1546,9 @@
                 name="+portlet-stats"
                 template="../templates/people-portlet-stats.pt"/>
         </browser:pages>
-        <browser:addform
+        <browser:page
             name="+requestmerge"
             for="lp.registry.interfaces.person.IPersonSet"
-            schema="lp.registry.interfaces.person.IRequestPeopleMerge"
-            fields="dupeaccount"
             class="canonical.launchpad.browser.RequestPeopleMergeView"
             permission="launchpad.AnyPerson"
             template="../templates/people-requestmerge.pt"/>

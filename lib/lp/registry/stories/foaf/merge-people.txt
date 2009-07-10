@@ -1,5 +1,16 @@
-'foo' is a dupe account for 'no-priv'. Let's merge them, and keep only
-'no-priv'.
+Merging people
+==============
+
+Since we may create Launchpad profiles automatically some times, we allow
+people to merge two profiles into a single one, if they find there's more
+than one profile representing themselves.
+
+Here we will merge the profile named 'foo' into the one named 'no-priv'.
+
+    # First we'll create the 'foo' profile because it doesn't exist yet.
+    >>> login('foo.bar@canonical.com')
+    >>> foo = factory.makePerson(name='foo', email='foo@baz.com')
+    >>> logout()
 
 Workaround while https://launchpad.net/launchpad/+bug/39016 is not
 fixed.
@@ -25,17 +36,19 @@ First we have to go to the +requestmerge page.
 If we try to merge a nonexistent account, we'll get an error page.
 
     >>> browser.getControl('Duplicated Account').value = 'bar'
-    >>> browser.getControl('Submit').click()
-    >>> 'There are <strong>1</strong> input errors' in browser.contents
-    True
+    >>> browser.getControl('Continue').click()
+    >>> print "\n".join(get_feedback_messages(browser.contents))
+    There is 1 error.
+    Invalid value
 
 The same will happen if we try to merge a team.
 
     >>> browser.getControl(
     ...     'Duplicated Account').value = 'support@canonical.com'
-    >>> browser.getControl('Submit').click()
-    >>> 'There are <strong>1</strong> input errors' in browser.contents
-    True
+    >>> browser.getControl('Continue').click()
+    >>> print "\n".join(get_feedback_messages(browser.contents))
+    There is 1 error.
+    Invalid value
 
 In preparation for the actual merge (below), we add an extra email
 address to the 'foo' account, to show how things work when the dupe
@@ -57,7 +70,7 @@ duplicate account. Here the user choses the ones which he want to claim.
 
     >>> browser.getControl(
     ...     'Duplicated Account').value = 'foo'
-    >>> browser.getControl('Submit').click()
+    >>> browser.getControl('Continue').click()
     >>> 'has more than one registered e-mail address' in browser.contents
     True
 
@@ -132,7 +145,7 @@ no-priv@canonical.com.
 
     >>> browser.open('http://launchpad.dev/people/+requestmerge')
     >>> browser.getControl('Duplicated Account').value = 'marilize@hbd.com'
-    >>> browser.getControl('Submit').click()
+    >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://launchpad.dev/people/+mergerequest-sent?dupe=55'
     >>> len(stub.test_emails)

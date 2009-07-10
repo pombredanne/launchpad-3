@@ -201,6 +201,60 @@ class TestPollingTaskSource(TestCase):
         deferred.callback('foo')
         self.assertEqual(['foo'], tasks_called)
 
+    def test_only_one_producer_call_at_once(self):
+        # If the task producer returns a Deferred, it will not be called again
+        # until that deferred has fired, even if takes longer than the
+        # interval we're polling at.
+        tasks_called = []
+        produced_deferreds = []
+        def producer():
+            deferred = Deferred()
+            produced_deferreds.append(deferred)
+            return deferred
+        clock = Clock()
+        interval = self.factory.getUniqueInteger()
+        task_source = self.makeTaskSource(
+            task_producer=producer, interval=interval, clock=clock)
+        task_source.start(AppendingTaskConsumer(tasks_called))
+        # The call to start calls producer.  It returns a deferred which has
+        # not been fired.
+        self.assertEqual(len(produced_deferreds), 1)
+        # If 'interval' seconds passes and the deferred has still not fired
+        # the producer is not called again.
+        clock.advance(interval)
+        self.assertEqual(len(produced_deferreds), 1)
+        # If the task-getting deferred is fired and more time passes, we poll
+        # again.
+        produced_deferreds[0].callback(None)
+        clock.advance(interval)
+        self.assertEqual(len(produced_deferreds), 2)
+
+    def test_taskStarted_deferred_doesnt_delay_polling(self):
+        # If taskStarted returns a deferred, we don't wait for it to fire
+        # before polling again.
+        class DeferredStartingConsumer(NoopTaskConsumer):
+            def taskStarted(self, task):
+                started.append(task)
+                return Deferred()
+        interval = self.factory.getUniqueInteger()
+        clock = Clock()
+        produced = []
+        started = []
+        def producer():
+            value = self.factory.getUniqueInteger()
+            produced.append(value)
+            return value
+        task_source = self.makeTaskSource(
+            task_producer=producer, interval=interval, clock=clock)
+        consumer = DeferredStartingConsumer()
+        task_source.start(consumer)
+        # The call to start polls once and taskStarted is called.
+        self.assertEqual((1, 1), (len(produced), len(started)))
+        # Even though taskStarted returned a deferred which has not yet fired,
+        # we poll again after 'interval' seconds.
+        clock.advance(interval)
+        self.assertEqual((2, 2), (len(produced), len(started)))
+
     def test_producer_errors_call_taskProductionFailed(self):
         # If the producer raises an error, then we call taskProductionFailed
         # on the task consumer.
@@ -218,6 +272,32 @@ class TestPollingTaskSource(TestCase):
         self.assertEqual(1, len(consumer._task_production_failed_calls))
         reason = consumer._task_production_failed_calls[0]
         self.assertTrue(reason.check(ZeroDivisionError))
+
+    def test_taskProductionFailed_deferred_doesnt_delay_polling(self):
+        # If taskProductionFailed returns a deferred, we don't wait for it to
+        # fire before polling again.
+        class DeferredFailingConsumer(NoopTaskConsumer):
+            def taskProductionFailed(self, reason):
+                failures.append(reason)
+                return Deferred()
+        interval = self.factory.getUniqueInteger()
+        clock = Clock()
+        produced = []
+        failures = []
+        def producer():
+            exc = RuntimeError()
+            produced.append(exc)
+            raise exc
+        task_source = self.makeTaskSource(
+            task_producer=producer, interval=interval, clock=clock)
+        consumer = DeferredFailingConsumer()
+        task_source.start(consumer)
+        # The call to start polls once and taskProductionFailed is called.
+        self.assertEqual((1, 1), (len(produced), len(failures)))
+        # Even though taskProductionFailed returned a deferred which has not
+        # yet fired, we poll again after 'interval' seconds.
+        clock.advance(interval)
+        self.assertEqual((2, 2), (len(produced), len(failures)))
 
 
 class TestParallelLimitedTaskConsumer(TestCase):

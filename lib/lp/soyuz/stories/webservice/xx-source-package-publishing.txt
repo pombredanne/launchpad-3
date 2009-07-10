@@ -135,6 +135,31 @@ publication to play with first.
     status: u'Pending'
 
 
+Unsigned sources
+================
+
+For packages synced from another distribution, the source is likely to
+be unsigned.  In this case, the package_signer_link will be None.
+
+Make cprov's PPA packages unsigned:
+
+    >>> login("foo.bar@canonical.com")
+    >>> for pub in ppa.getPublishedSources():
+    ...     pub = removeSecurityProxy(pub)
+    ...     pub.sourcepackagerelease.dscsigningkey = None
+    >>> transaction.commit()
+    >>> logout()
+
+Query the source again:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     distro_series=warty['self_link'],
+    ...     source_name="testwebservice").jsonBody()
+
+    >>> print pubs['entries'][0]['package_signer_link']
+    None
+
 Privacy
 =======
 
