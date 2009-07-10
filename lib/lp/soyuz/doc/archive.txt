@@ -1562,6 +1562,21 @@ immediately recognises 'cprov' rights on it.
     PPA for Celso Providelo
     PPA for Launchpad Buildd Admins
 
+The same happens for specific upload rights granted on 3rd-part
+PPAs. When 'No Privileges' gets upload rights to Celso's PPA,
+it gets listed by `getPPAsForUser`.
+
+    >>> for ppa in archive_set.getPPAsForUser(no_priv):
+    ...     print ppa.displayname
+    PPA for No Privileges Person
+
+    >>> discard = cprov_archive.newComponentUploader(no_priv, "main")
+
+    >>> for ppa in archive_set.getPPAsForUser(no_priv):
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+    PPA for No Privileges Person
+
 When there is no active PPA for the team a user participates the
 method returns an empty SelectResults.
 

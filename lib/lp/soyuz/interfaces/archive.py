@@ -1011,7 +1011,7 @@ class IArchiveSet(Interface):
     def getPPAsForUser(user):
         """Return all PPAs the given user can participate.
 
-        The result is ordered by PPA owner's displayname.
+        The result is ordered by PPA displayname.
         """
 
     def getPPAsPendingSigningKey():
