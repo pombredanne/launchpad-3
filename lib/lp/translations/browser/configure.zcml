@@ -685,6 +685,11 @@
             classes="
                 PersonTranslationsMenu"/>
         <browser:page
+            name="+translations"
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.translations.browser.translations.TranslationsRedirectView"
+            permission="zope.Public"/>
+        <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+translations"
             facet="translations"
