@@ -35,14 +35,10 @@ class OpenIDApplicationURL:
 
     path = ''
     inside = None
+    rootsite = 'openid'
 
     def __init__(self, context):
         self.context = context
-
-    @cachedproperty
-    def rootsite(self):
-        """The root site of the application."""
-        return CurrentOpenIDEndPoint.getVHost()
 
 
 class OpenIDApplicationNavigation(Navigation):
