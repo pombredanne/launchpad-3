@@ -43,6 +43,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.browser.branch import DecoratedBug
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from lp.code.enums import (
@@ -400,7 +401,13 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         """Return whether or not the merge proposal has a linked bug or spec.
         """
         branch = self.context.source_branch
-        return branch.bug_branches or branch.spec_links
+        return branch.linked_bugs or branch.spec_links
+
+    @cachedproperty
+    def linked_bugs(self):
+        """Return DecoratedBugs linked to the source branch."""
+        branch = self.context.source_branch
+        return [DecoratedBug(bug, branch) for bug in branch.linked_bugs]
 
 
 class DecoratedCodeReviewVoteReference:
@@ -422,7 +429,10 @@ class DecoratedCodeReviewVoteReference:
         is_mergable = self.context.branch_merge_proposal.isMergable()
         self.can_change_review = (user == context.reviewer) and is_mergable
         branch = context.branch_merge_proposal.source_branch
-        self.trusted = (user is not None and user.inTeam(branch.reviewer))
+        review_team = context.branch_merge_proposal.target_branch.reviewer
+        reviewer = context.reviewer
+        self.trusted = (reviewer is not None and reviewer.inTeam(
+                        review_team))
         if user is None:
             self.user_can_review = False
         else:
