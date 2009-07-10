@@ -59,12 +59,12 @@
     <td style="width: 15em; vertical-align: middle">
       <div class="status-content"
            style="width: 100%; float: left">
-        <a href="+edit"
+        <a href="+editstatus"
            tal:attributes="class string:value status${context/status/name}"
            style="float: left"
            tal:content="context/status/title" />
         <div style="float: right; margin-right: 0.5em">
-          <a href="+edit">
+          <a href="+editstatus">
             <img class="editicon" src="/@@/edit-grey" />
           </a>
         </div>
@@ -75,12 +75,12 @@
         style="width: 15em; vertical-align: middle">
       <div class="importance-content"
            style="width: 100%; float: left">
-        <a href="+edit"
+        <a href="+editstatus"
            tal:attributes="class string:value importance${context/importance/name}"
            style="float: left"
            tal:content="context/importance/title" />
         <div style="float: right; margin-right: 0.5em">
-          <a href="+edit">
+          <a href="+editstatus">
             <img class="editicon" src="/@@/edit-grey" />
           </a>
         </div>
