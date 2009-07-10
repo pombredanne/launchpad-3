@@ -1147,11 +1147,6 @@
             class="lp.registry.browser.person.PersonSpecWorkloadTableView"
             template="../templates/person-table-specworkload.pt"/>
         <browser:page
-            name="+translations"
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.translations.browser.translations.TranslationsRedirectView"
-            permission="zope.Public"/>
-        <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+specfeedback"
             facet="specifications"
