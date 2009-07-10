@@ -103,7 +103,7 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
         # with the required soyuz karma for this package.
 
         related_archives = self.source_package.findRelatedArchives(
-            require_karma=201)
+            required_karma=201)
         related_archive_names = [
             archive.name for archive in related_archives]
 

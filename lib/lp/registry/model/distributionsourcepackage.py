@@ -221,7 +221,7 @@ class DistributionSourcePackage(BugTargetBase,
     def findRelatedArchives(self,
                             exclude_archive=None,
                             archive_purpose=ArchivePurpose.PPA,
-                            require_karma=0):
+                            required_karma=0):
         """See `IDistributionSourcePackage`."""
 
         extra_args = []
@@ -237,8 +237,8 @@ class DistributionSourcePackage(BugTargetBase,
         # Include only those archives containing the source package released
         # by a person with karma for this source package greater than that
         # specified.
-        if require_karma > 0:
-            extra_args.append(KarmaTotalCache.karma_total >= require_karma)
+        if required_karma > 0:
+            extra_args.append(KarmaTotalCache.karma_total >= required_karma)
 
         store = Store.of(self.distribution)
         results = store.find(
