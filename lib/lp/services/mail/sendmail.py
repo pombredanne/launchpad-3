@@ -143,11 +143,12 @@ class MailController(object):
     """Message generation interface closer to peoples' mental model."""
 
     def __init__(self, from_addr, to_addrs, subject, body, headers=None,
-                 bulk=True):
+                 envelope_to=None, bulk=True):
         self.from_addr = from_addr
         if zisinstance(to_addrs, basestring):
             to_addrs = [to_addrs]
         self.to_addrs = to_addrs
+        self.envelope_to = envelope_to
         self.subject = subject
         self.body = body
         if headers is None:
@@ -217,8 +218,8 @@ class MailController(object):
         msg['Subject'] = self.subject
         return msg
 
-    def send(self):
-        return sendmail(self.makeMessage(), bulk=self.bulk)
+    def send(self, bulk=True):
+        return sendmail(self.makeMessage(), self.envelope_to, bulk=self.bulk)
 
 
 def simple_sendmail_from_person(
