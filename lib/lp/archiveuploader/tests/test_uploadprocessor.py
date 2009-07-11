@@ -1331,11 +1331,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
 
         foo_ps.add((bar_package,))
-        ap_set.newPackagesetUploader(uploader, foo_ps)
+        ap_set.newPackagesetUploader(
+            self.ubuntu.main_archive, uploader, foo_ps)
 
         # The uploader now does have a package set based upload permissions
         # to 'bar'.
-        self.assertTrue(ap_set.isSourceUploadAllowed('bar', uploader))
+        self.assertTrue(
+            ap_set.isSourceUploadAllowed(
+                self.ubuntu.main_archive, 'bar', uploader))
 
         # Upload the package again.
         self.processUpload(uploadprocessor, upload_dir)
