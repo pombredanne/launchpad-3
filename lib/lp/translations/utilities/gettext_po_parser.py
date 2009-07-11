@@ -479,6 +479,11 @@ ESCAPE_MAP = {
     }
 
 
+# Compiled regex for a straight test run, i.e. anything up to the next
+# double-quote or escaped character.
+STRAIGHT_TEXT_RUN = re.compile('[^"\\\\]*')
+
+
 class POParser(object):
     """Parser class for Gettext files."""
 
@@ -864,9 +869,11 @@ class POParser(object):
                         self._unescapeNumericCharSequence(string))
                     output += unescaped
             else:
-                # It's a normal char, we just store it and jump to next one.
-                output += string[0]
-                string = string[1:]
+                # Normal text.  Eat up as much as we can in one go.
+                text = re.match(STRAIGHT_TEXT_RUN, string)
+                output += text.group()
+                zero, runlength = text.span()
+                string = string[runlength:]
         else:
             # We finished parsing the string without finding the ending quote
             # char.
