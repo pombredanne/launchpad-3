@@ -497,7 +497,7 @@
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.BranchVisibilityPolicyView"
-        permission="launchpad.Admin"
+        permission="launchpad.Commercial"
         template="../templates/branch-visibility.pt"/>
     <browser:page
         name="+addbranchvisibilitypolicy"

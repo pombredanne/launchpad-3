@@ -275,7 +275,7 @@ class ArchiveContextMenu(ContextMenu):
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def admin(self):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')

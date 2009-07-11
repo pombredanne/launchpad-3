@@ -72,7 +72,7 @@ Amending it as an unprivileged user results in failure:
     >>> cprov_archive.relative_build_score = 100
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'relative_build_score', 'launchpad.Admin')
+    Unauthorized: (..., 'relative_build_score', 'launchpad.Commercial')
 
 As a Launchpad admin, it will work.
 
@@ -83,16 +83,21 @@ The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
 essentially the password to the archive for the builder.
 
-It can only be set by users with launchpad.Admin permission in the
-archive, i.e. a launchpad-administrator.
+It can only be set by users with launchpad.Commercial permission in the
+archive, i.e. an admin or a commercial admin.
 
     >>> login(ANONYMOUS)
     >>> cprov_archive.buildd_secret = 'boing'
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'buildd_secret', 'launchpad.Admin')
+    Unauthorized: (..., 'buildd_secret', 'launchpad.Commercial')
 
-Foo Bar, can set 'buildd_secret'.
+Commercial Member, a commercial admin but not an admin, can set 'buildd_secret'.
+
+    >>> login("commercial-member@canonical.com")
+    >>> cprov_archive.buildd_secret = 'not so secret at all'
+
+Foo Bar, an admin, can set 'buildd_secret'.
 
     >>> login("foo.bar@canonical.com")
     >>> cprov_archive.buildd_secret = 'not so secret'
@@ -2534,4 +2539,3 @@ already created accordingly.
 
     >>> ppa_with_key.signing_key == cprov.archive.signing_key
     True
-

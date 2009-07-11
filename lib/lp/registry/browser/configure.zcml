@@ -1695,7 +1695,7 @@
         for="lp.registry.interfaces.product.IProduct"
         facet="overview"
         class="lp.registry.browser.product.ProductReviewLicenseView"
-        permission="launchpad.Commercial"
+        permission="launchpad.ProjectReview"
         template="../templates/product-review-license.pt"/>
     <browser:addform
         name="+linkbounty"
@@ -1759,7 +1759,7 @@
         for="lp.registry.interfaces.product.IProductSet"
         class="lp.registry.browser.product.ProductSetReviewLicensesView"
         facet="overview"
-        permission="launchpad.Commercial">
+        permission="launchpad.ProjectReview">
         <browser:page
             name="+review-licenses"
             template="../templates/products-review-licenses.pt"/>

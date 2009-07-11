@@ -107,11 +107,35 @@ And for an anonymous user it is false.
     False
 
 
-== Reviewing a projects licensing ==
+== Reviewing a project's licensing ==
 
-Launchpad commercial members and Launchpad admins can review a project's
-licenses.
+Launchpad admins and members of the registry experts team can review a
+project's licenses.
 
+The Commercial Admin user is not in the registry admins team so he
+cannot access the page.
+
+    >>> login('commercial-member@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+index')
+
+    >>> view = create_initialized_view(firefox, name='+review-license')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Product..., 'license_reviewed', 'launchpad.ProjectReview')
+
+Mark is in the registry admins team and is allowed to access the page.
+
+    >>> login('mark@hbd.com')
+    >>> view = create_initialized_view(firefox, name='+review-license')
+    >>> print view.label
+    Review project
+
+Adding the Commercial Admin to the registry experts team will allow him access.
+
+    >>> commercial_member = getUtility(IPersonSet).getByEmail(
+    ...     'commercial-member@canonical.com')
+    >>> registry_experts = getUtility(IPersonSet).getByName('registry')
+    >>> registry_experts.addMember(commercial_member, reviewer=sabdfl)
     >>> login('commercial-member@canonical.com')
     >>> view = create_initialized_view(firefox, name='+review-license')
     >>> print view.label
