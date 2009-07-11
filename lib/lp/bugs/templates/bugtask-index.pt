@@ -14,6 +14,10 @@
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
       <tal:devmode condition="devmode">
+       <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/bugs/subscriber.js">
+       </script>
         <script type="text/javascript"
                 tal:define="lp_js string:${icingroot}/build"
                 tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">

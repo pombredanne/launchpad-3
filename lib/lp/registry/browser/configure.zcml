@@ -94,6 +94,10 @@
         class="lp.registry.browser.distroseries.DistroSeriesView"
         permission="zope.Public">
         <browser:page
+            name="+packaging"
+            facet="overview"
+            template="../templates/distroseries-packaging.pt"/>
+        <browser:page
             name="+filebug"
             facet="bugs"
             attribute="redirectToDistroFileBug"/>
@@ -102,22 +106,8 @@
             facet="overview"
             template="../templates/distroseries-index.pt"/>
         <browser:page
-            name="+packaging"
-            facet="overview"
-            template="../templates/distroseries-packaging.pt"/>
-        <browser:page
-            name="+builds"
-            facet="overview"
-            template="../templates/distroseries-builds.pt"/>
-        <browser:page
-            name="+builds-list"
-            template="../../soyuz/templates/builds-list.pt"/>
-        <browser:page
             name="+portlet-aboutcve"
             template="../templates/portlet-aboutcve.pt"/>
-        <browser:page
-            name="+portlet-architectures"
-            template="../templates/distroseries-portlet-architectures.pt"/>
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -132,9 +122,6 @@
         <browser:page
             name="+milestones"
             template="../templates/object-milestones.pt"/>
-        <browser:page
-            name="+portlet-latestuploads"
-            template="../templates/distroseries-portlet-latestuploads.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -143,24 +130,13 @@
         name="+cve"
         facet="bugs"
         template="../templates/distroseries-cvereport.pt"/>
-    <browser:pages
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesView"
-        permission="zope.Public">
-        <browser:page
-            name="+queue"
-            facet="overview"
-            template="../templates/distroseries-queue.pt"/>
-    </browser:pages>
-    <browser:pages
+    <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Admin"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
-        <browser:page
-            name="+reassign"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
-    </browser:pages>
+        class="canonical.launchpad.browser.ObjectReassignmentView"
+        name="+reassign"
+        template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
     <browser:page
         name="+translations"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -632,19 +608,13 @@
         module="lp.registry.browser.distributionsourcepackage"
         classes="
             DistributionSourcePackageNavigation"/>
-    <browser:pages
+    <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageView"
-        permission="zope.Public">
-        <browser:page
-            name="+index"
-            facet="overview"
-            template="../templates/distributionsourcepackage-index.pt"/>
-        <browser:page
-            name="+portlet-publishing-details"
-            facet="overview"
-            template="../templates/distributionsourcepackage-portlet-pub-details.pt"/>
-    </browser:pages>
+        permission="zope.Public"
+        name="+index"
+        facet="overview"
+        template="../templates/distributionsourcepackage-index.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         permission="launchpad.Edit"
@@ -656,13 +626,6 @@
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="canonical.launchpad.webapp.publisher.LaunchpadView"
         permission="zope.Public">
-        <browser:page
-            name="+publishinghistory"
-            facet="overview"
-            template="../templates/distributionsourcepackage-publishinghistory.pt"/>
-
-        <!-- DistributionSourcePackage Portlets -->
-
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -1049,12 +1012,6 @@
             <browser:page
                 name="+portlet-memberships"
                 template="../templates/person-portlet-memberships.pt"/>
-            <browser:page
-                name="+portlet-ppas"
-                template="../templates/person-portlet-ppas.pt"/>
-            <browser:page
-                name="+ppas-list"
-                template="../templates/person-ppas.pt"/>
 
             <!-- this should be on IPerson because we don't always know if it is a
                 team or a person -->
@@ -1074,24 +1031,6 @@
             class="lp.registry.browser.person.PersonRelatedSoftwareView"
             name="+related-software"
             template="../templates/person-related-software.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            permission="zope.Public"
-            class="lp.registry.browser.person.PersonMaintainedPackagesView"
-            name="+maintained-packages"
-            template="../templates/person-maintained-packages.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            permission="zope.Public"
-            class="lp.registry.browser.person.PersonUploadedPackagesView"
-            name="+uploaded-packages"
-            template="../templates/person-uploaded-packages.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            permission="zope.Public"
-            class="lp.registry.browser.person.PersonPPAPackagesView"
-            name="+ppa-packages"
-            template="../templates/person-ppa-packages.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
@@ -1228,13 +1167,6 @@
             permission="zope.Public"
             template="../../bugs/templates/buglisting-embedded-advanced-search.pt"/>
         <browser:page
-            name="+activate-ppa"
-            for="lp.registry.interfaces.person.IPerson"
-            facet="overview"
-            class="canonical.launchpad.browser.ArchiveActivateView"
-            permission="launchpad.Edit"
-            template="../templates/archive-activate.pt"/>
-        <browser:page
             name="+editsshkeys"
             for="lp.registry.interfaces.person.IPerson"
             permission="launchpad.Special"
@@ -1302,12 +1234,6 @@
             class="lp.registry.browser.person.PersonIndexView"
             name="+index"
             template="../templates/team-index.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            permission="zope.Public"
-            class="lp.registry.browser.person.PersonView"
-            name="+teamhierarchy"
-            template="../templates/person-teamhierarchy.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
@@ -1443,12 +1369,6 @@
             permission="launchpad.Edit"
             class="canonical.launchpad.browser.ProposedTeamMembersEditView"
             template="../templates/team-editproposed.pt"/>
-        <browser:page
-            name="+archivesubscriptions"
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.soyuz.browser.archivesubscription.PersonArchiveSubscriptionsView"
-            permission="launchpad.Edit"
-            template="../templates/person-archive-subscriptions.pt"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPersonSet"
             name="+index"/>
@@ -2009,14 +1929,6 @@
         permission="launchpad.Admin"
         template="../templates/productseries-review.pt"/>
     <browser:page
-        name="+addpackage"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="canonical.launchpad.browser.PackagingAddView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/productseries-packaging.pt">
-                </browser:page>
-    <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+link-translations-branch"
         class="lp.registry.browser.productseries.LinkTranslationsBranchView"
@@ -2091,6 +2003,13 @@
         module="lp.registry.browser.distribution"
         classes="
             DistributionNavigation"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionAllPackagesView"
+        permission="zope.Public"
+        name="+allpackages"
+        facet="overview"
+        template="../templates/distribution-allpackages.pt"/>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
@@ -2179,13 +2098,6 @@
             name="+series"
             facet="overview"
             template="../templates/distribution-series.pt"/>
-        <browser:page
-            name="+builds"
-            facet="overview"
-            template="../templates/distribution-builds.pt"/>
-        <browser:page
-            name="+builds-list"
-            template="../../soyuz/templates/builds-list.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -2195,20 +2107,6 @@
         name="+bounties"
         permission="zope.Public"
         template="../templates/related-bounties.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.registry.browser.distribution.DistributionPPASearchView"
-        name="+ppas"
-        permission="zope.Public"
-        facet="overview"
-        template="../templates/distribution-ppa-list.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.registry.browser.distribution.DistributionArchivesView"
-        name="+archives"
-        permission="launchpad.View"
-        facet="overview"
-        template="../templates/distribution-archive-list.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         name="+upstreamreport"
@@ -2223,13 +2121,6 @@
         permission="zope.Public"
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.registry.browser.distribution.DistributionAllPackagesView"
-        permission="zope.Public"
-        name="+allpackages"
-        facet="overview"
-        template="../templates/distribution-allpackages.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.bugs.browser.cvereport.CVEReportView"
@@ -2269,9 +2160,6 @@
         <browser:page
             name="+portlet-aboutcve"
             template="../templates/portlet-aboutcve.pt"/>
-        <browser:page
-            name="+portlet-ppa-architectures"
-            template="../templates/distribution-portlet-ppa-architectures.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -2460,39 +2348,20 @@
     <browser:pages
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
-        class="lp.registry.browser.sourcepackage.SourcePackageView"><browser:page
-        name="+index"
-        facet="overview"
-        template="../templates/sourcepackage-index.pt"/><browser:page
-        name="+gethelp"
-        facet="answers"
-        template="../templates/sourcepackage-gethelp.pt"/><browser:page
-        name="+changelog"
-        facet="overview"
-        template="../templates/sourcepackage-changelog.pt"/><browser:page
-        name="+packaging"
-        facet="overview"
-        template="../templates/sourcepackage-packaging.pt"/><browser:page
-        name="+builds"
-        facet="overview"
-        template="../templates/sourcepackage-builds.pt"/><browser:page
-        name="+builds-list"
-        template="../../soyuz/templates/builds-list.pt"/>
-    <!-- SourcePackage Portlets -->
-    <browser:page
-        name="+portlet-details"
-        facet="overview"
-        template="../templates/sourcepackage-portlet-details.pt"/>
-                /&gt;
-        </browser:pages>
-    <browser:pages
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        permission="launchpad.AnyPerson"
         class="lp.registry.browser.sourcepackage.SourcePackageView">
         <browser:page
-            name="+edit-packaging"
+            name="+index"
             facet="overview"
-            template="../templates/sourcepackage-edit-packaging.pt"/>
+            template="../templates/sourcepackage-index.pt"/>
+        <browser:page
+            name="+gethelp"
+            facet="answers"
+            template="../templates/sourcepackage-gethelp.pt"/>
+        <!-- SourcePackage Portlets -->
+        <browser:page
+            name="+portlet-details"
+            facet="overview"
+            template="../templates/sourcepackage-portlet-details.pt"/>
     </browser:pages>
     <browser:menus
         classes="
