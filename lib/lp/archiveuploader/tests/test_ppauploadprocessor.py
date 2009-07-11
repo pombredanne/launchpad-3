@@ -468,6 +468,40 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # addresses for maintainer and changed-by which must be ignored.
         self.assertEmail()
 
+    def testUploadSendsEmailToPeopleInArchivePermissions(self):
+        """PPA uploads result in notifications to ArchivePermission uploaders.
+
+        Anyone listed as an uploader in ArchivePermissions will automatically
+        get an upload notification email.
+
+        See https://bugs.edge.launchpad.net/soyuz/+bug/397077
+        """
+        # Create the extra permissions. We're making an extra team and
+        # adding it to cprov's upload permission, plus name12.
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        email = "contact@example.com"
+        name = "Team"
+        team = self.factory.makeTeam(email=email, displayname=name)
+        name12 = getUtility(IPersonSet).getByName("name12")
+        cprov.archive.newComponentUploader(name12, "main")
+        cprov.archive.newComponentUploader(team, "main")
+
+        # Process the upload.
+        upload_dir = self.queueUpload("bar_1.0-1", "~cprov/ppa/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        name12_email = "%s <%s>" % (
+            name12.displayname, name12.preferredemail.email)
+        team_email = "%s <%s>" % (team.displayname, team.preferredemail.email)
+
+        # We expect the recipients to be:
+        #  - the package signer (name15),
+        #  - the team in the extra permissions,
+        #  - name12 who is in the extra permissions.
+        expected_recipients = (
+            self.name16_recipient, name12_email, team_email)
+        self.assertEmail(ppa_header="cprov", recipients=expected_recipients)
+
     def testPPADistroSeriesOverrides(self):
         """It's possible to override target distroserieses of PPA uploads.
 

@@ -144,7 +144,8 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget, TextLineEditorWidget)
+    InlineEditPickerWidget, vocabulary_to_choice_edit_items,
+    TextLineEditorWidget)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -2995,6 +2996,39 @@ class BugTaskTableRowView(LaunchpadView):
         return self.request.getNearest(ICveSet) == (None, None)
 
     @property
+    def status_widget_items(self):
+        """The available status items as JSON."""
+        if self.user is not None:
+            status_vocab_factory = vocab_factory(
+                BugTaskStatus, noshow=[BugTaskStatus.UNKNOWN])
+
+            disabled_items = [status for status in BugTaskStatus.items
+                if not self.context.canTransitionToStatus(status, self.user)]
+
+            items = vocabulary_to_choice_edit_items(
+                status_vocab_factory(self.context),
+                css_class_prefix='status',
+                disabled_items=disabled_items)
+        else:
+            items = '[]'
+
+        return items
+
+    @property
+    def importance_widget_items(self):
+        """The available status items as JSON."""
+        if self.user is not None:
+            importance_vocab_factory = vocab_factory(
+                BugTaskImportance, noshow=[BugTaskImportance.UNKNOWN])
+
+            items = vocabulary_to_choice_edit_items(
+                importance_vocab_factory(self.context),
+                css_class_prefix='importance')
+        else:
+            items = '[]'
+
+        return items
+
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)
@@ -3019,6 +3053,22 @@ class BugTaskTableRowView(LaunchpadView):
             step_title='Search for people or teams',
             remove_button_text='Remove Assignee',
             null_display_value=null_display_value)
+
+    @property
+    def user_can_edit_importance(self):
+        """Can the user edit the Importance field?
+
+        If yes, return True, otherwise return False.
+        """
+        return self.context.userCanEditImportance(self.user)
+
+    @property
+    def user_can_edit_importance_json(self):
+        """Can the user edit the Importance field?
+
+        If yes, return True, otherwise return False.
+        """
+        return dumps(self.user_can_edit_importance)
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):

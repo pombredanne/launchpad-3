@@ -421,10 +421,6 @@
         for="lp.registry.interfaces.project.IProject"
         name="+questions"
         layer="canonical.launchpad.layers.AnswersLayer"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.project.IProject"
-        name="+translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:pages
         for="lp.registry.interfaces.project.IProject"
         class="lp.registry.browser.project.ProjectView"
@@ -475,24 +471,6 @@
         permission="zope.Public"
         name="+rdf"
         attribute="__call__"/>
-    <browser:page
-        name="+translations"
-        for="lp.registry.interfaces.project.IProject"
-        class="lp.translations.browser.translations.TranslationsRedirectView"
-        permission="zope.Public"/>
-    <browser:page
-        for="lp.registry.interfaces.project.IProject"
-        permission="zope.Public"
-        name="+translations"
-        facet="translations"
-        template="../templates/project-translations.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:page
-        name="+help-translate-button"
-        facet="translations"
-        for="lp.registry.interfaces.project.IProject"
-        class="lp.translations.browser.translations.HelpTranslateButtonView"
-        permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.project.IProject"
         permission="launchpad.Edit"
@@ -528,16 +506,6 @@
         facet="overview"
         permission="launchpad.Admin"
         template="../templates/project-edit.pt"/>
-    <browser:editform
-        name="+changetranslators"
-        for="lp.registry.interfaces.project.IProject"
-        facet="translations"
-        schema="lp.registry.interfaces.project.IProject"
-        fields="translationgroup translationpermission"
-        permission="launchpad.Edit"
-        label="Select a new translation group"
-        template="../templates/project-translators.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         name="+newproduct"
         for="lp.registry.interfaces.project.IProject"
@@ -643,8 +611,7 @@
             ProjectSeriesSpecificationsMenu
             ProjectSpecificationsMenu
             ProjectSetContextMenu
-            ProjectAnswersMenu
-            ProjectTranslationsMenu"
+            ProjectAnswersMenu"
         module="lp.registry.browser.project"/>
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -963,7 +930,6 @@
                 TeamBugsMenu
                 TeamSpecsMenu
                 PersonSetContextMenu
-                PersonTranslationsMenu
                 PersonOverviewNavigationMenu
                 PersonEditNavigationMenu
                 PersonRelatedSoftwareNavigationMenu
@@ -983,10 +949,6 @@
             for="lp.registry.interfaces.person.IPerson"
             layer="canonical.launchpad.layers.BugsLayer"
             name="+bugs"/>
-        <browser:defaultView
-            for="lp.registry.interfaces.person.IPerson"
-            name="+translations"
-            layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+review"
             for="lp.registry.interfaces.person.IPerson"
@@ -1184,35 +1146,6 @@
             permission="zope.Public"
             class="lp.registry.browser.person.PersonSpecWorkloadTableView"
             template="../templates/person-table-specworkload.pt"/>
-        <browser:page
-            name="+translations"
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.translations.browser.translations.TranslationsRedirectView"
-            permission="zope.Public"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            name="+translations"
-            facet="translations"
-            class="lp.registry.browser.person.PersonTranslationView"
-            permission="zope.Public"
-            template="../templates/person-translations.pt"
-            layer="canonical.launchpad.layers.TranslationsLayer"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            name="+licensing"
-            facet="translations"
-            class="lp.registry.browser.person.PersonTranslationRelicensingView"
-            permission="launchpad.Edit"
-            template="../templates/person-translations-relicensing.pt"
-            layer="canonical.launchpad.layers.TranslationsLayer"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            name="+imports"
-            class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
-            facet="translations"
-            permission="zope.Public"
-            template="../../translations/templates/hastranslationimports-index.pt"
-            layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+specfeedback"
@@ -1680,10 +1613,6 @@
         for="lp.registry.interfaces.product.IProduct"
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs-index"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.product.IProduct"
-        layer="canonical.launchpad.layers.TranslationsLayer"
-        name="+translations"/>
     <browser:navigation
         module="lp.registry.browser.product"
         classes="
@@ -1715,43 +1644,6 @@
         permission="zope.Public"
         facet="overview"
         template="../templates/product-files.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        name="+imports"
-        class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
-        facet="translations"
-        permission="zope.Public"
-        template="../../translations/templates/hastranslationimports-index.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:page
-        name="+help-translate-button"
-        facet="translations"
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.translations.browser.translations.HelpTranslateButtonView"
-        permission="zope.Public"/>
-    <browser:page
-        name="+translations"
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.translations.browser.translations.TranslationsRedirectView"
-        permission="zope.Public"/>
-    <browser:pages
-        for="lp.registry.interfaces.product.IProduct"
-        permission="zope.Public"
-        class="lp.registry.browser.product.ProductView"
-        layer="canonical.launchpad.layers.TranslationsLayer">
-        <browser:page
-            name="+translations"
-            facet="translations"
-            template="../templates/product-translations.pt"/>
-        <browser:page
-            name="+portlet-translatables"
-            facet="translations"
-            template="../templates/product-portlet-translatables.pt"/>
-        <browser:page
-            name="+portlet-obsolete-translatables"
-            facet="translations"
-            template="../templates/product-portlet-obsolete-translatables.pt"/>
-    </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
@@ -1885,14 +1777,6 @@
         class="lp.registry.browser.product.ProductReviewLicenseView"
         permission="launchpad.Commercial"
         template="../templates/product-review-license.pt"/>
-    <browser:page
-        name="+changetranslators"
-        for="lp.registry.interfaces.product.IProduct"
-        facet="translations"
-        class="lp.registry.browser.product.ProductChangeTranslatorsView"
-        permission="launchpad.Edit"
-        template="../templates/product-translators.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:addform
         name="+linkbounty"
         for="lp.registry.interfaces.product.IProduct"
@@ -1979,7 +1863,6 @@
             ProductOverviewMenu
             ProductBountiesMenu
             ProductSpecificationsMenu
-            ProductTranslationsMenu
             ProductBugsMenu
             ProductSetFacets
             ProductSetContextMenu

@@ -108,7 +108,7 @@ class CodeReviewCommentMailer(BMPMailer):
             headers['In-Reply-To'] = self.message.parent.rfc822msgid
         return headers
 
-    def _addAttachments(self, ctrl):
+    def _addAttachments(self, ctrl, email):
         """Add the attachments from the original message."""
         # Only reattach the display_aliases.
         for attachment in self.attachments:
