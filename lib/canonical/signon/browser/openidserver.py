@@ -51,7 +51,7 @@ from canonical.signon.interfaces.openidstore import IProviderOpenIDStore
 from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
-    action, custom_widget, LaunchpadFormView, LaunchpadView)
+    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
@@ -658,10 +658,28 @@ class LoginServiceMixinLoginView:
                     "change it.",
                     mapping=dict(email=cgi.escape(email))))
             else:
-                # This is either an email address we've never seen or it's
-                # associated with an unvalidated profile, so we just move
-                # on with the registration process as if we had never seen it.
-                pass
+                person = getUtility(IPersonSet).getByEmail(email)
+                if person is not None:
+                    # This is an email address that's associated with an 
+                    # unvalidated profile, so we must ask the user to validate
+                    # it as we can't do it from here -- we can't write to the
+                    # Person table.
+                    mapping = dict(
+                        email=cgi.escape(email), 
+                        person_url=canonical_url(person),
+                        claim_url=canonical_url(person, view_name='+claim'),
+                        person_name=cgi.escape(person.displayname))
+                    self.addError(structured(_(
+                        'The email address ${email} is already associated '
+                        'with the Launchpad profile of '
+                        '<a href="${person_url}">${person_name}</a>. '
+                        'You can either <a href="${claim_url}">claim that '
+                        'profile</a> and use it to log in or register with a '
+                        'different email address.', mapping=mapping)))
+                else:
+                    # This email address is not registered, so we can move on
+                    # with the registration.
+                    pass
         else:
             raise UnexpectedFormData("Unknown action")
 

@@ -11,8 +11,6 @@ __all__ = [
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.interfaces.pofiletranslator import (
-    IPOFileTranslatorSet)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.interfaces.product import IProductSet
@@ -34,6 +32,10 @@ def get_potmsgset_key(potmsgset):
 def merge_pofiletranslators(from_potmsgset, to_template):
     """Merge POFileTranslator entries from one template into another.
     """
+    # Import here to avoid circular import.
+    from lp.translations.interfaces.pofiletranslator import (
+        IPOFileTranslatorSet)
+
     pofiletranslatorset = getUtility(IPOFileTranslatorSet)
     affected_rows = pofiletranslatorset.getForPOTMsgSet(from_potmsgset)
     for pofiletranslator in affected_rows:

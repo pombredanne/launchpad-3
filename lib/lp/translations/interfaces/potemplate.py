@@ -111,6 +111,10 @@ class IHasTranslationTemplates(Interface):
         The returned templates are either obsolete or current.
         """
 
+    def getTranslationTemplateFormats():
+        """A list of native formats for all current translation templates.
+        """
+
 
 class IPOTemplate(IRosettaStats):
     """A translation template."""

@@ -19,9 +19,7 @@ import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
     StringCol)
-from storm.store import Store
-from storm.expr import And, Join
-from storm.locals import Unicode
+from storm.locals import And, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -32,6 +30,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.launchpad.interfaces import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
@@ -45,6 +44,8 @@ from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
 from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.potemplate import POTemplate
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.karma import KarmaContextMixin
 from lp.answers.model.faq import FAQ, FAQSearch
@@ -56,10 +57,12 @@ from lp.registry.interfaces.person import (
 from lp.registry.model.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
+from lp.registry.model.person import Person
 from canonical.launchpad.database.productbounty import ProductBounty
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.services.database.precache import precache
 from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from lp.blueprints.model.specification import (
@@ -909,17 +912,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 Milestone.name == version)).one()
 
     def packagedInDistros(self):
-        distros = Distribution.select(
-            "Packaging.productseries = ProductSeries.id AND "
-            "ProductSeries.product = %s AND "
-            "Packaging.distroseries = DistroSeries.id AND "
-            "DistroSeries.distribution = Distribution.id"
-            "" % sqlvalues(self.id),
-            clauseTables=['Packaging', 'ProductSeries', 'DistroSeries'],
-            orderBy='name',
-            distinct=True
-            )
-        return distros
+        return IStore(Distribution).find(
+            Distribution,
+            Packaging.productseriesID == ProductSeries.id,
+            ProductSeries.product == self,
+            Packaging.distroseriesID == DistroSeries.id,
+            DistroSeries.distributionID == Distribution.id
+            ).config(distinct=True).order_by(Distribution.name)
 
     def ensureRelatedBounty(self, bounty):
         """See `IProduct`."""
@@ -1085,52 +1084,57 @@ class ProductSet:
         conditions = []
 
         if license_reviewed is not None:
-            conditions.append('Product.reviewed = %s'
-                              % sqlvalues(license_reviewed))
+            conditions.append(Product.license_reviewed == license_reviewed)
+
         if license_approved is not None:
-            conditions.append('Product.license_approved = %s'
-                              % sqlvalues(license_approved))
+            conditions.append(Product.license_approved == license_approved)
 
         if active is not None:
-            conditions.append('Product.active = %s' % sqlvalues(active))
+            conditions.append(Product.active == active)
 
         if search_text is not None and search_text.strip() != '':
-            conditions.append('Product.fti @@ ftq(%s)'
-                              % sqlvalues(search_text))
+            conditions.append(SQL(
+                'Product.fti @@ ftq(%s)' % sqlvalues(search_text)))
 
         if created_after is not None:
-            conditions.append('Product.datecreated >= %s'
-                              % sqlvalues(created_after))
+            if not isinstance(created_after, datetime.datetime):
+                created_after = datetime.datetime(
+                    created_after.year, created_after.month,
+                    created_after.day, tzinfo=pytz.utc)
+            conditions.append(Product.datecreated >= created_after)
         if created_before is not None:
-            conditions.append('Product.datecreated <= %s'
-                              % sqlvalues(created_before))
+            if not isinstance(created_before, datetime.datetime):
+                created_before = datetime.datetime(
+                    created_before.year, created_before.month,
+                    created_before.day, tzinfo=pytz.utc)
+            conditions.append(Product.datecreated <= created_before)
 
         needs_join = False
         if subscription_expires_after is not None:
-            conditions.append('CommercialSubscription.date_expires >= %s'
-                              % sqlvalues(subscription_expires_after))
+            conditions.append(
+                CommercialSubscription.date_expires >=
+                    subscription_expires_after)
             needs_join = True
         if subscription_expires_before is not None:
-            conditions.append('CommercialSubscription.date_expires <= %s'
-                              % sqlvalues(subscription_expires_before))
+            conditions.append(
+                CommercialSubscription.date_expires <=
+                    subscription_expires_before)
             needs_join = True
 
         if subscription_modified_after is not None:
             conditions.append(
-                'CommercialSubscription.date_last_modified >= %s'
-                % sqlvalues(subscription_modified_after))
+                CommercialSubscription.date_last_modified >=
+                    subscription_modified_after)
             needs_join = True
         if subscription_modified_before is not None:
             conditions.append(
-                'CommercialSubscription.date_last_modified <= %s'
-                % sqlvalues(subscription_modified_before))
+                CommercialSubscription.date_last_modified <=
+                    subscription_modified_before)
             needs_join = True
 
-        clause_tables = []
         if needs_join:
             conditions.append(
-                'CommercialSubscription.product = Product.id')
-            clause_tables.append('CommercialSubscription')
+                CommercialSubscription.productID == Product.id)
 
         or_conditions = []
         if license_info_is_empty is True:
@@ -1179,12 +1183,11 @@ class ProductSet:
                 ''' % sqlvalues(tuple(licenses)))
 
         if len(or_conditions) != 0:
-            conditions.append('(%s)' % '\nOR '.join(or_conditions))
+            conditions.append(SQL('(%s)' % '\nOR '.join(or_conditions)))
 
-        conditions_string = '\nAND '.join(conditions)
-        result = Product.select(
-            conditions_string, clauseTables=clause_tables,
-            orderBy=['displayname', 'name'], distinct=True)
+        result = IStore(Product).find(
+            Product, *conditions).config(
+                distinct=True).order_by(Product.displayname, Product.name)
         return result
 
     def search(self, text=None, soyuz=None,
@@ -1222,16 +1225,18 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
-        upstream = Product.select('''
-            Product.active AND
-            Product.id = ProductSeries.product AND
-            POTemplate.productseries = ProductSeries.id AND
-            Product.official_rosetta
-            ''',
-            clauseTables=['ProductSeries', 'POTemplate'],
-            orderBy='Product.title',
-            distinct=True)
-        return upstream.prejoin(['owner'])
+        results = IStore(Product).find(
+            (Product, Person),
+            Product.active == True,
+            Product.id == ProductSeries.productID,
+            POTemplate.productseriesID == ProductSeries.id,
+            Product.official_rosetta == True,
+            Person.id == Product.ownerID
+            ).config(distinct=True).order_by(Product.title)
+
+        # We only want Product - the other tables are just to populate
+        # the cache.
+        return precache(results)
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""

@@ -126,16 +126,12 @@ archive as well as some new PPAs.
 
     # Publish the source 'netapplet' in the breezy-autotest and
     #  main archive.
-    >>> from datetime import datetime
-    >>> import pytz
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> netapplet_pub_breezy = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ubuntutest.main_archive,
-    ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
     ...     status=PackagePublishingStatus.PUBLISHED, version='1.3.1')
     >>> netapplet_pub_hoary = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ubuntutest.main_archive,
-    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
     ...     status=PackagePublishingStatus.PUBLISHED, version='1.0.1a',
     ...     distroseries=ubuntutest['hoary-test'])
 
@@ -148,17 +144,39 @@ archive as well as some new PPAs.
     # Then publish netapplet to both PPAs
     >>> netapplet_nightly_pub_breezy = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ppa_nightly,
-    ...     date_uploaded=datetime(2010, 12 ,1, tzinfo=pytz.UTC),
+    ...     creator=ppa_nightly.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.2n3')
     >>> netapplet_beta_pub_breezy = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ppa_beta,
-    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     creator=ppa_beta.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.1')
     >>> netapplet_beta_pub_hoary = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ppa_beta,
-    ...     date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
+    ...     creator=ppa_beta.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.0',
     ...     distroseries=ubuntutest['hoary-test'])
+
+    # Give the creators of the above source packages some soyuz
+    # karma for their efforts.
+    >>> from lp.registry.model.karma import KarmaTotalCache
+    >>> ppa_beta_owner_id = ppa_beta.owner.id
+    >>> ppa_nightly_owner_id = ppa_nightly.owner.id
+    >>> transaction.commit()
+
+    # XXX: Michael Nelson 2009-07-07 bug=396419. Currently there is no
+    # test api call to switchDbUser that works for non-zopeless layers.
+    # When bug 396419 is fixed, we can instead use
+    # DatabaseLayer.switchDbUser() instead of reconnect_stores()
+    >>> from canonical.testing.layers import reconnect_stores
+    >>> reconnect_stores('karmacacheupdater')
+    >>> from zope.component import getUtility
+    >>> cache_entry = KarmaTotalCache(
+    ...     person=ppa_beta_owner_id, karma_total=200)
+    >>> cache_entry = KarmaTotalCache(
+    ...     person=ppa_nightly_owner_id, karma_total=201)
+    >>> transaction.commit()
+    >>> reconnect_stores('launchpad')
+
     >>> logout()
 
 A /$DISTRO/+source/$PACKAGE page shows for a given source package all

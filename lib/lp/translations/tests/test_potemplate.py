@@ -243,22 +243,35 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
         }
         self._compareResult(expected, classes)
 
-    def test_GetSharingPOTemplates(self):
+    def _test_GetSharingPOTemplates(self, template_name, not_matching_name):
         # getSharingTemplates simply returns a list of sharing templates.
         warty_template = self.factory.makePOTemplate(
             distroseries=self.hoary, sourcepackagename=self.package,
-            name='foo')
+            name=template_name)
         hoary_template = self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.package,
-            name='foo')
+            name=template_name)
         other_hoary_template = self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.package,
-            name='foo-other')
+            name=not_matching_name)
         subset = getUtility(IPOTemplateSet).getSharingSubset(
             distribution=self.ubuntu, sourcepackagename=self.package)
 
-        templates = set(list(subset.getSharingPOTemplates('foo')))
+        templates = set(list(subset.getSharingPOTemplates(template_name)))
         self.assertEqual(set([warty_template, hoary_template]), templates)
+
+    def test_GetSharingPOTemplates(self):
+        # getSharingTemplates returns all sharing templates named foo.
+        self._test_GetSharingPOTemplates('foo', 'foo-other')
+
+    def test_GetSharingPOTemplates_special_name(self):
+        # Valid template names may also contain '+', '-' and '.' .
+        # But they must not be interpreted as regular expressions.
+        template_name = 'foo-bar.baz+'
+        # This name would match if the template_name was interpreted as a
+        # regular expression
+        not_matching_name = 'foo-barybazz'
+        self._test_GetSharingPOTemplates(template_name, not_matching_name)
 
     def test_GetSharingPOTemplates_NoSourcepackagename(self):
         # getSharingPOTemplates needs a sourcepackagename to be set.

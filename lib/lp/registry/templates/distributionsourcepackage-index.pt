@@ -94,16 +94,18 @@
     <a href="+publishinghistory">See full publishing history...</a>
   </p>
 
-  <div tal:define="ppa_versions view/latest_published_ppa_versions"
+  <div tal:define="ppa_versions view/related_ppa_versions"
        tal:condition="ppa_versions" id="related-ppa-versions">
-    <div class="widget-hd" id="slide-trigger">
-      Other versions of '<span tal:replace="context/name" />' in untrusted
-      archives.
+    <div id="slide-trigger">
+      <div class="widget-hd">
+        Other versions of '<span tal:replace="context/name" />' in untrusted
+        archives.
+      </div>
     </div>
     <div class="widget-bd">
       <p>The following <strong>unsupported</strong> and 
          <strong>untrusted</strong> Personal Archives (PPAs) provide
-         the most recently uploaded packages of
+         packages of
          '<span tal:replace="context/name" />':</p>
       <dl id="ppa_packaging">
         <tal:definition tal:repeat="ppa_version ppa_versions">

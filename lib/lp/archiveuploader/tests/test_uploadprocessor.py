@@ -53,6 +53,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
+from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
@@ -97,11 +98,13 @@ class BrokenUploadPolicy(AbstractUploadPolicy):
         raise Exception("Exception raised by BrokenUploadPolicy for testing.")
 
 
-class TestUploadProcessorBase(unittest.TestCase):
+class TestUploadProcessorBase(TestCaseWithFactory):
     """Base class for functional tests over uploadprocessor.py."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
+
         self.queue_folder = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
 

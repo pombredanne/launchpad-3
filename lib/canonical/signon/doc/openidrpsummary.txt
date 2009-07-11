@@ -4,7 +4,7 @@ The summary of the interaction between an `Account` and an OpenID
 Relying Party is represented by the OpenIDRPSummary object.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.signon.dbpolicy import SSODatabasePolicy
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
 

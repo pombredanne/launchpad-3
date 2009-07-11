@@ -149,7 +149,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         # Since this API is controlled using launchpad.AnyPerson there must be
         # an authenticated person, so use this person as the registrant.
         registrant = getUtility(ILaunchBag).user
-        bug.addBranch(branch, registrant=registrant)
+        bug.linkBranch(branch, registrant=registrant)
         return canonical_url(bug)
 
 

@@ -705,14 +705,14 @@ class PackageUpload(SQLBase):
         class PPARejectedMessage:
             """PPA rejected message."""
             template = get_email_template('ppa-upload-rejection.txt')
-            SUMMARY = summary_text
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            SUMMARY = sanitize_string(summary_text)
+            CHANGESFILE = sanitize_string("".join(changes_lines))
             USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
             template = get_email_template('upload-rejection.txt')
-            SUMMARY = summary_text
+            SUMMARY = sanitize_string(summary_text)
             CHANGESFILE = sanitize_string(changes['changes'])
             CHANGEDBY = ''
             ORIGIN = ''
@@ -736,7 +736,7 @@ class PackageUpload(SQLBase):
             attach_changes = True
 
         self._handleCommonBodyContent(message, changes)
-        if message.SUMMARY is None:
+        if summary_text is None:
             message.SUMMARY = 'Rejected by archive administrator.'
 
         body = message.template % message.__dict__
@@ -1002,8 +1002,16 @@ class PackageUpload(SQLBase):
                 "Changes file is unsigned, adding changer as recipient")
             candidate_recipients.append(changer)
 
-        # PPA uploads only email the uploader but for everything else
-        # we consider maintainer and changed-by also.
+        if self.isPPA():
+            # For PPAs, any person or team mentioned explicitly in the
+            # ArchivePermissions as uploaders for the archive will also
+            # get emailed.
+            uploaders = [
+                permission.person for permission in
+                    self.archive.getUploadersForComponent()]
+            candidate_recipients.extend(uploaders)
+
+        # If this is not a PPA, we also consider maintainer and changed-by.
         if self.signing_key and not self.isPPA():
             maintainer = self._emailToPerson(changes['maintainer'])
             if (maintainer and maintainer != signer and
