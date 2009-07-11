@@ -241,35 +241,25 @@ versions of a given source package have been published in.
     ...     creator=ppa_nightly.owner,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
-    # Give the creators of the above source packages some soyuz
+    # Give the creators of the above source packages some
     # karma for their efforts.
-    >>> from lp.registry.interfaces.karma import IKarmaCacheManager
-    >>> from lp.registry.model.karma import KarmaCategory
-    >>> soyuz_category = KarmaCategory.byName('soyuz')
-    >>> sourcepackagerelease = gedit_nightly_src_hist.sourcepackagerelease
-    >>> gedit_name = sourcepackagerelease.sourcepackagename
     >>> ppa_beta_owner_id = ppa_beta.owner.id
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
     >>> transaction.commit()
 
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('karma')
-    >>> karmacachemanager = getUtility(IKarmaCacheManager)
-    >>> cache_entry = karmacachemanager.new(
-    ...     200, ppa_beta_owner_id, soyuz_category.id,
-    ...     distribution_id=ubuntu_test.id,
-    ...     sourcepackagename_id=gedit_name.id)
-    >>> cache_entry = karmacachemanager.new(
-    ...     201, ppa_nightly_owner_id, soyuz_category.id,
-    ...     distribution_id=ubuntu_test.id,
-    ...     sourcepackagename_id=gedit_name.id)
+    >>> from lp.registry.model.karma import KarmaTotalCache
+    >>> cache_entry = KarmaTotalCache(person=ppa_beta_owner_id,
+    ...     karma_total=200)
+    >>> cache_entry = KarmaTotalCache(person=ppa_nightly_owner_id,
+    ...     karma_total=201)
     >>> import transaction
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
 The results of findRelatedArchives() are sorted so that archive containing
-the package created by the person with the greatest soyuz karma for that
-package is first:
+the package created by the person with the greatest karma is first:
 
     >>> gedit_src = ubuntu_test.getSourcePackage('gedit')
     >>> ppa_versions_for_gedit = gedit_src.findRelatedArchives()
