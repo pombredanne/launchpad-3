@@ -62,7 +62,7 @@ class GenericRevisionCollection:
     def authorCount(self):
         """See `IRevisionCollection`."""
         # Revision authors that are linked to Launchpad people are only
-        # counted once even if their revision text that they use in the commit
+        # counted once even if the revision text that they use in the commit
         # is different.
         author = Func(
             'coalesce',
