@@ -260,10 +260,23 @@ class HTTPWalker(WalkerBase):
     # URL schemes the walker supports, the first is the default.  We
     # list FTP because this walker is used when doing FTP through a
     # proxy.
-    URL_SCHEMES = ["http", "https", "ftp"]
+    URL_SCHEMES = ("http", "https", "ftp")
 
     # Whether to ignore or parse fragments in the URL
     FRAGMENTS = True
+
+    # All the urls handlers used to support the schemas. Redirects are not
+    # supported.
+    handlers = (
+        urllib2.ProxyHandler,
+        urllib2.UnknownHandler,
+        urllib2.HTTPHandler,
+        urllib2.HTTPDefaultErrorHandler,
+        urllib2.HTTPSHandler,
+        urllib2.HTTPDefaultErrorHandler,
+        urllib2.FTPHandler,
+        urllib2.FileHandler,
+        urllib2.HTTPErrorProcessor)
 
     _opener = None
 
@@ -284,13 +297,7 @@ class HTTPWalker(WalkerBase):
         # followed.
         if self._opener is None:
             self._opener = urllib2.OpenerDirector()
-            for handler in [urllib2.ProxyHandler,
-                            urllib2.UnknownHandler,
-                            urllib2.HTTPHandler,
-                            urllib2.HTTPDefaultErrorHandler,
-                            urllib2.FTPHandler,
-                            urllib2.FileHandler,
-                            urllib2.HTTPErrorProcessor]:
+            for handler in self.handlers:
                 self._opener.add_handler(handler())
 
         self.log.debug("Requesting %s with method %s", path, method)
