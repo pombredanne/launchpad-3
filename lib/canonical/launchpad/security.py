@@ -178,7 +178,16 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.commercial_admin)
-                or user.inTeam(celebrities.launchpad_developers)
+                or user.inTeam(celebrities.admin))
+
+
+class AdminByProjectReviewersOrAdmins(AuthorizationBase):
+    permission = 'launchpad.ProjectReview'
+    usedfor = Interface
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebrities.registry_experts)
                 or user.inTeam(celebrities.admin))
 
 
@@ -197,6 +206,7 @@ class ViewPillar(AuthorizationBase):
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
                     or user.inTeam(celebrities.launchpad_developers)
+                    or user.inTeam(celebrities.registry_experts)
                     or user.inTeam(celebrities.admin))
 
 
@@ -1091,7 +1101,7 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
-        """Allow LP/Translations admins, and for distros, owners and 
+        """Allow LP/Translations admins, and for distros, owners and
         translation group owners.
         """
         if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
@@ -1123,7 +1133,7 @@ class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
             return True
 
         return (
-            AdminPOTemplateDetails.checkAuthenticated(self, user) or 
+            AdminPOTemplateDetails.checkAuthenticated(self, user) or
             EditByOwnersOrAdmins.checkAuthenticated(self, user))
 
 
@@ -1821,8 +1831,9 @@ class ViewArchive(AuthorizationBase):
             return True
 
         # Administrator are allowed to view private archives.
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(admins):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (user.inTeam(celebrities.admin)
+            or user.inTeam(celebrities.commercial_admin)):
             return True
 
         # Uploaders can view private PPAs.
@@ -1858,7 +1869,7 @@ class AppendArchive(AuthorizationBase):
 
 class ViewArchiveAuthToken(AuthorizationBase):
     """Restrict viewing of archive tokens.
-    
+
     The user just needs to be mentioned in the token, have append privilege
     to the archive or be an admin.
     """
@@ -2066,6 +2077,7 @@ class ViewEmailAddress(AuthorizationBase):
         return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.launchpad_developers)
+                or user.inTeam(celebrities.registry_experts)
                 or user.inTeam(celebrities.admin))
 
 
