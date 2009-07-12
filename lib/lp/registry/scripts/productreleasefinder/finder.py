@@ -69,7 +69,7 @@ def extract_version(filename):
         version = version[:-len('.orig')]
     # Remove processor and language flavors from the version:
     # eg. _de_DE, _all, _i386.
-    version= flavor_pattern.sub('', version)
+    version = flavor_pattern.sub('', version)
     # Launchpad requires all versions to be lowercase. They may contain
     # letters, numbers, dots, underscores, and hyphens (a-z0-9._-).
     version = version.lower()
