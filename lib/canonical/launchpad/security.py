@@ -178,7 +178,16 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.commercial_admin)
-                or user.inTeam(celebrities.launchpad_developers)
+                or user.inTeam(celebrities.admin))
+
+
+class AdminByProjectReviewersOrAdmins(AuthorizationBase):
+    permission = 'launchpad.ProjectReview'
+    usedfor = Interface
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebrities.registry_experts)
                 or user.inTeam(celebrities.admin))
 
 
@@ -197,6 +206,7 @@ class ViewPillar(AuthorizationBase):
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
                     or user.inTeam(celebrities.launchpad_developers)
+                    or user.inTeam(celebrities.registry_experts)
                     or user.inTeam(celebrities.admin))
 
 
@@ -1091,7 +1101,7 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
-        """Allow LP/Translations admins, and for distros, owners and 
+        """Allow LP/Translations admins, and for distros, owners and
         translation group owners.
         """
         if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
@@ -1123,7 +1133,7 @@ class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
             return True
 
         return (
-            AdminPOTemplateDetails.checkAuthenticated(self, user) or 
+            AdminPOTemplateDetails.checkAuthenticated(self, user) or
             EditByOwnersOrAdmins.checkAuthenticated(self, user))
 
 
@@ -1814,19 +1824,20 @@ class ViewArchive(AuthorizationBase):
 
         Anyone can see a public archive.
 
-        Only a team member or a Launchpad admin can view a
-        private archive.
+        Only Launchpad admins and uploaders can view private archives.
         """
         # No further checks are required if the archive is not private.
         if not self.obj.private:
             return True
 
-        # Admins and this archive's owner or team members are allowed.
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(admins):
+        # Administrator are allowed to view private archives.
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (user.inTeam(celebrities.admin)
+            or user.inTeam(celebrities.commercial_admin)):
             return True
 
-        if self.obj.owner and user.inTeam(self.obj.owner):
+        # Uploaders can view private PPAs.
+        if self.obj.is_ppa and self.obj.canUpload(user):
             return True
 
         return False
@@ -1835,28 +1846,22 @@ class ViewArchive(AuthorizationBase):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
 
+
 class AppendArchive(AuthorizationBase):
     """Restrict appending (upload and copy) operations on archives.
 
-    Restrict the group that can already view the PPAs to users with valid
-    membership on it.
+    PPA upload rights are managed via `IArchive.canUpload`;
+
+    Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
     """
     permission = 'launchpad.Append'
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
-        """Verify that the user can append (upload) the archive.
+        if user.inTeam(self.obj.owner):
+            return True
 
-        Anyone with valid membership in the public PPA (owner) can append.
-        Only team members can append to private PPAs.
-        """
-        # XXX 2009-01-08 Julian
-        # This should be sharing code with the encapsulated method
-        # IArchive.canUpload().  That would mean it would also work for
-        # main archives in addition to not repeating the same code here.
-        auth_view = ViewArchive(self.obj)
-        can_view = auth_view.checkAuthenticated(user)
-        if can_view and user.inTeam(self.obj.owner):
+        if self.obj.is_ppa and self.obj.canUpload(user):
             return True
 
         return False
@@ -1864,7 +1869,7 @@ class AppendArchive(AuthorizationBase):
 
 class ViewArchiveAuthToken(AuthorizationBase):
     """Restrict viewing of archive tokens.
-    
+
     The user just needs to be mentioned in the token, have append privilege
     to the archive or be an admin.
     """
@@ -2072,6 +2077,7 @@ class ViewEmailAddress(AuthorizationBase):
         return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.launchpad_developers)
+                or user.inTeam(celebrities.registry_experts)
                 or user.inTeam(celebrities.admin))
 
 
