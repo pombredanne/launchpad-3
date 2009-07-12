@@ -399,14 +399,14 @@
         class="lp.code.browser.branch.BranchEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../branch-edit.pt"/>
+        template="../templates/branch-edit.pt"/>
     <browser:page
         name="+reviewer"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchReviewerEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../branch-edit.pt"/>
+        template="../templates/branch-edit.pt"/>
     <browser:page
         name="+edit-import"
         for="lp.code.interfaces.branch.IBranch"
