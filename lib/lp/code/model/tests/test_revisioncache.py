@@ -297,6 +297,17 @@ class TestRevisionCache(TestCaseWithFactory):
         revision_cache = getUtility(IRevisionCache)
         self.assertEqual(3, revision_cache.authorCount())
 
+    def test_author_count_distinct(self):
+        # If there are multiple revisions with the same revision author text,
+        # but not linked to a Launchpad person, then that revision_text is
+        # counted as one author.
+        revisions = [
+            self.makeCachedRevision(revision=self.factory.makeRevision(
+                    author="Foo <foo@example.com>"))
+            for i in range(4)]
+        revision_cache = getUtility(IRevisionCache)
+        self.assertEqual(1, revision_cache.authorCount())
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

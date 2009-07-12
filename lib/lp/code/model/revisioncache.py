@@ -54,7 +54,6 @@ class GenericRevisionCollection:
 
     def count(self):
         """See `IRevisionCollection`."""
-        # Don't join in the Revision table if we are just counting unique ids.
         result_set = self.store.find(
             RevisionCache.revision_id, self._filter_expressions)
         result_set.config(distinct=True)
@@ -62,6 +61,9 @@ class GenericRevisionCollection:
 
     def authorCount(self):
         """See `IRevisionCollection`."""
+        # Revision authors that are linked to Launchpad people are only
+        # counted once even if their revision text that they use in the commit
+        # is different.
         author = Func(
             'coalesce',
             RevisionAuthor.personID,

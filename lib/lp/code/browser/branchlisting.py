@@ -1184,7 +1184,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             'sort_by': BranchListingSort.DEFAULT,
             }
 
-    @property
+    @cachedproperty
     def commit_count(self):
         """The number of new revisions in the last 30 days."""
         return self.revision_cache.count()
