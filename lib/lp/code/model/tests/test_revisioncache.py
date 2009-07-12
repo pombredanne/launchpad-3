@@ -101,7 +101,7 @@ class TestRevisionCache(TestCaseWithFactory):
             sorted(revision_collection.getRevisions()))
 
     def test_private_revisions(self):
-        # Private flags are honour.ed when only requesting public revisions.
+        # Private flags are honoured when only requesting public revisions.
         # If a revision is in both public and private branches, then there are
         # two entried in the revision cache for it, and it will be retrieved
         # in a revision query
@@ -242,11 +242,10 @@ class TestRevisionCache(TestCaseWithFactory):
         revision_cache = revision_cache.inDistributionSourcePackage(dsp)
         self.assertCollectionContents([rev1, rev2], revision_cache)
 
-    def makePersonAndLinkedRevision(self, name, email):
+    def makePersonAndLinkedRevision(self):
         """Make a person and a revision that is linked to them."""
-        person = self.factory.makePerson(name=name, email=email)
-        revision = self.factory.makeRevision(
-            author=("%s <%s>" % (name, email)))
+        person = self.factory.makePerson()
+        revision = self.factory.makeRevision()
         # Link up the revision author and person.  This is normally a
         # protected method, so remove the security proxy.
         removeSecurityProxy(revision.revision_author).person = person
@@ -256,8 +255,7 @@ class TestRevisionCache(TestCaseWithFactory):
     def test_authored_by_individual(self):
         # Check that authoredBy appropriatly limits revisions to those
         # authored by the individual specified.
-        eric, rev1 = self.makePersonAndLinkedRevision(
-            "eric", "eric@example.com")
+        eric, rev1 = self.makePersonAndLinkedRevision()
         # Make a second revision by eric.
         rev2 = self.makeCachedRevision(
             self.factory.makeRevision(rev1.revision_author.name))
@@ -272,12 +270,10 @@ class TestRevisionCache(TestCaseWithFactory):
         # the team, and don't want security checks, we remove the security
         # proxy from the team.
         team = removeSecurityProxy(self.factory.makeTeam())
-        eric, rev1 = self.makePersonAndLinkedRevision(
-            "eric", "eric@example.com")
+        eric, rev1 = self.makePersonAndLinkedRevision()
         team.addMember(eric, team.teamowner)
         # Now make another revision by someone else in the team.
-        bob, rev2 = self.makePersonAndLinkedRevision(
-            "bob", "bob@example.com")
+        bob, rev2 = self.makePersonAndLinkedRevision()
         team.addMember(bob, team.teamowner)
         # Other revisions have other authors.
         self.makeCachedRevision()
