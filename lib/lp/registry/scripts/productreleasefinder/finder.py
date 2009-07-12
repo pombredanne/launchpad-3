@@ -212,7 +212,7 @@ class ProductReleaseFinder:
 
         version = extract_version(filename)
         if version is None:
-            self.log.error("Unable to parse version from %s", url)
+            self.log.warning("Unable to parse version from %s", url)
             return
         self.log.debug("Version is %s", version)
         if not sane_version(version):

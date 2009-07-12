@@ -120,7 +120,7 @@ class WalkerBase:
             try:
                 (dirnames, filenames) = self.list(sub_dir)
             except WalkerError, exc:
-                self.log.exception('could not retrieve directory '
+                self.log.warning('could not retrieve directory '
                                    'listing for %s', sub_dir)
                 continue
             except UnicodeEncodeError:
