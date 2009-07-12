@@ -26,7 +26,6 @@ from canonical.testing.layers import TwistedLayer
 from canonical.twistedsupport import suppress_stderr
 
 
-
 class MockRealm:
     """A mock realm for testing userauth.SSHUserAuthServer.
 
