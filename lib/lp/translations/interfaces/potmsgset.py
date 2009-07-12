@@ -91,10 +91,16 @@ class IPOTMsgSet(Interface):
         """
 
     def getCurrentTranslationMessage(potemplate, language, variant=None):
-        """Returns a TranslationMessage marked as being currently used."""
+        """Returns a TranslationMessage marked as being currently used.
+
+        Diverged messages are preferred.
+        """
 
     def getImportedTranslationMessage(potemplate, language, variant=None):
-        """Returns a TranslationMessage as imported from the package."""
+        """Returns a TranslationMessage as imported from the package.
+
+        Diverged messages are preferred.
+        """
 
     def getSharedTranslationMessage(language, variant=None):
         """Returns a shared TranslationMessage."""
