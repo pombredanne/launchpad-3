@@ -8,7 +8,7 @@ the SSO Server.
 
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> from canonical.signon.dbpolicy import SSODatabasePolicy
-    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
+    >>> #getUtility(IStoreSelector).push(SSODatabasePolicy())
 
 
 = AccountSet =
@@ -83,15 +83,6 @@ look up the user.
     >>> print account.displayname
     No Privileges Person
 
-The getByOpenIDIdentifier() method supports the human readable
-openid identifiers.
-
-    >>> account.new_openid_identifier
-    u'123/no-priv'
-    >>> account_2 = account_set.getByOpenIDIdentifier('123/no-priv')
-    >>> account_2 == account
-    True
-
 A LookupError is raised if the identifier is not used by any account.
 
     >>> account_set.getByOpenIDIdentifier('no-such-identifier')
@@ -146,12 +137,12 @@ list:
 We can also get a list of email addresses that are waiting for the
 user to validate:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IAuthTokenSet, LoginTokenType)
-    >>> token = getUtility(IAuthTokenSet).new(
-    ...     account, u"test@canonical.com", u"unvalidated-email@example.com",
-    ...     LoginTokenType.VALIDATEEMAIL, None)
-    >>> account.getUnvalidatedEmails()
+    > >> from canonical.launchpad.interfaces import (
+    . ..     IAuthTokenSet, LoginTokenType)
+    > >> token = getUtility(IAuthTokenSet).new(
+    . ..     account, u"test@canonical.com", u"unvalidated-email@example.com",
+    . ..     LoginTokenType.VALIDATEEMAIL, None)
+    > >> account.getUnvalidatedEmails()
     [u'unvalidated-email@example.com']
 
 
@@ -379,110 +370,16 @@ address, a new Person cannot be created.
 
 == OpenID identifiers ==
 
-The account is given old and new openid identifiers. The old
-identifier is created directly in the database; it not available until
-the account object is synced.
+The account is given an openid identifier. The identifier is created 
+directly in the database; it not available until the account object is synced.
 
     >>> new_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD, 'OID Account',
-    ...     openid_mnemonic='oid-account', password=u'clear_password')
+    ...     password=u'clear_password')
     >>> syncUpdate(new_account)
     >>> len(new_account.openid_identifier) == 7
     True
-    >>> new_account.new_openid_identifier
-    u'.../oid-account'
 
-The IAccountSet object can create a human-readable openid identifier
-using the createOpenIDIdentifier() method. It requires a string argument
-that is used as the mnemonic in the URL. A user name is a example of
-a mnemonic that would be used to create a new openid identifier.
-
-    >>> first_identifier = account_set.createOpenIDIdentifier('user-name')
-    >>> first_identifier
-    '.../user-name'
-
-There is no distinction between using a string mnemonic and a unicode
-mnemonic. A str is always returned.
-
-    >>> account_set.createOpenIDIdentifier(u'user-name')
-    '.../user-name'
-
-The mnemonic must be a string or a unicode string, otherwise an error is
-raised. The unicode string must contain only ASCII compatible
-characters, otherwise an error is raised.
-
-    >>> account_set.createOpenIDIdentifier(None)
-    Traceback (most recent call last):
-     ...
-    AssertionError: The mnemonic must be a non-empty string.
-
-    >>> account_set.createOpenIDIdentifier(u'b\xe4d')
-    Traceback (most recent call last):
-     ...
-    UnicodeEncodeError: 'ascii' codec can't encode character u'\xe4' in
-                         position 5: ordinal not in range(128)
-
-An error is raised if a non-unique openid identifier cannot be created
-for the mnemonic. All accounts and OpenID relying parties summaries are
-checked for to ensure that an openid identifier is not reused. In the
-unlikely chance that a unique random token cannot be found for a
-mnemonic, an error is raised.
-
-    # Instrument the random number range to ensure a duplicate will
-    # be generated.
-    >>> naked_account_set = removeSecurityProxy(account_set)
-    >>> naked_account_set._MAX_RANDOM_TOKEN_RANGE
-    1000
-    >>> naked_account_set._MAX_RANDOM_TOKEN_RANGE = 1
-
-    # Use the only random token available for the openid identifier.
-    >>> non_unique_account = account_set.new(
-    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD, 'Non Unique',
-    ...     openid_mnemonic='non-unique', password=u'clear_password')
-    >>> syncUpdate(non_unique_account)
-    >>> non_unique_account.new_openid_identifier
-    u'000/non-unique'
-
-    >>> account_set.createOpenIDIdentifier('non-unique')
-    Traceback (most recent call last):
-     ...
-    AssertionError: An openid_identifier could not be created with the
-                    mnemonic 'non-unique'.
-
-All OpenIDRPSummaries are checked to ensure the openid identifier has
-never been used. An error is raised in the unlikely event that every
-random token for a mnemonic has been used in the past.
-
-    >>> from canonical.signon.model.openidserver import OpenIDRPSummary
-
-    # Change the new_openid_identifier to ensure that the no account
-    # uses '000/non-unique'.
-    >>> removeSecurityProxy(
-    ...     non_unique_account).new_openid_identifier = '111/non-unique'
-    >>> syncUpdate(non_unique_account)
-    >>> account_set.getByOpenIDIdentifier('000/non-unique')
-    Traceback (most recent call last):
-    ...
-    LookupError:...
-
-    # Add the openid identifier to the history of used openid identifiers.
-    # The model object is used because the OpenIDRPSummarySet.record() may
-    # use the old openid identifier.
-    >>> summary = OpenIDRPSummary(
-    ...     account=non_unique_account,
-    ...     openid_identifier='http://id.launchpad.dev/000/non-unique',
-    ...     trust_root='http://blog.org/')
-
-    >>> import transaction
-    >>> transaction.commit()
-    >>> account_set.createOpenIDIdentifier('non-unique')
-    Traceback (most recent call last):
-     ...
-    AssertionError: An openid_identifier could not be created with the
-                    mnemonic 'non-unique'.
-
-    # Restore random number range.
-    >>> naked_account_set._MAX_RANDOM_TOKEN_RANGE = 1000
 
 == OpenID authentications ==
 
@@ -512,4 +409,4 @@ date.
 
 == Cleanup ==
 
-    >>> db_policy = getUtility(IStoreSelector).pop()
+    >>> #db_policy = getUtility(IStoreSelector).pop()

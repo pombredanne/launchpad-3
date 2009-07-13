@@ -57,10 +57,6 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://feeds.launchpad.dev/
     althosts:
     ----
-    id @ id.launchpad.dev
-    rooturl: http://id.launchpad.dev/
-    althosts:
-    ----
     mainsite @ launchpad.dev
     rooturl: http://launchpad.dev/
     althosts: localhost
@@ -106,7 +102,6 @@ request is headed to one of the officialy-used Launchpad host names:
     bugs.launchpad.dev
     code.launchpad.dev
     feeds.launchpad.dev
-    id.launchpad.dev
     launchpad.dev
     localhost
     openid.launchpad.dev
