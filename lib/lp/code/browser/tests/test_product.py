@@ -10,14 +10,14 @@ import unittest
 from mechanize import LinkNotFoundError
 import pytz
 
-from zope.component import getMultiAdapter
+from zope.component import getMultiAdapter, getUtility
 
-from lp.testing import time_counter, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.testing import login_person
 from canonical.testing import DatabaseFunctionalLayer
+from lp.code.interfaces.revision import IRevisionSet
+from lp.testing import (
+    ANONYMOUS, login, login_person, time_counter, TestCaseWithFactory)
 
 
 class TestProductCodeIndexView(TestCaseWithFactory):
@@ -113,6 +113,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         self.factory.makeRevisionsForBranch(
             branch, author='cthulu@example.com',
             date_generator=date_generator)
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
 
         view = getMultiAdapter(
             (product, LaunchpadTestRequest()), name='+code-index')
@@ -132,6 +133,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         self.factory.makeRevisionsForBranch(
             branch, author='flyingpasta@example.com',
             date_generator=date_generator)
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
 
         view = getMultiAdapter(
             (product, LaunchpadTestRequest()), name='+code-index')

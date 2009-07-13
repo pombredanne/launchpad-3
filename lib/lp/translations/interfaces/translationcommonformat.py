@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Common file format interfaces shared across all formats."""
@@ -179,3 +179,6 @@ class ITranslationFileData(Interface):
             unknown or is_template flag is set.
             ''',
         required=True, readonly=True)
+
+    syntax_warnings = Set(
+        title=u"Syntax warnings", required=False, readonly=True)

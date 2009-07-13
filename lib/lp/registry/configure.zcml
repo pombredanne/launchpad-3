@@ -941,7 +941,7 @@
             interface="lp.registry.interfaces.milestone.IProjectMilestone"/>
     </class>
     <subscriber
-        for="canonical.launchpad.interfaces.IProduct                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="canonical.launchpad.interfaces.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.registry.subscribers.product_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
@@ -1095,13 +1095,13 @@
             attributes="
                 qualifies_for_free_hosting"/>
         <require
-            permission="launchpad.Commercial"
+            permission="launchpad.ProjectReview"
             attributes="
                 reviewer_whiteboard
                 is_permitted
                 license_reviewed
                 license_approved"
-            set_schema="lp.registry.interfaces.product.IProductCommercialRestricted"
+            set_schema="lp.registry.interfaces.product.IProductProjectReviewRestricted"
             set_attributes="active private_bugs "/>
 
         <!-- Changes to official_rosetta must be available to Launchpad
@@ -1246,7 +1246,7 @@
         <allow
             interface="lp.registry.interfaces.product.IProductSet"/>
         <require
-            permission="launchpad.Commercial"
+            permission="launchpad.ProjectReview"
             attributes="
                 forReview"/>
     </securedutility>
@@ -1597,7 +1597,7 @@
          interface="lp.registry.interfaces.suitesourcepackage.ISuiteSourcePackage"/>
     </class>
 
-    <lp:help-folder 
+    <lp:help-folder
         folder="help" type="canonical.launchpad.layers.LaunchpadLayer" />
 
     <!-- DistributionMirror -->

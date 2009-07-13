@@ -34,10 +34,10 @@ class SSODatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def test_defaults(self):
         # Test that the default store are properly set by the policy.
-        self.assertCorrectlyProvides(
+        self.assertProvides(
             getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR),
             ISlaveStore)
-        self.assertCorrectlyProvides(
+        self.assertProvides(
             getUtility(IStoreSelector).get(AUTH_STORE, DEFAULT_FLAVOR),
             IMasterStore)
 
