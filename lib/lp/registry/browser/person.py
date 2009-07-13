@@ -2970,12 +2970,11 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     @cachedproperty
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return CurrentOpenIDEndPoint.getOldServiceURL()
+        return CurrentOpenIDEndPoint.getServiceURL()
 
     @cachedproperty
     def openid_identity_url(self):
-        return IOpenIDPersistentIdentity(
-            self.context).old_openid_identity_url
+        return IOpenIDPersistentIdentity(self.context).openid_identity_url
 
     def processForm(self):
         if not self.request.form.get('unsubscribe'):
@@ -3630,11 +3629,7 @@ class PersonEditView(BasePersonEditView):
         identifier = IOpenIDPersistentIdentity(self.context)
         unknown_trust_root_login_records = list(
             getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                identifier.old_openid_identity_url, True))
-        if identifier.new_openid_identifier is not None:
-            unknown_trust_root_login_records.extend(list(
-                getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                    identifier.new_openid_identity_url, True)))
+                identifier.openid_identity_url, True))
         return sorted([
             record.trust_root
             for record in unknown_trust_root_login_records])
