@@ -417,7 +417,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     @cachedproperty
     def bugtask_status_counts(self):
-      """A list StatusCounts summarising the targeted bugtasks."""
+        """A list StatusCounts summarising the targeted bugtasks."""
         bugtaskset = getUtility(IBugTaskSet)
         status_id_counts = bugtaskset.getStatusCountsForProductSeries(
             self.user, self.context)
@@ -429,7 +429,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     @cachedproperty
     def specification_status_counts(self):
-      """A list StatusCounts summarising the targeted specification."""
+        """A list StatusCounts summarising the targeted specification."""
         specification_set = getUtility(ISpecificationSet)
         status_id_counts = specification_set.getStatusCountsForProductSeries(
             self.context)
