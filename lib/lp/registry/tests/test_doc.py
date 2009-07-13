@@ -10,7 +10,8 @@ import transaction
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import (
-    DatabaseLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseLayer, DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 
 from lp.registry.tests import mailinglists_helper
 from lp.services.testing import build_test_suite
@@ -167,4 +168,4 @@ special = {
 
 
 def test_suite():
-    return build_test_suite(here, special)
+    return build_test_suite(here, special, layer=DatabaseFunctionalLayer)
