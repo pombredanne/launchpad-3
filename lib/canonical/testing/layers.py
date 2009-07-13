@@ -903,6 +903,8 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._original_sigint = signal.getsignal(signal.SIGINT)
         TwistedLayer._original_sigterm = signal.getsignal(signal.SIGTERM)
         TwistedLayer._original_sigchld = signal.getsignal(signal.SIGCHLD)
+        from twisted.internet import reactor
+        signal.signal(signal.SIGCHLD, reactor._handleSigchld)
 
     @classmethod
     def _restore_signals(cls):

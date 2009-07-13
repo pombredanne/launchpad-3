@@ -53,6 +53,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
+from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
@@ -97,11 +98,13 @@ class BrokenUploadPolicy(AbstractUploadPolicy):
         raise Exception("Exception raised by BrokenUploadPolicy for testing.")
 
 
-class TestUploadProcessorBase(unittest.TestCase):
+class TestUploadProcessorBase(TestCaseWithFactory):
     """Base class for functional tests over uploadprocessor.py."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
+
         self.queue_folder = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
 
@@ -1331,11 +1334,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
 
         foo_ps.add((bar_package,))
-        ap_set.newPackagesetUploader(uploader, foo_ps)
+        ap_set.newPackagesetUploader(
+            self.ubuntu.main_archive, uploader, foo_ps)
 
         # The uploader now does have a package set based upload permissions
         # to 'bar'.
-        self.assertTrue(ap_set.isSourceUploadAllowed('bar', uploader))
+        self.assertTrue(
+            ap_set.isSourceUploadAllowed(
+                self.ubuntu.main_archive, 'bar', uploader))
 
         # Upload the package again.
         self.processUpload(uploadprocessor, upload_dir)

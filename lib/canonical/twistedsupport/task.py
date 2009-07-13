@@ -112,8 +112,13 @@ class PollingTaskSource:
                 # task and the consumer need to figure out how to get output
                 # back to the end user.
                 task_consumer.taskStarted(task)
+        def task_failed(reason):
+            # If task production fails, we inform the consumer of this, but we
+            # don't let any deferred it returns delay subsequent polls.
+            task_consumer.taskProductionFailed(reason)
         d = defer.maybeDeferred(self._task_producer)
-        d.addCallbacks(got_task, task_consumer.taskProductionFailed)
+        d.addCallbacks(got_task, task_failed)
+        return d
 
     def stop(self):
         """See `ITaskSource`."""

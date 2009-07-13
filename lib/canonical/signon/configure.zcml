@@ -8,6 +8,27 @@
 
   <include package=".model" />
   <include package=".adapters" />
-  <include package=".browser" />
-
+  <include package=".browser" /> 
+  <publisher
+      name="openid"
+      factory="canonical.signon.publisher.openid_request_publication_factory"
+      methods="*"
+      mimetypes="*"
+      priority="90" />
+  <publisher
+      name="id"
+      factory="canonical.signon.publisher.id_request_publication_factory"
+      methods="*"
+      mimetypes="*"
+      priority="80" />
+  <adapter
+      for="canonical.signon.layers.IdLayer"
+      provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+      factory="canonical.signon.dbpolicy.SSODatabasePolicy"
+      />
+  <adapter
+      for="canonical.signon.layers.OpenIDLayer"
+      provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+      factory="canonical.signon.dbpolicy.SSODatabasePolicy"
+      />
 </configure>

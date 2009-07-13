@@ -23,6 +23,7 @@ __metaclass__ = type
 
 __all__ = [
     'ActiveMailingListVocabulary',
+    'AdminMergeablePersonVocabulary',
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectVocabulary',
     'DistributionOrProductVocabulary',
@@ -349,6 +350,7 @@ class PersonAccountToMergeVocabulary(
 
     _orderBy = ['displayname']
     displayname = 'Select a Person to Merge'
+    must_have_email = True
 
     def __contains__(self, obj):
         return obj in self._select()
@@ -356,7 +358,8 @@ class PersonAccountToMergeVocabulary(
     def _select(self, text=""):
         """Return `IPerson` objects that match the text."""
         return getUtility(IPersonSet).findPerson(
-            text, exclude_inactive_accounts=False, must_have_email=True)
+            text, exclude_inactive_accounts=False,
+            must_have_email=self.must_have_email)
 
     def search(self, text):
         """See `SQLObjectVocabularyBase`.
@@ -368,6 +371,15 @@ class PersonAccountToMergeVocabulary(
 
         text = text.lower()
         return self._select(text)
+
+
+class AdminMergeablePersonVocabulary(PersonAccountToMergeVocabulary):
+    """The set of all non-merged people.
+
+    This vocabulary is a very specialized one, meant to be used only for
+    admins to choose accounts to merge. You *don't* want to use it.
+    """
+    must_have_email = False
 
 
 class ValidPersonOrTeamVocabulary(
@@ -1204,7 +1216,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     A commercial project is one that does not qualify for free hosting.  For
     normal users only commercial projects for which the user is the
     maintainer, or in the maintainers team, will be listed.  For users with
-    launchpad.Commercial permission, all commercial projects are returned.
+    launchpad.ProjectReview permission, all commercial projects are returned.
     """
 
     implements(IHugeVocabulary)
@@ -1232,7 +1244,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         user = self.context
         if user is None:
             return self.emptySelectResults()
-        if check_permission('launchpad.Commercial', user):
+        if check_permission('launchpad.ProjectReview', user):
             product_set = getUtility(IProductSet)
             projects = product_set.forReview(
                 search_text=query, licenses=[License.OTHER_PROPRIETARY],

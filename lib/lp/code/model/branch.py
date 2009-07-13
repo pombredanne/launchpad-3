@@ -197,9 +197,29 @@ class Branch(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='branch', orderBy='id')
 
+    linked_bugs = SQLRelatedJoin(
+        'Bug', joinColumn='branch', otherColumn='bug',
+        intermediateTable='BugBranch', orderBy='id')
+
+    def linkBug(self, bug, registrant):
+        """See `IBranch`."""
+        return bug.linkBranch(self, registrant)
+
+    def unlinkBug(self, bug, user):
+        """See `IBranch`."""
+        return bug.unlinkBranch(self, user)
+
     spec_links = SQLMultipleJoin('SpecificationBranch',
         joinColumn='branch',
         orderBy='id')
+
+    def linkSpecification(self, spec, registrant):
+        """See `IBranch`."""
+        return spec.linkBranch(self, registrant)
+
+    def unlinkSpecification(self, spec, user):
+        """See `IBranch`."""
+        return spec.unlinkBranch(self, user)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_last_modified = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -364,11 +384,6 @@ class Branch(SQLBase):
             is_dev_focus = False
         return bazaar_identity(
             self, self.associatedProductSeries(), is_dev_focus)
-
-    @property
-    def related_bugs(self):
-        """See `IBranch`."""
-        return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
     def warehouse_url(self):

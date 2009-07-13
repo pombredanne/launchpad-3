@@ -1556,5 +1556,75 @@ class TestBranchCommitsForDays(TestCaseWithFactory):
         self.assertEqual(commits, branch.commitsForDays(self.epoch))
 
 
+class TestBranchBugLinks(TestCaseWithFactory):
+    """Tests for bug linkages in `Branch`"""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+
+    def test_bug_link(self):
+        # Branches can be linked to bugs through the Branch interface.
+        branch = self.factory.makeAnyBranch()
+        bug = self.factory.makeBug()
+        branch.linkBug(bug, self.user)
+
+        self.assertEqual(branch.linked_bugs.count(), 1)
+
+        linked_bug = branch.linked_bugs[0]
+
+        self.assertEqual(linked_bug.id, bug.id)
+
+    def test_bug_unlink(self):
+        # Branches can be unlinked from the bug as well.
+        branch = self.factory.makeAnyBranch()
+        bug = self.factory.makeBug()
+        branch.linkBug(bug, self.user)
+
+        self.assertEqual(branch.linked_bugs.count(), 1)
+
+        branch.unlinkBug(bug, self.user)
+
+        self.assertEqual(branch.linked_bugs.count(), 0)
+
+
+class TestBranchSpecLinks(TestCaseWithFactory):
+    """Tests for bug linkages in `Branch`"""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+
+    def test_spec_link(self):
+        # Branches can be linked to specs through the Branch interface.
+        branch = self.factory.makeAnyBranch()
+        spec = self.factory.makeSpecification()
+        branch.linkSpecification(spec, self.user)
+
+        self.assertEqual(branch.spec_links.count(), 1)
+
+        spec_branch = branch.spec_links[0]
+
+        self.assertEqual(spec_branch.specification.id, spec.id)
+        self.assertEqual(spec_branch.branch.id, branch.id)
+
+    def test_spec_unlink(self):
+        # Branches can be unlinked from the spec as well.
+        user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        branch = self.factory.makeAnyBranch()
+        spec = self.factory.makeSpecification()
+        branch.linkSpecification(spec, self.user)
+
+        self.assertEqual(branch.spec_links.count(), 1)
+
+        branch.unlinkSpecification(spec, self.user)
+
+        self.assertEqual(branch.spec_links.count(), 0)
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

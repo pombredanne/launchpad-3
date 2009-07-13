@@ -35,7 +35,7 @@ __all__ = [
     'pocket_dependencies',
     ]
 
-
+from canonical.config import config
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, ALLOW_RELEASE_BUILDS)
 from lp.soyuz.interfaces.publishing import (
@@ -155,8 +155,21 @@ def get_sources_list_for_building(build):
              get_components_for_building(build))
             )
 
-    return _get_sources_list_for_dependencies(deps, build.distroarchseries)
+    sources_list_lines = _get_sources_list_for_dependencies(
+        deps, build.distroarchseries)
 
+    # Append external sources_list lines for this archive if it's
+    # specified in the configuration.
+    archive_config_key = 'ppa.%s_%s' % (
+        build.archive.owner.name, build.archive.name)
+    if archive_config_key in config:
+        archive_config = config[archive_config_key]
+        for archive_dep in archive_config.dependencies.splitlines():
+            line = archive_dep % (
+                {'series': build.distroarchseries.distroseries.name})
+            sources_list_lines.append(line)
+
+    return sources_list_lines
 
 def _has_published_binaries(archive, distroarchseries, pocket):
     """Whether or not the archive dependency has published binaries."""
