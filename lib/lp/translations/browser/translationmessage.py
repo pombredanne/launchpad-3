@@ -35,6 +35,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
+from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -1091,8 +1092,27 @@ class CurrentTranslationMessageView(LaunchpadView):
             if self.context.is_imported:
                 # Imported one matches the current one.
                 imported_translationmessage = None
+            elif self.imported_translationmessage is not None:
+                imported_translationmessage = removeSecurityProxy(
+                    self.imported_translationmessage)
+                imported_translationmessage.suggestion_html_id = (
+                    self.context.potmsgset.makeHTMLID('%s_suggestion_%s_%s' % (
+                        imported_translationmessage.language.code,
+                        imported_translationmessage.id, index)))
+                imported_translationmessage.translation_html_id = (
+                    imported_translationmessage.makeHTMLID(
+                        'translation_%s' % (index)))
+                imported_translationmessage.suggestion_text = text_to_html(
+                    imported_translation,
+                    imported_translationmessage.potmsgset.flags)
+                imported_translationmessage.legal_warning = False
+                imported_translationmessage.person = (
+                    imported_translationmessage.submitter)
+                imported_translationmessage.is_local_to_pofile = (
+                    self.pofile == imported_translationmessage.pofile)
             else:
-                imported_translationmessage = self.imported_translationmessage
+                imported_translationmessage = None
+
             translation_entry = {
                 'plural_index': index,
                 'current_translation': text_to_html(
@@ -1586,6 +1606,8 @@ class TranslationMessageSuggestions:
                 'pofile': submission.pofile,
                 'person': submission.submitter,
                 'date_created': submission.date_created,
+                'is_empty' : False,
+                'is_local_to_pofile' : submission.pofile == self.pofile,
                 'legal_warning': legal_warning and (
                     submission.origin == RosettaTranslationOrigin.SCM),
                 'suggestion_html_id':
