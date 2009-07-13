@@ -383,7 +383,6 @@
 </metal:bug_reporting_guidelines>
 
 <metal:similar-bugs define-macro="display-similar-bugs">
-  <a id="prefocus-target"></a>
   <ul id="similar-bugs" style="list-style: none; margin-left: 0; margin-bottom: 0">
     <li tal:repeat="bug view/similar_bugs" class="similar-bug">
       <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
