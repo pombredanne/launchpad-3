@@ -119,7 +119,7 @@ def ensure_base(transport):
             _create_prefix(transport)
 
 
-_hooks = []
+_exception_logging_hooks = []
 
 _original_log_exception_quietly = trace.log_exception_quietly
 
@@ -127,7 +127,7 @@ _original_log_exception_quietly = trace.log_exception_quietly
 def _hooked_log_exception_quietly():
     """Wrapper around `trace.log_exception_quietly` that calls hooks."""
     _original_log_exception_quietly()
-    for hook in _hooks:
+    for hook in _exception_logging_hooks:
         hook()
 
 
@@ -139,7 +139,7 @@ def add_exception_logging_hook(hook_function):
     """
     if trace.log_exception_quietly == _original_log_exception_quietly:
         trace.log_exception_quietly = _hooked_log_exception_quietly
-    _hooks.append(hook_function)
+    _exception_logging_hooks.append(hook_function)
 
 
 def remove_exception_logging_hook(hook_function):
@@ -149,8 +149,8 @@ def remove_exception_logging_hook(hook_function):
         for exception information. It will be removed from the exception
         logging hooks.
     """
-    _hooks.remove(hook_function)
-    if len(_hooks) == 0:
+    _exception_logging_hooks.remove(hook_function)
+    if len(_exception_logging_hooks) == 0:
         trace.log_exception_quietly == _original_log_exception_quietly
 
 
