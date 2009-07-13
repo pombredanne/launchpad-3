@@ -9,6 +9,7 @@ __metaclass__ = type
 
 import ZConfig
 import os
+import pkg_resources
 import unittest
 
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
@@ -18,11 +19,10 @@ from lazr.config.interfaces import ConfigErrors
 
 # Calculate some landmark paths.
 import canonical.config
-here = os.path.dirname(canonical.config.__file__)
-schema_file = os.path.join(
-    here, os.pardir, os.pardir, 'zope/app/server/schema.xml')
+schema_file = pkg_resources.resource_filename('zope.app.server', 'schema.xml')
 schema = ZConfig.loadSchema(schema_file)
 
+here = os.path.dirname(canonical.config.__file__)
 lazr_schema_file = os.path.join(here, 'schema-lazr.conf')
 
 
