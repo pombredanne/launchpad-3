@@ -11,6 +11,7 @@ admins and registry admins teams can list, create, or review them.
     >>> login('no-priv@canonical.com')
     >>> project_set = getUtility(IProjectSet)
 
+
 Accessing the +index view
 -------------------------
 
@@ -22,7 +23,6 @@ A Launchpad admin has permission to access the +index view.
     >>> check_permission('launchpad.ProjectReview', view)
     True
 
-
 A regular user cannot access the view.
 
     >>> user = factory.makePerson()
@@ -31,6 +31,7 @@ A regular user cannot access the view.
     >>> registry = celebs.registry_experts
     >>> user.inTeam(registry)
     False
+
     >>> check_permission('launchpad.ProjectReview', view)
     False
 
@@ -41,9 +42,11 @@ A member of the registry team has permission.
     >>> registry.addMember(registry_member, registry.teamowner)
     >>> registry_member.inTeam(registry)
     True
+
     >>> login_person(registry_member)
     >>> check_permission('launchpad.ProjectReview', view)
     True
+
 
 Accessing the +all view
 -----------------------
@@ -67,6 +70,7 @@ A member of the registry team has permission.
     >>> check_permission('launchpad.ProjectReview', view)
     True
 
+
 Accessing the +review view
 --------------------------
 
@@ -89,6 +93,7 @@ A member of the registry team has permission.
     >>> check_permission('launchpad.ProjectReview', view)
     True
 
+
 Accessing the +new view
 -----------------------
 
@@ -110,3 +115,4 @@ A member of the registry team has permission.
     >>> login_person(registry_member)
     >>> check_permission('launchpad.ProjectReview', view)
     True
+
