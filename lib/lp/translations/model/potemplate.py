@@ -40,6 +40,8 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.translations.model.pofile import POFile, DummyPOFile
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.translationimportqueue import (
+    collect_import_info)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.translations.interfaces.pofile import IPOFileSet
@@ -813,8 +815,10 @@ class POTemplate(SQLBase, RosettaStats):
 
         subject = 'Translation template import - %s' % self.displayname
         template_mail = 'poimport-template-confirmation.txt'
+        errors, warnings = None, None
         try:
-            translation_importer.importFile(entry_to_import, logger)
+            errors, warnings = translation_importer.importFile(
+                entry_to_import, logger)
         except (BrokenTextError, TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError), exception:
             if logger:
@@ -829,17 +833,15 @@ class POTemplate(SQLBase, RosettaStats):
             error_text = None
             entry_to_import.setErrorOutput(None)
 
-        replacements = {
-            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-            'elapsedtime': entry_to_import.getElapsedTimeText(),
-            'file_link': entry_to_import.content.http_url,
+        replacements = collect_import_info(entry_to_import, self, warnings)
+        replacements.update({
             'import_title': 'translation templates for %s' % self.displayname,
-            'importer': entry_to_import.importer.displayname,
-            'template': self.displayname,
-            }
+            })
 
         if error_text is not None:
             replacements['error'] = error_text
+
+        entry_to_import.addWarningOutput(replacements['warnings'])
 
         if entry_to_import.status != RosettaImportStatus.FAILED:
             entry_to_import.setStatus(RosettaImportStatus.IMPORTED)
