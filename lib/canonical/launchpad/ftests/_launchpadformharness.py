@@ -7,7 +7,7 @@ __metaclass__ = type
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from zope.security.management import (
-    newInteraction, queryInteraction, endInteraction)
+    endInteraction, newInteraction, queryInteraction, restoreInteraction)
 
 class LaunchpadFormHarness:
 
@@ -21,24 +21,15 @@ class LaunchpadFormHarness:
     def _render(self, form_values=None, method='GET'):
         self.request = self.request_class(
             method=method, form=form_values, PATH_INFO='/')
-        interaction = queryInteraction()
-        if interaction is None:
-            newInteraction(self.request)
-            self._createViewAndInitializeIt()
-            endInteraction()
-        else:
+        if queryInteraction() is not None:
             self.request.setPrincipal(get_current_principal())
-            orig_participations = interaction.participations
-            # Overwrite the current participations with self.request,
-            # create the view, initialize() it and then restore the original
-            # participations.
-            interaction.participations = [self.request]
-            self._createViewAndInitializeIt()
-            interaction.participations = orig_participations
-
-    def _createViewAndInitializeIt(self):
+        # Setup a new interaction using self.request, create the view,
+        # initialize() it and then restore the original interaction.
+        endInteraction()
+        newInteraction(self.request)
         self.view = self.view_class(self.context, self.request)
         self.view.initialize()
+        restoreInteraction()
 
     def submit(self, action_name, form_values, method='POST'):
         action_name = '%s.actions.%s' % (self.view.prefix, action_name)
