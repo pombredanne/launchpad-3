@@ -1122,9 +1122,8 @@ def bazaar_identity(branch, is_dev_focus):
             branch.associatedProductSeries(), key=attrgetter('datecreated'))
         if len(associated_series) == 0:
             return lp_prefix + branch.unique_name
-
-        use_series = sorted(
-            associated_series, key=attrgetter('datecreated'))[-1]
+        # Use the most recently created series.
+        use_series = associated_series[-1]
         return "%(prefix)s%(product)s/%(series)s" % {
             'prefix': lp_prefix,
             'product': use_series.product.name,
