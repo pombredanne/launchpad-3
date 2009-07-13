@@ -19,17 +19,17 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskSearchParams, BugTaskStatus)
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.testing import TestCase, normalize_whitespace
+from lp.testing import TestCase, normalize_whitespace, TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 
 
-class TestBugTaskDelta(unittest.TestCase):
+class TestBugTaskDelta(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        super(TestBugTaskDelta, self).setUp()
         login('foo.bar@canonical.com')
-        self.factory = LaunchpadObjectFactory()
 
     def test_get_empty_delta(self):
         # getDelta() should return None when no change has been made.
@@ -466,12 +466,12 @@ class TestBugTaskTagSearchClauses(TestCase):
                   (SELECT bug FROM BugTag))""")
 
 
-class TestBugTaskHardwareSearch(unittest.TestCase):
+class TestBugTaskHardwareSearch(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(TestBugTaskHardwareSearch, self).setUp()
         self.layer.switchDbUser('launchpad')
 
     def test_search_results_without_duplicates(self):
@@ -494,7 +494,8 @@ class TestBugTaskHardwareSearch(unittest.TestCase):
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bugtasks = ubuntu.searchTasks(search_params)
         self.assertEqual(
-            [bugtask.bug.id for bugtask in bugtasks], [1, 2])
+            [1, 2],
+            [bugtask.bug.id for bugtask in bugtasks])
 
 
 def test_suite():

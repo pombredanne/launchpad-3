@@ -1641,7 +1641,8 @@ class BugTaskSet:
             extra_clauses.append(clause)
 
         hw_clause = self._buildHardwareRelatedClause(params)
-        extra_clauses.append(hw_clause)
+        if hw_clause is not None:
+            extra_clauses.append(hw_clause)
 
         orderby_arg = self._processOrderBy(params)
 
@@ -1835,7 +1836,7 @@ class BugTaskSet:
             tables, clauses = make_submission_device_statistics_clause(
                 None, None, None, driver_name, package_name, False)
         else:
-            return '1=1'
+            return None
 
         tables.append(HWSubmission)
         tables.append(Bug)
@@ -1862,7 +1863,7 @@ class BugTaskSet:
             tables.append(HWSubmissionBug)
 
         if len(bug_link_clauses) == 0:
-            return '1=1'
+            return None
 
         clauses.append(Or(*bug_link_clauses))
         clauses.append(_userCanAccessSubmissionStormClause(params.user))
