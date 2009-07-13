@@ -31,7 +31,7 @@ class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
 
     def testProvidesHasBuildRecords(self):
         # Ensure that the context does in fact provide IHasBuildRecords
-        self.assertCorrectlyProvides(self.context, IHasBuildRecords)
+        self.assertProvides(self.context, IHasBuildRecords)
 
     def test_getBuildRecords_no_archs(self):
         # getBuildRecords() called without any arguments returns all builds.
