@@ -37,10 +37,10 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp import canonical_url
 from lp.code.bzr import (
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
-from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
+from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
@@ -517,24 +517,27 @@ class RevisionsAddedJob(BranchJobDerived):
         """
         self.bzr_branch.lock_read()
         try:
-            info = RevisionInfo(self.bzr_branch, revno, revision_id)
-            outf = StringIO()
-            lf = log_formatter('long', to_file=outf)
-            show_log(self.bzr_branch,
-                     lf,
-                     start_revision=info,
-                     end_revision=info,
-                     verbose=True)
             graph = self.bzr_branch.repository.get_graph()
             merged_revisions = self.getMergedRevisionIDs(revision_id, graph)
-            authors = list(sorted(self.getAuthors(merged_revisions, graph)))
-            def person_id(person):
-                return '%s (%s)' % (person.displayname, person.name)
-            if len(authors) > 0:
-                outf.write('Merge authors: ')
-                outf.write(', '.join(authors[:5]))
-                if len(authors) > 5:
-                    outf.write('...')
+            authors = self.getAuthors(merged_revisions, graph)
+            revision_set = RevisionSet()
+            rev_authors = set(revision_set.acquireRevisionAuthor(author) for
+                              author in authors)
+            outf = StringIO()
+            pretty_authors = []
+            for rev_author in rev_authors:
+                if rev_author.person is None:
+                    displayname = rev_author.name
+                else:
+                    displayname = rev_author.person.unique_displayname
+                pretty_authors.append('  %s' % displayname)
+
+            if len(pretty_authors) > 0:
+                outf.write('Merge authors:\n')
+                pretty_authors.sort(key=lambda x: x.lower())
+                outf.write('\n'.join(pretty_authors[:5]))
+                if len(pretty_authors) > 5:
+                    outf.write('...\n')
                 outf.write('\n')
             bmps = list(self.findRelatedBMP(merged_revisions))
             if len(bmps) > 0:
@@ -542,15 +545,19 @@ class RevisionsAddedJob(BranchJobDerived):
             for bmp in bmps:
                 outf.write('  %s\n' % canonical_url(bmp))
                 proposer = bmp.registrant
-                outf.write('  proposed by: %s\n' % person_id(proposer))
-                if (bmp.reviewer is not None and bmp.queue_status ==
-                    BranchMergeProposalStatus.CODE_APPROVED):
-                    outf.write('  approved by: %s\n' %
-                               person_id(bmp.reviewer))
+                outf.write('  proposed by: %s\n' %
+                           proposer.unique_displayname)
                 for review in bmp.votes:
                     outf.write('  review: %s - %s\n' %
                         (review.comment.vote.title,
-                         person_id(review.reviewer)))
+                         review.reviewer.unique_displayname))
+            info = RevisionInfo(self.bzr_branch, revno, revision_id)
+            lf = log_formatter('long', to_file=outf)
+            show_log(self.bzr_branch,
+                     lf,
+                     start_revision=info,
+                     end_revision=info,
+                     verbose=True)
         finally:
             self.bzr_branch.unlock()
         return outf.getvalue()

@@ -197,6 +197,10 @@ class Branch(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='branch', orderBy='id')
 
+    linked_bugs = SQLRelatedJoin(
+        'Bug', joinColumn='branch', otherColumn='bug',
+        intermediateTable='BugBranch', orderBy='id')
+
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
         return bug.linkBranch(self, registrant)
@@ -380,11 +384,6 @@ class Branch(SQLBase):
             is_dev_focus = False
         return bazaar_identity(
             self, self.associatedProductSeries(), is_dev_focus)
-
-    @property
-    def related_bugs(self):
-        """See `IBranch`."""
-        return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
     def warehouse_url(self):

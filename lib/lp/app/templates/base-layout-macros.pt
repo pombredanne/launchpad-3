@@ -119,6 +119,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/formoverlay/formoverlay.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lazr_js}/choiceedit/choiceedit.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/effects/effects.js"></script>
 
     <script type="text/javascript"
@@ -179,11 +181,11 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script type="text/javascript">
-    YUI().use('node', function(Y) {
+    YUI().use('node', 'lp', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
-            activateCollapsibles();
+            Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
         }, window);
@@ -241,6 +243,10 @@
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
       string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
+      />
+  <link rel="stylesheet" type="text/css"
+      tal:attributes="href
+      string:${icingroot}/lazr/build/choiceedit/assets/choiceedit-core.css"
       />
 </metal:launchpad-stylesheet>
 

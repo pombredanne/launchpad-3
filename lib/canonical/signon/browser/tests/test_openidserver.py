@@ -25,11 +25,11 @@ from canonical.launchpad.interfaces.authtoken import (
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.testing.pages import setupBrowser
-from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.signon.browser.openidserver import OpenIDMixin
+from canonical.signon.dbpolicy import SSODatabasePolicy
 from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
 from canonical.signon.model.openidserver import OpenIDAuthorization
 from canonical.testing import DatabaseFunctionalLayer

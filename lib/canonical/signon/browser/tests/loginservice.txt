@@ -9,7 +9,7 @@ can only write to tables it controls. This will allow us to keep the
 SSO Service running during Launchpad outages.
 
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
-    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.signon.dbpolicy import SSODatabasePolicy
     >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
 
 

@@ -8,6 +8,25 @@
         package=".browser"/>
     <authorizations module="canonical.shipit.security" />
 
+    <publisher
+        name="shipit-ubuntu"
+        factory="canonical.shipit.publisher.ubuntu_request_publication_factory"
+        methods="*"
+        mimetypes="*"
+        priority="100" />
+    <publisher
+        name="shipit-kubuntu"
+        factory="canonical.shipit.publisher.kubuntu_request_publication_factory"
+        methods="*"
+        mimetypes="*"
+        priority="110" />
+    <publisher
+        name="shipit-edubuntu"
+        factory="canonical.shipit.publisher.edubuntu_request_publication_factory"
+        methods="*"
+        mimetypes="*"
+        priority="120" />
+
     <!-- This is only used on shipit. That's why it's here. -->
 
     <view

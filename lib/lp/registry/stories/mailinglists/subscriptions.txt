@@ -411,13 +411,20 @@ rosetta admins team has such a list and carlos is the owner.
     Mailing list archive
     Mailing list subscribers...
 
+The mailing list for Rosetta Admins has no subscribers.
+(Jeff Waugh has asked to subscribe but he's not considered a subscriber
+because his membership on Rosetta Admins hasn't been approved)
+
     >>> browser.getLink('Mailing list subscribers').click()
     >>> print browser.title
     Mailing list subscribers for the Rosetta Administrators team
     >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
-    The following people are subscribed...
-    Jeff Waugh
+    Nobody has subscribed to this team's mailing list yet.
 
+If it had subscribers, though, they'd be shown on that page, in a batched
+list.
+
+    # Forge two new subscribers to the team's mailing list.
     >>> from canonical.config import config
     >>> config.push('default-batch-size', """
     ... [launchpad]
@@ -425,9 +432,12 @@ rosetta admins team has such a list and carlos is the owner.
     ... """)
     >>> login('foo.bar@canonical.com')
     >>> salgado = person_set.getByName('salgado')
+    >>> jordi = person_set.getByName('jordi')
     >>> rosetta_admins = person_set.getByName('rosetta-admins')
     >>> rosetta_admins.addMember(salgado, reviewer=sabdfl)
     >>> rosetta_admins.mailing_list.subscribe(salgado)
+    >>> rosetta_admins.addMember(jordi, reviewer=sabdfl)
+    >>> rosetta_admins.mailing_list.subscribe(jordi)
     >>> logout()
     >>> browser.reload()
     >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
@@ -438,7 +448,7 @@ rosetta admins team has such a list and carlos is the owner.
     >>> browser.getLink('Next').click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
     The following people are subscribed...
-    Jeff Waugh
+    Jordi Mallach
     2 of 2 results...
 
     >>> config_data = config.pop('default-batch-size')

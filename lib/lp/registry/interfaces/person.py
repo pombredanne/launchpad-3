@@ -1895,7 +1895,7 @@ class IPersonSet(Interface):
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
-    dupeaccount = Choice(
+    dupe_person = Choice(
         title=_('Duplicated Account'), required=True,
         vocabulary='PersonAccountToMerge',
         description=_(
@@ -1908,12 +1908,12 @@ class IAdminPeopleMergeSchema(Interface):
 
     dupe_person = Choice(
         title=_('Duplicated Person'), required=True,
-        vocabulary='PersonAccountToMerge',
+        vocabulary='AdminMergeablePerson',
         description=_("The duplicated person found in Launchpad."))
 
     target_person = Choice(
         title=_('Target Person'), required=True,
-        vocabulary='PersonAccountToMerge',
+        vocabulary='AdminMergeablePerson',
         description=_("The person to be merged on."))
 
 
