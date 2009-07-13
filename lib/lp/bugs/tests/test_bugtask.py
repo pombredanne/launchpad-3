@@ -20,7 +20,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.testing import TestCase, normalize_whitespace, TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
