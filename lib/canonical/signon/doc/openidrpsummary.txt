@@ -38,7 +38,7 @@ for an identifier.
     ...     PATH_INFO='/+id/name16_oid')
 
     # Only admins are privileged to work with multiple accounts.
-    >>> login('foo.bar@canonical.com', old_request)
+    >>> login('foo.bar@canonical.com', request)
 
     >>> def print_openid_rp_summaries(summaries):
     ...     for summary in summaries:
