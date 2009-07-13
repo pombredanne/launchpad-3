@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <?xml version="1.0" encoding="utf-8"?>
 <rdf:RDF xmlns:doaml="http://ns.balbinus.net/doaml#"
     xmlns:foaf="http://xmlns.com/foaf/0.1/"

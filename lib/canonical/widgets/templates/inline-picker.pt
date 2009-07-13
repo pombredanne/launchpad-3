@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <span tal:attributes="id view/id">
     <span class="yui-activator-data-box">
     <tal:attribute replace="structure view/default_html"/>
