@@ -820,12 +820,16 @@ class POTemplate(SQLBase, RosettaStats):
             errors, warnings = translation_importer.importFile(
                 entry_to_import, logger)
         except (BrokenTextError, TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError), exception:
+                TranslationFormatInvalidInputError, UnicodeDecodeError), (
+                exception):
             if logger:
                 logger.info(
                     'We got an error importing %s', self.title, exc_info=1)
             subject = 'Import problem - %s' % self.displayname
-            template_mail = 'poimport-syntax-error.txt'
+            if isinstance(exception, UnicodeDecodeError):
+                template_mail = 'poimport-bad-encoding.txt'
+            else:
+                template_mail = 'poimport-syntax-error.txt'
             entry_to_import.setStatus(RosettaImportStatus.FAILED)
             error_text = str(exception)
             entry_to_import.setErrorOutput(error_text)
