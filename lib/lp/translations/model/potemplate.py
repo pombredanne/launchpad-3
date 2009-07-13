@@ -40,6 +40,8 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.translations.model.pofile import POFile, DummyPOFile
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.translationimportqueue import (
+    collect_import_info)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.translations.interfaces.pofile import IPOFileSet
@@ -813,15 +815,21 @@ class POTemplate(SQLBase, RosettaStats):
 
         subject = 'Translation template import - %s' % self.displayname
         template_mail = 'poimport-template-confirmation.txt'
+        errors, warnings = None, None
         try:
-            translation_importer.importFile(entry_to_import, logger)
+            errors, warnings = translation_importer.importFile(
+                entry_to_import, logger)
         except (BrokenTextError, TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError), exception:
+                TranslationFormatInvalidInputError, UnicodeDecodeError), (
+                exception):
             if logger:
                 logger.info(
                     'We got an error importing %s', self.title, exc_info=1)
             subject = 'Import problem - %s' % self.displayname
-            template_mail = 'poimport-syntax-error.txt'
+            if isinstance(exception, UnicodeDecodeError):
+                template_mail = 'poimport-bad-encoding.txt'
+            else:
+                template_mail = 'poimport-syntax-error.txt'
             entry_to_import.setStatus(RosettaImportStatus.FAILED)
             error_text = str(exception)
             entry_to_import.setErrorOutput(error_text)
@@ -829,17 +837,15 @@ class POTemplate(SQLBase, RosettaStats):
             error_text = None
             entry_to_import.setErrorOutput(None)
 
-        replacements = {
-            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-            'elapsedtime': entry_to_import.getElapsedTimeText(),
-            'file_link': entry_to_import.content.http_url,
+        replacements = collect_import_info(entry_to_import, self, warnings)
+        replacements.update({
             'import_title': 'translation templates for %s' % self.displayname,
-            'importer': entry_to_import.importer.displayname,
-            'template': self.displayname,
-            }
+            })
 
         if error_text is not None:
             replacements['error'] = error_text
+
+        entry_to_import.addWarningOutput(replacements['warnings'])
 
         if entry_to_import.status != RosettaImportStatus.FAILED:
             entry_to_import.setStatus(RosettaImportStatus.IMPORTED)
@@ -1283,7 +1289,8 @@ class POTemplateSharingSubset(object):
             assert self.sourcepackagename is not None, (
                    "Need sourcepackagename to select from distribution.")
 
-        return self._iterate_potemplates("^%s$" % potemplate_name)
+        escaped_potemplate_name = re.escape(potemplate_name)
+        return self._iterate_potemplates("^%s$" % escaped_potemplate_name)
 
     def groupEquivalentPOTemplates(self, name_pattern=None):
         """See IPOTemplateSharingSubset."""
@@ -1428,3 +1435,12 @@ class HasTranslationTemplatesMixin:
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         raise NotImplementedError('This must be provided when subclassing.')
+
+    def getTranslationTemplateFormats(self):
+        """See `IHasTranslationTemplates`."""
+        formats_query = self.getCurrentTranslationTemplates().order_by(
+            'source_file_format').config(distinct=True)
+        formats = helpers.shortlist(
+            formats_query.values(POTemplate.source_file_format),
+            10)
+        return formats

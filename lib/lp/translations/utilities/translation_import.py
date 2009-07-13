@@ -502,7 +502,7 @@ class FileImporter(object):
 
         self.finishImport()
 
-        return self.errors
+        return self.errors, self.translation_file.syntax_warnings
 
     @property
     def format_exporter(self):

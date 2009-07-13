@@ -26,7 +26,7 @@
           Name of project
         </h1>
         <p id="project-admin-whiteboard" class="whiteboard"
-           tal:condition="context/required:launchpad.Commercial">
+           tal:condition="context/required:launchpad.ProjectReview">
           <span tal:content="context/reviewer_whiteboard" />
           (<a href="+review-license">edit reviewer whiteboard</a>)
         </p>

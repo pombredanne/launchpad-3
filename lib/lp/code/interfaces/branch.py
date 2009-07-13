@@ -44,9 +44,9 @@ from zope.schema import (
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    collection_default_content, export_as_webservice_collection,
+    call_with, collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_entry)
+    exported, operation_parameters, operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
 
@@ -301,8 +301,9 @@ class IBranchNavigationMenu(Interface):
 
 class IBranch(IHasOwner, IHasBranchTarget):
     """A Bazaar branch."""
+
     # Mark branches as exported entries for the Launchpad API.
-    export_as_webservice_entry()
+    export_as_webservice_entry(plural_name='branches')
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
@@ -520,16 +521,39 @@ class IBranch(IHasOwner, IHasBranchTarget):
         "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
-    bug_branches = exported(
-        CollectionField(
+    bug_branches = CollectionField(
             title=_("The bug-branch link objects that link this branch "
                     "to bugs."),
             readonly=True,
-            value_type=Reference(schema=Interface))) # Really IBugBranch
+            value_type=Reference(schema=Interface)) # Really IBugBranch
 
-    related_bugs = Attribute(
-        "The bugs related to this branch, likely branches on which "
-        "some work has been done to fix this bug.")
+    linked_bugs = exported(
+        CollectionField(
+            title=_("The bugs linked to this branch."),
+        readonly=True,
+        value_type=Reference(schema=Interface))) # Really IBug
+
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        bug=Reference(schema=Interface)) # Really IBug
+    @export_write_operation()
+    def linkBug(bug, registrant):
+        """Link a bug to this branch.
+
+        :param bug: IBug to link.
+        :param registrant: IPerson linking the bug.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        bug=Reference(schema=Interface)) # Really IBug
+    @export_write_operation()
+    def unlinkBug(bug, user):
+        """Unlink a bug to this branch.
+
+        :param bug: IBug to unlink.
+        :param user: IPerson unlinking the bug.
+        """
 
     # Specification attributes
     spec_links = exported(
@@ -537,6 +561,28 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_("Specification linked to this branch."),
             readonly=True,
             value_type=Reference(Interface))) # Really ISpecificationBranch
+
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        spec=Reference(schema=Interface)) # Really ISpecification
+    @export_write_operation()
+    def linkSpecification(spec, registrant):
+        """Link an ISpecification to a branch.
+
+        :param spec: ISpecification to link.
+        :param registrant: IPerson unlinking the spec.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        spec=Reference(schema=Interface)) # Really ISpecification
+    @export_write_operation()
+    def unlinkSpecification(spec, user):
+        """Unlink an ISpecification to a branch.
+
+        :param spec: ISpecification to unlink.
+        :param user: IPerson unlinking the spec.
+        """
 
     pending_writes = Attribute(
         "Whether there is new Bazaar data for this branch.")

@@ -423,7 +423,7 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Commercial')
+    @enabled_with_permission('launchpad.ProjectReview')
     def review_license(self):
         text = 'Review project'
         return Link('+review-license', text, icon='edit')
@@ -599,7 +599,7 @@ class ProductSetContextMenu(ContextMenu):
     def meetings(self):
         return Link('/sprints/', 'View meetings')
 
-    @enabled_with_permission('launchpad.Commercial')
+    @enabled_with_permission('launchpad.ProjectReview')
     def review_licenses(self):
         return Link('+review-licenses', 'Review projects')
 
