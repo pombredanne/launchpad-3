@@ -111,7 +111,7 @@ class ProjectSetContextMenu(ContextMenu):
     usedfor = IProjectSet
     links = ['register', 'listall']
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.ProjectReview')
     def register(self):
         text = 'Register a project group'
         return Link('+new', text, icon='add')
