@@ -18,12 +18,13 @@ from canonical.launchpad.webapp.servers import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 from canonical.signon.interfaces.openidserver import IOpenIDApplication
-from canonical.signon.layers import (
-    IdLayer, OpenIDLayer)
+from canonical.signon.layers import OpenIDLayer
 
 
-class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
+class OpenIDPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
     """The publication used for OpenID requests."""
+
+    root_object_interface = IOpenIDApplication
 
     def getApplication(self, request):
         """Return the `IOpenIDApplication`."""
@@ -32,17 +33,6 @@ class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
     def maybeNotifyReadOnlyMode(self, request):
         """SSO doesn't care about read-only mode."""
         pass
-
-class IdBrowserRequest(LaunchpadBrowserRequest):
-    implements(IdLayer)
-
-
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove OpenIDPublication and OpenIDBrowserRequest.
-class OpenIDPublication(IdPublication):
-    """The publication used for old OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
 
 
 class OpenIDBrowserRequest(LaunchpadBrowserRequest):
@@ -65,9 +55,4 @@ class OpenIDServerTestRequest(LaunchpadTestRequest):
 def openid_request_publication_factory():
     return VirtualHostRequestPublicationFactory(
         'openid', OpenIDBrowserRequest, OpenIDPublication)
-
-
-def id_request_publication_factory():
-    return VirtualHostRequestPublicationFactory(
-        'id', IdBrowserRequest, IdPublication)
 
