@@ -30,38 +30,6 @@
       permission="zope.Public"
       />
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      layer="canonical.launchpad.layers.CodeLayer"
-      name="+branches" />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      class="lp.code.browser.branchlisting.PersonProductOwnedBranchesView"
-      permission="zope.Public"
-      facet="branches"
-      name="+branches"
-      template="../templates/personproduct-branches.pt"
-      />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      class="lp.code.browser.branchlisting.PersonProductTeamBranchesView"
-      facet="branches"
-      name="+portlet-teambranches"
-      template="../templates/person-portlet-teambranches.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      class="lp.code.browser.branchlisting.PersonProductCodeSummaryView"
-      facet="branches"
-      name="+codesummary"
-      template="../templates/person-codesummary.pt"
-      permission="zope.Public"
-      />
-
   <securedutility
       component="canonical.launchpad.database.personproduct.PersonProduct"
       provides="canonical.launchpad.interfaces.personproduct.IPersonProductFactory" >
