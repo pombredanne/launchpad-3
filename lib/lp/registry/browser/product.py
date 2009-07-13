@@ -872,7 +872,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         if self.context.programminglang is None:
             additional_arguments = dict(
                 default_text='Not yet specified',
-                initial_value='',
+                initial_value_override='',
                 )
         else:
             additional_arguments = {}
