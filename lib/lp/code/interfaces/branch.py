@@ -301,8 +301,9 @@ class IBranchNavigationMenu(Interface):
 
 class IBranch(IHasOwner, IHasBranchTarget):
     """A Bazaar branch."""
+
     # Mark branches as exported entries for the Launchpad API.
-    export_as_webservice_entry()
+    export_as_webservice_entry(plural_name='branches')
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
