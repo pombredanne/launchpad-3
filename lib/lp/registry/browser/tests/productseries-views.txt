@@ -4,151 +4,61 @@ We will have to check for a BranchJob being created for a branch, so
 let's put this check in a convenient function.
 
     >>> from zope.component import getUtility
-    >>> from lp.code.interfaces.branchjob import (
-    ...     IRosettaUploadJobSource)
-    >>> job_counter = 0
-    >>> def isUploadJobCreatedForBranch(productseries,
-    ...                                 force_translations_upload=None):
-    ...     global job_counter
-    ...     ready_jobs = list(getUtility(IRosettaUploadJobSource).iterReady())
-    ...     if len(ready_jobs) <= job_counter:
-    ...         return False
-    ...     job = ready_jobs[job_counter]
-    ...     job_counter += 1
-    ...     if force_translations_upload is None:
-    ...         return productseries.branch == job.branch
-    ...     return (productseries.branch == job.branch and
-    ...            force_translations_upload == job.force_translations_upload)
-
-Also, we need to set-up a branch for the product of this productseries. The
-last_mirrored_id and the last_scanned_id is set to the same value to pretend
-that the branch has been mirrored and scanned.
-
-    >>> def makeScannedProductBranch(productseries):
-    ...     branch = factory.makeProductBranch(productseries.product)
-    ...     branch.last_mirrored_id = "some_rev_id"
-    ...     branch.last_scanned_id = "some_rev_id"
-    ...     return branch
 
 For these tasks we need to log in.
 
     >>> login('foo.bar@canonical.com')
 
+== ProductSeries view ==
 
-= ProductSeriesLinkBranchView =
+The default view for the productseries includes a script that augments the
+'Create milestone' link to show a formoverlay to create a milestone and
+update the milestones and releases table.
 
-The ProductSeries is setup to sync translations from a branch but no branch
-has been linked to the ProductSeries yet.
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
-    >>> from canonical.launchpad.interfaces.translations import (
-    ...     TranslationsBranchImportMode)
-    >>> productseries = factory.makeProductSeries()
-    >>> productseries.translations_autoimport_mode = (
-    ...     TranslationsBranchImportMode.IMPORT_TEMPLATES)
+    >>> product = factory.makeProduct(name='app')
+    >>> series = factory.makeSeries(name='simple', product=product)
+    >>> view = create_view(series, '+index', principal=product.owner)
+    >>> script = find_tag_by_id(view.render(), 'milestone-script')
+    >>> print script
+    <script id="milestone-script" type="text/javascript">
+        YUI().use(... 'lp.milestoneoverlay', 'lp.milestonetable'...
+            var series_uri = '/app/simple';
+            var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
+            var milestone_row_uri_template =
+                '/app/+milestone/{name}/+productseries-table-row';
+            var milestone_rows_id = '#milestone-rows';...
+            Y.on('domready', function () {
+                var create_milestone_link = Y.get('.menu-link-create_milestone');
+                create_milestone_link.addClass('js-action');...
+                Y.lp.milestoneoverlay.attach_widget(config);...
+                Y.lp.milestonetable.setup(table_config);...
 
-When a branch is linked to the ProductSeries using this view, a new
-BranchJob to upload translation files to rosetta is created.
+If the Create milestone link is not enabled, the script is not present.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from lp.registry.browser.productseries import (
-    ...     ProductSeriesLinkBranchView)
-    >>> branch = makeScannedProductBranch(productseries)
-    >>> request = LaunchpadTestRequest(
-    ...     method='POST',
-    ...     form={'field.branch': branch.unique_name,
-    ...           'field.actions.update': 'Update'})
-    >>> view = ProductSeriesLinkBranchView(
-    ...     productseries, request)
-    >>> view.initialize()
-    >>> print isUploadJobCreatedForBranch(productseries)
-    True
-
-When a branch is removed from the ProductSeries using this view, no new
-BranchJob is created.
-
-    >>> branch = makeScannedProductBranch(productseries)
-    >>> request = LaunchpadTestRequest(
-    ...     method='POST',
-    ...     form={'field.branch': '',
-    ...           'field.actions.update': 'Update'})
-    >>> view = ProductSeriesLinkBranchView(
-    ...     productseries, request)
-    >>> view.initialize()
-    >>> print isUploadJobCreatedForBranch(productseries)
+    >>> a_user = factory.makePerson(name="hedgehog")
+    >>> login_person(a_user)
+    >>> view = create_view(series, '+index', principal=a_user)
+    >>> content = view.render()
+    >>> print find_tag_by_id(content, 'milestone-script')
+    None
+    >>> 'var milestone_form_uri' in content
     False
 
+The view also sets the class of the milestone and releases table which can
+be removed by the in-page script. If the product series has no milestones,
+the class table is 'listing unseen'.
 
-= ProductSeriesTranslationsSettingsView =
+    >>> print view.milestone_table_class
+    listing unseen
 
-Special settings for translations of a ProductSeries are set through
-this view.
+When the product series has milestones, the class is just 'listing'.
 
-The ProductSeries instance has a branch set that contains the source
-code.
-
-    >>> productseries = factory.makeProductSeries()
-    >>> productseries.branch = makeScannedProductBranch(productseries)
-
-    >>> from lp.registry.browser.productseries import (
-    ...     ProductSeriesTranslationsSettingsView)
-
-The only setting currently available is for the import of translation
-templates from bazaar branches hosted on Launchpad.
-
-    >>> request = LaunchpadTestRequest()
-    >>> view = ProductSeriesTranslationsSettingsView(
-    ...     productseries, request)
-    >>> view.setUpFields()
-    >>> [field.__name__ for field in view.form_fields]
-    ['translations_autoimport_mode']
-
-This setting is represented by a SettingsRadioWidget which is derived
-from LaunchpadRadioWidgetWithDescription.
-
-    >>> view.setUpWidgets()
-    >>> view.widgets['translations_autoimport_mode']
-    <...SettingsRadioWidget object at...>
-
-Submitting the form via "Change settings" will update the corresponding
-attribute of the ProductSeries.
-
-    >>> request = LaunchpadTestRequest(
-    ...     method='POST',
-    ...     form={'field.translations_autoimport_mode': 'IMPORT_TEMPLATES',
-    ...           'field.actions.save_settings': 'Save Settings'})
-    >>> view = ProductSeriesTranslationsSettingsView(
-    ...     productseries, request)
-    >>> print productseries.translations_autoimport_mode.title
-    None
-    >>> view.initialize()
-    >>> print productseries.translations_autoimport_mode.title
-    Import template files
-
-Also, a branch job to upload the full set of translation files has been
-created to create the initial database entries from the files in the branch.
-
-    >>> print isUploadJobCreatedForBranch(productseries)
-    True
-
-
-= ProductSeriesTranslationsBzrImportView =
-
-When requesting a one-time import of translation files, an Upload job
-is created that has force_translations_upload set to true.
-
-    >>> productseries = factory.makeProductSeries()
-    >>> productseries.branch = makeScannedProductBranch(productseries)
-    >>> from lp.registry.browser.productseries import (
-    ...     ProductSeriesTranslationsBzrImportView)
-    >>> request = LaunchpadTestRequest(
-    ...     method='POST',
-    ...     form={'field.actions.request_import':
-    ...               'Request one-time import'})
-    >>> view = ProductSeriesTranslationsBzrImportView(
-    ...     productseries, request)
-    >>> view.initialize()
-    >>> print isUploadJobCreatedForBranch(productseries, True)
-    True
+    >>> milestone = series.newMilestone('12', code_name='twelve')
+    >>> view = create_view(series, '+index')
+    >>> print view.milestone_table_class
+    listing
 
 
 == Delete ProductSeries ==

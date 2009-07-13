@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 """Functional tests for uploadprocessor.py."""
@@ -571,14 +572,27 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.rejection_message,
             "Signer has no upload rights to this PPA.")
 
-    def testPPAPartnerUploadFails(self):
-        """Upload a partner package to a PPA and ensure it's rejected."""
+    def testPPAPartnerUpload(self):
+        """Upload a partner package to a PPA and ensure it's not rejected."""
         upload_dir = self.queueUpload("foocomm_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
+        # Check it's been successfully accepted.
         self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA does not support partner uploads.")
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
+
+        # We rely on the fact that the component on the source package
+        # release is unmodified, only the publishing component is
+        # changed to 'main'.  This allows the package to get copied to
+        # the main archive later where it would be published using the
+        # source's component if the standard auto-overrides don't match
+        # an existing publication.
+        pub_sources = self.name16.archive.getPublishedSources(name='foocomm')
+        [pub_foocomm] = pub_sources
+        self.assertEqual(
+            pub_foocomm.sourcepackagerelease.component.name, 'partner')
+        self.assertEqual(pub_foocomm.component.name, 'main')
 
     def testUploadSignedByNonUbuntero(self):
         """Check if a non-ubuntero can upload to his PPA."""
@@ -667,7 +681,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         queue_items = self.breezy.getQueueItems(
             name="debian-installer",
-            status=PackagePublishingStatus.PUBLISHED,
+            status=PackageUploadStatus.ACCEPTED,
             archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
@@ -992,6 +1006,57 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Upload a higher version of bar that relies on the official
         # orig.tar.gz availability.
         self.uploadHigherBarToUbuntu()
+
+    def testErrorMessagesWithUnicode(self):
+        """Check that unicode errors messages are handled correctly.
+
+        Some error messages can contain the PPA display name, which may
+        sometimes contain unicode characters.  There was a bug
+        https://bugs.edge.launchpad.net/bugs/275509 reported about getting
+        upload errors related to unicode.  This only happened when the
+        uploder was attaching a .orig.tar.gz file with different contents
+        than the one already in the PPA.
+        """
+        # Ensure the displayname of the PPA has got unicode in it.
+        self.name16.archive.displayname = u"unicode PPA name: áří"
+
+        # Upload the first version.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
+
+        # The same 'bar' version will fail due to the conflicting
+        # file contents.
+        upload_dir = self.queueUpload("bar_1.0-1-ppa-orig", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # The error message should be sane, and not one about unicode
+        # errors.
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            'File bar_1.0.orig.tar.gz already exists in unicode PPA name: '
+            'áří, but uploaded version has different '
+            'contents. See more information about this error in '
+            'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            'File bar_1.0-1.diff.gz already exists in unicode PPA name: '
+            'áří, but uploaded version has different contents. See more '
+            'information about this error in '
+            'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            'Files specified in DSC are broken or missing, skipping package '
+            'unpack verification.')
+
+        # Also, the email generated should be sane.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
+
+        self.assertTrue(
+            "File bar_1.0.orig.tar.gz already exists in unicode PPA name: "
+            "áří" in body)
+
 
     def testPPAConflictingOrigFiles(self):
         """When available, the official 'orig.tar.gz' restricts PPA uploads.

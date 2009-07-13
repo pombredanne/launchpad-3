@@ -255,7 +255,7 @@ class Bug(SQLBase):
     questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
-    bug_branches = SQLMultipleJoin(
+    linked_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
@@ -458,6 +458,9 @@ class Bug(SQLBase):
 
     def isSubscribedToDupes(self, person):
         """See `IBug`."""
+        if person is None:
+            return False
+
         return bool(
             BugSubscription.select("""
                 bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
@@ -859,17 +862,14 @@ class Bug(SQLBase):
 
         return branch is not None
 
-    def addBranch(self, branch, registrant, whiteboard=None, status=None):
+    def linkBranch(self, branch, registrant):
         """See `IBug`."""
-        for bug_branch in shortlist(self.bug_branches):
+        for bug_branch in shortlist(self.linked_branches):
             if bug_branch.branch == branch:
                 return bug_branch
-        if status is None:
-            status = IBugBranch['status'].default
 
         bug_branch = BugBranch(
-            branch=branch, bug=self, whiteboard=whiteboard, status=status,
-            registrant=registrant)
+            branch=branch, bug=self, registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
         self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch, self))
@@ -877,7 +877,7 @@ class Bug(SQLBase):
 
         return bug_branch
 
-    def removeBranch(self, branch, user):
+    def unlinkBranch(self, branch, user):
         """See `IBug`."""
         bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
         if bug_branch is not None:

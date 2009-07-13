@@ -18,6 +18,30 @@ a request token which may later be exchanged for an access token.
     >>> print anon_browser.contents
     oauth_token=...&oauth_token_secret=...
 
+The consumer can ask for a JSON representation of the request token,
+which will also include information about the available permission
+levels.
+
+    >>> import simplejson
+    >>> from canonical.launchpad.testing.pages import setupBrowser
+
+    >>> json_browser = setupBrowser()
+    >>> json_browser.addHeader('Accept', 'application/json')
+    >>> json_browser.open(
+    ...     'http://launchpad.dev/+request-token', data=urlencode(data))
+    >>> token = simplejson.loads(json_browser.contents)
+    >>> sorted(token.keys())
+    ['access_levels', 'oauth_token', 'oauth_token_consumer',
+     'oauth_token_secret']
+
+    >>> sorted((level['value'], level['title'])
+    ...        for level in token['access_levels'])
+    [('READ_PRIVATE', 'Read Anything'),
+     ('READ_PUBLIC', 'Read Non-Private Data'),
+     ('UNAUTHORIZED', 'No Access'),
+     ('WRITE_PRIVATE', 'Change Anything'),
+     ('WRITE_PUBLIC', 'Change Non-Private Data')]
+
 If the consumer key is not yet registered, we register it automatically
 so that the application can proceed.
 

@@ -33,22 +33,25 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.potemplate import POTemplate
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import (
+    HasTranslationTemplatesMixin,
+    POTemplate)
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.productserieslanguage import (
+from lp.translations.model.productserieslanguage import (
     ProductSeriesLanguage)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packaging import PackagingType
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
@@ -60,7 +63,7 @@ from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
@@ -77,7 +80,8 @@ def landmark_key(landmark):
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
-                    StructuralSubscriptionTargetMixin):
+                    HasTranslationTemplatesMixin,
+                    StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
     implements(
         IProductSeries, IHasTranslationTemplates,
@@ -105,6 +109,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         notNull=True,
         schema=TranslationsBranchImportMode,
         default=TranslationsBranchImportMode.NO_IMPORT)
+    translations_branch = ForeignKey(
+        dbName='translations_branch', foreignKey='Branch', notNull=False,
+        default=None)
     # where are the tarballs released from this branch placed?
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
@@ -160,7 +167,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
-        return sorted(drivers, key=lambda x: x.browsername)
+        return sorted(drivers, key=lambda x: x.displayname)
 
     @property
     def bug_supervisor(self):
@@ -428,27 +435,30 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                                      orderBy=['-priority','name'])
         return shortlist(result, 300)
 
-    def _getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            productseries = %s AND
-            productseries = ProductSeries.id AND
-            iscurrent IS TRUE AND
-            ProductSeries.product = Product.id AND
-            Product.official_rosetta IS TRUE
-            ''' % sqlvalues(self),
-            orderBy=['-priority','name'],
-            clauseTables = ['ProductSeries', 'Product'])
-        return result
+        # Avoid circular imports.
+        from lp.registry.model.product import Product
 
-    def getCurrentTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        return shortlist(self._getCurrentTranslationTemplates(), 300)
+        store = Store.of(self)
+        if just_ids:
+            looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
+
+        result = store.find(
+            looking_for,
+            POTemplate.iscurrent == True,
+            POTemplate.productseries == self,
+            ProductSeries.id == self.id,
+            ProductSeries.product == Product.id,
+            Product.official_rosetta == True)
+        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     @property
     def potemplate_count(self):
         """See `IProductSeries`."""
-        return self._getCurrentTranslationTemplates().count()
+        return self.getCurrentTranslationTemplates().count()
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

@@ -40,6 +40,7 @@ __all__ = [
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
     'ZopelessAppServerLayer',
+    'ZopelessDatabaseLayer',
     'ZopelessLayer',
     'disconnect_stores',
     'reconnect_stores',
@@ -90,14 +91,15 @@ from canonical.launchpad.webapp.interfaces import (
         DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
     get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
-from canonical.testing.smtpcontrol import SMTPControl
-from canonical.lazr.testing.layers import MockRootFolder
+from canonical.testing.smtpd import SMTPController
+
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
@@ -1037,6 +1039,43 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
         disconnect_stores()
 
 
+
+class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
+    """Testing layer for unit tests with no need for librarian.
+
+    Can be used wherever you're accustomed to using LaunchpadZopeless
+    or LaunchpadScript layers, but there is no need for librarian.
+    """
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        # Signal Layer cannot be torn down fully
+        raise NotImplementedError
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        # LaunchpadZopelessLayer takes care of reconnecting the stores
+        if not LaunchpadZopelessLayer.isSetUp:
+            reconnect_stores()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        disconnect_stores()
+
+    @classmethod
+    @profiled
+    def switchDbConfig(cls, database_config_section):
+        reconnect_stores(database_config_section=database_config_section)
+
+
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     """Testing layer for scripts using the main Launchpad database adapter"""
 
@@ -1342,7 +1381,18 @@ class LayerProcessController:
         """Start the SMTP server if it hasn't already been started."""
         if cls.smtp_controller is not None:
             raise LayerInvariantError('SMTP server already running')
-        cls.smtp_controller = SMTPControl()
+        # Ensure that the SMTP server does proper logging.
+        log = logging.getLogger('lazr.smtptest')
+        log_file = os.path.join(config.mailman.build_var_dir, 'logs', 'smtpd')
+        handler = logging.FileHandler(log_file)
+        formatter = logging.Formatter(
+            fmt='%(asctime)s (%(process)d) %(message)s',
+            datefmt='%b %d %H:%M:%S %Y')
+        handler.setFormatter(formatter)
+        log.setLevel(logging.DEBUG)
+        log.addHandler(handler)
+        log.propagate = False
+        cls.smtp_controller = SMTPController('localhost', 9025)
         cls.smtp_controller.start()
         # Make sure that the smtp server is killed even if tearDown() is
         # skipped, which can happen if FunctionalLayer is in the mix.

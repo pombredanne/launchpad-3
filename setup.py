@@ -5,7 +5,6 @@
 import ez_setup
 ez_setup.use_setuptools()
 
-import sys
 from setuptools import setup, find_packages
 
 __version__ = '2.2.3'
@@ -28,8 +27,10 @@ setup(
         'chameleon.zpt',
         'feedvalidator',
         'launchpadlib',
+        'lazr.smtptest',
         'lazr.uri',
         'mechanize',
+        'mocker',
         'oauth',
         'python-openid',
         'pytz',

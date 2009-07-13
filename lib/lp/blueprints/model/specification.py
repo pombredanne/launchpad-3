@@ -145,7 +145,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
-    branch_links = SQLMultipleJoin('SpecificationBranch',
+    linked_branches = SQLMultipleJoin('SpecificationBranch',
         joinColumn='specification',
         orderBy='id')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
@@ -635,15 +635,18 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return SpecificationBranch.selectOneBy(
             specificationID=self.id, branchID=branch.id)
 
-    def linkBranch(self, branch, registrant, summary=None):
+    def linkBranch(self, branch, registrant):
         branch_link = self.getBranchLink(branch)
         if branch_link is not None:
             return branch_link
         branch_link = SpecificationBranch(
-            specification=self, branch=branch, summary=summary,
-            registrant=registrant)
+            specification=self, branch=branch, registrant=registrant)
         notify(ObjectCreatedEvent(branch_link))
         return branch_link
+
+    def unlinkBranch(self, branch, user):
+        spec_branch = self.getBranchLink(branch)
+        spec_branch.destroySelf()
 
 
 class HasSpecificationsMixin:

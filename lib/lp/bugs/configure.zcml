@@ -427,7 +427,7 @@
             permission="launchpad.Edit"
             attributes="
                 destroySelf"
-            set_attributes="fixed_in_revision_id status whiteboard"/>
+            set_attributes="fixed_in_revision_id"/>
     </class>
     <adapter
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
@@ -559,9 +559,12 @@
                     subscriptions
                     syncUpdate
                     date_last_updated
+                    getBugTask
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
+                    linkBranch
+                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -589,7 +592,7 @@
                     displayname
                     activity
                     initial_message
-                    bug_branches
+                    linked_branches
                     watches
                     cves
                     cve_links
@@ -611,7 +614,6 @@
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
-                    getBugTask
                     canBeNominatedFor
                     getNominationFor
                     getNominations
@@ -642,8 +644,6 @@
                     findCvesInText
                     newMessage
                     linkMessage
-                    addBranch
-                    removeBranch
                     addAttachment
                     unsubscribeFromDupes
                     subscribe

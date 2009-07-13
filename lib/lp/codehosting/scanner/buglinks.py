@@ -14,30 +14,7 @@ from zope.component import adapter, getUtility
 
 from lp.codehosting.scanner import events
 from canonical.launchpad.interfaces import (
-    BugBranchStatus, IBugBranchSet, IBugSet, ILaunchpadCelebrities,
-    NotFoundError)
-
-
-def set_bug_branch_status(bug, branch, status):
-    """Ensure there's a BugBranch for 'bug' and 'branch' set to 'status'.
-
-    This creates a BugBranch if one doesn't exist, and changes the status if
-    it does. If a BugBranch is created, the registrant is the branch owner.
-
-    If the BugBranch status is set to BESTFIX, we don't change it. That way,
-    we avoid overwriting data set in the web UI.
-
-    :return: The updated BugBranch.
-    """
-    bug_branch_set = getUtility(IBugBranchSet)
-    bug_branch = bug_branch_set.getBugBranch(bug, branch)
-    if bug_branch is None:
-        return bug.addBranch(
-            branch=branch, status=status,
-            registrant=getUtility(ILaunchpadCelebrities).janitor)
-    if bug_branch.status != BugBranchStatus.BESTFIX:
-        bug_branch.status = status
-    return bug_branch
+    IBugBranchSet, IBugSet, ILaunchpadCelebrities, NotFoundError)
 
 
 class BugBranchLinker:
@@ -70,7 +47,7 @@ class BugBranchLinker:
 
     def _getBugStatus(self, bzr_status):
         # Make sure the status is acceptable.
-        valid_statuses = {'fixed': BugBranchStatus.FIXAVAILABLE}
+        valid_statuses = {'fixed': 'fixed'}
         return valid_statuses.get(bzr_status.lower(), None)
 
     def extractBugInfo(self, bzr_revision):
@@ -106,7 +83,9 @@ class BugBranchLinker:
             except NotFoundError:
                 pass
             else:
-                set_bug_branch_status(bug, self.db_branch, status)
+                bug.linkBranch(
+                    branch=self.db_branch,
+                    registrant=getUtility(ILaunchpadCelebrities).janitor)
 
 
 @adapter(events.NewRevision)

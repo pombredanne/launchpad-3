@@ -1,0 +1,221 @@
+===============================
+The base-layout master template
+===============================
+
+The base-layout master template defines macros that control the layout
+of the page. Any page can use these layout options by including
+    metal:use-macro="view/macro:page/<layout>"
+in the root element of the page template. The base layout template uses the
+YUI grid classes for positioning.
+
+    >>> from z3c.ptcompat import ViewPageTemplateFile
+    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> user = factory.makePerson(name='waffles')
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='/~waffles/+layout')
+    >>> request.setPrincipal(user)
+
+The view can define the template's title in the page_title property, or
+define it in the pagetitles module.
+
+    >>> class MainSideView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/main-side.pt')
+    ...     page_title = 'Test base-layout: main_side'
+
+The main_side layout uses all the defined features of the base-layout
+template. The example template uses the epilogue, main, and side slots. The
+global search and the applications tabs are present. The main and side
+content are positioned using the "yui-t4", "yui-main", "yui-b", and
+"yui-b side" classes.
+
+    >>> view = MainSideView(user, request)
+    >>> print view.render()
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: main_side</title> ...
+        <!-- Extra head content -->
+      </head>
+      <body id="document" class="tab-overview main_side yui-skin-sam">
+        <div class="yui-d0">
+          <div id="locationbar"> ...
+             <form id="globalsearch" ...
+             <div id="lp-hierarchy" class="home">...
+             <div id="lp-apps" ...
+          <div class="yui-t4">
+            <div id="maincontent" class="yui-main">
+              <div class="yui-b" dir="ltr">
+                <div class="top-portlet">
+                  <h1>Heading</h1>
+                  <p class="registered">
+                    Registered on 2005-09-16
+                    by <a class="sprite team" href="#">Illuminati team</a>
+                  </p>
+                  <p>
+                    Main content of the page.
+                  </p>
+                </div>
+              </div><!-- yui-b -->
+            </div><!-- yui-main -->
+            <div class="yui-b side">
+              <div id="object-actions" class="top-portlet">
+                <h2>Important actions</h2>
+              </div>
+            </div><!-- yui-b side -->
+          </div><!-- yui-t4 -->
+          <div id="footer"> ...
+          </div><!-- footer-->
+        </div><!-- yui-d0-->
+        <script>LP.client.cache['context'] ...
+      </body>
+    </html> ...
+
+The main_only layout excludes the side slot, the main and epilogue slots are
+rendered. The global search and the applications tabs are present. The
+YUI Grid "yui-t4" and "yui-b side" divs are not rendered, allowing the main
+content to take up all the horizontal space.
+
+    >>> class MainOnlyView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/main-only.pt')
+    ...     page_title = 'Test base-layout: main_only'
+
+    >>> view = MainOnlyView(user, request)
+    >>> print view.render()
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: main_only</title> ...
+        <!-- Extra head content -->
+      </head>
+      <body id="document" class="tab-overview main_only yui-skin-sam">
+        <div class="yui-d0">
+          <div id="locationbar"> ...
+             <form id="globalsearch" ...
+             <div id="lp-hierarchy" class="home">...
+             <div id="lp-apps" ...
+          <div id="maincontent" class="yui-main">
+            <div class="yui-b" dir="ltr">
+              <div class="top-portlet">
+                <h1>Heading</h1>
+                <p class="registered">
+                  Registered on 2005-09-16
+                  by <a class="sprite team" href="#">Illuminati team</a>
+                </p>
+                <p>
+                  Main content of the page.
+                </p>
+              </div>
+            </div><!-- yui-b -->
+          </div><!-- yui-main -->
+            <!-- yui-b side -->
+            <!-- yui-t4 -->
+          <div id="footer"> ...
+          </div><!-- footer-->
+        </div><!-- yui-d0-->
+        <script>LP.client.cache['context'] ...
+      </body>
+    </html> ...
+
+The searchless template is intended for pages that provide search in the main
+content area, so the global search is not needed. The epilogue and main
+slots are rendered, as are the application tabs.
+
+    >>> class SearchlessView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/searchless.pt')
+    ...     page_title = 'Test base-layout: searchless'
+
+    >>> view = SearchlessView(user, request)
+    >>> print view.render()
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: searchless</title> ...
+        <!-- Extra head content -->
+      </head>
+      <body id="document" class="tab-overview searchless yui-skin-sam">
+        <div class="yui-d0">
+          <div id="locationbar">
+            <div id="logincontrol"><a href="...">Log in / Register</a></div>
+            <div id="lp-hierarchy" class="home">...
+            <div id="lp-apps" ...
+          </div><!--id="locationbar"-->
+          <div id="maincontent" class="yui-main">
+            <div class="yui-b" dir="ltr">
+              <div class="top-portlet">
+                <h1>Heading</h1>
+                <p class="registered">
+                  Registered on 2005-09-16
+                  by <a class="sprite team" href="#">Illuminati team</a>
+                </p>
+                <p>
+                  Main content of the page.
+                </p>
+              </div>
+            </div><!-- yui-b -->
+          </div><!-- yui-main -->
+            <!-- yui-b side -->
+            <!-- yui-t4 -->
+          <div id="footer"> ...
+          </div><!-- footer-->
+        </div><!-- yui-d0-->
+        <script>LP.client.cache['context'] ...
+      </body>
+    </html> ...
+
+The locationless template is intended for pages that provide content outside
+of normal application use. It is for exceptions. The epilogue and main
+slots are rendered. Global search and the application tabs are not included
+in the header.
+
+    >>> class LocationlessView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/locationless.pt')
+    ...     page_title = 'Test base-layout: locationless'
+
+    >>> view = LocationlessView(user, request)
+    >>> print view.render()
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: locationless</title> ...
+        <!-- Extra head content -->
+      </head>
+      <body id="document" class="tab-overview locationless yui-skin-sam">
+        <div class="yui-d0">
+          <div id="locationbar">
+            <div id="logincontrol"><a href="...">Log in / Register</a></div>
+            <div id="lp-hierarchy" class="home">...<div
+              class="apps-separator"><!-- --></div>
+          </div><!--id="locationbar"-->
+          <div id="maincontent" class="yui-main">
+            <div class="yui-b" dir="ltr">
+              <div class="top-portlet">
+                <h1>Heading</h1>
+                <p class="registered">
+                  Registered on 2005-09-16
+                  by <a class="sprite team" href="#">Illuminati team</a>
+                </p>
+                <p>
+                  Main content of the page.
+                </p>
+              </div>
+            </div><!-- yui-b -->
+          </div><!-- yui-main -->
+            <!-- yui-b side -->
+            <!-- yui-t4 -->
+          <div id="footer"> ...
+          </div><!-- footer-->
+        </div><!-- yui-d0-->
+        <script>LP.client.cache['context'] ...
+      </body>
+    </html> ...

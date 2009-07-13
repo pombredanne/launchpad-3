@@ -21,7 +21,7 @@ from zope.schema import Choice, TextLine, Text, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
 

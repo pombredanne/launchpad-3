@@ -10,14 +10,20 @@
   i18n:domain="launchpad"
 >
 
-<style type="text/css" metal:fill-slot="head_epilogue">
-  .logtail {
-    padding-left: 2em;
-  }
-  #merge-summary {
-    margin: 1em 0;
-  }
-</style>
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    .logtail {
+      padding-left: 2em;
+    }
+    #merge-summary {
+      margin: 1em 0;
+    }
+  </style>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/branchsubscription.js">
+  </script>
+</metal:block>
 
 <body>
 
@@ -103,15 +109,15 @@
             <td id="upload-directions" tal:condition="not:context/owner/isTeam">
               Only
               <a tal:attributes="href context/owner/fmt:url"
-                 tal:content="context/owner/browsername">Person</a>
+                 tal:content="context/owner/displayname">Person</a>
               can upload to this branch. If you are
-              <tal:branch-owner replace="context/owner/browsername"/>
+              <tal:branch-owner replace="context/owner/displayname"/>
               please <a href="+login">log in</a> for upload directions.
             </td>
             <td id="upload-directions" tal:condition="context/owner/isTeam">
               Members of
               <a tal:attributes="href context/owner/fmt:url"
-                 tal:content="context/owner/browsername">Team</a>
+                 tal:content="context/owner/displayname">Team</a>
               can upload to this branch. <a href="+login">Log in</a> for directions.
             </td>
           </tr>
@@ -127,13 +133,13 @@
               <td id="upload-directions" tal:condition="not:context/owner/isTeam">
                 You cannot upload to this branch. Only
                 <a tal:attributes="href context/owner/fmt:url"
-                   tal:content="context/owner/browsername">Person</a>
+                   tal:content="context/owner/displayname">Person</a>
                 can upload to this branch.
               </td>
               <td id="upload-directions" tal:condition="context/owner/isTeam">
                 You cannot upload to this branch. Members of
                 <a tal:attributes="href context/owner/fmt:url"
-                   tal:content="context/owner/browsername">Team</a>
+                   tal:content="context/owner/displayname">Team</a>
                 can upload to this branch.
               </td>
             </tr>
@@ -197,9 +203,34 @@
       <tal:has-codeimport condition="branch/code_import"
                           define="code_import branch/code_import">
 
-        <p><strong>Import Status:</strong>
-        <tal:status replace="code_import/review_status/title"/>
-        </p>
+        <div><strong>Import Status:</strong>
+          <span tal:attributes="class string:codeimport${code_import/review_status/name}"
+                tal:content="code_import/review_status/title"/>
+            <form tal:attributes="action string:${context/fmt:url}/@@+try-again"
+                  tal:condition="python:view.user and code_import.review_status.name == 'FAILING'"
+                  style="display: inline; padding-left: 1em"
+                  name="tryagain"
+                  method="post"
+                  enctype="multipart/form-data" accept-charset="UTF-8">
+              <noscript>
+                <img src="/@@/retry" />
+                <input id="tryagain.actions.tryagain" name="tryagain.actions.tryagain" value="Try Again" class="button" type="submit" />
+              </noscript>
+              <input
+                 type="hidden"
+                 name="tryagain.actions.tryagain"
+                 value="" />
+              <a href="javascript:document.tryagain.submit()" style="display: none" id="tryagainlink">
+                <img src="/@@/retry" />
+                Try again
+              </a>
+              <script type="text/javascript">
+                  YUI().use('event', 'node', function(Y) {
+                    Y.on("domready", function () { Y.get('#tryagainlink').setStyle('display', 'inline') });
+                  });
+              </script>
+            </form>
+        </div>
 
         <tal:git-import condition="code_import/rcs_type/enumvalue:GIT">
           <p>This branch is an import of the MASTER branch from the Git repo at
@@ -265,6 +296,14 @@
           </tal:not-running>
           </div>
         </tal:has-job>
+
+        <tal:failing condition="code_import/review_status/enumvalue:FAILING">
+          <div id="failing-try-again" class="message warning">
+            The import has been suspended because it failed
+            <tal:failure-limit content="modules/canonical.config/config/codeimport/consecutive_failure_limit"/>
+            or more times in succession.
+          </div>
+        </tal:failing>
 
         <tal:last-successful condition="code_import/date_last_successful">
           <p>

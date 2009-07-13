@@ -35,17 +35,18 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
-from zope.security.interfaces import Unauthorized
 
 from z3c.ptcompat import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
 from lp.registry.browser.announcement import HasAnnouncementsView
-from lp.registry.browser.product import ProductAddViewBase
+from lp.registry.browser.product import (
+    ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.answers.browser.question import QuestionAddView
@@ -376,38 +377,58 @@ class ProjectReviewView(ProjectEditView):
             )
 
 
-class ProjectAddProductView(ProductAddViewBase):
+class ProjectGroupAddStepOne(ProjectAddStepOne):
+    """project/+newproduct view class for creating a new project.
 
-    label = "Register a new project that is part of this initiative"
-    product = None
+    The new project will automatically be a part of the project group.
+    """
+    heading = "Register a project in your project group"
 
-    @action(_('Add'), name='add')
-    def add_action(self, action, data):
-        # add the owner information for the product
-        if not self.user:
-            raise Unauthorized(
-                "Need to have an authenticated user in order to create a bug"
-                " on a project")
-        # create the product
-        self.product = getUtility(IProductSet).createProduct(
+    @cachedproperty
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Register a project in Launchpad as a part of %s' % (
+            self.context.displayname)
+
+    @property
+    def _next_step(self):
+        """See `ProjectAddStepOne`."""
+        return ProjectGroupAddStepTwo
+
+
+class ProjectGroupAddStepTwo(ProjectAddStepTwo):
+    """Step 2 (of 2) in the +newproduct project add wizard."""
+
+    heading = "Register a project in your project group"
+
+    def create_product(self, data):
+        """Create the product from the user data."""
+        return getUtility(IProductSet).createProduct(
+            owner=self.user,
             name=data['name'],
             title=data['title'],
             summary=data['summary'],
-            description=data['description'],
             displayname=data['displayname'],
-            homepageurl=data['homepageurl'],
-            downloadurl=data['downloadurl'],
-            screenshotsurl=data['screenshotsurl'],
-            wikiurl=data['wikiurl'],
-            freshmeatproject=data['freshmeatproject'],
-            sourceforgeproject=data['sourceforgeproject'],
-            programminglang=data['programminglang'],
+            licenses=data['licenses'],
+            license_info=data['license_info'],
             project=self.context,
-            owner=self.user,
-            licenses = data['licenses'],
-            license_info=data['license_info'])
-        self.notifyFeedbackMailingList()
-        notify(ObjectCreatedEvent(self.product))
+            )
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Register %s (%s) in Launchpad as a part of %s' % (
+            self.request.form['displayname'], self.request.form['name'],
+            self.context.displayname)
+
+
+class ProjectAddProductView(ProductAddView):
+    """The controlling view for project/+newproduct."""
+
+    @property
+    def first_step(self):
+        """See `MultiStepView`."""
+        return ProjectGroupAddStepOne
 
 
 class ProjectSetView(object):
