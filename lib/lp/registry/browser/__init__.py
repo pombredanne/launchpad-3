@@ -7,6 +7,7 @@ __all__ = [
     'get_status_count',
     'MilestoneOverlayMixin',
     'RegistryDeleteViewMixin',
+    'StatusCount',
     ]
 
 
