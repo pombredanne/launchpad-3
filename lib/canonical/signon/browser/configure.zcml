@@ -260,4 +260,11 @@
         name="loginservice_macros"
         template="../templates/loginservice-macros.pt" />
 
+    <!-- IAuthTokenSet -->
+    <browser:url
+        for="canonical.launchpad.interfaces.IAuthTokenSet"
+        path_expression="string:token"
+        parent_utility="canonical.signon.interfaces.openidserver.IOpenIDApplication"
+        />
+
 </configure>

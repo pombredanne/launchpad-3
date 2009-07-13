@@ -85,6 +85,12 @@ Other properties are shortcuts to the source package's properties:
     >>> print spph.package_signer
     <Person at ... name16 (Foo Bar)>
 
+The signer can also be None for packages that were synced (e.g. from Debian):
+
+    >>> spph.sourcepackagerelease.dscsigningkey = None
+    >>> print spph.package_signer
+    None
+
 There is also a property that returns the changesfile URL.  This is proxied
 through the webapp rather than being a librarian URL because the changesfile
 could be private and thus in the restricted librarian.
@@ -137,6 +143,21 @@ The underlying method being used here is getUnpublishedBuilds():
     ...     print build.title
     hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+Note: if the related archive for this source package publishing is
+a rebuild archive then the status summary will always display
+FULLY_BUILT.
+
+    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> spph.archive.purpose = ArchivePurpose.COPY
+    >>> build_status_summary = spph.getStatusSummaryForBuilds()
+    >>> print_build_status_summary(build_status_summary)
+    FULLYBUILT
+    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+    # Just set the purpose back before continuing on.
+    >>> spph.archive.purpose = ArchivePurpose.PRIMARY
 
 If one of the builds becomes published, it will not appear in the summary:
 

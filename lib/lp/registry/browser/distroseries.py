@@ -401,6 +401,13 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
 
+    @property
+    def show_arch_selector(self):
+        """Display the architecture selector.
+
+        See `BuildRecordsView` for further details."""
+        return True
+
 
 class DistroSeriesEditView(LaunchpadEditFormView):
     """View class that lets you edit a DistroSeries object.

@@ -8,6 +8,8 @@ There were problems with %(numberoferrors)d of these translations.
 
 The other %(numberofcorrectmessages)d translations have been accepted.
 
+%(warnings)s
+
 To fix these problems, please upload a file containing the corrected translations.
 
 Thank you,

@@ -112,6 +112,14 @@
       provides="lp.code.interfaces.branchcollection.IAllBranches">
     <allow interface="lp.code.interfaces.branchcollection.IAllBranches"/>
   </securedutility>
+  <class class="lp.code.model.revisioncache.GenericRevisionCollection">
+    <allow interface="lp.code.interfaces.revisioncache.IRevisionCollection"/>
+  </class>
+  <securedutility
+      class="lp.code.model.revisioncache.GenericRevisionCollection"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache">
+    <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
+  </securedutility>
   <securedutility
       class="lp.code.model.branchpuller.BranchPuller"
       provides="lp.code.interfaces.branchpuller.IBranchPuller">
@@ -351,9 +359,9 @@
                     revision_count
                     warehouse_url
                     bug_branches
+                    linked_bugs
                     linkBug
                     unlinkBug
-                    related_bugs
                     spec_links
                     linkSpecification
                     unlinkSpecification

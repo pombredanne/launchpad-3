@@ -18,8 +18,6 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError, DirectBranchCommit)
-from lp.registry.model.product import Product
-from lp.registry.model.productseries import ProductSeries
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -86,6 +84,10 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
     def main(self):
         """See `LaunchpadScript`."""
+        # Avoid circular imports.
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+
         self.logger.info("Exporting to translations branches.")
 
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)

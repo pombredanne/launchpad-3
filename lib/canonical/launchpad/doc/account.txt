@@ -7,7 +7,7 @@ Many operations on Account and related tables are available only to
 the SSO Server.
 
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
-    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.signon.dbpolicy import SSODatabasePolicy
     >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
 
 

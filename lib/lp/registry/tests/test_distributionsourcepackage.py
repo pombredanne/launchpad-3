@@ -12,8 +12,7 @@ from zope.component import getUtility
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.model.karma import KarmaCategory
+from lp.registry.model.karma import KarmaTotalCache
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -59,20 +58,14 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
 
         # Save the gedit source package for easy access.
         self.source_package = self.distribution.getSourcePackage('gedit')
-        self.soyuz_karma_category = KarmaCategory.byName('soyuz')
-        self.karma_cache_manager = getUtility(IKarmaCacheManager)
 
         # Add slightly more soyuz karma for person_nightly for this package.
         transaction.commit()
         self.layer.switchDbUser('karma')
-        self.karma_cache_manager.new(
-            200, self.person_beta.id, self.soyuz_karma_category.id,
-            distribution_id = self.distribution.id,
-            sourcepackagename_id = self.source_package.sourcepackagename.id)
-        self.karma_cache_manager.new(
-            201, self.person_nightly.id, self.soyuz_karma_category.id,
-            distribution_id = self.distribution.id,
-            sourcepackagename_id = self.source_package.sourcepackagename.id)
+        self.person_beta_karma = KarmaTotalCache(
+            person=self.person_beta, karma_total=200)
+        self.person_nightly_karma = KarmaTotalCache(
+            person=self.person_nightly, karma_total=201)
         transaction.commit()
         self.layer.switchDbUser('launchpad')
 
@@ -92,10 +85,7 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
         # Update the soyuz karma for person_beta for this package so that
         # it is greater than person_nightly's.
         self.layer.switchDbUser('karma')
-        self.karma_cache_manager.updateKarmaValue(
-            202, self.person_beta.id, self.soyuz_karma_category.id,
-            distribution_id = self.distribution.id,
-            sourcepackagename_id = self.source_package.sourcepackagename.id)
+        self.person_beta_karma.karma_total = 202
         transaction.commit()
         self.layer.switchDbUser('launchpad')
 
@@ -113,7 +103,7 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
         # with the required soyuz karma for this package.
 
         related_archives = self.source_package.findRelatedArchives(
-            require_package_karma=201)
+            required_karma=201)
         related_archive_names = [
             archive.name for archive in related_archives]
 
