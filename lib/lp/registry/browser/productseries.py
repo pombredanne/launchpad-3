@@ -30,6 +30,7 @@ __all__ = [
 
 import cgi
 import os.path
+from operator import attrgetter
 
 from bzrlib.revision import NULL_REVISION
 
@@ -42,6 +43,9 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
+from lp.blueprints.interfaces.specification import (
+    ISpecificationSet, SpecificationImplementationStatus)
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
@@ -52,6 +56,7 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.browser import StatusCount
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.productserieslanguage import (
@@ -78,11 +83,10 @@ from canonical.widgets.itemswidgets import (
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
-    get_status_counts, MilestoneOverlayMixin, RegistryDeleteViewMixin)
+    MilestoneOverlayMixin, RegistryDeleteViewMixin)
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-
 
 def quote(text):
     """Escape and quite text."""
@@ -707,22 +711,38 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin,
 
     @cachedproperty
     def bugtask_status_counts(self):
-        """A list StatusCounts summarising the targeted bugtasks."""
+      """A list StatusCounts summarising the targeted bugtasks."""
+      try:
         bugtaskset = getUtility(IBugTaskSet)
-        return bugtaskset.getStatusCountsForProductSeries(
+        status_id_counts = bugtaskset.getStatusCountsForProductSeries(
             self.user, self.context)
+        status_counts = dict([(BugTaskStatus.items[status_id], count)
+                              for status_id, count in status_id_counts])
+        return [StatusCount(status, status_counts[status])
+                for status
+                    in sorted(status_counts, key=attrgetter('sortkey'))]
+      except:
+        import traceback
+        traceback.print_exc()
+        return []
 
     @cachedproperty
     def specification_status_counts(self):
-        """A list StatusCounts summarising the targeted specification."""
-        # Series goals.
-        all_specifications = set(
-            list(self.context.all_specifications))
-        # Targeted to be fixed in this series.
-        for milestone in self.released_and_active_milestones:
-            all_specifications = all_specifications.union(
-                list(milestone.specifications))
-        return get_status_counts(all_specifications, 'implementation_status')
+      """A list StatusCounts summarising the targeted specification."""
+      try:
+        specification_set = getUtility(ISpecificationSet)
+        status_id_counts = specification_set.getStatusCountsForProductSeries(
+            self.context)
+        SpecStatus = SpecificationImplementationStatus
+        status_counts = dict([(SpecStatus.items[status_id], count)
+                              for status_id, count in status_id_counts])
+        return [StatusCount(status, status_counts[status])
+                for status
+                    in sorted(status_counts, key=attrgetter('sortkey'))]
+      except:
+        import traceback
+        traceback.print_exc()
+        return []
 
     @property
     def milestone_table_class(self):

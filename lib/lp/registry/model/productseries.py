@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'ProductSeries',
     'ProductSeriesSet',
-    'StatusCount',
     ]
 
 import datetime
@@ -61,7 +60,7 @@ from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productseries import (
-    IProductSeries, IProductSeriesSet, IStatusCount)
+    IProductSeries, IProductSeriesSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.translations.interfaces.translations import (
@@ -69,15 +68,6 @@ from lp.translations.interfaces.translations import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 
-
-class StatusCount:
-    """See `IStatusCount`."""
-    implements(IStatusCount)
-
-    def __init__(self, status, count):
-        """Set the status and count."""
-        self.status = status
-        self.count = count
 
 def landmark_key(landmark):
     """Sorts landmarks by date and name."""

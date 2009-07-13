@@ -1282,12 +1282,6 @@
         for="canonical.launchpad.event.interfaces.ITeamInvitationEvent"
         handler="canonical.launchpad.mailnotification.notify_invitation_to_join_team"/>
 
-    <!-- This is class StatusCount -->
-
-    <class class="lp.registry.model.productseries.StatusCount">
-        <allow interface="lp.registry.interfaces.productseries.IStatusCount"/>
-    </class>
-
     <!-- This is class ProductSeries -->
 
     <class
