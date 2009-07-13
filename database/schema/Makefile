@@ -1,6 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
+# Quick hack makefile to (re)create the Launchpad database.
 # One day the guts of this will be migrated to Python
 #
 
