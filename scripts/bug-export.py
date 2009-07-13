@@ -11,7 +11,7 @@ from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IProductSet
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
-from canonical.launchpad.scripts.bugexport import export_bugtasks
+from lp.bugs.scripts.bugexport import export_bugtasks
 
 def main(argv):
     parser = optparse.OptionParser(
@@ -33,7 +33,7 @@ def main(argv):
     output = sys.stdout
     if options.output is not None:
         output = open(options.output, 'wb')
-    
+
     execute_zcml_for_scripts()
     ztm = initZopeless()
 

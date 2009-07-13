@@ -1,11 +1,13 @@
+#!/usr/bin/env python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 """Script to generate SQL to add MD5 sums for existing librarian files."""
 
 __metaclass__ = type
 
-import os, os.path
 import commands
+import os
+import sys
 
 SQL = "UPDATE LibraryFileContent SET md5 = '%s' WHERE id = %d;"
 
@@ -27,9 +29,7 @@ def main(path, minimumID=0):
             md5sum = commands.getoutput('md5sum ' + filename).split(' ', 1)[0]
             yield databaseID, md5sum
 
-            
 if __name__ == '__main__':
-    import sys
     if len(sys.argv) > 2:
         minimumID = int(sys.argv[2])
     else:

@@ -6,33 +6,13 @@ Usage hint:
 
 % utilities/check-scripts.py
 """
+# pylint: disable-msg=W0403
 import os
-import subprocess
 import sys
 
-
-script_locations = [
-    'cronscripts',
-    'scripts',
-    ]
-
-
-KNOWN_BROKEN = [
-    # Needs mysqldb module
-    './scripts/bugzilla-import.py',
-    './scripts/migrate-bugzilla-initialcontacts.py',
-    # circular import from hell (IHasOwner).
-    './scripts/clean-sourceforge-project-entries.py',
-    './scripts/import-zope-specs.py',
-    # sqlobject.DatbaseIndex ?
-    './scripts/linkreport.py',
-    # Python executable without '.py' extension.
-    './scripts/list-team-members',
-    './scripts/queue',
-    # Bad script, no help.
-    './scripts/librarian-report.py',
-    './scripts/rosetta/message-sharing-populate-test.py',
-    ]
+import _pythonpath
+from lp.services.scripts.tests import find_lp_scripts
+from lp.testing import run_script
 
 
 def check_script(script_path):
@@ -43,42 +23,20 @@ def check_script(script_path):
     """
     sys.stdout.write('Checking: %s ' % script_path)
     sys.stdout.flush()
-    args = [sys.executable, script_path, "-h"]
-    process = subprocess.Popen(
-        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    if process.returncode != os.EX_OK:
+    cmd_line = script_path + " -h"
+    out, err, returncode = run_script(cmd_line)
+    if returncode != os.EX_OK:
         sys.stdout.write('... FAILED\n')
-        sys.stdout.write('%s\n' % stderr)
+        sys.stdout.write('%s\n' % err)
     else:
         sys.stdout.write('... OK\n')
     sys.stdout.flush()
 
 
-def should_skip(script_path):
-    """Return True if the given script path should not be run.
-
-    Skips filename starting with '_' or not ending with '.py' or
-    listed in the KNOWN_BROKEN blacklist.
-    """
-    filename = os.path.basename(script_path)
-    return (filename.startswith('_') or
-            not filename.endswith('.py') or
-            script_path in KNOWN_BROKEN)
-
-
 def main():
     """Walk over the specified script locations and check them."""
-    lp_tree = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), os.pardir))
-    for script_location in script_locations:
-        location = os.path.join(lp_tree, script_location)
-        for path, dirs, filenames in os.walk(location):
-            for filename in sorted(filenames):
-                script_path = os.path.join(path, filename)
-                if should_skip(script_path):
-                    continue
-                check_script(script_path)
+    for script_path in find_lp_scripts():
+        check_script(script_path)
 
 
 if __name__ == '__main__':
