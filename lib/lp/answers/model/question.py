@@ -835,8 +835,13 @@ class QuestionSearch:
                 'Question.fti @@ ftq(%s)' % quote(self.search_text))
 
         if self.status:
-            constraints.append('Question.status IN %s' % sqlvalues(
-                list(self.status)))
+            statuses = list(self.status)
+            if len(statuses) > 1:
+                constraints.append('Question.status IN %s' % sqlvalues(
+                    statuses))
+            else:
+                constraints.append('Question.status = %s' % sqlvalues(
+                    statuses[0]))
 
         if self.needs_attention_from:
             constraints.append('''(
