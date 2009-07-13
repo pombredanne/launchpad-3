@@ -95,7 +95,7 @@ class TestExpandURL(TestCaseWithFactory):
         self.addCleanup(config.pop, 'hot_product')
         trunk = self.product.development_focus.branch
         results = self.api.resolve_lp_path(self.product.name)
-        http_url = ['http://bazaar.launchpad.dev/%s' % trunk.unique_name]
+        http_url = 'http://bazaar.launchpad.dev/%s' % trunk.unique_name
         self.assertEqual(dict(urls=[http_url]), results)
 
     def test_product_only(self):
