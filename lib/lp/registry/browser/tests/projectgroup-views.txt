@@ -5,7 +5,6 @@ Project groups cannot be administered by end-users.  Only members of the
 admins and registry admins teams can list, create, or review them.
 
     >>> from lp.registry.interfaces.project import IProjectSet
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.webapp.authorization import check_permission
