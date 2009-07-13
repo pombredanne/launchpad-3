@@ -63,7 +63,7 @@ Non administrators cannot access the +review view
 The +reviewaccount allows admins to see and edit user account information.
 Non-admins cannot access it.
 
-    >>> view = create_initialized_view(user, '+reviewaccount', principal=user)
+    >>> view = create_initialized_view(user, '+reviewaccount')
     >>> check_permission('launchpad.Admin', view)
     False
 
@@ -163,3 +163,4 @@ addresses; the user must use the reset password feature to restore these.
     True
     >>> print user.preferredemail
     None
+
