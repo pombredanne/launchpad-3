@@ -835,13 +835,8 @@ class QuestionSearch:
                 'Question.fti @@ ftq(%s)' % quote(self.search_text))
 
         if self.status:
-            statuses = list(self.status)
-            if len(statuses) > 1:
-                constraints.append('Question.status IN %s' % sqlvalues(
-                    statuses))
-            else:
-                constraints.append('Question.status = %s' % sqlvalues(
-                    statuses[0]))
+            constraints.append('Question.status IN %s' % sqlvalues(
+                list(self.status)))
 
         if self.needs_attention_from:
             constraints.append('''(
@@ -917,11 +912,15 @@ class QuestionSearch:
         query = ''
         constraints = self.getConstraints()
         if constraints:
-            query += (
-                'Question.id IN ('
-                    'SELECT Question.id FROM Question %s WHERE %s)' % (
-                        '\n'.join(self.getTableJoins()),
-                        ' AND '.join(constraints)))
+            joins = self.getTableJoins()
+            if len(joins) > 0:
+                # Make a slower query to accommodate the joins.
+                query += (
+                    'Question.id IN ('
+                        'SELECT Question.id FROM Question %s WHERE %s)' % (
+                            '\n'.join(joins), ' AND '.join(constraints)))
+            else:
+                query += ' AND '.join(constraints)
         return Question.select(
             query, prejoins=self.getPrejoins(),
             prejoinClauseTables=self.getPrejoinClauseTables(),
