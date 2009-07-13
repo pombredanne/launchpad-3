@@ -666,8 +666,9 @@ class LoginServiceMixinLoginView:
                     # Person table.
                     mapping = dict(
                         email=cgi.escape(email), 
-                        person_url=canonical_url(person),
-                        claim_url=canonical_url(person, view_name='+claim'),
+                        person_url=canonical_url(person, rootsite='mainsite'),
+                        claim_url=canonical_url(
+                            person, view_name='+claim', rootsite='mainsite'),
                         person_name=cgi.escape(person.displayname))
                     self.addError(structured(_(
                         'The email address ${email} is already associated '
