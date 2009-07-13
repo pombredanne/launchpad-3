@@ -1203,6 +1203,9 @@ class IBugTaskSet(Interface):
             typically the result of calling `BugTaskSet.search()`.
         """
 
+    def getStatusCountsForProductSeries(user, product_series):
+        """Returns status counts for a product series' bugs."""
+
     def createTask(bug, product=None, productseries=None, distribution=None,
                    distroseries=None, sourcepackagename=None, status=None,
                    importance=None, assignee=None, owner=None,

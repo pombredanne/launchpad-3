@@ -709,20 +709,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin,
     def bugtask_status_counts(self):
         """A list StatusCounts summarising the targeted bugtasks."""
         bugtaskset = getUtility(IBugTaskSet)
-        # Nominated to be fixes in this series.
-        params = BugTaskSearchParams(self.user)
-        params.setProductSeries(self.context)
-        all_bugtasks = set(
-            list(bugtaskset.search(params)))
-        # Targeted to be fixed in this series.
-        milestones = [
-            milestone.id for milestone in self.released_and_active_milestones]
-        if len(milestones) > 0:
-            params = BugTaskSearchParams(
-                self.user, milestone=any(*milestones))
-            all_bugtasks = all_bugtasks.union(
-                list(bugtaskset.search(params)))
-        return get_status_counts(all_bugtasks, 'status')
+        return bugtaskset.getStatusCountsForProductSeries(
+            self.user, self.context)
 
     @cachedproperty
     def specification_status_counts(self):

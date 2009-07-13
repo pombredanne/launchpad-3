@@ -11,6 +11,7 @@ __all__ = [
     'IProductSeriesPublic',
     'IProductSeriesSet',
     'NoSuchProductSeries',
+    'IStatusCount',
     ]
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine
@@ -325,3 +326,13 @@ class NoSuchProductSeries(NameLookupFailed):
     def __init__(self, name, product, message=None):
         NameLookupFailed.__init__(self, name, message)
         self.product = product
+
+class IStatusCount(Interface):
+    """A helper that stores the count of status for a list of items.
+
+    Items such as `IBugTask` and `ISpecification` can be summarised by
+    their status.
+    """
+
+    status = Attribute(_("Either a bug status or a specification status."))
+    count = Attribute(_("Number of bugs with this status."))

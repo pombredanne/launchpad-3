@@ -1282,6 +1282,12 @@
         for="canonical.launchpad.event.interfaces.ITeamInvitationEvent"
         handler="canonical.launchpad.mailnotification.notify_invitation_to_join_team"/>
 
+    <!-- This is class StatusCount -->
+
+    <class class="lp.registry.model.productseries.StatusCount">
+        <allow interface="lp.registry.interfaces.productseries.IStatusCount"/>
+    </class>
+
     <!-- This is class ProductSeries -->
 
     <class
@@ -1297,10 +1303,13 @@
             interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="product name owner driver summary branch                                                                                                                 status releasefileglob                                                                                                                        translations_autoimport_mode"/>
+            set_attributes="product name owner driver summary branch
+                            status releasefileglob
+                            translations_autoimport_mode"/>
         <require
             permission="launchpad.AnyPerson"
-            set_attributes="importstatus rcstype cvsroot cvsmodule                                                                 cvstarfileurl cvsbranch svnrepository"/>
+            set_attributes="importstatus rcstype cvsroot cvsmodule
+                            cvstarfileurl cvsbranch svnrepository"/>
 
         <!-- IStructuralSubscriptionTarget -->
 

@@ -2006,6 +2006,35 @@ class BugTaskSet:
 
         return bugtask
 
+    def getStatusCountsForProductSeries(self, user, product_series):
+        """See `IBugTaskSet`."""
+        # Import here to avoid import loop.
+        from lp.registry.model.productseries import StatusCount
+
+        bug_privacy_filter = get_bug_privacy_filter(user)
+        if bug_privacy_filter != "":
+            bug_privacy_filter = ' AND ' + bug_privacy_filter
+        cur = cursor()
+        condition = """
+            (BugTask.productseries = %s
+                 OR Milestone.productseries = %s)
+            """ % sqlvalues(product_series, product_series)
+        query = """
+            SELECT BugTask.status, count(*)
+            FROM BugTask
+                JOIN Bug ON BugTask.bug = Bug.id
+                LEFT JOIN Milestone ON BugTask.milestone = Milestone.id
+            WHERE
+                %s
+                %s
+            GROUP BY BugTask.status
+            """ % (condition, bug_privacy_filter)
+        cur.execute(query)
+        result = cur.fetchall()
+        result = [StatusCount(BugTaskStatus.items[status_id], count)
+                  for status_id, count in result]
+        return result
+
     def findExpirableBugTasks(self, min_days_old, user,
                               bug=None, target=None):
         """See `IBugTaskSet`.
