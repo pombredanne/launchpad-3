@@ -10,8 +10,13 @@ from bzrlib import errors
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import format_registry
 from bzrlib.tests import (
-    TestCaseWithTransport, TestLoader, TestNotApplicable)
-from bzrlib.tests.branch_implementations import TestCaseWithBzrDir
+    multiply_tests, TestCaseWithTransport, TestLoader, TestNotApplicable)
+try:
+    from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
+except ImportError:
+    raise
+    from bzrlib.tests.branch_implementations import (
+        TestCaseWithBzrDir, branch_scenarios)
 from lp.codehosting.bzrutils import (
     DenyingServer, get_branch_stacked_on_url, is_branch_stackable)
 from lp.codehosting.tests.helpers import TestResultWrapper
@@ -132,10 +137,6 @@ def load_tests(basic_tests, module, loader):
 
     get_branch_stacked_on_url_tests = loader.loadTestsFromTestCase(
         TestGetBranchStackedOnURL)
-
-    from bzrlib.tests import multiply_tests
-    from bzrlib.tests.branch_implementations import branch_scenarios
-
     scenarios = [scenario for scenario in branch_scenarios()
                  if scenario[0] != 'BranchReferenceFormat']
     multiply_tests(get_branch_stacked_on_url_tests, scenarios, result)
