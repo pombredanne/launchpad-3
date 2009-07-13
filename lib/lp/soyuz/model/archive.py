@@ -1318,16 +1318,27 @@ class ArchiveSet:
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
-        query = """
-            Archive.owner = Person.id AND
-            TeamParticipation.team = Archive.owner AND
-            TeamParticipation.person = %s AND
-            Archive.purpose = %s
-        """ % sqlvalues(user, ArchivePurpose.PPA)
+        # Avoiding circular imports.
+        from lp.soyuz.model.archivepermission import ArchivePermission
 
-        return Archive.select(
-            query, clauseTables=['Person', 'TeamParticipation'],
-            orderBy=['Person.displayname'])
+        store = Store.of(user)
+        direct_membership = store.find(
+            Archive,
+            Archive.purpose == ArchivePurpose.PPA,
+            TeamParticipation.team == Archive.ownerID,
+            TeamParticipation.person == user,
+            )
+        third_part_upload_acl = store.find(
+            Archive,
+            Archive.purpose == ArchivePurpose.PPA,
+            ArchivePermission.archiveID == Archive.id,
+            ArchivePermission.person == user,
+            )
+
+        result = direct_membership.union(third_part_upload_acl)
+        result.order_by(Archive.displayname)
+
+        return result
 
     def getPPAsPendingSigningKey(self):
         """See `IArchiveSet`."""

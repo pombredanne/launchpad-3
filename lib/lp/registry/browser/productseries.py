@@ -412,14 +412,6 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 check_permission('launchpad.View', branch))
 
     @cachedproperty
-    def released_and_active_milestones(self):
-        """Milestones that are active or have releases."""
-        return [
-            milestone
-            for milestone in self.context.all_milestones
-            if milestone.active or milestone.product_release is not None]
-
-    @cachedproperty
     def bugtask_status_counts(self):
         """A list StatusCounts summarising the targeted bugtasks."""
         bugtaskset = getUtility(IBugTaskSet)
@@ -430,7 +422,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
             list(bugtaskset.search(params)))
         # Targeted to be fixed in this series.
         milestones = [
-            milestone.id for milestone in self.released_and_active_milestones]
+            milestone.id for milestone in self.context.all_milestones]
         if len(milestones) > 0:
             params = BugTaskSearchParams(
                 self.user, milestone=any(*milestones))
@@ -445,7 +437,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         all_specifications = set(
             list(self.context.all_specifications))
         # Targeted to be fixed in this series.
-        for milestone in self.released_and_active_milestones:
+        for milestone in self.context.all_milestones:
             all_specifications = all_specifications.union(
                 list(milestone.specifications))
         return get_status_counts(all_specifications, 'implementation_status')
@@ -453,7 +445,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     @property
     def milestone_table_class(self):
         """The milestone table will be unseen if there are no milestones."""
-        if len(self.released_and_active_milestones) > 0:
+        if len(self.context.all_milestones) > 0:
             return 'listing'
         else:
             # The page can remove the 'unseen' class to make the table

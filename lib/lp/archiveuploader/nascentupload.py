@@ -534,7 +534,7 @@ class NascentUpload:
         # package set based permissions.
         ap_set = getUtility(IArchivePermissionSet)
         if source_name is not None and signer is not None:
-            if ap_set.isSourceUploadAllowed(source_name, signer):
+            if ap_set.isSourceUploadAllowed(archive, source_name, signer):
                 return
 
         # If source_name is None then the package must be new, but we
