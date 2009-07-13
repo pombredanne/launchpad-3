@@ -8,7 +8,7 @@ the SSO Server.
 
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> from canonical.signon.dbpolicy import SSODatabasePolicy
-    >>> #getUtility(IStoreSelector).push(SSODatabasePolicy())
+    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
 
 
 = AccountSet =
@@ -137,12 +137,12 @@ list:
 We can also get a list of email addresses that are waiting for the
 user to validate:
 
-    > >> from canonical.launchpad.interfaces import (
-    . ..     IAuthTokenSet, LoginTokenType)
-    > >> token = getUtility(IAuthTokenSet).new(
-    . ..     account, u"test@canonical.com", u"unvalidated-email@example.com",
-    . ..     LoginTokenType.VALIDATEEMAIL, None)
-    > >> account.getUnvalidatedEmails()
+    >>> from canonical.launchpad.interfaces import (
+    ...     IAuthTokenSet, LoginTokenType)
+    >>> token = getUtility(IAuthTokenSet).new(
+    ...     account, u"test@canonical.com", u"unvalidated-email@example.com",
+    ...     LoginTokenType.VALIDATEEMAIL, None)
+    >>> account.getUnvalidatedEmails()
     [u'unvalidated-email@example.com']
 
 
@@ -409,4 +409,4 @@ date.
 
 == Cleanup ==
 
-    >>> #db_policy = getUtility(IStoreSelector).pop()
+    >>> db_policy = getUtility(IStoreSelector).pop()
