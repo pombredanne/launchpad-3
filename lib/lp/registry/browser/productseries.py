@@ -424,8 +424,8 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         status_counts = dict([(BugTaskStatus.items[status_id], count)
                               for status_id, count in status_id_counts])
         return [StatusCount(status, status_counts[status])
-                for status
-                    in sorted(status_counts, key=attrgetter('sortkey'))]
+                for status in sorted(status_counts,
+                                     key=attrgetter('sortkey'))]
 
     @cachedproperty
     def specification_status_counts(self):
@@ -437,8 +437,8 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         status_counts = dict([(SpecStatus.items[status_id], count)
                               for status_id, count in status_id_counts])
         return [StatusCount(status, status_counts[status])
-                for status
-                    in sorted(status_counts, key=attrgetter('sortkey'))]
+                for status in sorted(status_counts,
+                                     key=attrgetter('sortkey'))]
 
     @property
     def milestone_table_class(self):

@@ -1204,7 +1204,14 @@ class IBugTaskSet(Interface):
         """
 
     def getStatusCountsForProductSeries(user, product_series):
-        """Returns status counts for a product series' bugs."""
+        """Returns status counts for a product series' bugs.
+
+        Both the nominated and scheduled blueprints are included
+        in the count.
+
+        :param product_series: ProductSeries object.
+        :return: A list of tuples containing (status_id, count).
+        """
 
     def createTask(bug, product=None, productseries=None, distribution=None,
                    distroseries=None, sourcepackagename=None, status=None,

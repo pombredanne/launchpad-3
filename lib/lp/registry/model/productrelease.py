@@ -241,7 +241,7 @@ class ProductReleaseSet(object):
         """See `IProductReleaseSet`."""
         releases = list(releases)
         if len(releases) == 0:
-            return ProductReleaseFile.select('1 = 2')
+            return EmptyResultSet()
         return ProductReleaseFile.select(
             """ProductReleaseFile.productrelease IN %s""" % (
             sqlvalues([release.id for release in releases])),
