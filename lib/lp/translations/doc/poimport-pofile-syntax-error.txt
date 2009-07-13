@@ -116,6 +116,64 @@ And the code composed an email with the notification of the error.
     <BLANKLINE>
 
 
+== Encoding errors ==
+
+Encoding problems are similarly reported, but with a different
+explanatory text.
+
+    >>> pofile = potemplate.newPOFile('fy')
+    >>> pofile_contents = u'''
+    ... msgid ""
+    ... msgstr ""
+    ... "Content-Type: text/plain; charset=ASCII\\n"
+    ... "X-Rosetta-Export-Date: 2009-07-13 00:00+0700\\n"
+    ...
+    ... msgid "\xa9 Yoyodine Industries"
+    ... msgstr ""
+    ... '''.encode('utf-8')
+    >>> published = False
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, published, person,
+    ...     productseries=series, potemplate=potemplate, pofile=pofile)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> transaction.commit()
+    >>> (subject, message) = pofile.importFromQueue(entry)
+    >>> print entry.status.name
+    FAILED
+
+An email describes the problem in relatively helpful terms.
+
+    >>> subject
+    u'Import problem - Frisian (fy) - firefox in Mozilla Firefox trunk'
+    >>> print message
+    Hello Mark Shuttleworth,
+    <BLANKLINE>
+    On ..., you uploaded a file with Frisian (fy) translations for
+    firefox in Mozilla Firefox trunk to Launchpad.
+    <BLANKLINE>
+    The file could not be imported because of text encoding problems.
+    This may indicate that the file does not specify the correct
+    encoding, or that it contains garbled or truncated text data.
+    <BLANKLINE>
+    The specific error message was:
+    <BLANKLINE>
+    'ascii' codec can't decode byte ... in position ...: ordinal not in
+    range(128)
+    <BLANKLINE>
+    For your convenience, you can find the file you uploaded at: ...
+    <BLANKLINE>
+    Thank you,
+    <BLANKLINE>
+    The Launchpad team
+    <BLANKLINE>
+
+The error output field is more terse.
+
+    >>> print entry.error_output
+    'ascii' codec can't decode byte ... in position ...: ordinal not in
+    range(128)
+
+
 == Invalid numbers of plural forms ==
 
 Some uploads declare impossible numbers of plural forms.  Those uploads
@@ -345,5 +403,3 @@ plural forms, the file imports just fine.
 
     >>> print entry.status.name
     IMPORTED
-
-

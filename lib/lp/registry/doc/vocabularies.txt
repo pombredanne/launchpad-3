@@ -1348,15 +1348,24 @@ change bzr's so we will get more interesting results.
     ...     print term.value.displayname
     Mega Money Maker
 
-If the user has launchpad.Commercial permission then all commercial
+If the user is a member of Registry Experts, and therefore has
+launchpad.ProjectReview permission, then all commercial
 projects are returned.
 
-    >>> login('commercial-member@canonical.com')
-    >>> commercial_member = person_set.getByEmail('commercial-member@canonical.com')
-    >>> check_permission('launchpad.Commercial', commercial_member)
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> registry_member = factory.makePerson()
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> registry = celebs.registry_experts
+    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> logout()
+
+    >>> login_person(registry_member)
+    >>> check_permission('launchpad.ProjectReview', registry_member)
     True
 
-    >>> comm_proj_vocab = vocabulary_registry.get(commercial_member, "CommercialProjects")
+    >>> comm_proj_vocab = vocabulary_registry.get(registry_member, "CommercialProjects")
     >>> print comm_proj_vocab.displayname
     Select a commercial project
 

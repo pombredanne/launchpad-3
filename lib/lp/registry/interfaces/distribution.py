@@ -14,7 +14,7 @@ __all__ = [
     'NoSuchDistribution',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, List, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from lazr.restful.fields import CollectionField, Reference
@@ -195,6 +195,8 @@ class IDistributionPublic(
             # Really IDistroSeries, see below.
             value_type=Reference(schema=Interface)),
         exported_as="series")
+    architectures = List(
+        title=_("DistroArchSeries inside this Distribution"))
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
     is_read_only = Attribute(

@@ -25,7 +25,6 @@ __all__ = [
     'ProjectSetNavigation',
     'ProjectSetView',
     'ProjectSpecificationsMenu',
-    'ProjectTranslationsMenu',
     'ProjectView',
     ]
 
@@ -284,18 +283,6 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     def new(self):
         text = 'Ask a question'
         return Link('+addquestion', text, icon='add')
-
-
-class ProjectTranslationsMenu(ApplicationMenu):
-
-    usedfor = IProject
-    facet = 'translations'
-    links = ['changetranslators']
-
-    @enabled_with_permission('launchpad.Edit')
-    def changetranslators(self):
-        text = 'Change translators'
-        return Link('+changetranslators', text, icon='edit')
 
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):

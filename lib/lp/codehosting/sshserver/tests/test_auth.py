@@ -85,13 +85,14 @@ class UserAuthServerMixin:
 
     def _getMessageName(self, message_type):
         """Get the name of the message for the given message type constant."""
-        return userauth.messages[message_type]
+        return userauth.SSHUserAuthServer.protocolMessages[message_type]
 
     def assertMessageOrder(self, message_types):
         """Assert that SSH messages were sent in the given order."""
+        messages = userauth.SSHUserAuthServer.protocolMessages
         self.assertEqual(
-            [userauth.messages[msg_type] for msg_type in message_types],
-            [userauth.messages[packet_type]
+            [messages[msg_type] for msg_type in message_types],
+            [messages[packet_type]
              for packet_type, contents in self.transport.packets])
 
     def assertBannerSent(self, banner_message, expected_language='en'):

@@ -150,11 +150,15 @@ class ITranslationImporter(Interface):
         :raise NotExportedFromLaunchpad: If the entry imported is not
             published and doesn't have the tag added by Launchpad on export
             time.
-        :return: a list of dictionaries with all errors found. Each dictionary
-            has three keys:
+        :return: a tuple of two lists: error descriptors, and warnings.
+
+        The errors list contains dictionaries describing messages that
+        couldn't be imported.  Each of those has three keys:
             - 'pomsgset': An `IPOMsgSet` associated with this error.
             - 'pomessage': The original message text in its native format.
             - 'error-message': The error message text.
+
+        The warnings list is simply a list of warning strings.
         """
 
 

@@ -106,6 +106,25 @@ You can list development distroseriess:
     ...     print devdist.name
     hoary
 
+You can list the serieses for a distribution,
+
+    >>> for series in ubuntu.serieses:
+    ...     print series.name
+    breezy-autotest
+    grumpy
+    hoary
+    warty
+
+as well as the distribution architecture series for a distribution:
+
+    >>> for architecture in ubuntu.architectures:
+    ...     print architecture.displayname
+    Ubuntu Breezy Badger Autotest i386
+    Ubuntu Hoary hppa
+    Ubuntu Hoary i386
+    Ubuntu Warty hppa
+    Ubuntu Warty i386
+
 You can use the has_published_binaries property to find out if the
 distribution has any binaries on disk.  This is useful when searching for
 packages and you need to tailor any user messages about what types of packages
