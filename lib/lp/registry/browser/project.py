@@ -55,9 +55,10 @@ from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
-    Navigation, StandardLaunchpadFacets, stepthrough, structured)
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
+    canonical_url, custom_widget, enabled_with_permission, stepthrough,
+    structured)
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets.popup import SinglePopupWidget
 
@@ -418,13 +419,12 @@ class ProjectAddProductView(ProductAddView):
         return ProjectGroupAddStepOne
 
 
-class ProjectSetView(object):
+class ProjectSetView(LaunchpadView):
 
     header = "Project groups registered in Launchpad"
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(ProjectSetView, self).__init__(context, request)
         self.form = self.request.form_ng
         self.soyuz = self.form.getOne('soyuz', None)
         self.rosetta = self.form.getOne('rosetta', None)

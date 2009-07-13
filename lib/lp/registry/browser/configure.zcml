@@ -540,7 +540,7 @@
     <browser:pages
         for="lp.registry.interfaces.project.IProjectSet"
         facet="overview"
-        permission="launchpad.Admin"
+        permission="launchpad.ProjectReview"
         class="lp.registry.browser.project.ProjectSetView">
         <browser:page
             name="+all"
@@ -554,13 +554,13 @@
         for="lp.registry.interfaces.project.IProjectSet"
         class="lp.registry.browser.project.ProjectAddView"
         facet="overview"
-        permission="launchpad.Admin"
+        permission="launchpad.ProjectReview"
         template="../templates/project-add.pt"/>
     <browser:pages
         for="lp.registry.interfaces.project.IProjectSet"
         facet="overview"
         class="lp.registry.browser.project.ProjectSetView"
-        permission="launchpad.Admin">
+        permission="launchpad.ProjectReview">
         <browser:page
             name="+review"
             template="../templates/registry-review.pt"/>
