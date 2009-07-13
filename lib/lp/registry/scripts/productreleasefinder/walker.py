@@ -120,7 +120,7 @@ class WalkerBase:
             try:
                 (dirnames, filenames) = self.list(sub_dir)
             except WalkerError, exc:
-                self.log.warning('could not retrieve directory '
+                self.log.info('could not retrieve directory '
                                    'listing for %s', sub_dir)
                 continue
             except UnicodeEncodeError:
@@ -128,7 +128,7 @@ class WalkerBase:
                 # XXX sinzui 2009-06-22 bug=70524:
                 # This problem should be reported to the project drivers
                 # so that they can attempt to get this fixed.
-                self.log.warning(
+                self.log.info(
                     "Unicode error parsing %s page '%s'" %
                     (self.base, sub_dir))
                 continue
