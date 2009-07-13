@@ -269,8 +269,8 @@ class HandleReleaseTestCase(unittest.TestCase):
         # parsed from the url given.
         ztm = self.layer.txn
         output = StringIO()
-        logging.basicConfig(level=logging.CRITICAL)
         logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
         logger.addHandler(logging.StreamHandler(output))
         prf = ProductReleaseFinder(ztm, logger)
 
