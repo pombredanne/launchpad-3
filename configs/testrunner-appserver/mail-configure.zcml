@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <!-- This file configures Launchpad to use direct delivery of mail to an SMTP
      server listening on port 9025.  Generally, this will only work when the
      Launchpad/Mailman integration tests are running.  Those tests spawn a
