@@ -1127,7 +1127,7 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         # ReclaimBranchSpaceJob implements IReclaimBranchSpaceJob.
         job = getUtility(IReclaimBranchSpaceJobSource).create(
             self.factory.getUniqueInteger())
-        self.assertCorrectlyProvides(job, IReclaimBranchSpaceJob)
+        self.assertProvides(job, IReclaimBranchSpaceJob)
 
     def test_scheduled_in_future(self):
         # A freshly created ReclaimBranchSpaceJob is scheduled to run in a
