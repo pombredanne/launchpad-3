@@ -936,10 +936,10 @@ hierarchy, and the application tabs. */
 /* === Help pane === */
 /*
 Inline help is contained in a <div> and dynamically positioned by JavaScript.
-*
-* This should appear above all other content.  Needs to be
-* above the Google Maps element on the profile pages, which
-* has a z-index of 9999.  See bug #380349.
+
+This should appear above all other content.  Needs to be
+above the Google Maps element on the profile pages, which
+has a z-index of 9999.  See bug #380349.
 */
 #help-pane {
   position: absolute;
