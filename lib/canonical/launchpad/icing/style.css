@@ -53,11 +53,11 @@ h1 .edit {
 span.invisible-link {display:none;} 
 span.invisible {left:-9999em;display:block;} 
 .sprite {padding:2px 0 0 18px;}
-.sprite-left {padding:2px 18px 0 0; background-position:left;}
+.sprite-after {padding: 2px 18px 0 0;}
 
 .add {background:url(icon-sprites) 0 0 no-repeat;}
-.edit {background:url(icon-sprites) 0 -32px no-repeat;}
-.remove {background:url(icon-sprites) 0 -64px no-repeat;}
+.edit {background:url(icon-sprites) 100% -32px no-repeat;}
+.remove {background:url(icon-sprites) 100% -64px no-repeat;}
 .info {background:url(icon-sprites) 0 -96px no-repeat;}
 .question {background:url(icon-sprites) 0 -128px no-repeat;}
 .download-icon {background:url(icon-sprites) 0 -160px no-repeat;}
@@ -124,7 +124,7 @@ span.invisible {left:-9999em;display:block;}
 .translate-icon {background:url(icon-sprites-2) 0 -800px no-repeat;}
 .translation-file {background:url(icon-sprites-2) 0 -832px no-repeat;}
 .translation-template {background:url(icon-sprites-2) 0 -864px no-repeat;}
-.trash-icon {background:url(icon-sprites-2) 0 -896px no-repeat;}
+.trash-icon {background:url(icon-sprites-2) 100% -896px no-repeat;}
 .stop {background:url(icon-sprites-2) 0 -928px no-repeat;}
 .bounty {background:url(icon-sprites-2) 0 -960px no-repeat;}
 .list {background:url(icon-sprites-2) 0 -992px no-repeat;}
