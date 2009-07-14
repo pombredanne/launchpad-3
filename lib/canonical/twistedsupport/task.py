@@ -59,8 +59,7 @@ class ITaskConsumer(Interface):
         """
 
     def noTasksFound():
-        """Calld when no tasks were found.
-        """
+        """Called when no tasks were found."""
 
     def taskProductionFailed(reason):
         """Called when the task source fails to produce a task.
