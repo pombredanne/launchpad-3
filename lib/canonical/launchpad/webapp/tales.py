@@ -1107,28 +1107,30 @@ class PillarFormatterAPI(CustomizableFormatter):
     def link(self, view_name):
         """The html to show a link to a Product, Project or distribution.
 
-        In the case of Products, we display the custom icon if one exists.
-        """
+        In the case of Products or Project groups we display the custom
+        icon, if one exists."""
+
         html = super(PillarFormatterAPI, self).link(view_name)
-        if IProduct.providedBy(self._context):
-            product = self._context
+        context = self._context
+        if IProduct.providedBy(context) or IProject.providedBy(context):
             custom_icon = ObjectImageDisplayAPI(
-                product)._get_custom_icon_url()
-            url = canonical_url(product, view_name=view_name)
+                context)._get_custom_icon_url()
+            url = canonical_url(context, view_name=view_name)
             summary = self._make_link_summary()
             if custom_icon is None:
-                css_class = ObjectImageDisplayAPI(product).sprite_css()
+                css_class = ObjectImageDisplayAPI(context).sprite_css()
                 html = (u'<a href="%s" class="%s">%s</a>') % (
                     url, css_class, summary)
             else:
                 html = (u'<a href="%s" class="bg-image" '
                          'style="background-image: url(%s)">%s</a>') % (
                     url, custom_icon, summary)
-            license_status = self._context.license_status
-            if license_status != LicenseStatus.OPEN_SOURCE:
-                html = '<span title="%s">%s (%s)</span>' % (
-                    license_status.description, html,
-                    license_status.title)
+            if IProduct.providedBy(context):
+                license_status = context.license_status
+                if license_status != LicenseStatus.OPEN_SOURCE:
+                    html = '<span title="%s">%s (%s)</span>' % (
+                            license_status.description, html,
+                            license_status.title)
         return html
 
 

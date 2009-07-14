@@ -78,6 +78,10 @@ class IHasTranslationTemplates(Interface):
     Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
     """
 
+    has_current_translation_templates = Bool(
+        title=_("Does this object have current translation templates?"),
+        readonly=True)
+
     def getCurrentTranslationTemplates(just_ids=False):
         """Return an iterator over all active translation templates.
 

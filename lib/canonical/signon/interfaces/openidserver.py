@@ -226,16 +226,6 @@ class IOpenIDPersistentIdentity(Interface):
     This interface is generally needed by the UI.
     """
     account = Attribute('The `IAccount` for the user.')
-    # XXX sinzui 2008-09-04 bug=264783:
-    # Remove old_openid_identity_url and new_*.
-    old_openid_identifier = Attribute(
-        'The old openid_identifier for the `IAccount`.')
-    old_openid_identity_url = Attribute(
-        'The old OpenID identity URL for the user.')
-    new_openid_identifier = Attribute(
-        'The new openid_identifier for the `IAccount`.')
-    new_openid_identity_url = Attribute(
-        'The new OpenID identity URL for the user.')
     openid_identity_url = Attribute(
         'The OpenID identity URL for the user.')
     openid_identifier = Attribute(

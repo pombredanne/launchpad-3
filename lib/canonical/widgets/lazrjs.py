@@ -44,10 +44,10 @@ class TextLineEditorWidget:
     #   trigger: the trigger (button) HTML code
     #   value: the current field value
     WIDGET_TEMPLATE = dedent(u"""\
-        <h1 id="%(id)s"><span
+        <%(tag)s id="%(id)s"><span
             class="yui-editable_text-text">%(value)s</span>
             %(trigger)s
-        </h1>
+        </%(tag)s>
         %(activation_script)s
         """)
 
@@ -63,10 +63,12 @@ class TextLineEditorWidget:
         YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
+                accept_empty: %(accept_empty)s,
+                initial_value_override: %(initial_value_override)s
             });
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
-                  patch: '%(attribute)s',
+                  patch: '%(public_attribute)s',
                   resource: '%(context_url)s'}});
             widget.render();
         });
@@ -74,7 +76,9 @@ class TextLineEditorWidget:
         """)
 
 
-    def __init__(self, context, attribute, edit_url, id=None, title="Edit"):
+    def __init__(self, context, attribute, edit_url, id=None, title="Edit",
+                 tag='h1', public_attribute=None, accept_empty=False,
+                 default_text=None, initial_value_override=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -84,15 +88,34 @@ class TextLineEditorWidget:
         :param id: The HTML id to use for this widget. Automatically
             generated if this is not provided.
         :param title: The string to use as the link title. Defaults to 'Edit'.
+        :param tag: The HTML tag to use.
+        :param public_attribute: If given, the name of the attribute in the
+            public webservice API.
+        :param accept_empty: Whether the field accepts empty input or not.
+        :param default_text: Text to show in the unedited field, if the
+            parameter value is missing or None.
+        :param initial_value_override: Use this text for the initial edited
+            field value instead of the attribute's current value.
         """
         self.context = context
         self.attribute = attribute
         self.edit_url = edit_url
+        self.tag = tag
+        if accept_empty:
+            self.accept_empty = 'true'
+        else:
+            self.accept_empty = 'false'
+        if public_attribute is None:
+            self.public_attribute = attribute
+        else:
+            self.public_attribute = public_attribute
         if id is None:
             self.id = self._generate_id()
         else:
             self.id = id
         self.title = title
+        self.default_text = default_text
+        self.initial_value_override = initial_value_override
 
     @classmethod
     def _generate_id(cls):
@@ -102,16 +125,26 @@ class TextLineEditorWidget:
 
     def __call__(self):
         """Return the HTML to include to render the widget."""
+        # We can't use the value None because of the cgi.escape() and because
+        # that wouldn't look very good in the ui!
+        value = getattr(self.context, self.attribute, self.default_text)
+        if value is None:
+            value = self.default_text
         params = {
             'activation_script': '',
             'trigger': '',
             'edit_url': self.edit_url,
             'id': self.id,
             'title': self.title,
-            'value': cgi.escape(getattr(self.context, self.attribute)),
+            'value': cgi.escape(value),
             'context_url': canonical_url(
                 self.context, path_only_if_possible=True),
             'attribute': self.attribute,
+            'tag': self.tag,
+            'public_attribute': self.public_attribute,
+            'accept_empty': self.accept_empty,
+            'initial_value_override': simplejson.dumps(
+                self.initial_value_override),
             }
         # Only display the trigger link and the activation script if
         # the user can write the attribute.
@@ -146,8 +179,6 @@ class InlineEditPickerWidget:
         :param show_remove_button: Show remove button below search box.
         :param show_assign_me_button: Show assign-me button below search box.
         :param remove_button_text: Override default button text: "Remove"
-
-
         """
         self.context = context
         self.request = request
