@@ -20,7 +20,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.scripts.productreleasefinder.filter import (
     FilterPattern)
 from lp.registry.scripts.productreleasefinder.finder import (
-    ProductReleaseFinder)
+    extract_version, ProductReleaseFinder)
 
 
 class FindReleasesTestCase(unittest.TestCase):
@@ -269,8 +269,8 @@ class HandleReleaseTestCase(unittest.TestCase):
         # parsed from the url given.
         ztm = self.layer.txn
         output = StringIO()
-        logging.basicConfig(level=logging.CRITICAL)
         logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
         logger.addHandler(logging.StreamHandler(output))
         prf = ProductReleaseFinder(ztm, logger)
 
@@ -284,6 +284,78 @@ class HandleReleaseTestCase(unittest.TestCase):
         prf.handleRelease('evolution', 'trunk', url)
         self.assertEqual(
             "Unable to parse version from %s\n" % url, output.getvalue())
+
+
+class ExtractVersionTestCase(unittest.TestCase):
+    """Verify that release version names are correctly extracted."""
+
+    def test_extract_version_common_name(self):
+        """Verify the common file names."""
+        version = extract_version('emacs-21.10.tar.gz')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.01.tar.gz')
+        self.assertEqual(version, '21.10.01')
+        version = extract_version('emacs-21.10.01.2.tar.gz')
+        self.assertEqual(version, '21.10.01.2')
+        version = extract_version('bzr-1.15rc1.tar.gz')
+        self.assertEqual(version, '1.15rc1')
+        version = extract_version('bzr-1.15_rc1.tar.gz')
+        self.assertEqual(version, '1.15-rc1')
+        version = extract_version('bzr-1.15_beta1.tar.gz')
+        self.assertEqual(version, '1.15-beta1')
+
+    def test_extract_version_debian_name(self):
+        """Verify that the debian-style .orig suffix is handled."""
+        version = extract_version('emacs-21.10.orig.tar.gz')
+        self.assertEqual(version, '21.10')
+
+    def test_extract_version_name_with_supported_types(self):
+        """Verify that the file's mimetype is supported."""
+        version = extract_version('emacs-21.10.tar.gz')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.tar')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.gz')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.tar.Z')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.tar.bz2')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.zip')
+        self.assertEqual(version, '21.10')
+
+    def test_extract_version_name_with_flavors(self):
+        """Verify that language, processor, and packaging are removed."""
+        version = extract_version('furiusisomount-0.8.1.0_de_DE.tar.gz')
+        self.assertEqual(version, '0.8.1.0')
+        version = extract_version('glow-0.2.0_all.deb')
+        self.assertEqual(version, '0.2.0')
+        version = extract_version('glow-0.2.1_i386.deb')
+        self.assertEqual(version, '0.2.1')
+        version = extract_version('ipython-0.8.4.win32-setup.exe')
+        self.assertEqual(version, '0.8.4')
+        version = extract_version('Bazaar-1.16.1.win32-py2.5.exe')
+        self.assertEqual(version, '1.16.1')
+        version = extract_version(' Bazaar-1.16.0-OSX10.5.dmg')
+        self.assertEqual(version, '1.16.0')
+        version = extract_version('Bazaar-1.16.2-OSX10.4-universal-py25.dmg')
+        self.assertEqual(version, '1.16.2')
+        version = extract_version('Bazaar-1.16.3.exe')
+        self.assertEqual(version, '1.16.3')
+        version = extract_version('partitionmanager-21-2.noarch.rpm')
+        self.assertEqual(version, '21-2')
+
+    def test_extract_version_name_with_uppercase(self):
+        """Verify that the file's version is lowercases."""
+        version = extract_version('client-2.4p1A.tar.gz')
+        self.assertEqual(version, '2.4p1a')
+
+    def test_extract_version_name_with_bad_characters(self):
+        """Verify that the file's version is lowercases."""
+        version = extract_version('vpnc-0.2-rm+zomb-pre1.tar.gz')
+        self.assertEqual(version, '0.2-rm-zomb-pre1')
+        version = extract_version('warzone2100-2.0.5_rc1.tar.bz2')
+        self.assertEqual(version, '2.0.5-rc1')
 
 
 def test_suite():

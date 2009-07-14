@@ -202,12 +202,12 @@ class TestBugLinking(BzrSyncTestCase):
     def test_ignoreNonExistentBug(self):
         """If the bug doesn't actually exist, we just ignore it."""
         self.assertRaises(NotFoundError, getUtility(IBugSet).get, 99999)
-        self.assertEqual([], list(self.db_branch.bug_branches))
+        self.assertEqual([], list(self.db_branch.linked_bugs))
         self.commitRevision(
             rev_id='rev1',
             revprops={'bugs': 'https://launchpad.net/bugs/99999 fixed'})
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
-        self.assertEqual([], list(self.db_branch.bug_branches))
+        self.assertEqual([], list(self.db_branch.linked_bugs))
 
     def test_multipleBugsInProperty(self):
         """Create BugBranch links for *all* bugs in the property."""

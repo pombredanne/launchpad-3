@@ -1778,6 +1778,17 @@ a.update-retry {
     padding-left: 1em;
 }
 
+/* Brand the related PPA versions with the PPA icon (not currently
+   in the sprite image.) */
+div#slide-trigger {
+    padding:8px 0 8px 32px;
+    background:url('/@@/ppa-large') 0 0 no-repeat;
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
+}
+div#slide-trigger:hover {
+    text-decoration: underline
+}
 dl#ppa_packaging dd {
     margin-left: 16px;
 }
@@ -1926,6 +1937,10 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 
 body.tab-branches table.listing .section-heading {
   color: #d18b39;
+}
+
+body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead {
+  color: #666666;
 }
 
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }

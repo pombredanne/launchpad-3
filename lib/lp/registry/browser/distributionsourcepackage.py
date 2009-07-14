@@ -157,7 +157,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
         return results
 
     @property
-    def latest_published_ppa_versions(self):
+    def related_ppa_versions(self):
         """Return a list of the latest 3 ppas with related publishings.
 
         The list contains dictionaries each with a key of 'archive' and
@@ -175,23 +175,23 @@ class DistributionSourcePackageView(LaunchpadFormView):
         # we grab the first 20 results and iterate through to find three
         # distinct archives (20 is a magic number being greater than
         # 3 * number of distroseries).
-        latest_related_archives = self.context.findRelatedArchives()
-        latest_related_archives.config(limit=20)
-        latest_three_archives = []
-        for archive in latest_related_archives:
-            if archive in latest_three_archives:
+        related_archives = self.context.findRelatedArchives()
+        related_archives.config(limit=20)
+        top_three_archives = []
+        for archive in related_archives:
+            if archive in top_three_archives:
                 continue
             else:
-                latest_three_archives.append(archive)
+                top_three_archives.append(archive)
 
-            if len(latest_three_archives) == 3:
+            if len(top_three_archives) == 3:
                 break
 
-        # Now we'll find the relevant publications for the latest
+        # Now we'll find the relevant publications for the top
         # three archives.
         archive_set = getUtility(IArchiveSet)
         publications = archive_set.getPublicationsInArchives(
-                self.context.sourcepackagename, latest_three_archives,
+                self.context.sourcepackagename, top_three_archives,
                 self.context.distribution)
 
         # Collect the publishings for each archive
@@ -202,7 +202,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
         # Then construct a list of dicts with the results for easy use in
         # the template, preserving the order of the archives:
         archive_versions = []
-        for archive in latest_three_archives:
+        for archive in top_three_archives:
             versions = []
 
             # For each publication, append something like:

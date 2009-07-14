@@ -33,7 +33,7 @@ from lp.code.browser.branch import BranchView
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
 from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
@@ -237,18 +237,19 @@ class RevisionListingFeed(FeedBase):
         """See `IFeed`."""
         return "%s/@@/branch" % self.site_url
 
-    def _getRawItems(self):
-        """Get the raw set of items for the feed."""
-        raise NotImplementedError
+    def _getRevisionCache(self):
+        """Return the revision cache limited to the revision context."""
+        raise NotImplementedError(self._getRevisionCache)
 
     def _getItemsWorker(self):
         """Create the list of items.
 
         Called by getItems which may cache the results.
         """
-        items = self._getRawItems()
+        cache = self._getRevisionCache()
+        revisions = cache.public().getRevisions().config(limit=self.quantity)
         # Convert the items into their feed entry representation.
-        items = [self.itemToFeedEntry(item) for item in items]
+        items = [self.itemToFeedEntry(item) for item in revisions]
         return items
 
     def itemToFeedEntry(self, revision):
@@ -294,14 +295,9 @@ class PersonRevisionFeed(RevisionListingFeed):
         else:
             return 'Latest Revisions by %s' % self.context.displayname
 
-    def _getRawItems(self):
-        """See `RevisionListingFeed._getRawItems`.
-
-        Return the public revisions by this person, or by people in this team.
-        """
-        query = getUtility(IRevisionSet).getPublicRevisionsForPerson(
-            self.context)
-        return list(query[:self.quantity])
+    def _getRevisionCache(self):
+        """See `RevisionListingFeed`."""
+        return getUtility(IRevisionCache).authoredBy(self.context)
 
 
 class ProjectRevisionFeedBase(RevisionListingFeed):
@@ -318,14 +314,9 @@ class ProductRevisionFeed(ProjectRevisionFeedBase):
 
     usedfor = IProduct
 
-    def _getRawItems(self):
-        """See `RevisionListingFeed._getRawItems`.
-
-        Return the public revisions in this product.
-        """
-        query = getUtility(IRevisionSet).getPublicRevisionsForProduct(
-            self.context)
-        return list(query[:self.quantity])
+    def _getRevisionCache(self):
+        """See `RevisionListingFeed`."""
+        return getUtility(IRevisionCache).inProduct(self.context)
 
 
 class ProjectRevisionFeed(ProjectRevisionFeedBase):
@@ -333,14 +324,9 @@ class ProjectRevisionFeed(ProjectRevisionFeedBase):
 
     usedfor = IProject
 
-    def _getRawItems(self):
-        """See `RevisionListingFeed._getRawItems`.
-
-        Return the public revisions in products that are part of this project.
-        """
-        query = getUtility(IRevisionSet).getPublicRevisionsForProject(
-            self.context)
-        return list(query[:self.quantity])
+    def _getRevisionCache(self):
+        """See `RevisionListingFeed`."""
+        return getUtility(IRevisionCache).inProject(self.context)
 
 
 class RevisionPerson:

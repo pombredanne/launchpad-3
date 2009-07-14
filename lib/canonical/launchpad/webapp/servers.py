@@ -47,9 +47,7 @@ from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IPerson, IPersonSet,
     IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
     TimestampOrderingError, ClockSkew)
-from canonical.signon.interfaces.openidserver import IOpenIDApplication
 import canonical.launchpad.layers
-import canonical.signon.layers
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -1047,8 +1045,6 @@ class AnswersBrowserRequest(LaunchpadBrowserRequest):
             'Vary', 'Cookie, Authorization, Accept-Language')
 
 
-# ---- openid
-
 class AccountPrincipalMixin:
     """Mixin for publication that works with person-less accounts."""
 
@@ -1065,30 +1061,6 @@ class AccountPrincipalMixin:
             principal = auth_utility.unauthenticatedPrincipal()
             assert principal is not None, "Missing unauthenticated principal."
         return principal
-
-
-class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
-    """The publication used for OpenID requests."""
-
-    def getApplication(self, request):
-        """Return the `IOpenIDApplication`."""
-        return getUtility(IOpenIDApplication)
-
-
-class IdBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.signon.layers.IdLayer)
-
-
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove OpenIDPublication and OpenIDBrowserRequest.
-class OpenIDPublication(IdPublication):
-    """The publication used for old OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
-
-
-class OpenIDBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.signon.layers.OpenIDLayer)
 
 
 # ---- feeds
@@ -1424,9 +1396,6 @@ def register_launchpad_request_publication_factories():
                TranslationsPublication),
         VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
         VWSHRP('answers', AnswersBrowserRequest, AnswersPublication),
-        VHRP('id', IdBrowserRequest, IdPublication),
-        # XXX sinzui 2008-09-04 bug=264783: Remove openid.
-        VHRP('openid', OpenIDBrowserRequest, OpenIDPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         WebServiceRequestPublicationFactory(
             'api', WebServiceClientRequest, WebServicePublication),

@@ -679,7 +679,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def _hasBugBranch(self):
         """Return whether the bug has a branch linked to it."""
-        return self._context.bug.bug_branches.count() > 0
+        return self._context.bug.linked_branches.count() > 0
 
     def _hasSpecification(self):
         """Return whether the bug is linked to a specification."""
@@ -770,7 +770,7 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
             badges += self.icon_template % (
                 "mentoring", "Mentoring offered", "sprite mentoring")
 
-        if self._context.branch_links.count() > 0:
+        if self._context.linked_branches.count() > 0:
             badges += self.icon_template % (
                 "branch", "Branch is available", "sprite branch")
 
@@ -2692,8 +2692,7 @@ class FormattersAPI:
                 person_formatter = PersonFormatterAPI(person)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
-                    address,
-                    '<a href="%s" class="%s">&nbsp;%s</a>' % (
+                    address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
                         canonical_url(person), css_sprite, address))
 
         return text
@@ -2851,6 +2850,7 @@ class PageMacroDispatcher:
     implements(ITraversable)
 
     master = ViewPageTemplateFile('../templates/main-template.pt')
+    base = ViewPageTemplateFile('../../../lp/app/templates/base-layout.pt')
 
     def __init__(self, context):
         # The context of this object is a view object.
@@ -2884,7 +2884,7 @@ class PageMacroDispatcher:
         if pagetype not in self._pagetypes:
             raise TraversalError('unknown pagetype: %s' % pagetype)
         self.context.__pagetype__ = pagetype
-        return self.master.macros['master']
+        return self._template.macros['master']
 
     def haspage(self, layoutelement):
         pagetype = getattr(self.context, '__pagetype__', None)
@@ -2937,7 +2937,6 @@ class PageMacroDispatcher:
                 portlets=True,
                 navigationtabs=True),
         'onecolumn':
-            # XXX 20080130 mpt: Should eventually become the new 'default'.
             LayoutElements(
                 actionsmenu=False,
                 applicationborder=True,
@@ -2972,4 +2971,48 @@ class PageMacroDispatcher:
                 portlets=False),
        'freeform':
             LayoutElements(),
+       'main_side':
+            LayoutElements(
+                actionsmenu=False,
+                applicationborder=False,
+                applicationtabs=True,
+                globalsearch=True,
+                heading=False,
+                pageheading=False,
+                portlets=True),
+       'main_only':
+            LayoutElements(
+                actionsmenu=False,
+                applicationborder=False,
+                applicationtabs=True,
+                globalsearch=True,
+                heading=False,
+                pageheading=False,
+                portlets=False),
+       'searchless':
+            LayoutElements(
+                actionsmenu=False,
+                applicationborder=False,
+                applicationtabs=True,
+                globalsearch=False,
+                heading=False,
+                pageheading=False,
+                portlets=False),
+       'locationless':
+            LayoutElements(),
         }
+
+    _3_0_pagetypes = [
+        'main_side',
+        'main_only',
+        'searchless',
+        'locationless',
+        ]
+
+    @property
+    def _template(self):
+        """Return the ViewPageTemplateFile used by layout."""
+        if self.context.__pagetype__ in self._3_0_pagetypes:
+            return self.base
+        else:
+            return self.master

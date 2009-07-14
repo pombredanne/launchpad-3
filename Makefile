@@ -67,17 +67,27 @@ check_db_merge: $(PY)
 # This can be removed once we move to zc.buildout and we have versioned
 # dependencies, but for now we run both Launchpad and all other
 # dependencies tests for any merge to sourcecode.
-check_sourcecode_merge: build check
+check_sourcecode_merge: check
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
-check: build
+# Clean before running the test suite, since the build might fail depending
+# what source changes happened. (e.g. apidoc depends on interfaces)
+check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
+
+jscheck: build
+	# Run all JavaScript integration tests.  The test runner takes care of
+	# setting up the test environment.
+	@echo
+	@echo "Running the JavaScript integration test suite"
+	@echo
+	${PY} utilities/test-all-windmills.py
 
 check_mailman: build
 	# Run all tests, including the Mailman integration

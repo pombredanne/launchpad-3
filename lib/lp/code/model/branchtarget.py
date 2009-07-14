@@ -120,6 +120,13 @@ class PackageBranchTarget(_BaseBranchTarget):
             distribution=self.context.distribution,
             sourcepackagename=self.context.sourcepackagename)
 
+    def getBugTask(self, bug):
+        """See `IBranchTarget`."""
+        # XXX: rockstar - See bug 397251.  Basically, source packages may have
+        # specific bug tasks.  This should return those specific bugtasks in
+        # those cases.
+        return bug.default_bugtask
+
 
 class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
@@ -169,6 +176,10 @@ class PersonBranchTarget(_BaseBranchTarget):
     def assignKarma(self, person, action_name):
         """See `IBranchTarget`."""
         # Does nothing. No karma for +junk.
+
+    def getBugTask(self, bug):
+        """See `IBranchTarget`."""
+        return bug.default_bugtask
 
 
 class ProductBranchTarget(_BaseBranchTarget):
@@ -245,6 +256,13 @@ class ProductBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         person.assignKarma(action_name, product=self.product)
 
+    def getBugTask(self, bug):
+        """See `IBranchTarget`."""
+        task = bug.getBugTask(self.context)
+        if task is None:
+            # Just choose the first task for the bug.
+            task = bug.bugtasks[0]
+        return task
 
 
 def get_canonical_url_data_for_target(branch_target):
