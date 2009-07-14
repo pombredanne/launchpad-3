@@ -1173,7 +1173,8 @@ class PublishingSet:
 
         return self.getBuildsForSourceIds(source_publication_ids)
 
-    def _getSourceBinaryJoinForSources(self, source_publication_ids):
+    def _getSourceBinaryJoinForSources(
+        self, source_publication_ids, ignore_cruft=False):
         """Return the join linking sources with binaries."""
         # Import Build, BinaryPackageRelease and DistroArchSeries locally
         # to avoid circular imports, since Build uses
@@ -1185,7 +1186,7 @@ class PublishingSet:
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
-        return (
+        join_exprs = [
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 Build.sourcepackagereleaseID,
             BinaryPackageRelease.build == Build.id,
@@ -1195,19 +1196,38 @@ class PublishingSet:
                 DistroArchSeries.distroseriesID,
             BinaryPackagePublishingHistory.distroarchseriesID ==
                 DistroArchSeries.id,
-            BinaryPackagePublishingHistory.binarypackagerelease ==
-                BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.pocket ==
                SourcePackagePublishingHistory.pocket,
             BinaryPackagePublishingHistory.archiveID ==
                SourcePackagePublishingHistory.archiveID,
             In(BinaryPackagePublishingHistory.status,
                [enum.value for enum in active_publishing_status]),
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            In(SourcePackagePublishingHistory.id, source_publication_ids)]
 
-    def getUnpublishedBuildsForSources(self,
-                                       one_or_more_source_publications,
-                                       build_states=None):
+        if ignore_cruft:
+            # If we are ignoring cruft then it doesn't matter if the
+            # BPPH is for the specific build, as long as it has a BPR.version
+            # >= the version we expect from the BPR.version above.
+            # To do this we need something like:
+            # In(BinaryPackagePublishingHistory.binarypackagerelease,
+            #  sub-select that selects all bpr's with the same bpn as
+            # the bpn above and greater version?
+
+            # OK, I'm at a loss here...
+            # sub_select = Select(BinaryPackageRelease.id)
+            pass
+        else:
+            # Ensure we require the actual binary publishing for this
+            # specific build.
+            join_exprs.append(
+                BinaryPackagePublishingHistory.binarypackagerelease ==
+                    BinaryPackageRelease.id)
+
+        return join_exprs
+
+    def getUnpublishedBuildsForSources(
+        self, one_or_more_source_publications, build_states=None,
+        ignore_cruft=True):
         """See `IPublishingSet`."""
         # Import Build, BinaryPackageRelease and DistroArchSeries locally
         # to avoid circular imports, since Build uses
@@ -1225,9 +1245,14 @@ class PublishingSet:
             one_or_more_source_publications)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        find_spec = (SourcePackagePublishingHistory, Build, DistroArchSeries)
+
+        source_binary_join = self._getSourceBinaryJoinForSources(
+            source_publication_ids, ignore_cruft=ignore_cruft)
+
         published_builds = store.find(
-            (SourcePackagePublishingHistory, Build, DistroArchSeries),
-            self._getSourceBinaryJoinForSources(source_publication_ids),
+            find_spec,
+            source_binary_join,
             BinaryPackagePublishingHistory.datepublished != None,
             Build.buildstate.is_in(build_states))
 
