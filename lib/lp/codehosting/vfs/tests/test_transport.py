@@ -9,7 +9,7 @@ import unittest
 try:
     from bzrlib.tests import per_transport
 except ImportError:
-    from bzrlib.tests import test_transport_implementations
+    from bzrlib.tests import test_transport_implementations as per_transport
 
 from bzrlib.transport import chroot, get_transport, Transport
 from bzrlib.transport.local import LocalTransport

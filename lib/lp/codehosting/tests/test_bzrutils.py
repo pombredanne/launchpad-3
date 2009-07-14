@@ -14,7 +14,6 @@ from bzrlib.tests import (
 try:
     from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
 except ImportError:
-    raise
     from bzrlib.tests.branch_implementations import (
         TestCaseWithBzrDir, branch_scenarios)
 from lp.codehosting.bzrutils import (
