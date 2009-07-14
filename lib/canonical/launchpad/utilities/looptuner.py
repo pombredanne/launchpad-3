@@ -98,7 +98,7 @@ class LoopTuner:
         while not self.operation.isDone():
 
             if (self.abort_time is not None
-                and last_clock > start_time + self.abort_time):
+                and last_clock >= start_time + self.abort_time):
                 self.log.warn(
                     "Task aborted after %d seconds." % self.abort_time)
                 break
