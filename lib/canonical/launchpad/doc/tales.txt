@@ -1165,15 +1165,9 @@ MenuLinks (ILink) can be formatted anchored text and icons.
 The link can be rendered as an anchored icon.
 
     >>> print test_tales('menu_link/fmt:icon', menu_link=menu_link)
-    <a href="http://launchpad.dev/+place" 
+    <a href="http://launchpad.dev/+place"
        class="menu-link-test_link sprite icon" title="summary"><span
        class="invisible-link">text</span></a>
-
-The link can be rendered as text with an icon to the right.
-
-    >>> print test_tales('menu_link/fmt:link-icon', menu_link=menu_link)
-    <a href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite icon" title="summary">text</a>
 
 The default rendering can be explicitly called too, text with an icon to
 the left.
@@ -1182,12 +1176,36 @@ the left.
     <a href="http://launchpad.dev/+place"
        class="menu-link-test_link sprite icon" title="summary">text</a>
 
-fmt:icon-link is an alias for fmt:link so that the fmt names are consistent.
+The 'edit', 'remove' and 'trash-icon' links are rendered as text followed
+by an icon.
 
+    >>> menu_link.icon = 'edit'
+    >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
+    <a href="http://launchpad.dev/+place"
+       class="menu-link-test_link sprite-after edit" title="summary">text</a>
+
+    >>> menu_link.icon = 'remove'
+    >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
+    <a href="http://launchpad.dev/+place"
+       class="menu-link-test_link sprite-after remove" title="summary">text</a>
+
+    >>> menu_link.icon = 'trash-icon'
+    >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
+    <a href="http://launchpad.dev/+place"
+       class="menu-link-test_link sprite-after trash-icon" title="summary">text</a>
+
+fmt:icon-link and fmt:link-icon are deprecated. They are an alias for
+fmt:link. They do not control formatting as they once did; fmt:link control
+the format based on the icon name.
+
+    >>> menu_link.icon = 'icon'
     >>> print test_tales('menu_link/fmt:icon-link', menu_link=menu_link)
     <a href="http://launchpad.dev/+place"
        class="menu-link-test_link sprite icon" title="summary">text</a>
 
+    >>> print test_tales('menu_link/fmt:link-icon', menu_link=menu_link)
+    <a href="http://launchpad.dev/+place"
+       class="menu-link-test_link sprite icon" title="summary">text</a>
 
 And the url format is also available.
 
