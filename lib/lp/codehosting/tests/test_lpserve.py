@@ -106,6 +106,8 @@ class TestLaunchpadServe(TestCaseWithTransport):
     def start_server_inet(self, user_id=None):
         """Start an lp-serve server subprocess.
 
+        Copied from `bzrlib.tests.test_serve`.
+
         :param user_id: The database id of the user to run as. If not
             provided, defaults to 1.
 
@@ -120,8 +122,9 @@ class TestLaunchpadServe(TestCaseWithTransport):
             ['lp-serve', '--inet', str(user_id)])
 
         # Connect to the server.
-        # We use this url because while this is no valid URL to connect to
-        # this server instance, the transport needs a URL.
+        # The transport needs a URL, but we don't have one for our server, so
+        # we're just going to give it this nearly-arbitrary-yet-well-formed
+        # one.
         url = 'bzr://localhost/'
         client_medium = medium.SmartSimplePipesClientMedium(
             process.stdout, process.stdin, url)
