@@ -5,40 +5,31 @@ __metaclass__ = type
 __all__ = [
     'AuthTokenSetNavigation',
     'AuthTokenView',
-    'BaseAuthTokenView',
     'NewAccountView',
-    'ResetPasswordView',
+    'ResetAccountPasswordView',
     'ValidateEmailView',
     ]
-
-import urllib
-import cgi
 
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import Interface
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.login import logInPrincipal
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
-    LaunchpadFormView, LaunchpadView)
+    LaunchpadFormView)
 
 from canonical.signon.browser.openidserver import OpenIDMixin
+from canonical.launchpad.browser.logintoken import (
+    BaseTokenView, LoginTokenView, ResetPasswordView, ValidateTeamEmailView)
 from canonical.launchpad.interfaces import IMasterObject
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.authtoken import (
-    IAuthToken, IAuthTokenSet, LoginTokenType)
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+    IAuthTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
-from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import (
     INewPersonForm, IPerson, IPersonSet, PersonCreationRationale)
 
@@ -48,7 +39,7 @@ class AuthTokenSetNavigation(GetitemNavigation):
     usedfor = IAuthTokenSet
 
 
-class AuthTokenView(LaunchpadView):
+class AuthTokenView(LoginTokenView):
     """The default view for AuthToken.
 
     This view will check the token type and then redirect to the specific view
@@ -60,59 +51,11 @@ class AuthTokenView(LaunchpadView):
     they got this token because they tried to do something that required email
     address confirmation, but that confirmation is already concluded.
     """
-
-    PAGES = {
-        LoginTokenType.NEWACCOUNT: '+newaccount',
-        LoginTokenType.NEWPERSONLESSACCOUNT: '+newaccount',
-        LoginTokenType.NEWPROFILE: '+newaccount',
-        LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
-        LoginTokenType.VALIDATEEMAIL: '+validateemail',
-        }
-
-    def render(self):
-        if self.context.date_consumed is None:
-            url = urllib.basejoin(
-                str(self.request.URL), self.PAGES[self.context.tokentype])
-            self.request.response.redirect(url)
-        else:
-            return super(AuthTokenView, self).render()
+    PAGES = LoginTokenView.sso_pages
 
 
-class BaseAuthTokenView(OpenIDMixin):
-    """A view class to be used by other LoginToken views."""
-
-    expected_token_types = ()
-    successfullyProcessed = False
-
-    def redirectIfInvalidOrConsumedToken(self):
-        """If this is a consumed or invalid token redirect to the LoginToken
-        default view and return True.
-
-        An invalid token is a token used for a purpose it wasn't generated for
-        (i.e. create a new account with a VALIDATEEMAIL token).
-        """
-        assert self.expected_token_types
-        if (self.context.date_consumed is not None
-            or self.context.tokentype not in self.expected_token_types):
-            self.request.response.redirect(canonical_url(self.context))
-            return True
-        else:
-            return False
-
-    def success(self, message):
-        """Indicate to the user that the token was successfully processed.
-
-        This involves adding a notification message, and redirecting the
-        user to their Launchpad page.
-        """
-        self.successfullyProcessed = True
-        self.request.response.addInfoNotification(message)
-
-    def logInPrincipalByEmail(self, email):
-        """Login the principal with the given email address."""
-        loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(email)
-        logInPrincipal(self.request, principal, email)
+class AuthTokenOpenIDMixinView(OpenIDMixin):
+    """An extended OpenID mixin to be used by other AuthToken views."""
 
     @property
     def has_openid_request(self):
@@ -137,60 +80,18 @@ class BaseAuthTokenView(OpenIDMixin):
         self.next_url = None
         return self.renderOpenIDResponse(self.createPositiveResponse())
 
-    def _cancel(self):
-        """Consume the LoginToken and set self.next_url.
 
-        next_url is set to the home page of this LoginToken's requester.
-        """
-        self.next_url = canonical_url(self.context.requester)
-        self.context.consume()
-
-    def accountWasSuspended(self, account, reason):
-        """Return True if the person's account was SUSPENDED, otherwise False.
-
-        When the account was SUSPENDED, the Warning Notification with the
-        reason is added to the request's response. The LoginToken is consumed.
-
-        :param account: The IAccount.
-        :param reason: A sentence that explains why the SUSPENDED account
-            cannot be used.
-        """
-        if account.status != AccountStatus.SUSPENDED:
-            return False
-        suspended_account_mailto = (
-            'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
-        message = structured(
-              '%s Contact a <a href="%s">Launchpad admin</a> '
-              'about this issue.' % (reason, suspended_account_mailto))
-        self.request.response.addWarningNotification(message)
-        self.context.consume()
-        return True
-
-
-class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
-
-    schema = IAuthToken
-    field_names = ['email', 'password']
-    custom_widget('password', PasswordChangeWidget)
-    label = 'Reset password'
-    expected_token_types = (LoginTokenType.PASSWORDRECOVERY,)
-
-    def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        super(ResetPasswordView, self).initialize()
-
-    def validate(self, form_values):
-        """Validate the email address."""
-        email = form_values.get("email", "").strip()
-        # All operations with email addresses must be case-insensitive. We
-        # enforce that in EmailAddressSet, but here we only do a comparison,
-        # so we have to .lower() them first.
-        if email.lower() != self.context.email.lower():
-            self.addError(_(
-                "The email address you provided didn't match the address "
-                "you provided when requesting the password reset."))
+class ResetAccountPasswordView(AuthTokenOpenIDMixinView, ResetPasswordView):
 
     def reactivate(self, data):
+        """Reactivate the account of this token.
+
+        The regular view for resetting a user's password (ResetPasswordView)
+        reactivates the person and account of the token, but this one runs on
+        the OpenID server so it can't change the Person table, so we override
+        reactivate() here to call IAccount.reactivate() instead of
+        IPerson.reactivate().
+        """
         emailaddress = getUtility(IEmailAddressSet).getByEmail(
             self.context.email)
         # Need to remove the security proxy of the account because at this
@@ -203,154 +104,26 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
-        """Reset the user's password. When password is successfully changed,
-        the AuthToken (self.context) used is consumed, so nobody can use
-        it again.
-        """
-        account = self.context.requester_account
-        # Suspended accounts cannot reset their password.
-        reason = ('Your password cannot be reset because your account '
-                  'is suspended.')
-        if self.accountWasSuspended(account, reason):
-            return
-
-        naked_account = removeSecurityProxy(account)
-        # Reset password can be used to reactivate a deactivated account.
-        if account.status == AccountStatus.DEACTIVATED:
-            self.reactivate(data)
-            self.request.response.addInfoNotification(
-                _('Welcome back to Launchpad.'))
-        else:
-            naked_account.password = data.get('password')
-
-        person = self.context.requester
-
-        if self.context.redirection_url is not None:
-            self.next_url = self.context.redirection_url
-        elif not self.has_openid_request:
-            self.next_url = self.request.getApplicationURL()
-        else:
-            assert self.has_openid_request, (
-                'No redirection URL specified and this is not part of an '
-                'OpenID authentication.')
-
-        self.context.consume()
-
-        self.logInPrincipalByEmail(self.context.email)
-
-        self.request.response.addInfoNotification(
-            _('Your password has been reset successfully.'))
-
+        super(ResetAccountPasswordView, self).continue_action.success(data)
         return self.maybeCompleteOpenIDRequest()
 
-    @action(_('Cancel'), name='cancel')
-    def cancel_action(self, action, data):
-        self._cancel()
 
+class ValidateEmailView(AuthTokenOpenIDMixinView, ValidateTeamEmailView):
 
-class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
-
-    schema = Interface
-    field_names = []
     expected_token_types = (LoginTokenType.VALIDATEEMAIL,)
-
-    def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        super(ValidateEmailView, self).initialize()
-
-    def validate(self, data):
-        """Make sure the email address this token refers to is not in use."""
-        validated = (
-            EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
-        requester = self.context.requester
-        account = self.context.requester_account
-
-        emailset = getUtility(IEmailAddressSet)
-        email = emailset.getByEmail(self.context.email)
-        if email is not None:
-            if email.personID is not None and (
-                requester is None or email.personID != requester.id):
-                dupe = email.person
-                dname = cgi.escape(dupe.name)
-                # Yes, hardcoding an autogenerated field name is an evil
-                # hack, but if it fails nothing will happen.
-                # -- Guilherme Salgado 2005-07-09
-                url = allvhosts.configs['mainsite'].rooturl
-                url += '/people/+requestmerge?field.dupeaccount=%s' % dname
-                self.addError(
-                        structured(_(
-                    'This email address is already registered for another '
-                    'Launchpad user account. This account can be a '
-                    'duplicate of yours, created automatically, and in this '
-                    'case you should be able to <a href="${url}">merge them'
-                    '</a> into a single one.',
-                    mapping=dict(url=url))))
-            elif account is not None and email.accountID != account.id:
-                # Email address is owned by a personless account.  We
-                # can't offer to perform a merge here.
-                self.addError(
-                    'This email address is already registered for another '
-                    'account')
-            elif email.status in validated:
-                self.addError(_(
-                    "This email address is already registered and validated "
-                    "for your Launchpad account. There's no need to validate "
-                    "it again."))
-            else:
-                # Yay, email is not used by anybody else and is not yet
-                # validated.
-                pass
-
-    @action(_('Cancel'), name='cancel')
-    def cancel_action(self, action, data):
-        self._cancel()
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
-        """Mark the new email address as VALIDATED in the database.
-
-        If this is the first validated email of this person, it'll be marked
-        as the preferred one.
-
-        If the requester is a team, the team's contact address is removed (if
-        any) and this becomes the team's contact address.
-        """
-        if self.context.redirection_url is not None:
-            self.next_url = self.context.redirection_url
-        elif self.context.requester is not None:
-            self.next_url = canonical_url(self.context.requester)
-        else:
-            assert self.has_openid_request, (
-                'No redirection URL specified and this is not part of an '
-                'OpenID authentication.')
-
-        email = self._ensureEmail()
-        self.markEmailAsValid(email)
-
-        self.context.consume()
-        self.request.response.addInfoNotification(
-            _('Email address successfully confirmed.'))
+        super(ValidateEmailView, self).continue_action.success(data)
         return self.maybeCompleteOpenIDRequest()
 
-    def _ensureEmail(self):
-        """Make sure self.requester has this token's email address as one of
-        its email addresses and return it.
-        """
-        emailset = getUtility(IEmailAddressSet)
-        email = emailset.getByEmail(self.context.email)
-        if email is None:
-            email = emailset.new(
-                email=self.context.email,
-                person=self.context.requester,
-                account=self.context.requester_account)
-        return email
-
     def markEmailAsValid(self, email):
-        """Mark the given email address as valid."""
+        """See `ValidateEmailView`"""
         self.context.requester_account.validateAndEnsurePreferredEmail(email)
 
 
-class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
+class NewAccountView(
+        BaseTokenView, AuthTokenOpenIDMixinView, LaunchpadFormView):
     """Page to create a new Launchpad account."""
 
     created_person = None
@@ -487,10 +260,8 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
         request we use PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
         """
         if self.has_openid_request:
-            rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
-                self.openid_request.trust_root)
-            if rpconfig is not None:
-                rationale = rpconfig.creation_rationale
+            if self.rpconfig is not None:
+                rationale = self.rpconfig.creation_rationale
             else:
                 rationale = (
                     PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
