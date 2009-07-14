@@ -13,8 +13,9 @@ from zope.interface import implements
 
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
-    AccountPrincipalMixin, LaunchpadBrowserRequest,
+    AccountPrincipalMixin, LaunchpadBrowserRequest, LaunchpadTestRequest,
     VirtualHostRequestPublicationFactory)
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 from canonical.signon.interfaces.openidserver import IOpenIDApplication
 from canonical.signon.layers import OpenIDLayer
@@ -36,6 +37,19 @@ class OpenIDPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
 
 class OpenIDBrowserRequest(LaunchpadBrowserRequest):
     implements(OpenIDLayer)
+
+
+class OpenIDServerTestRequest(LaunchpadTestRequest):
+    implements(OpenIDLayer)
+
+    def __init__(self, body_instream=None, environ=None, **kw):
+        test_environ = {
+            'SERVER_URL': allvhosts.configs['openid'].rooturl,
+            'HTTP_HOST': allvhosts.configs['openid'].hostname}
+        if environ is not None:
+            test_environ.update(environ)
+        super(OpenIDServerTestRequest, self).__init__(
+            body_instream=body_instream, environ=test_environ, **kw)
 
 
 def openid_request_publication_factory():
