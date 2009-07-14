@@ -940,7 +940,7 @@ class IPublishingSet(Interface):
         """
 
     def getUnpublishedBuildsForSources(one_or_more_source_publications,
-                                       build_states=None, ignore_cruft=True):
+                                       build_states=None):
         """Return all the unpublished builds for each source.
 
         :param one_or_more_source_publications: list of, or a single
@@ -948,10 +948,6 @@ class IPublishingSet(Interface):
         :param build_states: list of build states to which the result should
             be limited. Defaults to BuildStatus.FULLYBUILT if none are
             specified.
-        :param ignore_cruft: optional param indicating whether builds that
-            have not had their own binaries published but later versions
-            of those binaries are already published by other sources, should
-            be ignored.
         :return: a storm ResultSet containing tuples of
             (`SourcePackagePublishingHistory`, `Build`)
         """
