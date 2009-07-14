@@ -22,6 +22,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.model.pofile import POFile, DummyPOFile
+from lp.translations.model.potemplate import get_pofiles_for
 from lp.translations.model.translator import Translator
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage, IDistroSeriesLanguageSet)
@@ -69,7 +70,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
 
     def getPOFilesFor(self, potemplates):
         """See `IDistroSeriesLanguage`."""
-        return self.distroseries.getPOFilesFor(potemplates, self.language)
+        return get_pofiles_for(potemplates, self.language)
 
     @property
     def translators(self):
@@ -163,9 +164,8 @@ class DummyDistroSeriesLanguage(RosettaStats):
     @property
     def pofiles(self):
         """See `IDistroSeriesLanguage`."""
-        templates = self.distroseries.getCurrentTranslationTemplates()
-        language = self.language
-        return [DummyPOFile(template, language) for template in templates]
+        return self.getPOFilesFor(
+            self.distroseries.getCurrentTranslationTemplates())
 
     def getPOFilesFor(self, potemplates):
         """See `IDistroSeriesLanguage`."""

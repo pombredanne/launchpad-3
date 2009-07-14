@@ -612,7 +612,7 @@ class POFileTranslateView(BaseTranslationView):
             'translated': self.context.getPOTMsgSetTranslated,
             'untranslated': self.context.getPOTMsgSetUntranslated,
             'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
-            'changed_in_launchpad': 
+            'changed_in_launchpad':
                 self.context.getPOTMsgSetChangedInLaunchpad,
             }
 

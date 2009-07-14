@@ -444,9 +444,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             looking_for = POTemplate
 
         result = store.find(looking_for, And(
+            self.product.official_rosetta == True,
             POTemplate.iscurrent == True,
-            POTemplate.productseries == self,
-            self.product.official_rosetta == True))
+            POTemplate.productseries == self))
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     @property

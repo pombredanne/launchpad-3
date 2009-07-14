@@ -42,6 +42,13 @@ class IProductSeriesLanguage(IRosettaStats):
         "language. This includes only the real pofiles where translations "
         "exist.")
 
+    def getPOFilesFor(potemplates):
+        """Return `POFiles` for each of `potemplates`, in the same order.
+
+        For any `POTemplate` that does not have a translation to the
+        required language, a `DummyPOFile` is provided.
+        """
+
 
 class IProductSeriesLanguageSet(Interface):
     """The set of productserieslanguages."""

@@ -17,7 +17,7 @@ from storm.store import Store
 
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.model.pofile import DummyPOFile, POFile
-from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.potemplate import get_pofiles_for, POTemplate
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
 
@@ -92,8 +92,7 @@ class ProductSeriesLanguage(RosettaStats):
 
     def getPOFilesFor(self, potemplates):
         """See `IProductSeriesLanguage`."""
-        return self.productseries.getPOFilesFor(
-            potemplates, self.language, self.variant)
+        return get_pofiles_for(potemplates, self.language, self.variant)
 
 
 class DummyProductSeriesLanguage(ProductSeriesLanguage):

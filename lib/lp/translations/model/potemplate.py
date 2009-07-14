@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_pofiles_for',
     'HasTranslationTemplatesMixin',
     'POTemplate',
     'POTemplateSet',
@@ -93,6 +94,36 @@ standardTemplateHeader = (
 
 standardPOFileHeader = (standardTemplateHeader +
     "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n")
+
+
+def get_pofiles_for(potemplates, language, variant=None):
+    """Return list of `IPOFile`s for given templates in given language.
+
+    :param potemplates: a list or sequence of `POTemplate`s.
+    :param language: the language that the `IPOFile`s should be for.
+    :return: a list of exactly one `IPOFile` for each `POTemplate`
+        in `potemplates`.  They will be `POFile`s where available,
+        and `DummyPOFile`s where not.
+    """
+    potemplates = list(potemplates)
+    if len(potemplates) == 0:
+        return []
+
+    template_ids = [template.id for template in potemplates]
+
+    pofiles = Store.of(potemplates[0]).find(POFile, And(
+        POFile.potemplateID.is_in(template_ids),
+        POFile.language == language,
+        POFile.variant == variant))
+
+    mapping = dict((pofile.potemplate.id, pofile) for pofile in pofiles)
+    result = [mapping.get(id) for id in template_ids]
+    for entry, pofile in enumerate(result):
+        assert pofile == result[entry], "This enumerate confuses me."
+        if pofile is None:
+            result[entry] = DummyPOFile(potemplates[entry], language, variant)
+
+    return result
 
 
 class POTemplate(SQLBase, RosettaStats):
@@ -1435,31 +1466,6 @@ class HasTranslationTemplatesMixin:
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         raise NotImplementedError('This must be provided when subclassing.')
-
-    def getPOFilesFor(self, potemplates, language, variant=None):
-        """Return list of `IPOFile`s for given templates in given language.
-
-        :param potemplates: a list or sequence of `POTemplate`s.
-        :param language: the language that the `IPOFile`s should be for.
-        :return: a list of exactly one `IPOFile` for each `POTemplate`
-            in `potemplates`.  They will be `POFile`s where available,
-            and `DummyPOFile`s where not.
-        """
-        template_ids = [template.id for template in potemplates]
-        pofiles = Store.of(self).find(POFile, And(
-            POFile.potemplateID.is_in(template_ids),
-            POFile.language == language,
-            POFile.variant == variant))
-
-        mapping = dict((pofile.potemplate.id, pofile) for pofile in pofiles)
-        result = [mapping.get(id) for id in template_ids]
-        for entry, pofile in enumerate(result):
-            assert pofile == result[entry], "This enumerate confuses me."
-            if pofile is None:
-                result[entry] = DummyPOFile(
-                    potemplates[entry], language, variant)
-
-        return result
 
     def getTranslationTemplateFormats(self):
         """See `IHasTranslationTemplates`."""

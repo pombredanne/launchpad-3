@@ -11,7 +11,7 @@ from lp.translations.interfaces.translationfileformat import (
 from lp.testing import TestCaseWithFactory, verifyObject
 
 
-class HasTranslationTemplatesMixin(TestCaseWithFactory):
+class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
     """Test behaviour of objects with translation templates."""
 
     layer = ZopelessDatabaseLayer
@@ -19,7 +19,7 @@ class HasTranslationTemplatesMixin(TestCaseWithFactory):
     def setUp(self):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
-        super(HasTranslationTemplatesMixin, self).setUp()
+        super(HasTranslationTemplatesTestMixin, self).setUp()
 
     def createTranslationTemplate(self, name, priority=0):
         """Attaches a template to appropriate container."""
@@ -189,7 +189,8 @@ class HasTranslationTemplatesMixin(TestCaseWithFactory):
             all_formats)
 
 
-class TestProductSeries(HasTranslationTemplatesMixin):
+class TestProductSeriesHasTranslationTemplates(
+    HasTranslationTemplatesTestMixin):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -199,12 +200,14 @@ class TestProductSeries(HasTranslationTemplatesMixin):
         return potemplate
 
     def setUp(self):
-        super(TestProductSeries, self).setUp()
+        super(TestProductSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.container.product.official_rosetta = True
+        self.product_or_distro = self.container.product
+        self.product_or_distro.official_rosetta = True
 
 
-class TestSourcePackage(HasTranslationTemplatesMixin):
+class TestSourcePackageHasTranslationTemplates(
+    HasTranslationTemplatesTestMixin):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -215,13 +218,14 @@ class TestSourcePackage(HasTranslationTemplatesMixin):
         return potemplate
 
     def setUp(self):
-        super(TestSourcePackage, self).setUp()
+        super(TestSourcePackageHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeSourcePackage()
         self.product_or_distro = self.container.distroseries.distribution
         self.product_or_distro.official_rosetta = True
 
 
-class TestDistroSeries(HasTranslationTemplatesMixin):
+class TestDistroSeriesHasTranslationTemplates(
+    HasTranslationTemplatesTestMixin):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -234,16 +238,19 @@ class TestDistroSeries(HasTranslationTemplatesMixin):
         return potemplate
 
     def setUp(self):
-        super(TestDistroSeries, self).setUp()
+        super(TestDistroSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeDistroRelease()
-        self.product_or_distro = self.container.product
+        self.product_or_distro = self.container.distribution
         self.product_or_distro.official_rosetta = True
 
 
 def test_suite():
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestProductSeries))
-    suite.addTest(loader.loadTestsFromTestCase(TestSourcePackage))
-    suite.addTest(loader.loadTestsFromTestCase(TestDistroSeries))
+    suite.addTest(loader.loadTestsFromTestCase(
+        TestProductSeriesHasTranslationTemplates))
+    suite.addTest(loader.loadTestsFromTestCase(
+        TestSourcePackageHasTranslationTemplates))
+    suite.addTest(loader.loadTestsFromTestCase(
+        TestDistroSeriesHasTranslationTemplates))
     return suite
