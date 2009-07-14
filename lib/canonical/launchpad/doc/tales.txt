@@ -1195,7 +1195,7 @@ by an icon.
        class="menu-link-test_link sprite-after trash-icon" title="summary">text</a>
 
 fmt:icon-link and fmt:link-icon are deprecated. They are an alias for
-fmt:link. They do not control formatting as they once did; fmt:link control
+fmt:link. They do not control formatting as they once did; fmt:link controls
 the format based on the icon name.
 
     >>> menu_link.icon = 'icon'
