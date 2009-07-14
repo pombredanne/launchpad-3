@@ -4,6 +4,42 @@
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
 
+# We require Bazaar 1.16.1 or higher.  
+# So first, grab the output of 'bzr --version' and transform the
+# version line, like "Bazaar (bzr) 1.16.1", into "1 16 1":
+VER_NUMS=`bzr --version | head -1 | sed -e 's/[^.0-9]//g' | sed -e 's/[.]/ /g'`
+# Now stuff each component into its own variable, so we can check sanely.
+MAJOR=0
+MINOR=0
+MICRO=0
+ITER=0
+for VER_COMPONENT in ${VER_NUMS}; do
+  if [ ${ITER} -eq 0 ]; then
+    MAJOR=${VER_COMPONENT}
+  elif [ ${ITER} -eq 1 ]; then
+    MINOR=${VER_COMPONENT}
+  elif [ ${ITER} -eq 2 ]; then
+    MICRO=${VER_COMPONENT}
+  # Ignore anything beyond micro -- nanoversions are irrelevant here.
+  fi
+  ITER=`expr ${ITER} + 1`
+done
+# Check that the version is high enough.
+BAZAAR_BAIL=0
+if [ ${MAJOR} -lt 1 ]; then
+  BAZAAR_BAIL=1
+elif [ ${MINOR} -lt 16 ]; then
+  BAZAAR_BAIL=1
+elif [ ${MINOR} -eq 16 -a ${MICRO} -lt 1 ]; then
+  BAZAAR_BAIL=1
+fi
+if [ ${BAZAAR_BAIL} -ne 0 ]; then
+  echo "ERROR: You don't have a high enough version of Bazaar:"
+  echo "  rocketfuel-setup requires bzr 1.16.1 or higher, but you have bzr ${MAJOR}.${MINOR}.${MICRO}."
+  echo "  Please see http://bazaar-vcs.org/Download to get a newer version."
+  exit 1
+fi
+
 if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
   echo "# Common environment variables for the rocketfuel-* scripts.
 #
