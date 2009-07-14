@@ -40,7 +40,11 @@ class SourcesListEntriesView(LaunchpadView):
     def initialize(self):
         self.terms = []
         for series in self.context.valid_series:
-            self.terms.append(SimpleTerm(series, series.name, series.title))
+            distro_version = "%(distro_name)s %(distro_version)s" % {
+                'distro_name': self.context.distribution.displayname,
+                'distro_version': series.version
+                }
+            self.terms.append(SimpleTerm(series, series.name, distro_version))
 
         # If the call-site requested that the widget be displayed initially
         # without a selection, or we were not able to find a sensible
@@ -48,8 +52,8 @@ class SourcesListEntriesView(LaunchpadView):
         # a distroseries.
         if self._initially_without_selection or self.default_series is None:
             self.terms.insert(0, SimpleTerm(
-                None, 'YOUR_DISTRO_SERIES_HERE',
-                'Choose a Distribution Series'))
+                None, 'YOUR_DISTRO_SERIES_HERE',"Choose your %s version" % (
+                    self.context.distribution.displayname)))
 
         field = Choice(__name__='series', title=_("Distro Series"),
                        vocabulary=SimpleVocabulary(self.terms), required=True)
