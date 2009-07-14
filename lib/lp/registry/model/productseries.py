@@ -443,6 +443,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         else:
             looking_for = POTemplate
 
+        # Select all current templates for this series, if the Product
+        # actually uses Launchpad Translations.  Otherwise, return an
+        # empty result.
         result = store.find(looking_for, And(
             self.product.official_rosetta == True,
             POTemplate.iscurrent == True,

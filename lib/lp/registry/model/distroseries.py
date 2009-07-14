@@ -1705,6 +1705,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         else:
             looking_for = POTemplate
 
+        # Select all current templates for this series, if the Product
+        # actually uses Launchpad Translations.  Otherwise, return an
+        # empty result.
         result = store.find(looking_for, And(
             self.distribution.official_rosetta == True,
             POTemplate.iscurrent == True,
