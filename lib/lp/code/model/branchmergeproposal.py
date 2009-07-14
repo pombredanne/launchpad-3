@@ -282,6 +282,9 @@ class BranchMergeProposal(SQLBase):
         # transitioning to the same state.
         self.queue_status = next_state
 
+    def setState(self, status):
+        """See `IBranchMergeProposal`."""
+
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
