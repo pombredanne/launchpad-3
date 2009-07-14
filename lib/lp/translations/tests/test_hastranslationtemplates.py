@@ -130,6 +130,29 @@ class HasTranslationTemplatesMixin(TestCaseWithFactory):
             set([pofile_sr.id, pofile_es.id]),
             current_translations_ids)
 
+    def test_has_current_translation_templates(self):
+        # A series without templates has no current templates.
+        self.assertFalse(self.container.has_current_translation_templates)
+
+        # A series with a current template has current templates.
+        first_template = self.createTranslationTemplate("first")
+        self.assertTrue(self.container.has_current_translation_templates)
+
+        # A series with only non-current templates has no current
+        # templates.
+        first_template.iscurrent = False
+        self.assertFalse(self.container.has_current_translation_templates)
+
+        # A series with current and non-current templates has current
+        # templates.
+        second_template = self.createTranslationTemplate("second")
+        self.assertTrue(self.container.has_current_translation_templates)
+
+        # A product or distribution that doesn't use Launchpad for
+        # translations has no current templates.
+        self.product_or_distro.official_rosetta = False
+        self.assertFalse(self.container.has_current_translation_templates)
+
     def test_getTranslationTemplateFormats(self):
         # Check that translation_template_formats works properly.
 
@@ -194,7 +217,8 @@ class TestSourcePackage(HasTranslationTemplatesMixin):
     def setUp(self):
         super(TestSourcePackage, self).setUp()
         self.container = self.factory.makeSourcePackage()
-        self.container.distroseries.distribution.official_rosetta = True
+        self.product_or_distro = self.container.distroseries.distribution
+        self.product_or_distro.official_rosetta = True
 
 
 class TestDistroSeries(HasTranslationTemplatesMixin):
@@ -212,7 +236,8 @@ class TestDistroSeries(HasTranslationTemplatesMixin):
     def setUp(self):
         super(TestDistroSeries, self).setUp()
         self.container = self.factory.makeDistroRelease()
-        self.container.distribution.official_rosetta = True
+        self.product_or_distro = self.container.product
+        self.product_or_distro.official_rosetta = True
 
 
 def test_suite():

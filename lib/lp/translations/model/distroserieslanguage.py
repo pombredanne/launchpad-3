@@ -1,7 +1,7 @@
 # Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0231
 
-"""An implementation of DistroSeriesLanguage objects."""
+"""An implementation of `DistroSeriesLanguage` objects."""
 
 __metaclass__ = type
 
@@ -25,6 +25,8 @@ from lp.translations.model.pofile import POFile, DummyPOFile
 from lp.translations.model.translator import Translator
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage, IDistroSeriesLanguageSet)
+
+
 class DistroSeriesLanguage(SQLBase, RosettaStats):
     """See `IDistroSeriesLanguage`.
 
