@@ -6,6 +6,7 @@
 
     <!-- HWDBApplication -->
     <class class="canonical.launchpad.systemhomes.HWDBApplication">
+        <allow interface="lazr.restful.interfaces.ITopLevelEntryLink" />
         <require
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IHWDBApplication" />
@@ -14,6 +15,7 @@
     <securedutility
         class="canonical.launchpad.systemhomes.HWDBApplication"
         provides="canonical.launchpad.interfaces.IHWDBApplication">
+        <allow interface="lazr.restful.interfaces.ITopLevelEntryLink" />
         <require
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IHWDBApplication" />
