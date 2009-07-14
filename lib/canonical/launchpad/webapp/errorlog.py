@@ -371,10 +371,10 @@ class ErrorReportingUtility:
             now = now.astimezone(UTC)
         else:
             now = datetime.datetime.now(UTC)
-        # we look up the error directory before allocating a new ID,
+        # We look up the error directory before allocating a new ID,
         # because if the day has changed, errordir() will reset the ID
-        # counter to zero
-        errordir = self.errordir(now)
+        # counter to zero.
+        self.errordir(now)
         self.lastid_lock.acquire()
         try:
             self.lastid += 1
