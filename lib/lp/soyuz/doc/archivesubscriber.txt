@@ -83,7 +83,7 @@ subscription for joesmith:
 The new subscription is returned and reflects the data:
 
     >>> print new_sub.displayname
-    Joe Smith's subscription to PPA for Celso Providelo
+    Joe Smith's access to PPA for Celso Providelo
 
     >>> print new_sub.registrant.name
     cprov
@@ -109,17 +109,17 @@ entry is created:
     From: Celso Providelo <noreply@launchpad.net>
     To: joe@example.com
     Reply-To: Celso Providelo <celso.providelo@canonical.com>
-    Subject: New PPA subscription for PPA for Celso Providelo
+    Subject: PPA access granted for PPA for Celso Providelo
     Hello Joe Smith,
     <BLANKLINE>
-    Launchpad: activate your archive subscription
-    ---------------------------------------------
+    Launchpad: access to a private archive
+    --------------------------------------
     <BLANKLINE>
-    Celso Providelo has invited you to subscribe to a private software
-    archive hosted by Launchpad.
+    Celso Providelo has granted you access to a private software archive
+    "PPA for Celso Providelo", which is hosted by Launchpad.
     <BLANKLINE>
     To start downloading and using software from this archive you need to
-    activate your subscription by visiting this link:
+    view your access details by visiting this link:
     <BLANKLINE>
     <http://launchpad.dev/~joesmith/+archivesubscriptions>
     <BLANKLINE>
