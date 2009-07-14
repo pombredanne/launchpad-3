@@ -28,6 +28,7 @@ class TranslationFileData:
         self.translation_domain = None
         self.is_template = None
         self.language_code = None
+        self.syntax_warnings = []
 
 
 class TranslationMessageData:

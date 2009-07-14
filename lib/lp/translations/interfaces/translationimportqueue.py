@@ -260,7 +260,14 @@ class ITranslationImportQueueEntry(Interface):
         """
 
     def setErrorOutput(output):
-        """Set error_output string."""
+        """Set `error_output` string."""
+
+    def addWarningOutput(output):
+        """Optionally add warning output to `error_output`.
+
+        This may not do everything you expect of it.  Read the code if
+        you need certainty.
+        """
 
     def getGuessedPOFile():
         """Return an IPOFile that we think this entry should be imported into.

@@ -37,6 +37,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad import _
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
@@ -66,7 +67,11 @@ class ProductSeriesNameField(ContentNameField):
 
 def validate_release_glob(value):
     """Validate that the URL is supported."""
-    if validate_url(value, ["http", "https", "ftp"]):
+    parts = urlparse(value)
+    if (validate_url(value, ["http", "https", "ftp"])
+        and '*' in parts[2]):
+        # The product release finder does support the url scheme and
+        # can match more than one file to the url's path part.
         return True
     else:
         raise LaunchpadValidationError('Invalid release URL pattern.')
