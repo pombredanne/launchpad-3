@@ -58,6 +58,10 @@ class ITaskConsumer(Interface):
         :param task: The interface for this is defined by the task source.
         """
 
+    def noTasksFound():
+        """Calld when no tasks were found.
+        """
+
     def taskProductionFailed(reason):
         """Called when the task source fails to produce a task.
 
@@ -112,6 +116,8 @@ class PollingTaskSource:
                 # task and the consumer need to figure out how to get output
                 # back to the end user.
                 task_consumer.taskStarted(task)
+            else:
+                task_consumer.noTasksFound()
         def task_failed(reason):
             # If task production fails, we inform the consumer of this, but we
             # don't let any deferred it returns delay subsequent polls.
@@ -196,6 +202,19 @@ class ParallelLimitedTaskConsumer:
         # failure modes.
         d.addErrback(log.err)
         d.addCallback(self._taskEnded)
+
+    def noTasksFound(self):
+        """See `ITaskConsumer`.
+
+        Called when the producer found no tasks.  If we are not currently
+        running any workers, exit.
+
+        This will only actually happen if the very first production doesn't
+        find any jobs, if we actually start any jobs then the exit condition
+        in _taskEnded will always be reached before this one.
+        """
+        if self._worker_count == 0:
+            self._terminationDeferred.callback(None)
 
     def taskProductionFailed(self, reason):
         """See `ITaskConsumer`.
