@@ -28,7 +28,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
             build.buildstate = BuildStatus.FULLYBUILT
         self.publishing_set = getUtility(IPublishingSet)
 
-    def get_builds_for_results(self, results):
+    def _getBuildsForResults(self, results):
         # The method returns (SPPH, Build) tuples, we just want the build.
         return [result[1] for result in results]
 
@@ -36,7 +36,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
         # If no binaries have been published then all builds are.
         results = self.publishing_set.getUnpublishedBuildsForSources(
             self.sources)
-        unpublished_builds = self.get_builds_for_results(results)
+        unpublished_builds = self._getBuildsForResults(results)
 
         self.assertContentEqual(unpublished_builds, self.builds)
 
@@ -49,7 +49,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         results = self.publishing_set.getUnpublishedBuildsForSources(
             self.sources)
-        unpublished_builds = self.get_builds_for_results(results)
+        unpublished_builds = self._getBuildsForResults(results)
 
         self.assertContentEqual(unpublished_builds, self.builds[1:3])
 
@@ -68,7 +68,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         results = self.publishing_set.getUnpublishedBuildsForSources(
             self.sources)
-        unpublished_builds = self.get_builds_for_results(results)
+        unpublished_builds = self._getBuildsForResults(results)
 
         # The original gedit build should not be included in the results as,
         # even though it is no longer published.
