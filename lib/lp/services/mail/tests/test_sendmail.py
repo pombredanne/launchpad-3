@@ -7,6 +7,7 @@ import unittest
 from zope.testing.doctest import DocTestSuite
 
 from lp.testing import TestCase
+from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
 
 
@@ -157,6 +158,22 @@ class TestMailController(TestCase):
             'text/plain', attachment['Content-Type'])
         self.assertEqual(
             'inline; filename="README"', attachment['Content-Disposition'])
+
+    def test_sendUsesRealTo(self):
+        """MailController.envelope_to is provided as to_addrs."""
+        ctrl = MailController('from@example.com', 'to@example.com', 'subject',
+                              'body', envelope_to=['to@example.org'])
+        sendmail_kwargs = {}
+        def fake_sendmail(message, to_addrs=None, bulk=True):
+            sendmail_kwargs.update(locals())
+        real_sendmail = sendmail.sendmail
+        sendmail.sendmail = fake_sendmail
+        try:
+            ctrl.send()
+        finally:
+            sendmail.sendmail = real_sendmail
+        self.assertEqual('to@example.com', sendmail_kwargs['message']['To'])
+        self.assertEqual(['to@example.org'], sendmail_kwargs['to_addrs'])
 
 
 def test_suite():

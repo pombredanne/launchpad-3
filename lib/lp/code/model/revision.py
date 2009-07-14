@@ -214,11 +214,7 @@ class RevisionSet:
         """See IRevisionSet.new()"""
         if properties is None:
             properties = {}
-        # create a RevisionAuthor if necessary:
-        try:
-            author = RevisionAuthor.byName(revision_author)
-        except SQLObjectNotFound:
-            author = self._createRevisionAuthor(revision_author)
+        author = self.acquireRevisionAuthor(revision_author)
 
         revision = Revision(revision_id=revision_id,
                             log_body=log_body,
@@ -241,6 +237,23 @@ class RevisionSet:
             RevisionProperty(revision=revision, name=name, value=value)
 
         return revision
+
+    def acquireRevisionAuthor(self, name):
+        """Find or create the RevisionAuthor with the specified name.
+
+        Name may be any arbitrary string, but if it is an email-id, and
+        its email address is a verified email address, it will be
+        automatically linked to the corresponding Person.
+
+        Email-ids come in two major forms:
+            "Foo Bar" <foo@bar.com>
+            foo@bar.com (Foo Bar)
+        """
+        # create a RevisionAuthor if necessary:
+        try:
+            return RevisionAuthor.byName(name)
+        except SQLObjectNotFound:
+            return self._createRevisionAuthor(name)
 
     def _timestampToDatetime(self, timestamp):
         """Convert the given timestamp to a datetime object.

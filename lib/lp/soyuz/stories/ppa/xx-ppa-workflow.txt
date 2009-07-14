@@ -305,8 +305,9 @@ LP-admins can also 'edit' PPAs of other people:
     >>> admin_browser.getLink("Change details") is not None
     True
 
-But more importantly, only LP administrators can 'administer' Personal
-Package Archives.
+But more importantly, administering Personal Package Archives is
+restricted to LP administrators and LP commercial administrators, as
+they need to be able to make PPAs private.
 
     >>> sample_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> print sample_browser.getLink("Administer archive")
@@ -314,9 +315,17 @@ Package Archives.
     ...
     LinkNotFoundError
 
+    >>> admin_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> admin_browser.getLink("Administer archive").click()
     >>> print admin_browser.title
     Administer Hack PPA
+
+    >>> commercial_browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> commercial_browser.open("http://launchpad.dev/~jblack/+archive")
+    >>> commercial_browser.getLink("Administer archive") is not None
+    True
+
 
 Trying to shortcut the URL as a non-privileged user does not work:
 

@@ -282,7 +282,7 @@ a.js-action:active {color: #093;}
 /* Help links */
 a.help {
   border-bottom: 1px dotted #03a;
-  cursor: help;}
+  cursor: help;
 }
 a.help:hover, a.help:hover {
   text-decoration: none;
@@ -1778,6 +1778,17 @@ a.update-retry {
     padding-left: 1em;
 }
 
+/* Brand the related PPA versions with the PPA icon (not currently
+   in the sprite image.) */
+div#slide-trigger {
+    padding:8px 0 8px 32px;
+    background:url('/@@/ppa-large') 0 0 no-repeat;
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
+}
+div#slide-trigger:hover {
+    text-decoration: underline
+}
 dl#ppa_packaging dd {
     margin-left: 16px;
 }
@@ -2016,6 +2027,10 @@ div#sub-unsub-spinner {
 }
 .unsub-icon, .editsub-icon {position:absolute; right:8px;}
 
+.highlight-message {
+  margin: 2em 0 2em 0;
+  font-size: 120%;
+}
 
 /* --- Blueprints --- */
 

@@ -31,6 +31,8 @@ from lp.translations.utilities.rosettastats import RosettaStats
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.translationimportqueue import (
+    collect_import_info)
 from lp.translations.model.translationmessage import (
     TranslationMessage, make_plurals_sql_fragment)
 from lp.translations.model.translationtemplateitem import (
@@ -1005,8 +1007,10 @@ class POFile(SQLBase, POFileMixIn):
         import_rejected = False
         needs_notification_for_imported = False
         error_text = None
+        errors, warnings = None, None
         try:
-            errors = translation_importer.importFile(entry_to_import, logger)
+            errors, warnings = (
+                translation_importer.importFile(entry_to_import, logger))
         except NotExportedFromLaunchpad:
             # We got a file that was not exported from Rosetta as a non
             # published upload. We log it and select the email template.
@@ -1018,13 +1022,17 @@ class POFile(SQLBase, POFileMixIn):
             entry_to_import.setErrorOutput(
                 "File was not exported from Launchpad.")
         except (BrokenTextError, TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError), exception:
+                TranslationFormatInvalidInputError, UnicodeDecodeError), (
+                exception):
             # The import failed with a format error. We log it and select the
             # email template.
             if logger:
                 logger.info(
                     'Error importing %s' % self.title, exc_info=1)
-            template_mail = 'poimport-syntax-error.txt'
+            if isinstance(exception, UnicodeDecodeError):
+                template_mail = 'poimport-bad-encoding.txt'
+            else:
+                template_mail = 'poimport-syntax-error.txt'
             import_rejected = True
             error_text = str(exception)
             entry_to_import.setErrorOutput(error_text)
@@ -1056,22 +1064,19 @@ class POFile(SQLBase, POFileMixIn):
             'was_obsolete_in_last_import IS FALSE AND pofile=%s' %
             (sqlvalues(self.id))).count()
 
-        replacements = {
-            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-            'elapsedtime': entry_to_import.getElapsedTimeText(),
-            'file_link': entry_to_import.content.http_url,
+        replacements = collect_import_info(entry_to_import, self, warnings)
+        replacements.update({
             'import_title': '%s translations for %s' % (
                 self.language.displayname, self.potemplate.displayname),
-            'importer': entry_to_import.importer.displayname,
             'language': self.language.displayname,
             'language_code': self.language.code,
-            'max_plural_forms': TranslationConstants.MAX_PLURAL_FORMS,
             'numberofmessages': msgsets_imported,
-            'template': self.potemplate.displayname,
-            }
+            })
 
         if error_text is not None:
             replacements['error'] = error_text
+
+        entry_to_import.addWarningOutput(replacements['warnings'])
 
         if import_rejected:
             # We got an error that prevented us to import any translation, we

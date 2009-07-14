@@ -423,7 +423,7 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Commercial')
+    @enabled_with_permission('launchpad.ProjectReview')
     def review_license(self):
         text = 'Review project'
         return Link('+review-license', text, icon='edit')
@@ -599,7 +599,7 @@ class ProductSetContextMenu(ContextMenu):
     def meetings(self):
         return Link('/sprints/', 'View meetings')
 
-    @enabled_with_permission('launchpad.Commercial')
+    @enabled_with_permission('launchpad.ProjectReview')
     def review_licenses(self):
         return Link('+review-licenses', 'Review projects')
 
@@ -869,6 +869,23 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, 'title',
             canonical_url(self.context, view_name='+edit'),
             id="product-title", title="Edit this title")
+        if self.context.programminglang is None:
+            additional_arguments = dict(
+                default_text='Not yet specified',
+                initial_value_override='',
+                )
+        else:
+            additional_arguments = {}
+        self.languages_edit_widget = TextLineEditorWidget(
+            self.context, 'programminglang',
+            canonical_url(self.context, view_name='+edit'),
+            id='programminglang', title='Edit programming languages',
+            tag='span', public_attribute='programming_language',
+            accept_empty=True,
+            **additional_arguments)
+        self.show_programming_languages = bool(
+            self.context.programminglang or
+            self.user == self.context.owner)
 
     @property
     def show_license_status(self):

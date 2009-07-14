@@ -26,7 +26,7 @@
           Name of project
         </h1>
         <p id="project-admin-whiteboard" class="whiteboard"
-           tal:condition="context/required:launchpad.Commercial">
+           tal:condition="context/required:launchpad.ProjectReview">
           <span tal:content="context/reviewer_whiteboard" />
           (<a href="+review-license">edit reviewer whiteboard</a>)
         </p>
@@ -136,9 +136,11 @@
         </p>
       </tal:launchpad_usage>
 
-      <p id="product-languages" tal:condition="context/programminglang">
-        <strong>Languages:</strong> <span tal:content="context/programminglang">Python</span>
-      </p>
+      <span tal:condition="view/show_programming_languages">
+      <p id="product-languages" />
+        <strong>Programming Languages:</strong>
+        <span tal:content="structure view/languages_edit_widget" />
+     </span>
 
       <p id="owner" tal:condition="context/owner">
         <strong>Maintainer:</strong> <tal:link replace="structure context/owner/fmt:link" />

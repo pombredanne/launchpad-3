@@ -117,20 +117,25 @@ def plural_form_mapper(first_expression, second_expression):
 
 
 class POSyntaxWarning(Warning):
-    """ Syntax warning in a po file """
+    """Syntax warning in a PO file."""
+    def __init__(self, message, line_number=None):
+        """Create (and log) a warning.
 
-    def __init__(self, lno=0, msg=None):
-        Warning.__init__(self)
-        self.lno = lno
-        self.msg = msg
+        :param message: warning text.
+        :param line_number: optional line number where the warning
+            occurred.  Leave out or pass zero if unknown.
+        """
+        Warning.__init__(self, message, line_number)
 
-    def __str__(self):
-        if self.msg:
-            return self.msg
-        elif self.lno is None:
-            return 'PO file: syntax warning on unknown line'
+        self.lno = line_number
+        if line_number:
+            self.message = 'Line %d: %s' % (line_number, message)
         else:
-            return 'PO file: syntax warning on entry at line %d' % self.lno
+            self.message = message
+        logging.info(self.message)
+
+    def __unicode__(self):
+        return unicode(self.message)
 
 
 def parse_charset(string_to_parse, is_escaped=True):
@@ -154,37 +159,6 @@ def parse_charset(string_to_parse, is_escaped=True):
             charset = default_charset
 
     return charset
-
-
-def get_header_dictionary(raw_header, handled_keys_order):
-    """Return dictionary with all keys in raw_header.
-
-    :param raw_header: string representing the header in native format.
-    :param handled_keys_order: list of header keys in the order they must
-        appear on export time.
-    :return: dictionary with all key/values in raw_header.
-    """
-    header_dictionary = {}
-    for line in raw_header.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            field, value = line.split(':', 1)
-        except ValueError:
-            logging.warning(POSyntaxWarning(
-                msg='PO file header entry has a bad entry: %s' % line))
-            continue
-
-        # Store in lower case the entries we know about so we are sure
-        # that we update entries even when it's not using the right
-        # character case.
-        if field.lower() in handled_keys_order:
-            field = field.lower()
-
-        header_dictionary[field] = value.strip()
-
-    return header_dictionary
 
 
 class POHeader:
@@ -231,6 +205,7 @@ class POHeader:
         self.number_plural_forms = None
         self.plural_form_expression = None
         self.launchpad_export_date = None
+        self.syntax_warnings = []
 
         # First thing to do is to get the charset used to decode correctly the
         # header content.
@@ -243,9 +218,42 @@ class POHeader:
 
         # Parse the header in a dictionary so it's easy for us to export it
         # with updates later.
-        self._header_dictionary = get_header_dictionary(
-            self._raw_header, self._handled_keys_order)
+        self._header_dictionary = self._getHeaderDict(self._raw_header)
         self._parseHeaderFields()
+
+    def _emitSyntaxWarning(self, message):
+        """Issue syntax warning, add to warnings list."""
+        self.syntax_warnings.append(unicode(POSyntaxWarning(message)))
+
+    def _getHeaderDict(self, raw_header):
+        """Return dictionary with all keys in raw_header.
+
+        :param raw_header: string representing the header in native format.
+        :param handled_keys_order: list of header keys in the order they must
+            appear on export time.
+        :return: dictionary with all key/values in raw_header.
+        """
+        header_dictionary = {}
+        for line in raw_header.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                field, value = line.split(':', 1)
+            except ValueError:
+                self._emitSyntaxWarning(
+                    'PO file header entry has a bad entry: %s' % line)
+                continue
+
+            # Store in lower case the entries we know about so we are sure
+            # that we update entries even when it's not using the right
+            # character case.
+            if field.lower() in self._handled_keys_order:
+                field = field.lower()
+
+            header_dictionary[field] = value.strip()
+
+        return header_dictionary
 
     def _decode(self, text):
         if text is None or isinstance(text, unicode):
@@ -255,15 +263,36 @@ class POHeader:
         try:
             text = unicode(text, charset)
         except UnicodeError:
-            logging.info(POSyntaxWarning(
-                msg='string is not in declared charset %r' % charset
-                ))
+            self._emitSyntaxWarning(
+                'String is not in declared charset %r' % charset)
             text = unicode(text, charset, 'replace')
         except LookupError:
             raise TranslationFormatInvalidInputError(
                 message='Unknown charset %r' % charset)
 
         return text
+
+    def _parseAssignments(self, text, separator=';', assigner='=',
+                          skipfirst=False):
+        """Parse "assignment" expressions in the plural-form header."""
+        parts = {}
+        if skipfirst:
+            start = 1
+        else:
+            start = 0
+        for assignment in text.split(separator)[start:]:
+            if not assignment.strip():
+                # empty
+                continue
+            if assigner in assignment:
+                name, value = assignment.split(assigner, 1)
+            else:
+                self._emitSyntaxWarning(
+                    "Found an error in the header content: %s" % text)
+                continue
+
+            parts[name.strip()] = value.strip()
+        return parts
 
     def _parseOptionalDate(self, date_string):
         """Attempt to parse `date_string`, or return None if invalid."""
@@ -276,7 +305,7 @@ class POHeader:
         """Return plural form values based on the parsed header."""
         for key, value in self._header_dictionary.iteritems():
             if key == 'plural-forms':
-                parts = parse_assignments(value)
+                parts = self._parseAssignments(value)
                 nplurals = parts.get('nplurals')
                 if nplurals is None:
                     # Number of plurals not specified.  Default to single
@@ -417,8 +446,8 @@ class POHeader:
 
     def updateFromTemplateHeader(self, template_header):
         """See `ITranslationHeaderData`."""
-        template_header_dictionary = get_header_dictionary(
-            template_header.getRawContent(), self._handled_keys_order)
+        template_header_dictionary = self._getHeaderDict(
+            template_header.getRawContent())
         # 'Domain' is a non standard header field. However, this is required
         # for good Plone support. It relies in that field to know the
         # translation domain. For more information you can take a look to
@@ -493,6 +522,11 @@ class POParser(object):
         # Marks when we're parsing a continuation of a string after an escaped
         # newline.
         self._escaped_line_break = False
+
+    def _emitSyntaxWarning(self, message):
+        warning = POSyntaxWarning(message, line_number=self._lineno)
+        if self._translation_file:
+            self._translation_file.syntax_warnings.append(unicode(warning))
 
     def _decode(self):
         # is there anything to convert?
@@ -647,8 +681,9 @@ class POParser(object):
 
     def _parseHeader(self, header_text, header_comment):
         try:
-            self._translation_file.header = POHeader(
-                header_text, header_comment)
+            header = POHeader(header_text, header_comment)
+            self._translation_file.header = header
+            self._translation_file.syntax_warnings += header.syntax_warnings
         except TranslationFormatInvalidInputError, error:
             if error.line_number is None:
                 error.line_number = self._message_lineno
@@ -657,9 +692,7 @@ class POParser(object):
             'fuzzy' in self._message.flags)
 
         if self._translation_file.messages:
-            logging.warning(
-                POSyntaxWarning(
-                    self._lineno, 'Header entry is not first entry'))
+            self._emitSyntaxWarning("Header entry is not first entry.")
 
         plural_formula = self._translation_file.header.plural_form_expression
         if plural_formula is None:
@@ -940,8 +973,7 @@ class POParser(object):
                         TranslationConstants.SINGULAR_FORM],
                     self._message.comment)
             else:
-                logging.warning(
-                    POSyntaxWarning(self._lineno, 'We got a second header.'))
+                self._emitSyntaxWarning("We got a second header.")
 
             # Start a new message.
             self._message = TranslationMessageData()
@@ -1033,13 +1065,12 @@ class POParser(object):
 
                 if (self._plural_case is not None) and (
                         new_plural_case != self._plural_case + 1):
-                    logging.warning(POSyntaxWarning(self._lineno,
-                                                'bad plural case number'))
+                    self._emitSyntaxWarning("Bad plural case number.")
                 if new_plural_case != self._plural_case:
                     self._plural_case = new_plural_case
                 else:
-                    logging.warning(POSyntaxWarning(
-                        self._lineno, 'msgstr[] but same plural case number'))
+                    self._emitSyntaxWarning(
+                        "msgstr[] repeats same plural case number.")
             else:
                 self._plural_case = TranslationConstants.SINGULAR_FORM
         elif self._section is None:
@@ -1052,11 +1083,9 @@ class POParser(object):
 
         line = line.strip()
         if len(line) == 0:
-            logging.info(
-                POSyntaxWarning(
-                    self._lineno,
-                    'line has no content; this is not supported by'
-                    'some implementations of msgfmt'))
+            self._emitSyntaxWarning(
+                "Line has no content; this is not supported by some "
+                "implementations of msgfmt.")
         return line
 
     def _parseLine(self, original_line):
@@ -1079,28 +1108,4 @@ class POParser(object):
                 line_number=self._lineno,
                 message='Invalid content: %r' % original_line)
 
-        self._parsed_content += line
-
-
-# convenience function to parse "assignment" expressions like
-# the plural-form header
-def parse_assignments(text, separator=';', assigner='=', skipfirst=False):
-    parts = {}
-    if skipfirst:
-        start = 1
-    else:
-        start = 0
-    for assignment in text.split(separator)[start:]:
-        if not assignment.strip():
-            # empty
-            continue
-        if assigner in assignment:
-            name, value = assignment.split(assigner, 1)
-        else:
-            logging.warning(POSyntaxWarning(
-                msg="Found an error in the header content: %s" % text
-                ))
-            continue
-
-        parts[name.strip()] = value.strip()
-    return parts
+        self._parsed_content += line 

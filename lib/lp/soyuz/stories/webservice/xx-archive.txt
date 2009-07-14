@@ -318,7 +318,7 @@ the 'main' component, or an error is returned:
     ...     cprov_archive['self_link'], 'newComponentUploader', {},
     ...     person=name12['self_link'], component_name='restricted')
     >>> print response.getOutput()
-    HTTP/1.1 400 Bad Request                                                  
+    HTTP/1.1 400 Bad Request
     ...
     InvalidComponent: Component for PPAs should be 'main'
     <BLANKLINE>
@@ -768,7 +768,8 @@ is already a current subscription:
 
 == Modifying privacy ==
 
-Modifying the privacy flag through the API is not allowed except for admins.
+Modifying the privacy flag through the API is not allowed except for
+admins and commercial admins.
 
     >>> import simplejson
     >>> def modify_archive(service, archive):
@@ -782,7 +783,7 @@ Modifying the privacy flag through the API is not allowed except for admins.
     >>> print modify_archive(user_webservice, sabdfl_archive)
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: (<Archive at ...>, 'private', 'launchpad.Admin')
+    Unauthorized: (<Archive at ...>, 'private', 'launchpad.Commercial')
     <BLANKLINE>
 
 

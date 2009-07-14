@@ -98,11 +98,12 @@
     <require
       permission="launchpad.Moderate"
       attributes="reject"
+      set_attributes="assignee"
       />
     <require
       permission="launchpad.Admin"
       attributes="setStatus"
-      set_attributes="priority assignee whiteboard"
+      set_attributes="priority whiteboard"
       />
     <!-- IBugLinkTarget -->
     <allow attributes="bugs bug_links" />
