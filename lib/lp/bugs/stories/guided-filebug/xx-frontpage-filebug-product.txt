@@ -19,11 +19,9 @@ Selecting a product that doesn't use Launchpad Bugs will produce a warning.
     ...     name='field.bugtarget.product').value = 'thunderbird'
     >>> user_browser.getControl('Summary').value = 'Some harry'
     >>> user_browser.getControl('Continue').click()
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
-    Mozilla Thunderbird does not use...
-    ...
-    You can refine and resubmit your bug report.
+    Mozilla Thunderbird (Unspecified) does not use...
 
 A link will be included to take the user back to the +filebug page:
 
@@ -161,9 +159,7 @@ Launchpad Bugs results in an informational page being displayed.
     >>> user_browser.getControl('Summary').value = 'Thunderbird crashes'
     >>> user_browser.getControl('Further information').value = 'Crash.'
     >>> user_browser.getControl('Submit Bug Report').click()
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
-    Mozilla Thunderbird does not use...
-    ...
-    You can refine and resubmit your bug report.
+    Mozilla Thunderbird (Unspecified) does not use...
 

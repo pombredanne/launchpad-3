@@ -282,7 +282,7 @@ a.js-action:active {color: #093;}
 /* Help links */
 a.help {
   border-bottom: 1px dotted #03a;
-  cursor: help;}
+  cursor: help;
 }
 a.help:hover, a.help:hover {
   text-decoration: none;
@@ -2027,6 +2027,10 @@ div#sub-unsub-spinner {
 }
 .unsub-icon, .editsub-icon {position:absolute; right:8px;}
 
+.highlight-message {
+  margin: 2em 0 2em 0;
+  font-size: 120%;
+}
 
 /* --- Blueprints --- */
 

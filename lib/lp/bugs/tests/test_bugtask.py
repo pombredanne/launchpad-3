@@ -4,28 +4,31 @@ __metaclass__ = type
 
 import unittest
 
+from zope.component import getUtility
 from zope.interface import providedBy
 from zope.testing.doctestunit import DocTestSuite
 
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.ftests import login
+from canonical.launchpad.interfaces.hwdb import HWBus, IHWDeviceSet
 from canonical.launchpad.searchbuilder import all, any
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance, BugTaskSearchParams, BugTaskStatus)
 from lp.bugs.model.bugtask import build_tag_search_clause
-from lp.testing import TestCase, normalize_whitespace
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.testing import TestCase, normalize_whitespace, TestCaseWithFactory
 
 
-class TestBugTaskDelta(unittest.TestCase):
+class TestBugTaskDelta(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        super(TestBugTaskDelta, self).setUp()
         login('foo.bar@canonical.com')
-        self.factory = LaunchpadObjectFactory()
 
     def test_get_empty_delta(self):
         # getDelta() should return None when no change has been made.
@@ -462,10 +465,42 @@ class TestBugTaskTagSearchClauses(TestCase):
                   (SELECT bug FROM BugTag))""")
 
 
+class TestBugTaskHardwareSearch(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBugTaskHardwareSearch, self).setUp()
+        self.layer.switchDbUser('launchpad')
+
+    def test_search_results_without_duplicates(self):
+        # Searching for hardware related bugtasks returns each
+        # matching task exactly once, even if devices from more than
+        # one HWDB submission match the given criteria.
+        new_submission = self.factory.makeHWSubmission(
+            emailaddress=u'test@canonical.com')
+        self.layer.txn.commit()
+        device = getUtility(IHWDeviceSet).getByDeviceID(
+            HWBus.PCI, '0x10de', '0x0455')
+        self.layer.switchDbUser('hwdb-submission-processor')
+        self.factory.makeHWSubmissionDevice(
+            new_submission, device, None, None, 1)
+        self.layer.txn.commit()
+        self.layer.switchDbUser('launchpad')
+        search_params = BugTaskSearchParams(
+            user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+            hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        bugtasks = ubuntu.searchTasks(search_params)
+        self.assertEqual(
+            [1, 2],
+            [bugtask.bug.id for bugtask in bugtasks])
+
 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestBugTaskDelta))
     suite.addTest(unittest.makeSuite(TestBugTaskTagSearchClauses))
+    suite.addTest(unittest.makeSuite(TestBugTaskHardwareSearch))
     suite.addTest(DocTestSuite('lp.bugs.model.bugtask'))
     return suite
