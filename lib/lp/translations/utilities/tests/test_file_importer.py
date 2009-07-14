@@ -315,7 +315,7 @@ class FileImporterTestCase(TestCaseWithFactory):
         for (pot_importer, po_importer) in importers:
             # Run the import and see if PotMsgSet and TranslationMessage
             # entries are correctly created in the DB.
-            errors = pot_importer.importFile()
+            errors, warnings = pot_importer.importFile()
             self.failUnlessEqual(len(errors), 0,
                 "POTFileImporter.importFile returned errors where there "
                 "should be none.")
@@ -325,7 +325,7 @@ class FileImporterTestCase(TestCaseWithFactory):
                 "POTFileImporter.importFile did not create an IPOTMsgSet "
                 "object in the database.")
 
-            errors = po_importer.importFile()
+            errors, warnings = po_importer.importFile()
             self.failUnlessEqual(len(errors), 0,
                 "POFileImporter.importFile returned errors where there "
                 "should be none.")
@@ -346,12 +346,12 @@ class FileImporterTestCase(TestCaseWithFactory):
         # with an earlier export timestamp to provoke an update conflict.
 
         # First import template.
-        errors = pot_importer.importFile()
+        errors, warnings = pot_importer.importFile()
         self.failUnlessEqual(len(errors), 0,
             "POTFileImporter.importFile returned errors where there should "
             "be none.")
         # Now import translation.
-        errors = po_importer.importFile()
+        errors, warnings = po_importer.importFile()
         self.failUnlessEqual(len(errors), 0,
             "POFileImporter.importFile returned errors where there should "
             "be none.")
@@ -363,7 +363,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             pot_importer, TEST_TRANSLATION_EXPORTED_EARLIER, False,
             po_importer.pofile)
         # Try to import this, too.
-        errors = po_importer2.importFile()
+        errors, warnings = po_importer2.importFile()
         self.failUnlessEqual(len(errors), 1,
             "No error detected when importing a pofile with an earlier "
             "export timestamp (update conflict).")
@@ -378,11 +378,11 @@ class FileImporterTestCase(TestCaseWithFactory):
         (pot_importer, po_importer) = self._createFileImporters(
             TEST_TEMPLATE_FOR_ERROR,
             TEST_TRANSLATION_FILE_WITH_ERROR, False)
-        errors = pot_importer.importFile()
+        errors, warnings = pot_importer.importFile()
         self.failUnlessEqual(len(errors), 0,
             "POTFileImporter.importFile returned errors where there should "
             "be none.")
-        errors = po_importer.importFile()
+        errors, warnings = po_importer.importFile()
         self.failUnlessEqual(len(errors), 1,
             "No error detected when importing a pofile with mismatched "
             "format specifiers.")

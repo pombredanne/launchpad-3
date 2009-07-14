@@ -2447,8 +2447,8 @@ class PersonSet:
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
         account = getUtility(IAccountSet).new(
-                account_rationale, displayname, openid_mnemonic=name,
-                password=password, password_is_encrypted=passwordEncrypted)
+                account_rationale, displayname, password=password,
+                password_is_encrypted=passwordEncrypted)
 
         person = self._newPerson(
             name, displayname, hide_email_addresses, rationale=rationale,

@@ -1129,7 +1129,7 @@ def notify_new_ppa_subscription(subscription, event):
 
     registrant_name = subscription.registrant.displayname
     ppa_name = subscription.archive.displayname
-    subject = 'New PPA subscription for ' + ppa_name
+    subject = 'PPA access granted for ' + ppa_name
 
     template = get_email_template('ppa-subscription-new.txt')
 

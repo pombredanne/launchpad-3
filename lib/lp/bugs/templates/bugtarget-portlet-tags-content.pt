@@ -6,7 +6,7 @@
                  other_tags view/other_tags"
      tal:condition="python: official_tags or other_tags">
   <div class="section" tal:condition="official_tags">
-    <h2>Official Tags</h2>
+    <h2>Official tags</h2>
 
     <table width="100%">
       <tr tal:repeat="bug_tag_info official_tags">
@@ -22,7 +22,7 @@
   </div>
 
   <div class="section" tal:condition="other_tags">
-    <h2 tal:condition="official_tags">Other Tags</h2>
+    <h2 tal:condition="official_tags">Other tags</h2>
     <h2 tal:condition="not: official_tags">Tags</h2>
 
     <table width="100%">

@@ -183,9 +183,9 @@
             name="+index"
             facet="overview"
             template="../templates/distroseriessourcepackagerelease-index.pt"/>
-        
+
         <!-- DistroSeriesSourcePackageRelease Portlets -->
-        
+
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -210,9 +210,9 @@
             name="+index"
             facet="overview"
             template="../templates/distroarchseriesbinarypackagerelease-index.pt"/>
-        
+
         <!-- DistroArchSeriesBinaryPackageRelease Portlets -->
-        
+
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -287,7 +287,7 @@
         facet="overview"
         for="lp.soyuz.interfaces.archive.IArchive"
         class="lp.soyuz.browser.archive.ArchiveAdminView"
-        permission="launchpad.Admin"
+        permission="launchpad.Commercial"
         template="../templates/archive-admin.pt"/>
     <browser:pages
         for="lp.soyuz.interfaces.archive.IArchive"
@@ -510,9 +510,9 @@
             name="+index"
             facet="overview"
             template="../templates/distroarchseriesbinarypackage-index.pt"/>
-        
+
         <!-- DistroArchSeriesBinaryPackage Portlets -->
-        
+
         <browser:page
             name="+portlet-details"
             template="../templates/distroarchseriesbinarypackage-portlet-details.pt"/>
@@ -571,9 +571,9 @@
             name="+index"
             facet="overview"
             template="../templates/distributionsourcepackagerelease-index.pt"/>
-        
+
         <!-- DistributionSourcePackageRelease Portlets -->
-        
+
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -602,9 +602,9 @@
             name="+index"
             facet="overview"
             template="../templates/distroseriesbinarypackage-index.pt"/>
-        
+
         <!-- DistroSeriesBinaryPackage Portlets -->
-        
+
         <browser:page
             name="+portlet-details"
             template="../templates/distroseriesbinarypackage-portlet-details.pt"/>

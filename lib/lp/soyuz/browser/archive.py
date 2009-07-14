@@ -275,14 +275,14 @@ class ArchiveContextMenu(ContextMenu):
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def admin(self):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')
 
     @enabled_with_permission('launchpad.Append')
     def manage_subscribers(self):
-        text = 'Manage subscriptions'
+        text = 'Manage access'
         link = Link('+subscriptions', text, icon='edit')
 
         # This link should only be available for private archives:

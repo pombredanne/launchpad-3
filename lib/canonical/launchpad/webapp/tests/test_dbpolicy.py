@@ -34,7 +34,7 @@ class ImplicitDatabasePolicyTestCase(TestCase):
 
     def test_defaults(self):
         for store in ALL_STORES:
-            self.assertCorrectlyProvides(
+            self.assertProvides(
                 getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR),
                 IMasterStore)
 
@@ -65,7 +65,7 @@ class BaseDatabasePolicyTestCase(ImplicitDatabasePolicyTestCase):
         getUtility(IStoreSelector).pop()
 
     def test_correctly_implements_IDatabasePolicy(self):
-        self.assertCorrectlyProvides(self.policy, IDatabasePolicy)
+        self.assertProvides(self.policy, IDatabasePolicy)
 
 
 class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
@@ -78,13 +78,13 @@ class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def test_defaults(self):
         for store in ALL_STORES:
-            self.assertCorrectlyProvides(
+            self.assertProvides(
                 getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR),
                 ISlaveStore)
 
     def test_master_allowed(self):
         for store in ALL_STORES:
-            self.assertCorrectlyProvides(
+            self.assertProvides(
                 getUtility(IStoreSelector).get(store, MASTER_FLAVOR),
                 IMasterStore)
 
@@ -125,7 +125,7 @@ class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
     def test_slave_allowed(self):
         # We get the master store even if the slave was requested.
         for store in ALL_STORES:
-            self.assertCorrectlyProvides(
+            self.assertProvides(
                 getUtility(IStoreSelector).get(store, SLAVE_FLAVOR),
                 ISlaveStore)
 
@@ -202,13 +202,13 @@ class ReadOnlyLaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
     def test_defaults(self):
         # default Store is the slave.
         for store in ALL_STORES:
-            self.assertCorrectlyProvides(
+            self.assertProvides(
                 getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR),
                 ISlaveStore)
 
     def test_slave_allowed(self):
         for store in ALL_STORES:
-            self.assertCorrectlyProvides(
+            self.assertProvides(
                 getUtility(IStoreSelector).get(store, SLAVE_FLAVOR),
                 ISlaveStore)
 
