@@ -907,7 +907,7 @@ class TwistedLayer(BaseLayer):
         # layer launches a process with spawnProcess, there should really be a
         # SIGCHLD handler installed to avoid PotentialZombieWarnings.  But
         # some tests in this layer use tachandler and it is fragile when a
-        # SIGCHLD handler is installed.
+        # SIGCHLD handler is installed.  tachandler needs to be fixed.
         # from twisted.internet import reactor
         # signal.signal(signal.SIGCHLD, reactor._handleSigchld)
 
