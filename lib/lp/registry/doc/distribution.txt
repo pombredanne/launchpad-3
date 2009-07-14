@@ -17,7 +17,8 @@ The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistribution, IDistributionSet)
-    >>> from canonical.launchpad.interfaces import IHasTranslationImports
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     IHasTranslationImports)
     >>> distroset = getUtility(IDistributionSet)
 
 To retrieve a specific distribution, use IDistributionSet.get:
@@ -104,6 +105,25 @@ You can list development distroseriess:
     >>> for devdist in devdists:
     ...     print devdist.name
     hoary
+
+You can list the serieses for a distribution,
+
+    >>> for series in ubuntu.serieses:
+    ...     print series.name
+    breezy-autotest
+    grumpy
+    hoary
+    warty
+
+as well as the distribution architecture series for a distribution:
+
+    >>> for architecture in ubuntu.architectures:
+    ...     print architecture.displayname
+    Ubuntu Breezy Badger Autotest i386
+    Ubuntu Hoary hppa
+    Ubuntu Hoary i386
+    Ubuntu Warty hppa
+    Ubuntu Warty i386
 
 You can use the has_published_binaries property to find out if the
 distribution has any binaries on disk.  This is useful when searching for

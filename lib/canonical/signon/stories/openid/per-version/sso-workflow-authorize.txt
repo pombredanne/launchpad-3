@@ -39,7 +39,7 @@ has not ever used Launchpad to authenticate with a relying party.
 
     >>> login('foo.bar@canonical.com')
 
-    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.signon.dbpolicy import SSODatabasePolicy
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
 

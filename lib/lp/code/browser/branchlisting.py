@@ -7,7 +7,10 @@ __metaclass__ = type
 __all__ = [
     'BranchBadges',
     'BranchListingView',
+    'DistributionBranchListingView',
     'DistributionSourcePackageBranchesView',
+    'DistroSeriesBranchListingView',
+    'GroupedDistributionSourcePackageBranchesView',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -26,6 +29,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+from operator import attrgetter
 
 import simplejson
 from storm.expr import Asc, Desc
@@ -42,6 +46,7 @@ from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
+
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
@@ -71,15 +76,17 @@ from lp.code.interfaces.branchcollection import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
-
+from lp.code.interfaces.revisioncache import IRevisionCache
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks)
 from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
-
 
 def get_plural_text(count, singular, plural):
     """Return 'singular' if 'count' is 1, 'plural' otherwise."""
@@ -95,7 +102,7 @@ class BranchBadges(HasBadgeBase):
     def isBugBadgeVisible(self):
         """Show a bug badge if the branch is linked to bugs."""
         # Only show the badge if at least one bug is visible by the user.
-        for bug in self.context.related_bugs:
+        for bug in self.context.linked_bugs:
             # Stop on the first visible one.
             if check_permission('launchpad.View', bug):
                 return True
@@ -201,6 +208,10 @@ class BranchListingItem(BranchBadges):
         return self.context.codebrowse_url(
             'revision', str(self.context.revision_count))
 
+    def __repr__(self):
+        # For testing purposes.
+        return '<BranchListingItem %r (%d)>' % (self.unique_name, self.id)
+
 
 class BranchListingSort(EnumeratedType):
     """Choices for how to sort branch listings."""
@@ -286,87 +297,29 @@ class IBranchListingFilter(Interface):
         default=BranchListingSort.LIFECYCLE)
 
 
-class BranchListingBatchNavigator(TableBatchNavigator):
-    """Batch up the branch listings."""
-    implements(IBranchBatchNavigator)
+class BranchListingItemsMixin:
+    """Mixin class to create BranchListingItems."""
 
-    def __init__(self, view):
-        TableBatchNavigator.__init__(
-            self, view.getVisibleBranchesForUser(), view.request,
-            columns_to_show=view.extra_columns,
-            size=config.launchpad.branchlisting_batch_size)
-        self.view = view
-        self.column_count = 4 + len(view.extra_columns)
-        self._now = datetime.now(pytz.UTC)
+    # Requires the following attributes:
+    #   visible_branches_for_view
+    def __init__(self, user):
         self._dev_series_map = {}
+        self._now = datetime.now(pytz.UTC)
+        self.view_user = user
 
-    @cachedproperty
-    def branch_sparks(self):
-        return simplejson.dumps([
-                ('b-%s' % (count+1),
-                 canonical_url(branch, view_name='+spark'))
-                for count, branch
-                in enumerate(self._branches_for_current_batch)
-                ])
-
-    @cachedproperty
-    def _branches_for_current_batch(self):
-        branches = list(self.currentBatch())
-        # XXX: TimPenhey 2009-04-08 bug=324546
-        # Until there is an API to do this nicely, shove the launchpad.view
-        # permission into the request cache directly.
-        request = self.view.request
-        precache_permission_for_objects(request, 'launchpad.View', branches)
-        return branches
-
-    @cachedproperty
-    def branch_ids_with_bug_links(self):
-        """Return a set of branch ids that should show bug badges."""
-        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-            self._branches_for_current_batch, self.view.user)
-        return set(bug_branch.branch.id for bug_branch in bug_branches)
-
-    @cachedproperty
-    def branch_ids_with_spec_links(self):
-        """Return a set of branch ids that should show blueprint badges."""
-        spec_branches = getUtility(
-            ISpecificationBranchSet).getSpecificationBranchesForBranches(
-            self._branches_for_current_batch, self.view.user)
-        return set(spec_branch.branch.id for spec_branch in spec_branches)
-
-    @cachedproperty
-    def branch_ids_with_merge_proposals(self):
-        """Return a set of branches that should show merge proposal badges.
-
-        Branches have merge proposals badges if they've been proposed for
-        merging into another branch (source branches)
-        """
-        proposals = (
-            self.view._getCollection()
-            .visibleByUser(self.view.user)
-            .getMergeProposals(for_branches=self._branches_for_current_batch))
-        return set(proposal.source_branch.id for proposal in proposals)
-
-    @cachedproperty
-    def tip_revisions(self):
-        """Return a set of branch ids that should show blueprint badges."""
-        revisions = getUtility(IRevisionSet).getTipRevisionsForBranches(
-            self._branches_for_current_batch)
-        if revisions is None:
-            revision_map = {}
-        else:
-            # Key the revisions by revision id.
-            revision_map = dict((revision.revision_id, revision)
-                                for revision in revisions)
-        # Return a dict keyed on branch id.
-        return dict((branch.id, revision_map.get(branch.last_scanned_id))
-                     for branch in self._branches_for_current_batch)
+    def getBranchCollection(self):
+        """Should be a user restricted branch collection for the view."""
+        raise NotImplementedError(self.getBranchCollection)
 
     @cachedproperty
     def product_series_map(self):
-        """Return a map of branch id to a list of product series."""
+        """Return a map of branch id to a list of product series.
+
+        While this code is still valid with package branches is it a query
+        that isn't needed.
+        """
         series_resultset = getUtility(IProductSeriesSet).getSeriesForBranches(
-            self._branches_for_current_batch)
+            self.visible_branches_for_view)
         result = {}
         for series in series_resultset:
             result.setdefault(series.branch.id, []).append(series)
@@ -390,6 +343,10 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def getDevFocusBranch(self, branch):
         """Get the development focus branch that relates to `branch`."""
+        # XXX: 2009-07-02 TimPenhey spec=package-branches We need to determine
+        # here what constitutes a dev focus branch for package branches, and
+        # that perhaps this should also refer to targets instead of using
+        # product.
         if branch.product is None:
             return None
         try:
@@ -398,6 +355,48 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             result = branch.product.development_focus.branch
             self._dev_series_map[branch.product] = result
             return result
+
+    @cachedproperty
+    def branch_ids_with_bug_links(self):
+        """Return a set of branch ids that should show bug badges."""
+        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+            self.visible_branches_for_view, self.view_user)
+        return set(bug_branch.branch.id for bug_branch in bug_branches)
+
+    @cachedproperty
+    def branch_ids_with_spec_links(self):
+        """Return a set of branch ids that should show blueprint badges."""
+        spec_branches = getUtility(
+            ISpecificationBranchSet).getSpecificationBranchesForBranches(
+            self.visible_branches_for_view, self.view_user)
+        return set(spec_branch.branch.id for spec_branch in spec_branches)
+
+    @cachedproperty
+    def branch_ids_with_merge_proposals(self):
+        """Return a set of branches that should show merge proposal badges.
+
+        Branches have merge proposals badges if they've been proposed for
+        merging into another branch (source branches).
+        """
+        branches = self.visible_branches_for_view
+        collection = self.getBranchCollection()
+        proposals = collection.getMergeProposals(for_branches=branches)
+        return set(proposal.source_branch.id for proposal in proposals)
+
+    @cachedproperty
+    def tip_revisions(self):
+        """Return a set of branch ids that should show blueprint badges."""
+        revisions = getUtility(IRevisionSet).getTipRevisionsForBranches(
+            self.visible_branches_for_view)
+        if revisions is None:
+            revision_map = {}
+        else:
+            # Key the revisions by revision id.
+            revision_map = dict((revision.revision_id, revision)
+                                for revision in revisions)
+        # Return a dict keyed on branch id.
+        return dict((branch.id, revision_map.get(branch.last_scanned_id))
+                     for branch in self.visible_branches_for_view)
 
     def _createItem(self, branch):
         last_commit = self.tip_revisions[branch.id]
@@ -411,10 +410,52 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             show_blueprint_badge, is_dev_focus,
             associated_product_series, show_mp_badge)
 
+    def decoratedBranches(self, branches):
+        """Return the decorated branches for the branches passed in."""
+        return [self._createItem(branch) for branch in branches]
+
+
+class BranchListingBatchNavigator(TableBatchNavigator,
+                                  BranchListingItemsMixin):
+    """Batch up the branch listings."""
+    implements(IBranchBatchNavigator)
+
+    def __init__(self, view):
+        TableBatchNavigator.__init__(
+            self, view.getVisibleBranchesForUser(), view.request,
+            columns_to_show=view.extra_columns,
+            size=config.launchpad.branchlisting_batch_size)
+        BranchListingItemsMixin.__init__(self, view.user)
+        self.view = view
+        self.column_count = 4 + len(view.extra_columns)
+
+    def getBranchCollection(self):
+        """See `BranchListingItemsMixin`."""
+        return self.view._getCollection().visibleByUser(self.view.user)
+
+    @cachedproperty
+    def branch_sparks(self):
+        return simplejson.dumps([
+                ('b-%s' % (count+1),
+                 canonical_url(branch, view_name='+spark'))
+                for count, branch
+                in enumerate(self.visible_branches_for_view)
+                ])
+
+    @cachedproperty
+    def visible_branches_for_view(self):
+        branches = list(self.currentBatch())
+        # XXX: TimPenhey 2009-04-08 bug=324546
+        # Until there is an API to do this nicely, shove the launchpad.view
+        # permission into the request cache directly.
+        request = self.view.request
+        precache_permission_for_objects(request, 'launchpad.View', branches)
+        return branches
+
+    @cachedproperty
     def branches(self):
         """Return a list of BranchListingItems."""
-        return [self._createItem(branch)
-                for branch in self._branches_for_current_batch]
+        return self.decoratedBranches(self.visible_branches_for_view)
 
     @cachedproperty
     def multiple_pages(self):
@@ -503,11 +544,16 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
 
     def hasAnyBranchesVisibleByUser(self):
         """Does the context have any branches that are visible to the user?"""
-        return self._branches(None).count() > 0
+        return self.branch_count > 0
 
     def _getCollection(self):
         """Override this to say what branches will be in the listing."""
         raise NotImplementedError(self._getCollection)
+
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return self._getCollection().visibleByUser(self.user).count()
 
     def _branches(self, lifecycle_status):
         """Return a sequence of branches.
@@ -1066,7 +1112,7 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
             text = 'unmerged proposals'
         return Link('+approvedmerges', text)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit', site='mainsite')
@@ -1085,11 +1131,6 @@ class ProductBranchListingView(BranchListingView):
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context)
-
-    @cachedproperty
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
 
     @cachedproperty
     def development_focus_branch(self):
@@ -1129,6 +1170,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initialize(self):
         ProductBranchListingView.initialize(self)
         self.product = self.context
+        revision_cache = getUtility(IRevisionCache)
+        self.revision_cache = revision_cache.inProduct(self.product)
 
     @property
     def form_action(self):
@@ -1142,37 +1185,14 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             }
 
     @cachedproperty
-    def _recent_revisions(self):
-        """Revisions for this project created in the last 30 days."""
-        # The actual number of revisions for any given project are likely
-        # to be small(ish).  We also need to be able to traverse over the
-        # actual revision authors in order to get an accurate count.
-        revisions = list(
-            getUtility(IRevisionSet).getRecentRevisionsForProduct(
-                product=self.context, days=30))
-        # XXX: thumper 2008-04-24
-        # How best to warn if the limit is getting too large?
-        # And how much is too much anyway.
-        return revisions
-
-    @property
     def commit_count(self):
         """The number of new revisions in the last 30 days."""
-        return len(self._recent_revisions)
+        return self.revision_cache.count()
 
     @cachedproperty
     def committer_count(self):
         """The number of committers in the last 30 days."""
-        # Record a set of tuples where the first part is a launchpad
-        # person name if know, and the second part is the revision author
-        # text.  Only one part of the tuple will be set.
-        committers = set()
-        for (revision, author) in self._recent_revisions:
-            if author.personID is None:
-                committers.add((None, author.name))
-            else:
-                committers.add((author.personID, None))
-        return len(committers)
+        return self.revision_cache.authorCount()
 
     @cachedproperty
     def _branch_owners(self):
@@ -1339,19 +1359,193 @@ class ProjectBranchesView(BranchListingView):
         return message % self.context.displayname
 
 
-class DistributionSourcePackageBranchesView(BranchListingView):
-    """A general listing of all branches in the distro source package."""
+class BaseSourcePackageBranchesView(BranchListingView):
+    """A simple base view for package branch listings."""
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+
+    @property
+    def initial_values(self):
+        values = super(BaseSourcePackageBranchesView, self).initial_values
+        values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+        return values
+
+
+class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
+    """A general listing of all branches in the distro source package."""
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
             self.context)
 
+
+class DistributionBranchListingView(BaseSourcePackageBranchesView):
+    """A general listing of all branches in the distribution."""
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).inDistribution(self.context)
+
+
+class DistroSeriesBranchListingView(BaseSourcePackageBranchesView):
+    """A general listing of all branches in the distro source package."""
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).inDistroSeries(self.context)
+
+
+class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
+                                                   BranchListingItemsMixin):
+    """A view that groups branches into distro series."""
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        BranchListingItemsMixin.__init__(self, self.user)
+
+    def getBranchCollection(self):
+        """See `BranchListingItemsMixin`."""
+        return getUtility(IAllBranches).inDistributionSourcePackage(
+            self.context).visibleByUser(self.user)
+
+    def _getBranchDict(self):
+        """Return a dict of branches grouped by distroseries."""
+        branches = {}
+        # We're only interested in active branches.
+        collection = self.getBranchCollection().withLifecycleStatus(
+            *DEFAULT_BRANCH_STATUS_IN_LISTING)
+        for branch in collection.getBranches():
+            branches.setdefault(branch.distroseries, []).append(branch)
+        return branches
+
+    def _getOfficialBranches(self):
+        """Get all the official branches for the distro source package.
+
+        Return a dict of distro series to a list of branches.
+
+        The branches are ordered by official pocket.
+        """
+        link_set = getUtility(IFindOfficialBranchLinks)
+        links = link_set.findForDistributionSourcePackage(self.context)
+        # Remember it is possible that the linked branch is not visible by the
+        # user.  Unlikely, but possible.
+        visible_links = [
+            link for link in links
+            if check_permission('launchpad.View', link.branch)]
+        # Sort into distroseries.
+        distro_links = {}
+        for link in visible_links:
+            distro_links.setdefault(link.distroseries, []).append(link)
+        # For each distro series, we only want the "best" pocket if one branch
+        # is linked to more than one pocket.  Best here means smaller value.
+        official_branches = {}
+        for key, value in distro_links.iteritems():
+            ordered = sorted(value, key=attrgetter('pocket'))
+            seen_branches = set()
+            branches = []
+            for link in ordered:
+                if link.branch not in seen_branches:
+                    branches.append(link.branch)
+                    seen_branches.add(link.branch)
+            official_branches[key] = branches
+        return official_branches
+
+    def _getSeriesBranches(self, official_branches, branches):
+        """Return the "best" five branches."""
+        # Sort the branches by the last modified date, and ignore any that are
+        # official.
+        ordered_branches = sorted(
+            [branch for branch in branches
+             if branch not in official_branches],
+            key=attrgetter('date_last_modified'), reverse=True)
+        num_branches = len(ordered_branches)
+        num_official = len(official_branches)
+        # We want to show at most five branches, with (at most) the most
+        # recently touched three non-official branch.
+        official_count = 5 - min(num_branches, 3)
+        # Top up with non-official branches.
+        branches = official_branches[0:official_count] + ordered_branches
+        # And chop off at 5.
+        branches = branches[0:5]
+
+        more_count = num_branches + num_official - len(branches)
+        return branches, more_count
+
+    @cachedproperty
+    def series_branches_map(self):
+        """Return a dict of tuples for branches in the distroseries.
+
+        The tuple contains the branches, and the 'more_count'.
+        """
+        series_branches = {}
+        all_branches = self._getBranchDict()
+        official_branches = self._getOfficialBranches()
+        for series in self.context.distribution.serieses:
+            if series in all_branches:
+                branches, more_count = self._getSeriesBranches(
+                    official_branches.get(series, []),
+                    all_branches.get(series, []))
+                series_branches[series] = (branches, more_count)
+        return series_branches
+
+    @cachedproperty
+    def visible_branches_for_view(self):
+        """All the branches we are going to show with this view.
+
+        Used by the mixin class to get all the associated bugs, blueprints,
+        and merge proposal links for badges.
+        """
+        visible_branches = []
+        for branches, count in self.series_branches_map.itervalues():
+            visible_branches.extend(branches)
+        return visible_branches
+
     @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
+        return len(self.visible_branches_for_view)
+
+    @cachedproperty
+    def groups(self):
+        """Return a list of dicts containing series and branches.
+
+        The list is ordered so the most recent distro series is first.
+
+        The list contains dicts.  The dict has the values:
+          * distroseries - a `IDistroSeries` object
+          * branches - an ordered list of branches
+          * more-branch-count - a count of additional branches
+          * package - the `ISourcePackage` for the distroseries,
+              sourcepackagename pair
+          * total-count-string - a string saying the number of branches.
+
+        The branches list will contain at most five branches.  If there are
+        non-official branches associated with the distroseries, then there
+        will always be some non-official branches shown in the summary even if
+        there are five different official branches (for the different
+        pockets).
+
+        The official branches are sorted based on PackagePublishingPocket, and
+        the non-official branches are sorted on date last modified.
+        """
+        result = []
+        series_branches_map = self.series_branches_map
+        sp_factory = getUtility(ISourcePackageFactory)
+        for series in self.context.distribution.serieses:
+            if series in series_branches_map:
+                branches, more_count = series_branches_map[series]
+                sourcepackage = sp_factory.new(
+                    self.context.sourcepackagename, series)
+                num_branches = len(branches) + more_count
+                num_branches_text = get_plural_text(
+                    num_branches, "branch", "branches")
+                count_string = "%s %s" % (num_branches, num_branches_text)
+                result.append(
+                    {'distroseries': series,
+                     'branches': self.decoratedBranches(branches),
+                     'more-branch-count': more_count,
+                     'package': sourcepackage,
+                     'total-count-string': count_string,
+                     })
+        return result
 
 
 class SourcePackageBranchesView(BranchListingView):
@@ -1367,11 +1561,6 @@ class SourcePackageBranchesView(BranchListingView):
 
     def _getCollection(self):
         return getUtility(IAllBranches).inSourcePackage(self.context)
-
-    @cachedproperty
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return self._getCollection().visibleByUser(self.user).count()
 
     def _numBranchesInPackage(self, package):
         branches = IBranchTarget(package).collection

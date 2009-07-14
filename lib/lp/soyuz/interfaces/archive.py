@@ -42,7 +42,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ParticipatingPersonChoice, PublicPersonChoice, StrippedTextLine)
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
@@ -784,8 +784,13 @@ class IArchiveAppend(Interface):
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
 
-        This method takes string-based paramters and is intended for use
-        in the API.
+        It will copy the most recent versions of the named sources to
+        the destination archive if necessary.
+
+        This operation will only succeeds when all requested packages
+        are synchronised between the archives. If any of the requested
+        copies cannot be performed, the whole operation will fail. There
+        will be no partial changes of the destination archive.
 
         :param source_names: a list of string names of packages to copy.
         :param from_archive: the source archive from which to copy.
@@ -799,8 +804,6 @@ class IArchiveAppend(Interface):
         :raises PocketNotFound: if the pocket name is invalid
         :raises DistroSeriesNotFound: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
-
-        :return: a list of string names of packages that could be copied.
         """
 
     @operation_parameters(
@@ -824,8 +827,8 @@ class IArchiveAppend(Interface):
                    to_series=None, include_binaries=False):
         """Synchronise (copy) a single named source into this archive.
 
-        This method takes string-based paramters and is intended for use
-        in the API.
+        Copy a specific version of a named source to the destination
+        archive if necessary.
 
         :param source_name: a string name of the package to copy.
         :param version: the version of the package to copy.
@@ -1008,7 +1011,7 @@ class IArchiveSet(Interface):
     def getPPAsForUser(user):
         """Return all PPAs the given user can participate.
 
-        The result is ordered by PPA owner's displayname.
+        The result is ordered by PPA displayname.
         """
 
     def getPPAsPendingSigningKey():

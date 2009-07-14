@@ -105,9 +105,9 @@
         <allow
             interface="canonical.launchpad.interfaces.IHasQueueItems"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <allow
             interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
         <require
@@ -238,7 +238,7 @@
     <class
         class="lp.registry.model.person.IrcID">
         <allow
-            interface="canonical.launchpad.interfaces.IHasOwner"/>
+            interface="lp.registry.interfaces.role.IHasOwner"/>
         <allow
             attributes="
                 id
@@ -461,7 +461,7 @@
     <class
         class="lp.registry.model.person.JabberID">
         <allow
-            interface="canonical.launchpad.interfaces.IHasOwner"/>
+            interface="lp.registry.interfaces.role.IHasOwner"/>
         <allow
             attributes="
                 id
@@ -800,7 +800,7 @@
             <allow
                 interface="lp.registry.interfaces.person.ITeamPublic"/>
             <allow
-                interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+                interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
             <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
             <allow
@@ -941,7 +941,7 @@
             interface="lp.registry.interfaces.milestone.IProjectMilestone"/>
     </class>
     <subscriber
-        for="canonical.launchpad.interfaces.IProduct                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="canonical.launchpad.interfaces.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.registry.subscribers.product_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
@@ -996,7 +996,7 @@
     <class
         class="lp.registry.model.person.WikiName">
         <allow
-            interface="canonical.launchpad.interfaces.IHasOwner"/>
+            interface="lp.registry.interfaces.role.IHasOwner"/>
         <allow
             attributes="
                 id
@@ -1051,7 +1051,7 @@
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
@@ -1095,13 +1095,13 @@
             attributes="
                 qualifies_for_free_hosting"/>
         <require
-            permission="launchpad.Commercial"
+            permission="launchpad.ProjectReview"
             attributes="
                 reviewer_whiteboard
                 is_permitted
                 license_reviewed
                 license_approved"
-            set_schema="lp.registry.interfaces.product.IProductCommercialRestricted"
+            set_schema="lp.registry.interfaces.product.IProductProjectReviewRestricted"
             set_attributes="active private_bugs "/>
 
         <!-- Changes to official_rosetta must be available to Launchpad
@@ -1246,7 +1246,7 @@
         <allow
             interface="lp.registry.interfaces.product.IProductSet"/>
         <require
-            permission="launchpad.Commercial"
+            permission="launchpad.ProjectReview"
             attributes="
                 forReview"/>
     </securedutility>
@@ -1292,9 +1292,9 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <require
             permission="launchpad.Edit"
             set_attributes="product name owner driver summary branch                                                                                                                 status releasefileglob                                                                                                                        translations_autoimport_mode"/>
@@ -1356,7 +1356,7 @@
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
@@ -1478,9 +1478,9 @@
         <allow
             interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
 
         <!-- IQuestionTarget -->
 
@@ -1597,7 +1597,7 @@
          interface="lp.registry.interfaces.suitesourcepackage.ISuiteSourcePackage"/>
     </class>
 
-    <lp:help-folder 
+    <lp:help-folder
         folder="help" type="canonical.launchpad.layers.LaunchpadLayer" />
 
     <!-- DistributionMirror -->

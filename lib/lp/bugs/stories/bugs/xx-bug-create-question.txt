@@ -112,7 +112,7 @@ bug. He uses the link to Related bug to return to the bug.
 
     >>> portlet = find_portlet(user_browser.contents, 'Related bugs')
     >>> portlet.a
-    <a href="http://bugs.launchpad.dev/bugs/10">#10: another test bug</a>
+    <a class="sprite bug" href="http://bugs.launchpad.dev/bugs/10">Bug #10: another test bug</a>
 
     >>> user_browser.getLink('#10: another test bug').click()
     >>> user_browser.title

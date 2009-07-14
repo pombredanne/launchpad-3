@@ -8,7 +8,6 @@ __all__ = [
     'SourcePackageBreadcrumbBuilder',
     'SourcePackageFacets',
     'SourcePackageNavigation',
-    'SourcePackageTranslationsExportView',
     'SourcePackageView',
     ]
 
@@ -21,15 +20,13 @@ from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
-from canonical.launchpad.browser.poexportrequest import BaseExportView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from canonical.launchpad.browser.translations import TranslationsMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.packaging import IPackaging
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
     NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
@@ -111,54 +108,7 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
         return Link('+gethelp', 'Help and support options', icon='info')
 
 
-class SourcePackageTranslationsMenu(NavigationMenu):
-
-    usedfor = ISourcePackage
-    facet = 'translations'
-    links = ('overview', 'translationdownload', 'imports')
-
-    def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
-
-    @enabled_with_permission('launchpad.ExpensiveRequest')
-    def translationdownload(self):
-        text = 'Download'
-        enabled = bool(self.context.getCurrentTranslationTemplates().any())
-        return Link('+export', text, icon='download', enabled=enabled)
-
-    def overview(self):
-        return Link('', 'Overview', icon='info')
-
-
-class SourcePackageTranslationsExportView(BaseExportView):
-    """Request tarball export of all translations for source package.
-    """
-
-    def processForm(self):
-        """Process form submission requesting translations export."""
-        templates = list(
-            self.context.getCurrentTranslationTemplates(just_ids=True))
-        pofiles = list(self.context.getCurrentTranslationFiles(just_ids=True))
-        if len(pofiles) > 0:
-            pofiles = None
-        return (templates, pofiles)
-
-    def getDefaultFormat(self):
-        templates = self.context.getCurrentTranslationTemplates()
-        if not bool(templates.any()):
-            return None
-        format = templates[0].source_file_format
-        for template in templates:
-            if template.source_file_format != format:
-                self.request.response.addInfoNotification(
-                    "This package has templates with different native "
-                    "file formats.  If you proceed, all translations will be "
-                    "exported in the single format you specify.")
-        return format
-
-
-class SourcePackageView(BuildRecordsView, TranslationsMixin):
+class SourcePackageView(BuildRecordsView):
 
     def initialize(self):
         # lets add a widget for the product series to which this package is

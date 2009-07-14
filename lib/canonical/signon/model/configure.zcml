@@ -48,5 +48,21 @@
             interface="..interfaces.openidserver.IOpenIDRPSummarySet" />
     </securedutility>
 
+    <class class="canonical.signon.model.authtoken.AuthToken">
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IAuthToken" />
+    </class>
+
+    <class class="canonical.signon.model.authtoken.AuthTokenSet">
+        <allow interface="canonical.launchpad.interfaces.IAuthTokenSet" />
+    </class>
+
+    <securedutility
+        class="canonical.signon.model.authtoken.AuthTokenSet"
+        provides="canonical.launchpad.interfaces.IAuthTokenSet">
+        <allow interface="canonical.launchpad.interfaces.IAuthTokenSet" />
+    </securedutility>
+
 
 </configure>

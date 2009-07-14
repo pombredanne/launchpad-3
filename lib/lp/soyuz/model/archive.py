@@ -71,13 +71,13 @@ from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.interfaces.launchpad import (
-    IHasOwner, ILaunchpadCelebrities, NotFoundError)
+    ILaunchpadCelebrities, NotFoundError)
+from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet,
-    ISourcePackagePublishingHistory)
+    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.soyuz.scripts.packagecopier import (
@@ -275,12 +275,12 @@ class Archive(SQLBase):
         return None
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None):
+                        arch_tag=None, user=None):
         """See IHasBuildRecords"""
         # Ignore "user", since anyone already accessing this archive
         # will implicitly have permission to see it.
         return getUtility(IBuildSet).getBuildsForArchive(
-            self, build_state, name, pocket)
+            self, build_state, name, pocket, arch_tag)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
@@ -1014,8 +1014,7 @@ class Archive(SQLBase):
                 from_archive.getPublishedSources(
                     name=name, exact_match=True)[0])
 
-        return self._copySources(
-            sources, to_pocket, to_series, include_binaries)
+        self._copySources(sources, to_pocket, to_series, include_binaries)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False):
@@ -1063,19 +1062,7 @@ class Archive(SQLBase):
             series = None
 
         # Perform the copy, may raise CannotCopy.
-        copies = do_copy(
-            sources, self, series, pocket, include_binaries)
-
-        if len(copies) == 0:
-            raise CannotCopy("Packages already copied.")
-
-        # Return a list of string names of source packages that were copied.
-        # We only return source package names, even when binaries were copied,
-        # because that's the "Contract".
-        return [
-            copy.sourcepackagerelease.sourcepackagename.name
-            for copy in copies
-            if ISourcePackagePublishingHistory.providedBy(copy)]
+        do_copy(sources, self, series, pocket, include_binaries)
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
@@ -1331,16 +1318,27 @@ class ArchiveSet:
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
-        query = """
-            Archive.owner = Person.id AND
-            TeamParticipation.team = Archive.owner AND
-            TeamParticipation.person = %s AND
-            Archive.purpose = %s
-        """ % sqlvalues(user, ArchivePurpose.PPA)
+        # Avoiding circular imports.
+        from lp.soyuz.model.archivepermission import ArchivePermission
 
-        return Archive.select(
-            query, clauseTables=['Person', 'TeamParticipation'],
-            orderBy=['Person.displayname'])
+        store = Store.of(user)
+        direct_membership = store.find(
+            Archive,
+            Archive.purpose == ArchivePurpose.PPA,
+            TeamParticipation.team == Archive.ownerID,
+            TeamParticipation.person == user,
+            )
+        third_part_upload_acl = store.find(
+            Archive,
+            Archive.purpose == ArchivePurpose.PPA,
+            ArchivePermission.archiveID == Archive.id,
+            ArchivePermission.person == user,
+            )
+
+        result = direct_membership.union(third_part_upload_acl)
+        result.order_by(Archive.displayname)
+
+        return result
 
     def getPPAsPendingSigningKey(self):
         """See `IArchiveSet`."""

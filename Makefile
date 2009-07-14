@@ -67,17 +67,27 @@ check_db_merge: $(PY)
 # This can be removed once we move to zc.buildout and we have versioned
 # dependencies, but for now we run both Launchpad and all other
 # dependencies tests for any merge to sourcecode.
-check_sourcecode_merge: build check
+check_sourcecode_merge: check
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
-check: build
+# Clean before running the test suite, since the build might fail depending
+# what source changes happened. (e.g. apidoc depends on interfaces)
+check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
+
+jscheck: build
+	# Run all JavaScript integration tests.  The test runner takes care of
+	# setting up the test environment.
+	@echo
+	@echo "Running the JavaScript integration test suite"
+	@echo
+	${PY} utilities/test-all-windmills.py
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
@@ -181,25 +191,26 @@ $(BZR_VERSION_INFO):
 
 support_files: $(WADL_FILE) $(BZR_VERSION_INFO)
 
+# Intended for use on developer machines
+start: inplace stop support_files initscript-start
+
 # Run as a daemon - hack using nohup until we move back to using zdaemon
 # properly. We also should really wait until services are running before
 # exiting, as running 'make stop' too soon after running 'make start'
-# will not work as expected.
-start: inplace stop support_files
-	nohup bin/run -i $(LPCONFIG) > ${LPCONFIG}-nohup.out 2>&1 &
-
-# This is a stripped down version of the "start" target for use on
-# production servers - removes running 'make build' because we already
-# run this as part of our initscripts, so not needed here. Likewise we
-# don't want to run 'make stop' because it takes unnecessary time
-# even if the service is already stopped, and bzr_version_info is not
-# needed either because it's run as part of 'make build'.
+# will not work as expected. For use on production servers, where
+# we know we don't need the extra steps in a full "make start"
+# because of how the code is deployed/built.
 initscript-start:
 	nohup bin/run -i $(LPCONFIG) > ${LPCONFIG}-nohup.out 2>&1 &
 
+# Intended for use on developer machines
+stop: build initscript-stop
+
 # Kill launchpad last - other services will probably shutdown with it,
-# so killing them after is a race condition.
-stop: build
+# so killing them after is a race condition. For use on production
+# servers, where we know we don't need the extra steps in a full 
+# "make stop" because of how the code is deployed/built.
+initscript-stop:
 	bin/killservice librarian buildsequencer launchpad mailman
 
 shutdown: scheduleoutage stop

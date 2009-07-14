@@ -91,14 +91,15 @@ from canonical.launchpad.webapp.interfaces import (
         DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
     get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
-from canonical.testing.smtpcontrol import SMTPControl
-from canonical.lazr.testing.layers import MockRootFolder
+from canonical.testing.smtpd import SMTPController
+
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
@@ -902,6 +903,8 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._original_sigint = signal.getsignal(signal.SIGINT)
         TwistedLayer._original_sigterm = signal.getsignal(signal.SIGTERM)
         TwistedLayer._original_sigchld = signal.getsignal(signal.SIGCHLD)
+        from twisted.internet import reactor
+        signal.signal(signal.SIGCHLD, reactor._handleSigchld)
 
     @classmethod
     def _restore_signals(cls):
@@ -1380,7 +1383,18 @@ class LayerProcessController:
         """Start the SMTP server if it hasn't already been started."""
         if cls.smtp_controller is not None:
             raise LayerInvariantError('SMTP server already running')
-        cls.smtp_controller = SMTPControl()
+        # Ensure that the SMTP server does proper logging.
+        log = logging.getLogger('lazr.smtptest')
+        log_file = os.path.join(config.mailman.build_var_dir, 'logs', 'smtpd')
+        handler = logging.FileHandler(log_file)
+        formatter = logging.Formatter(
+            fmt='%(asctime)s (%(process)d) %(message)s',
+            datefmt='%b %d %H:%M:%S %Y')
+        handler.setFormatter(formatter)
+        log.setLevel(logging.DEBUG)
+        log.addHandler(handler)
+        log.propagate = False
+        cls.smtp_controller = SMTPController('localhost', 9025)
         cls.smtp_controller.start()
         # Make sure that the smtp server is killed even if tearDown() is
         # skipped, which can happen if FunctionalLayer is in the mix.
