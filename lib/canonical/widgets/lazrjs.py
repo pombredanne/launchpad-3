@@ -152,6 +152,7 @@ class TextLineEditorWidget:
             params['activation_script'] = self.ACTIVATION_TEMPLATE % params
         return self.WIDGET_TEMPLATE % params 
 
+
 class InlineEditPickerWidget:
     """Wrapper for the lazr-js picker widget.
 

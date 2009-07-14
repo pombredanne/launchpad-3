@@ -3029,6 +3029,17 @@ class BugTaskTableRowView(LaunchpadView):
 
         return items
 
+    @property
+    def milestone_widget_items(self):
+        """The available milestone items as JSON."""
+        if self.user is not None:
+            items = vocabulary_to_choice_edit_items(
+                MilestoneVocabulary(self.context))
+        else:
+            items = '[]'
+
+        return items
+
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)

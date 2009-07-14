@@ -74,7 +74,6 @@
 
     <metal:page-javascript
       use-macro="context/@@+main-template-macros/page-javascript" />
-
     <link rel="shortcut icon" href="/@@/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
