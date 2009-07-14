@@ -62,17 +62,17 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
         self.assertEqual(u'feasty', view.default_series_name)
 
     def testDefaultWithoutUserAgent(self):
-        # If there is no user-agent setting, then the first distroseries
-        # will be the default.
+        # If there is no user-agent setting, then we force the user
+        # to make a selection.
         view = SourcesListEntriesView(self.entries, LaunchpadTestRequest())
         view.initialize()
 
-        self.assertEqual(u'feasty', view.default_series_name)
+        self.assertEqual('YOUR_DISTRO_SERIES_HERE', view.default_series_name)
 
     def testNonRecognisedSeries(self):
         # If the supplied series in the user-agent is not recognized as a
-        # valid distroseries for the distro, then we default to the
-        # first distroseries.
+        # valid distroseries for the distro, then we force the user
+        # to make a selection.
         view = SourcesListEntriesView(self.entries, LaunchpadTestRequest(
                 HTTP_USER_AGENT='Mozilla/5.0 '
                                 '(X11; U; Linux i686; en-US; rv:1.9.0.10) '
@@ -81,12 +81,12 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
 
         view.initialize()
 
-        self.assertEqual(u'feasty', view.default_series_name)
+        self.assertEqual('YOUR_DISTRO_SERIES_HERE', view.default_series_name)
 
     def testNonRecognisedDistro(self):
         # If the supplied series in the user-agent is not recognized as a
-        # valid distroseries for the distro, then we default to the
-        # first distroseries.
+        # valid distroseries for the distro, then we force the user to
+        # make a selection.
         view = SourcesListEntriesView(self.entries, LaunchpadTestRequest(
                 HTTP_USER_AGENT='Mozilla/5.0 '
                                 '(X11; U; Linux i686; en-US; rv:1.9.0.10) '
@@ -95,7 +95,7 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
 
         view.initialize()
 
-        self.assertEqual(u'feasty', view.default_series_name)
+        self.assertEqual('YOUR_DISTRO_SERIES_HERE', view.default_series_name)
 
 
 class TestSourcesListComment(TestCaseWithFactory):

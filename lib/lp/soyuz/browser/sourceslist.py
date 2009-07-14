@@ -39,12 +39,18 @@ class SourcesListEntriesView(LaunchpadView):
 
     def initialize(self):
         self.terms = []
-        if self._initially_without_selection:
-            self.terms.append(SimpleTerm(
-                None, 'YOUR_DISTRO_SERIES_HERE',
-                'Choose a Distribution series'))
         for series in self.context.valid_series:
             self.terms.append(SimpleTerm(series, series.name, series.title))
+
+        # If the call-site requested that the widget be displayed initially
+        # without a selection, or we were not able to find a sensible
+        # default series, then add an option to force the user to select
+        # a distroseries.
+        if self._initially_without_selection or self.default_series is None:
+            self.terms.insert(0, SimpleTerm(
+                None, 'YOUR_DISTRO_SERIES_HERE',
+                'Choose a Distribution Series'))
+
         field = Choice(__name__='series', title=_("Distro Series"),
                        vocabulary=SimpleVocabulary(self.terms), required=True)
         setUpWidget(self, 'series',  field, IInputWidget)
@@ -93,13 +99,17 @@ class SourcesListEntriesView(LaunchpadView):
             # Finally, check if this version is one of the available
             # distroseries for this archive:
             for term in self.terms:
-                if term.value.version == version_number:
+                if (term.value is not None and
+                    term.value.version == version_number):
                     return term.value
 
-        # Otherwise, simply return the first distroseries. The callsite
-        # is repsonsible for ensuring this is the most recent release
-        # with published sources if desired.
-        return self.terms[0].value
+        # If we were not able to get the users distribution series, then
+        # either they are running a different OS, or they are running a
+        # very old version of Ubuntu, or they have explicitly tampered
+        # with user-agent headers in their browser. In any case,
+        # we won't try to guess a value, but instead force them to
+        # select one.
+        return None
 
     @property
     def default_series_name(self):
