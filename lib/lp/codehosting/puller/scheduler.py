@@ -433,9 +433,6 @@ class JobScheduler:
 
     def _turnJobTupleIntoTask(self, job_tuple):
         if len(job_tuple) == 0:
-            print 'wibble'
-            if self.consumer._worker_count == 0:
-                self.consumer._terminationDeferred.callback(None)
             return None
         (branch_id, pull_url, unique_name,
          default_stacked_on_url, branch_type_name) = job_tuple
