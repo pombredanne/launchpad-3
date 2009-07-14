@@ -25,14 +25,15 @@ class NoopTaskConsumer:
     def taskStarted(self, task):
         """Do nothing."""
 
+    def noTasksFound(self):
+        """Do nothing."""
+
     def taskProductionFailed(self, reason):
         """Do nothing."""
 
 
-class AppendingTaskConsumer:
+class AppendingTaskConsumer(NoopTaskConsumer):
     """Task consumer that logs calls to `taskStarted`."""
-
-    implements(ITaskConsumer)
 
     def __init__(self, data_sink):
         self.data_sink = data_sink
@@ -40,9 +41,6 @@ class AppendingTaskConsumer:
     def taskStarted(self, task):
         """Log that 'task' has started."""
         self.data_sink.append(task)
-
-    def taskProductionFailed(self, reason):
-        """Do nothing."""
 
 
 class LoggingSource:
@@ -106,6 +104,19 @@ class TestPollingTaskSource(TestCase):
         task_source = self.makeTaskSource()
         task_source.start(self._default_task_consumer)
         self.assertEqual(1, self._num_task_producer_calls)
+
+    def test_noTasksFound_called_when_no_tasks_found(self):
+        # When a call to the producer indicates that no job is found, the
+        # 'noTasksFound' method is called on the consumer.
+        class NoTasksFoundCountingConsumer:
+            def __init__(self):
+                self._noTasksFound_calls = 0
+            def noTasksFound(self):
+                self._noTasksFound_calls += 1
+        task_source = self.makeTaskSource(task_producer=lambda: None)
+        consumer = NoTasksFoundCountingConsumer()
+        task_source.start(consumer)
+        self.assertEqual(1, consumer._noTasksFound_calls)
 
     def test_start_continues_polling(self):
         # Calling `start` on a PollingTaskSource begins polling the task
@@ -360,6 +371,27 @@ class TestParallelLimitedTaskConsumer(TestCase):
         d.addCallback(task_log.append)
         consumer.taskStarted(lambda: None)
         self.assertEqual([None], task_log)
+
+    def test_consume_returns_deferred_fires_if_no_tasks_found(self):
+        # `consume` returns a Deferred that fires if no tasks are found when
+        # no tasks are running.
+        consumer = self.makeConsumer()
+        task_log = []
+        d = consumer.consume(LoggingSource([]))
+        d.addCallback(task_log.append)
+        consumer.noTasksFound()
+        self.assertEqual([None], task_log)
+
+    def test_consume_deferred_no_fire_if_no_tasks_found_and_job_running(self):
+        # If no tasks are found while a job is running, the Deferred returned
+        # by `consume` is not fired.
+        consumer = self.makeConsumer()
+        task_log = []
+        d = consumer.consume(LoggingSource([]))
+        d.addCallback(task_log.append)
+        consumer.taskStarted(self._neverEndingTask)
+        consumer.noTasksFound()
+        self.assertEqual([], task_log)
 
     def test_source_stopped_when_tasks_done(self):
         # When no more tasks are running, we stop the task source.
