@@ -39,16 +39,13 @@ class TestLaunchpadServe(TestCaseWithTransport):
                              working_dir=None):
         """Start bzr in a subprocess for testing.
 
-        This starts a new Python interpreter and runs bzr in there.
+        Copied and modified from `bzrlib.tests.TestCase.start_bzr_subprocess`.
+        This version removes some of the skipping stuff, some of the
+        irrelevant comments (e.g. about win32) and uses Launchpad's own
+        mechanisms for getting the path to 'bzr'.
 
-        :param process_args: a list of arguments to pass to the bzr
-            executable, for example ``['--version']``.
-        :param env_changes: A dictionary which lists changes to environment
-            variables. A value of None will unset the env variable.
-            The values must be strings. The change will only occur in the
-            child, so you don't need to fix the environment after running.
-
-        :return: Popen object for the started process.
+        Comments starting with 'LAUNCHPAD' are comments about our
+        modifications.
         """
         if env_changes is None:
             env_changes = {}
@@ -68,16 +65,13 @@ class TestLaunchpadServe(TestCaseWithTransport):
             cwd = osutils.getcwd()
             os.chdir(working_dir)
 
-        # Because of buildout, we need to get a custom Python binary, not
-        # sys.executable.
+        # LAUNCHPAD: Because of buildout, we need to get a custom Python
+        # binary, not sys.executable.
         python_path = self.get_python_path()
-        # We can't use self.get_bzr_path(), since it'll find lib/bzrlib,
-        # rather than the path to sourcecode/bzr/bzr.
+        # LAUNCHPAD: We can't use self.get_bzr_path(), since it'll find
+        # lib/bzrlib, rather than the path to sourcecode/bzr/bzr.
         bzr_path = get_bzr_path()
         try:
-            # win32 subprocess doesn't support preexec_fn
-            # so we will avoid using it on all platforms, just to
-            # make sure the code path is used, and we don't break on win32
             cleanup_environment()
             command = [python_path, bzr_path]
             command.extend(process_args)

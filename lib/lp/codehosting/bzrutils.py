@@ -2,7 +2,8 @@
 
 """Utilities for dealing with Bazaar.
 
-Everything in here should be submitted upstream.
+Much of the code in here should be submitted upstream. The rest is code that
+integrates between Bazaar's infrastructure and Launchpad's infrastructure.
 """
 
 __metaclass__ = type

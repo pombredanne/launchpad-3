@@ -742,6 +742,7 @@ class TestOopsLoggingHandler(TestCase):
         TestCase.setUp(self)
         self.logger = logging.getLogger(self.factory.getUniqueString())
         self.error_utility = ErrorReportingUtility()
+        self.error_utility.error_dir = tempfile.mkdtemp()
         self.logger.addHandler(
             OopsLoggingHandler(error_utility=self.error_utility))
         self.addCleanup(remove_tree, self.error_utility.error_dir)
