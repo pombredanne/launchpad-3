@@ -1796,13 +1796,14 @@ class EditHWSubmission(AdminByAdminsTeam):
 
 
 class ViewHWDBBase(AuthorizationBase):
-    """Base class to restrict access to HWDB data to Canonical employees."""
+    """Base class to restrict access to HWDB data to members of the HWDB team.
+    """
     permission = 'launchpad.View'
 
     def checkAuthenticated(self, user):
         """We give for now access only to Canonical employees."""
-        canonical = getUtility(ILaunchpadCelebrities).canonical
-        return user.inTeam(canonical)
+        hwdb_team = getUtility(ILaunchpadCelebrities).hwdb_team
+        return user.inTeam(hwdb_team)
 
     def checkUnauthenticated(self):
         """No access for anonymous users."""

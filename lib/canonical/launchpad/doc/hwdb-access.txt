@@ -5,12 +5,12 @@ The access to most HWDB tables is restricted to members of the team
 "canonical".
 
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> canonical = getUtility(IPersonSet).getByName('canonical')
+    >>> hwdb_team = getUtility(IPersonSet).getByName('hwdb-team')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> no_priv.inTeam(canonical)
+    >>> no_priv.inTeam(hwdb_team)
     False
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
-    >>> sample_person.inTeam(canonical)
+    >>> sample_person.inTeam(hwdb_team)
     True
 
 
