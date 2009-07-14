@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from datetime import datetime, timedelta
+import errno
 import sys
 from time import time
 import os
@@ -11,6 +12,7 @@ import os
 from zope.interface import implements
 
 from canonical.config import config
+from canonical.database.postgresql import quoteIdentifier
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.librarian.storage import _relFileLocation as relative_file_path
@@ -197,28 +199,24 @@ class UnreferencedLibraryFileContentPruner:
     """
     implements(ITunableLoop)
 
-    index = 1 # Index of current batch of rows to remove.
-
-    total_deleted = 0 # Running total
-
-    con = None # Database connection to use
-
     def __init__(self, con):
-        self.con = con
+        self.con = con # Database connection to use
+        self.total_deleted = 0 # Running total
+        self.index = 1
 
         log.info("Deleting unreferenced LibraryFileAliases")
 
         cur = con.cursor()
 
-        # Start with a list of all unexpired and recently accessed content
-        # - we don't remove them even if they are unlinked.
-        # We currently don't remove stuff until it has been expired for
-        # more than one week, but we will change this if disk space becomes
-        # short and it actually will make a noticeable difference.
-        # Note that ReferencedLibraryFileContent will contain duplicates -
-        # duplicates are the exception so we are better off filtering them
-        # once at the end rather than when we load the data into the temporary
-        # file.
+        # Start with a list of all unexpired and recently accessed
+        # content - we don't remove them even if they are unlinked. We
+        # currently don't remove stuff until it has been expired for
+        # more than one week, but we will change this if disk space
+        # becomes short and it actually will make a noticeable
+        # difference. Note that ReferencedLibraryFileContent will
+        # contain duplicates - duplicates are unusual so we are better
+        # off filtering them once at the end rather than when we load
+        # the data into the temporary file.
         cur.execute("DROP TABLE IF EXISTS ReferencedLibraryFileContent")
         cur.execute("""
             SELECT LibraryFileAlias.content
@@ -255,7 +253,9 @@ class UnreferencedLibraryFileContentPruner:
                 SELECT LibraryFileAlias.content
                 FROM LibraryFileAlias, %(table)s
                 WHERE LibraryFileAlias.id = %(table)s.%(column)s
-                """ % {'table': table, 'column': column})
+                """ % {
+                    'table': quoteIdentifier(table),
+                    'column': quoteIdentifier(column)})
             con.commit()
 
         log.debug("Calculating expired unreferenced LibraryFileContent set.")
@@ -321,12 +321,11 @@ class UnreferencedContentPruner:
     what their expires flag says.
     """
     implements(ITunableLoop)
-    index = 0
-    con = None
-    total_deleted = 0
 
     def __init__(self, con):
         self.con = con
+        self.index = 1
+        self.total_deleted = 0
         cur = con.cursor()
         cur.execute("DROP TABLE IF EXISTS UnreferencedLibraryFileContent")
         cur.execute("""
@@ -365,10 +364,10 @@ class UnreferencedContentPruner:
             DELETE FROM LibraryFileContent
             USING (
                 SELECT content FROM UnreferencedLibraryFileContent
-                WHERE id BETWEEN %d AND %d) AS UnreferencedLibraryFileContent
+                WHERE id BETWEEN %s AND %s) AS UnreferencedLibraryFileContent
             WHERE
                 LibraryFileContent.id = UnreferencedLibraryFileContent.content
-            """ % (self.index, self.index + chunksize - 1))
+            """, (self.index, self.index + chunksize - 1))
         rows_deleted = cur.rowcount
         self.total_deleted += rows_deleted
         self.con.commit()
@@ -378,19 +377,23 @@ class UnreferencedContentPruner:
         # on disk but not in the DB.
         cur.execute("""
             SELECT content FROM UnreferencedLibraryFileContent
-            WHERE id BETWEEN %d AND %d
-            """ % (self.index, self.index + chunksize - 1))
+            WHERE id BETWEEN %s AND %s
+            """, (self.index, self.index + chunksize - 1))
         for content_id in (row[0] for row in cur.fetchall()):
             # Remove the file from disk, if it hasn't already been
             path = get_file_path(content_id)
-            if os.path.exists(path):
-                log.debug("Deleting %s", path)
+            try:
                 os.unlink(path)
-            elif config.librarian_server.upstream_host is None:
-                # It is normal to have files in the database that are
-                # not on disk if the Librarian has an upstream
-                # Librarian, such as on staging.
-                log.info("%s already deleted", path)
+                log.debug("Deleted %s", path)
+            except OSError, e:
+                if e.errno != errno.ENOENT:
+                    raise
+                if config.librarian_server.upstream_host is None:
+                    # It is normal to have files in the database that
+                    # are not on disk if the Librarian has an upstream
+                    # Librarian, such as on staging. Don't annoy the
+                    # operator with noise in this case.
+                    log.info("%s already deleted", path)
 
         self.index += chunksize
 
@@ -409,14 +412,10 @@ class FlagExpiredFiles:
     """
     implements(ITunableLoop)
 
-    index = 1
-
-    con = None # Database connection to use
-
-    total_flagged = 0
-
     def __init__(self, con):
         self.con = con
+        self.index = 1
+        self.total_flagged = 0
         cur = con.cursor()
 
         log.debug("Creating set of expired LibraryFileContent.")
@@ -514,33 +513,44 @@ def delete_unwanted_files(con):
                 and content_id > next_wanted_content_id):
             next_wanted_content_id = get_next_wanted_content_id()
 
-        if (next_wanted_content_id is not None
-                and next_wanted_content_id == content_id):
-            file_wanted = True
-        else:
-            file_wanted = False
+        file_wanted = (
+                next_wanted_content_id is not None
+                and next_wanted_content_id == content_id)
 
         path = get_file_path(content_id)
-        path_exists = os.path.exists(path)
 
-        if file_wanted and not path_exists:
-            if config.librarian_server.upstream_host is None:
+        if file_wanted:
+            if (config.librarian_server.upstream_host is None
+                and not os.path.exists(path)):
                 # It is normal to have files in the database that are
                 # not on disk if the Librarian has an upstream
-                # Librarian, such as on staging.
+                # Librarian, such as on staging. Don't spam in this
+                # case.
                 log.error(
                     "LibraryFileContent %d exists in the db but not at %s"
                     % (content_id, path))
-        elif path_exists and not file_wanted:
-            one_day = 24 * 60 * 60
-            if time() - os.path.getctime(path) < one_day:
-                log.debug(
-                    "File %d not removed - created too recently" % content_id)
-            else:
-                # File uploaded a while ago but no longer wanted - remove it
-                log.debug("Deleting %s" % path)
-                os.unlink(path)
-                count += 1
+
+        else:
+            try:
+                one_day = 24 * 60 * 60
+                if time() - os.path.getctime(path) < one_day:
+                    log.debug(
+                        "File %d not removed - created too recently"
+                        % content_id)
+                else:
+                    # File uploaded a while ago but no longer wanted.
+                    os.unlink(path)
+                    log.debug("Deleted %s" % path)
+                    count += 1
+            except OSError, e:
+                if e.errno != errno.ENOENT:
+                    raise
+                if config.librarian_server.upstream_host is None:
+                    # It is normal to have files in the database that
+                    # are not on disk if the Librarian has an upstream
+                    # Librarian, such as on staging. Don't annoy the
+                    # operator with noise in this case.
+                    log.info("%s already deleted", path)
 
     log.info(
             "Deleted %d files from disk that where no longer referenced "
