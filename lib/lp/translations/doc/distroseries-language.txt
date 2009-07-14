@@ -96,12 +96,10 @@ hoary_spanish.pofiles is hidding as expected.
 
 We also have DummyDistroSeriesLanguages.
 
-    >>> from lp.translations.model.distroserieslanguage import (
-    ...     DummyDistroSeriesLanguage)
     >>> amharic = getUtility(ILanguageSet)['am']
     >>> hoary_amharic = hoary.getDistroSeriesLanguageOrDummy(amharic)
     >>> print hoary_amharic.__class__
-    <class 'lp.translations.model.distroserieslanguage.DummyDistroSeriesLanguage'>
+    <class '...DummyDistroSeriesLanguage'>
 
 English is not a translatable language because we store the source messages
 as English. Thus English cannot be a DummyDistroSeriesLanguage.
