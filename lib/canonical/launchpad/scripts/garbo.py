@@ -479,7 +479,7 @@ class PersonPruner(TunableLoop):
         self.log.debug("Counting UnlinkedPeople.")
         self.max_offset = self.store.execute(
             "SELECT MAX(id) FROM UnlinkedPeople").get_one()[0]
-        self.log.info("%d Person records to remove.")
+        self.log.info("%d Person records to remove." % self.max_offset)
         # Don't keep any locks open - we might block.
         transaction.commit()
 
