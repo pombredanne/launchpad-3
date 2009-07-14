@@ -35,7 +35,6 @@ from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
-from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -1091,27 +1090,19 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.date_created == self.context.date_reviewed)
             if self.context.is_imported:
                 # Imported one matches the current one.
-                imported_translationmessage = None
+                imported_submission = None
             elif self.imported_translationmessage is not None:
-                imported_translationmessage = removeSecurityProxy(
-                    self.imported_translationmessage)
-                imported_translationmessage.suggestion_html_id = (
-                    self.context.potmsgset.makeHTMLID('%s_suggestion_%s_%s' % (
-                        imported_translationmessage.language.code,
-                        imported_translationmessage.id, index)))
-                imported_translationmessage.translation_html_id = (
-                    imported_translationmessage.makeHTMLID(
-                        'translation_%s' % (index)))
-                imported_translationmessage.suggestion_text = text_to_html(
-                    imported_translation,
-                    imported_translationmessage.potmsgset.flags)
-                imported_translationmessage.legal_warning = False
-                imported_translationmessage.person = (
-                    imported_translationmessage.submitter)
-                imported_translationmessage.is_local_to_pofile = (
-                    self.pofile == imported_translationmessage.pofile)
+
+                imported_submission = (
+                    convert_translationmessage_to_submission(
+                        self.imported_translationmessage,
+                        index,
+                        self.pofile,
+                        False,
+                        is_empty=False))
+
             else:
-                imported_translationmessage = None
+                imported_submission = None
 
             translation_entry = {
                 'plural_index': index,
@@ -1120,7 +1111,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 'submitted_translation': submitted_translation,
                 'imported_translation': text_to_html(
                     imported_translation, self.context.potmsgset.flags),
-                'imported_translation_message': imported_translationmessage,
+                'imported_translation_message': imported_submission,
                 'suggestion_block': self.suggestion_blocks[index],
                 'suggestions_count': self.suggestions_count[index],
                 'store_flag': index in self.plural_indices_to_store,
@@ -1571,8 +1562,6 @@ class TranslationMessageSuggestions:
             seen_translations = set()
 
         for submission in submissions:
-            # XXX: JeroenVermeulen 2007-11-29 bug=165167: The second part of
-            # this safeguard condition is not tested.  We should test it.
             total_plural_forms = submission.language.pluralforms
             if total_plural_forms is None:
                 total_plural_forms = 2
@@ -1588,35 +1577,57 @@ class TranslationMessageSuggestions:
                 continue
             else:
                 seen_translations.add(this_translation)
-            # Radio buttons for suggestions are always dismissable.
-            suggestion_dismissable_class = self.potmsgset.makeHTMLID(
-                'dismissable_button')
-            if self.pofile == submission.pofile:
-                suggestion_dismissable_class += ' '+self.potmsgset.makeHTMLID(
-                    'dismissable')
-            self.submissions.append({
-                'id': submission.id,
-                'translationmessage' : submission,
-                'language': submission.language,
-                'plural_index': plural_form,
-                'suggestion_text': text_to_html(
-                    submission.translations[plural_form],
-                    submission.potmsgset.flags),
-                'potmsgset': submission.potmsgset,
-                'pofile': submission.pofile,
-                'person': submission.submitter,
-                'date_created': submission.date_created,
-                'is_empty' : False,
-                'is_local_to_pofile' : submission.pofile == self.pofile,
-                'legal_warning': legal_warning and (
-                    submission.origin == RosettaTranslationOrigin.SCM),
-                'suggestion_html_id':
-                    self.potmsgset.makeHTMLID('%s_suggestion_%s_%s' % (
-                        submission.language.code, submission.id,
-                        plural_form)),
-                'translation_html_id':
-                    translation.makeHTMLID(
-                        'translation_%s' % (plural_form)),
-                'suggestion_dismissable_class': suggestion_dismissable_class,
-                })
+            self.submissions.append(
+                convert_translationmessage_to_submission(
+                    submission,
+                    plural_form,
+                    self.pofile,
+                    legal_warning,
+                    is_empty=False))
         self.seen_translations = seen_translations
+
+def convert_translationmessage_to_submission(
+    message, plural_form, pofile, legal_warning_needed, is_empty=False):
+    """Turn a TranslationMessage to an object used for rendering a submission.
+
+    :param message: A TranslationMessage.
+    :param plural_form: A plural form to prepare a submission for.
+    :param pofile: A containing PO file where suggestion is being rendered.
+    :param legal_warning_needed: Whether a warning check is needed.
+    :param is_empty: Is the submission empty or not.
+    """
+
+    class Submission:
+        pass
+
+    submission = Submission()
+    submission.translationmessage = message
+    for attribute in ['id', 'language', 'potmsgset', 'pofile', 'date_created']:
+        setattr(submission, attribute, getattr(message, attribute))
+
+    submission.person = message.submitter
+
+    submission.is_empty = is_empty
+    submission.plural_index = plural_form
+    submission.suggestion_text = text_to_html(
+        message.translations[plural_form],
+        message.potmsgset.flags)
+    submission.is_local_to_pofile = (message.pofile == pofile)
+    submission.legal_warning = legal_warning_needed and (
+        message.origin == RosettaTranslationOrigin.SCM)
+    submission.suggestion_html_id = (
+        message.potmsgset.makeHTMLID('%s_suggestion_%s_%s' % (
+            message.language.code, message.id,
+            plural_form)))
+    submission.translation_html_id = (
+        message.makeHTMLID(
+            'translation_%s' % (plural_form)))
+
+    suggestion_dismissable_class = message.potmsgset.makeHTMLID(
+        'dismissable_button')
+    if submission.is_local_to_pofile:
+        suggestion_dismissable_class += ' '+message.potmsgset.makeHTMLID(
+            'dismissable')
+    submission.suggestion_dismissable_class = suggestion_dismissable_class
+
+    return submission
