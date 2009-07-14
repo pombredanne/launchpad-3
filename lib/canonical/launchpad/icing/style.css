@@ -48,10 +48,10 @@ h1 .edit {
 }
 .offscreen {
     position: absolute;
-    left: -999em; 
+    left: -999em;
 }
-span.invisible-link {display:none;} 
-span.invisible {left:-9999em;display:block;} 
+span.invisible-link {display:none;}
+span.invisible {left:-9999em;display:block;}
 .sprite {padding:2px 0 0 18px;}
 .sprite-left {padding:2px 18px 0 0; background-position:left;}
 
@@ -936,12 +936,16 @@ hierarchy, and the application tabs. */
 /* === Help pane === */
 /*
 Inline help is contained in a <div> and dynamically positioned by JavaScript.
+*
+* This should appear above all other content.  Needs to be
+* above the Google Maps element on the profile pages, which
+* has a z-index of 9999.  See bug #380349.
 */
 #help-pane {
   position: absolute;
   border: 1px solid black;
   padding: 1px 1px 5px 10px;
-  z-index: 3000;  /* This should appear above all other content. */
+  z-index: 11000; /* Needs to be at least 9999.  See bug #380349. */
   background-color: #fff;
   width: 600px; /* based on the help wiki, should change later */
 }
