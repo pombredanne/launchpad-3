@@ -992,5 +992,40 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertTrue(tm2.is_imported)
 
 
+    def test_updateTranslation_DivergedCurrentoDivergedImported(self):
+        # Corner case that came up when fixing bug #394224:
+        # Two diverged messages, one imported, the other (current) is not.
+        # Updating to the first one through we ui (is_imported=False) allows
+        # the imported to replace the not imported while both stay diverged.
+        tm1 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=True, force_diverged=True)
+        tm2 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
+            is_imported=False, force_diverged=True)
+
+        self.assertEquals(self.pofile.potemplate, tm1.potemplate)
+        self.assertEquals(self.pofile.potemplate, tm2.potemplate)
+
+        self.assertFalse(tm1.is_current)
+        self.assertTrue(tm2.is_current)
+
+        self.assertTrue(tm1.is_imported)
+        self.assertFalse(tm2.is_imported)
+
+        self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=False)
+
+        self.assertEquals(self.pofile.potemplate, tm1.potemplate)
+        self.assertEquals(self.pofile.potemplate, tm2.potemplate)
+
+        self.assertTrue(tm1.is_current)
+        self.assertFalse(tm2.is_current)
+
+        self.assertTrue(tm1.is_imported)
+        self.assertFalse(tm2.is_imported)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
