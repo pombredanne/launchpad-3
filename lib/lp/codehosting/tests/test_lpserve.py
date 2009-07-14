@@ -14,9 +14,9 @@ from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import remote
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 from lp.codehosting import get_bzr_path, get_bzr_plugins_path
+from lp.codehosting.bzrutils import make_error_utility
 
 
 class TestLaunchpadServe(TestCaseWithTransport):
@@ -134,10 +134,6 @@ class TestLaunchpadServe(TestCaseWithTransport):
         transport = remote.RemoteTransport(url, medium=client_medium)
         return process, transport
 
-    def test_no_oops_yet(self):
-        # There should be no OOPS reports yet.
-        self.assertIs(None, globalErrorUtility.getLastOopsReport())
-
     def test_successful_start_then_stop(self):
         # We can start and stop the lpserve process.
         process, transport = self.start_server_inet()
@@ -147,13 +143,15 @@ class TestLaunchpadServe(TestCaseWithTransport):
     def test_successful_start_then_stop_logs_no_oops(self):
         # Starting and stopping the lp-serve process leaves no OOPS.
         process, transport = self.start_server_inet()
+        error_utility = make_error_utility(process.pid)
         self.finish_lpserve_subprocess(process)
-        self.assertIs(None, globalErrorUtility.getLastOopsReport())
+        self.assertIs(None, error_utility.getLastOopsReport())
 
     def test_unexpected_error_logs_oops(self):
         # If an unexpected error is raised in the plugin, then an OOPS is
         # recorded.
         process, transport = self.start_server_inet()
+        error_utility = make_error_utility(process.pid)
         # This will trigger an error, because the XML-RPC server is not
         # running, and any filesystem access tries to get at the XML-RPC
         # server. If this *doesn'* raise, then the test is no longer valid and
@@ -163,7 +161,7 @@ class TestLaunchpadServe(TestCaseWithTransport):
             transport.list_dir, 'foo/bar/baz')
         result = self.finish_lpserve_subprocess(process)
         self.assertFinishedCleanly(result)
-        self.assertIsNot(None, globalErrorUtility.getLastOopsReport())
+        self.assertIsNot(None, error_utility.getLastOopsReport())
 
 
 def test_suite():
