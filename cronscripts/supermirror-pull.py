@@ -38,7 +38,7 @@ if __name__ == '__main__':
     (options, arguments) = parser.parse_args()
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
-    log = set_up_logging_for_script(options, 'supermirror_upload_puller')
+    log = set_up_logging_for_script(options, 'supermirror_puller')
     manager = scheduler.JobScheduler(
         Proxy(config.codehosting.branch_puller_endpoint), log)
 
