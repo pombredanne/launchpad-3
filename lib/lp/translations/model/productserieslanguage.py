@@ -16,10 +16,12 @@ from storm.expr import Sum
 from storm.store import Store
 
 from lp.translations.utilities.rosettastats import RosettaStats
-from lp.translations.model.pofile import POFile
-from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.pofile import DummyPOFile, POFile
+from lp.translations.model.potemplate import get_pofiles_for, POTemplate
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
+
+
 class ProductSeriesLanguage(RosettaStats):
     """See `IProductSeriesLanguage`."""
     implements(IProductSeriesLanguage)
@@ -88,30 +90,9 @@ class ProductSeriesLanguage(RosettaStats):
             POTemplate.iscurrent==True)
         return result.order_by(['-priority'])
 
-    @property
-    def pofiles_or_dummies(self):
+    def getPOFilesFor(self, potemplates):
         """See `IProductSeriesLanguage`."""
-        store = Store.of(self.language)
-
-        all_templates = store.find(
-            POTemplate,
-            POTemplate.productseries==self.productseries,
-            POTemplate.iscurrent==True)
-
-        existing_pofiles = {}
-        for pofile in self.pofiles:
-            existing_pofiles[pofile.potemplate] = pofile
-
-        all_pofiles = []
-        for potemplate in all_templates.order_by(['-priority']):
-            if existing_pofiles.has_key(potemplate):
-                pofile = existing_pofiles[potemplate]
-            else:
-                pofile = potemplate.getDummyPOFile(
-                    self.language.code, self.variant)
-            all_pofiles.append(pofile)
-
-        return all_pofiles
+        return get_pofiles_for(potemplates, self.language, self.variant)
 
 
 class DummyProductSeriesLanguage(ProductSeriesLanguage):
@@ -136,6 +117,13 @@ class DummyProductSeriesLanguage(ProductSeriesLanguage):
         if total is None:
             total = 0
         return total
+
+    def getPOFilesFor(self, potemplates):
+        """See `IProductSeriesLanguage`."""
+        return [
+            DummyPOFile(template, self.language, self.variant)
+            for template in potemplates
+            ]
 
 
 class ProductSeriesLanguageSet:

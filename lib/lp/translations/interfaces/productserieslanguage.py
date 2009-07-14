@@ -42,9 +42,12 @@ class IProductSeriesLanguage(IRosettaStats):
         "language. This includes only the real pofiles where translations "
         "exist.")
 
-    pofiles_or_dummies = Attribute(
-        "Return a full complement of po files and dummy pofiles, one for "
-        "each PO Template in the series.")
+    def getPOFilesFor(potemplates):
+        """Return `POFiles` for each of `potemplates`, in the same order.
+
+        For any `POTemplate` that does not have a translation to the
+        required language, a `DummyPOFile` is provided.
+        """
 
 
 class IProductSeriesLanguageSet(Interface):

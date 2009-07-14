@@ -24,14 +24,13 @@
 </metal:heading>
 
 <div metal:fill-slot="main">
-
-  <tal:block condition="not:view/batchnav/currentBatch">
+  <tal:block condition="not:view/pofiles">
     <div class="documentDescription">
       There are no programs available to be translated.
     </div>
   </tal:block>
 
-  <tal:block condition="view/batchnav/currentBatch">
+  <tal:block condition="view/pofiles">
 
     <p>
       Choose a template name to begin translating. Templates that are
@@ -54,7 +53,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="entry view/batchnav/currentBatch"
+        <tr tal:repeat="entry view/pofiles"
             tal:attributes="id string:${entry/potemplate/name}">
           <td>
             <a tal:attributes="href string:${entry/fmt:url}/+translate"
