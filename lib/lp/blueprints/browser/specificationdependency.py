@@ -24,7 +24,6 @@ class SpecificationDependencyAddView(LaunchpadFormView):
     schema = ISpecificationDependency
     field_names = ['dependency']
     label = _('Depends On')
-    custom_widget('dependency', SinglePopupWidget)
 
     def setUpFields(self):
         """Override the setup to define own fields."""

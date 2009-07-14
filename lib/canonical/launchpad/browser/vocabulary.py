@@ -13,10 +13,12 @@ __all__ = [
 
 import simplejson
 
+from zope.app import zapi
+from zope.app.schema.vocabulary import IVocabularyFactory
 from zope.interface import implementer
 from zope.component import adapter
+from zope.component.interfaces import ComponentLookupError
 from zope.interface import Attribute, implements, Interface
-from zope.schema.vocabulary import getVocabularyRegistry
 from zope.app.form.interfaces import MissingInputError
 
 from lazr.restful.interfaces import IWebServiceClientRequest
@@ -91,8 +93,17 @@ class HugeVocabularyJSONView:
         if search_text is None:
             raise MissingInputError('search_text', '')
 
-        registry = getVocabularyRegistry()
-        vocabulary = registry.get(IHugeVocabulary, name)
+        try:
+            factory = zapi.getUtility(IVocabularyFactory, name)
+        except ComponentLookupError:
+            raise UnexpectedFormData(
+                'Unknown vocabulary %s' % vocabulary_name)
+
+        vocabulary = factory(self.context)
+
+        if not IHugeVocabulary.providedBy(vocabulary):
+            raise UnexpectedFormData(
+                'Non-huge vocabulary %s' % vocabulary_name)
 
         matches = vocabulary.searchForTerms(search_text)
         batch_navigator = BatchNavigator(matches, self.request)
