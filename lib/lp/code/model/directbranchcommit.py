@@ -16,6 +16,8 @@ from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview
 
+from lp.codehosting.vfs import get_multi_server
+
 
 class ConcurrentUpdateError(Exception):
     """Bailout exception for concurrent updates.
@@ -44,18 +46,33 @@ class DirectBranchCommit:
     is_open = False
     is_locked = False
 
-    def __init__(self, db_branch, committer=None):
+    def __init__(self, db_branch, committer=None, bzrserver=None):
         """Create context for direct commit to branch.
 
-        :param db_branch: a Launchpad Branch object.
+        :param db_branch: a Launchpad `Branch` object.
+        :param committer: the `Person` writing to the branch.
+        :param bzrserver: an optional bzr server to use.  You can set
+            one up using `DirectBranchCommit.makeBzrServer`, use it as
+            many times as you like, then tear it down.  Or you can omit
+            this parameter and one will be created (and torn down) for
+            you.
         """
         self.db_branch = db_branch
+
+        if bzrserver is None:
+            self.bzrserver = self.makeBzrServer()
+            self.own_bzrserver = True
+        else:
+            self.bzrserver = bzrserver
+            self.own_bzrserver = False
 
         if committer is None:
             committer = db_branch.owner
         self.committer = committer
 
-        self.bzrbranch = BzrBranch.open(self.db_branch.getPullURL())
+        #mirrorer = BranchMirrorer(HostedBranchPolicy(), None, None)
+        mirrorer = BzrBranch
+        self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
         self.bzrbranch.lock_write()
         self.is_locked = True
 
@@ -70,6 +87,12 @@ class DirectBranchCommit:
             raise
 
         self.files = set()
+
+    @classmethod
+    def makeBzrServer(cls):
+        server = get_multi_server(write_hosted=True)
+        server.setUp()
+        return server
 
     def _getDir(self, path):
         """Get trans_id for directory "path."  Create if necessary."""
@@ -164,3 +187,8 @@ class DirectBranchCommit:
         if self.is_locked:
             self.bzrbranch.unlock()
             self.is_locked = False
+
+        if self.own_bzrserver:
+            self.bzrserver.tearDown()
+            self.bzrserver = None
+            self.own_bzrserver = False
