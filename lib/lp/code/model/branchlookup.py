@@ -29,7 +29,7 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.linkedbranch import get_linked_branch, NoLinkedBranch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet)
+    IDistroSeries, IDistroSeriesSet, NoSuchDistroSeries)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
@@ -129,7 +129,10 @@ class DistributionTraversable(_BaseTraversable):
         # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
         # could also try to find a package and then return a reference to its
         # development focus.
-        return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
+        try:
+            return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
+        except NoSuchDistroSeries:
+            return self.context.getSourcePackage(name)
 
 
 class DistroSeriesTraversable:

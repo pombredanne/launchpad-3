@@ -345,6 +345,16 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         ssp = package.getSuiteSourcePackage(PackagePublishingPocket.RELEASE)
         self.assertTraverses(package.path, ssp)
 
+    def test_distribution_source_package(self):
+        # `traverse` resolves 'distro/package' to the distribution source
+        # package.
+        #
+        # XXX: This test fails because DistributionSourcePackage.__getitem__
+        # tricks Zope into adapting it incorrectly.
+        dsp = self.factory.makeDistributionSourcePackage()
+        path = '%s/%s' % (dsp.distribution.name, dsp.sourcepackagename.name)
+        self.assertTraverses(path, dsp)
+
     def test_traverse_source_package_pocket(self):
         # `traverse` resolves 'distro/series-pocket/package' to the official
         # branch for 'pocket' on that package.
@@ -366,6 +376,8 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
     def test_no_such_distro_series(self):
         # `traverse` raises `NoSuchDistroSeries` if the distro series doesn't
         # exist.
+        # XXX: This fails now that we try to resolve 'series' as a source
+        # package as well as a series. Decide what to do.
         self.factory.makeDistribution(name='distro')
         self.assertRaises(
             NoSuchDistroSeries, self.traverser.traverse,
