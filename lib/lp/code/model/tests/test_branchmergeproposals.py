@@ -263,6 +263,16 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertIs(None, proposal.date_reviewed)
         self.assertIs(None, proposal.reviewed_revision_id)
 
+    def test_set_status_wip_to_needs_review(self):
+        # The branch merge proposal's status can be set with the setState
+        # method.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal.setState(BranchMergeProposalStatus.NEEDS_REVIEW)
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposal.NEEDS_REVIEW)
+
 
 class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     """Test the resetting of date_review_reqeuested."""
