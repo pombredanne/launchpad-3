@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_pofiles_for',
     'HasTranslationTemplatesMixin',
     'POTemplate',
     'POTemplateSet',
@@ -21,7 +22,7 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, SQL
+from storm.expr import Alias, And, SQL
 from storm.store import Store
 from zope.component import getAdapter, getUtility
 from zope.interface import implements
@@ -40,6 +41,8 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.translations.model.pofile import POFile, DummyPOFile
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.translationimportqueue import (
+    collect_import_info)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.translations.interfaces.pofile import IPOFileSet
@@ -93,6 +96,36 @@ standardTemplateHeader = (
 
 standardPOFileHeader = (standardTemplateHeader +
     "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n")
+
+
+def get_pofiles_for(potemplates, language, variant=None):
+    """Return list of `IPOFile`s for given templates in given language.
+
+    :param potemplates: a list or sequence of `POTemplate`s.
+    :param language: the language that the `IPOFile`s should be for.
+    :return: a list of exactly one `IPOFile` for each `POTemplate`
+        in `potemplates`.  They will be `POFile`s where available,
+        and `DummyPOFile`s where not.
+    """
+    potemplates = list(potemplates)
+    if len(potemplates) == 0:
+        return []
+
+    template_ids = [template.id for template in potemplates]
+
+    pofiles = Store.of(potemplates[0]).find(POFile, And(
+        POFile.potemplateID.is_in(template_ids),
+        POFile.language == language,
+        POFile.variant == variant))
+
+    mapping = dict((pofile.potemplate.id, pofile) for pofile in pofiles)
+    result = [mapping.get(id) for id in template_ids]
+    for entry, pofile in enumerate(result):
+        assert pofile == result[entry], "This enumerate confuses me."
+        if pofile is None:
+            result[entry] = DummyPOFile(potemplates[entry], language, variant)
+
+    return result
 
 
 class POTemplate(SQLBase, RosettaStats):
@@ -813,15 +846,21 @@ class POTemplate(SQLBase, RosettaStats):
 
         subject = 'Translation template import - %s' % self.displayname
         template_mail = 'poimport-template-confirmation.txt'
+        errors, warnings = None, None
         try:
-            translation_importer.importFile(entry_to_import, logger)
+            errors, warnings = translation_importer.importFile(
+                entry_to_import, logger)
         except (BrokenTextError, TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError), exception:
+                TranslationFormatInvalidInputError, UnicodeDecodeError), (
+                exception):
             if logger:
                 logger.info(
                     'We got an error importing %s', self.title, exc_info=1)
             subject = 'Import problem - %s' % self.displayname
-            template_mail = 'poimport-syntax-error.txt'
+            if isinstance(exception, UnicodeDecodeError):
+                template_mail = 'poimport-bad-encoding.txt'
+            else:
+                template_mail = 'poimport-syntax-error.txt'
             entry_to_import.setStatus(RosettaImportStatus.FAILED)
             error_text = str(exception)
             entry_to_import.setErrorOutput(error_text)
@@ -829,17 +868,15 @@ class POTemplate(SQLBase, RosettaStats):
             error_text = None
             entry_to_import.setErrorOutput(None)
 
-        replacements = {
-            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-            'elapsedtime': entry_to_import.getElapsedTimeText(),
-            'file_link': entry_to_import.content.http_url,
+        replacements = collect_import_info(entry_to_import, self, warnings)
+        replacements.update({
             'import_title': 'translation templates for %s' % self.displayname,
-            'importer': entry_to_import.importer.displayname,
-            'template': self.displayname,
-            }
+            })
 
         if error_text is not None:
             replacements['error'] = error_text
+
+        entry_to_import.addWarningOutput(replacements['warnings'])
 
         if entry_to_import.status != RosettaImportStatus.FAILED:
             entry_to_import.setStatus(RosettaImportStatus.IMPORTED)
@@ -1386,12 +1423,18 @@ class POTemplateToTranslationFileDataAdapter:
 
 
 class HasTranslationTemplatesMixin:
-    """Methods related to objects having translation templates."""
+    """Helper class for implementing `IHasTranslationTemplates`."""
     implements(IHasTranslationTemplates)
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
         raise NotImplementedError('This must be provided when subclassing.')
+
+    @property
+    def has_current_translation_templates(self):
+        """Does self have current translation templates?"""
+        templates = self.getCurrentTranslationTemplates()
+        return bool(templates.any())
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""

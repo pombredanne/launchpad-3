@@ -13,16 +13,18 @@ from zope.interface import implements
 
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
-    AccountPrincipalMixin, LaunchpadBrowserRequest,
+    AccountPrincipalMixin, LaunchpadBrowserRequest, LaunchpadTestRequest,
     VirtualHostRequestPublicationFactory)
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 from canonical.signon.interfaces.openidserver import IOpenIDApplication
-from canonical.signon.layers import (
-    IdLayer, OpenIDLayer)
+from canonical.signon.layers import OpenIDLayer
 
 
-class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
+class OpenIDPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
     """The publication used for OpenID requests."""
+
+    root_object_interface = IOpenIDApplication
 
     def getApplication(self, request):
         """Return the `IOpenIDApplication`."""
@@ -32,28 +34,25 @@ class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
         """SSO doesn't care about read-only mode."""
         pass
 
-class IdBrowserRequest(LaunchpadBrowserRequest):
-    implements(IdLayer)
-
-
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove OpenIDPublication and OpenIDBrowserRequest.
-class OpenIDPublication(IdPublication):
-    """The publication used for old OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
-
 
 class OpenIDBrowserRequest(LaunchpadBrowserRequest):
     implements(OpenIDLayer)
 
 
+class OpenIDServerTestRequest(LaunchpadTestRequest):
+    implements(OpenIDLayer)
+
+    def __init__(self, body_instream=None, environ=None, **kw):
+        test_environ = {
+            'SERVER_URL': allvhosts.configs['openid'].rooturl,
+            'HTTP_HOST': allvhosts.configs['openid'].hostname}
+        if environ is not None:
+            test_environ.update(environ)
+        super(OpenIDServerTestRequest, self).__init__(
+            body_instream=body_instream, environ=test_environ, **kw)
+
+
 def openid_request_publication_factory():
     return VirtualHostRequestPublicationFactory(
         'openid', OpenIDBrowserRequest, OpenIDPublication)
-
-
-def id_request_publication_factory():
-    return VirtualHostRequestPublicationFactory(
-        'id', IdBrowserRequest, IdPublication)
 

@@ -24,11 +24,9 @@ presented with a warning.
     ...     name='field.bugtarget.package').value = 'alsa-utils'
     >>> user_browser.getControl('Summary').value = 'Alsa crashes'
     >>> user_browser.getControl('Continue').click()
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     Debian does not use...
-    ...
-    You can refine and resubmit your bug report.
 
 A link will be included to take the user back to the +filebug page:
 
@@ -66,7 +64,7 @@ Selecting a valid package will take us to the next filebug step.
     >>> from lp.bugs.tests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #1 Firefox does not support SVG
-    Open (1 comment) last updated 2006-05-19
+    Open (1 comment) last updated 2006-05-19...
     Firefox needs to support embedded SVG...
 
 
@@ -117,9 +115,7 @@ Launchpad Bugs results in an informational page being displayed.
     >>> user_browser.getControl('Summary').value = 'Alsa crashes'
     >>> user_browser.getControl('Further information').value = 'Crash.'
     >>> user_browser.getControl('Submit Bug Report').click()
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     Debian does not use...
-    ...
-    You can refine and resubmit your bug report.
 

@@ -18,7 +18,7 @@ from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
 
-from storm.locals import Desc, Join, SQL
+from storm.locals import And, Desc, Join, SQL
 from storm.store import Store
 
 from zope.component import getUtility
@@ -37,7 +37,6 @@ from canonical.launchpad.components.decoratedresultset import (
 from lp.translations.model.pofiletranslator import (
     POFileTranslator)
 from lp.translations.model.pofile import POFile
-from lp.translations.model.potemplate import POTemplate
 from canonical.launchpad.interfaces import IStore
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -49,7 +48,7 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
-    DistroArchSeries, PocketChroot)
+    DistroArchSeries, DistroArchSeriesSet, PocketChroot)
 from lp.soyuz.model.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
 from lp.translations.model.distroserieslanguage import (
@@ -118,7 +117,6 @@ from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
-from lp.services.worlddata.model.language import Language
 
 
 class SeriesMixin:
@@ -627,7 +625,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Language.id,
             Language.visible == True,
             Language.id == POFile.languageID,
-            Language.code <> 'en',
+            Language.code != 'en',
             POFile.potemplateID == POTemplate.id,
             POTemplate.distroseries == self,
             POTemplate.iscurrent == True).config(distinct=True))
@@ -977,14 +975,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 for pubrecord in result]
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None):
+                        arch_tag=None, user=None):
         """See IHasBuildRecords"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
 
         # Find out the distroarchseries in question.
-        arch_ids = [arch.id for arch in self.architectures]
+        arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
+            self.architectures, arch_tag)
+
         # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
@@ -1699,22 +1699,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        # Avoid circular imports.
-        from lp.registry.model.distribution import Distribution
-
         store = Store.of(self)
         if just_ids:
             looking_for = POTemplate.id
         else:
             looking_for = POTemplate
 
-        result = store.find(
-            looking_for,
+        # Select all current templates for this series, if the Product
+        # actually uses Launchpad Translations.  Otherwise, return an
+        # empty result.
+        result = store.find(looking_for, And(
+            self.distribution.official_rosetta == True,
             POTemplate.iscurrent == True,
-            POTemplate.distroseries == self,
-            DistroSeries.id == self.id,
-            DistroSeries.distribution == Distribution.id,
-            Distribution.official_rosetta == True)
+            POTemplate.distroseries == self))
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     def getObsoleteTranslationTemplates(self):

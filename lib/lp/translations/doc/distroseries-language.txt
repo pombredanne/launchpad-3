@@ -19,40 +19,56 @@ will work with spanish in Hoary first.
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> hoary_spanish = hoary.getDistroSeriesLanguage(spanish)
 
-Now lets get the list of real pofiles. By this we mean the ones where there
-is actually a translation or two:
+In DistroSeriesLanguage.pofiles we find real POFiles for the given
+DistroSeries in the given language.  That is, translations that actually
+contain messages.
 
-    >>> for po in hoary_spanish.pofiles: print po.potemplate.name
+    >>> for po in hoary_spanish.pofiles:
+    ...     print po.potemplate.name
     evolution-2.2
     pmount
     pkgconf-mozilla
     man
 
-Now lets include the dummies:
+There are however more templates than the ones that have messages:
 
-    >>> for po in hoary_spanish.po_files_or_dummies: print po.potemplate.name
+    >>> hoary_templates = list(hoary.getCurrentTranslationTemplates())
+    >>> for template in hoary_templates:
+    ...     print template.name
     evolution-2.2
     man
     man
     pkgconf-mozilla
     pmount
+
+We can ask the DistroSeriesLanguage to fetch existing POFiles for these
+templates where they exist, or create matching DummyPOFiles where they
+don't.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> def print_augmented_pofiles(distroserieslanguage, templates):
+    ...     """Print `POFile`s for each of `templates`.
+    ...
+    ...     Creates `DummyPOFile`s where needed.  Prints types.
+    ...     """
+    ...     for pofile in distroserieslanguage.getPOFilesFor(templates):
+    ...         print "%s (%s) %s" % (
+    ...             pofile.potemplate.name, pofile.language.code,
+    ...             removeSecurityProxy(pofile).__class__)
+
+    >>> print_augmented_pofiles(hoary_spanish, hoary_templates)
+    evolution-2.2     (es)   <class '...pofile.POFile'>
+    man               (es)   <class '...pofile.POFile'>
+    man               (es)   <class '...pofile.DummyPOFile'>
+    pkgconf-mozilla   (es)   <class '...pofile.POFile'>
+    pmount            (es)   <class '...pofile.POFile'>
 
 Note that the sorting is by template name, and there are two 'man'
-dummy po files.
+templates of which one has a real translation and the other uses a
+DummyPOFile.
 
-The list that include dummies should be the same as the current potemplates
-for Hoary
-
-    >>> for potemplate in hoary.getCurrentTranslationTemplates():
-    ...     print potemplate.name
-    evolution-2.2
-    man
-    man
-    pkgconf-mozilla
-    pmount
-
-But if we get the whole list of templates, even non current ones, we can see
-that there is one extra template that was not shown in distroserieslanguage
+When we ask for the whole list of templates, including non-current ones,
+we see one extra template that was not shown in the DistroSeriesLanguage
 listing.
 
     >>> for potemplate in hoary.getTranslationTemplates():
@@ -64,7 +80,7 @@ listing.
     pkgconf-mozilla
     pmount
 
-Which is exactly the one that is obsolete.
+This is the one obsolete template.
 
     >>> for potemplate in hoary.getObsoleteTranslationTemplates():
     ...     print potemplate.name
@@ -80,12 +96,10 @@ hoary_spanish.pofiles is hidding as expected.
 
 We also have DummyDistroSeriesLanguages.
 
-    >>> from lp.translations.model.distroserieslanguage import (
-    ...     DummyDistroSeriesLanguage)
     >>> amharic = getUtility(ILanguageSet)['am']
     >>> hoary_amharic = hoary.getDistroSeriesLanguageOrDummy(amharic)
     >>> print hoary_amharic.__class__
-    <class 'lp.translations.model.distroserieslanguage.DummyDistroSeriesLanguage'>
+    <class '...DummyDistroSeriesLanguage'>
 
 English is not a translatable language because we store the source messages
 as English. Thus English cannot be a DummyDistroSeriesLanguage.
@@ -96,14 +110,15 @@ as English. Thus English cannot be a DummyDistroSeriesLanguage.
     ...
     AssertionError: English is not a translatable language.    
 
-It should give you the same set of templates to translate.
+A DummyDistroSeriesLanguage gives you the same set of templates to
+translate as a regular DistroSeriesLanguage would.
 
-    >>> for po in hoary_amharic.po_files_or_dummies: print po.potemplate.name
-    evolution-2.2
-    man
-    man
-    pkgconf-mozilla
-    pmount
+    >>> print_augmented_pofiles(hoary_amharic, hoary_templates)
+    evolution-2.2    (am)  <class '...pofile.DummyPOFile'>
+    man              (am)  <class '...pofile.DummyPOFile'>
+    man              (am)  <class '...pofile.DummyPOFile'>
+    pkgconf-mozilla  (am)  <class '...pofile.DummyPOFile'>
+    pmount           (am)  <class '...pofile.DummyPOFile'>
 
 Now, we should test that a DummyDistroSeriesLanguage implements the full
 interface of a normal DistroSeriesLanguage.
@@ -124,7 +139,7 @@ tests show that).
 
 Now we will show that the priority can dominate the sort order.
 
-    >>> potemplates = hoary.getCurrentTranslationTemplates()
+    >>> potemplates = list(hoary.getCurrentTranslationTemplates())
     >>> evo = potemplates[0]
     >>> print evo.name
     evolution-2.2
@@ -160,7 +175,7 @@ priority.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
-And now we can confirm that priority does in fact dominate
+And now we can confirm that priority does in fact dominate:
 
     >>> for pot in hoary.getCurrentTranslationTemplates():
     ...     print pot.priority, pot.name
@@ -170,13 +185,14 @@ And now we can confirm that priority does in fact dominate
     6 man
     5 evolution-2.2
 
-And now this priority should also dominate the distroseries language pofile
-sort order:
+And now this priority should also dominate the distroseries language
+pofile sort order:
 
-    >>> for po in hoary_amharic.po_files_or_dummies: print po.potemplate.name
-    pmount
-    pkgconf-mozilla
-    man
-    man
-    evolution-2.2
+    >>> print_augmented_pofiles(
+    ...     hoary_amharic, hoary.getCurrentTranslationTemplates())
+    pmount           (am)  <class '...pofile.DummyPOFile'>
+    pkgconf-mozilla  (am)  <class '...pofile.DummyPOFile'>
+    man              (am)  <class '...pofile.DummyPOFile'>
+    man              (am)  <class '...pofile.DummyPOFile'>
+    evolution-2.2    (am)  <class '...pofile.DummyPOFile'>
 

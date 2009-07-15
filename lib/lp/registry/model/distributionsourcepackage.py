@@ -34,7 +34,7 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
-from lp.registry.model.karma import KarmaCache, KarmaCategory
+from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
 from canonical.launchpad.database.structuralsubscription import (
@@ -221,7 +221,7 @@ class DistributionSourcePackage(BugTargetBase,
     def findRelatedArchives(self,
                             exclude_archive=None,
                             archive_purpose=ArchivePurpose.PPA,
-                            require_package_karma=0):
+                            required_karma=0):
         """See `IDistributionSourcePackage`."""
 
         extra_args = []
@@ -237,10 +237,8 @@ class DistributionSourcePackage(BugTargetBase,
         # Include only those archives containing the source package released
         # by a person with karma for this source package greater than that
         # specified.
-        if require_package_karma > 0:
-            extra_args.append(KarmaCache.karmavalue >= require_package_karma)
-
-        soyuz_category_id = KarmaCategory.byName('soyuz')
+        if required_karma > 0:
+            extra_args.append(KarmaTotalCache.karma_total >= required_karma)
 
         store = Store.of(self.distribution)
         results = store.find(
@@ -253,12 +251,11 @@ class DistributionSourcePackage(BugTargetBase,
             (SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == self.sourcepackagename,
+            # Ensure that the package was not copied.
+            SourcePackageRelease.upload_archive == Archive.id,
             # Next, the joins for the ordering by soyuz karma of the
             # SPR creator.
-            KarmaCache.person == SourcePackageRelease.creatorID,
-            KarmaCache.category == soyuz_category_id,
-            KarmaCache.distribution == self.distribution,
-            KarmaCache.sourcepackagename == self.sourcepackagename,
+            KarmaTotalCache.person == SourcePackageRelease.creatorID,
             *extra_args
             )
 
@@ -266,7 +263,7 @@ class DistributionSourcePackage(BugTargetBase,
         # such as IArchive.rank, we will then be able to return distinct
         # results. As it is, we cannot return distinct results while ordering
         # by a non-selected column.
-        results.order_by(Desc(KarmaCache.karmavalue))
+        results.order_by(Desc(KarmaTotalCache.karma_total))
 
         return results
 
