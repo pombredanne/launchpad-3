@@ -290,7 +290,8 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setState(BranchMergeProposalStatus.CODE_APPROVED)
+        proposal.setState(BranchMergeProposalStatus.CODE_APPROVED,
+            user=self.target_branch.owner)
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.CODE_APPROVED)
 
@@ -300,7 +301,8 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setState(BranchMergeProposalStatus.QUEUED)
+        proposal.setState(BranchMergeProposalStatus.QUEUED,
+            user=self.target_branch.owner)
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.QUEUED)
 
@@ -310,7 +312,8 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setState(BranchMergeProposalStatus.REJECTED)
+        proposal.setState(BranchMergeProposalStatus.REJECTED,
+            user=self.target_branch.owner)
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.REJECTED)
 
