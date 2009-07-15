@@ -1096,6 +1096,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 imported_submission = (
                     convert_translationmessage_to_submission(
                         self.imported_translationmessage,
+                        self.context,
                         index,
                         self.pofile,
                         False,
@@ -1580,6 +1581,7 @@ class TranslationMessageSuggestions:
             self.submissions.append(
                 convert_translationmessage_to_submission(
                     submission,
+                    translation,
                     plural_form,
                     self.pofile,
                     legal_warning,
@@ -1587,7 +1589,8 @@ class TranslationMessageSuggestions:
         self.seen_translations = seen_translations
 
 def convert_translationmessage_to_submission(
-    message, plural_form, pofile, legal_warning_needed, is_empty=False):
+    message, current_message, plural_form, pofile, legal_warning_needed,
+    is_empty=False):
     """Turn a TranslationMessage to an object used for rendering a submission.
 
     :param message: A TranslationMessage.
@@ -1616,18 +1619,18 @@ def convert_translationmessage_to_submission(
     submission.legal_warning = legal_warning_needed and (
         message.origin == RosettaTranslationOrigin.SCM)
     submission.suggestion_html_id = (
-        message.potmsgset.makeHTMLID('%s_suggestion_%s_%s' % (
+        message.potmsgset.makeHTMLID(u'%s_suggestion_%s_%s' % (
             message.language.code, message.id,
             plural_form)))
     submission.translation_html_id = (
-        message.makeHTMLID(
-            'translation_%s' % (plural_form)))
+        current_message.makeHTMLID(
+            u'translation_%s' % (plural_form)))
 
     suggestion_dismissable_class = message.potmsgset.makeHTMLID(
-        'dismissable_button')
+        u'dismissable_button')
     if submission.is_local_to_pofile:
-        suggestion_dismissable_class += ' '+message.potmsgset.makeHTMLID(
-            'dismissable')
+        suggestion_dismissable_class += u' ' + message.potmsgset.makeHTMLID(
+            u'dismissable')
     submission.suggestion_dismissable_class = suggestion_dismissable_class
 
     return submission
