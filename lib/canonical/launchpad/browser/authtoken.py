@@ -51,7 +51,7 @@ class AuthTokenView(LoginTokenView):
     they got this token because they tried to do something that required email
     address confirmation, but that confirmation is already concluded.
     """
-    PAGES = LoginTokenView.sso_pages
+    PAGES = LoginTokenView.auth_token_pages
 
 
 class AuthTokenOpenIDMixinView(OpenIDMixin):
@@ -77,11 +77,19 @@ class AuthTokenOpenIDMixinView(OpenIDMixin):
         """
         if not self.has_openid_request:
             return None
-        self.next_url = None
         return self.renderOpenIDResponse(self.createPositiveResponse())
 
 
 class ResetAccountPasswordView(AuthTokenOpenIDMixinView, ResetPasswordView):
+
+    @property
+    def next_url(self):
+        if self.has_openid_request:
+            return None
+        elif self.context.redirection_url is not None:
+            return self.context.redirection_url
+        else:
+            return self.request.getApplicationURL()
 
     def reactivate(self, data):
         """Reactivate the account of this token.
@@ -111,6 +119,19 @@ class ResetAccountPasswordView(AuthTokenOpenIDMixinView, ResetPasswordView):
 class ValidateEmailView(AuthTokenOpenIDMixinView, ValidateTeamEmailView):
 
     expected_token_types = (LoginTokenType.VALIDATEEMAIL,)
+
+    @property
+    def next_url(self):
+        if self.has_openid_request:
+            return None
+        elif self.context.redirection_url is not None:
+            return self.context.redirection_url
+        elif self.context.requester is not None:
+            return canonical_url(self.context.requester)
+        else:
+            raise AssertionError(
+                'No redirection URL specified and this is not part of an '
+                'OpenID authentication.')
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
@@ -144,16 +165,15 @@ class NewAccountView(
                 self.context.email)
             super(NewAccountView, self).initialize()
 
-    # Use a method to set self.next_url rather than a property because we
-    # want to override self.next_url in a subclass of this.
-    def setNextUrl(self):
+    @property
+    def next_url(self):
         if self.has_openid_request:
             # For OpenID requests we don't use self.next_url, so don't even
             # bother setting it.
-            return
+            return None
 
         if self.context.redirection_url:
-            self.next_url = self.context.redirection_url
+            return self.context.redirection_url
         elif self.account is not None:
             # User is logged in, redirect to his home page.
             person = IPerson(self.account, None)
@@ -162,15 +182,15 @@ class NewAccountView(
             # OpenID server doesn't store a fallback redirection_url in the
             # AuthTokens it creates (bug=353974), so we need this hack here.
             if person is None:
-                self.next_url = self.request.getApplicationURL()
+                return self.request.getApplicationURL()
             else:
-                self.next_url = canonical_url(person)
+                return canonical_url(person)
         elif self.created_person is not None:
             # User is not logged in, redirect to the created person's home
             # page.
-            self.next_url = canonical_url(self.created_person)
+            return canonical_url(self.created_person)
         else:
-            self.next_url = None
+            return None
 
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
@@ -248,7 +268,6 @@ class NewAccountView(
         self.created_person = person
         self.request.response.addInfoNotification(_(
             "Registration completed successfully"))
-        self.setNextUrl()
 
         return self.maybeCompleteOpenIDRequest()
 

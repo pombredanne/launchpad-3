@@ -25,8 +25,6 @@ from zope.component import getUtility
 from zope.interface import alsoProvides, directlyProvides, Interface
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.lazr.utils import safe_hasattr
-
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
@@ -70,14 +68,14 @@ class LoginTokenView(LaunchpadView):
     they got this token because they tried to do something that required email
     address confirmation, but that confirmation is already concluded.
     """
-    sso_pages = {
+    auth_token_pages = {
         LoginTokenType.NEWACCOUNT: '+newaccount',
         LoginTokenType.NEWPERSONLESSACCOUNT: '+newaccount',
         LoginTokenType.NEWPROFILE: '+newaccount',
         LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
         LoginTokenType.VALIDATEEMAIL: '+validateemail',
         }
-    lp_pages = {
+    login_token_pages = {
         LoginTokenType.ACCOUNTMERGE: '+accountmerge',
         LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
         LoginTokenType.VALIDATEGPG: '+validategpg',
@@ -86,8 +84,8 @@ class LoginTokenView(LaunchpadView):
         LoginTokenType.TEAMCLAIM: '+claimteam',
         LoginTokenType.BUGTRACKER: '+bugtracker-handshake',
         }
-    lp_pages.update(sso_pages)
-    PAGES = lp_pages
+    login_token_pages.update(auth_token_pages)
+    PAGES = login_token_pages
 
     def render(self):
         if self.context.date_consumed is None:
@@ -187,6 +185,13 @@ class ResetPasswordView(BaseTokenView, LaunchpadFormView):
                 "The email address you provided didn't match the address "
                 "you provided when requesting the password reset."))
 
+    @property
+    def next_url(self):
+        if self.context.redirection_url is not None:
+            return self.context.redirection_url
+        else:
+            return self.request.getApplicationURL()
+
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         """Reset the user's password. When password is successfully changed,
@@ -210,24 +215,7 @@ class ResetPasswordView(BaseTokenView, LaunchpadFormView):
             naked_account.password = data.get('password')
 
         person = self.context.requester
-
-        # XXX: Salgado, 2009-08-14: This is a hack because the LoginToken
-        # views no longer provide a has_openid_request property, as they
-        # can't be used as part of an OpenID authentication.
-        has_openid_request = False
-        if safe_hasattr(self, 'has_openid_request'):
-            has_openid_request = self.has_openid_request
-        if self.context.redirection_url is not None:
-            self.next_url = self.context.redirection_url
-        elif not has_openid_request:
-            self.next_url = self.request.getApplicationURL()
-        else:
-            assert has_openid_request, (
-                'No redirection URL specified and this is not part of an '
-                'OpenID authentication.')
-
         self.context.consume()
-
         self.logInPrincipalByEmail(self.context.email)
 
         self.request.response.addInfoNotification(
@@ -624,6 +612,15 @@ class ValidateTeamEmailView(BaseTokenView, LaunchpadFormView):
                 # validated.
                 pass
 
+    @property
+    def next_url(self):
+        if self.context.redirection_url is not None:
+            return self.context.redirection_url
+        else:
+            assert self.context.requester is not None, (
+                "LoginTokens of this type must have a requester")
+            return canonical_url(self.context.requester)
+
     @action(_('Cancel'), name='cancel')
     def cancel_action(self, action, data):
         self._cancel()
@@ -638,21 +635,6 @@ class ValidateTeamEmailView(BaseTokenView, LaunchpadFormView):
         If the requester is a team, the team's contact address is removed (if
         any) and this becomes the team's contact address.
         """
-        if self.context.redirection_url is not None:
-            self.next_url = self.context.redirection_url
-        elif self.context.requester is not None:
-            self.next_url = canonical_url(self.context.requester)
-        else:
-            # XXX: Salgado, 2009-08-14: This is a hack because the LoginToken
-            # views no longer provide a has_openid_request property, as they
-            # can't be used as part of an OpenID authentication.
-            has_openid_request = False
-            if safe_hasattr(self, 'has_openid_request'):
-                has_openid_request = self.has_openid_request
-            assert has_openid_request, (
-                'No redirection URL specified and this is not part of an '
-                'OpenID authentication.')
-
         email = self._ensureEmail()
         self.markEmailAsValid(email)
 
