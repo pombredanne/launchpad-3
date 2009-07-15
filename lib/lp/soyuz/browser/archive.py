@@ -275,6 +275,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         elif item_type == 'packageset':
             # See if "item" is a package set.
             the_item = getUtility(IPackagesetSet).getByName(item)
+        else:
+            the_item = None
 
         if the_item is not None:
             return getUtility(IArchivePermissionSet).checkAuthenticated(
