@@ -1025,9 +1025,6 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         if new_status == curr_status:
             return
 
-        # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
-        # would be better as a dict mapping.
-        # See bug #281060.
         if new_status == BranchMergeProposalStatus.SUPERSEDED:
             # Redirect the user to the resubmit view.
             self.next_url = canonical_url(self.context, view_name="+resubmit")

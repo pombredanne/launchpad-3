@@ -284,6 +284,9 @@ class BranchMergeProposal(SQLBase):
 
     def setStatus(self, status, user=None, rev_id=None):
         """See `IBranchMergeProposal`."""
+        # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
+        # would be better as a dict mapping.
+        # See bug #281060.
         if status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
             self.setAsWorkInProgress()
         elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
