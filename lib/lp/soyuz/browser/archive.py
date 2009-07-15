@@ -266,24 +266,19 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         if item_type == 'component':
             # See if "item" is a component name.
             try:
-                component = getUtility(IComponentSet)[item]
+                the_item = getUtility(IComponentSet)[item]
             except NotFoundError:
                 pass
-            else:
-                return getUtility(IArchivePermissionSet).checkAuthenticated(
-                    user, self.context, permission_type, component)[0]
         elif item_type == 'packagename':
             # See if "item" is a source package name.
-            package = getUtility(ISourcePackageNameSet).queryByName(item)
-            if package is not None:
-                return getUtility(IArchivePermissionSet).checkAuthenticated(
-                    user, self.context, permission_type, package)[0]
+            the_item = getUtility(ISourcePackageNameSet).queryByName(item)
         elif item_type == 'packageset':
             # See if "item" is a package set.
-            pkgset = getUtility(IPackagesetSet).getByName(item)
-            if pkgset is not None:
-                return getUtility(IArchivePermissionSet).checkAuthenticated(
-                    user, self.context, permission_type, pkgset)[0]
+            the_item = getUtility(IPackagesetSet).getByName(item)
+
+        if the_item is not None:
+            return getUtility(IArchivePermissionSet).checkAuthenticated(
+                user, self.context, permission_type, the_item)[0]
         else:
             return None
 
