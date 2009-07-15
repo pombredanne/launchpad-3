@@ -265,7 +265,7 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
 
 
 class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
-    """Test the state transitions of branch merge proposals."""
+    """Test the setState method of BranchMergeProposal."""
 
     layer = DatabaseFunctionalLayer
 
@@ -283,6 +283,46 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         proposal.setState(BranchMergeProposalStatus.NEEDS_REVIEW)
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.NEEDS_REVIEW)
+
+    def test_set_status_wip_to_code_approved(self):
+        # The branch merge proposal's status can be set with the setState
+        # method.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal.setState(BranchMergeProposalStatus.CODE_APPROVED)
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.CODE_APPROVED)
+
+    def test_set_status_wip_to_queued(self):
+        # The branch merge proposal's status can be set with the setState
+        # method.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal.setState(BranchMergeProposalStatus.QUEUED)
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.QUEUED)
+
+    def test_set_status_wip_to_rejected(self):
+        # The branch merge proposal's status can be set with the setState
+        # method.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal.setState(BranchMergeProposalStatus.REJECTED)
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.REJECTED)
+
+    def test_set_status_wip_to_merged(self):
+        # The branch merge proposal's status can be set with the setState
+        # method.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal.setState(BranchMergeProposalStatus.MERGED)
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.MERGED)
 
 
 class TestBranchMergeProposalRequestReview(TestCaseWithFactory):

@@ -282,10 +282,27 @@ class BranchMergeProposal(SQLBase):
         # transitioning to the same state.
         self.queue_status = next_state
 
-    def setState(self, status):
+    def setState(self, status, user=None, rev_id=None):
         """See `IBranchMergeProposal`."""
-        if status == BranchMergeProposalStatus.NEEDS_REVIEW:
+        if status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
+            self.setAsWorkInProgress()
+        elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
             self.requestReview()
+        elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
+            self.requestReview()
+        elif status == BranchMergeProposalStatus.CODE_APPROVED:
+            # Other half of the edge case.  If the status is currently queued,
+            # we need to dequeue, otherwise we just approve the branch.
+            if self.queue_status == BranchMergeProposalStatus.QUEUED:
+                self.dequeue()
+            else:
+                self.approveBranch(user, rev_id)
+        elif status == BranchMergeProposalStatus.REJECTED:
+            self.rejectBranch(user, rev_id)
+        elif status == BranchMergeProposalStatus.QUEUED:
+            self.enqueue(user, rev_id)
+        elif status == BranchMergeProposalStatus.MERGED:
+            self.markAsMerged(merge_reporter=user)
 
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
