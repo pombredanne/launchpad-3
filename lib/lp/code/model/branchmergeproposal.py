@@ -282,7 +282,7 @@ class BranchMergeProposal(SQLBase):
         # transitioning to the same state.
         self.queue_status = next_state
 
-    def setStatus(self, status, user=None, rev_id=None):
+    def setStatus(self, status, user=None, revision_id=None):
         """See `IBranchMergeProposal`."""
         # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
         # would be better as a dict mapping.
@@ -299,11 +299,11 @@ class BranchMergeProposal(SQLBase):
             if self.queue_status == BranchMergeProposalStatus.QUEUED:
                 self.dequeue()
             else:
-                self.approveBranch(user, rev_id)
+                self.approveBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.REJECTED:
-            self.rejectBranch(user, rev_id)
+            self.rejectBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.QUEUED:
-            self.enqueue(user, rev_id)
+            self.enqueue(user, revision_id)
         elif status == BranchMergeProposalStatus.MERGED:
             self.markAsMerged(merge_reporter=user)
         else:

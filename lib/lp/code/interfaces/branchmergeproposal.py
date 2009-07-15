@@ -146,9 +146,10 @@ class IBranchMergeProposal(Interface):
             title=_('The current diff of the source branch against the '
                     'target branch.'), readonly=True))
 
-    reviewed_revision_id = Attribute(
-        _("The revision id that has been approved by the reviewer."))
-
+    reviewed_revision_id = exported(
+        Text(
+            title=_("The revision id that has been approved by the reviewer.")
+            ))
 
     commit_message = exported(
         Summary(
@@ -277,13 +278,20 @@ class IBranchMergeProposal(Interface):
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
 
-    def setStatus(status, user, rev_id):
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        status=Choice(
+            title=_("The new status of the merge proposal."),
+            vocabulary=BranchMergeProposalStatus),
+        revision_id=Text())
+    @export_write_operation()
+    def setStatus(status, user, revision_id):
         """Set the state of the merge proposal to the specified status.
 
         :param status: The new status of the merge proposal.
         :param user: The user making the change.
-        :param rev_id: The rev_id to provide to the underlying status change
-            method.
+        :param revision_id: The rev_id to provide to the underlying status
+            change method.
         """
 
     def setAsWorkInProgress():

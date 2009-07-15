@@ -53,6 +53,7 @@ We use the webservice as an unrelated, unprivileged user.
     queuer_link: None
     registrant_link: u'http://.../~person-name13'
     resource_type_link: u'http://.../#branch_merge_proposal'
+    reviewed_revision_id: None
     reviewer_link: None
     self_link: u'http://.../~source/fooix/fix-it/+merge/...'
     source_branch_link: u'http://.../~source/fooix/fix-it'
@@ -165,6 +166,21 @@ Now the code review should be made.
     vote_tag: u'code'
 
 
+In fact, now that the votes indicate approval, we might as well set the merge
+proposal status to "Approved" as well.
+
+    >>> _unused = reviewer_webservice.named_post(
+    ...     merge_proposal['self_link'], 'setStatus',
+    ...     status=u'Approved', revision_id=u'25')
+    >>> merge_proposal = reviewer_webservice.get(
+    ...     merge_proposal['self_link']).jsonBody()
+
+    >>> print merge_proposal['queue_status']
+    Approved
+    >>> print merge_proposal['reviewed_revision_id']
+    25
+
+
 == Updating the preview diff ==
 
 The merge proposal can now be updated with the diff that reflects what the
@@ -242,7 +258,7 @@ proposals by their status.
     ...     '/fooix', 'getMergeProposals').jsonBody()
     >>> for proposal in proposals['entries']:
     ...     print_proposal(proposal)
-    http://.../~source/fooix/fix-it/+merge/1 - Work in progress
+    http://.../~source/fooix/fix-it/+merge/1 - Approved
 
 
 Or I can look for anything that is approved.

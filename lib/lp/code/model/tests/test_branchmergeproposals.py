@@ -291,7 +291,7 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
         proposal.setStatus(BranchMergeProposalStatus.CODE_APPROVED,
-            user=self.target_branch.owner, rev_id='500')
+            user=self.target_branch.owner, revision_id='500')
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.CODE_APPROVED)
         self.assertEqual(proposal.reviewed_revision_id, '500')
@@ -303,7 +303,7 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
         proposal.setStatus(BranchMergeProposalStatus.QUEUED,
-            user=self.target_branch.owner, rev_id='250')
+            user=self.target_branch.owner, revision_id='250')
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.QUEUED)
         self.assertEqual(proposal.queued_revision_id, '250')
@@ -315,7 +315,7 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
         proposal.setStatus(BranchMergeProposalStatus.REJECTED,
-            user=self.target_branch.owner, rev_id='1000')
+            user=self.target_branch.owner, revision_id='1000')
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.REJECTED)
         self.assertEqual(proposal.reviewed_revision_id, '1000')
