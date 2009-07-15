@@ -19,7 +19,9 @@
     <script type="text/javascript">
         YUI().use(
           'base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
-            Y.bugs.setup_dupe_finder();
+            Y.on('domready', function() {
+                Y.bugs.setup_dupes();
+            });
         });
     </script>
 
