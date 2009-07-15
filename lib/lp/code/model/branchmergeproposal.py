@@ -282,7 +282,7 @@ class BranchMergeProposal(SQLBase):
         # transitioning to the same state.
         self.queue_status = next_state
 
-    def setState(self, status, user=None, rev_id=None):
+    def setStatus(self, status, user=None, rev_id=None):
         """See `IBranchMergeProposal`."""
         if status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
             self.setAsWorkInProgress()
@@ -303,6 +303,8 @@ class BranchMergeProposal(SQLBase):
             self.enqueue(user, rev_id)
         elif status == BranchMergeProposalStatus.MERGED:
             self.markAsMerged(merge_reporter=user)
+        else:
+            raise AssertionError('Unexpected queue status: ' % new_status)
 
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""

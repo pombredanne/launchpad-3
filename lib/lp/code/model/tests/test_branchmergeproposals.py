@@ -265,7 +265,7 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
 
 
 class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
-    """Test the setState method of BranchMergeProposal."""
+    """Test the setStatus method of BranchMergeProposal."""
 
     layer = DatabaseFunctionalLayer
 
@@ -275,55 +275,58 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         login_person(self.target_branch.owner)
 
     def test_set_status_wip_to_needs_review(self):
-        # The branch merge proposal's status can be set with the setState
+        # The branch merge proposal's status can be set with the setStatus
         # method.
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setState(BranchMergeProposalStatus.NEEDS_REVIEW)
+        proposal.setStatus(BranchMergeProposalStatus.NEEDS_REVIEW)
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.NEEDS_REVIEW)
 
     def test_set_status_wip_to_code_approved(self):
-        # The branch merge proposal's status can be set with the setState
+        # The branch merge proposal's status can be set with the setStatus
         # method.
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setState(BranchMergeProposalStatus.CODE_APPROVED,
-            user=self.target_branch.owner)
+        proposal.setStatus(BranchMergeProposalStatus.CODE_APPROVED,
+            user=self.target_branch.owner, rev_id='500')
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.CODE_APPROVED)
+        self.assertEqual(proposal.reviewed_revision_id, '500')
 
     def test_set_status_wip_to_queued(self):
-        # The branch merge proposal's status can be set with the setState
+        # The branch merge proposal's status can be set with the setStatus
         # method.
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setState(BranchMergeProposalStatus.QUEUED,
-            user=self.target_branch.owner)
+        proposal.setStatus(BranchMergeProposalStatus.QUEUED,
+            user=self.target_branch.owner, rev_id='250')
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.QUEUED)
+        self.assertEqual(proposal.queued_revision_id, '250')
 
     def test_set_status_wip_to_rejected(self):
-        # The branch merge proposal's status can be set with the setState
+        # The branch merge proposal's status can be set with the setStatus
         # method.
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setState(BranchMergeProposalStatus.REJECTED,
-            user=self.target_branch.owner)
+        proposal.setStatus(BranchMergeProposalStatus.REJECTED,
+            user=self.target_branch.owner, rev_id='1000')
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.REJECTED)
+        self.assertEqual(proposal.reviewed_revision_id, '1000')
 
     def test_set_status_wip_to_merged(self):
-        # The branch merge proposal's status can be set with the setState
+        # The branch merge proposal's status can be set with the setStatus
         # method.
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setState(BranchMergeProposalStatus.MERGED)
+        proposal.setStatus(BranchMergeProposalStatus.MERGED)
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.MERGED)
 

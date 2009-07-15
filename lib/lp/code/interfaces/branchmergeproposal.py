@@ -277,10 +277,13 @@ class IBranchMergeProposal(Interface):
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
 
-    def setState(status):
+    def setStatus(status, user, rev_id):
         """Set the state of the merge proposal to the specified status.
 
         :param status: The new status of the merge proposal.
+        :param user: The user making the change.
+        :param rev_id: The rev_id to provide to the underlying status change
+            method.
         """
 
     def setAsWorkInProgress():
