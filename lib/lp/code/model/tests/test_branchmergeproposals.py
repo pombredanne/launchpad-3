@@ -263,6 +263,17 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertIs(None, proposal.date_reviewed)
         self.assertIs(None, proposal.reviewed_revision_id)
 
+
+class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
+    """Test the state transitions of branch merge proposals."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.target_branch = self.factory.makeProductBranch()
+        login_person(self.target_branch.owner)
+
     def test_set_status_wip_to_needs_review(self):
         # The branch merge proposal's status can be set with the setState
         # method.
@@ -271,7 +282,7 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
         proposal.setState(BranchMergeProposalStatus.NEEDS_REVIEW)
         self.assertEqual(proposal.queue_status,
-            BranchMergeProposal.NEEDS_REVIEW)
+            BranchMergeProposalStatus.NEEDS_REVIEW)
 
 
 class TestBranchMergeProposalRequestReview(TestCaseWithFactory):

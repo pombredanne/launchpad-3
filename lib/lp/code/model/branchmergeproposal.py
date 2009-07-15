@@ -284,6 +284,8 @@ class BranchMergeProposal(SQLBase):
 
     def setState(self, status):
         """See `IBranchMergeProposal`."""
+        if status == BranchMergeProposalStatus.NEEDS_REVIEW:
+            self.requestReview()
 
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
