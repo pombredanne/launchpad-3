@@ -23,6 +23,7 @@ special_test_layer = {
     'person-views.txt': LaunchpadFunctionalLayer,
     'user-to-user-views.txt': LaunchpadFunctionalLayer,
     'distribution-views.txt': LaunchpadFunctionalLayer,
+    'distributionsourcepackage-views.txt': LaunchpadFunctionalLayer,
 }
 
 
@@ -38,10 +39,7 @@ def test_suite():
     filenames.sort()
     for filename in filenames:
         path = filename
-        if path in special_test_layer:
-            layer = special_test_layer[path]
-        else:
-            layer = DatabaseFunctionalLayer
+        layer = special_test_layer.get(path, DatabaseFunctionalLayer)
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown, layer=layer,
             stdout_logging_level=logging.WARNING

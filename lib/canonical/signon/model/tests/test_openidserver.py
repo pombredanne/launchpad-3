@@ -13,12 +13,12 @@ import transaction
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.dbpolicy import (
-    SlaveDatabasePolicy, SSODatabasePolicy)
+from canonical.launchpad.webapp.dbpolicy import SlaveDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, IStoreSelector, MASTER_FLAVOR)
 from canonical.signon.interfaces.openidserver import (
     IOpenIDAuthorizationSet)
+from canonical.signon.dbpolicy import SSODatabasePolicy
 from canonical.signon.model.openidserver import OpenIDAuthorization
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory

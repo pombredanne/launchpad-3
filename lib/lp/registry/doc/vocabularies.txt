@@ -608,8 +608,8 @@ The list of selectable products releases.
 
 === PersonAccountToMergeVocabulary ===
 
-All non-merged people. This vocabulary is meant to be used only in the
-people merge form.
+All non-merged people with at least one email address. This vocabulary is
+meant to be used only in the people merge form.
 
     >>> vocab = vocabulary_registry.get(None, "PersonAccountToMerge")
     >>> vocab.displayname
@@ -694,6 +694,25 @@ INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
     ...     naked_cprov.syncUpdate()
     ...     checked_count += int(cprov in vocab)
     >>> checked_count == len(INACTIVE_ACCOUNT_STATUSES)
+    True
+
+
+== AdminMergeablePerson ==
+
+The set of non-merged people.
+
+    >>> vocab = vocabulary_registry.get(None, "AdminMergeablePerson")
+    >>> vocab.displayname
+    'Select a Person to Merge'
+
+Unlike PersonAccountToMerge, this vocabulary includes people who don't have a
+single email address, as it's fine for admins to merge them.
+
+    >>> print fooperson.preferredemail
+    None
+    >>> list(fooperson.validatedemails) + list(fooperson.guessedemails)
+    []
+    >>> fooperson in vocab
     True
 
 
@@ -871,10 +890,13 @@ displayname and the first set of those are the ones returned
 
     >>> login(ANONYMOUS)
     >>> vocab.LIMIT
-    500
+    100
     >>> vocab.LIMIT = 4
+
+    # The limit gets applied in multiple subselects, so the result
+    # can actually be less than the limit.
     >>> [person.displayname for person in vocab.search('team')]
-    [u'Hoary Gnome Team', u'No Team Memberships', u'Other Team', u'Simple Team']
+    [u'No Team Memberships', u'Simple Team', u'testing Spanish team']
 
 
 === ValidOwner ===
@@ -1326,15 +1348,24 @@ change bzr's so we will get more interesting results.
     ...     print term.value.displayname
     Mega Money Maker
 
-If the user has launchpad.Commercial permission then all commercial
+If the user is a member of Registry Experts, and therefore has
+launchpad.ProjectReview permission, then all commercial
 projects are returned.
 
-    >>> login('commercial-member@canonical.com')
-    >>> commercial_member = person_set.getByEmail('commercial-member@canonical.com')
-    >>> check_permission('launchpad.Commercial', commercial_member)
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> registry_member = factory.makePerson()
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> registry = celebs.registry_experts
+    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> logout()
+
+    >>> login_person(registry_member)
+    >>> check_permission('launchpad.ProjectReview', registry_member)
     True
 
-    >>> comm_proj_vocab = vocabulary_registry.get(commercial_member, "CommercialProjects")
+    >>> comm_proj_vocab = vocabulary_registry.get(registry_member, "CommercialProjects")
     >>> print comm_proj_vocab.displayname
     Select a commercial project
 

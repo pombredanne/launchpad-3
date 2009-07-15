@@ -51,12 +51,13 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadSource)
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
-    IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES, PocketNotFound,
-    SourceNotFound, default_name_by_purpose)
+    IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
+    PocketNotFound, SourceNotFound, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivepermission import (
@@ -66,21 +67,21 @@ from lp.soyuz.interfaces.archivesubscriber import (
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.interfaces.launchpad import (
-    IHasOwner, ILaunchpadCelebrities, NotFoundError)
+    ILaunchpadCelebrities, NotFoundError)
+from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet,
-    ISourcePackagePublishingHistory)
+    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.soyuz.scripts.packagecopier import (
-    CannotCopy, check_copy, do_copy)
+    CannotCopy, do_copy)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -274,12 +275,12 @@ class Archive(SQLBase):
         return None
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None):
+                        arch_tag=None, user=None):
         """See IHasBuildRecords"""
         # Ignore "user", since anyone already accessing this archive
         # will implicitly have permission to see it.
         return getUtility(IBuildSet).getBuildsForArchive(
-            self, build_state, name, pocket)
+            self, build_state, name, pocket, arch_tag)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
@@ -841,11 +842,25 @@ class Archive(SQLBase):
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."
+        # PPA access is immediately granted if the user is in the PPA
+        # team.
         if self.is_ppa:
-            return user.inTeam(self.owner)
-        else:
-            return self._authenticate(
-                user, component_or_package, ArchivePermissionType.UPLOAD)
+            if user.inTeam(self.owner):
+                return True
+            else:
+                # If the user is not in the PPA team, default to using
+                # the main component for further ACL checks.  This is
+                # not ideal since PPAs don't use components, but when
+                # packagesets replace them for main archive uploads this
+                # interface will no longer require them because we can
+                # then relax the database constraint on
+                # ArchivePermission.
+                component_or_package = getUtility(IComponentSet)['main']
+
+        # Otherwise any archive, including PPAs, uses the standard
+        # ArchivePermission entries.
+        return self._authenticate(
+            user, component_or_package, ArchivePermissionType.UPLOAD)
 
     def canAdministerQueue(self, user, component):
         """See `IArchive`."""
@@ -865,6 +880,17 @@ class Archive(SQLBase):
 
     def newComponentUploader(self, person, component_name):
         """See `IArchive`."""
+        if self.is_ppa:
+            if IComponent.providedBy(component_name):
+                name = component_name.name
+            elif isinstance(component_name, str):
+                name = component_name
+            else:
+                name = None
+
+            if name is None or name != 'main':
+                raise InvalidComponent("Component for PPAs should be 'main'")
+
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.newComponentUploader(
             self, person, component_name)
@@ -988,8 +1014,7 @@ class Archive(SQLBase):
                 from_archive.getPublishedSources(
                     name=name, exact_match=True)[0])
 
-        return self._copySources(
-            sources, to_pocket, to_series, include_binaries)
+        self._copySources(sources, to_pocket, to_series, include_binaries)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False):
@@ -1036,32 +1061,8 @@ class Archive(SQLBase):
         else:
             series = None
 
-        # Validate the copy.
-        broken_copies = []
-        for source in sources:
-            try:
-                check_copy(
-                    source, self, series, pocket, include_binaries)
-            except CannotCopy, reason:
-                broken_copies.append("%s (%s)" % (source.displayname, reason))
-
-        if len(broken_copies) != 0:
-            raise CannotCopy("\n".join(broken_copies))
-
-        # Perform the copy.
-        copies = do_copy(
-            sources, self, series, pocket, include_binaries)
-
-        if len(copies) == 0:
-            raise CannotCopy("Packages already copied.")
-
-        # Return a list of string names of source packages that were copied.
-        # We only return source package names, even when binaries were copied,
-        # because that's the "Contract".
-        return [
-            copy.sourcepackagerelease.sourcepackagename.name
-            for copy in copies
-            if ISourcePackagePublishingHistory.providedBy(copy)]
+        # Perform the copy, may raise CannotCopy.
+        do_copy(sources, self, series, pocket, include_binaries)
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
@@ -1317,16 +1318,27 @@ class ArchiveSet:
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
-        query = """
-            Archive.owner = Person.id AND
-            TeamParticipation.team = Archive.owner AND
-            TeamParticipation.person = %s AND
-            Archive.purpose = %s
-        """ % sqlvalues(user, ArchivePurpose.PPA)
+        # Avoiding circular imports.
+        from lp.soyuz.model.archivepermission import ArchivePermission
 
-        return Archive.select(
-            query, clauseTables=['Person', 'TeamParticipation'],
-            orderBy=['Person.displayname'])
+        store = Store.of(user)
+        direct_membership = store.find(
+            Archive,
+            Archive.purpose == ArchivePurpose.PPA,
+            TeamParticipation.team == Archive.ownerID,
+            TeamParticipation.person == user,
+            )
+        third_part_upload_acl = store.find(
+            Archive,
+            Archive.purpose == ArchivePurpose.PPA,
+            ArchivePermission.archiveID == Archive.id,
+            ArchivePermission.person == user,
+            )
+
+        result = direct_membership.union(third_part_upload_acl)
+        result.order_by(Archive.displayname)
+
+        return result
 
     def getPPAsPendingSigningKey(self):
         """See `IArchiveSet`."""
@@ -1357,7 +1369,6 @@ class ArchiveSet:
         return SourcePackagePublishingHistory.select(
             query, limit=5, clauseTables=['Archive', 'DistroSeries'],
             orderBy=['-datecreated', '-id'])
-
 
     def getMostActivePPAsForDistribution(self, distribution):
         """See `IArchiveSet`."""
@@ -1492,3 +1503,29 @@ class ArchiveSet:
             *extra_exprs)
 
         return query
+
+    def getPublicationsInArchives(self, source_package_name, archive_list,
+                                  distribution):
+        """See `IArchiveSet`."""
+        archive_ids = [archive.id for archive in archive_list]
+
+        store = Store.of(source_package_name)
+
+        # Return all the published source pubs for the given name in the
+        # given list of archives. Note: importing DistroSeries here to
+        # avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        results = store.find(
+            SourcePackagePublishingHistory,
+            Archive.id.is_in(archive_ids),
+            SourcePackagePublishingHistory.archive == Archive.id,
+            (SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED),
+            (SourcePackagePublishingHistory.sourcepackagerelease ==
+                SourcePackageRelease.id),
+            SourcePackageRelease.sourcepackagename == source_package_name,
+            SourcePackagePublishingHistory.distroseries == DistroSeries.id,
+            DistroSeries.distribution == distribution,
+            )
+
+        return results

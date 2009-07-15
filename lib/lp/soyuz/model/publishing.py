@@ -467,6 +467,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
+    @property
+    def package_creator(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.creator
+
+    @property
+    def package_maintainer(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.maintainer
+
+    @property
+    def package_signer(self):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.sourcepackagerelease.dscsigningkey is not None:
+            return self.sourcepackagerelease.dscsigningkey.owner
+        return None
+
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
@@ -771,6 +788,44 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return getUtility(
             IPublishingSet).getBuildStatusSummaryForSourcePublication(self)
 
+    def getAncestry(self, archive=None, distroseries=None, pocket=None,
+                    status=None):
+        """See `ISourcePackagePublishingHistory`."""
+        if archive is None:
+            archive = self.archive
+        if distroseries is None:
+            distroseries = self.distroseries
+        if status is None:
+            status = PackagePublishingStatus.PUBLISHED
+
+        ancestries = archive.getPublishedSources(
+            name=self.source_package_name, exact_match=True,
+            status=status, distroseries=distroseries, pocket=pocket)
+
+        if ancestries.count() > 0:
+            return ancestries[0]
+
+        return None
+
+    def overrideFromAncestry(self):
+        """See `ISourcePackagePublishingHistory`."""
+        # We don't want to use changeOverride here because it creates a
+        # new publishing record. This code can be only executed for pending
+        # publishing records.
+        assert self.status == PackagePublishingStatus.PENDING, (
+            "Cannot override published records.")
+
+        # If there is an published ancestry, use its component, otherwise
+        # use the original upload component.
+        ancestry = self.getAncestry()
+        if ancestry is not None:
+            component = ancestry.component
+        else:
+            component = self.sourcepackagerelease.component
+
+        self.secure_record.component = component
+        Store.of(self).invalidate(self)
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
@@ -997,6 +1052,44 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return [
             BinaryPackagePublishingHistory.get(copy.id) for copy in copies]
+
+    def getAncestry(self, archive=None, distroseries=None, pocket=None,
+                    status=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        if archive is None:
+            archive = self.archive
+        if distroseries is None:
+            distroseries = self.distroarchseries.distroseries
+        if status is None:
+            status = PackagePublishingStatus.PUBLISHED
+
+        ancestries = archive.getAllPublishedBinaries(
+            name=self.binary_package_name, exact_match=True, pocket=pocket,
+            status=status, distroarchseries=distroseries.architectures)
+
+        if ancestries.count() > 0:
+            return ancestries[0]
+
+        return None
+
+    def overrideFromAncestry(self):
+        """See `IBinaryPackagePublishingHistory`."""
+        # We don't want to use changeOverride here because it creates a
+        # new publishing record. This code can be only executed for pending
+        # publishing records.
+        assert self.status == PackagePublishingStatus.PENDING, (
+            "Cannot override published records.")
+
+        # If there is an ancestry, use its component, otherwise use the
+        # original upload component.
+        ancestry = self.getAncestry()
+        if ancestry is not None:
+            component = ancestry.component
+        else:
+            component = self.binarypackagerelease.component
+
+        self.secure_record.component = component
+        Store.of(self).invalidate(self)
 
 
 class PublishingSet:
@@ -1317,13 +1410,17 @@ class PublishingSet:
         summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
             builds)
 
-        # We only augment the result if we (the SPPH) are ourselves in
-        # the pending/published state and all the builds are fully-built.
+        # We only augment the result if:
+        #   1. we (the SPPH) are ourselves in an active publishing state, and
+        #   2. all the builds are fully-built, and
+        #   3. we are not being published in a rebuild/copy archive (in
+        #      which case the binaries are not currently published anyway)
         # In this case we check to see if they are all published, and if
         # not we return FULLYBUILT_PENDING:
         augmented_summary = summary
         if (source_publication.status in active_publishing_status and
-                summary['status'] == BuildSetStatus.FULLYBUILT):
+                summary['status'] == BuildSetStatus.FULLYBUILT and
+                source_publication.archive.purpose != ArchivePurpose.COPY):
 
             unpublished_builds = list(
                 source_publication.getUnpublishedBuilds())

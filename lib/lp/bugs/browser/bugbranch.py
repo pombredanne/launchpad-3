@@ -47,7 +47,7 @@ class BugBranchAddView(LaunchpadFormView):
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         branch = data['branch']
-        self.context.bug.addBranch(
+        self.context.bug.linkBranch(
             branch=branch, registrant=self.user)
         self.request.response.addNotification(
             "Successfully registered branch %s for this bug." %
@@ -77,7 +77,7 @@ class BugBranchDeleteView(LaunchpadEditFormView):
 
     @action('Delete', name='delete')
     def delete_action(self, action, data):
-        self.context.bug.removeBranch(self.context.branch, self.user)
+        self.context.bug.unlinkBranch(self.context.branch, self.user)
 
 
 class BranchLinkToBugView(LaunchpadFormView):
@@ -97,7 +97,7 @@ class BranchLinkToBugView(LaunchpadFormView):
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         bug = data['bug']
-        bug_branch = bug.addBranch(
+        bug_branch = bug.linkBranch(
             branch=self.context, registrant=self.user)
 
     @action(_('Cancel'), name='cancel', validator='validate_cancel')
@@ -110,8 +110,3 @@ class BranchLinkToBugView(LaunchpadFormView):
             return
 
         link_bug = data['bug']
-        for bug in self.context.related_bugs:
-            if bug == link_bug:
-                self.setFieldError(
-                    'bug',
-                    'Bug #%s is already linked to this branch' % bug.id)

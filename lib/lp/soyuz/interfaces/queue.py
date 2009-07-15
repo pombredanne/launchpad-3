@@ -22,10 +22,15 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
-from zope.schema import Datetime, Int, TextLine
+from zope.schema import Choice, Datetime, Int, List, TextLine
 from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
+
 from canonical.launchpad import _
+
+from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (
+    export_as_webservice_entry, exported)
+from lazr.restful.fields import Reference
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -76,45 +81,136 @@ class IPackageUploadQueue(Interface):
     """
 
 
+class PackageUploadStatus(DBEnumeratedType):
+    """Distro Release Queue Status
+
+    An upload has various stages it must pass through before becoming part
+    of a DistroSeries. These are managed via the Upload table
+    and related tables and eventually (assuming a successful upload into the
+    DistroSeries) the effects are published via the PackagePublishing and
+    SourcePackagePublishing tables.
+    """
+
+    NEW = DBItem(0, """
+        New
+
+        This upload is either a brand-new source package or contains a
+        binary package with brand new debs or similar. The package must sit
+        here until someone with the right role in the DistroSeries checks
+        and either accepts or rejects the upload. If the upload is accepted
+        then entries will be made in the overrides tables and further
+        uploads will bypass this state. """)
+
+    UNAPPROVED = DBItem(1, """
+        Unapproved
+
+        If a DistroSeries is frozen or locked out of ordinary updates then
+        this state is used to mean that while the package is correct from a
+        technical point of view; it has yet to be approved for inclusion in
+        this DistroSeries. One use of this state may be for security
+        releases where you want the security team of a DistroSeries to
+        approve uploads.""")
+
+    ACCEPTED = DBItem(2, """
+        Accepted
+
+        An upload in this state has passed all the checks required of it and
+        is ready to have its publishing records created.""")
+
+    DONE = DBItem(3, """
+        Done
+
+        An upload in this state has had its publishing records created if it
+        needs them and is fully processed into the DistroSeries. This state
+        exists so that a logging and/or auditing tool can pick up accepted
+        uploads and create entries in a journal or similar before removing
+        the queue item.""")
+
+    REJECTED = DBItem(4, """
+        Rejected
+
+        An upload which reaches this state has, for some reason or another
+        not passed the requirements (technical or human) for entry into the
+        DistroSeries it was targetting. As for the 'done' state, this state
+        is present to allow logging tools to record the rejection and then
+        clean up any subsequently unnecessary records.""")
+
+
 class IPackageUpload(Interface):
     """A Queue item for Lucille"""
+    export_as_webservice_entry()
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
             )
 
-    status = Int(
+    status = exported(
+        Choice(
+            vocabulary=PackageUploadStatus,
+            description=_("The status of this upload."),
             title=_("Queue status"), required=False, readonly=True,
-            )
+            ))
 
-    distroseries = Int(
+    distroseries = exported(
+        Reference(
+            # Really IDistroSeries, patched in
+            # _schema_circular_imports.py
+            schema=Interface,
+            description=_("The distroseries targeted by this upload."),
             title=_("Series"), required=True, readonly=False,
-            )
+            ))
 
-    pocket = Int(
+    pocket = exported(
+        Choice(
+            # Really PackagePublishingPocket, patched in
+            # _schema_circular_imports.py
+            vocabulary=DBEnumeratedType,
+            description=_("The pocket targeted by this upload."),
             title=_("The pocket"), required=True, readonly=False,
-            )
+            ))
 
-    date_created = Datetime(
-        title=_('Date created'),
-        description=_("The date this package upload was done."))
+    date_created = exported(
+        Datetime(
+            title=_('Date created'),
+            description=_("The date this package upload was done.")))
 
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
 
     signing_key = Attribute("Changesfile Signing Key.")
-    archive = Int(title=_("Archive"), required=True, readonly=True)
+    archive = exported(
+        Reference(
+            # Really IArchive, patched in _schema_circular_imports.py
+            schema=Interface,
+            description=_("The archive for this upload."),
+            title=_("Archive"), required=True, readonly=True))
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
     customfiles = Attribute("Custom upload files associated with this "
                             "queue item")
 
-    displayname = TextLine(
-        title=_("Generic displayname for a queue item"), readonly=True)
-    displayversion = TextLine(
-        title=_("The source package version for this item"), readonly=True)
-    displayarchs = TextLine(
-        title=_("Architetures related to this item"), readonly=True)
+    custom_file_urls = exported(
+        List(
+            title=_("Custom File URLs"),
+            description=_("Librarian URLs for all the custom files attached "
+                          "to this upload."),
+            value_type=TextLine(),
+            required=False,
+            readonly=True))
+
+    displayname = exported(
+        TextLine(
+            title=_("Generic displayname for a queue item"), readonly=True),
+        exported_as="display_name")
+    displayversion = exported(
+        TextLine(
+            title=_("The source package version for this item"),
+            readonly=True),
+        exported_as="display_version")
+    displayarchs = exported(
+        TextLine(
+            title=_("Architectures related to this item"), readonly=True),
+        exported_as="display_arches")
 
     sourcepackagerelease = Attribute(
         "The source package release for this item")
@@ -131,6 +227,8 @@ class IPackageUpload(Interface):
         "wheter or not this upload contains DDTP images")
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
+    is_delayed_copy = Attribute(
+        "Whether or not this PackageUpload record is a delayed-copy.")
 
     components = Attribute(
         """The set of components used in this upload.
@@ -170,13 +268,24 @@ class IPackageUpload(Interface):
     def acceptFromUploader(changesfile_path, logger=None):
         """Perform upload acceptance during upload-time.
 
-         * Move the upload to accepted queue in all cases;
-         * Publish and close bugs for 'single-source' uploads;
+         * Move the upload to accepted queue in all cases.
+         * Publish and close bugs for 'single-source' uploads.
          * Skip bug-closing for PPA uploads.
+         * Grant karma to people involved with the upload.
+        """
+
+    def acceptFromCopy():
+        """Perform upload acceptance for a delayed-copy record.
+
+         * Move the upload to accepted queue in all cases.
+         * Close bugs for uploaded sources (skip imported ones).
         """
 
     def acceptFromQueue(announce_list, logger=None, dry_run=False):
-        """Call setAccepted, do a syncUpdate, and send notification email."""
+        """Call setAccepted, do a syncUpdate, and send notification email.
+
+         * Grant karma to people involved with the upload.
+        """
 
     def rejectFromQueue(logger=None, dry_run=False):
         """Call setRejected, do a syncUpdate, and send notification email."""
@@ -355,9 +464,9 @@ class IPackageUploadSource(Interface):
         that only PRIMARY archive allows post-RELEASE pockets are:
 
          1. original archive, original distroseries and pocket (old
-            DEVELOPMENT/SRU/PPA uploads);
+            DEVELOPMENT/SRU/PPA uploads).
          2. primary archive, original distroseries and release pocket (NEW
-            SRU/PPA uploads fallback);
+            SRU/PPA uploads fallback).
          3. primary_archive, any distroseries and release pocket (BACKPORTS)
 
         We lookup a source publication with the same name in those location
@@ -497,6 +606,14 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
+    def publish_STATIC_TRANSLATIONS(logger):
+        """Publish this custom item as a static translations tarball.
+
+        This is currently a no-op as we don't publish these files, they only
+        reside in the librarian for later retrieval using the webservice.
+        """
+
+
 class IPackageUploadSet(Interface):
     """Represents a set of IPackageUploads"""
 
@@ -526,6 +643,30 @@ class IPackageUploadSet(Interface):
         :param signing_key: `IGPGKey` of the user requesting this copy.
 
         :return: an `IPackageUpload` record in NEW state.
+        """
+
+    def getAll(distroseries, created_since_date=None, status=None,
+               archive=None, pocket=None, custom_type=None):
+        """Get package upload records for a series with optional filtering.
+
+        :param created_since_date: If specified, only returns items uploaded
+            since the timestamp supplied.
+        :param status: Filter results by this `PackageUploadStatus`
+        :param archive: Filter results for this `IArchive`
+        :param pocket: Filter results by this `PackagePublishingPocket`
+        :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :return: A result set containing `IPackageUpload`s
+        """
+
+    def findSourceUpload(name, version, archive, distribution):
+        """Return a `PackageUpload` for a matching source.
+
+        :param name: a string with the exact source name.
+        :param version: a string with the exact source version.
+        :param archive: source upload target `IArchive`.
+        :param distribution: source upload target `IDistribution`.
+
+        :return: a matching `IPackageUpload` object.
         """
 
     def getBuildByBuildIDs(build_ids):
@@ -565,61 +706,6 @@ class IHasQueueItems(Interface):
         Use 'exact_match' argument for precise results.
         """
 
-
-class PackageUploadStatus(DBEnumeratedType):
-    """Distro Release Queue Status
-
-    An upload has various stages it must pass through before becoming part
-    of a DistroSeries. These are managed via the Upload table
-    and related tables and eventually (assuming a successful upload into the
-    DistroSeries) the effects are published via the PackagePublishing and
-    SourcePackagePublishing tables.  """
-
-    NEW = DBItem(0, """
-        New
-
-        This upload is either a brand-new source package or contains a
-        binary package with brand new debs or similar. The package must sit
-        here until someone with the right role in the DistroSeries checks
-        and either accepts or rejects the upload. If the upload is accepted
-        then entries will be made in the overrides tables and further
-        uploads will bypass this state """)
-
-    UNAPPROVED = DBItem(1, """
-        Unapproved
-
-        If a DistroSeries is frozen or locked out of ordinary updates then
-        this state is used to mean that while the package is correct from a
-        technical point of view; it has yet to be approved for inclusion in
-        this DistroSeries. One use of this state may be for security
-        releases where you want the security team of a DistroSeries to
-        approve uploads.  """)
-
-    ACCEPTED = DBItem(2, """
-        Accepted
-
-        An upload in this state has passed all the checks required of it and
-        is ready to have its publishing records created.  """)
-
-    DONE = DBItem(3, """
-        Done
-
-        An upload in this state has had its publishing records created if it
-        needs them and is fully processed into the DistroSeries. This state
-        exists so that a logging and/or auditing tool can pick up accepted
-        uploads and create entries in a journal or similar before removing
-        the queue item.  """)
-
-    REJECTED = DBItem(4, """
-        Rejected
-
-        An upload which reaches this state has, for some reason or another
-        not passed the requirements (technical or human) for entry into the
-        DistroSeries it was targetting. As for the 'done' state, this state
-        is present to allow logging tools to record the rejection and then
-        clean up any subsequently unnecessary records.  """)
-
-
 # If you change this (add items, change the meaning, whatever) search for
 # the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
 # update the stuff marked with it.
@@ -657,4 +743,10 @@ class PackageUploadCustomFormat(DBEnumeratedType):
 
         A raw-ddtp-tarball contains all the translated package description
         indexes for a component.
+        """)
+
+    STATIC_TRANSLATIONS = DBItem(4, """
+        raw-translations-static
+
+        A tarball containing raw (Gnome) help file translations.
         """)

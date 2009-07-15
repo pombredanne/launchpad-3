@@ -10,12 +10,14 @@ import time
 
 import pytz
 import transaction
+from psycopg2 import IntegrityError
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import SQL, Max, Min
 
 from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
+from canonical.database import postgresql
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.hwdb import HWSubmission
 from canonical.launchpad.database.oauth import OAuthNonce
@@ -32,6 +34,7 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
 from lp.registry.model.mailinglist import MailingListSubscription
+from lp.registry.model.person import Person
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -313,13 +316,17 @@ class HWSubmissionEmailLinker(TunableLoop):
         self.submission_store = IMasterStore(HWSubmission)
         self.submission_store.execute(
             "DROP TABLE IF EXISTS NewlyMatchedSubmission")
+        # The join with the Person table is to avoid any replication
+        # lag issues - EmailAddress.person might reference a Person
+        # that does not yet exist.
         self.submission_store.execute("""
             CREATE TEMPORARY TABLE NewlyMatchedSubmission AS
             SELECT
                 HWSubmission.id AS submission,
                 EmailAddress.person AS owner
-            FROM HWSubmission, EmailAddress
+            FROM HWSubmission, EmailAddress, Person
             WHERE HWSubmission.owner IS NULL
+                AND EmailAddress.person = Person.id
                 AND EmailAddress.status IN %s
                 AND lower(HWSubmission.raw_emailaddress)
                     = lower(EmailAddress.email)
@@ -404,6 +411,122 @@ class MailingListSubscriptionPruner(TunableLoop):
         transaction.commit()
 
 
+class PersonPruner(TunableLoop):
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log):
+        super(PersonPruner, self).__init__(log)
+        self.offset = 0
+        self.store = IMasterStore(Person)
+        self.log.debug("Creating LinkedPeople temporary table.")
+        self.store.execute(
+            "CREATE TEMPORARY TABLE LinkedPeople(person integer primary key)")
+        # Prefill with Person entries created after our OpenID provider
+        # started creating personless accounts on signup.
+        self.log.debug(
+            "Populating LinkedPeople with post-OpenID created Person.")
+        self.store.execute("""
+            INSERT INTO LinkedPeople
+            SELECT id FROM Person
+            WHERE datecreated > '2009-04-01'
+            """)
+        transaction.commit()
+        for (from_table, from_column, to_table, to_column, uflag, dflag) in (
+                postgresql.listReferences(cursor(), 'person', 'id')):
+            # Skip things that don't link to Person.id or that link to it from
+            # TeamParticipation or EmailAddress, as all Person entries will be
+            # linked to from these tables.
+            if (to_table != 'person' or to_column != 'id'
+                or from_table in ('teamparticipation', 'emailaddress')):
+                continue
+            self.log.debug(
+                "Populating LinkedPeople from %s.%s"
+                % (from_table, from_column))
+            self.store.execute("""
+                INSERT INTO LinkedPeople
+                SELECT DISTINCT %(from_column)s AS person
+                FROM %(from_table)s
+                WHERE %(from_column)s IS NOT NULL
+                EXCEPT ALL
+                SELECT person FROM LinkedPeople
+                """ % dict(from_table=from_table, from_column=from_column))
+            transaction.commit()
+
+        self.log.debug("Creating UnlinkedPeople temporary table.")
+        self.store.execute("""
+            CREATE TEMPORARY TABLE UnlinkedPeople(
+                id serial primary key, person integer);
+            """)
+        self.log.debug("Populating UnlinkedPeople.")
+        self.store.execute("""
+            INSERT INTO UnlinkedPeople (person) (
+                SELECT id AS person FROM Person
+                WHERE teamowner IS NULL
+                EXCEPT ALL
+                SELECT person FROM LinkedPeople);
+            """)
+        transaction.commit()
+        self.log.debug("Indexing UnlinkedPeople.")
+        self.store.execute("""
+            CREATE UNIQUE INDEX unlinkedpeople__person__idx ON
+                UnlinkedPeople(person);
+            """)
+        self.log.debug("Analyzing UnlinkedPeople.")
+        self.store.execute("""
+            ANALYZE UnlinkedPeople;
+            """)
+        self.log.debug("Counting UnlinkedPeople.")
+        self.max_offset = self.store.execute(
+            "SELECT MAX(id) FROM UnlinkedPeople").get_one()[0]
+        self.log.info("%d Person records to remove.")
+        # Don't keep any locks open - we might block.
+        transaction.commit()
+
+    def isDone(self):
+        return self.offset > self.max_offset
+
+    def __call__(self, chunk_size):
+        subquery = """
+            SELECT person FROM UnlinkedPeople
+            WHERE id BETWEEN %d AND %d
+            """ % (self.offset, self.offset + chunk_size)
+        people_ids = ",".join(
+            str(item[0]) for item in self.store.execute(subquery).get_all())
+        self.offset += chunk_size
+        try:
+            # This would be dangerous if we were deleting a
+            # team, so join with Person to ensure it isn't one
+            # even in the rare case a person is converted to
+            # a team during this run.
+            self.store.execute("""
+                DELETE FROM TeamParticipation
+                USING Person
+                WHERE TeamParticipation.person = Person.id
+                    AND Person.teamowner IS NULL
+                    AND Person.id IN (%s)
+                """ % people_ids)
+            self.store.execute("""
+                UPDATE EmailAddress SET person=NULL
+                WHERE person IN (%s)
+                """ % people_ids)
+            self.store.execute("""
+                DELETE FROM Person
+                WHERE id IN (%s)
+                """ % people_ids)
+            transaction.commit()
+            self.log.debug(
+                "Deleted the following unlinked people: %s" % people_ids)
+        except IntegrityError:
+            # This case happens when a Person is linked to something
+            # during the run. It is unlikely to occur, so just ignore it again.
+            # Everything will clear up next run.
+            transaction.abort()
+            self.log.warning(
+                "Failed to delete %d Person records. Left for next time."
+                % chunk_size)
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -422,9 +545,19 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             dbuser=self.script_name.replace('-','_'),
             test_args=test_args)
 
+    def add_my_options(self):
+        self.parser.add_option("-x", "--experimental", dest="experimental",
+            default=False, action="store_true",
+            help="Run experimental jobs. Normally this is just for staging.")
+
     def main(self):
         failure_count = 0
-        for tunable_loop in self.tunable_loops:
+        if self.options.experimental:
+            tunable_loops = (
+                self.tunable_loops + self.experimental_tunable_loops)
+        else:
+            tunable_loops = self.tunable_loops
+        for tunable_loop in tunable_loops:
             self.logger.info("Running %s" % tunable_loop.__name__)
             tunable_loop = tunable_loop(log=self.logger)
             if self._maximum_chunk_size is not None:
@@ -443,6 +576,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         if failure_count:
             raise SilentLaunchpadScriptFailure(failure_count)
 
+
 class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-hourly'
     tunable_loops = [
@@ -452,6 +586,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
         ]
+    experimental_tunable_loops = []
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -462,4 +597,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         HWSubmissionEmailLinker,
         MailingListSubscriptionPruner,
         ]
-
+    experimental_tunable_loops = [
+        PersonPruner,
+        ]

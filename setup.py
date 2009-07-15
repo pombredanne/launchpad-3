@@ -5,7 +5,6 @@
 import ez_setup
 ez_setup.use_setuptools()
 
-import sys
 from setuptools import setup, find_packages
 
 __version__ = '2.2.3'
@@ -22,9 +21,12 @@ setup(
                  'for software projects.'),
     license='LGPL v3',
     install_requires=[
+        'bzr',
         'feedvalidator',
         'launchpadlib',
+        'lazr.smtptest',
         'lazr.uri',
+        'mocker',
         'oauth',
         'python-openid',
         'pytz',

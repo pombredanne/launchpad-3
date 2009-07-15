@@ -72,7 +72,7 @@ Let's check it out:
 
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'product-languages'))
-    Languages: C++,Xenon and Purple
+    Programming Languages: C++,Xenon and Purple
 
 When the freshmeat or sourceforge URLs are identical to the homepage, we omit
 the homepage:

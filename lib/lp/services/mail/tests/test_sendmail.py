@@ -7,6 +7,7 @@ import unittest
 from zope.testing.doctest import DocTestSuite
 
 from lp.testing import TestCase
+from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
 
 
@@ -77,6 +78,21 @@ class TestMailController(TestCase):
         self.assertEqual('subject', message['Subject'])
         self.assertEqual('body', message.get_payload(decode=True))
 
+    def test_MakeMessage_long_address(self):
+        # Long email addresses are not wrapped if very long.  These are due to
+        # the paranoid checks that are in place to make sure that there are no
+        # carriage returns in the to or from email addresses.
+        to_addr = (
+            'Launchpad Community Help Rotation team '
+            '<long.email.address+devnull@example.com>')
+        from_addr = (
+            'Some Random User With Many Public Names '
+            '<some.random.user.with.many.public.names@example.com')
+        ctrl = MailController(from_addr, to_addr, 'subject', 'body')
+        message = ctrl.makeMessage()
+        self.assertEqual(from_addr, message['From'])
+        self.assertEqual(to_addr, message['To'])
+
     def test_MakeMessage_no_attachment(self):
         """A message without an attachment should have a single body."""
         ctrl = MailController(
@@ -142,6 +158,22 @@ class TestMailController(TestCase):
             'text/plain', attachment['Content-Type'])
         self.assertEqual(
             'inline; filename="README"', attachment['Content-Disposition'])
+
+    def test_sendUsesRealTo(self):
+        """MailController.envelope_to is provided as to_addrs."""
+        ctrl = MailController('from@example.com', 'to@example.com', 'subject',
+                              'body', envelope_to=['to@example.org'])
+        sendmail_kwargs = {}
+        def fake_sendmail(message, to_addrs=None, bulk=True):
+            sendmail_kwargs.update(locals())
+        real_sendmail = sendmail.sendmail
+        sendmail.sendmail = fake_sendmail
+        try:
+            ctrl.send()
+        finally:
+            sendmail.sendmail = real_sendmail
+        self.assertEqual('to@example.com', sendmail_kwargs['message']['To'])
+        self.assertEqual(['to@example.org'], sendmail_kwargs['to_addrs'])
 
 
 def test_suite():

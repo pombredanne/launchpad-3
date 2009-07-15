@@ -10,14 +10,24 @@
   i18n:domain="launchpad"
 >
 
-<style type="text/css" metal:fill-slot="head_epilogue">
-  .logtail {
-    padding-left: 2em;
-  }
-  #merge-summary {
-    margin: 1em 0;
-  }
-</style>
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    .logtail {
+      padding-left: 2em;
+    }
+    #merge-summary {
+      margin: 1em 0;
+    }
+  </style>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/branchsubscription.js">
+  </script>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/branchlinks.js">
+  </script>
+</metal:block>
 
 <body>
 
@@ -103,15 +113,15 @@
             <td id="upload-directions" tal:condition="not:context/owner/isTeam">
               Only
               <a tal:attributes="href context/owner/fmt:url"
-                 tal:content="context/owner/browsername">Person</a>
+                 tal:content="context/owner/displayname">Person</a>
               can upload to this branch. If you are
-              <tal:branch-owner replace="context/owner/browsername"/>
+              <tal:branch-owner replace="context/owner/displayname"/>
               please <a href="+login">log in</a> for upload directions.
             </td>
             <td id="upload-directions" tal:condition="context/owner/isTeam">
               Members of
               <a tal:attributes="href context/owner/fmt:url"
-                 tal:content="context/owner/browsername">Team</a>
+                 tal:content="context/owner/displayname">Team</a>
               can upload to this branch. <a href="+login">Log in</a> for directions.
             </td>
           </tr>
@@ -127,13 +137,13 @@
               <td id="upload-directions" tal:condition="not:context/owner/isTeam">
                 You cannot upload to this branch. Only
                 <a tal:attributes="href context/owner/fmt:url"
-                   tal:content="context/owner/browsername">Person</a>
+                   tal:content="context/owner/displayname">Person</a>
                 can upload to this branch.
               </td>
               <td id="upload-directions" tal:condition="context/owner/isTeam">
                 You cannot upload to this branch. Members of
                 <a tal:attributes="href context/owner/fmt:url"
-                   tal:content="context/owner/browsername">Team</a>
+                   tal:content="context/owner/displayname">Team</a>
                 can upload to this branch.
               </td>
             </tr>
@@ -387,18 +397,24 @@
 
   <div id="related-bugs-and-blueprints">
     <h2>Linked bug reports and blueprints</h2>
-    <div class="actions">
+    <div id="buglinks" class="actions">
       <tal:bugs tal:define="branch context;
                             show_edit python:True;">
         <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
       </tal:bugs>
+
       <div
         tal:define="link context_menu/link_bug"
         tal:condition="link/enabled"
-        tal:content="structure link/render">
-        Link to a bug
+        >
+        <a id="linkbug"
+           class="sprite add"
+           tal:attributes="href link/url"
+           tal:content="link/text" />
       </div>
+
     </div>
+
     <div class="actions">
       <tal:blueprints tal:define="branch context;
                                   show_edit python:True;">
@@ -412,6 +428,25 @@
         Link to a blueprint
       </div>
     </div>
+    <tal:script
+      replace="structure
+      string:&lt;script id='branchlink-script' type='text/javascript'&gt;" />
+      <!--
+
+      YUI().use('io-base', 'code.branchlinks', function(Y) {
+
+      if(Y.UA.ie) {
+          return;
+      }
+
+      Y.on('domready', function() {
+          Y.code.branchlinks.connect_branchlinks();
+      });
+
+      });
+      -->
+    <tal:script replace="structure string:&lt;/script&gt;" />
+
   </div>
 
 

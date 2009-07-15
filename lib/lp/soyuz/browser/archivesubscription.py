@@ -19,17 +19,19 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import implements
+from zope.interface import Interface, implements
+from zope.schema import Date, Text
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad import _
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IArchiveSubscriberUI,
-    IPersonalArchiveSubscription)
+    IArchiveSubscriberSet, IPersonalArchiveSubscription)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -60,8 +62,7 @@ class PersonalArchiveSubscription:
     @property
     def displayname(self):
         """See `IPersonalArchiveSubscription`."""
-        return "%s's subscription to %s" % (
-            self.subscriber.displayname, self.archive.displayname)
+        return "Access to %s" % self.archive.displayname
 
 def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
     """Return the subscription for a subscriber to an archive."""
@@ -75,6 +76,28 @@ def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
         return None
     else:
         return PersonalArchiveSubscription(subscriber, archive)
+
+
+class IArchiveSubscriberUI(Interface):
+    """A custom interface for user interaction with archive subscriptions.
+
+    IArchiveSubscriber uses a datetime field for date_expires, whereas
+    we simply want to use a date field when users create or edit new
+    subscriptions.
+    """
+    subscriber = ParticipatingPersonChoice(
+        title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
+        description=_("The person or team to grant access."))
+
+    date_expires = Date(
+        title=_("Date of Expiration"), required=False,
+        description=_("The date when the access will expire. "
+                      "Leave this blank for access that should "
+                      "never expire."))
+
+    description = Text(
+        title=_("Description"), required=False,
+        description=_("Optional notes about this access."))
 
 
 class ArchiveSubscribersView(LaunchpadFormView):
@@ -157,8 +180,21 @@ class ArchiveSubscribersView(LaunchpadFormView):
             description=data['description'],
             date_expires=date_expires)
 
-        notification = "You have subscribed %s to %s." % (
-            data['subscriber'].displayname, self.context.displayname)
+        subscriber_individuals = data['subscriber'].displayname
+        if data['subscriber'].is_team:
+            subscriber_individuals = "Members of " + subscriber_individuals
+
+        notification = (
+            "You have granted access for %(subscriber)s to install "
+            "software from %(archive)s. "
+            "%(subscriber_individuals)s will be notified of the access "
+            " via email."
+            ) % {
+                'subscriber': data['subscriber'].displayname,
+                'archive': self.context.displayname,
+                'subscriber_individuals': subscriber_individuals,
+                }
+
         self.request.response.addNotification(structured(notification))
 
         # Just ensure a redirect happens (back to ourselves).
@@ -200,11 +236,11 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 
         self.updateContextFromData(data)
 
-        notification = "The subscription for %s has been updated." % (
+        notification = "The access for %s has been updated." % (
             self.context.subscriber.displayname)
         self.request.response.addNotification(structured(notification))
 
-    @action(u'Cancel subscription', name='cancel')
+    @action(u'Cancel access', name='cancel')
     def cancel_subscription(self, action, data):
         """Cancel the context subscription."""
         self.context.cancel(self.user)
@@ -267,12 +303,6 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         if self.request.form.get('activate') and not self.active_token:
             token = self.context.archive.newAuthToken(self.context.subscriber)
 
-            self.request.response.addNotification(structured(
-                "You have confirmed your subscription to the archive %s. "
-                "Before you can install software from the archive you need "
-                "to follow the instructions below to update your custom "
-                " \"sources.list\"." % self.context.archive.displayname))
-
             self.request.response.redirect(self.request.getURL())
 
         # Otherwise, if a regeneration was requested and there is an
@@ -285,7 +315,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
 
             self.request.response.addNotification(structured(
                 "Launchpad has generated the new password you requested "
-                "for your subscription to the archive %s. Please follow "
+                "for your access to the archive %s. Please follow "
                 "the instructions below to update your custom "
                 "\"sources.list\"." % self.context.archive.displayname))
 
@@ -297,7 +327,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         if self.active_token is None:
             return None
 
-        comment = "Personal subscription of %s to %s" % (
+        comment = "Personal access of %s to %s" % (
             self.context.subscriber.displayname,
             self.context.archive.displayname)
 

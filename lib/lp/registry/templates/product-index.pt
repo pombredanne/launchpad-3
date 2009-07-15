@@ -26,7 +26,7 @@
           Name of project
         </h1>
         <p id="project-admin-whiteboard" class="whiteboard"
-           tal:condition="context/required:launchpad.Commercial">
+           tal:condition="context/required:launchpad.ProjectReview">
           <span tal:content="context/reviewer_whiteboard" />
           (<a href="+review-license">edit reviewer whiteboard</a>)
         </p>
@@ -69,6 +69,7 @@
           <li tal:condition="view/should_display_homepage">
             <a id="homepageurl-link"
                class="sprite external-link"
+               rel="nofollow"
                tal:attributes="href context/homepageurl">
               <strong>Home page</strong>
             </a>
@@ -135,9 +136,11 @@
         </p>
       </tal:launchpad_usage>
 
-      <p id="product-languages" tal:condition="context/programminglang">
-        <strong>Languages:</strong> <span tal:content="context/programminglang">Python</span>
-      </p>
+      <span tal:condition="view/show_programming_languages">
+      <p id="product-languages" />
+        <strong>Programming Languages:</strong>
+        <span tal:content="structure view/languages_edit_widget" />
+     </span>
 
       <p id="owner" tal:condition="context/owner">
         <strong>Maintainer:</strong> <tal:link replace="structure context/owner/fmt:link" />
@@ -241,46 +244,14 @@
 
       <div class="portlet">
         <h2>Series and milestones</h2>
-        <p>A "release series" is major release that would typically have a number
-      of "point releases" associated with it.</p>
-        <div class="series"
-             tal:repeat="series view/sorted_active_series_list">
 
-          <div tal:define="is_focus series/is_development_focus"
-               tal:attributes="
-                               class python:is_focus and 'highlighted' or 'unhighlighted'">
-            <metal:series use-macro="series/@@+macros/detailed_display" />
-          </div>
-        </div>
+        <iframe
+          metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
         <div
            class="actions"
            tal:content="structure overview_menu/series_add/render"
         />
-        <div id="timeline-loading" style="display: none">
-          <img src="/@@/spinner" /> Loading graph...
-        </div>
-        <iframe id="timeline-iframe"
-                style="display: none"
-                tal:attributes="src string:+timeline-graph"
-                width="100%" height="170px"></iframe>
-        <script>
-          YUI().use('node', function(Y) {
-              if (Y.UA.ie) {
-                  return;
-              }
-              var loading_el = Y.get('#timeline-loading');
-              loading_el.setStyle('display', 'block');
-              var iframe = Y.get('#timeline-iframe');
-              Y.on('load', function(e) {
-                  loading_el.setStyle('display', 'none');
-                  iframe.setStyle('display', 'block');
-              }, iframe);
-          });
-        </script>
-        <div style="float: right">
-          <a href="+series">&#x00BB; Series timeline</a>
-          <a href="+milestones">&#x00BB; Milestone history</a>
-        </div>
+        <a href="+series">&#x00BB; View full history</a>
       </div>
 
       <tal:contrib replace="structure context/@@+portlet-top-contributors" />

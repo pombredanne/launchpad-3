@@ -24,11 +24,9 @@ presented with a warning.
     ...     name='field.bugtarget.package').value = 'alsa-utils'
     >>> user_browser.getControl('Summary').value = 'Alsa crashes'
     >>> user_browser.getControl('Continue').click()
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     Debian does not use...
-    ...
-    You can refine and resubmit your bug report.
 
 A link will be included to take the user back to the +filebug page:
 
@@ -117,9 +115,7 @@ Launchpad Bugs results in an informational page being displayed.
     >>> user_browser.getControl('Summary').value = 'Alsa crashes'
     >>> user_browser.getControl('Further information').value = 'Crash.'
     >>> user_browser.getControl('Submit Bug Report').click()
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     Debian does not use...
-    ...
-    You can refine and resubmit your bug report.
 

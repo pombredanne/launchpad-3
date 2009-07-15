@@ -149,7 +149,6 @@ class ContentNegotiationTests(unittest.TestCase):
             request.response.getHeader('x-xrds-location'), None)
 
 
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 

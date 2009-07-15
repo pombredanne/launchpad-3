@@ -17,6 +17,7 @@ __all__ = [
     'BugTextView',
     'BugURL',
     'BugView',
+    'BugViewMixin',
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
     'MaloneView',
@@ -226,7 +227,7 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        if self.context.bug.bug_branches.count() > 0:
+        if self.context.bug.linked_branches.count() > 0:
             text = 'Link another branch'
         else:
             text = 'Link a related branch'
@@ -373,7 +374,36 @@ class MaloneView(LaunchpadFormView):
         return getUtility(ICveSet).getBugCveCount()
 
 
-class BugView(LaunchpadView):
+class BugViewMixin:
+    """Mix-in class to share methods between bug and portlet views."""
+
+    @cachedproperty
+    def direct_subscribers(self):
+        """Caches the list of direct subscribers."""
+        return frozenset(self.context.getDirectSubscribers())
+
+    @cachedproperty
+    def duplicate_subscribers(self):
+        """Caches the list of subscribers from duplicates."""
+        return frozenset(self.context.getSubscribersFromDuplicates())
+
+    def subscription_class(self, subscribed_person):
+        """Returns a set of CSS class names based on subscription status.
+
+        For example, "subscribed-false dup-subscribed-true".
+        """
+        if subscribed_person in self.duplicate_subscribers:
+            dup_class = 'dup-subscribed-true'
+        else:
+            dup_class = 'dup-subscribed-false'
+
+        if subscribed_person in self.direct_subscribers:
+            return 'subscribed-true %s' % dup_class
+        else:
+            return 'subscribed-false %s' % dup_class
+
+
+class BugView(LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be
@@ -400,14 +430,6 @@ class BugView(LaunchpadView):
         if user is None:
             return False
         return self.context.isSubscribed(user)
-
-    @property
-    def subscription_class(self):
-        """Returns a CSS class name based on subscription status."""
-        if self.context.isSubscribed(self.user):
-            return 'subscribed-true'
-        else:
-            return 'subscribed-false'
 
     def duplicates(self):
         """Return a list of dicts of duplicates.

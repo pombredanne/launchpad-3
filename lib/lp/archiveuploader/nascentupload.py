@@ -384,9 +384,9 @@ class NascentUpload:
         try:
             callable()
         except UploadError, error:
-            self.reject(str(error))
+            self.reject("".join(error.args).encode("utf8"))
         except UploadWarning, error:
-            self.warn(str(error))
+            self.warn("".join(error.args).encode("utf8"))
 
     def run_and_collect_errors(self, callable):
         """Run 'special' callable that generates a list of errors/warnings.
@@ -406,9 +406,9 @@ class NascentUpload:
         """
         for error in callable():
             if isinstance(error, UploadError):
-                self.reject(str(error))
+                self.reject("".join(error.args).encode("utf8"))
             elif isinstance(error, UploadWarning):
-                self.warn(str(error))
+                self.warn("".join(error.args).encode("utf8"))
             else:
                 raise AssertionError(
                     "Unknown error occurred: %s" % str(error))
@@ -534,7 +534,7 @@ class NascentUpload:
         # package set based permissions.
         ap_set = getUtility(IArchivePermissionSet)
         if source_name is not None and signer is not None:
-            if ap_set.isSourceUploadAllowed(source_name, signer):
+            if ap_set.isSourceUploadAllowed(archive, source_name, signer):
                 return
 
         # If source_name is None then the package must be new, but we
@@ -1049,22 +1049,21 @@ class NascentUpload:
         includes decisions such as moving the package to the partner
         archive if the package's component is 'partner'.
 
-        PPA uploads with partner files and normal uploads with a mixture
-        of partner and non-partner files will be rejected.
+        Uploads with a mixture of partner and non-partner files will be
+        rejected.
         """
 
         # Get a set of the components used in this upload:
         components = self.getComponents()
 
         if PARTNER_COMPONENT_NAME in components:
-            # Reject partner uploads to PPAs.
-            if self.is_ppa:
-                self.reject("PPA does not support partner uploads.")
-                return
-
             # All files in the upload must be partner if any one of them is.
             if len(components) != 1:
                 self.reject("Cannot mix partner files with non-partner.")
+                return
+
+            # Partner uploads to PPAs do not need an override.
+            if self.is_ppa:
                 return
 
             # See if there is an archive to override with.
