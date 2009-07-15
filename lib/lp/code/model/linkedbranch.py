@@ -78,11 +78,8 @@ class DistributionPackageLinkedBranch:
     @property
     def branch(self):
         """See `ICanHasLinkedBranch`."""
-        distribution = self._distribution_sourcepackage.distribution
-        current_series = distribution.currentseries
-        sourcepackagename = self._distribution_sourcepackage.sourcepackagename
-        development_package = current_series.getSourcePackage(
-            sourcepackagename)
+        development_package = (
+            self._distribution_sourcepackage.development_version)
         suite_sourcepackage = development_package.getSuiteSourcePackage(
             PackagePublishingPocket.RELEASE)
         return ICanHasLinkedBranch(suite_sourcepackage).branch
