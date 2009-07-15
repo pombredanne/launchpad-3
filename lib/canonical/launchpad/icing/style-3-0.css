@@ -232,7 +232,7 @@ Pixels  Percent
 /* Default text presentation */
 html, body {
     font-family: bitstream vera sans, arial, helvetica, clean, sans-serif;
-    font-size: 93%; /* 2.0 backward compatability */
+    font-size: 97%; /* 2.0 backward compatability */
     }
 h1 {
     clear: none;
