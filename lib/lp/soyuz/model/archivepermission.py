@@ -452,6 +452,33 @@ class ArchivePermissionSet:
             query, (person.id, person.id, sourcepackagename.id, archive.id))
         return store.find(ArchivePermission, In(ArchivePermission.id, query))
 
+    def packagesetsForSource(
+        self, archive, sourcepackagename, direct_permissions=True):
+        """See `IArchivePermissionSet`."""
+        sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
+        store = IStore(ArchivePermission)
+        if direct_permissions:
+            query = '''
+                SELECT ap.id FROM archivepermission ap, packagesetsources pss
+                WHERE
+                    ap.packageset = pss.packageset
+                    AND pss.sourcepackagename = ?
+                    AND ap.archive = ?
+            '''
+        else:
+            query = '''
+                SELECT ap.id FROM
+                    archivepermission ap,
+                    packagesetsources pss, flatpackagesetinclusion fpsi
+                WHERE
+                    ap.packageset = fpsi.parent
+                    AND pss.packageset = fpsi.child
+                    AND pss.sourcepackagename = ?
+                    AND ap.archive = ?
+            '''
+        query = SQL(query, (sourcepackagename.id, archive.id))
+        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+
     def isSourceUploadAllowed(self, archive, sourcepackagename, person):
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)

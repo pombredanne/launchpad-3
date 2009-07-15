@@ -854,6 +854,28 @@ Persons can have both explicit or non-explicit permissions for package sets.
     primary     sabdfl:      firefox ->           UPLOAD (explicit)
     primary     sabdfl:  thunderbird ->           UPLOAD (implicit)
 
+Sometimes it's handy to know what permissions apply for a given source
+package irespective of the person.
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForSource(ubuntu_archive, 'mozilla-firefox'))
+    primary     sabdfl:      firefox ->           UPLOAD (explicit)
+    primary    juergen:      firefox ->           UPLOAD (implicit)
+
+If we make the 'mozilla' package set include 'firefox' again and ask the same
+question without insisiting on direct permissions we also see the permission
+granting 'hacker' upload privileges to 'mozilla' (since the latter is now
+a parent package set of 'firefox' and that includes the 'mozilla-firefox'
+source package (directly)).
+
+    >>> mozilla_ps.add((firefox_ps,))
+    >>> print_permission(
+    ...     ap_set.packagesetsForSource(
+    ...         ubuntu_archive, 'mozilla-firefox', direct_permissions=False))
+    primary     sabdfl:      firefox ->           UPLOAD (explicit)
+    primary     hacker:      mozilla ->           UPLOAD (implicit)
+    primary    juergen:      firefox ->           UPLOAD (implicit)
+
 Attempting to create an explicit permission when a non-explicit one exists
 already will fail.
 
