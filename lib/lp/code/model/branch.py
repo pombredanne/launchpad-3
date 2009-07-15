@@ -51,6 +51,7 @@ from lp.code.model.branchmergeproposal import (
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.revision import Revision
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
@@ -382,8 +383,7 @@ class Branch(SQLBase):
             is_dev_focus = (series_branch == self)
         else:
             is_dev_focus = False
-        return bazaar_identity(
-            self, self.associatedProductSeries(), is_dev_focus)
+        return bazaar_identity(self, is_dev_focus)
 
     @property
     def warehouse_url(self):
@@ -526,6 +526,14 @@ class Branch(SQLBase):
         return Store.of(self).find(
             ProductSeries,
             ProductSeries.branch == self)
+
+    def associatedSuiteSourcePackages(self):
+        """See `IBranch`."""
+        series_set = getUtility(IFindOfficialBranchLinks)
+        # Order by the pocket to get the release one first.
+        links = series_set.findForBranch(self).order_by(
+            SeriesSourcePackageBranch.pocket)
+        return [link.suite_sourcepackage for link in links]
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,

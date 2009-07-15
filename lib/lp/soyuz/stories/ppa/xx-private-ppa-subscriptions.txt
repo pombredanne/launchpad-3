@@ -44,7 +44,7 @@ Setup both cprov's and sabdfl's PPAs as a private one:
 The PPA page includes a link to manage subscriptions:
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
-    >>> cprov_browser.getLink("Manage subscriptions").click()
+    >>> cprov_browser.getLink("Manage access").click()
 
 The page includes the required dependencies for the yui2-based date
 picker:
@@ -60,11 +60,11 @@ with a message:
 
     >>> main_content = find_main_content(cprov_browser.contents)
     >>> print extract_text(main_content.find('h1'))
-    Manage subscriptions for...PPA for Celso Providelo
+    Manage access to PPA for Celso Providelo
 
     >>> print extract_text(find_tag_by_id(cprov_browser.contents,
     ...     'no-subscribers'))
-    This PPA does not yet have any subscribers.
+    No one has access to install software from this PPA.
 
 Create two new users that can be subscribed to archives:
 
@@ -107,7 +107,7 @@ heading:
     >>> cprov_browser.open("/~cprov/+archivesubscriptions")
     >>> h1_heading = find_main_content(cprov_browser.contents).find('h1')
     >>> print extract_text(h1_heading)
-    Private PPA subscriptions
+    Private PPA access
 
 A person who is not subscribed to any archives will see an appropriate
 explanation if they try to view their archive subscriptions:
@@ -152,12 +152,11 @@ displaying their subscription.
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith
+        breezy-autotest main #Personal access of Joe Smith
         to PPA for Mark Shuttleworth
     deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith
+        breezy-autotest main #Personal access of Joe Smith
         to PPA for Mark Shuttleworth
-    Next you need to ...
 
 This page will include information about the signing key, if the archive
 has a signing key:
@@ -177,11 +176,10 @@ has a signing key:
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith
+        breezy-autotest main #Personal access of Joe Smith
         to PPA for Mark Shuttleworth
     deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith
+        breezy-autotest main #Personal access of Joe Smith
         to PPA for Mark Shuttleworth
     This repository is signed ...
-    Next you need to ...
 
