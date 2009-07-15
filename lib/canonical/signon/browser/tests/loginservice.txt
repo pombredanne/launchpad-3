@@ -29,6 +29,7 @@ As well as these actions, there are a number of error handling code paths:
     ...     LoginServiceLoginView)
     >>> from canonical.signon.interfaces.openidserver import (
     ...     IOpenIDApplication)
+    >>> from canonical.signon.publisher import OpenIDServerTestRequest
     >>> from canonical.launchpad.webapp import LaunchpadFormView
 
     # Create a fake LoginServiceLoginView which stubs out OpenID-related bits
@@ -47,7 +48,8 @@ As well as these actions, there are a number of error handling code paths:
 A valid email address is required for any operation available on this form.
 
     >>> harness = LaunchpadFormHarness(
-    ...     getUtility(IOpenIDApplication), TestingLoginServiceLoginView)
+    ...     getUtility(IOpenIDApplication), TestingLoginServiceLoginView,
+    ...     request_class=OpenIDServerTestRequest)
 
     >>> harness.submit('continue', {'field.email': 'foo@'})
     >>> for message in harness.getFormErrors():

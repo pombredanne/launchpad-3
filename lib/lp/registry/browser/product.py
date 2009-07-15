@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Browser views for products."""
 
@@ -773,20 +773,20 @@ class ProductDownloadFileMixin:
         # Get all of the releases for all of the serieses in a single
         # query.  The query sorts the releases properly so we know the
         # resulting list is sorted correctly.
-        release_set = getUtility(IProductReleaseSet)
         release_by_id = {}
-        releases = release_set.getReleasesForSerieses(
-            product_with_series.serieses)
-        for release in releases:
+        milestones_and_releases = list(
+            original_product.getMilestonesAndReleases())
+        for milestone, release in milestones_and_releases:
             series = product_with_series.getSeriesById(
-                release.productseries.id)
+                milestone.productseries.id)
             decorated_release = ReleaseWithFiles(release)
             series.addRelease(decorated_release)
             release_by_id[release.id] = decorated_release
 
         # Get all of the files for all of the releases.  The query
         # returns all releases sorted properly.
-        files = release_set.getFilesForReleases(releases)
+        releases = [release for milestone, release in milestones_and_releases]
+        files = getUtility(IProductReleaseSet).getFilesForReleases(releases)
         for file in files:
             release = release_by_id[file.productrelease.id]
             release.addFile(file)

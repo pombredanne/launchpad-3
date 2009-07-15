@@ -64,7 +64,7 @@ class TextLineEditorWidget:
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
                 accept_empty: %(accept_empty)s,
-                initial_value_override: '%(initial_value_override)s'
+                initial_value_override: %(initial_value_override)s
             });
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
@@ -143,7 +143,8 @@ class TextLineEditorWidget:
             'tag': self.tag,
             'public_attribute': self.public_attribute,
             'accept_empty': self.accept_empty,
-            'initial_value_override': self.initial_value_override,
+            'initial_value_override': simplejson.dumps(
+                self.initial_value_override),
             }
         # Only display the trigger link and the activation script if
         # the user can write the attribute.

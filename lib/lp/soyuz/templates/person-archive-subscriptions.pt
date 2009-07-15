@@ -13,12 +13,12 @@
   <div metal:fill-slot="main">
 
     <h1 tal:content="CONTEXTS/fmt:pagetitle">
-      Private PPA subscriptions
+      Private PPA access
     </h1>
   <tal:has_subscriptions condition="view/subscriptions_with_tokens">
     <div id="current_subscriptions">
       <p>Here's a list of all the private archives to which you have
-         subscribed.
+         been granted access.
       </p>
       <table summary="CONTEXTS/fmt:pagetitle" id="archive-subscriptions"
         class="listing">
