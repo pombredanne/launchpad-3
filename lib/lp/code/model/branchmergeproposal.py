@@ -307,7 +307,7 @@ class BranchMergeProposal(SQLBase):
         elif status == BranchMergeProposalStatus.MERGED:
             self.markAsMerged(merge_reporter=user)
         else:
-            raise AssertionError('Unexpected queue status: ' % new_status)
+            raise AssertionError('Unexpected queue status: ' % status)
 
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
