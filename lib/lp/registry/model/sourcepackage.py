@@ -578,24 +578,17 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        # Avoid circular imports.
-        from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.distribution import Distribution
-
         store = Store.of(self.sourcepackagename)
         if just_ids:
             looking_for = POTemplate.id
         else:
             looking_for = POTemplate
 
-        result = store.find(
-            looking_for,
+        result = store.find(looking_for, And(
             POTemplate.iscurrent == True,
             POTemplate.distroseries == self.distroseries,
             POTemplate.sourcepackagename == self.sourcepackagename,
-            DistroSeries.id == self.distroseries.id,
-            DistroSeries.distribution == Distribution.id,
-            Distribution.official_rosetta == True)
+            self.distroseries.distribution.official_rosetta == True))
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     def getObsoleteTranslationTemplates(self):

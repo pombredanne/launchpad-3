@@ -72,14 +72,11 @@ class BranchRewriter:
         try:
             transport_type, info, trailing = extract_result(deferred)
         except xmlrpclib.Fault, f:
-            if faults.check_fault(f, faults.PathTranslationError):
-                return "NULL"
-            elif faults.check_fault(f, faults.PermissionDenied):
-                # If we get permission denied, send to codebrowse which will
-                # redirect to the https version of the codehost, which doesn't
-                # indirect through here and does authentication via OpenID.
-                # If we could generate a 30x response to the client from here,
-                # we'd do it, but we can't.
+            if (faults.check_fault(f, faults.PathTranslationError)
+                or faults.check_fault(f, faults.PermissionDenied)):
+                # In this situation, we'd *like* to generate a 404
+                # (PathTranslationError) or 301 (PermissionDenied) error.  But
+                # we can't, so we just forward on to codebrowse which can.
                 return self._codebrowse_url(resource_location)
             else:
                 raise
