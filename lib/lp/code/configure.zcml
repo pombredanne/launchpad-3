@@ -384,6 +384,7 @@
                     deletionRequirements
                     associatedProductSeries
                     getProductSeriesPushingTranslations
+                    associatedSuiteSourcePackages
                     subscribe
                     getSubscription
                     hasSubscription
