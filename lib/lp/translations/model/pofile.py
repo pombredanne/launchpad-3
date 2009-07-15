@@ -343,6 +343,17 @@ class POFileMixIn(RosettaStats):
                    quote_like(text))
         return english_match
 
+    def _getOrderedPOTMsgSets(self, origin_tables, query):
+        """Find all POTMsgSets matching `query` from `origin_tables`.
+
+        Orders the result by TranslationTemplateItem.sequence which must
+        be among `origin_tables`.
+        """
+        store = Store.of(self)
+        results = store.using(origin_tables).find(
+            POTMsgSet, SQL(query))
+        return results.order_by(TranslationTemplateItem.sequence)
+
     def findPOTMsgSetsContaining(self, text):
         """See `IPOFile`."""
         clauses = [
@@ -375,8 +386,10 @@ class POFileMixIn(RosettaStats):
 
             all_potmsgsets_query = "(" + " UNION ".join(search_clauses) + ")"
 
-        return POTMsgSet.select("POTMsgSet.id IN " + all_potmsgsets_query,
-                                orderBy='sequence')
+        return self._getOrderedPOTMsgSets(
+            [POTMsgSet, TranslationTemplateItem],
+            "TranslationTemplateItem.potmsgset = POTMsgSet.id AND "
+            "POTMsgSet.id IN " + all_potmsgsets_query)
 
     def getFullLanguageCode(self):
         """See `IPOFile`."""
@@ -654,17 +667,6 @@ class POFile(SQLBase, POFileMixIn):
                             + shared_translation_query + ') )')
         clauses.append(translated_query)
         return (clauses, clause_tables)
-
-    def _getOrderedPOTMsgSets(self, origin_tables, query):
-        """Find all POTMsgSets matching `query` from `origin_tables`.
-
-        Orders the result by TranslationTemplateItem.sequence which must
-        be among `origin_tables`.
-        """
-        store = Store.of(self)
-        results = store.using(origin_tables).find(
-            POTMsgSet, SQL(query))
-        return results.order_by(TranslationTemplateItem.sequence)
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
