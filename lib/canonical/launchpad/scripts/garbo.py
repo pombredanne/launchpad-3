@@ -48,7 +48,7 @@ class TunableLoop:
     maximum_chunk_size = None # Override
     cooldown_time = 0
 
-    def __init__(self, log, abort_time):
+    def __init__(self, log, abort_time=None):
         self.log = log
         self.abort_time = abort_time
 
@@ -70,7 +70,7 @@ class OAuthNoncePruner(TunableLoop):
     """
     maximum_chunk_size = 6*60*60 # 6 hours in seconds.
 
-    def __init__(self, log, abort_time):
+    def __init__(self, log, abort_time=None):
         super(OAuthNoncePruner, self).__init__(log, abort_time)
         self.store = IMasterStore(OAuthNonce)
         self.oldest_age = self.store.execute("""
@@ -106,7 +106,7 @@ class OpenIDConsumerNoncePruner(TunableLoop):
     """
     maximum_chunk_size = 6*60*60 # 6 hours in seconds.
 
-    def __init__(self, log, abort_time):
+    def __init__(self, log, abort_time=None):
         super(OpenIDConsumerNoncePruner, self).__init__(log, abort_time)
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self.earliest_timestamp = self.store.find(
@@ -143,7 +143,7 @@ class OpenIDAssociationPruner(TunableLoop):
 
     _num_removed = None
 
-    def __init__(self, log, abort_time):
+    def __init__(self, log, abort_time=None):
         super(OpenIDAssociationPruner, self).__init__(log, abort_time)
         self.store = getUtility(IStoreSelector).get(
             self.store_name, MASTER_FLAVOR)
@@ -197,7 +197,7 @@ class CodeImportResultPruner(TunableLoop):
     CodeImport.
     """
     maximum_chunk_size = 1000
-    def __init__(self, log, abort_time):
+    def __init__(self, log, abort_time=None):
         super(CodeImportResultPruner, self).__init__(log, abort_time)
         self.store = IMasterStore(CodeImportResult)
 
@@ -255,7 +255,7 @@ class RevisionAuthorEmailLinker(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self, log, abort_time):
+    def __init__(self, log, abort_time=None):
         super(RevisionAuthorEmailLinker, self).__init__(log, abort_time)
         self.author_store = IMasterStore(RevisionAuthor)
         self.email_store = IMasterStore(EmailAddress)
@@ -313,7 +313,7 @@ class HWSubmissionEmailLinker(TunableLoop):
     linked to the same.
     """
     maximum_chunk_size = 50000
-    def __init__(self, log, abort_time):
+    def __init__(self, log, abort_time=None):
         super(HWSubmissionEmailLinker, self).__init__(log, abort_time)
         self.submission_store = IMasterStore(HWSubmission)
         self.submission_store.execute(
@@ -374,7 +374,7 @@ class MailingListSubscriptionPruner(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self, log, abort_time):
+    def __init__(self, log, abort_time=None):
         super(MailingListSubscriptionPruner, self).__init__(log, abort_time)
         self.subscription_store = IMasterStore(MailingListSubscription)
         self.email_store = IMasterStore(EmailAddress)
@@ -417,7 +417,7 @@ class PersonPruner(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self, log, abort_time):
+    def __init__(self, log, abort_time=None):
         super(PersonPruner, self).__init__(log, abort_time)
         self.offset = 0
         self.store = IMasterStore(Person)
