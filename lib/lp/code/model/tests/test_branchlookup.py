@@ -311,7 +311,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         # a non-existent series.
         self.assertRaises(
             NoSuchProduct, self.traverser.traverse, 'bb/dd')
-        product = self.factory.makeProduct(name='bb')
+        self.factory.makeProduct(name='bb')
         self.assertRaises(
             NoSuchProductSeries, self.traverser.traverse, 'bb/dd')
 
@@ -366,7 +366,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
     def test_no_such_distro_series(self):
         # `traverse` raises `NoSuchDistroSeries` if the distro series doesn't
         # exist.
-        distro = self.factory.makeDistribution(name='distro')
+        self.factory.makeDistribution(name='distro')
         self.assertRaises(
             NoSuchDistroSeries, self.traverser.traverse,
             'distro/series/package')
