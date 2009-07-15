@@ -787,6 +787,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
         branches.
         """
 
+    def associatedSuiteSourcePackages():
+        """Return the suite source packages that this branch is linked to."""
+
     # subscription-related methods
     @operation_parameters(
         person=Reference(
@@ -1105,7 +1108,7 @@ class IBranchCloud(Interface):
         """
 
 
-def bazaar_identity(branch, associated_series, is_dev_focus):
+def bazaar_identity(branch, is_dev_focus):
     """Return the shortest lp: style branch identity."""
     lp_prefix = config.codehosting.bzr_lp_prefix
 
@@ -1125,23 +1128,23 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
             return lp_prefix + branch.product.name
 
         # If there are no associated series, then use the unique name.
-        associated_series = list(associated_series)
-        if [] == associated_series:
+        associated_series = sorted(
+            branch.associatedProductSeries(), key=attrgetter('datecreated'))
+        if len(associated_series) == 0:
             return lp_prefix + branch.unique_name
-
-        use_series = sorted(
-            associated_series, key=attrgetter('datecreated'))[-1]
+        # Use the most recently created series.
+        use_series = associated_series[-1]
         return "%(prefix)s%(product)s/%(series)s" % {
             'prefix': lp_prefix,
             'product': use_series.product.name,
             'series': use_series.name}
 
     if branch.sourcepackage is not None:
-        sourcepackage = branch.sourcepackage
-        linked_branches = sourcepackage.linked_branches
-        for pocket, linked_branch in linked_branches:
-            if linked_branch == branch:
-                return lp_prefix + sourcepackage.getPocketPath(pocket)
+        suite_sourcepackages = branch.associatedSuiteSourcePackages()
+        # Take the first link if there is one.
+        if len(suite_sourcepackages) > 0:
+            suite_source_package = suite_sourcepackages[0]
+            return lp_prefix + suite_source_package.path
 
     return lp_prefix + branch.unique_name
 
