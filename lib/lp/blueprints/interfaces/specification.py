@@ -891,6 +891,16 @@ class ISpecificationSet(IHasSpecifications):
     specification_count = Attribute(
         "The total number of blueprints in Launchpad")
 
+    def getStatusCountsForProductSeries(product_series):
+        """Return the status counts for blueprints in a series.
+
+        Both the nominated and scheduled blueprints are included
+        in the count.
+
+        :param product_series: ProductSeries object.
+        :return: A list of tuples containing (status_id, count).
+        """
+
     def __iter__():
         """Iterate over all specifications."""
 

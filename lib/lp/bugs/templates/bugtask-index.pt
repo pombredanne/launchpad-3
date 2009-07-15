@@ -228,10 +228,7 @@
             </a>
           </div>
           <div style="width: 45%: text-align: right; float: right;" class="clearfix">
-            <tal:editdescription
-                define="link context_menu/editdescription"
-                condition="link/enabled"
-                replace="structure link/@@+inline-suffix" />
+            <a tal:replace="structure context_menu/editdescription/fmt:icon-link" />
             <span tal:condition="view/wasDescriptionModified" class="discreet"
             >(see <a href="comments/0">original description</a>)</span>
           </div>
