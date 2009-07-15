@@ -32,16 +32,16 @@ from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.browser.queue import QueueItemsView
-from canonical.launchpad.browser.translations import TranslationsMixin
+from lp.translations.browser.translations import TranslationsMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from canonical.launchpad.interfaces.distroserieslanguage import (
+from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -53,6 +53,7 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -118,6 +119,10 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         else:
             return self.context.last_delta_language_pack_exported.file
 
+    @stepthrough('+upload')
+    def traverse_queue(self, id):
+        return getUtility(IPackageUploadSet).get(id)
+
 
 class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IDistroSeries`."""
@@ -129,7 +134,8 @@ class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
 class DistroSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroSeries
-    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+    enable_only = ['overview', 'branches', 'bugs', 'specifications',
+                   'translations']
 
 
 class DistroSeriesOverviewMenu(ApplicationMenu):
@@ -394,6 +400,13 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
+
+    @property
+    def show_arch_selector(self):
+        """Display the architecture selector.
+
+        See `BuildRecordsView` for further details."""
+        return True
 
 
 class DistroSeriesEditView(LaunchpadEditFormView):

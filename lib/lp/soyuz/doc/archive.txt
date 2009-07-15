@@ -72,7 +72,7 @@ Amending it as an unprivileged user results in failure:
     >>> cprov_archive.relative_build_score = 100
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'relative_build_score', 'launchpad.Admin')
+    Unauthorized: (..., 'relative_build_score', 'launchpad.Commercial')
 
 As a Launchpad admin, it will work.
 
@@ -83,16 +83,21 @@ The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
 essentially the password to the archive for the builder.
 
-It can only be set by users with launchpad.Admin permission in the
-archive, i.e. a launchpad-administrator.
+It can only be set by users with launchpad.Commercial permission in the
+archive, i.e. an admin or a commercial admin.
 
     >>> login(ANONYMOUS)
     >>> cprov_archive.buildd_secret = 'boing'
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'buildd_secret', 'launchpad.Admin')
+    Unauthorized: (..., 'buildd_secret', 'launchpad.Commercial')
 
-Foo Bar, can set 'buildd_secret'.
+Commercial Member, a commercial admin but not an admin, can set 'buildd_secret'.
+
+    >>> login("commercial-member@canonical.com")
+    >>> cprov_archive.buildd_secret = 'not so secret at all'
+
+Foo Bar, an admin, can set 'buildd_secret'.
 
     >>> login("foo.bar@canonical.com")
     >>> cprov_archive.buildd_secret = 'not so secret'
@@ -1562,6 +1567,22 @@ immediately recognises 'cprov' rights on it.
     PPA for Celso Providelo
     PPA for Launchpad Buildd Admins
 
+The same happens for specific upload rights granted on 3rd-part
+PPAs. When 'No Privileges' gets upload rights to Celso's PPA,
+it gets listed by `getPPAsForUser`.
+
+    >>> for ppa in archive_set.getPPAsForUser(no_priv):
+    ...     print ppa.displayname
+    PPA for No Privileges Person
+
+    >>> cprov_archive.newComponentUploader(no_priv, "main")
+    <ArchivePermission ...>
+
+    >>> for ppa in archive_set.getPPAsForUser(no_priv):
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+    PPA for No Privileges Person
+
 When there is no active PPA for the team a user participates the
 method returns an empty SelectResults.
 
@@ -2013,6 +2034,37 @@ You'll get the same error if you use a component object that's not main.
     ...
     InvalidComponent: Component for PPAs should be 'main'
 
+As important as the right to upload packages to Celso's PPA, Carlos
+also got the corresponding permissions on it.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login("carlos@canonical.com")
+
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+    >>> check_permission('launchpad.Append', cprov_archive)
+    True
+
+So even if Celso's PPA suddenly becomes private, Carlos rights will be
+preserved.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.buildd_secret = 'x'
+    >>> cprov_archive.private = True
+
+    >>> login("carlos@canonical.com")
+
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+    >>> check_permission('launchpad.Append', cprov_archive)
+    True
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.buildd_secret = ''
+    >>> cprov_archive.private = False
+
 
 == Rebuild archives ==
 
@@ -2122,8 +2174,9 @@ release pocket, but to do so we must have edit permissions on the archive.
 Let's log in as sabdfl and it will work:
 
     >>> login("mark@hbd.com")
+
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
-    [u'package1', u'package2']
+
     >>> [sabdfl_one] = sabdfl.archive.getPublishedSources(name="package1")
     >>> print sabdfl_one.sourcepackagerelease.version
     1.1
@@ -2486,4 +2539,3 @@ already created accordingly.
 
     >>> ppa_with_key.signing_key == cprov.archive.signing_key
     True
-

@@ -24,7 +24,7 @@ from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, SQL
+from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, Or, SQL
 from storm.sqlobject import SQLObjectResultSet
 from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
@@ -40,7 +40,8 @@ from lazr.enum import DBItem
 from canonical.config import config
 
 from canonical.database.sqlbase import (
-    block_implicit_flushes, cursor, SQLBase, sqlvalues, quote, quote_like)
+    SQLBase, block_implicit_flushes, convert_storm_clause_to_string, cursor,
+    quote, quote_like, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -57,6 +58,7 @@ from lp.bugs.interfaces.bugtask import (
     INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
+from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -1638,6 +1640,10 @@ class BugTaskSet:
         if clause:
             extra_clauses.append(clause)
 
+        hw_clause = self._buildHardwareRelatedClause(params)
+        if hw_clause is not None:
+            extra_clauses.append(hw_clause)
+
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
@@ -1796,6 +1802,80 @@ class BugTaskSet:
 
         return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
 
+    def _buildHardwareRelatedClause(self, params):
+        """Hardware related SQL expressions and tables for bugtask searches.
+
+        :return: (tables, clauses) where clauses is a list of SQL expressions
+            which limit a bugtask search to bugs related to a device or
+            driver specified in search_params. If search_params contains no
+            hardware related data, empty lists are returned.
+        :param params: A `BugTaskSearchParams` instance.
+
+        Device related WHERE clauses are returned if
+        params.hardware_bus, params.hardware_vendor_id,
+        params.hardware_product_id are all not None.
+        """
+        # Avoid cyclic imports.
+        from canonical.launchpad.database.hwdb import (
+            HWSubmission, HWSubmissionBug, HWSubmissionDevice,
+            _userCanAccessSubmissionStormClause,
+            make_submission_device_statistics_clause)
+        from lp.bugs.model.bug import Bug, BugAffectsPerson
+
+        bus = params.hardware_bus
+        vendor_id = params.hardware_vendor_id
+        product_id = params.hardware_product_id
+        driver_name = params.hardware_driver_name
+        package_name = params.hardware_driver_package_name
+
+        if (bus is not None and vendor_id is not None and
+            product_id is not None):
+            tables, clauses = make_submission_device_statistics_clause(
+                bus, vendor_id, product_id, driver_name, package_name, False)
+        elif driver_name is not None or package_name is not None:
+            tables, clauses = make_submission_device_statistics_clause(
+                None, None, None, driver_name, package_name, False)
+        else:
+            return None
+
+        tables.append(HWSubmission)
+        tables.append(Bug)
+        clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
+        bug_link_clauses = []
+        if params.hardware_owner_is_bug_reporter:
+            bug_link_clauses.append(
+                HWSubmission.ownerID == Bug.ownerID)
+        if params.hardware_owner_is_affected_by_bug:
+            bug_link_clauses.append(
+                And(BugAffectsPerson.personID == HWSubmission.ownerID,
+                    BugAffectsPerson.bug == Bug.id,
+                    BugAffectsPerson.affected))
+            tables.append(BugAffectsPerson)
+        if params.hardware_owner_is_subscribed_to_bug:
+            bug_link_clauses.append(
+                And(BugSubscription.personID == HWSubmission.ownerID,
+                    BugSubscription.bugID == Bug.id))
+            tables.append(BugSubscription)
+        if params.hardware_is_linked_to_bug:
+            bug_link_clauses.append(
+                And(HWSubmissionBug.bugID == Bug.id,
+                    HWSubmissionBug.submissionID == HWSubmission.id))
+            tables.append(HWSubmissionBug)
+
+        if len(bug_link_clauses) == 0:
+            return None
+
+        clauses.append(Or(*bug_link_clauses))
+        clauses.append(_userCanAccessSubmissionStormClause(params.user))
+
+        tables = [convert_storm_clause_to_string(table) for table in tables]
+        clauses = ['(%s)' % convert_storm_clause_to_string(clause)
+                   for clause in clauses]
+        clause = 'Bug.id IN (SELECT DISTINCT Bug.id from %s WHERE %s)' % (
+            ', '.join(tables), ' AND '.join(clauses))
+        return clause
+
+
     def search(self, params, *args):
         """See `IBugTaskSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -1923,6 +2003,29 @@ class BugTaskSet:
         bugtask.updateTargetNameCache()
 
         return bugtask
+
+    def getStatusCountsForProductSeries(self, user, product_series):
+        """See `IBugTaskSet`."""
+        bug_privacy_filter = get_bug_privacy_filter(user)
+        if bug_privacy_filter != "":
+            bug_privacy_filter = ' AND ' + bug_privacy_filter
+        cur = cursor()
+        condition = """
+            (BugTask.productseries = %s
+                 OR Milestone.productseries = %s)
+            """ % sqlvalues(product_series, product_series)
+        query = """
+            SELECT BugTask.status, count(*)
+            FROM BugTask
+                JOIN Bug ON BugTask.bug = Bug.id
+                LEFT JOIN Milestone ON BugTask.milestone = Milestone.id
+            WHERE
+                %s
+                %s
+            GROUP BY BugTask.status
+            """ % (condition, bug_privacy_filter)
+        cur.execute(query)
+        return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
                               bug=None, target=None):

@@ -48,16 +48,16 @@ h1 .edit {
 }
 .offscreen {
     position: absolute;
-    left: -999em; 
+    left: -999em;
 }
-span.invisible-link {display:none;} 
-span.invisible {left:-9999em;display:block;} 
+span.invisible-link {display:none;}
+span.invisible {left:-9999em;display:block;}
 .sprite {padding:2px 0 0 18px;}
-.sprite-left {padding:2px 18px 0 0; background-position:left;}
+.sprite-after {padding: 2px 18px 0 0;}
 
 .add {background:url(icon-sprites) 0 0 no-repeat;}
-.edit {background:url(icon-sprites) 0 -32px no-repeat;}
-.remove {background:url(icon-sprites) 0 -64px no-repeat;}
+.edit {background:url(icon-sprites) 100% -32px no-repeat;}
+.remove {background:url(icon-sprites) 100% -64px no-repeat;}
 .info {background:url(icon-sprites) 0 -96px no-repeat;}
 .question {background:url(icon-sprites) 0 -128px no-repeat;}
 .download-icon {background:url(icon-sprites) 0 -160px no-repeat;}
@@ -124,7 +124,7 @@ span.invisible {left:-9999em;display:block;}
 .translate-icon {background:url(icon-sprites-2) 0 -800px no-repeat;}
 .translation-file {background:url(icon-sprites-2) 0 -832px no-repeat;}
 .translation-template {background:url(icon-sprites-2) 0 -864px no-repeat;}
-.trash-icon {background:url(icon-sprites-2) 0 -896px no-repeat;}
+.trash-icon {background:url(icon-sprites-2) 100% -896px no-repeat;}
 .stop {background:url(icon-sprites-2) 0 -928px no-repeat;}
 .bounty {background:url(icon-sprites-2) 0 -960px no-repeat;}
 .list {background:url(icon-sprites-2) 0 -992px no-repeat;}
@@ -274,10 +274,15 @@ a[onclick], .collapsible legend a, a.js-action               {color: #093;}
 a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
 a.js-action:active {color: #093;}
 
+/* The js-action class is also used for non-links, for example, with
+ * expand/collapse sections. */
+.widget-hd.js-action {color: #093; cursor:pointer}
+.widget-hd.js-action:hover {text-decoration: underline;}
+
 /* Help links */
 a.help {
   border-bottom: 1px dotted #03a;
-  cursor: help;}
+  cursor: help;
 }
 a.help:hover, a.help:hover {
   text-decoration: none;
@@ -931,12 +936,16 @@ hierarchy, and the application tabs. */
 /* === Help pane === */
 /*
 Inline help is contained in a <div> and dynamically positioned by JavaScript.
+
+This should appear above all other content.  Needs to be
+above the Google Maps element on the profile pages, which
+has a z-index of 9999.  See bug #380349.
 */
 #help-pane {
   position: absolute;
   border: 1px solid black;
   padding: 1px 1px 5px 10px;
-  z-index: 3000;  /* This should appear above all other content. */
+  z-index: 11000; /* Needs to be at least 9999.  See bug #380349. */
   background-color: #fff;
   width: 600px; /* based on the help wiki, should change later */
 }
@@ -1584,6 +1593,15 @@ div#branch-description {
     margin-top: 1em;
 }
 
+/* Timeline Graph */
+div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
+  visibility: hidden;
+}
+
+div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
+  visibility: visible;
+}
+
 /* The top-most Person portlet, Contact Details, is allowed to float up and
 beside the mugshot. */
 #contact-details {clear: none;}
@@ -1764,20 +1782,29 @@ a.update-retry {
     padding-left: 1em;
 }
 
-/* Information about related PPAs presented in a box */
-.informational.ppa {
-    background: #FAFAFA;
-    border: solid #666;
-    border-width: 1px 2px 2px 1px;
-    color: black;
-    margin: 0 auto 10px auto;
-    padding: 0 10px 10px 20px;
-    width: 80%;
+/* Brand the related PPA versions with the PPA icon (not currently
+   in the sprite image.) */
+div#slide-trigger {
+    padding:8px 0 8px 32px;
+    background:url('/@@/ppa-large') 0 0 no-repeat;
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
 }
-.informational.ppa::before {
-    content: url(/@@/ppa-large);
+div#slide-trigger:hover {
+    text-decoration: underline
+}
+dl#ppa_packaging dd {
+    margin-left: 16px;
+}
+#related-ppa-versions .widget-bd {
+    margin-left: 2em;
+}
+/* Ensure that when we add the lazr-closed class via js that the
+ * slider body will not be visible. */
+#related-ppa-versions .widget-bd.lazr-closed {
+    height: 0px;
+    overflow: hidden;
     display: block;
-    margin: -15px 0 -6px -35px;
 }
 
 /* Archive subscription confirmation should be transparent
@@ -1916,6 +1943,10 @@ body.tab-branches table.listing .section-heading {
   color: #d18b39;
 }
 
+body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead {
+  color: #666666;
+}
+
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
 table.diff {
    white-space: pre-wrap;
@@ -2000,6 +2031,10 @@ div#sub-unsub-spinner {
 }
 .unsub-icon, .editsub-icon {position:absolute; right:8px;}
 
+.highlight-message {
+  margin: 2em 0 2em 0;
+  font-size: 120%;
+}
 
 /* --- Blueprints --- */
 

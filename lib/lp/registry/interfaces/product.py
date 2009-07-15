@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'InvalidProductName',
     'IProduct',
-    'IProductCommercialRestricted',
+    'IProductProjectReviewRestricted',
     'IProductDriverRestricted',
     'IProductEditRestricted',
     'IProductPublic',
@@ -45,8 +45,8 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
-    ILaunchpadUsage)
+    IHasLogo, IHasMugshot,IHasSecurityContact, ILaunchpadUsage)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from lp.registry.interfaces.announcement import IMakesAnnouncements
@@ -60,7 +60,7 @@ from lp.registry.interfaces.project import IProject
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -276,8 +276,8 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
     """`IProduct` properties which require launchpad.Edit permission."""
 
 
-class IProductCommercialRestricted(Interface):
-    """`IProduct` properties which require launchpad.Commercial permission."""
+class IProductProjectReviewRestricted(Interface):
+    """`IProduct` properties which require launchpad.ProjectReview."""
 
     qualifies_for_free_hosting = exported(
         Bool(
@@ -316,7 +316,7 @@ class IProductCommercialRestricted(Interface):
             title=_("Project approved"),
             description=_(
                 "The project is legitimate and its license appears valid. "
-                "Not application to 'Other/Proprietary'.")))
+                "Not applicable to 'Other/Proprietary'.")))
 
 
 class IProductPublic(
@@ -661,6 +661,9 @@ class IProductPublic(
     def getRelease(version):
         """Return the release for this product that has the version given."""
 
+    def getMilestonesAndReleases():
+        """Return all the milestones and releases for this product."""
+
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
@@ -686,13 +689,16 @@ class IProductPublic(
         this Product.
         """
 
+    @operation_parameters(
+        include_inactive=Bool(title=_("Include inactive"),
+                              required=False, default=False))
     @export_read_operation()
     @export_operation_as('get_timeline')
-    def getTimeline():
+    def getTimeline(include_inactive):
         """Return basic timeline data useful for creating a diagram."""
 
 
-class IProduct(IProductEditRestricted, IProductCommercialRestricted,
+class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
                IProductDriverRestricted, IProductPublic):
     """A Product.
 

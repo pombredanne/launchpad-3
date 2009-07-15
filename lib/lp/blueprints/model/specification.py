@@ -27,7 +27,7 @@ from lp.blueprints.interfaces.specification import (
     SpecificationPriority, SpecificationSort)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -145,7 +145,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
-    branch_links = SQLMultipleJoin('SpecificationBranch',
+    linked_branches = SQLMultipleJoin('SpecificationBranch',
         joinColumn='specification',
         orderBy='id')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
@@ -644,6 +644,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
         notify(ObjectCreatedEvent(branch_link))
         return branch_link
 
+    def unlinkBranch(self, branch, user):
+        spec_branch = self.getBranchLink(branch)
+        spec_branch.destroySelf()
+
 
 class HasSpecificationsMixin:
     """A mixin class that implements many of the common shortcut properties
@@ -687,6 +691,24 @@ class SpecificationSet(HasSpecificationsMixin):
         """See ISpecificationSet."""
         self.title = 'Specifications registered in Launchpad'
         self.displayname = 'All Specifications'
+
+    def getStatusCountsForProductSeries(self, product_series):
+        """See `ISpecificationSet`."""
+        cur = cursor()
+        condition = """
+            (Specification.productseries = %s
+                 OR Milestone.productseries = %s)
+            """ % sqlvalues(product_series, product_series)
+        query = """
+            SELECT Specification.implementation_status, count(*)
+            FROM Specification
+                LEFT JOIN Milestone ON Specification.milestone = Milestone.id
+            WHERE
+                %s
+            GROUP BY Specification.implementation_status
+            """ % condition
+        cur.execute(query)
+        return cur.fetchall()
 
     @property
     def all_specifications(self):

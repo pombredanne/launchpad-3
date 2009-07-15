@@ -85,7 +85,9 @@ class cmd_launchpad_server(Command):
 
     def run(self, user_id, port=None, upload_directory=None,
             mirror_directory=None, branchfs_endpoint_url=None, inet=False):
+        from lp.codehosting.bzrutils import install_oops_handler
         from lp.codehosting.vfs import get_lp_server
+        install_oops_handler(user_id)
         lp_server = get_lp_server(
             int(user_id), branchfs_endpoint_url,
             upload_directory, mirror_directory)
