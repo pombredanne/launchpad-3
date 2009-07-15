@@ -66,6 +66,10 @@ class SeriesSourcePackageBranch(Storm):
     def sourcepackage(self):
         return self.distroseries.getSourcePackage(self.sourcepackagename)
 
+    @property
+    def suite_sourcepackage(self):
+        return self.sourcepackage.getSuiteSourcePackage(self.pocket)
+
 
 class SeriesSourcePackageBranchSet:
     """See `ISeriesSourcePackageBranchSet`."""
