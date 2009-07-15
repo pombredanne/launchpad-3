@@ -67,7 +67,7 @@ check_db_merge: $(PY)
 # This can be removed once we move to zc.buildout and we have versioned
 # dependencies, but for now we run both Launchpad and all other
 # dependencies tests for any merge to sourcecode.
-check_sourcecode_merge: build check
+check_sourcecode_merge: check
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
@@ -130,14 +130,14 @@ bin/buildout: download-cache eggs
 	$(PYTHON) bootstrap.py --ez_setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
-$(PY): bin/buildout versions.cfg
+$(PY): bin/buildout versions.cfg buildout.cfg setup.py
 	./bin/buildout configuration:instance_name=${LPCONFIG}
 
 compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
-	${SHHH} sourcecode/lazr-js/tools/build.py \
+	${SHHH} $(PY) sourcecode/lazr-js/tools/build.py \
 		-n launchpad -s lib/canonical/launchpad/javascript \
 		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
 

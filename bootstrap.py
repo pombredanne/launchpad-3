@@ -17,7 +17,7 @@ Simply run this script in a directory containing a buildout.cfg.
 The script accepts buildout command-line options, so you can
 use the -c option to specify an alternate configuration file.
 
-$Id: bootstrap.py 101848 2009-07-13 13:45:10Z gary $
+$Id: bootstrap.py 101879 2009-07-14 01:24:48Z gary $
 """
 
 import os, re, shutil, sys, tempfile, textwrap, urllib, urllib2
@@ -56,13 +56,15 @@ helpstring = __doc__ + textwrap.dedent('''
     By using --ez_setup-source and --download-base to point to local resources,
     you can keep this script from going over the network.
     ''' % configuration)
-match_equals = re.compile(r'(%s)=(\S*)' % ('|'.join(configuration),)).match
+match_equals = re.compile(r'(%s)=(.*)' % ('|'.join(configuration),)).match
 args = sys.argv[1:]
 if args == ['--help']:
     print helpstring
     sys.exit(0)
 
-# defaults
+# If we end up using a temporary directory for storing our eggs, this will
+# hold the path of that directory.  On the other hand, if an explicit directory
+# is specified in the argv, this will remain None.
 tmpeggs = None
 
 while args:
@@ -84,13 +86,13 @@ while args:
 
 for name in ('--ez_setup-source', '--download-base'):
     val = configuration[name]
-    if val is not None and '://' not in val: # we're being lazy.
+    if val is not None and '://' not in val: # We're being lazy.
         configuration[name] = 'file://%s' % (
             urllib.pathname2url(os.path.abspath(os.path.expanduser(val))),)
 
 if (configuration['--download-base'] and
     not configuration['--download-base'].endswith('/')):
-    # download base needs a trailing slash to make the world happy
+    # Download base needs a trailing slash to make the world happy.
     configuration['--download-base'] += '/'
 
 if not configuration['--eggs']:
@@ -99,8 +101,10 @@ else:
     configuration['--eggs'] = os.path.abspath(
         os.path.expanduser(configuration['--eggs']))
 
+# The requirement is what we will pass to setuptools to specify zc.buildout.
+requirement = 'zc.buildout'
 if configuration['--version']:
-    configuration['--version'] = '==' + configuration['--version']
+    requirement += '==' + configuration['--version']
 
 try:
     import pkg_resources
@@ -132,7 +136,7 @@ cmd = [quote(sys.executable),
 if configuration['--download-base']:
     cmd.extend(['-f', quote(configuration['--download-base'])])
 
-cmd.append('zc.buildout' + configuration['--version'])
+cmd.append(requirement)
 
 ws = pkg_resources.working_set
 env = dict(
@@ -153,7 +157,7 @@ if exitcode != 0:
     sys.exit(exitcode)
 
 ws.add_entry(configuration['--eggs'])
-ws.require('zc.buildout' + configuration['--version'])
+ws.require(requirement)
 import zc.buildout.buildout
 args.append('bootstrap')
 zc.buildout.buildout.main(args)
