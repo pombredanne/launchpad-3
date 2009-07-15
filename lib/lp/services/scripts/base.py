@@ -123,6 +123,7 @@ class LaunchpadScript:
         self.logger = scripts.logger(self.options, name)
 
         self.lockfilepath = os.path.join(LOCK_PATH, self.lockfilename)
+
     #
     # Hooks that we expect users to redefine.
     #

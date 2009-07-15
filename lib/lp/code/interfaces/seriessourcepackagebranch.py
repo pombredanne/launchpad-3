@@ -31,6 +31,8 @@ class ISeriesSourcePackageBranch(Interface):
 
     sourcepackage = Attribute('The source package')
 
+    suite_sourcepackage = Attribute('The suite source package')
+
     sourcepackagename = Choice(
         title=_("Package"), required=True, vocabulary='SourcePackageName')
 
