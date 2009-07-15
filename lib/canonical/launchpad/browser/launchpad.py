@@ -184,6 +184,15 @@ class LinkView(LaunchpadView):
     The link is not rendered if it's not enabled and we are not in development
     mode.
     """
+    AFTER_ICONS = ('edit', 'remove', 'trash-icon')
+
+    @property
+    def sprite_class(self):
+        """Return the class used to display the link's icon."""
+        if self.context.icon in self.AFTER_ICONS:
+            return 'sprite-after'
+        else:
+            return 'sprite'
 
     def render(self):
         """Render the menu link if it's enabled or we're in dev mode."""

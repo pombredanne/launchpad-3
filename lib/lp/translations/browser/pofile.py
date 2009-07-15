@@ -23,6 +23,7 @@ from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from lp.translations.browser.translationmessage import (
     BaseTranslationView, CurrentTranslationMessageView)
 from lp.translations.browser.poexportrequest import BaseExportView
@@ -359,6 +360,15 @@ class POFileUploadView(POFileView):
             '<a href="%s/+imports">Translation Import Queue</a>' %(
             canonical_url(self.context.potemplate.translationtarget))))
 
+
+class POFileBatchNavigator(BatchNavigator):
+    """Special BatchNavigator to override the maximum batch size."""
+
+    @property
+    def max_batch_size(self):
+        return config.rosetta.translate_pages_max_batch_size
+
+
 class POFileTranslateView(BaseTranslationView):
     """The View class for a `POFile` or a `DummyPOFile`.
 
@@ -451,10 +461,10 @@ class POFileTranslateView(BaseTranslationView):
             force_start = True # start will be 0, by default
         else:
             force_start = False
-        return BatchNavigator(self._getSelectedPOTMsgSets(),
-                              self.request, size=self.DEFAULT_SIZE,
-                              transient_parameters=["old_show"],
-                              force_start=force_start)
+        return POFileBatchNavigator(self._getSelectedPOTMsgSets(),
+                                    self.request, size=self.DEFAULT_SIZE,
+                                    transient_parameters=["old_show"],
+                                    force_start=force_start)
 
     def _initializeTranslationMessageViews(self):
         """See BaseTranslationView._initializeTranslationMessageViews."""
