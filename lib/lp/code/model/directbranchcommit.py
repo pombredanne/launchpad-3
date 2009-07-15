@@ -11,7 +11,6 @@ __all__ = [
 
 import os.path
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview

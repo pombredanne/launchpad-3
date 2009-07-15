@@ -726,6 +726,8 @@ class HostedBranchPolicy(BranchPolicy):
         at the two locations -- only going as far as BzrDir to avoid getting
         into the mess of branch references and stacked branches.
         """
+        # Avoid circular import
+        from lp.codehosting.puller.worker import StackedOnBranchNotFound
         hosted_url = 'lp-hosted://' + path
         if self._bzrdirExists(hosted_url):
             return hosted_url

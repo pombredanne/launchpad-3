@@ -19,11 +19,11 @@ import bzrlib.ui
 
 from canonical.config import config
 from lp.codehosting.vfs.branchfs import (
-    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, make_branch_mirrorer)
+    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, make_branch_mirrorer)
 from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.code.enums import BranchType
 from canonical.launchpad.webapp import errorlog
-from lazr.uri import URI, InvalidURIError
+from lazr.uri import InvalidURIError
 
 
 __all__ = [
