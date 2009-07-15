@@ -16,7 +16,7 @@ from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview
 
-from lp.codehosting.vfs import get_multi_server
+from lp.codehosting.vfs import get_multi_server, make_branch_mirrorer
 
 
 class ConcurrentUpdateError(Exception):
@@ -49,6 +49,10 @@ class DirectBranchCommit:
     def __init__(self, db_branch, committer=None, bzrserver=None):
         """Create context for direct commit to branch.
 
+        If you use this in a test that calls `useBzrBranches`, create
+        `bzrserver` before calling `useBzrBranches`!  Otherwise it will
+        set up the wrong kind of server.
+
         :param db_branch: a Launchpad `Branch` object.
         :param committer: the `Person` writing to the branch.
         :param bzrserver: an optional bzr server to use.  You can set
@@ -70,8 +74,7 @@ class DirectBranchCommit:
             committer = db_branch.owner
         self.committer = committer
 
-        #mirrorer = BranchMirrorer(HostedBranchPolicy(), None, None)
-        mirrorer = BzrBranch
+        mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
         self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
         self.bzrbranch.lock_write()
         self.is_locked = True

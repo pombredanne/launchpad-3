@@ -18,21 +18,16 @@ from bzrlib.ui import SilentUIFactory
 import bzrlib.ui
 
 from canonical.config import config
-from lp.codehosting.vfs import get_puller_server
+from lp.codehosting.vfs.branchfs import (
+    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, make_branch_mirrorer)
 from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.code.enums import BranchType
-from lp.code.interfaces.branch import get_blacklisted_hostnames
 from canonical.launchpad.webapp import errorlog
 from lazr.uri import URI, InvalidURIError
 
 
 __all__ = [
-    'BadUrl',
-    'BadUrlFile',
-    'BadUrlLaunchpad',
-    'BadUrlSsh',
     'BranchMirrorer',
-    'BranchPolicy',
     'BranchLoopError',
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
@@ -43,25 +38,6 @@ __all__ = [
     'StackedOnBranchNotFound',
     'URLChecker',
     ]
-
-
-class BadUrl(Exception):
-    """Tried to mirror a branch from a bad URL."""
-
-
-class BadUrlSsh(BadUrl):
-    """Tried to mirror a branch from sftp or bzr+ssh."""
-
-
-class BadUrlLaunchpad(BadUrl):
-    """Tried to mirror a branch from launchpad.net."""
-
-
-class BadUrlScheme(BadUrl):
-    """Found a URL with an untrusted scheme."""
-    def __init__(self, scheme, url):
-        BadUrl.__init__(self, scheme, url)
-        self.scheme = scheme
 
 
 class BranchReferenceForbidden(Exception):
@@ -81,14 +57,6 @@ class BranchLoopError(Exception):
 
 class StackedOnBranchNotFound(Exception):
     """Couldn't find the stacked-on branch."""
-
-
-def get_stacked_on_url(branch):
-    """Get the stacked-on URL for 'branch', return None if it not stacked."""
-    try:
-        return branch.get_stacked_on_url()
-    except (errors.NotStacked, errors.UnstackableBranchFormat):
-        return None
 
 
 def get_canonical_url_for_branch_name(unique_name):
@@ -179,75 +147,6 @@ def identical_formats(branch_one, branch_two):
     """
     return (get_vfs_format_classes(branch_one) ==
             get_vfs_format_classes(branch_two))
-
-
-class BranchPolicy:
-    """Policy on how to mirror branches.
-
-    In particular, a policy determines which branches are safe to mirror by
-    checking their URLs and deciding whether or not to follow branch
-    references. A policy also determines how the mirrors of branches should be
-    stacked.
-    """
-
-    def getStackedOnURLForDestinationBranch(self, source_branch,
-                                            destination_url):
-        """Return the URL of the branch to stack the mirrored copy on.
-
-        By default, we stacked the copy on the same URL as the source,
-        relative to the new URL.
-
-        :param source_branch: The branch to be mirrored.
-        :param destination_url: The place to mirror it to.
-        :return: The URL of the branch to stack the mirrored copy on. None if
-            the mirrored copy should not be stacked.
-        """
-        stacked_on_url = get_stacked_on_url(source_branch)
-        if stacked_on_url is None:
-            return None
-        elif '://' in stacked_on_url:
-            # If we've gotten this far, stacked_on_url is "safe" (i.e. it's a
-            # Launchpad URL of some form or other), so we can set the stack on
-            # url of the destination branch to be the most access-method
-            # compatible '/~user/project/branch' string.
-            return URI(stacked_on_url).path
-        else:
-            return stacked_on_url
-
-    def shouldFollowReferences(self):
-        """Whether we traverse references when mirroring.
-
-        Subclasses must override this method.
-
-        If we encounter a branch reference and this returns false, an error is
-        raised.
-
-        :returns: A boolean to indicate whether to follow a branch reference.
-        """
-        raise NotImplementedError(self.shouldFollowReferences)
-
-    def transformFallbackLocation(self, branch, url):
-        """Validate, maybe modify, 'url' to be used as a stacked-on location.
-
-        :param branch:  The branch that is being opened.
-        :param url: The URL that the branch provides for its stacked-on
-            location.
-        :return: (new_url, check) where 'new_url' is the URL of the branch to
-            actually open and 'check' is true if 'new_url' needs to be
-            validated by checkAndFollowBranchReference.
-        """
-        raise NotImplementedError(self.transformFallbackLocation)
-
-    def checkOneURL(self, url):
-        """Check the safety of the source URL.
-
-        Subclasses must override this method.
-
-        :param url: The source URL to check.
-        :raise BadUrl: subclasses are expected to raise this or a subclass
-            when it finds a URL it deems to be unsafe.
-        """
-        raise NotImplementedError(self.checkOneURL)
 
 
 class BranchMirrorer(object):
@@ -457,196 +356,6 @@ class BranchMirrorer(object):
         return branch
 
 
-class HostedBranchPolicy(BranchPolicy):
-    """Mirroring policy for HOSTED branches.
-
-    In summary:
-
-     - don't follow references,
-     - assert we're pulling from a lp-hosted:/// URL.
-    """
-
-    def shouldFollowReferences(self):
-        """See `BranchPolicy.shouldFollowReferences`.
-
-        We do not traverse references for HOSTED branches because that may
-        cause us to connect to remote locations, which we do not allow because
-        we want hosted branches to be mirrored quickly.
-        """
-        return False
-
-    def _bzrdirExists(self, url):
-        """Return whether a BzrDir exists at `url`."""
-        try:
-            BzrDir.open(url)
-        except errors.NotBranchError:
-            return False
-        else:
-            return True
-
-    def _adjustPathURL(self, path):
-        """Given a branch unique name, return the best stacking URL for it.
-
-        If the path represents a hosted branch, then we should return a
-        lp-hosted:/// URL.  If it's mirrored, we should return a
-        lp-mirrored:/// URL.  We tell the difference by trying to open BzrDirs
-        at the two locations -- only going as far as BzrDir to avoid getting
-        into the mess of branch references and stacked branches.
-        """
-        hosted_url = 'lp-hosted://' + path
-        if self._bzrdirExists(hosted_url):
-            return hosted_url
-        mirrored_url = 'lp-mirrored://' + path
-        if self._bzrdirExists(mirrored_url):
-            return mirrored_url
-        raise StackedOnBranchNotFound()
-
-    def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
-
-        For hosted branches, the situation is complicated.
-
-        If the user pushes and the default stacking policy does it's think,
-        the stacked_on_url will be of the form /~user/product/trunk.  If this
-        URL corresponds to a hosted branch, then we want to stack on
-        lp-hosted:///~user/product/trunk, (although the usual URL joining
-        rules would also do the right thing).  If, however, the default stack
-        on branch is mirrored, we need to stack on
-        lp-mirrored:///~user/product/trunk.
-
-        If the user pushes with a command line like::
-
-            $ bzr push lp:~user/project/branch --stacked-on \
-                lp:~user/project/stack-on
-
-        Then the stacked_on_url will be a full bzr+ssh or http URL.  We treat
-        such URLs as if they were just the '/~user/project/branch' part, and
-        process this as above.
-
-        All other URLs are forbidden.
-        """
-        if '://' not in url:
-            return self._adjustPathURL(url), False
-        uri = URI(url)
-        if uri.scheme not in ['http', 'bzr+ssh', 'sftp']:
-            raise BadUrlScheme(uri.scheme, uri)
-        launchpad_domain = config.vhost.mainsite.hostname
-        if uri.underDomain(launchpad_domain):
-            return self._adjustPathURL(uri.path), False
-        else:
-            raise BadUrl(uri)
-
-    def checkOneURL(self, url):
-        """See `BranchPolicy.checkOneURL`.
-
-        If the URL we are mirroring from is anything but a
-        lp-hosted:///~user/project/branch URL, something has gone badly wrong,
-        so we raise AssertionError if that's happened.
-        """
-        uri = URI(url)
-        if uri.scheme != 'lp-hosted':
-            raise AssertionError(
-                "Non-hosted url %r for hosted branch." % url)
-
-
-class MirroredBranchPolicy(BranchPolicy):
-    """Mirroring policy for MIRRORED branches.
-
-    In summary:
-
-     - follow references,
-     - only open non-Launchpad http: and https: URLs.
-    """
-
-    def __init__(self, stacked_on_url=None):
-        self.stacked_on_url = stacked_on_url
-
-    def getStackedOnURLForDestinationBranch(self, source_branch,
-                                            destination_url):
-        """See `BranchPolicy.getStackedOnURLForDestinationBranch`.
-
-        Mirrored branches are stacked on the default stacked-on branch of
-        their product, except when we're mirroring the default stacked-on
-        branch itself.
-        """
-        if self.stacked_on_url is None:
-            return None
-        stacked_on_url = urlutils.join(destination_url, self.stacked_on_url)
-        if destination_url == stacked_on_url:
-            return None
-        return self.stacked_on_url
-
-    def shouldFollowReferences(self):
-        """See `BranchPolicy.shouldFollowReferences`.
-
-        We traverse branch references for MIRRORED branches because they
-        provide a useful redirection mechanism and we want to be consistent
-        with the bzr command line.
-        """
-        return True
-
-    def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
-
-        For mirrored branches, we stack on whatever the remote branch claims
-        to stack on, but this URL still needs to be checked.
-        """
-        return urlutils.join(branch.base, url), True
-
-    def checkOneURL(self, url):
-        """See `BranchPolicy.checkOneURL`.
-
-        We refuse to mirror from Launchpad or a ssh-like or file URL.
-        """
-        uri = URI(url)
-        launchpad_domain = config.vhost.mainsite.hostname
-        if uri.underDomain(launchpad_domain):
-            raise BadUrlLaunchpad(url)
-        for hostname in get_blacklisted_hostnames():
-            if uri.underDomain(hostname):
-                raise BadUrl(url)
-        if uri.scheme in ['sftp', 'bzr+ssh']:
-            raise BadUrlSsh(url)
-        elif uri.scheme not in ['http', 'https']:
-            raise BadUrlScheme(uri.scheme, url)
-
-
-class ImportedBranchPolicy(BranchPolicy):
-    """Mirroring policy for IMPORTED branches.
-
-    In summary:
-
-     - don't follow references,
-     - assert the URLs start with the prefix we expect for imported branches.
-    """
-
-    def shouldFollowReferences(self):
-        """See `BranchPolicy.shouldFollowReferences`.
-
-        We do not traverse references for IMPORTED branches because the
-        code-import system should never produce branch references.
-        """
-        return False
-
-    def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
-
-        Import branches should not be stacked, ever.
-        """
-        raise AssertionError("Import branch unexpectedly stacked!")
-
-    def checkOneURL(self, url):
-        """See `BranchPolicy.checkOneURL`.
-
-        If the URL we are mirroring from does not start how we expect the pull
-        URLs of import branches to start, something has gone badly wrong, so
-        we raise AssertionError if that's happened.
-        """
-        if not url.startswith(config.launchpad.bzr_imports_root_url):
-            raise AssertionError(
-                "Bogus URL for imported branch: %r" % url)
-
-
 class PullerWorker:
     """This class represents a single branch that needs mirroring.
 
@@ -661,20 +370,9 @@ class PullerWorker:
             be based on this.
         :return: A `BranchMirrorer`.
         """
-        if branch_type == BranchType.HOSTED:
-            policy = HostedBranchPolicy()
-        elif branch_type == BranchType.MIRRORED:
-            policy = MirroredBranchPolicy(self.default_stacked_on_url)
-        elif branch_type == BranchType.IMPORTED:
-            policy = ImportedBranchPolicy()
-        else:
-            raise AssertionError(
-                "Unexpected branch type: %r" % branch_type)
-        if self.protocol is not None:
-            log = self.protocol.log
-        else:
-            log = None
-        return BranchMirrorer(policy, self.protocol, log)
+        return make_branch_mirrorer(
+            branch_type, protocol=self.protocol,
+            mirror_stacked_on_url=self.default_stacked_on_url)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
                  default_stacked_on_url, protocol, branch_mirrorer=None,
@@ -742,6 +440,9 @@ class PullerWorker:
         particularly useful for tests that want to mirror a branch and be
         informed immediately of any errors.
         """
+        # Avoid circular import
+        from lp.codehosting.vfs import get_puller_server
+
         server = get_puller_server()
         server.setUp()
         try:
