@@ -7,7 +7,7 @@
     <metal:display-similar-bugs
         use-macro="context/@@+filebug-macros/show-similar-bugs-and-filebug-button" />
   </tal:similar-bugs-list>
-  <tal:no-similar-bugs>
+  <tal:no-similar-bugs condition="not: view/similar_bugs">
     <p>No similar bug reports were found.</p>
   </tal:no-similar-bugs>
 
