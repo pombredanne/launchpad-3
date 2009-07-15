@@ -12,8 +12,8 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.ftests import login_person, logout
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import setupBrowser
-from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.signon.dbpolicy import SSODatabasePolicy
 from canonical.testing import DatabaseFunctionalLayer
 
 

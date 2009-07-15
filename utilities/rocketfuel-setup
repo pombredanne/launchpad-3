@@ -84,6 +84,7 @@ hostnames=$(cat <<EOF
     code.launchpad.dev
     feeds.launchpad.dev
     id.launchpad.dev
+    lists.launchpad.dev
     openid.launchpad.dev
     shipit.edubuntu.dev
     shipit.kubuntu.dev

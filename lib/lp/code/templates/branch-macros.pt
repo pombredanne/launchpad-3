@@ -107,8 +107,8 @@
   <tal:bug-tasks repeat="bug view/linked_bugs">
     <div tal:condition="bug/required:launchpad.View"
          tal:define="bugtask bug/bugtask;
-                     show_edit show_edit|nothing;
-                     ">
+                     show_edit show_edit|nothing;"
+         tal:attributes="id string:buglink-${bug/id}">
       <div class="bug-branch-summary">
       <tal:link replace="structure bugtask/fmt:link" />
       (<span tal:content="bugtask/importance/title"
@@ -122,7 +122,9 @@
        </span>)
        <tal:show-edit condition="show_edit|nothing">
          <a title="Remove link"
-            tal:attributes="href string:+bug/${bug/id}/+delete;">
+            class="delete-buglink"
+            tal:attributes="href string:+bug/${bug/id}/+delete;
+                            id string:delete-buglink-${bug/id}">
            <img src="/@@/remove"/>
          </a>
        </tal:show-edit>
@@ -166,6 +168,7 @@
        </dd></dl>
        </div>
     </div>
+
   </tal:spec-tasks>
 
 </metal:spec-branch-links>

@@ -13,7 +13,7 @@ from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.signon.publisher import IdPublication, OpenIDPublication
+from canonical.signon.publisher import OpenIDPublication
 
 
 class TestAuthenticationOfPersonlessAccounts(TestCaseWithFactory):
@@ -29,19 +29,6 @@ class TestAuthenticationOfPersonlessAccounts(TestCaseWithFactory):
             self.account.id, self.account.displayname,
             self.account.displayname, self.account)
         login(self.email)
-
-    def test_navigate_logged_in_on_id_dot_launchpad_dot_net(self):
-        # A user with the credentials of a personless account will browse
-        # login.launchpad.net logged in as that account.
-        logInPrincipal(self.request, self.principal, self.email)
-        self.request.response.setCookie(
-            config.launchpad_session.cookie, 'xxx')
-
-        publication = IdPublication(None)
-        principal = publication.getPrincipal(self.request)
-        self.failUnless(isinstance(principal, LaunchpadPrincipal),
-                        "%r should be a LaunchpadPrincipal" % (principal,))
-        self.failUnlessEqual(principal.id, self.account.id)
 
     def test_navigate_logged_in_on_login_dot_launchpad_dot_net(self):
         # A user with the credentials of a personless account will browse

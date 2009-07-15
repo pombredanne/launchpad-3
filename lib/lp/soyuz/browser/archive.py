@@ -275,14 +275,14 @@ class ArchiveContextMenu(ContextMenu):
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def admin(self):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')
 
     @enabled_with_permission('launchpad.Append')
     def manage_subscribers(self):
-        text = 'Manage subscriptions'
+        text = 'Manage access'
         link = Link('+subscriptions', text, icon='edit')
 
         # This link should only be available for private archives:
@@ -849,17 +849,17 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     @cachedproperty
     def ppas_for_user(self):
         """Return all PPAs for which the user accessing the page can copy."""
-        return getUtility(IArchiveSet).getPPAsForUser(self.user)
+        return list(getUtility(IArchiveSet).getPPAsForUser(self.user))
 
     @cachedproperty
     def can_copy(self):
         """Whether or not the current user can copy packages to any PPA."""
-        return self.ppas_for_user.count() > 0
+        return len(self.ppas_for_user) > 0
 
     @cachedproperty
     def can_copy_to_context_ppa(self):
         """Whether or not the current user can copy to the context PPA."""
-        return self.user.inTeam(self.context.owner)
+        return self.context.canUpload(self.user)
 
     def createDestinationArchiveField(self):
         """Create the 'destination_archive' field."""

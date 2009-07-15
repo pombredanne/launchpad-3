@@ -10,8 +10,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.database.tests.test_baseopenidstore import (
     BaseStormOpenIDStoreTestsMixin)
-from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.signon.dbpolicy import SSODatabasePolicy
 from canonical.signon.interfaces.openidstore import IProviderOpenIDStore
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCase

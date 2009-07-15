@@ -50,6 +50,15 @@ Launchpad admins however, can get to it.
     >>> print admin_browser.url
     http://launchpad.dev/firefox/+branchvisibility
 
+And members of the Launchpad Commercial team can view the page.
+
+    >>> commercial_browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> commercial_browser.open('http://code.launchpad.dev/firefox')
+    >>> commercial_browser.getLink('Define branch visibility').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/firefox/+branchvisibility
+
 
 == Default policies ==
 

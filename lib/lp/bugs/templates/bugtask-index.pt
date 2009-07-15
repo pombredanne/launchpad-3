@@ -13,14 +13,20 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
-      <script type="text/javascript"
-              tal:define="lp_js string:${icingroot}/build"
-              tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
-      </script>
-      <script type="text/javascript"
-              tal:define="lp_js string:${icingroot}/build"
-              tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
-      </script>
+      <tal:devmode condition="devmode">
+       <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/bugs/subscriber.js">
+       </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
+        </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
+        </script>
+      </tal:devmode>
       <script type="text/javascript">
         YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
             Y.bugs.setup_bugtask_index();
@@ -228,10 +234,7 @@
             </a>
           </div>
           <div style="width: 45%: text-align: right; float: right;" class="clearfix">
-            <tal:editdescription
-                define="link context_menu/editdescription"
-                condition="link/enabled"
-                replace="structure link/@@+inline-suffix" />
+            <a tal:replace="structure context_menu/editdescription/fmt:icon-link" />
             <span tal:condition="view/wasDescriptionModified" class="discreet"
             >(see <a href="comments/0">original description</a>)</span>
           </div>

@@ -113,6 +113,17 @@ setting up Canonical-internal projects.
 Show that the commercial member does not own or drive any projects by
 viewing his +related-software page.
 
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> commercial_member = getUtility(IPersonSet).getByEmail(
+    ...     'commercial-member@canonical.com')
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> celebs.registry_experts.addMember(commercial_member, commercial_member)
+    >>> logout()
+
     >>> browser.open('http://launchpad.dev/~commercial-member/+related-software')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
