@@ -23,7 +23,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
         """Use `SoyuzTestPublisher` to publish some sources in archives."""
         super(TestPublishingSet, self).setUp()
 
-        # Ensure all the builds have been built
+        # Ensure all the builds have been built.
         for build in self.builds:
             build.buildstate = BuildStatus.FULLYBUILT
         self.publishing_set = getUtility(IPublishingSet)
@@ -38,7 +38,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
             self.sources)
         unpublished_builds = self._getBuildsForResults(results)
 
-        self.assertContentEqual(unpublished_builds, self.builds)
+        self.assertContentEqual(self.builds, unpublished_builds)
 
     def test_getUnpublishedBuildsForSources_one_published(self):
         # If we publish a binary for a build, it is no longer returned.
@@ -51,7 +51,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
             self.sources)
         unpublished_builds = self._getBuildsForResults(results)
 
-        self.assertContentEqual(unpublished_builds, self.builds[1:3])
+        self.assertContentEqual(self.builds[1:3], unpublished_builds)
 
     def test_getUnpublishedBuildsForSources_with_cruft(self):
         # SourcePackages that has a superseded binary are still considered
@@ -72,7 +72,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         # The original gedit build should not be included in the results as,
         # even though it is no longer published.
-        self.assertContentEqual(unpublished_builds, self.builds[1:3])
+        self.assertContentEqual(self.builds[1:3], unpublished_builds)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
