@@ -1092,15 +1092,15 @@ are. Contents can be attached to it.
 
    >>> unused = delayed_copy.addSource(a_source_release)
 
-IPackageUpload.acceptFromCopy() checks and accepts a delayed-copy
-record. It also closes related bug reports and grant karma to people
-related with the upload, although it doesn't send any emails.
+IPackageUpload.acceptFromCopy() simply checks and accepts a
+delayed-copy record. Bugs mentioned in the changelog are closed by
+`process-accepted` (transition to ACCEPTED to DONE) see
+closing-bugs-from-changelogs.txt for more information.
+
+   >>> print delayed_copy.status.name
+   NEW
 
    >>> delayed_copy.acceptFromCopy()
-
-   >>> transaction.commit()
-   >>> pop_notifications()
-   []
 
    >>> print delayed_copy.status.name
    ACCEPTED

@@ -19,6 +19,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+
+
 def get_bugs_from_changes_file(changes_file):
     """Parse the changes file and return a list of bugs referenced by it.
 
@@ -53,6 +55,7 @@ def close_bugs(queue_ids):
         queue_item = getUtility(IPackageUploadSet).get(queue_id)
         close_bugs_for_queue_item(queue_item)
 
+
 def can_close_bugs(target):
     """Whether or not bugs should be closed in the given target.
 
@@ -72,6 +75,7 @@ def can_close_bugs(target):
         return False
 
     return True
+
 
 def close_bugs_for_queue_item(queue_item, changesfile_object=None):
     """Close bugs for a given queue item.
@@ -95,11 +99,16 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
         return
 
     if changesfile_object is None:
-        changesfile_object = queue_item.changesfile
+        if queue_item.is_delayed_copy:
+            sourcepackagerelease = queue_item.sources[0].sourcepackagerelease
+            changesfile_object = sourcepackagerelease.upload_changesfile
+        else:
+            changesfile_object = queue_item.changesfile
 
     for source_queue_item in queue_item.sources:
         close_bugs_for_sourcepackagerelease(
             source_queue_item.sourcepackagerelease, changesfile_object)
+
 
 def close_bugs_for_sourcepublication(source_publication):
     """Close bugs for a given sourcepublication.
@@ -119,6 +128,7 @@ def close_bugs_for_sourcepublication(source_publication):
 
     close_bugs_for_sourcepackagerelease(
         sourcepackagerelease, changesfile_object)
+
 
 def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
     """Close bugs for a given source.
