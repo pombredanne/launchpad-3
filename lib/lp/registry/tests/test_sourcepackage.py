@@ -154,6 +154,17 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertEqual(
             dev_sourcepackage, dev_sourcepackage.development_version)
 
+    def test_distribution_sourcepackage(self):
+        # ISourcePackage.distribution_sourcepackage is the distribution source
+        # package for the ISourcePackage.
+        sourcepackage = self.factory.makeSourcePackage()
+        distribution = sourcepackage.distribution
+        distribution_sourcepackage = distribution.getSourcePackage(
+            sourcepackage.sourcepackagename)
+        self.assertEqual(
+            distribution_sourcepackage,
+            sourcepackage.distribution_sourcepackage)
+
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
     """Tests for source package branch linking security."""
