@@ -777,7 +777,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
         series as a branch.
         """
 
-    def associatedSuiteSourcePackages(self):
+    def associatedSuiteSourcePackages():
         """Return the suite source packages that this branch is linked to."""
 
     # subscription-related methods
