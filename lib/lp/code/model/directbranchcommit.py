@@ -90,6 +90,10 @@ class DirectBranchCommit:
 
     @classmethod
     def makeBzrServer(cls):
+        """Create a bzr server to use with one or more `DirectBranchCommit`s.
+
+        Invoke tearDown on the server when you're done with it.  Thank you.
+        """
         server = get_multi_server(write_hosted=True)
         server.setUp()
         return server
