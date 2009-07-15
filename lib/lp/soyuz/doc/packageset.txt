@@ -855,7 +855,7 @@ Persons can have both explicit or non-explicit permissions for package sets.
     primary     sabdfl:  thunderbird ->           UPLOAD (implicit)
 
 Sometimes it's handy to know what permissions apply for a given source
-package irespective of the person.
+package irrespective of the person.
 
     >>> print_permission(
     ...     ap_set.packagesetsForSource(ubuntu_archive, 'mozilla-firefox'))

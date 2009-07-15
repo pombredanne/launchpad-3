@@ -246,7 +246,7 @@ class IArchivePermissionSet(Interface):
         :param archive: The archive the permission applies to.
         :param sourcepackagename: the source package name; can be
             either a string or a `ISourcePackageName`.
-        :param direct_permissions: If set only package sets that directly
+        :param direct_permissions: If set, only package sets that directly
             include the given source will be considered.
 
         :raises SourceNotFound: if a source package with the given

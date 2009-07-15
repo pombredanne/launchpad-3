@@ -457,27 +457,26 @@ class ArchivePermissionSet:
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
         store = IStore(ArchivePermission)
+
         if direct_permissions:
-            query = '''
-                SELECT ap.id FROM archivepermission ap, packagesetsources pss
-                WHERE
-                    ap.packageset = pss.packageset
-                    AND pss.sourcepackagename = ?
-                    AND ap.archive = ?
-            '''
+            origin = SQL('ArchivePermission, PackagesetSources')
+            rset = store.using(origin).find(ArchivePermission, SQL('''
+                ArchivePermission.packageset = PackagesetSources.packageset
+                AND PackagesetSources.sourcepackagename = ?
+                AND ArchivePermission.archive = ?
+                ''', (sourcepackagename.id, archive.id)))
         else:
-            query = '''
-                SELECT ap.id FROM
-                    archivepermission ap,
-                    packagesetsources pss, flatpackagesetinclusion fpsi
-                WHERE
-                    ap.packageset = fpsi.parent
-                    AND pss.packageset = fpsi.child
-                    AND pss.sourcepackagename = ?
-                    AND ap.archive = ?
-            '''
-        query = SQL(query, (sourcepackagename.id, archive.id))
-        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+            origin = SQL(
+                'ArchivePermission, PackagesetSources, '
+                'FlatPackagesetInclusion')
+            rset = store.using(origin).find(ArchivePermission, SQL('''
+                ArchivePermission.packageset = FlatPackagesetInclusion.parent
+                AND PackagesetSources.packageset =
+                    FlatPackagesetInclusion.child
+                AND PackagesetSources.sourcepackagename = ?
+                AND ArchivePermission.archive = ?
+                ''', (sourcepackagename.id, archive.id)))
+        return rset
 
     def isSourceUploadAllowed(self, archive, sourcepackagename, person):
         """See `IArchivePermissionSet`."""
