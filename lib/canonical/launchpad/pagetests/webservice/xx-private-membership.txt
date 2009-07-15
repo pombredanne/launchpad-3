@@ -13,7 +13,7 @@ team.
     >>> response = user_webservice.get(
     ...     member['memberships_details_collection_link'])
     >>> print sorted(response.jsonBody().items())
-    [(u'entries', [{u'status':...}]),
+    [(u'entries', [{...}]),
      (u'resource_type_link',
       u'http://.../#team_membership-page-resource'),
      (u'start', 0),
