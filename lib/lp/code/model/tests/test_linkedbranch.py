@@ -53,6 +53,25 @@ class TestLinkedBranch(TestCaseWithFactory):
         self.assertEqual(
             branch, ICanHasLinkedBranch(suite_sourcepackage).branch)
 
+    def test_distribution_sourcepackage(self):
+        # The linked branch of a distribution source package is the official
+        # branch for the release pocket of the development focus series for
+        # that package. Phew.
+        branch = self.factory.makeAnyBranch()
+        sourcepackage = self.factory.makeSourcePackage()
+        dev_sourcepackage = sourcepackage.development_version
+        pocket = PackagePublishingPocket.RELEASE
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        run_with_login(
+            ubuntu_branches.teamowner,
+            dev_sourcepackage.setBranch, pocket, branch, registrant)
+        distribution = sourcepackage.distribution
+        distribution_sourcepackage = distribution.getSourcePackage(
+            sourcepackage.sourcepackagename)
+        self.assertEqual(
+            branch, ICanHasLinkedBranch(distribution_sourcepackage).branch)
+
     def test_project(self):
         project = self.factory.makeProject()
         self.assertRaises(

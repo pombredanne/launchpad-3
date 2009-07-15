@@ -11,9 +11,12 @@ from zope.component import adapts
 from zope.interface import implements
 
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 
 
 class ProductSeriesLinkedBranch:
@@ -61,3 +64,25 @@ class PackageLinkedBranch:
         package = self.suite_sourcepackage.sourcepackage
         pocket = self.suite_sourcepackage.pocket
         return package.getBranch(pocket)
+
+
+class DistributionPackageLinkedBranch:
+    """Implement a linked branch for an `IDistributionSourcePackage`."""
+
+    adapts(IDistributionSourcePackage)
+    implements(ICanHasLinkedBranch)
+
+    def __init__(self, distribution_sourcepackage):
+        self._distribution_sourcepackage = distribution_sourcepackage
+
+    @property
+    def branch(self):
+        """See `ICanHasLinkedBranch`."""
+        distribution = self._distribution_sourcepackage.distribution
+        current_series = distribution.currentseries
+        sourcepackagename = self._distribution_sourcepackage.sourcepackagename
+        development_package = current_series.getSourcePackage(
+            sourcepackagename)
+        suite_sourcepackage = development_package.getSuiteSourcePackage(
+            PackagePublishingPocket.RELEASE)
+        return ICanHasLinkedBranch(suite_sourcepackage).branch
