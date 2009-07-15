@@ -317,7 +317,8 @@ class ArchivePermissionSet:
         """Helper to convert a possible string name to IPackageset."""
         if isinstance(packageset, basestring):
             name = packageset
-            packageset = Store.of(self).find(Packageset, name=name).one()
+            store = IStore(Packageset)
+            packageset = store.find(Packageset, name=name).one()
             if packageset is not None:
                 return packageset
             else:
