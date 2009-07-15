@@ -129,5 +129,36 @@ class TestSourcesListComment(TestCaseWithFactory):
             "The comment was not included in the sources.list snippet.")
 
 
+class TestOneDistroSeriesOnly(TestCaseWithFactory):
+    """Ensure the correct behaviour when only one distro series is present.
+    """
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.distribution = self.factory.makeDistribution(name='ibuntu')
+
+        # Ensure there is only one series available.
+        self.series = [
+            self.factory.makeDistroRelease(name="feasty", version='9.04'),
+            ]
+        self.entries = SourcesListEntries(
+            self.distribution, 'http://example.com/my/archive',
+            self.series)
+
+        self.view = SourcesListEntriesView(
+            self.entries, LaunchpadTestRequest())
+        self.view.initialize()
+
+    def testNoSelectorForOneSeries(self):
+        # The selector should not be presented when there is only one series
+
+        self.failUnless(self.view.sources_in_more_than_one_series is False)
+
+    def testDefaultDistroSeries(self):
+        # When there is only one distro series it should always be the
+        # default.
+        self.failUnless(self.view.default_series == self.series[0])
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

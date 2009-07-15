@@ -85,6 +85,10 @@ class SourcesListEntriesView(LaunchpadView):
         if len(self.terms) == 0:
             return self.context.distribution.currentseries
 
+        # If we only have one series then we have no choice...just return it.
+        elif len(self.terms) == 1:
+            return self.terms[0].value
+
         # If the caller has indicated that there should not be a default
         # distroseries selected then we return None.
         elif self._initially_without_selection:

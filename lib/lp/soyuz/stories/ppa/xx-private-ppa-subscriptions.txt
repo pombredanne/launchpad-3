@@ -152,11 +152,11 @@ displaying their subscription.
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to...PPA
-        for Mark Shuttleworth
+        breezy-autotest main #Personal subscription of Joe Smith
+        to PPA for Mark Shuttleworth
     deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to...PPA
-        for Mark Shuttleworth
+        breezy-autotest main #Personal subscription of Joe Smith
+        to PPA for Mark Shuttleworth
     Next you need to ...
 
 This page will include information about the signing key, if the archive
@@ -177,11 +177,11 @@ has a signing key:
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to...PPA
-        for Mark Shuttleworth
+        breezy-autotest main #Personal subscription of Joe Smith
+        to PPA for Mark Shuttleworth
     deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to...PPA
-        for Mark Shuttleworth
+        breezy-autotest main #Personal subscription of Joe Smith
+        to PPA for Mark Shuttleworth
     This repository is signed ...
     Next you need to ...
 

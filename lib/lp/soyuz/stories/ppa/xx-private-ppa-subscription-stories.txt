@@ -210,11 +210,11 @@ access details.
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to PPA
-        for Celso Providelo
+        YOUR_UBUNTU_VERSION_HERE main #Personal subscription of Joe Smith
+        to PPA for Celso Providelo
     deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to PPA
-        for Celso Providelo
+        YOUR_UBUNTU_VERSION_HERE main #Personal subscription of Joe Smith
+        to PPA for Celso Providelo
     ...
 
 When Joe navigates back to his current archive subscriptions then the list of
@@ -302,11 +302,11 @@ access details are displayed.
     Custom sources.list entries
     ...
     deb http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Mark Shuttleworth
-        to PPA for Celso Providelo
+        YOUR_UBUNTU_VERSION_HERE main #Personal subscription of
+        Mark Shuttleworth to PPA for Celso Providelo
     deb-src http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Mark Shuttleworth
-        to PPA for Celso Providelo
+        YOUR_UBUNTU_VERSION_HERE main #Personal subscription of
+        Mark Shuttleworth to PPA for Celso Providelo
     ...
 
 When Mark navigates back to his current archive subscriptions then the list of
