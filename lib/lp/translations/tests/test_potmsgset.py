@@ -956,7 +956,7 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
 
     def test_updateTranslation_SharedImportedToSharedImported(self):
         # Corner case for bug #394224:
-        # Adding a shared and a diverged imported message "tm1" and "tm2".
+        # Adding two imported messages, a shared "tm1" and a diverged "tm2".
         # "tm1" is the current message.
         # On importing "tm2" again, we need to make it shared while marking
         # "tm1" to be not imported because two imported shared translations
@@ -994,10 +994,11 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
 
     def test_updateTranslation_DivergedCurrentToDivergedImported(self):
         # Corner case that came up when fixing bug #394224:
-        # Two diverged messages, one imported, the other (current) is not.
-        # Updating to the first one through we ui (is_imported=False) allows
+        # Two diverged messages, one imported "tm1", the other "tm2" (current)
+        # is not.
+        # Updating the first one through web ui (is_imported=False) allows
         # the imported to replace the not imported. The former diverged
-        # current is converged.
+        # current message is converged.
         tm1 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
             is_imported=True, force_diverged=True)
