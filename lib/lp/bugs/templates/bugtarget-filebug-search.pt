@@ -16,12 +16,6 @@
               tal:define="lp_js string:${icingroot}/build"
               tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js">
       </script>
-      <script type="text/javascript">
-          YUI().use(
-            'base', 'io', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
-              Y.bugs.setup_dupe_finder();
-          });
-      </script>
     </tal:devmode>
   </metal:block>
 

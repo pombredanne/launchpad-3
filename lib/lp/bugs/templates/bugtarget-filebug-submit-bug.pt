@@ -12,10 +12,12 @@
 <body>
   <metal:block fill-slot="head_epilogue">
     <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
-    <script type="text/javascript"
-            tal:define="lp_js string:${icingroot}/build"
-            tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js">
-    </script>
+    <tal:devmode condition="devmode">
+      <script type="text/javascript"
+              tal:define="lp_js string:${icingroot}/build"
+              tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js">
+      </script>
+    </tal:devmode>
     <script type="text/javascript">
         YUI().use(
           'base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
