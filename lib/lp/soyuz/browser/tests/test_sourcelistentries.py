@@ -23,7 +23,8 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.distribution = self.factory.makeDistribution(name='ibuntu')
+        self.distribution = self.factory.makeDistribution(
+            name='ibuntu', displayname="Ibuntu")
         self.series = [
             self.factory.makeDistroRelease(name="feasty", version='9.04'),
             self.factory.makeDistroRelease(name="getsy", version='10.09'),
@@ -67,7 +68,7 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
         view = SourcesListEntriesView(self.entries, LaunchpadTestRequest())
         view.initialize()
 
-        self.assertEqual('YOUR_DISTRO_SERIES_HERE', view.default_series_name)
+        self.assertEqual('YOUR_IBUNTU_VERSION_HERE', view.default_series_name)
 
     def testNonRecognisedSeries(self):
         # If the supplied series in the user-agent is not recognized as a
@@ -81,7 +82,7 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
 
         view.initialize()
 
-        self.assertEqual('YOUR_DISTRO_SERIES_HERE', view.default_series_name)
+        self.assertEqual('YOUR_IBUNTU_VERSION_HERE', view.default_series_name)
 
     def testNonRecognisedDistro(self):
         # If the supplied series in the user-agent is not recognized as a
@@ -95,7 +96,7 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
 
         view.initialize()
 
-        self.assertEqual('YOUR_DISTRO_SERIES_HERE', view.default_series_name)
+        self.assertEqual('YOUR_IBUNTU_VERSION_HERE', view.default_series_name)
 
 
 class TestSourcesListComment(TestCaseWithFactory):

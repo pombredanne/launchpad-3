@@ -40,9 +40,9 @@ class SourcesListEntriesView(LaunchpadView):
     def initialize(self):
         self.terms = []
         for series in self.context.valid_series:
-            distro_version = "%(distro_name)s %(distro_version)s" % {
-                'distro_name': self.context.distribution.displayname,
-                'distro_version': series.version
+            distro_version = "%(series_name)s (%(series_version)s)" % {
+                'series_name': series.displayname,
+                'series_version': series.version
                 }
             self.terms.append(SimpleTerm(series, series.name, distro_version))
 
@@ -51,14 +51,21 @@ class SourcesListEntriesView(LaunchpadView):
         # default series, then add an option to force the user to select
         # a distroseries.
         if self._initially_without_selection or self.default_series is None:
+            initial_selection = "Choose your %s version" % (
+                    self.context.distribution.displayname)
             self.terms.insert(0, SimpleTerm(
-                None, 'YOUR_DISTRO_SERIES_HERE',"Choose your %s version" % (
-                    self.context.distribution.displayname)))
+                None, self.initial_value_without_selection,
+                initial_selection))
 
         field = Choice(__name__='series', title=_("Distro Series"),
                        vocabulary=SimpleVocabulary(self.terms), required=True)
         setUpWidget(self, 'series',  field, IInputWidget)
         self.series_widget.extra = "onChange='updateSeries(this);'"
+
+    @property
+    def initial_value_without_selection(self):
+        return "YOUR_%s_VERSION_HERE" % (
+            self.context.distribution.displayname.upper())
 
     @property
     def plain_series_widget(self):
@@ -124,5 +131,5 @@ class SourcesListEntriesView(LaunchpadView):
         else:
             # Return the select value for the generic text noting to the
             # user that they should select a distroseries.
-            return 'YOUR_DISTRO_SERIES_HERE'
+            return self.initial_value_without_selection
 
