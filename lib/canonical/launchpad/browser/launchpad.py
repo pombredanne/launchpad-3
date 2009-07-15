@@ -574,6 +574,13 @@ class LaunchpadRootNavigation(Navigation):
         return self.redirectSubTree(
             urlappend(new_url, '/'.join(self.request.stepstogo)))
 
+    @stepto('+oops+')
+    def request_oops(self):
+        """Request an oops to be generated at the end of processing."""
+        self.request.request_oops = True
+        # Keep the current context (which should be LaunchpadRoot).
+        return self.context
+
     # XXX cprov 2009-03-19 bug=345877: path segments starting with '+'
     # should never correspond to a valid traversal, they confuse the
     # hierarchical navigation model.

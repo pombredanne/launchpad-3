@@ -16,11 +16,11 @@ import logging
 import types
 import urllib
 
-from zope.interface import implements
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-
+from lazr.restful.utils import get_current_browser_request
 from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
+from zope.interface import implements
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
 from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
@@ -517,6 +517,7 @@ class ErrorReportRequest:
     implements(IErrorReportRequest)
 
     oopsid = None
+    request_oops = False
 
 
 class ScriptRequest(ErrorReportRequest):
@@ -567,3 +568,23 @@ def end_request(event):
         globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
+
+
+class UserRequestOops(Exception):
+    """A user requested OOPS to log statements."""
+
+
+def user_requested_oops():
+    """If an OOPS has been requested, report one.
+
+    :return: The oopsid of the requested oops.  Returns None if an oops was
+        not requested, or if there is already an OOPS.
+    """
+    request = get_current_browser_request()
+    # If there is no request, or there is an oops already, then return.
+    if request is None or request.oopsid is not None:
+        return None
+    if request.request_oops:
+        globalErrorUtility.raising(
+            (UserRequestOops, UserRequestOops(request), None), request)
+    return request.oopsid
