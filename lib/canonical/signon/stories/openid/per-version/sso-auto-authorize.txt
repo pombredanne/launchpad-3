@@ -23,7 +23,7 @@ automatically authorized:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.signon.interfaces.openidserver import (
+    >>> from lp.services.openid.interfaces.openidrpconfig import (
     ...     IOpenIDRPConfigSet)
 
     >>> login('admin@canonical.com')
