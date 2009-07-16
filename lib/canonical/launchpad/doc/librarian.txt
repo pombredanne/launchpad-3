@@ -294,7 +294,7 @@ Trying to access that file directly on the normal librarian will fail
     >>> urlopen(sneaky_url).read()
     Traceback (most recent call last):
       ...
-    HTTPError: HTTP Error 404: Not Found
+    httperror_seek_wrapper: HTTP Error 404: Not Found
 
 But downloading it from the restricted host, will work.
 

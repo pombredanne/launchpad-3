@@ -40,7 +40,7 @@ will fail because request tokens can be used only once.
     ...     'http://launchpad.dev/+access-token', data=urlencode(data))
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 401: Unauthorized
+    httperror_seek_wrapper: HTTP Error 401: Unauthorized
 
 The token's context, when not None, is sent to the consumer together
 with the token's key and secret.

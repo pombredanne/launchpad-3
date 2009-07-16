@@ -39,7 +39,7 @@ class TestBug358498(TestCaseWithFactory):
         """
         logout()
         browser = setupBrowser()
-        browser.open(root_url + '/token/' + token.token)
+        browser.open(root_url + '/token/' + token.token.encode('utf8'))
         browser.getControl(name='field.email').value = token.email
         browser.getControl(name='field.password').value = 'test'
         browser.getControl(name='field.password_dupe').value = 'test'

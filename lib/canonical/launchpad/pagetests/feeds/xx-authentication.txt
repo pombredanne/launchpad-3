@@ -23,4 +23,4 @@ unauthenticated anonymous user for all interaction.
     >>> browser.open('http://feeds.launchpad.dev/bugs/14/bug.atom')
     Traceback (most recent call last):
       ...
-    HTTPError: HTTP Error 403: Forbidden
+    httperror_seek_wrapper: HTTP Error 403: Forbidden

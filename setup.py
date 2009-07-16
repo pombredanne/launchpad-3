@@ -72,6 +72,7 @@ setup(
         'zope.formlib',
         'zope.i18n',
         'zope.interface',
+        'zope.hookable', # indirect, via zope.app.component
         'zope.lifecycleevent',
         'zope.location',
         'zope.pagetemplate',

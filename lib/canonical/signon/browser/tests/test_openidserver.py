@@ -317,7 +317,8 @@ class TestPasswordResetViewForLaunchpadPerson(TestCaseWithFactory):
         """
         logout()
         browser = setupBrowser()
-        browser.open('http://openid.launchpad.dev/token/' + token.token)
+        browser.open(
+            'http://openid.launchpad.dev/token/' + token.token.encode('utf8'))
         browser.getControl(name='field.email').value = token.email
         browser.getControl(name='field.password').value = 'test'
         browser.getControl(name='field.password_dupe').value = 'test'

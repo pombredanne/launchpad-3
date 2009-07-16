@@ -58,8 +58,9 @@ def reset_logging():
     logging._handlers.clear()
 
     # Reset the setup
-    import zope.testing.testrunner
-    zope.testing.testrunner.configure_logging()
+    from zope.testing.testrunner.runner import Runner
+    from zope.testing.testrunner.logsupport import Logging
+    Logging(Runner()).global_setup()
 
 # This import registers the 'doctest' Unicode codec.
 import canonical.testing.doctestcodec

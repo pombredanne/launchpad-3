@@ -10,7 +10,7 @@ large and what is the current maximum.
     >>> anon_browser.open('http://launchpad.dev/projects/+all?start=0&batch=1000')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 400: Bad Request
+    httperror_seek_wrapper: HTTP Error 400: Bad Request
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Log in...

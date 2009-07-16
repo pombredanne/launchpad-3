@@ -28,7 +28,7 @@ def finish_registration_through_the_web(token):
 
     Return the Browser object after the registration is finished.
     """
-    token_url = canonical_url(token)
+    token_url = canonical_url(token).encode('utf8')
     logout()
     browser = setupBrowser()
     browser.open(token_url)

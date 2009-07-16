@@ -38,7 +38,7 @@ Found page is generated:
   >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/99999')
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 404: Not Found
+  httperror_seek_wrapper: HTTP Error 404: Not Found
   >>> browser.handleErrors = False
 
 
