@@ -126,9 +126,6 @@ class DistributionTraversable(_BaseTraversable):
 
     def traverse(self, name, segments):
         """See `ITraversable`."""
-        # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
-        # could also try to find a package and then return a reference to its
-        # development focus.
         try:
             return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
         except NoSuchDistroSeries:
