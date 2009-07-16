@@ -30,7 +30,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.signon.browser.openidserver import OpenIDMixin
 from canonical.signon.dbpolicy import SSODatabasePolicy
-from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
+from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from canonical.signon.model.openidserver import OpenIDAuthorization
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
