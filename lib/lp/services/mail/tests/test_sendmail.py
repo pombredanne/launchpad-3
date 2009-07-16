@@ -197,8 +197,10 @@ class TestMailController(TestCase):
         part.set_payload(text)
         MailController.encodeOptimally(part)
         self.assertEqual(text, part.get_payload(decode=True))
-        self.assertEqual('I went to the cafe today.=0A=0D', part.get_payload())
-        self.assertEqual('quoted-printable', part['Content-Transfer-Encoding'])
+        self.assertEqual('I went to the cafe today.=0A=0D',
+                         part.get_payload())
+        self.assertEqual('quoted-printable',
+                         part['Content-Transfer-Encoding'])
 
     def test_encodeOptimally_with_text(self):
         """Mostly-ascii attachments should be encoded as quoted-printable."""
