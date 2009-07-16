@@ -43,10 +43,10 @@ from lazr.restful.interfaces import IWebServiceConfiguration
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
-from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IPerson, IPersonSet,
-    IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
-    TimestampOrderingError, ClockSkew)
+from canonical.launchpad.interfaces.launchpad import (
+    IFeedsApplication, IPrivateApplication, IWebServiceApplication)
+from canonical.launchpad.interfaces.oauth import (
+    ClockSkew, IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError)
 import canonical.launchpad.layers
 
 from canonical.launchpad.webapp.adapter import (
