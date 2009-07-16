@@ -18,11 +18,11 @@ from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.testing import run_with_login, TestCaseWithFactory
 
 
-class TestLinkedBranch(TestCaseWithFactory):
+class TestProductSeriesLinkedBranch(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_product_series(self):
+    def test_branch(self):
         # The linked branch of a product series is its branch attribute.
         product_series = self.factory.makeProductSeries()
         product_series.branch = self.factory.makeProductBranch(
@@ -30,7 +30,12 @@ class TestLinkedBranch(TestCaseWithFactory):
         self.assertEqual(
             product_series.branch, ICanHasLinkedBranch(product_series).branch)
 
-    def test_product(self):
+
+class TestProductLinkedBranch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_branch(self):
         # The linked branch of a product is the linked branch of its
         # development focus product series.
         branch = self.factory.makeProductBranch()
@@ -38,7 +43,12 @@ class TestLinkedBranch(TestCaseWithFactory):
         removeSecurityProxy(product).development_focus.branch = branch
         self.assertEqual(branch, ICanHasLinkedBranch(product).branch)
 
-    def test_suitesourcepackage(self):
+
+class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_branch(self):
         # The linked branch of a suite source package is the official branch
         # for the pocket of that source package.
         branch = self.factory.makeAnyBranch()
@@ -53,7 +63,12 @@ class TestLinkedBranch(TestCaseWithFactory):
         self.assertEqual(
             branch, ICanHasLinkedBranch(suite_sourcepackage).branch)
 
-    def test_distribution_sourcepackage(self):
+
+class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_branch(self):
         # The linked branch of a distribution source package is the official
         # branch for the release pocket of the development focus series for
         # that package. Phew.
@@ -72,7 +87,13 @@ class TestLinkedBranch(TestCaseWithFactory):
         self.assertEqual(
             branch, ICanHasLinkedBranch(distribution_sourcepackage).branch)
 
-    def test_project(self):
+
+class TestProjectLinkedBranch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_cannot_have_linked_branch(self):
+        # Projects cannot have linked branches.
         project = self.factory.makeProject()
         self.assertRaises(
             CannotHaveLinkedBranch, get_linked_branch, project)
