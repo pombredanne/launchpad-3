@@ -16,7 +16,7 @@
 
 <div metal:fill-slot="main"
      tal:define="user request/lp:person;
-                 is_ubuntu_coc_signee user/is_ubuntu_coc_signee|nothing;
+                 is_ubuntu_coc_signer user/is_ubuntu_coc_signer|nothing;
                  gpgkeys user/gpgkeys|nothing">
 
       <ul>
@@ -27,9 +27,9 @@
           tal:replace="context/current_code_of_conduct/datereleased" /></li>
       </ul>
 
-      <div tal:condition="not: is_ubuntu_coc_signee">
+      <div tal:condition="not: is_ubuntu_coc_signer">
 
-        <h2>Sign the Ubuntu Code-of-Conduct</h2>
+        <h2>Sign the Ubuntu Code of Conduct</h2>
 
         Ubuntu community members may commit to observing the Ubuntu Code of
         Conduct by signing it online:
@@ -66,7 +66,7 @@
         </ol>
       </div>
 
-      <div tal:condition="is_ubuntu_coc_signee">
+      <div tal:condition="is_ubuntu_coc_signer">
         Congratulations; you have already <a tal:attributes="href
         string:${user/fmt:url}/+codesofconduct">signed</a> the Ubuntu Code
         of Conduct.

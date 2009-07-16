@@ -47,7 +47,7 @@ class CodeOfConductConf:
     prefix = 'Ubuntu Code of Conduct - '
     currentrelease = '1.0.1'
     # Set the datereleased to the date that 1.0 CoC was released,
-    # preserving everyone's Ubuntu Code-of-Conduct signatory status.
+    # preserving everyone's Ubuntu Code of Conduct signatory status.
     # https://launchpad.net/products/launchpad/+bug/48995
     datereleased = datetime(2005, 4, 12, tzinfo=pytz.timezone("UTC"))
 

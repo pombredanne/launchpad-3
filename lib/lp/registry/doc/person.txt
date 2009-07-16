@@ -353,9 +353,9 @@ Non-administrators may not change a person's standing.
 Some people have signed the latest version of the Ubuntu Code of Conduct and
 others have not.
 
-    >>> foobar.is_ubuntu_coc_signee
+    >>> foobar.is_ubuntu_coc_signer
     True
-    >>> lifeless.is_ubuntu_coc_signee
+    >>> lifeless.is_ubuntu_coc_signer
     False
 
 

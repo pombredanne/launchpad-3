@@ -151,10 +151,10 @@ A person's homepage also lists Karma and status information:
     Member since: 2005-06-06
     Karma: 130
 
-Negative Ubuntu Code-of-Conduct signatory status is only displayed for
+Negative Ubuntu Code of Conduct signatory status is only displayed for
 yourself; others won't see it:
 
-    >>> "Ubuntu Code-of-Conduct signee:" in browser.contents
+    >>> "Signed Ubuntu Code of Conduct:" in browser.contents
     False
 
     >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
@@ -162,7 +162,7 @@ yourself; others won't see it:
     >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
     Bragging rights
     ...
-    Ubuntu Code-of-Conduct signee: No
+    Signed Ubuntu Code of Conduct: No
 
 You can grab certain bits of information programatically:
 

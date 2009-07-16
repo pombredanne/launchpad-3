@@ -53,7 +53,7 @@ class CodeOfConductContextMenu(ContextMenu):
         text = 'Sign this version'
         if (self.context.current and
             self.user and
-            not self.user.is_ubuntu_coc_signee):
+            not self.user.is_ubuntu_coc_signer):
             # Then...
             enabled = True
         else:

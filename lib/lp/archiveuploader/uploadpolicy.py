@@ -224,11 +224,11 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         return False
 
     def checkSignerIsUbuntuCodeOfConductSignee(self, upload):
-        """Reject the upload if not signed by an Ubuntu CoC signee."""
-        if not upload.changes.signer.is_ubuntu_coc_signee:
+        """Reject the upload if not signed by an Ubuntu CoC signer."""
+        if not upload.changes.signer.is_ubuntu_coc_signer:
             upload.reject(
                 'PPA uploads must be signed by an Ubuntu '
-                'code-of-conduct signee.')
+                'Code of Conduct signer.')
 
     def checkSignerIsBetaTester(self, upload):
         """Reject the upload if the upload signer is not a 'beta-tester'.
@@ -285,14 +285,14 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
-        If the upload is target to any PPA it checks if the signer is
-        an Ubuntu code-of-conduct signee and if it is member of
+        If the upload is target to any PPA it checks if the signer is an
+        Ubuntu Code of Conduct signer and if it is member of
         'launchpad-beta-tests'.
         """
         if upload.is_ppa:
             # XXX cprov 2007-06-13: checks for PPA uploads are not yet
             # established. We may decide for only one of the checks.  Either
-            # in a specific team or having an Ubuntu CoC signee (or similar
+            # in a specific team or having an Ubuntu CoC signer (or similar
             # flag). This code will be revisited before releasing PPA
             # publicly.
             self.checkSignerIsUbuntuCodeOfConductSignee(upload)
