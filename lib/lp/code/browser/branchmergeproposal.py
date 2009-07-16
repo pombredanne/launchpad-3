@@ -1025,31 +1025,11 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         if new_status == curr_status:
             return
 
-        # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
-        # would be better as a dict mapping.
-        # See bug #281060.
-        if new_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
-            self.context.setAsWorkInProgress()
-        elif new_status == BranchMergeProposalStatus.NEEDS_REVIEW:
-            self.context.requestReview()
-        elif new_status == BranchMergeProposalStatus.CODE_APPROVED:
-            # Other half of the edge case.  If the status is currently queued,
-            # we need to dequeue, otherwise we just approve the branch.
-            if curr_status == BranchMergeProposalStatus.QUEUED:
-                self.context.dequeue()
-            else:
-                self.context.approveBranch(self.user, rev_id)
-        elif new_status == BranchMergeProposalStatus.REJECTED:
-            self.context.rejectBranch(self.user, rev_id)
-        elif new_status == BranchMergeProposalStatus.QUEUED:
-            self.context.enqueue(self.user, rev_id)
-        elif new_status == BranchMergeProposalStatus.MERGED:
-            self.context.markAsMerged(merge_reporter=self.user)
-        elif new_status == BranchMergeProposalStatus.SUPERSEDED:
+        if new_status == BranchMergeProposalStatus.SUPERSEDED:
             # Redirect the user to the resubmit view.
             self.next_url = canonical_url(self.context, view_name="+resubmit")
         else:
-            raise AssertionError('Unexpected queue status: ' % new_status)
+            self.context.setStatus(new_status, self.user, rev_id)
 
 
 class IAddVote(Interface):
