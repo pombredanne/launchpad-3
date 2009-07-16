@@ -72,8 +72,7 @@
        </thead>
        <tbody class="lesser">
          <tal:batch repeat="packageupload batch">
-           <tal:block
-                define="filelist_class string:queue-${packageupload/displayname}-${packageupload/id}">
+           <tal:block define="filelist_class string:queue-${packageupload/id}">
              <tr class="queue-row">
                 <tal:comment condition="nothing">
                   Every column is top-padded apart from the checkbox
@@ -129,7 +128,29 @@
                   </span>
                 </td>
              </tr>
-             <metal:filelist use-macro="template/macros/package-filelist"/>
+             <tal:copy condition="packageupload/pending_delayed_copy">
+               <tr tal:attributes="class string:${filelist_class}"
+                   tal:define="archive
+                               packageupload/sourcepackagerelease/upload_archive"
+                   style="display:none">
+                 <td />
+                 <td tal:condition="view/availableActions" />
+                 <td>Copied from
+                   <tal:linked condition="archive/required:launchpad.View">
+                     <a tal:attributes="href archive/fmt:url"
+                        tal:content="archive/displayname" />
+                   </tal:linked>
+                   <tal:not_linked
+                     condition="not: archive/required:launchpad.View"
+                     replace="archive/displayname">
+                   </tal:not_linked>
+                 </td>
+                 <td colspan="6" />
+               </tr>
+             </tal:copy>
+             <tal:upload condition="not: packageupload/pending_delayed_copy">
+               <metal:filelist use-macro="template/macros/package-filelist"/>
+             </tal:upload>
            </tal:block>
          </tal:batch>
          <tr tal:condition="view/availableActions">
@@ -230,7 +251,7 @@
           <td tal:condition="view/availableActions"/>
           <td>
             <a tal:attributes="href file/libraryfile/http_url">
-              <tal:filename content="file/libraryfile/filename"/>
+              <tal:filename replace="file/libraryfile/filename"/>
             </a>
             (<tal:size replace="file/libraryfile/content/filesize/fmt:bytes" />)
             <span style="color: red" tal:condition="is_new">NEW</span>
@@ -287,12 +308,16 @@
          alt="[Debian Description Translation Project Indexes]"
          src="/@@/ubuntu-icon"
          title="Debian Description Translation Project Indexes"/>
-    <a tal:attributes="href packageupload/changesfile/http_url;
-                       title string:Changes file for ${packageupload/displayname}">
-      <tal:name replace="string: ${packageupload/displayname}"/>
+    <a tal:condition="not: packageupload/pending_delayed_copy"
+       tal:content="packageupload/displayname"
+       tal:attributes="
+         href packageupload/changesfile/http_url;
+         title string:Changes file for ${packageupload/displayname};">
     </a>
-    <tal:version replace="
-          string: (${packageupload/displayarchs})"/>
+    <tal:pending_delayed_copy_title
+      condition="packageupload/pending_delayed_copy"
+      replace="packageupload/displayname" />
+    <tal:arches replace="string: (${packageupload/displayarchs})"/>
   </div>
 </metal:macro>
 
