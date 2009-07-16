@@ -94,7 +94,7 @@ class TestBranchGetRevision(TestCaseWithFactory):
     def _makeRevision(self, revno):
         # Make a revision and add it to the branch.
         rev = self.factory.makeRevision()
-        br = self.branch.createBranchRevision(revno, rev)
+        self.branch.createBranchRevision(revno, rev)
         return rev
 
     def testGetBySequenceNumber(self):
@@ -117,7 +117,7 @@ class TestBranchGetRevision(TestCaseWithFactory):
         self.assertEqual(1, branch_revision.sequence)
 
     def testNonExistant(self):
-        rev1 = self._makeRevision(1)
+        self._makeRevision(1)
         self.assertTrue(self.branch.getBranchRevision(sequence=2) is None)
         rev2 = self.factory.makeRevision()
         self.assertTrue(self.branch.getBranchRevision(revision=rev2) is None)
@@ -529,7 +529,7 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_stackedBranchDisablesDeletion(self):
         # A branch that is stacked upon cannot be deleted.
-        branch = self.factory.makeAnyBranch(stacked_on=self.branch)
+        self.factory.makeAnyBranch(stacked_on=self.branch)
         self.assertFalse(self.branch.canBeDeleted())
 
     def test_subscriptionDoesntDisableDeletion(self):
@@ -702,8 +702,7 @@ class TestBranchDeletionConsequences(TestCase):
              ' proposal.')),
             merge_proposal2:
             ('delete', _('This branch is the source branch of this merge'
-             ' proposal.'))
-             },
+             ' proposal.'))},
                          self.branch.deletionRequirements())
         self.assertEqual({
             merge_proposal1:
@@ -711,8 +710,7 @@ class TestBranchDeletionConsequences(TestCase):
              ' proposal.')),
             merge_proposal2:
             ('delete', _('This branch is the target branch of this merge'
-             ' proposal.'))
-            },
+             ' proposal.'))},
             merge_proposal1.target_branch.deletionRequirements())
         self.assertEqual({
             merge_proposal1:
@@ -720,8 +718,7 @@ class TestBranchDeletionConsequences(TestCase):
              ' proposal.')),
             merge_proposal2:
             ('alter', _('This branch is the dependent branch of this merge'
-             ' proposal.'))
-            },
+             ' proposal.'))},
             merge_proposal1.dependent_branch.deletionRequirements())
 
     def test_deleteMergeProposalSource(self):
@@ -745,7 +742,6 @@ class TestBranchDeletionConsequences(TestCase):
     def test_deleteMergeProposalDependent(self):
         """break_links enables deleting merge proposal dependant branches."""
         merge_proposal1, merge_proposal2 = self.makeMergeProposals()
-        merge_proposal1_id = merge_proposal1.id
         merge_proposal1.dependent_branch.destroySelf(break_references=True)
         self.assertEqual(None, merge_proposal1.dependent_branch)
 
@@ -778,7 +774,6 @@ class TestBranchDeletionConsequences(TestCase):
     def test_branchWithBugDeletion(self):
         """break_links allows deleting a branch with a bug."""
         bug1 = self.factory.makeBug()
-        bug2 = self.factory.makeBug()
         bug1.linkBranch(self.branch, self.branch.owner)
         bug_branch1 = bug1.linked_branches[0]
         bug_branch1_id = bug_branch1.id
@@ -974,7 +969,7 @@ class StackedBranches(TestCaseWithFactory):
         # some_branch.getStackedBranchesWithIncompleteMirrors does not include
         # stacked branches that haven't been mirrored at all.
         branch = self.factory.makeAnyBranch()
-        stacked_a = self.factory.makeAnyBranch(stacked_on=branch)
+        self.factory.makeAnyBranch(stacked_on=branch)
         self.assertEqual(
             set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
 
@@ -1120,8 +1115,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         branch pair, then another landing target specifying the same pair
         raises.
         """
-        proposal = self.source.addLandingTarget(
-            self.user, self.target, self.dependent)
+        self.source.addLandingTarget(self.user, self.target, self.dependent)
 
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
@@ -1136,8 +1130,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
             self.user, self.target, self.dependent)
         proposal.rejectBranch(self.user, 'some_revision')
         syncUpdate(proposal)
-        new_proposal = self.source.addLandingTarget(
-            self.user, self.target, self.dependent)
+        self.source.addLandingTarget(self.user, self.target, self.dependent)
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
@@ -1637,7 +1630,6 @@ class TestBranchSpecLinks(TestCaseWithFactory):
 
     def test_spec_unlink(self):
         # Branches can be unlinked from the spec as well.
-        user = getUtility(IPersonSet).getByEmail('test@canonical.com')
         branch = self.factory.makeAnyBranch()
         spec = self.factory.makeSpecification()
         branch.linkSpecification(spec, self.user)
