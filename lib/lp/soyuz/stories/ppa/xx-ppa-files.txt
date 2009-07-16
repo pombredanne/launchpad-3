@@ -452,9 +452,7 @@ the page.
 
     >>> main_content = find_main_content(str(not_found_file))
     >>> print extract_text(main_content)
-    Log in / Register
-    &gt; No Privileges Person &gt;
-    PPA for No Privileges Person
+    Lost something?
     ...
     Include the error ID OOPS-...
     ...
