@@ -11,13 +11,13 @@ from bzrlib.branch import Branch as BzrBranch
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError, DirectBranchCommit)
 from lp.testing import TestCaseWithFactory
-from canonical.testing.layers import ZopelessAppServerLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 
 
 class TestDirectBranchCommit(TestCaseWithFactory):
     """Test `DirectBranchCommit`."""
 
-    layer = ZopelessAppServerLayer
+    layer = ZopelessDatabaseLayer
 
     db_branch = None
     committer = None
@@ -25,9 +25,6 @@ class TestDirectBranchCommit(TestCaseWithFactory):
     def setUp(self):
         super(TestDirectBranchCommit, self).setUp()
 
-        # Set up the bzr server before calling useBzrBranches, or
-        # useBzrBranches will set up the wrong kind of server.
-        self.bzrserver = DirectBranchCommit.makeBzrServer()
         self.useBzrBranches()
 
         self.series = self.factory.makeProductSeries()
@@ -42,15 +39,13 @@ class TestDirectBranchCommit(TestCaseWithFactory):
         if self.committer:
             self.committer.unlock()
 
-        self.committer = DirectBranchCommit(
-            self.db_branch, bzrserver=self.bzrserver)
+        self.committer = DirectBranchCommit(self.db_branch)
         if update_last_scanned_id:
             self.db_branch.last_scanned_id = (
                 self.committer.bzrbranch.last_revision())
 
     def tearDown(self):
         self.committer.unlock()
-        self.bzrserver.tearDown()
 
     def _getContents(self):
         """Return branch contents as dict mapping filenames to contents."""

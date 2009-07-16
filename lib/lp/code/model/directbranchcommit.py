@@ -15,7 +15,7 @@ from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview
 
-from lp.codehosting.vfs import get_multi_server, make_branch_mirrorer
+from lp.codehosting.vfs import make_branch_mirrorer
 
 
 class ConcurrentUpdateError(Exception):
@@ -45,29 +45,27 @@ class DirectBranchCommit:
     is_open = False
     is_locked = False
 
-    def __init__(self, db_branch, committer=None, bzrserver=None):
+    def __init__(self, db_branch, committer=None):
         """Create context for direct commit to branch.
 
-        If you use this in a test that calls `useBzrBranches`, create
-        `bzrserver` before calling `useBzrBranches`!  Otherwise it will
-        set up the wrong kind of server.
+        Before constructing a `DirectBranchCommit`, set up a server that
+        allows write access to lp-hosted:/// URLs:
+
+        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver.setUp()
+        try:
+            branchcommit = DirectBranchCommit(branch)
+            # ...
+        finally:
+            bzrserver.tearDown()
+
+        Or in tests, just call `useBzrBranches` before creating a
+        `DirectBranchCommit`.
 
         :param db_branch: a Launchpad `Branch` object.
         :param committer: the `Person` writing to the branch.
-        :param bzrserver: an optional bzr server to use.  You can set
-            one up using `DirectBranchCommit.makeBzrServer`, use it as
-            many times as you like, then tear it down.  Or you can omit
-            this parameter and one will be created (and torn down) for
-            you.
         """
         self.db_branch = db_branch
-
-        if bzrserver is None:
-            self.bzrserver = self.makeBzrServer()
-            self.own_bzrserver = True
-        else:
-            self.bzrserver = bzrserver
-            self.own_bzrserver = False
 
         if committer is None:
             committer = db_branch.owner
@@ -89,16 +87,6 @@ class DirectBranchCommit:
             raise
 
         self.files = set()
-
-    @classmethod
-    def makeBzrServer(cls):
-        """Create a bzr server to use with one or more `DirectBranchCommit`s.
-
-        Invoke tearDown on the server when you're done with it.  Thank you.
-        """
-        server = get_multi_server(write_hosted=True)
-        server.setUp()
-        return server
 
     def _getDir(self, path):
         """Get trans_id for directory "path."  Create if necessary."""
@@ -193,8 +181,3 @@ class DirectBranchCommit:
         if self.is_locked:
             self.bzrbranch.unlock()
             self.is_locked = False
-
-        if self.own_bzrserver:
-            self.bzrserver.tearDown()
-            self.bzrserver = None
-            self.own_bzrserver = False

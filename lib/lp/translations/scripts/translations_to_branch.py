@@ -82,11 +82,11 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         finally:
             committer.unlock()
 
-    def _exportToBranches(self, productserieses):
-        """Loop over `productserieses` and export their translations."""
+    def _exportToBranches(self, productseries_iter):
+        """Loop over `productseries_iter` and export their translations."""
         items_done = 0
         items_failed = 0
-        for source in productserieses:
+        for source in productseries_iter:
             try:
                 self._exportToBranch(source)
 
@@ -130,7 +130,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # testing.
         productseries = productseries.order_by(ProductSeries.id)
 
-        bzrserver = DirectBranchCommit.makeBzrServer()
+        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver.setUp()
         try:
             self._exportToBranches(productseries)
         finally:
