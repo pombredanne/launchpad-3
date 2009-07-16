@@ -384,7 +384,7 @@
       </tr>
     </tal:has-submitter>
 
-    <tal:variables
+    <tal:imported_translation
       define="
         section_title string:Packaged:;
         submission translation_dictionary/imported_translation_message;
@@ -394,7 +394,19 @@
         ">
       <metal:suggestion
          use-macro="context/@@+translationmessage-macros/render-suggestion" />
-    </tal:variables>
+    </tal:imported_translation>
+    <tal:shared_translation
+      condition="translation_dictionary/shared_translation_message"
+      define="
+        section_title string:Shared:;
+        submission translation_dictionary/shared_translation_message;
+        dismissable view/dismissable_class_packaged;
+        form_is_writeable view/form_is_writeable;
+        user_is_official_translator view/user_is_official_translator;
+        ">
+      <metal:suggestion
+         use-macro="context/@@+translationmessage-macros/render-suggestion" />
+    </tal:shared_translation>
     <tal:locked condition="not:context/potmsgset/is_translation_credit">
       <tal:suggestions-title
          condition="translation_dictionary/suggestions_count">

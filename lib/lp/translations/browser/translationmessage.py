@@ -1030,6 +1030,19 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.potmsgset.getImportedTranslationMessage(
                     self.pofile.potemplate,
                     self.pofile.language))
+
+        if self.context.potemplate is None:
+            # Shared translation is current.
+            self.shared_translationmessage = None
+        else:
+            self.shared_translationmessage = (
+                self.context.potmsgset.getSharedTranslationMessage(
+                    self.pofile.language))
+            if (self.shared_translationmessage ==
+                self.imported_translationmessage):
+                # If it matches imported message, we don't care.
+                self.shared_translationmessage = None
+
         self.can_confirm_and_dismiss = False
         self.can_dismiss_on_empty = False
         self.can_dismiss_on_plural = False
@@ -1073,6 +1086,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         for index in self.pluralform_indices:
             current_translation = self.getCurrentTranslation(index)
             imported_translation = self.getImportedTranslation(index)
+            shared_translation = self.getSharedTranslation(index)
             submitted_translation = self.getSubmittedTranslation(index)
             if (submitted_translation is None and
                 self.user_is_official_translator):
@@ -1092,7 +1106,6 @@ class CurrentTranslationMessageView(LaunchpadView):
                 # Imported one matches the current one.
                 imported_submission = None
             elif self.imported_translationmessage is not None:
-
                 imported_submission = (
                     convert_translationmessage_to_submission(
                         message=self.imported_translationmessage,
@@ -1102,9 +1115,21 @@ class CurrentTranslationMessageView(LaunchpadView):
                         legal_warning_needed=False,
                         is_empty=False,
                         packaged=True))
-
             else:
                 imported_submission = None
+
+            if (self.context.potemplate is not None and
+                self.shared_translationmessage is not None):
+                shared_submission = (
+                    convert_translationmessage_to_submission(
+                        message=self.shared_translationmessage,
+                        current_message=self.context,
+                        plural_form=index,
+                        pofile=self.pofile,
+                        legal_warning_needed=False,
+                        is_empty=False))
+            else:
+                shared_submission = None
 
             translation_entry = {
                 'plural_index': index,
@@ -1114,6 +1139,9 @@ class CurrentTranslationMessageView(LaunchpadView):
                 'imported_translation': text_to_html(
                     imported_translation, self.context.potmsgset.flags),
                 'imported_translation_message': imported_submission,
+                'shared_translation': text_to_html(
+                    shared_translation, self.context.potmsgset.flags),
+                'shared_translation_message': shared_submission,
                 'suggestion_block': self.suggestion_blocks[index],
                 'suggestions_count': self.suggestions_count[index],
                 'store_flag': index in self.plural_indices_to_store,
@@ -1331,7 +1359,8 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.seen_translations = iterable_submissions.seen_translations
         return iterable_submissions
 
-    def getOfficialTranslation(self, index, is_imported=False):
+    def getOfficialTranslation(self, index, is_imported=False,
+                               is_shared=False):
         """Return current or imported translation for plural form 'index'."""
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
@@ -1342,6 +1371,11 @@ class CurrentTranslationMessageView(LaunchpadView):
                 return None
 
             translation = self.imported_translationmessage.translations[index]
+        elif is_shared:
+            if self.shared_translationmessage is None:
+                return None
+
+            translation = self.shared_translationmessage.translations[index]
         else:
             translation = self.context.translations[index]
         # We store newlines as '\n', '\r' or '\r\n', depending on the
@@ -1359,6 +1393,10 @@ class CurrentTranslationMessageView(LaunchpadView):
     def getImportedTranslation(self, index):
         """Return the imported translation for the pluralform 'index'."""
         return self.getOfficialTranslation(index, is_imported=True)
+
+    def getSharedTranslation(self, index):
+        """Return the shared translation for the pluralform 'index'."""
+        return self.getOfficialTranslation(index, is_shared=True)
 
     def getSubmittedTranslation(self, index):
         """Return the translation submitted for the pluralform 'index'."""
