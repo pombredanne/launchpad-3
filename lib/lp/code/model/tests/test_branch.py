@@ -467,18 +467,20 @@ class TestBzrIdentity(TestCaseWithFactory):
         ICanHasLinkedBranch(product).setBranch(branch)
         self.assertBzrIdentity(branch, branch.unique_name)
 
-    def test_linked_to_package_release(self):
-        # If a branch is linked to the release pocket of a package, then the
+    def test_linked_to_package(self):
+        # If a branch is linked to a pocket of a package, then the
         # bzr identity is the path to that package.
         branch = self.factory.makePackageBranch()
+        pocket = self.factory.getAnyPocket()
+        linked_branch = ICanHasLinkedBranch(
+            branch.sourcepackage.getSuiteSourcePackage(pocket))
         registrant = getUtility(
             ILaunchpadCelebrities).ubuntu_branches.teamowner
         login_person(registrant)
-        branch.sourcepackage.setBranch(
-            PackagePublishingPocket.RELEASE, branch, registrant)
+        linked_branch.setBranch(branch, registrant)
         logout()
         login(ANONYMOUS)
-        self.assertBzrIdentity(branch, branch.sourcepackage.path)
+        self.assertBzrIdentity(branch, linked_branch.bzr_identity)
 
 
 class TestBranchDeletion(TestCaseWithFactory):
