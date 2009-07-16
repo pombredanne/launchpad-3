@@ -95,18 +95,18 @@
       />
 
     <browser:url
-        for="..interfaces.openidserver.IOpenIDPersistentIdentity"
+        for="lp.services.openid.interfaces.openid.IOpenIDPersistentIdentity"
         path_expression="string:${openid_identifier}"
         parent_utility="..interfaces.openidserver.IOpenIDApplication"
         />
 
     <browser:defaultView
-        for="..interfaces.openidserver.IOpenIDPersistentIdentity"
+        for="lp.services.openid.interfaces.openid.IOpenIDPersistentIdentity"
         name="+index"
         />
 
     <browser:page
-        for="..interfaces.openidserver.IOpenIDPersistentIdentity"
+        for="lp.services.openid.interfaces.openid.IOpenIDPersistentIdentity"
         name="+index"
         template="../templates/openidpersistentidentity-index.pt"
         permission="zope.Public"
@@ -114,7 +114,7 @@
         />
 
     <browser:page
-        for="..interfaces.openidserver.IOpenIDPersistentIdentity"
+        for="lp.services.openid.interfaces.openid.IOpenIDPersistentIdentity"
         name="+xrds"
         permission="zope.Public"
         class=".openiddiscovery.PersistentIdentityView"
@@ -181,4 +181,52 @@
         parent_utility="canonical.signon.interfaces.openidserver.IOpenIDApplication"
         />
 
+    <!-- IAuthToken -->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IAuthToken"
+        name="+index" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IAuthToken"
+        path_expression="token"
+        parent_utility="canonical.launchpad.interfaces.IAuthTokenSet"
+        rootsite="openid"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IAuthToken"
+        name="+index"
+        permission="zope.Public"
+        class="canonical.signon.browser.authtoken.AuthTokenView"
+        template="../../launchpad/templates/logintoken-index.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IAuthToken"
+        name="+validateemail"
+        permission="zope.Public"
+        class="canonical.signon.browser.authtoken.ValidateEmailView"
+        template="../../launchpad/templates/logintoken-validateemail.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IAuthToken"
+        name="+resetpassword"
+        permission="zope.Public"
+        class="canonical.signon.browser.authtoken.ResetAccountPasswordView"
+        template="../../launchpad/templates/logintoken-resetpassword.pt"
+        />
+
+    <browser:page
+        name="+newaccount"
+        for="canonical.launchpad.interfaces.IAuthToken"
+        class="canonical.signon.browser.authtoken.NewAccountView"
+        permission="zope.Public"
+        template="../../launchpad/templates/logintoken-newaccount.pt"
+        />
+
+    <browser:navigation
+        module="canonical.signon.browser.authtoken"
+        classes="AuthTokenSetNavigation"
+        />
 </configure>

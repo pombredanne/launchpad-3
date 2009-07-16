@@ -127,7 +127,6 @@ from lp.soyuz.browser.archive import traverse_named_ppa
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
-from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
 from lp.soyuz.interfaces.archivesubscriber import (
@@ -148,6 +147,7 @@ from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
+from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.answers.interfaces.questionenums import QuestionParticipation
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -179,8 +179,8 @@ from canonical.launchpad.interfaces.message import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
-from canonical.signon.interfaces.openidserver import (
-    IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from lp.soyuz.interfaces.sourcepackagerelease import (
@@ -190,7 +190,7 @@ from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.signon.browser.openiddiscovery import (
+from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
@@ -2970,7 +2970,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     @cachedproperty
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return CurrentOpenIDEndPoint.getServiceURL()
+        return allvhosts.configs['openid'].rooturl + '+openid'
 
     @cachedproperty
     def openid_identity_url(self):

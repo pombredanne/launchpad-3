@@ -17,7 +17,7 @@ casting the account to the IOpenIDPersistentIdentity interface.
     >>> from zope.interface.verify import verifyObject
 
     >>> from canonical.launchpad.interfaces.account import IAccountSet
-    >>> from canonical.signon.interfaces.openidserver import (
+    >>> from lp.services.openid.interfaces.openid import (
     ...     IOpenIDPersistentIdentity)
 
     >>> accountset = getUtility(IAccountSet)

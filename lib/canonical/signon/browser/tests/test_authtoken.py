@@ -4,7 +4,7 @@ import unittest
 
 from zope.testing.doctest import DocTestSuite
 
-from canonical.launchpad.browser import authtoken
+from canonical.signon.browser import authtoken
 
 
 def test_suite():
