@@ -82,6 +82,7 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
 
+
 class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
 
@@ -739,8 +740,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
                 'development focus, then the result should be lp:product.  '
                 'If the branch is related to a series, then '
                 'lp:product/series.  Otherwise the result is '
-                'lp:~user/product/branch-name.'
-                )))
+                'lp:~user/product/branch-name.')))
 
     def addToLaunchBag(launchbag):
         """Add information about this branch to `launchbag'.
@@ -1079,8 +1079,6 @@ class IBranchDelta(Interface):
     lifecycle_status = Attribute("Old and new lifecycle status, or None.")
     revision_count = Attribute("Old and new revision counts, or None.")
     last_scanned_id = Attribute("The revision id of the tip revision.")
-
-
 
 
 class IBranchCloud(Interface):
