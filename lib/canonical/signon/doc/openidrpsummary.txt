@@ -65,7 +65,7 @@ The method accepts an only_unknown_trust_roots parameter that will
 restrict the list to records for trust roots for which there is no
 IOpenIDRPConfig entry.
 
-    >>> from canonical.signon.interfaces.openidserver import (
+    >>> from lp.services.openid.interfaces.openidrpconfig import (
     ...     IOpenIDRPConfigSet)
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
