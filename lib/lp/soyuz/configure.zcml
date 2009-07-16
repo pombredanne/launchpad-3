@@ -454,6 +454,7 @@
                 permissionsForPerson
                 uploadersForPackageset
                 packagesetsForUploader
+                packagesetsForSource
                 packagesetsForSourceUploader
                 isSourceUploadAllowed"/>
         <require

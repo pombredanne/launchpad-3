@@ -124,9 +124,6 @@ class DistributionSourcePackage(BugTargetBase,
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
 
-    def __getitem__(self, version):
-        return self.getVersion(version)
-
     @property
     def latest_overall_publication(self):
         """See `IDistributionSourcePackage`."""
