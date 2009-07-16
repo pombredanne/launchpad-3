@@ -11,6 +11,7 @@ from zope.component import getUtility
 
 from storm.expr import Join, SQL
 
+from lp.codehosting.vfs import get_multi_server
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
