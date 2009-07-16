@@ -42,6 +42,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.code.model.branch import (
@@ -417,9 +418,10 @@ class TestBzrIdentity(TestCaseWithFactory):
         # If a branch is the development focus branch for a product, then it's
         # bzr identity is lp:product.
         branch = self.factory.makeProductBranch()
-        product = branch.product
-        removeSecurityProxy(product).development_focus.branch = branch
-        self.assertBzrIdentity(branch, product.name)
+        product = removeSecurityProxy(branch.product)
+        linked_branch = ICanHasLinkedBranch(product)
+        linked_branch.setBranch(branch)
+        self.assertBzrIdentity(branch, linked_branch.bzr_identity)
 
     def test_linked_to_product_series(self):
         # If a branch is the development focus branch for a product series,
@@ -427,8 +429,9 @@ class TestBzrIdentity(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         product = branch.product
         series = self.factory.makeProductSeries(product=product)
-        series.branch = branch
-        self.assertBzrIdentity(branch, '%s/%s' % (product.name, series.name))
+        linked_branch = ICanHasLinkedBranch(series)
+        linked_branch.setBranch(branch)
+        self.assertBzrIdentity(branch, linked_branch.bzr_identity)
 
     def test_private_linked_to_product(self):
         # If a branch is private, then the bzr identity is the unique name,
@@ -438,8 +441,8 @@ class TestBzrIdentity(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        product = branch.product
-        removeSecurityProxy(product).development_focus.branch = branch
+        product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(product).setBranch(branch)
         self.assertBzrIdentity(branch, branch.unique_name)
 
     def test_linked_to_series_and_dev_focus(self):
@@ -447,19 +450,21 @@ class TestBzrIdentity(TestCaseWithFactory):
         # branch for a series, the bzr identity will be the storter of the two
         # URLs.
         branch = self.factory.makeProductBranch()
-        product = branch.product
-        removeSecurityProxy(product).development_focus.branch = branch
-        series = self.factory.makeProductSeries(product=product)
-        series.branch = branch
-        self.assertBzrIdentity(branch, product.name)
+        series = self.factory.makeProductSeries(product=branch.product)
+        product_link = ICanHasLinkedBranch(
+            removeSecurityProxy(branch.product))
+        series_link = ICanHasLinkedBranch(series)
+        product_link.setBranch(branch)
+        series_link.setBranch(branch)
+        self.assertBzrIdentity(branch, product_link.bzr_identity)
 
     def test_junk_branch_always_unique_name(self):
         # For junk branches, the bzr identity is always based on the unique
         # name of the branch, even if it's linked to a product, product series
         # or whatever.
         branch = self.factory.makePersonalBranch()
-        product = self.factory.makeProduct()
-        removeSecurityProxy(product).development_focus.branch = branch
+        product = removeSecurityProxy(self.factory.makeProduct())
+        ICanHasLinkedBranch(product).setBranch(branch)
         self.assertBzrIdentity(branch, branch.unique_name)
 
     def test_linked_to_package_release(self):
