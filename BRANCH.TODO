@@ -2,20 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
- - Error handling.
- - Fix the title field escaping nonsense.
- - Deal with the frontpage +filebug.
- - Neuter the form!
- - Deal with Martin's issues:
-   - Enter on the field reloads the page?
-   - I think "no, I need to report this bug" should clean out the
-     results and show you the form. Again, not moving the page at all.
-   - I should still be able to search again for duped, even if I looked
-     at the dupes. You can now, but you should have the button on the
-     summary
-   - When searching for dupes, the input + button moves. It shouldn't. I
-     also thing the button should be replaced by the spinner
-   - For some of the transitions, you could use the slider so it's less
-     surprising
-     - Working on this: it's non-obvious how to make it work, though.
