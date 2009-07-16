@@ -376,3 +376,43 @@ How about the complement set i.e. the packages not shared?
     ...
     ["cnews", "thunderbird"]
 
+
+== Archive permissions and package sets ==
+
+Operating on package set based archive permissions is possible via
+the Launchpad API as well.
+
+The newPackagesetUploader() method is a factory function that adds a new
+permission for a person to upload source packages included in a given
+package set.
+
+    >>> distros = webservice.get("/distros").jsonBody()
+    >>> ubuntu = distros['entries'][0]
+
+Grant upload privileges to 'name12' for package set 'firefox' in the Ubuntu
+main archive.
+
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
+    ...     person=name12['self_link'],
+    ...     packageset='firefox')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+Let's see what we've got:
+
+    >>> from lazr.restful.testing.webservice import pprint_entry
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> pprint_entry(new_permission)
+    archive_link: u'http://.../+archive/primary'
+    component_name: None
+    date_created: ...
+    explicit: False
+    package_set_name: u'firefox'
+    permission: u'Archive Upload Rights'
+    person_link: u'http://.../~name12'
+    resource_type_link: ...
+    self_link: u'http://.../+archive/primary/+upload/name12?type=packageset&item=firefox'
+    source_package_name: None

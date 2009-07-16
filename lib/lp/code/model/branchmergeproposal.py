@@ -282,6 +282,33 @@ class BranchMergeProposal(SQLBase):
         # transitioning to the same state.
         self.queue_status = next_state
 
+    def setStatus(self, status, user=None, revision_id=None):
+        """See `IBranchMergeProposal`."""
+        # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
+        # would be better as a dict mapping.
+        # See bug #281060.
+        if status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
+            self.setAsWorkInProgress()
+        elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
+            self.requestReview()
+        elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
+            self.requestReview()
+        elif status == BranchMergeProposalStatus.CODE_APPROVED:
+            # Other half of the edge case.  If the status is currently queued,
+            # we need to dequeue, otherwise we just approve the branch.
+            if self.queue_status == BranchMergeProposalStatus.QUEUED:
+                self.dequeue()
+            else:
+                self.approveBranch(user, revision_id)
+        elif status == BranchMergeProposalStatus.REJECTED:
+            self.rejectBranch(user, revision_id)
+        elif status == BranchMergeProposalStatus.QUEUED:
+            self.enqueue(user, revision_id)
+        elif status == BranchMergeProposalStatus.MERGED:
+            self.markAsMerged(merge_reporter=user)
+        else:
+            raise AssertionError('Unexpected queue status: ' % status)
+
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
