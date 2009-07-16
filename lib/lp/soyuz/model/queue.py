@@ -367,20 +367,7 @@ class PackageUpload(SQLBase):
         assert self.is_delayed_copy, 'Can only process delayed-copies.'
         assert self.sources.count() == 1, (
             'Source is mandatory for delayed copies.')
-
         self.setAccepted()
-
-        # XXX cprov 2009-06-22 bug=390851: self.sourcepackagerelease
-        # is cached, we cannot rely on it.
-        sourcepackagerelease = self.sources[0].sourcepackagerelease
-
-        # Close bugs if possible, skip imported sources.
-        original_changesfile = sourcepackagerelease.upload_changesfile
-        if original_changesfile is not None:
-            changesfile_object = StringIO.StringIO(
-                original_changesfile.read())
-            close_bugs_for_queue_item(
-                self, changesfile_object=changesfile_object)
 
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
