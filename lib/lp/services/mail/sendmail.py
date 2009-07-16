@@ -22,6 +22,7 @@ __all__ = [
     'simple_sendmail_from_person',
     'raw_sendmail']
 
+from binascii import b2a_qp
 import sha
 import sets
 from email.Encoders import encode_base64
@@ -31,7 +32,6 @@ from email.Header import Header
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email import Charset
-import quopri
 from smtplib import SMTP
 
 from zope.app import zapi
@@ -177,12 +177,26 @@ class MailController(object):
         self.attachments.append(attachment)
 
     @staticmethod
-    def encodeOptimally(part):
+    def encodeOptimally(part, exact=True):
+        """Encode a message part as needed.
+
+        If the part is more than 10% high-bit characters, it will be encoded
+        using base64 encoding.  If the contents are 7-bit and exact is False,
+        the part will not be encoded.  Otherwise, the message will be encoded
+        as quoted-printable.
+
+        If quoted-printable encoding is used, exact will cause all line-ending
+        characters to be quoted.
+
+        :param part: The message part to encode.
+        :param exact: If True, the encoding will ensure newlines are not
+            mangled.  If False, 7-bit attachments will not be encoded.
+        """
         orig_payload = part.get_payload()
-        # Payloads which are completely ascii need no encoding.
-        if is_ascii_only(orig_payload):
+        if not exact and is_ascii_only(orig_payload):
             return
-        quopri_bytes = quopri.encodestring(orig_payload)
+        # Payloads which are completely ascii need no encoding.
+        quopri_bytes = b2a_qp(orig_payload, istext=not exact)
         # If 10% of characters need to be encoded, len is 1.2 times
         # the original len.  If more than 10% need encoding, the result
         # is unlikely to be readable.
