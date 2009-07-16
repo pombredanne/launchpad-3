@@ -64,6 +64,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.person import IPerson
@@ -1129,6 +1130,10 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
 
     if branch.sourcepackage is not None:
         sourcepackage = branch.sourcepackage
+        distro_package = sourcepackage.distribution_sourcepackage
+        linked_branch = ICanHasLinkedBranch(distro_package)
+        if linked_branch.branch == branch:
+            return lp_prefix + linked_branch.bzr_identity
         linked_branches = sourcepackage.linked_branches
         for pocket, linked_branch in linked_branches:
             if linked_branch == branch:
