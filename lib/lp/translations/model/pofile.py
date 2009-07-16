@@ -139,6 +139,10 @@ def _can_edit_translations(pofile, person):
     translation team for the given `IPOFile`.translationpermission and the
     language associated with this `IPOFile`.
     """
+    # Nothing can be edited in read-only mode.
+    if config.launchpad.read_only:
+        return False
+
     # If the person is None, then they cannot edit
     if person is None:
         return False
@@ -180,6 +184,10 @@ def _can_add_suggestions(pofile, person):
     any logged-in user for translations in RESTRICTED mode that have a
     translation team assigned.
     """
+    # No suggestions can be added in read-only mode.
+    if config.launchpad.read_only:
+        return False
+
     if person is None:
         return False
 
@@ -553,13 +561,11 @@ class POFile(SQLBase, POFileMixIn):
 
     def canEditTranslations(self, person):
         """See `IPOFile`."""
-        return (not config.launchpad.read_only and
-                _can_edit_translations(self, person))
+        return _can_edit_translations(self, person)
 
     def canAddSuggestions(self, person):
         """See `IPOFile`."""
-        return (not config.launchpad.read_only and
-                _can_add_suggestions(self, person))
+        return _can_add_suggestions(self, person)
 
     def translated(self):
         """See `IPOFile`."""
