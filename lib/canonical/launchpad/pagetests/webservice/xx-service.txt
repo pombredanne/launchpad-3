@@ -22,9 +22,23 @@ Members of the beta team aren't redirected to the beta site on API call.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
-    >>> beta_admin = getUtility(IPersonSet).getByName('launchpad-beta-owner')
+    >>> beta_admin = getUtility(IPersonSet).getByEmail(
+    ...     'beta-admin@launchpad.net')
     >>> beta_user = webservice_for_person(beta_admin)
     >>> logout()
+
+A request to the web site is redirected:
+
+    >>> print http('GET /~launchpad-beta-owner HTTP/1.1\n'
+    ... 'Host: launchpad.dev\n'
+    ... 'Authorization: Basic %s\n' %
+    ...     "beta-admin@launchpad.net:test".encode('base64'))
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://beta.launchpad.dev/~launchpad-beta-owner
+    ...
+
+But not a request to the web service:
 
     >>> print beta_user.get("/~launchpad-beta-owner")
     HTTP/1.1 200 Ok
