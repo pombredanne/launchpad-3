@@ -68,6 +68,12 @@
             template="../templates/rosetta-status-legend.pt"/>
     </browser:pages>
     <browser:page
+        for="*"
+        name="+translationmessage-macros"
+        facet="translations"
+        permission="zope.Public"
+        template="../templates/translationmessage-macros.pt"/>
+    <browser:page
         for="lp.translations.interfaces.translationgroup.IHasTranslationGroup"
         facet="translations"
         permission="zope.Public"
