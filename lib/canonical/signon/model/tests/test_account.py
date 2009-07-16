@@ -13,6 +13,7 @@ from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.signon.dbpolicy import SSODatabasePolicy
+from canonical.signon.interfaces.ssoaccount import ISSOAccount
 from canonical.launchpad.database.tests.test_account import (
     EmailManagementTests)
 
@@ -37,7 +38,7 @@ class EmailManagementWithSSODatabasePolicyTests(EmailManagementTests):
             account, account.preferredemail.email,
             u"unvalidated-email@example.org", LoginTokenType.VALIDATEEMAIL,
             None)
-        self.assertEqual(account.getUnvalidatedEmails(),
+        self.assertEqual(ISSOAccount(account).getUnvalidatedEmails(),
                          [u"unvalidated-email@example.org"])
 
 

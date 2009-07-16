@@ -36,7 +36,7 @@
       <br />
 
       <div id="visited-sites"
-          tal:define="rps view/account/recently_authenticated_rps"
+          tal:define="rps view/sso_account/recently_authenticated_rps"
           tal:condition="rps/count">
         <h3>Sites you last authenticated to</h3>
 
