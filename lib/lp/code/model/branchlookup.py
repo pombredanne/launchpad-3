@@ -132,7 +132,10 @@ class DistributionTraversable(_BaseTraversable):
         try:
             return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
         except NoSuchDistroSeries:
-            return self.context.getSourcePackage(name)
+            sourcepackage = self.context.getSourcePackage(name)
+            if sourcepackage is None:
+                raise
+            return sourcepackage
 
 
 class DistroSeriesTraversable:
