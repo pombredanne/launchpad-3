@@ -126,6 +126,16 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
                                     subscriber.preferredemail.email)
         self.assertEqual([bmp.address], ctrl.to_addrs)
 
+    def test_to_addrs_excludes_people_with_hidden_addresses(self):
+        """The to header excludes those with hidden addresses."""
+        request, requester = self.makeReviewRequest()
+        request.recipient.hide_email_addresses = True
+        bmp = request.merge_proposal
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail(request.recipient,
+                                    request.recipient.preferredemail.email)
+        self.assertEqual([bmp.address], ctrl.to_addrs)
+
     def test_RecordMessageId(self):
         """Ensure that the contents of the mail are as expected"""
         bmp, subscriber = self.makeProposalWithSubscriber()

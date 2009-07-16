@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'collect_import_info',
     'HasTranslationImportsMixin',
     'TranslationImportQueueEntry',
     'TranslationImportQueue'
@@ -16,6 +17,7 @@ import datetime
 import re
 import pytz
 from cStringIO import StringIO
+from textwrap import dedent
 from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
@@ -49,6 +51,8 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     TranslationImportQueueConflictError)
+from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -64,6 +68,37 @@ def is_gettext_name(path):
     """Does given file name indicate it's in gettext (PO or POT) format?"""
     base_name, extension = os.path.splitext(path)
     return extension in GettextPOImporter().file_extensions
+
+
+def collect_import_info(queue_entry, imported_object, warnings):
+    """Collect basic information about import for feedback to user.
+
+    :return: a dict providing substitutions for various items used in
+        generating import notices.
+    """
+    info = {
+        'dateimport': queue_entry.dateimported.strftime('%F %Rz'),
+        'elapsedtime': queue_entry.getElapsedTimeText(),
+        'file_link': queue_entry.content.http_url,
+        'importer': queue_entry.importer.displayname,
+        'max_plural_forms': TranslationConstants.MAX_PLURAL_FORMS,
+        'warnings': '',
+    }
+
+    if IPOTemplate.providedBy(imported_object):
+        template = imported_object
+    else:
+        template = imported_object.potemplate
+    info['template'] = template.displayname
+
+    if warnings:
+        info['warnings'] = dedent("""
+            There were warnings while parsing the file.  These are not
+            fatal, but please correct them if you can.
+
+            %s""") % '\n\n'.join(warnings)
+
+    return info
 
 
 class TranslationImportQueueEntry(SQLBase):
@@ -219,6 +254,14 @@ class TranslationImportQueueEntry(SQLBase):
     def setErrorOutput(self, output):
         """See `ITranslationImportQueueEntry`."""
         self.error_output = output
+
+    def addWarningOutput(self, output):
+        """See `ITranslationImportQueueEntry`."""
+        # Very crude implementation: if there is no error output, and
+        # there is warning output, set error_output to the warning text.
+        # Otherwise, merely keep whatever error_output there already is.
+        if output and not self.error_output:
+            self.setErrorOutput(output)
 
     def _findCustomLanguageCode(self, language_code):
         """Find applicable custom language code, if any."""

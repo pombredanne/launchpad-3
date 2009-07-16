@@ -14,7 +14,7 @@ from lp.testing import TestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.layers import setFirstLayer
-from canonical.signon.layers import IdLayer, OpenIDLayer
+from canonical.signon.layers import  OpenIDLayer
 from canonical.signon.dbpolicy import SSODatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
@@ -34,10 +34,10 @@ class SSODatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def test_defaults(self):
         # Test that the default store are properly set by the policy.
-        self.assertCorrectlyProvides(
+        self.assertProvides(
             getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR),
             ISlaveStore)
-        self.assertCorrectlyProvides(
+        self.assertProvides(
             getUtility(IStoreSelector).get(AUTH_STORE, DEFAULT_FLAVOR),
             IMasterStore)
 
@@ -78,15 +78,7 @@ class SSOLayerDatabaseRegistrationTestCase(TestCase):
         policy = IDatabasePolicy(request)
         self.assertIsInstance(policy, SSODatabasePolicy)
 
-    def test_IdLayer_uses_SSODatabasePolicy(self):
-        # Test that the IdLayer uses the SSODatabasePolicy.
-        request = LaunchpadTestRequest(
-            SERVER_URL='http://openid.launchpad.dev/+openid')
-        setFirstLayer(request, IdLayer)
-        policy = IDatabasePolicy(request)
-        self.assertIsInstance(policy, SSODatabasePolicy)
-
-    def test_read_only_mode_IdLayer_uses_SSODatabasePolicy(self):
+    def test_read_only_mode_OpenIDLayer_uses_SSODatabasePolicy(self):
         # Test that the OpenIDLayer in read-only mode uses the 
         # SSODatabasePolicy.
         config.push('read_only', """
@@ -95,7 +87,7 @@ class SSOLayerDatabaseRegistrationTestCase(TestCase):
         try:
             request = LaunchpadTestRequest(
                 SERVER_URL='http://openid.launchpad.dev/+openid')
-            setFirstLayer(request, IdLayer)
+            setFirstLayer(request, OpenIDLayer)
             policy = IDatabasePolicy(request)
             self.assertIsInstance(policy, SSODatabasePolicy)
         finally:

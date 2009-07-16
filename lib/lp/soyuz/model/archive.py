@@ -878,6 +878,12 @@ class Archive(SQLBase):
         return permission_set.newPackageUploader(
             self, person, source_package_name)
 
+    def newPackagesetUploader(self, person, packageset, explicit=False):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newPackagesetUploader(
+            self, person, packageset, explicit)
+
     def newComponentUploader(self, person, component_name):
         """See `IArchive`."""
         if self.is_ppa:

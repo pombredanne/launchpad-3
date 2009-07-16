@@ -69,13 +69,14 @@ from lp.code.enums import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter,
     BranchMergeProposalStatus, BranchType)
 from lp.code.interfaces.branch import (
-    bazaar_identity,  DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    bazaar_identity, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchBatchNavigator)
 from lp.code.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.browser.product import (
@@ -154,6 +155,10 @@ class BranchListingItem(BranchBadges):
         self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
 
+    def associatedProductSeries(self):
+        """Override the IBranch.associatedProductSeries."""
+        return self.associated_product_series
+
     @property
     def active_series(self):
         return [series for series in self.associated_product_series
@@ -162,9 +167,7 @@ class BranchListingItem(BranchBadges):
     @property
     def bzr_identity(self):
         """Produce the bzr identity from our known associated series."""
-        return bazaar_identity(
-            self.context, self.associated_product_series,
-            self.is_development_focus)
+        return bazaar_identity(self, self.is_development_focus)
 
     @property
     def since_updated(self):
@@ -1111,7 +1114,7 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
             text = 'unmerged proposals'
         return Link('+approvedmerges', text)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit', site='mainsite')
@@ -1169,6 +1172,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initialize(self):
         ProductBranchListingView.initialize(self)
         self.product = self.context
+        revision_cache = getUtility(IRevisionCache)
+        self.revision_cache = revision_cache.inProduct(self.product)
 
     @property
     def form_action(self):
@@ -1182,37 +1187,14 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             }
 
     @cachedproperty
-    def _recent_revisions(self):
-        """Revisions for this project created in the last 30 days."""
-        # The actual number of revisions for any given project are likely
-        # to be small(ish).  We also need to be able to traverse over the
-        # actual revision authors in order to get an accurate count.
-        revisions = list(
-            getUtility(IRevisionSet).getRecentRevisionsForProduct(
-                product=self.context, days=30))
-        # XXX: thumper 2008-04-24
-        # How best to warn if the limit is getting too large?
-        # And how much is too much anyway.
-        return revisions
-
-    @property
     def commit_count(self):
         """The number of new revisions in the last 30 days."""
-        return len(self._recent_revisions)
+        return self.revision_cache.count()
 
     @cachedproperty
     def committer_count(self):
         """The number of committers in the last 30 days."""
-        # Record a set of tuples where the first part is a launchpad
-        # person name if know, and the second part is the revision author
-        # text.  Only one part of the tuple will be set.
-        committers = set()
-        for (revision, author) in self._recent_revisions:
-            if author.personID is None:
-                committers.add((None, author.name))
-            else:
-                committers.add((author.personID, None))
-        return len(committers)
+        return self.revision_cache.authorCount()
 
     @cachedproperty
     def _branch_owners(self):
