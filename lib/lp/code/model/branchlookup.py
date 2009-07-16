@@ -134,7 +134,10 @@ class DistributionTraversable(_BaseTraversable):
         except NoSuchDistroSeries:
             sourcepackage = self.context.getSourcePackage(name)
             if sourcepackage is None:
-                raise
+                if segments:
+                    raise
+                else:
+                    raise NoSuchSourcePackageName(name)
             return sourcepackage
 
 

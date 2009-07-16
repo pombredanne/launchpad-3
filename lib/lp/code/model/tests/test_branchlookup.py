@@ -392,6 +392,14 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         self.assertRaises(
             NoSuchSourcePackageName, self.traverser.traverse, path)
 
+    def test_no_such_distribution_sourcepackage(self):
+        # `traverse` raises `NoSuchSourcePackageName` if the package in
+        # distro/package doesn't exist.
+        distribution = self.factory.makeDistribution()
+        path = '%s/doesntexist' % distribution.name
+        self.assertRaises(
+            NoSuchSourcePackageName, self.traverser.traverse, path)
+
 
 class TestGetByLPPath(TestCaseWithFactory):
     """Ensure URLs are correctly expanded."""
