@@ -642,7 +642,7 @@
         name="+imports"
         class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
         permission="zope.Public"
-        template="../../translations/templates/hastranslationimports-index.pt"
+        template="../templates/hastranslationimports-index.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -847,7 +847,7 @@
         class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
         facet="translations"
         permission="zope.Public"
-        template="../../translations/templates/hastranslationimports-index.pt"
+        template="../templates/hastranslationimports-index.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -857,6 +857,76 @@
         permission="launchpad.TranslationsAdmin"
         template="../templates/distribution-language-pack-admin.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
+
+<!-- DistroSeries -->
+    <browser:defaultView
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:menus
+        classes="
+            DistroSeriesTranslationsMenu"
+        module="lp.translations.browser.distroseries"/>
+
+    <browser:page
+        name="+translations"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.translations.browser.translations.TranslationsRedirectView"
+        permission="zope.Public"/>
+    <browser:pages
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.translations.browser.distroseries.DistroSeriesView"
+        permission="zope.Public"
+        facet="translations"
+        layer="canonical.launchpad.layers.TranslationsLayer">
+        <browser:page
+            name="+translations"
+            template="../templates/distroseries-translations.pt"/>
+        <browser:page
+            name="+langchart"
+            template="../templates/distroseries-langchart.pt"/>
+        <browser:page
+            name="+potlist"
+            template="../templates/object-pots.pt"/>
+    </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.translations.browser.distroseries.DistroSeriesTemplatesView"
+        permission="launchpad.Edit"
+        facet="translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+templates"
+        template="../templates/object-templates.pt" />
+    <browser:page
+        name="+help-translate-button"
+        facet="translations"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.translations.browser.translations.HelpTranslateButtonView"
+        permission="zope.Public"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        permission="launchpad.TranslationsAdmin"
+        class="lp.translations.browser.distroseries.DistroSeriesTranslationsAdminView"
+        name="+admin"
+        facet="translations"
+        template="../templates/distroseries-translationsadmin.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        name="+imports"
+        class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
+        facet="translations"
+        permission="zope.Public"
+        template="../templates/hastranslationimports-index.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.translations.browser.distroseries.DistroSeriesLanguagePackView"
+        permission="zope.Public"
+        facet="translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+language-packs"
+        template="../templates/distroseries-language-packs.pt"/>
 
 
     </facet>
