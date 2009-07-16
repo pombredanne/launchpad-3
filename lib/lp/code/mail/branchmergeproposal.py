@@ -161,6 +161,8 @@ class BMPMailer(BranchMailer):
                 continue
             if vote.reviewer.is_team:
                 continue
+            if vote.reviewer.hide_email_addresses:
+                continue
             to_addrs.append(self._format_user_address(vote.reviewer))
         return to_addrs
 

@@ -114,6 +114,7 @@ class LaunchpadCelebrities:
     debian = CelebrityDescriptor(IDistributionSet, 'debian')
     english = LanguageCelebrityDescriptor(ILanguageSet, 'en')
     gnome_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'gnome-bugs')
+    hwdb_team = CelebrityDescriptor(IPersonSet, 'hwdb-team')
     janitor = CelebrityDescriptor(IPersonSet, 'janitor')
     katie = CelebrityDescriptor(IPersonSet, 'katie')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
