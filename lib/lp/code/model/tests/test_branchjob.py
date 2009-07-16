@@ -621,6 +621,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal(target_branch=job.branch,
                                                    registrant=hacker)
         bmp.source_branch.last_scanned_id = 'rev3-id'
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
