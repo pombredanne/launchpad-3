@@ -49,11 +49,11 @@ We use the webservice as an unrelated, unprivileged user.
     preview_diff_link: None
     queue_position: None
     queue_status: u'Work in progress'
-    queued_revision_id: None
+    queued_revno: None
     queuer_link: None
     registrant_link: u'http://.../~person-name13'
     resource_type_link: u'http://.../#branch_merge_proposal'
-    reviewed_revision_id: None
+    reviewed_revno: None
     reviewer_link: None
     self_link: u'http://.../~source/fooix/fix-it/+merge/...'
     source_branch_link: u'http://.../~source/fooix/fix-it'
@@ -171,13 +171,13 @@ proposal status to "Approved" as well.
 
     >>> _unused = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'setStatus',
-    ...     status=u'Approved', revision_id=u'25')
+    ...     status=u'Approved', revno=u'25')
     >>> merge_proposal = reviewer_webservice.get(
     ...     merge_proposal['self_link']).jsonBody()
 
     >>> print merge_proposal['queue_status']
     Approved
-    >>> print merge_proposal['reviewed_revision_id']
+    >>> print merge_proposal['reviewed_revno']
     25
 
 However, there may have been breakage in the branch, and we need to revert back
@@ -191,7 +191,7 @@ to "Work In Progress" and not specify the revision_id.
 
     >>> print merge_proposal['queue_status']
     Work in progress
-    >>> print merge_proposal['reviewed_revision_id']
+    >>> print merge_proposal['reviewed_revno']
     None
 
 
