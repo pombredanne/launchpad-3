@@ -116,6 +116,7 @@ class DistributionPackageLinkedBranch:
 
     @property
     def bzr_identity(self):
+        """See `ICanHasLinkedBranch`."""
         return '/'.join(
             [self._distribution_sourcepackage.distribution.name,
              self._distribution_sourcepackage.sourcepackagename.name])
