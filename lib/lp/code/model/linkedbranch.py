@@ -110,6 +110,8 @@ class DistributionPackageLinkedBranch:
         """See `ICanHasLinkedBranch`."""
         development_package = (
             self._distribution_sourcepackage.development_version)
+        if development_package is None:
+            return None
         suite_sourcepackage = development_package.getSuiteSourcePackage(
             PackagePublishingPocket.RELEASE)
         return ICanHasLinkedBranch(suite_sourcepackage).branch

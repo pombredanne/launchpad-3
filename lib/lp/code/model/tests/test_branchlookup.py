@@ -18,7 +18,7 @@ from lp.code.interfaces.branchlookup import (
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, NoLinkedBranch)
+    CannotHaveLinkedBranch, ICanHasLinkedBranch, NoLinkedBranch)
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import NoSuchPerson
@@ -520,6 +520,12 @@ class TestGetByLPPath(TestCaseWithFactory):
             CannotHaveLinkedBranch,
             self.branch_lookup.getByLPPath, distribution.name)
         self.assertEqual(distribution, exception.component)
+
+    def test_distribution_with_no_series(self):
+        distro_package = self.factory.makeDistributionSourcePackage()
+        path = ICanHasLinkedBranch(distro_package).bzr_identity
+        self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, path)
 
     def test_project_linked_branch(self):
         # Projects cannot have linked branches, so `getByLPPath` raises a

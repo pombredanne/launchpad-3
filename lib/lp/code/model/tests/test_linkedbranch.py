@@ -141,6 +141,12 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
         self.assertEqual(
             branch, ICanHasLinkedBranch(distribution_sourcepackage).branch)
 
+    def test_branch_when_no_series(self):
+        # Our data model allows distributions that have no series. The linked
+        # branch for a package in such a distribution is always None.
+        distro_package = self.factory.makeDistributionSourcePackage()
+        self.assertIs(None, ICanHasLinkedBranch(distro_package).branch)
+
     def test_setBranch(self):
         # Setting the linked branch for a distribution source package links
         # the branch to the release pocket of the development focus series for
