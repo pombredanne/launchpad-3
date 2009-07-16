@@ -192,6 +192,7 @@
         set_attributes="whiteboard merged_revno commit_message                                                                                                 root_message_id review_diff"
         attributes="
                     deleteProposal
+                    setStatus
                     setAsWorkInProgress
                     requestReview
                     approveBranch
@@ -383,6 +384,7 @@
                     canBeDeleted
                     deletionRequirements
                     associatedProductSeries
+                    associatedSuiteSourcePackages
                     subscribe
                     getSubscription
                     hasSubscription

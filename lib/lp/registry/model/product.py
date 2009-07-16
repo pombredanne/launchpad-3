@@ -19,7 +19,7 @@ import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
     StringCol)
-from storm.locals import And, Join, SQL, Store, Unicode
+from storm.locals import And, Desc, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -910,6 +910,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ProductRelease,
             And(Milestone.product == self,
                 Milestone.name == version)).one()
+
+    def getMilestonesAndReleases(self):
+        """See `IProduct`."""
+        store = Store.of(self)
+        result = store.find(
+            (Milestone, ProductRelease),
+            And(ProductRelease.milestone == Milestone.id,
+                Milestone.productseries == ProductSeries.id,
+                ProductSeries.product == self))
+        return result.order_by(Desc(ProductRelease.datereleased))
 
     def packagedInDistros(self):
         return IStore(Distribution).find(

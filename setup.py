@@ -19,10 +19,11 @@ setup(
     maintainer='Launchpad Developers',
     description=('A unique collaboration and Bazaar code hosting platform '
                  'for software projects.'),
-    license='LGPL v3',
+    license='Affero GPL v3',
     # this list should only contain direct dependencies--things imported or
     # used in zcml.
     install_requires=[
+        'bzr',
         'chameleon.core',
         'chameleon.zpt',
         'feedvalidator',
