@@ -335,7 +335,7 @@ class BranchLookup:
             namespace_set = getUtility(IBranchNamespaceSet)
             segments = iter(path.lstrip('~').split('/'))
             branch = namespace_set.traverse(segments)
-            suffix =  '/'.join(segments)
+            suffix = '/'.join(segments)
             if not check_permission('launchpad.View', branch):
                 raise NoSuchBranch(path)
             if suffix == '':
