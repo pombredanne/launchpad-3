@@ -16,8 +16,14 @@ from zope.interface import Interface
 class ILinkedBranchTraversable(Interface):
     """A thing that can be traversed to find a thing linked to a branch."""
 
-    def traverse(self, name):
-        """Return the object beneath this one that matches 'name'."""
+    def traverse(self, name, segments):
+        """Return the object beneath this one that matches 'name'.
+
+        :param name: The name of the object being traversed to.
+        :param segments: Remaining path segments.
+        :return: An `ILinkedBranchTraversable` object if traversing should
+            continue, an `ICanHasLinkedBranch` object otherwise.
+        """
 
 
 class ILinkedBranchTraverser(Interface):
