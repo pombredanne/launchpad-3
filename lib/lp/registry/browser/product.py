@@ -920,36 +920,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 self.context.homepageurl not in
                     [self.freshmeat_url, self.sourceforge_url])
 
-    @cachedproperty
-    def uses_translations(self):
-        """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and self.primary_translatable)
-
-    @cachedproperty
-    def primary_translatable(self):
-        """Return a dictionary with the info for a primary translatable.
-
-        If there is no primary translatable object, returns an empty
-        dictionary.
-
-        The dictionary has the keys:
-         * 'title': The title of the translatable object.
-         * 'potemplates': a set of PO Templates for this object.
-         * 'base_url': The base URL to reach the base URL for this object.
-        """
-        translatable = self.context.primary_translatable
-        naked_translatable = removeSecurityProxy(translatable)
-
-        if (translatable is None or
-            not isinstance(naked_translatable, ProductSeries)):
-            return {}
-
-        return {
-            'title': translatable.title,
-            'potemplates': translatable.getCurrentTranslationTemplates(),
-            'base_url': canonical_url(translatable)
-            }
-
     def requestCountry(self):
         return ICountry(self.request, None)
 
@@ -1195,11 +1165,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return self.next_url
-
-
-class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
-    label = "Select a new translation group"
-    field_names = ["translationgroup", "translationpermission"]
 
 
 class ProductAdminView(ProductEditView):
