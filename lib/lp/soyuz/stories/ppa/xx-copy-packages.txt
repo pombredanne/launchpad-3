@@ -913,7 +913,7 @@ deleted files will be re-published in his archive.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    pmount - 0.1-1              Pending    Hoary            Editors  i386
+    pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
@@ -1050,7 +1050,7 @@ do not enforce coherent version ordering across suites.
         Status
     foo - 2.0  (changesfile)    Pending    Hoary            Base
     foo - 1.1  (changesfile)    Pending    Warty            Base
-    pmount - 0.1-1              Pending    Hoary            Editors  i386
+    pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
 

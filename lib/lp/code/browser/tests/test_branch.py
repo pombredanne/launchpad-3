@@ -207,6 +207,27 @@ class TestBranchView(TestCaseWithFactory):
         view.initialize()
         self.assertFalse(view.show_merge_links)
 
+    def testNoProductSeriesPushingTranslations(self):
+        # By default, a branch view shows no product series pushing
+        # translations to the branch.
+        branch = self.factory.makeBranch()
+
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertEqual(list(view.translations_sources()), [])
+
+    def testProductSeriesPushingTranslations(self):
+        # If a product series exports its translations to the branch,
+        # the view shows it.
+        product = self.factory.makeProduct()
+        trunk = product.getSeries('trunk')
+        branch = self.factory.makeBranch(owner=product.owner)
+        removeSecurityProxy(trunk).translations_branch = branch
+
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertEqual(list(view.translations_sources()), [trunk])
+
 
 class TestBranchReviewerEditView(TestCaseWithFactory):
     """Test the BranchReviewerEditView view."""
@@ -288,7 +309,7 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         view = PersonOwnedBranchesView(branch.owner, LaunchpadTestRequest())
         view.initialize()
         navigator = view.branches()
-        [decorated_branch] = navigator.branches()
+        [decorated_branch] = navigator.branches
         self.assertEqual("lp://dev/fooix", decorated_branch.bzr_identity)
 
 

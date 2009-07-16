@@ -4,6 +4,8 @@ import StringIO
 import logging
 import unittest
 import urlparse
+
+from canonical.lazr.utils import safe_hasattr
 from canonical.testing import reset_logging
 
 
@@ -187,8 +189,8 @@ class WalkerBase_walk(unittest.TestCase):
                 pass
 
         log_output = StringIO.StringIO()
-        logging.basicConfig(level=logging.WARNING)
         logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
         logger.addHandler(logging.StreamHandler(log_output))
         walker = TestWalker('http://example.org/foo', logger)
         for dummy in walker:
@@ -261,6 +263,36 @@ class HTTPWalker_Base(unittest.TestCase):
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker, WalkerError)
         self.assertRaises(WalkerError, HTTPWalker, "foo://localhost/")
+
+
+class HTTPWalker_url_schemes_and_handlers(unittest.TestCase):
+    """Verify there is a handler for each URL scheme."""
+
+    def setUp(self):
+        from lp.registry.scripts.productreleasefinder.walker import (
+            HTTPWalker)
+        self.walker = HTTPWalker("http://localhost/")
+
+    def verify_url_scheme_and_handler(self, scheme, handler):
+        self.assert_(scheme in self.walker.URL_SCHEMES)
+        self.assert_(handler in self.walker.handlers)
+        # urllib2 uses a naming convention to select the handler for
+        # a URL scheme. This test is sanity to check to ensure that the
+        # HTTPWalker's configuration of the OpenerDirector is will work.
+        method_name = '%s_open' % scheme
+        self.assert_(safe_hasattr(handler, method_name))
+
+    def test_http_request(self):
+        import urllib2
+        self.verify_url_scheme_and_handler('http', urllib2.HTTPHandler)
+
+    def test_https_request(self):
+        import urllib2
+        self.verify_url_scheme_and_handler('https', urllib2.HTTPSHandler)
+
+    def test_ftp_request(self):
+        import urllib2
+        self.verify_url_scheme_and_handler('ftp', urllib2.FTPHandler)
 
 
 class HTTPWalker_ListDir(unittest.TestCase):

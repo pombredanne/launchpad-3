@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -19,7 +19,7 @@ import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
     StringCol)
-from storm.locals import And, Join, SQL, Store, Unicode
+from storm.locals import And, Desc, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -43,8 +43,8 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
-from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
-from canonical.launchpad.database.potemplate import POTemplate
+from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.potemplate import POTemplate
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.karma import KarmaContextMixin
@@ -68,7 +68,7 @@ from lp.answers.model.question import (
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -91,7 +91,7 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from canonical.launchpad.webapp.interfaces import (
@@ -166,8 +166,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin, OfficialBugTagTargetMixin,
-              HasBranchesMixin, HasMergeProposalsMixin):
+              HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
+              HasMergeProposalsMixin):
 
     """A Product."""
 
@@ -687,10 +687,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def translatable_packages(self):
         """See `IProduct`."""
-        packages = set(package for package in self.sourcepackages
-                       if bool(
-                           package.getCurrentTranslationTemplates().any())
-                       )
+        packages = set(
+            package
+            for package in self.sourcepackages
+            if package.has_current_translation_templates)
+
         # Sort packages by distroseries.name and package.name
         return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 
@@ -698,8 +699,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def translatable_series(self):
         """See `IProduct`."""
         translatable_product_series = set(
-            product_series for product_series in self.serieses
-            if bool(product_series.getCurrentTranslationTemplates().any()))
+            product_series
+            for product_series in self.serieses
+            if product_series.has_current_translation_templates)
         return sorted(
             translatable_product_series,
             key=operator.attrgetter('datecreated'))
@@ -908,6 +910,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ProductRelease,
             And(Milestone.product == self,
                 Milestone.name == version)).one()
+
+    def getMilestonesAndReleases(self):
+        """See `IProduct`."""
+        store = Store.of(self)
+        result = store.find(
+            (Milestone, ProductRelease),
+            And(ProductRelease.milestone == Milestone.id,
+                Milestone.productseries == ProductSeries.id,
+                ProductSeries.product == self))
+        return result.order_by(Desc(ProductRelease.datereleased))
 
     def packagedInDistros(self):
         return IStore(Distribution).find(

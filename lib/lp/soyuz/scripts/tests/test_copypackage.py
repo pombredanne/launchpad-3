@@ -27,7 +27,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.build import (
+    BuildSetStatus, BuildStatus)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
@@ -41,7 +42,7 @@ from lp.soyuz.model.publishing import (
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
-    CopyChecker, _do_delayed_copy, _do_direct_copy, PackageCopier,
+    CopyChecker, do_copy, _do_delayed_copy, _do_direct_copy, PackageCopier,
     re_upload_file, UnembargoSecurityPackage, update_files_privacy)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -386,33 +387,81 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
 class CopyCheckerHarness:
     """Basic checks common for all scenarios."""
 
-    def assertCanCopySourceOnly(self):
-        """checkCopy() for source-only copy returns None."""
+    def assertCanCopySourceOnly(self, delayed=False):
+        """Source-only copy is allowed.
+
+        Initialise a `CopyChecker` and assert a `checkCopy` call returns
+        None (more importantly, doesn't raise `CannotCopy`) in the test
+        suite context.
+
+        Also assert that:
+         * 1 'CheckedCopy' was allowed and stored as so.
+         * Since it was source-only, the `CheckedCopy` objects is in
+           NEEDSBUILD state.
+         * Finally check whether is a delayed-copy or not according to the
+           given state.
+        """
         copy_checker = CopyChecker(self.archive, include_binaries=False)
         self.assertIs(
             None,
             copy_checker.checkCopy(self.source, self.series, self.pocket))
+        checked_copies = list(copy_checker.getCheckedCopies())
+        self.assertEquals(1, len(checked_copies))
+        [checked_copy] = checked_copies
+        self.assertEquals(
+            BuildSetStatus.NEEDSBUILD,
+            checked_copy.getStatusSummaryForBuilds()['status'])
+        self.assertEquals(delayed, checked_copy.delayed)
 
-    def assertCanCopyBinaries(self):
-        """checkCopy() for copy including binaries returns None."""
+    def assertCanCopyBinaries(self, delayed=False):
+        """Source and binary copy is allowed.
+
+        Initialise a `CopyChecker` and assert a `checkCopy` call returns
+        None (more importantly, doesn't raise `CannotCopy`) in the test
+        suite context.
+
+        Also assert that:
+         * 1 'CheckedCopy' was allowed and stored as so.
+         * The `CheckedCopy` objects is in FULLYBUILT_PENDING or FULLYBUILT
+           status, so there are binaries to be copied.
+         * Finally check whether is a delayed-copy or not according to the
+           given state.
+        """
         copy_checker = CopyChecker(self.archive, include_binaries=True)
         self.assertIs(
             None,
             copy_checker.checkCopy(self.source, self.series, self.pocket))
+        checked_copies = list(copy_checker.getCheckedCopies())
+        self.assertEquals(1, len(checked_copies))
+        [checked_copy] = checked_copies
+        self.assertTrue(
+            checked_copy.getStatusSummaryForBuilds()['status'] >=
+            BuildSetStatus.FULLYBUILT_PENDING)
+        self.assertEquals(delayed, checked_copy.delayed)
 
     def assertCannotCopySourceOnly(self, msg):
-        """checkCopy() for source-only copy raises CannotCopy."""
+        """`CopyChecker.checkCopy()` for source-only copy raises CannotCopy.
+
+        No `CheckedCopy` is stored.
+        """
         copy_checker = CopyChecker(self.archive, include_binaries=False)
         self.assertRaisesWithContent(
             CannotCopy, msg,
             copy_checker.checkCopy, self.source, self.series, self.pocket)
+        checked_copies = list(copy_checker.getCheckedCopies())
+        self.assertEquals(0, len(checked_copies))
 
     def assertCannotCopyBinaries(self, msg):
-        """checkCopy() for copy including binaries raises CannotCopy."""
+        """`CopyChecker.checkCopy()` including binaries raises CannotCopy.
+
+        No `CheckedCopy` is stored.
+        """
         copy_checker = CopyChecker(self.archive, include_binaries=True)
         self.assertRaisesWithContent(
             CannotCopy, msg,
             copy_checker.checkCopy, self.source, self.series, self.pocket)
+        checked_copies = list(copy_checker.getCheckedCopies())
+        self.assertEquals(0, len(checked_copies))
 
     def test_cannot_copy_binaries_from_building(self):
         [build] = self.source.createMissingBuilds()
@@ -548,6 +597,32 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
             status=PackagePublishingStatus.PUBLISHED)
         self.assertCanCopySourceOnly()
 
+    def switchToAPrivateSource(self):
+        """Override the probing source with a private one."""
+        private_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        private_archive.buildd_secret = 'x'
+        private_archive.private = True
+
+        self.source = self.test_publisher.getPubSource(
+            archive=private_archive)
+
+    def test_can_copy_only_source_from_private_archives(self):
+        # Source-only copies from private archives to public ones
+        # are allowed and result in a delayed-copy.
+        self.switchToAPrivateSource()
+        self.assertCanCopySourceOnly(delayed=True)
+
+    def test_can_copy_binaries_from_private_archives(self):
+        # Source and binary copies from private archives to public ones
+        # are allowed and result in a delayed-copy.
+        self.switchToAPrivateSource()
+        self.test_publisher.getPubBinaries(
+            pub_source=self.source,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertCanCopyBinaries(delayed=True)
+
 
 class CopyCheckerTestCase(TestCaseWithFactory):
 
@@ -657,7 +732,6 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             None,
             copy_checker.checkCopy(
                 source, source.distroseries, source.pocket))
-        copy_checker.addCopy(source)
 
         # The second source-only copy, for hoary-test, fails, since it
         # conflicts with the just-approved copy.
@@ -667,6 +741,73 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             'for Breezy Badger Autotest',
             copy_checker.checkCopy,
             copied_source, copied_source.distroseries, copied_source.pocket)
+
+    def test_checkCopy_identifies_delayed_copies_conflicts(self):
+        # checkCopy() detects copy conflicts in the upload queue for
+        # delayed-copies. This is mostly caused by previous delayed-copies
+        # that are waiting to be processed.
+
+        # Create a private archive with a restricted source publication.
+        private_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        private_archive.buildd_secret = 'x'
+        private_archive.private = True
+        source = self.test_publisher.getPubSource(archive=private_archive)
+
+        archive = self.test_publisher.ubuntutest.main_archive
+        series = source.distroseries
+        pocket = source.pocket
+
+        # Commit so the just-created files are accessible and perform
+        # the delayed-copy.
+        self.layer.txn.commit()
+        do_copy([source], archive, series, pocket, include_binaries=False)
+
+        # Repeating the copy is denied.
+        copy_checker = CopyChecker(archive, include_binaries=False)
+        self.assertRaisesWithContent(
+            CannotCopy,
+            'same version already uploaded and waiting in ACCEPTED queue',
+            copy_checker.checkCopy, source, series, pocket)
+
+    def test_checkCopy_suppressing_delayed_copies(self):
+        # `CopyChecker` by default will request delayed-copies when it's
+        # the case (restricted files being copied to public archives).
+        # However this feature can be turned off, and the operation can
+        # be performed as a direct-copy by passing 'allow_delayed_copies'
+        # as False when initialising `CopyChecker`.
+        # This aspect is currently only used in `UnembargoSecurityPackage`
+        # script class, because it performs the file privacy fixes in
+        # place.
+
+        # Create a private archive with a restricted source publication.
+        private_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        private_archive.buildd_secret = 'x'
+        private_archive.private = True
+        source = self.test_publisher.getPubSource(archive=private_archive)
+
+        archive = self.test_publisher.ubuntutest.main_archive
+        series = source.distroseries
+        pocket = source.pocket
+
+        # Normally `CopyChecker` would store a delayed-copy representing
+        # this operation, since restricted files are being copied to
+        # public archives.
+        copy_checker = CopyChecker(archive, include_binaries=False)
+        copy_checker.checkCopy(source, series, pocket)
+        [checked_copy] = list(copy_checker.getCheckedCopies())
+        self.assertTrue(checked_copy.delayed)
+
+        # When 'allow_delayed_copies' is off, a direct-copy will be
+        # scheduled.
+        copy_checker = CopyChecker(
+            archive, include_binaries=False, allow_delayed_copies=False)
+        copy_checker.checkCopy(source, series, pocket)
+        [checked_copy] = list(copy_checker.getCheckedCopies())
+        self.assertFalse(checked_copy.delayed)
 
 
 class DoDirectCopyTestCase(TestCaseWithFactory):
@@ -721,6 +862,7 @@ class DoDirectCopyTestCase(TestCaseWithFactory):
 class DoDelayedCopyTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         super(DoDelayedCopyTestCase, self).setUp()
@@ -762,21 +904,31 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         self.test_publisher.breezy_autotest.status = (
             DistroSeriesStatus.CURRENT)
 
-        # Commit for making the just-create library files available.
-        self.layer.txn.commit()
-
         # Setup and execute the delayed copy procedure.
         copy_archive = self.test_publisher.ubuntutest.main_archive
         copy_series = source.distroseries
         copy_pocket = PackagePublishingPocket.SECURITY
 
+        # Commit for making the just-create library files available.
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
+
         delayed_copy = _do_delayed_copy(
             source, copy_archive, copy_series, copy_pocket, True)
+
+        self.layer.txn.commit()
+        self.layer.switchDbUser('launchpad')
 
         # A delayed-copy `IPackageUpload` record is returned.
         self.assertTrue(delayed_copy.is_delayed_copy)
         self.assertEquals(
             PackageUploadStatus.ACCEPTED, delayed_copy.status)
+
+        # The returned object has a more descriptive 'displayname'
+        # attribute than plain `IPackageUpload` instances.
+        self.assertEquals(
+            'Delayed copy of foo - 666 (source, i386, raw-dist-upgrader)',
+            delayed_copy.displayname)
 
         # It is targeted to the right publishing context.
         self.assertEquals(copy_archive, delayed_copy.archive)
@@ -799,6 +951,68 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         self.assertEquals(
             [custom_file],
             [custom.libraryfilealias for custom in delayed_copy.customfiles])
+
+    def createPartiallyBuiltDelayedCopyContext(self):
+        """Allow tests on delayed-copies of partially built sources.
+
+        Create an architecture-specific source publication in a private PPA
+        capable of building for i386 and hppa architectures.
+
+        Upload and publish only the i386 binary, letting the hppa build
+        in pending status.
+        """
+        self.test_publisher.prepareBreezyAutotest()
+
+        ppa = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        ppa.buildd_secret = 'x'
+        ppa.private = True
+        ppa.require_virtualized = False
+
+        source = self.test_publisher.getPubSource(
+            archive=ppa, architecturehintlist='any')
+
+        [build_hppa, build_i386] = source.createMissingBuilds()
+        lazy_bin = self.test_publisher.uploadBinaryForBuild(
+            build_i386, 'lazy-bin')
+        self.test_publisher.publishBinaryInArchive(lazy_bin, source.archive)
+        changes_file_name = '%s_%s_%s.changes' % (
+            lazy_bin.name, lazy_bin.version, build_i386.arch_tag)
+        package_upload = self.test_publisher.addPackageUpload(
+            ppa, build_i386.distroarchseries.distroseries,
+            build_i386.pocket, changes_file_content='anything',
+            changes_file_name=changes_file_name)
+        package_upload.addBuild(build_i386)
+
+        return source
+
+    def test_do_delayed_copy_of_partially_built_sources(self):
+        # delayed-copies of partially built sources are allowed and only
+        # the FULLYBUILT builds are copied.
+        source = self.createPartiallyBuiltDelayedCopyContext()
+
+        # Setup and execute the delayed copy procedure.
+        copy_archive = self.test_publisher.ubuntutest.main_archive
+        copy_series = source.distroseries
+        copy_pocket = PackagePublishingPocket.RELEASE
+
+        # Make new libraryfiles available by committing the transaction.
+        self.layer.txn.commit()
+
+        # Perform the delayed-copy including binaries.
+        delayed_copy = _do_delayed_copy(
+            source, copy_archive, copy_series, copy_pocket, True)
+
+        # Only the i386 build is included in the delayed-copy.
+        # For the record, later on, when the delayed-copy gets processed,
+        # a new hppa build record will be created in the destination
+        # archive context. Also after this point, the same delayed-copy
+        # request will be denied by `CopyChecker`.
+        [build_hppa, build_i386] = source.getBuilds()
+        self.assertEquals(
+            [build_i386],
+            [pub.build for pub in delayed_copy.builds])
 
 
 class CopyPackageScriptTestCase(unittest.TestCase):
@@ -1771,15 +1985,7 @@ class CopyPackageTestCase(TestCase):
             copy_helper.mainTask)
 
     def testCopyFromPrivateToPublicPPAs(self):
-        """Check if copying private sources into public archives is denied.
-
-        Private source files can only be published in private archives,
-        because builders do not have access to the restricted librarian.
-
-        Builders only fetch the sources files from the repository itself
-        for private PPAs. If we copy a restricted file into a public PPA
-        builders will not be able to fetch it.
-        """
+        """Copies from private to public archives are allowed."""
         # Set up a private PPA.
         cprov = getUtility(IPersonSet).getByName("cprov")
         cprov.archive.buildd_secret = "secret"
@@ -1793,6 +1999,7 @@ class CopyPackageTestCase(TestCase):
             archive=cprov.archive, version='1.0', distroseries=hoary)
         ppa_binaries = test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=hoary)
+        self.layer.txn.commit()
 
         # Run the copy package script storing the logged information.
         copy_helper = self.getCopier(
@@ -1800,12 +2007,20 @@ class CopyPackageTestCase(TestCase):
             from_suite='hoary', to_suite='hoary')
         copied = copy_helper.mainTask()
 
-        # Nothing was copied and an error message was printed explaining why.
-        self.assertEqual(len(copied), 0)
+        # The private files are copied via a delayed-copy request.
+        self.assertEqual(len(copied), 1)
         self.assertEqual(
-            copy_helper.logger.buffer.getvalue().splitlines()[-1],
-            'ERROR: foo 1.0 in hoary '
-            '(cannot copy private files into public archives)')
+            ['INFO: FROM: cprov: hoary-RELEASE',
+             'INFO: TO: Primary Archive for Ubuntu Linux: hoary-RELEASE',
+             'INFO: Copy candidates:',
+             'INFO: \tfoo 1.0 in hoary',
+             'INFO: \tfoo-bin 1.0 in hoary hppa',
+             'INFO: \tfoo-bin 1.0 in hoary i386',
+             'INFO: Copied:',
+             'INFO: \tDelayed copy of foo - 1.0 (source, i386)',
+             'INFO: 1 package successfully copied.',
+             ],
+            copy_helper.logger.buffer.getvalue().splitlines())
 
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""

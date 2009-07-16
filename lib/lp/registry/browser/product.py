@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Browser views for products."""
 
@@ -63,7 +63,7 @@ from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
@@ -88,7 +88,7 @@ from lp.registry.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.browser.translations import TranslationsMixin
+from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -99,7 +99,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.widgets.popup import PersonPickerWidget, VocabularyPickerWidget
+from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
@@ -423,7 +423,7 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Commercial')
+    @enabled_with_permission('launchpad.ProjectReview')
     def review_license(self):
         text = 'Review project'
         return Link('+review-license', text, icon='edit')
@@ -599,7 +599,7 @@ class ProductSetContextMenu(ContextMenu):
     def meetings(self):
         return Link('/sprints/', 'View meetings')
 
-    @enabled_with_permission('launchpad.Commercial')
+    @enabled_with_permission('launchpad.ProjectReview')
     def review_licenses(self):
         return Link('+review-licenses', 'Review projects')
 
@@ -773,20 +773,20 @@ class ProductDownloadFileMixin:
         # Get all of the releases for all of the serieses in a single
         # query.  The query sorts the releases properly so we know the
         # resulting list is sorted correctly.
-        release_set = getUtility(IProductReleaseSet)
         release_by_id = {}
-        releases = release_set.getReleasesForSerieses(
-            product_with_series.serieses)
-        for release in releases:
+        milestones_and_releases = list(
+            original_product.getMilestonesAndReleases())
+        for milestone, release in milestones_and_releases:
             series = product_with_series.getSeriesById(
-                release.productseries.id)
+                milestone.productseries.id)
             decorated_release = ReleaseWithFiles(release)
             series.addRelease(decorated_release)
             release_by_id[release.id] = decorated_release
 
         # Get all of the files for all of the releases.  The query
         # returns all releases sorted properly.
-        files = release_set.getFilesForReleases(releases)
+        releases = [release for milestone, release in milestones_and_releases]
+        files = getUtility(IProductReleaseSet).getFilesForReleases(releases)
         for file in files:
             release = release_by_id[file.productrelease.id]
             release.addFile(file)
@@ -869,6 +869,23 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, 'title',
             canonical_url(self.context, view_name='+edit'),
             id="product-title", title="Edit this title")
+        if self.context.programminglang is None:
+            additional_arguments = dict(
+                default_text='Not yet specified',
+                initial_value_override='',
+                )
+        else:
+            additional_arguments = {}
+        self.languages_edit_widget = TextLineEditorWidget(
+            self.context, 'programminglang',
+            canonical_url(self.context, view_name='+edit'),
+            id='programminglang', title='Edit programming languages',
+            tag='span', public_attribute='programming_language',
+            accept_empty=True,
+            **additional_arguments)
+        self.show_programming_languages = bool(
+            self.context.programminglang or
+            self.user == self.context.owner)
 
     @property
     def show_license_status(self):

@@ -467,6 +467,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
+    @property
+    def package_creator(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.creator
+
+    @property
+    def package_maintainer(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.maintainer
+
+    @property
+    def package_signer(self):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.sourcepackagerelease.dscsigningkey is not None:
+            return self.sourcepackagerelease.dscsigningkey.owner
+        return None
+
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
@@ -1156,7 +1173,8 @@ class PublishingSet:
 
         return self.getBuildsForSourceIds(source_publication_ids)
 
-    def _getSourceBinaryJoinForSources(self, source_publication_ids):
+    def _getSourceBinaryJoinForSources(self, source_publication_ids,
+        active_binaries_only=True):
         """Return the join linking sources with binaries."""
         # Import Build, BinaryPackageRelease and DistroArchSeries locally
         # to avoid circular imports, since Build uses
@@ -1168,7 +1186,7 @@ class PublishingSet:
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
-        return (
+        join = [
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 Build.sourcepackagereleaseID,
             BinaryPackageRelease.build == Build.id,
@@ -1184,9 +1202,18 @@ class PublishingSet:
                SourcePackagePublishingHistory.pocket,
             BinaryPackagePublishingHistory.archiveID ==
                SourcePackagePublishingHistory.archiveID,
-            In(BinaryPackagePublishingHistory.status,
-               [enum.value for enum in active_publishing_status]),
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            In(SourcePackagePublishingHistory.id, source_publication_ids)
+            ]
+
+        # If the call-site requested to join only on binaries published
+        # with an active publishing status then we need to further restrict
+        # the join.
+        if active_binaries_only:
+            join.append(
+                In(BinaryPackagePublishingHistory.status,
+                    [enum.value for enum in active_publishing_status]))
+
+        return join
 
     def getUnpublishedBuildsForSources(self,
                                        one_or_more_source_publications,
@@ -1210,7 +1237,8 @@ class PublishingSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         published_builds = store.find(
             (SourcePackagePublishingHistory, Build, DistroArchSeries),
-            self._getSourceBinaryJoinForSources(source_publication_ids),
+            self._getSourceBinaryJoinForSources(
+                source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
             Build.buildstate.is_in(build_states))
 
@@ -1393,13 +1421,17 @@ class PublishingSet:
         summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
             builds)
 
-        # We only augment the result if we (the SPPH) are ourselves in
-        # the pending/published state and all the builds are fully-built.
+        # We only augment the result if:
+        #   1. we (the SPPH) are ourselves in an active publishing state, and
+        #   2. all the builds are fully-built, and
+        #   3. we are not being published in a rebuild/copy archive (in
+        #      which case the binaries are not currently published anyway)
         # In this case we check to see if they are all published, and if
         # not we return FULLYBUILT_PENDING:
         augmented_summary = summary
         if (source_publication.status in active_publishing_status and
-                summary['status'] == BuildSetStatus.FULLYBUILT):
+                summary['status'] == BuildSetStatus.FULLYBUILT and
+                source_publication.archive.purpose != ArchivePurpose.COPY):
 
             unpublished_builds = list(
                 source_publication.getUnpublishedBuilds())

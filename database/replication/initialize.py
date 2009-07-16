@@ -142,9 +142,11 @@ def create_replication_sets(
             comment='Launchpad tables and sequences');
         """)
 
+    script.append(
+        "echo 'Adding %d tables to replication set @lpmain_set';"
+        % len(lpmain_tables))
     for table in sorted(lpmain_tables):
         script.append("""
-            echo 'Adding %(table)s to replication set @lpmain_set';
             set add table (
                 set id=@lpmain_set,
                 origin=@master_node,
@@ -154,9 +156,11 @@ def create_replication_sets(
         entry_id += 1
 
     entry_id = 200
+    script.append(
+        "echo 'Adding %d sequences to replication set @lpmain_set';"
+        % len(lpmain_sequences))
     for sequence in sorted(lpmain_sequences):
         script.append("""
-            echo 'Adding %(sequence)s to replication set @lpmain_set';
             set add sequence (
                 set id=@lpmain_set,
                 origin=@master_node,

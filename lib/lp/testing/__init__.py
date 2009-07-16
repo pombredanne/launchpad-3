@@ -121,16 +121,7 @@ class TestCase(unittest.TestCase):
         self.addCleanup(fixture.tearDown)
 
     def assertProvides(self, obj, interface):
-        """Assert 'obj' provides 'interface'.
-
-        You should probably be using `assertCorrectlyProvides`.
-        """
-        self.assertTrue(
-            interface.providedBy(obj),
-            "%r does not provide %r" % (obj, interface))
-
-    def assertCorrectlyProvides(self, obj, interface):
-        """Assert 'obj' may correctly provides 'interface'."""
+        """Assert 'obj' correctly provides 'interface'."""
         self.assertTrue(
             interface.providedBy(obj),
             "%r does not provide %r." % (obj, interface))

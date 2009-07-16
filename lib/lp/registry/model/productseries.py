@@ -19,7 +19,6 @@ from zope.interface import implements
 from storm.locals import And, Desc
 from storm.store import Store
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -34,16 +33,16 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.potemplate import (
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate)
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.productserieslanguage import (
+from lp.translations.model.productserieslanguage import (
     ProductSeriesLanguage)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -52,7 +51,7 @@ from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packaging import PackagingType
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
@@ -64,10 +63,11 @@ from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+
 
 def landmark_key(landmark):
     """Sorts landmarks by date and name."""
@@ -198,7 +198,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def sourcepackages(self):
         """See IProductSeries"""
         from lp.registry.model.sourcepackage import SourcePackage
-        ret = Packaging.selectBy(productseries=self)
+        ret = self.packagings
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distroseries=r.distroseries)
                     for r in ret]
@@ -438,22 +438,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        # Avoid circular imports.
-        from lp.registry.model.product import Product
-
         store = Store.of(self)
         if just_ids:
             looking_for = POTemplate.id
         else:
             looking_for = POTemplate
 
-        result = store.find(
-            looking_for,
+        # Select all current templates for this series, if the Product
+        # actually uses Launchpad Translations.  Otherwise, return an
+        # empty result.
+        result = store.find(looking_for, And(
+            self.product.official_rosetta == True,
             POTemplate.iscurrent == True,
-            POTemplate.productseries == self,
-            ProductSeries.id == self.id,
-            ProductSeries.product == Product.id,
-            Product.official_rosetta == True)
+            POTemplate.productseries == self))
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     @property

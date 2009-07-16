@@ -18,7 +18,9 @@ import tempfile
 
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
-from storm.locals import Join
+
+from storm.locals import Desc, In, Join
+from storm.store import Store
 from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
@@ -53,7 +55,8 @@ from lp.soyuz.interfaces.queue import (
     PackageUploadStatus, PackageUploadCustomFormat)
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+    ISourcePackagePublishingHistory, PackagePublishingPocket,
+    PackagePublishingStatus, pocketsuffix)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
@@ -174,6 +177,11 @@ class PackageUpload(SQLBase):
     customfiles = SQLMultipleJoin('PackageUploadCustom',
                                   joinColumn='packageupload')
 
+    @property
+    def custom_file_urls(self):
+        """See `IPackageUpload`."""
+        return tuple(
+            file.libraryfilealias.getURL() for file in self.customfiles)
 
     def setNew(self):
         """See `IPackageUpload`."""
@@ -529,6 +537,11 @@ class PackageUpload(SQLBase):
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
                           "Re-uploaded %s to librarian" % new_file.filename)
+                if ISourcePackagePublishingHistory.providedBy(pub_record):
+                    pas_verify = BuildDaemonPackagesArchSpecific(
+                        config.builddmaster.root, self.distroseries)
+                    pub_record.createMissingBuilds(
+                        pas_verify=pas_verify, logger=logger)
 
         self.setDone()
 
@@ -698,14 +711,14 @@ class PackageUpload(SQLBase):
         class PPARejectedMessage:
             """PPA rejected message."""
             template = get_email_template('ppa-upload-rejection.txt')
-            SUMMARY = summary_text
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            SUMMARY = sanitize_string(summary_text)
+            CHANGESFILE = sanitize_string("".join(changes_lines))
             USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
             template = get_email_template('upload-rejection.txt')
-            SUMMARY = summary_text
+            SUMMARY = sanitize_string(summary_text)
             CHANGESFILE = sanitize_string(changes['changes'])
             CHANGEDBY = ''
             ORIGIN = ''
@@ -729,7 +742,7 @@ class PackageUpload(SQLBase):
             attach_changes = True
 
         self._handleCommonBodyContent(message, changes)
-        if message.SUMMARY is None:
+        if summary_text is None:
             message.SUMMARY = 'Rejected by archive administrator.'
 
         body = message.template % message.__dict__
@@ -995,8 +1008,16 @@ class PackageUpload(SQLBase):
                 "Changes file is unsigned, adding changer as recipient")
             candidate_recipients.append(changer)
 
-        # PPA uploads only email the uploader but for everything else
-        # we consider maintainer and changed-by also.
+        if self.isPPA():
+            # For PPAs, any person or team mentioned explicitly in the
+            # ArchivePermissions as uploaders for the archive will also
+            # get emailed.
+            uploaders = [
+                permission.person for permission in
+                    self.archive.getUploadersForComponent()]
+            candidate_recipients.extend(uploaders)
+
+        # If this is not a PPA, we also consider maintainer and changed-by.
         if self.signing_key and not self.isPPA():
             maintainer = self._emailToPerson(changes['maintainer'])
             if (maintainer and maintainer != signer and
@@ -1704,6 +1725,59 @@ class PackageUploadSet:
 
         query = " AND ".join(clauses)
         return PackageUpload.select(query).count()
+
+    def getAll(self, distroseries, created_since_date=None, status=None,
+               archive=None, pocket=None, custom_type=None):
+        """See `IPackageUploadSet`."""
+        # XXX Julian 2009-07-02 bug=394645
+        # This method is an incremental deprecation of
+        # IDistroSeries.getQueueItems(). It's basically re-writing it
+        # using Storm queries instead of SQLObject, but not everything
+        # is implemented yet.  When it is, this comment and the old
+        # method can be removed and call sites updated to use this one.
+        store = Store.of(distroseries)
+
+        def dbitem_values_tuple(item_or_list):
+            if not isinstance(item_or_list, list):
+                return (item_or_list.value,)
+            else:
+                return tuple(item.value for item in item_or_list)
+
+        timestamp_query_clause = ()
+        if created_since_date is not None:
+            timestamp_query_clause = (
+                PackageUpload.date_created > created_since_date,)
+
+        status_query_clause = ()
+        if status is not None:
+            status = dbitem_values_tuple(status)
+            status_query_clause = (
+                In(PackageUpload.status, status),)
+
+        archives = distroseries.distribution.getArchiveIDList(archive)
+        archive_query_clause = (
+            In(PackageUpload.archiveID, archives),)
+
+        pocket_query_clause = ()
+        if pocket is not None:
+            pocket = dbitem_values_tuple(pocket)
+            pocket_query_clause = (
+                In(PackageUpload.pocket, pocket),)
+
+        custom_type_query_clause = ()
+        if custom_type is not None:
+            custom_type = dbitem_values_tuple(custom_type)
+            custom_type_query_clause = (
+                PackageUpload.id == PackageUploadCustom.packageuploadID,
+                In(PackageUploadCustom.customformat, custom_type))
+
+        return store.find(
+            PackageUpload,
+            PackageUpload.distroseries == distroseries,
+            *(status_query_clause + archive_query_clause +
+              pocket_query_clause + timestamp_query_clause +
+              custom_type_query_clause)
+            ).order_by(Desc(PackageUpload.id)).config(distinct=True)
 
     def getBuildByBuildIDs(self, build_ids):
         """See `IPackageUploadSet`."""
