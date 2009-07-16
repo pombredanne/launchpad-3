@@ -40,7 +40,7 @@ class ILinkedBranchTraverser(Interface):
         :return: One of
             * `IProduct`
             * `IProductSeries`
-            * (ISourcePackage, PackagePublishingPocket)
+            * `ISuiteSourcePackage`
             * `IDistributionSourcePackage`
         """
 
