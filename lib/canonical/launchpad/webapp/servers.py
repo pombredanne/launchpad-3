@@ -1186,18 +1186,6 @@ class WebServicePublication(WebServicePublicationMixin,
             token.person.account.id, access_level=token.permission,
             scope=token.context)
 
-        # Make sure the principal is a member of the beta test team.
-        # XXX leonardr 2008-05-22 spec=api-bugs-remote:
-        # Once we launch the web service this code will be removed.
-        people = getUtility(IPersonSet)
-        webservice_beta_team_name = config.vhost.api.beta_test_team
-        if webservice_beta_team_name is not None:
-            webservice_beta_team = people.getByName(
-                webservice_beta_team_name)
-            person = IPerson(principal)
-            if not person.inTeam(webservice_beta_team):
-                raise Unauthorized(
-                    person.name + " is not a member of the beta test team.")
         return principal
 
 
