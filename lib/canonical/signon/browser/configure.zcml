@@ -159,59 +159,6 @@
         class=".openidserver.ProtocolErrorView"
         />
 
-    <!-- IOpenIDRPConfig -->
-    <browser:url
-        for="..interfaces.openidserver.IOpenIDRPConfig"
-        path_expression="string:${id}"
-        parent_utility="..interfaces.openidserver.IOpenIDRPConfigSet"
-        />
-
-    <browser:page
-        for="..interfaces.openidserver.IOpenIDRPConfig"
-        name="+edit"
-        class=".openidrpconfig.OpenIDRPConfigEditView"
-        permission="launchpad.Admin"
-        template="../templates/openidrpconfig-edit.pt"
-        />
-
-    <browser:defaultView
-        for="..interfaces.openidserver.IOpenIDRPConfig"
-        name="+edit"
-        />
-
-    <!-- IOpenIDRPConfigSet -->
-
-    <browser:url
-        for="..interfaces.openidserver.IOpenIDRPConfigSet"
-        path_expression="string:+rpconfig"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-        />
-
-    <browser:navigation
-        module=".openidrpconfig"
-        classes="OpenIDRPConfigSetNavigation"
-        />
-
-    <browser:page
-        for="..interfaces.openidserver.IOpenIDRPConfigSet"
-        name="+add"
-        class=".openidrpconfig.OpenIDRPConfigAddView"
-        permission="launchpad.Admin"
-        template="../templates/openidrpconfig-add.pt"
-        />
-
-    <browser:page
-        for="..interfaces.openidserver.IOpenIDRPConfigSet"
-        name="+index"
-        permission="launchpad.Admin"
-        template="../templates/openidrpconfigset-index.pt"
-        />
-
-    <browser:defaultView
-        for="..interfaces.openidserver.IOpenIDRPConfigSet"
-        name="+index"
-        />
-
     <!-- A simple view used by the page tests. -->
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"

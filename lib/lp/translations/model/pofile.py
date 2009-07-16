@@ -39,6 +39,8 @@ from lp.translations.model.translationmessage import (
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.translations.interfaces.pofile import IPOFile, IPOFileSet
 from lp.translations.interfaces.potmsgset import BrokenTextError
 from lp.translations.interfaces.translationcommonformat import (
@@ -352,6 +354,17 @@ class POFileMixIn(RosettaStats):
                    quote_like(text))
         return english_match
 
+    def _getOrderedPOTMsgSets(self, origin_tables, query):
+        """Find all POTMsgSets matching `query` from `origin_tables`.
+
+        Orders the result by TranslationTemplateItem.sequence which must
+        be among `origin_tables`.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        results = store.using(origin_tables).find(
+            POTMsgSet, SQL(query))
+        return results.order_by(TranslationTemplateItem.sequence)
+
     def findPOTMsgSetsContaining(self, text):
         """See `IPOFile`."""
         clauses = [
@@ -382,10 +395,11 @@ class POFileMixIn(RosettaStats):
                         self, plural_form, text)
                     search_clauses.append(translation_match)
 
-            all_potmsgsets_query = "(" + " UNION ".join(search_clauses) + ")"
+            clauses.append(
+                "POTMsgSet.id IN (" + " UNION ".join(search_clauses) + ")")
 
-        return POTMsgSet.select("POTMsgSet.id IN " + all_potmsgsets_query,
-                                orderBy='sequence')
+        return self._getOrderedPOTMsgSets(
+            [POTMsgSet, TranslationTemplateItem], ' AND '.join(clauses))
 
     def getFullLanguageCode(self):
         """See `IPOFile`."""
@@ -663,17 +677,6 @@ class POFile(SQLBase, POFileMixIn):
                             + shared_translation_query + ') )')
         clauses.append(translated_query)
         return (clauses, clause_tables)
-
-    def _getOrderedPOTMsgSets(self, origin_tables, query):
-        """Find all POTMsgSets matching `query` from `origin_tables`.
-
-        Orders the result by TranslationTemplateItem.sequence which must
-        be among `origin_tables`.
-        """
-        store = Store.of(self)
-        results = store.using(origin_tables).find(
-            POTMsgSet, SQL(query))
-        return results.order_by(TranslationTemplateItem.sequence)
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
