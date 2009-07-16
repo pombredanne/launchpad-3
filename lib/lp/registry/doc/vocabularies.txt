@@ -738,7 +738,8 @@ as teams:
 
     >>> [(p.name, getattr(p.teamowner, 'name', None))
     ...  for p in vocab.search('ubuntu-team')]
-    [(u'doc', None), (u'name18', u'sabdfl'), (u'ubuntu-team', u'sabdfl')]
+    [(u'doc', None), (u'name18', u'sabdfl'),
+     (u'ubuntu-security', u'kamion'), (u'ubuntu-team', u'sabdfl')]
 
 But it doesn't include merged accounts:
 
@@ -775,7 +776,7 @@ PRIVATE_MEMBERSHIP_TEAM 'myteam' is not included in the results.
     >>> sorted(person.name for person in vocab.search('team'))
     [u'name18', u'name20', u'name21', u'no-team-memberships',
      u'otherteam', u'simple-team', u'testing-spanish-team',
-     u'ubuntu-team', u'warty-gnome']
+     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
 
 Logging in as 'owner', who is a member of myteam shows that the token
 lookup still omits myteam.
@@ -784,7 +785,7 @@ lookup still omits myteam.
     >>> sorted(person.name for person in vocab.search('team'))
     [u'name18', u'name20', u'name21', u'no-team-memberships',
      u'otherteam', u'simple-team', u'testing-spanish-team',
-     u'ubuntu-team', u'warty-gnome']
+     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
 
 A PRIVATE team is displayed when the logged in user is a member of the team.
 
@@ -798,16 +799,16 @@ A PRIVATE team is displayed when the logged in user is a member of the team.
     ...     visibility=PersonVisibility.PRIVATE)
     >>> sorted(person.name for person in vocab.search('team'))
     [u'name18', u'name20', u'name21', u'no-team-memberships', u'otherteam',
-     u'private-team',
-     u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
+     u'private-team', u'simple-team', u'testing-spanish-team',
+     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
 
 The PRIVATE team is also displayed for Launchpad admins.
 
     >>> login('foo.bar@canonical.com')
     >>> sorted(person.name for person in vocab.search('team'))
     [u'name18', u'name20', u'name21', u'no-team-memberships', u'otherteam',
-     u'private-team',
-     u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
+     u'private-team', u'simple-team', u'testing-spanish-team',
+     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
 
 The PRIVATE team can be looked up via getTermByToken for a member of the team.
 
@@ -821,7 +822,7 @@ The PRIVATE team is not returned for a user who is not part of the team.
     >>> sorted(person.name for person in vocab.search('team'))
     [u'name18', u'name20', u'name21', u'no-team-memberships',
      u'otherteam', u'simple-team', u'testing-spanish-team',
-     u'ubuntu-team', u'warty-gnome']
+     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
 
 The anonymous user will not see the private team either.
 
@@ -829,7 +830,7 @@ The anonymous user will not see the private team either.
     >>> sorted(person.name for person in vocab.search('team'))
     [u'name18', u'name20', u'name21', u'no-team-memberships',
      u'otherteam', u'simple-team', u'testing-spanish-team',
-     u'ubuntu-team', u'warty-gnome']
+     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
 
 Attempting to lookup the team via getTermByToken results in a
 LookupError, the same as if the team didn't exist, which is really
@@ -848,7 +849,6 @@ Searching for all teams, which requires monkey-patching the
     >>> vocab.allow_null_search = True
     >>> sorted(person.name for person in vocab.search(''))
     [...u'private-team'...]
-
 
 A search for 'support' will give us only the persons which have support
 as part of their name or displayname, or the beginning of
@@ -885,8 +885,8 @@ displayname and the first set of those are the ones returned
     >>> login(ANONYMOUS)
     >>> [person.displayname for person in vocab.search('team')]
     [u'Hoary Gnome Team', u'No Team Memberships', u'Other Team', u'Simple Team',
-     u'Ubuntu Gnome Team', u'Ubuntu Team', u'Warty Gnome Team', u'Warty Security Team',
-     u'testing Spanish team']
+     u'Ubuntu Gnome Team', u'Ubuntu Security Team', u'Ubuntu Team',
+     u'Warty Gnome Team', u'Warty Security Team', u'testing Spanish team']
 
     >>> login(ANONYMOUS)
     >>> vocab.LIMIT
@@ -916,7 +916,8 @@ search for 'team' should give us some of them:
 
     >>> sorted(person.name for person in vocab.search('team'))
     [u'name18', u'name20', u'name21', u'no-team-memberships', u'otherteam',
-     u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
+     u'simple-team', u'testing-spanish-team', u'ubuntu-security',
+     u'ubuntu-team', u'warty-gnome']
 
 
 === ValidTeam ===
@@ -954,6 +955,7 @@ returned.
      (u'ShipIt Administrators', u'Mark Shuttleworth'),
      (u'Simple Team', u'One Membership'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Security Team', u'Colin Watson'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
      (u'Ubuntu Translators', u'Rosetta Administrators'),
      (u'Ubuntu branches', u'Ubuntu-branches-owner'),
@@ -973,6 +975,7 @@ text to match against the team name.  Still, you only get teams back.
     ...        for team in vocab.search('spanish | ubuntu'))
     [(u'Mirror Administrators', u'Mark Shuttleworth'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Security Team', u'Colin Watson'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
      (u'Ubuntu Translators', u'Rosetta Administrators'),
      (u'Ubuntu branches', u'Ubuntu-branches-owner'),
@@ -984,6 +987,7 @@ text to match against the team name.  Still, you only get teams back.
      (u'Other Team', u'Owner'),
      (u'Simple Team', u'One Membership'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Security Team', u'Colin Watson'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
      (u'Warty Gnome Team', u'Mark Shuttleworth'),
      (u'Warty Security Team', u'Mark Shuttleworth'),
@@ -999,6 +1003,7 @@ A user who is a member of a private team will see that team in his search.
      (u'Private Team', u'Commercial Member'),
      (u'Simple Team', u'One Membership'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Security Team', u'Colin Watson'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
      (u'Warty Gnome Team', u'Mark Shuttleworth'),
      (u'Warty Security Team', u'Mark Shuttleworth'),
@@ -1051,7 +1056,7 @@ ValidTeamMember's context must implement ITeam:
     >>> team in vocab
     False
     >>> [person.name for person in vocab.search('ubuntu-team')]
-    [u'name18']
+    [u'name18', u'ubuntu-security']
 
 'ubuntu-team' is a member of 'guadamen', so 'guadamen' can't be a member
 of 'ubuntu-team'.
@@ -1094,7 +1099,7 @@ ValidTeamOwner's context must provide IPerson or IPersonSet.
     >>> team in vocab
     False
     >>> [person.name for person in vocab.search('ubuntu-team')]
-    [u'name18']
+    [u'name18', u'ubuntu-security']
 
 'name16' is a valid owner for 'ubuntu-team'.
 
