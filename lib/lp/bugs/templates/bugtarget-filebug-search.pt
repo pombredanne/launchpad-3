@@ -78,6 +78,8 @@
             tal:attributes="class error_class"
             style="text-align: left; padding-left: 5em;">
           <div>
+            <label tal:attributes="for widget/name"
+                   tal:content="string:${widget/label}:">Label</label>
             <input tal:replace="structure widget" />
           </div>
           <div class="message" tal:condition="error"
