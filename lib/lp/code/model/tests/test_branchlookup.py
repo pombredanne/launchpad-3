@@ -230,7 +230,7 @@ class TestGetByUrl(TestCaseWithFactory):
 
         This is because Launchpad doesn't currently support ftp.
         """
-        branch = self.makeProductBranch()
+        self.makeProductBranch()
         branch_set = getUtility(IBranchLookup)
         branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertIs(None, branch2)
@@ -409,10 +409,10 @@ class TestGetByLPPath(TestCaseWithFactory):
         # components are found.
         self.assertRaises(
             NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/bb/c')
-        owner = self.factory.makePerson(name='aa')
+        self.factory.makePerson(name='aa')
         self.assertRaises(
             NoSuchProduct, self.branch_lookup.getByLPPath, '~aa/bb/c')
-        product = self.factory.makeProduct(name='bb')
+        self.factory.makeProduct(name='bb')
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/bb/c')
 
@@ -446,7 +446,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # doesn't match an existing branch.
         self.assertRaises(
             NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/+junk/c')
-        owner = self.factory.makePerson(name='aa')
+        self.factory.makePerson(name='aa')
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/+junk/c')
 
