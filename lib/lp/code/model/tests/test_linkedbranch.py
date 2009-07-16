@@ -83,14 +83,13 @@ class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
         # The linked branch of a suite source package is the official branch
         # for the pocket of that source package.
         branch = self.factory.makeAnyBranch()
-        sourcepackage = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.RELEASE
+        suite_sourcepackage = self.factory.makeSuiteSourcePackage()
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         registrant = ubuntu_branches.teamowner
         run_with_login(
-            ubuntu_branches.teamowner,
-            sourcepackage.setBranch, pocket, branch, registrant)
-        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
+            registrant,
+            suite_sourcepackage.sourcepackage.setBranch,
+            suite_sourcepackage.pocket, branch, registrant)
         self.assertEqual(
             branch, ICanHasLinkedBranch(suite_sourcepackage).branch)
 
@@ -98,16 +97,17 @@ class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
         # setBranch sets the official branch for the appropriate pocket of the
         # source package.
         branch = self.factory.makeAnyBranch()
-        sourcepackage = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.RELEASE
+        suite_sourcepackage = self.factory.makeSuiteSourcePackage()
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         registrant = ubuntu_branches.teamowner
-        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
         run_with_login(
             registrant,
             ICanHasLinkedBranch(suite_sourcepackage).setBranch,
             branch, registrant)
-        self.assertEqual(branch, sourcepackage.getBranch(pocket))
+        self.assertEqual(
+            branch,
+            suite_sourcepackage.sourcepackage.getBranch(
+                suite_sourcepackage.pocket))
 
     def test_bzr_identity(self):
         # The bzr_identity of a suite source package linked branch is the path
