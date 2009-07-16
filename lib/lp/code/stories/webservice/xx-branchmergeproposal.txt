@@ -180,6 +180,20 @@ proposal status to "Approved" as well.
     >>> print merge_proposal['reviewed_revision_id']
     25
 
+However, there may have been breakage in the branch, and we need to revert back
+to "Work In Progress" and not specify the revision_id.
+
+    >>> _unused = reviewer_webservice.named_post(
+    ...     merge_proposal['self_link'], 'setStatus',
+    ...     status=u'Work in progress')
+    >>> merge_proposal = reviewer_webservice.get(
+    ...     merge_proposal['self_link']).jsonBody()
+
+    >>> print merge_proposal['queue_status']
+    Work in progress
+    >>> print merge_proposal['reviewed_revision_id']
+    None
+
 
 == Updating the preview diff ==
 
@@ -258,7 +272,7 @@ proposals by their status.
     ...     '/fooix', 'getMergeProposals').jsonBody()
     >>> for proposal in proposals['entries']:
     ...     print_proposal(proposal)
-    http://.../~source/fooix/fix-it/+merge/1 - Approved
+    http://.../~source/fooix/fix-it/+merge/1 - Work in progress
 
 
 Or I can look for anything that is approved.

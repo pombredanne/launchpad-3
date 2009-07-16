@@ -283,7 +283,7 @@ class IBranchMergeProposal(Interface):
         status=Choice(
             title=_("The new status of the merge proposal."),
             vocabulary=BranchMergeProposalStatus),
-        revision_id=Text())
+        revision_id=Text(required=False))
     @export_write_operation()
     def setStatus(status, user, revision_id):
         """Set the state of the merge proposal to the specified status.
