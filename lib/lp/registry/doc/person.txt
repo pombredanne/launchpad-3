@@ -348,15 +348,14 @@ Non-administrators may not change a person's standing.
     >>> login(ANONYMOUS)
 
 
-=== Ubunteros ===
+=== Ubuntu Code of Conduct signees ===
 
-Anybody who signed the last version of Ubuntu's Code of Conduct is
-considered an Ubuntero. To check if a person is an Ubuntero, use
-IPerson.is_ubuntero:
+Some people have signed the latest version of the Ubuntu Code of Conduct and
+others have not.
 
-    >>> foobar.is_ubuntero
+    >>> foobar.is_ubuntu_coc_signee
     True
-    >>> lifeless.is_ubuntero
+    >>> lifeless.is_ubuntu_coc_signee
     False
 
 

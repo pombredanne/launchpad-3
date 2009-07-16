@@ -1,6 +1,8 @@
-= Codes of Conduct =
+================
+Codes of Conduct
+================
 
-Administrators can see the signed Code of Conducts of any given person.
+Administrators can see the signed Ubuntu Code of Conducts of any given person.
 
     # A useful helper
     >>> def get_details_portlet(page):
@@ -13,7 +15,7 @@ Administrators can see the signed Code of Conducts of any given person.
     >>> print get_details_portlet(admin_browser.contents)
     Bragging rights
     ...
-    Ubuntero: Yes
+    Ubuntu Code-of-Conduct signee: Yes
 
     >>> admin_browser.getLink(url='+codesofconduct').click()
     >>> signatures = find_tags_by_class(admin_browser.contents, 'signature')
@@ -27,24 +29,24 @@ A regular user can't see the link to Foo Bar's signed codes of conduct.
     >>> print get_details_portlet(browser.contents)
     Bragging rights
     ...
-    Ubuntero: Yes
+    Ubuntu Code-of-Conduct signee: Yes
 
     >>> browser.getLink(url='+codesofconduct')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-No-priv hasn't signed up to be an Ubuntero yet.  His homepage has
-a link to the Ubuntero Code of Conduct forms.
+No-priv hasn't signed the Ubuntu Code-of-Conduct yet.  His homepage has a link
+to the Ubuntu Code of Conduct forms.
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~no-priv')
     >>> print get_details_portlet(browser.contents)
     Bragging rights
     ...
-    Ubuntero: No
+    Ubuntu Code-of-Conduct signee: No
 
     >>> browser.getLink(url='codeofconduct')
     <Link
-      text='Apply to become an Ubuntero[IMG]'
+      text='Sign the Ubuntu Code-of-Conduct[IMG]'
       url='http://launchpad.dev/codeofconduct'>
