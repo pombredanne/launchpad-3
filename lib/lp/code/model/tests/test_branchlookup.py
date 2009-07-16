@@ -470,6 +470,24 @@ class TestGetByLPPath(TestCaseWithFactory):
             (branch, 'foo/bar/baz'),
             self.branch_lookup.getByLPPath(path))
 
+    def test_resolve_distro_package_branch(self):
+        # getByLPPath returns the branch associated with the distribution
+        # source package referred to by the path.
+        sourcepackage = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        distro_package = sourcepackage.distribution_sourcepackage
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        run_with_login(
+            registrant,
+            ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
+        self.assertEqual(
+            (branch, None),
+            self.branch_lookup.getByLPPath(
+                '%s/%s' % (
+                    distro_package.distribution.name,
+                    distro_package.sourcepackagename.name)))
+
     def test_no_product_series_branch(self):
         # getByLPPath raises `NoLinkedBranch` if there's no branch registered
         # linked to the requested series.
