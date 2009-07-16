@@ -1,0 +1,30 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+>
+<body>
+  <div metal:fill-slot="main">
+    <h1>Translations to review</h1>
+    <tal:work-to-do condition="view/num_projects_and_packages_to_review">
+      <p>
+        These translations are available to be reviewed by
+        <tal:person replace="structure context/fmt:link">R. Viewer</tal:person>:
+      </p>
+      <metal:translations-to-review
+        tal:replace="structure context/@@+translations-to-review-table" />
+    </tal:work-to-do>
+    <tal:no-work condition="not: view/num_projects_and_packages_to_review">
+      <p>
+        No translations waiting for review by
+        <tal:person replace="structure context/fmt:link">R. Viewer</tal:person>.
+      </p>
+    </tal:no-work>
+  </div>
+</body>
+</html>
