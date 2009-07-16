@@ -20,6 +20,30 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
+from canonical.launchpad.ftests import (
+    ANONYMOUS, login, login_person, logout, syncUpdate)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
+
+from lp.blueprints.interfaces.specification import (
+    ISpecificationSet, SpecificationDefinitionStatus)
+from lp.blueprints.model.specificationbranch import (
+    SpecificationBranch)
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.model.bugbranch import BugBranch
+from lp.code.bzr import BranchFormat, RepositoryFormat
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
+    BranchVisibilityRule, CodeReviewNotificationLevel)
+from lp.code.interfaces.branch import (
+    BranchCannotBePrivate, BranchCannotBePublic,
+    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks)
 from lp.code.model.branch import (
     ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
     DeleteCodeImport, DeletionCallable, DeletionOperation,
@@ -28,41 +52,16 @@ from lp.code.model.branchjob import (
     BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob)
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
-from lp.bugs.model.bugbranch import BugBranch
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
-from lp.registry.model.product import ProductSet
-from lp.blueprints.model.specificationbranch import (
-    SpecificationBranch)
-from lp.registry.model.sourcepackage import SourcePackage
-from canonical.launchpad.ftests import (
-    ANONYMOUS, login, login_person, logout, syncUpdate)
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet, SpecificationDefinitionStatus)
-from lp.code.bzr import BranchFormat, RepositoryFormat
-from lp.code.enums import (
-    BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
-    BranchVisibilityRule, CodeReviewNotificationLevel)
-from lp.code.interfaces.branch import (
-    BranchCannotBePrivate, BranchCannotBePublic,
-    CannotDeleteBranch)
-from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.model.product import ProductSet
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.testing import (
     run_with_login, TestCase, TestCaseWithFactory, time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 
 class TestCodeImport(TestCase):
