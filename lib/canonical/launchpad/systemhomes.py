@@ -48,6 +48,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lazr.restful import ServiceRootResource
+from lazr.restful.interfaces import ITopLevelEntryLink
 
 
 class AuthServerApplication:
@@ -238,7 +239,7 @@ class RosettaApplication:
 
 class HWDBApplication:
     """See `IHWDBApplication`."""
-    implements(IHWDBApplication)
+    implements(IHWDBApplication, ITopLevelEntryLink)
 
     link_name = 'hwdb'
     entry_type = IHWDBApplication
