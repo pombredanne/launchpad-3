@@ -330,7 +330,7 @@ An IBranch.
 An IBugBranch.
 
     >>> bug = getUtility(IBugSet).get(1)
-    >>> bug_branch = bug.addBranch(
+    >>> bug_branch = bug.linkBranch(
     ...     branch, getUtility(IPersonSet).getByName('sabdfl'))
 
     >>> canonical_url(bug_branch)

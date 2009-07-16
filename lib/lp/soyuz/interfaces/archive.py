@@ -593,6 +593,26 @@ class IArchivePublic(IHasOwner):
         :return: A new IArchiveAuthToken
         """
 
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        packageset=TextLine(
+            title=_("Package set"), required=True),
+        explicit=Bool(
+            title=_("Explicit"), required=False))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @export_factory_operation(Interface, [])
+    def newPackagesetUploader(person, packageset, explicit=False):
+        """Add a package set based permission for a person.
+
+        :param person: An `IPerson` for whom you want to add permission.
+        :param packageset: An `IPackageset` or a string package set name.
+        :param explicit: True if the package set in question requires
+            specialist skills for proper handling.
+
+        :return: The new `ArchivePermission`, or the existing one if it
+            already exists.
+        """
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
@@ -1011,7 +1031,7 @@ class IArchiveSet(Interface):
     def getPPAsForUser(user):
         """Return all PPAs the given user can participate.
 
-        The result is ordered by PPA owner's displayname.
+        The result is ordered by PPA displayname.
         """
 
     def getPPAsPendingSigningKey():

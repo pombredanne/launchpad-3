@@ -384,9 +384,9 @@ class NascentUpload:
         try:
             callable()
         except UploadError, error:
-            self.reject(str(error))
+            self.reject("".join(error.args).encode("utf8"))
         except UploadWarning, error:
-            self.warn(str(error))
+            self.warn("".join(error.args).encode("utf8"))
 
     def run_and_collect_errors(self, callable):
         """Run 'special' callable that generates a list of errors/warnings.
@@ -406,9 +406,9 @@ class NascentUpload:
         """
         for error in callable():
             if isinstance(error, UploadError):
-                self.reject(str(error))
+                self.reject("".join(error.args).encode("utf8"))
             elif isinstance(error, UploadWarning):
-                self.warn(str(error))
+                self.warn("".join(error.args).encode("utf8"))
             else:
                 raise AssertionError(
                     "Unknown error occurred: %s" % str(error))
@@ -534,7 +534,7 @@ class NascentUpload:
         # package set based permissions.
         ap_set = getUtility(IArchivePermissionSet)
         if source_name is not None and signer is not None:
-            if ap_set.isSourceUploadAllowed(source_name, signer):
+            if ap_set.isSourceUploadAllowed(archive, source_name, signer):
                 return
 
         # If source_name is None then the package must be new, but we

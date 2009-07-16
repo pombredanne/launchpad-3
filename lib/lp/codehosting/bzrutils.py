@@ -2,25 +2,36 @@
 
 """Utilities for dealing with Bazaar.
 
-Everything in here should be submitted upstream.
+Much of the code in here should be submitted upstream. The rest is code that
+integrates between Bazaar's infrastructure and Launchpad's infrastructure.
 """
 
 __metaclass__ = type
 __all__ = [
+    'add_exception_logging_hook',
     'DenyingServer',
     'ensure_base',
     'get_branch_stacked_on_url',
     'HttpAsLocalTransport',
+    'install_oops_handler',
     'is_branch_stackable',
+    'remove_exception_logging_hook',
     ]
+
+import os
+import sys
 
 from bzrlib import config
 from bzrlib.errors import (
     NoSuchFile, NotStacked, UnstackableBranchFormat,
     UnstackableRepositoryFormat)
 from bzrlib.remote import RemoteBzrDir
+from bzrlib import trace
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
+
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 
 from lazr.uri import URI
 
@@ -116,6 +127,83 @@ def ensure_base(transport):
             _create_prefix(transport)
 
 
+_exception_logging_hooks = []
+
+_original_log_exception_quietly = trace.log_exception_quietly
+
+
+def _hooked_log_exception_quietly():
+    """Wrapper around `trace.log_exception_quietly` that calls hooks."""
+    _original_log_exception_quietly()
+    for hook in _exception_logging_hooks:
+        hook()
+
+
+def add_exception_logging_hook(hook_function):
+    """Call 'hook_function' when bzr logs an exception.
+
+    :param hook_function: A nullary callable that relies on sys.exc_info()
+        for exception information.
+    """
+    if trace.log_exception_quietly == _original_log_exception_quietly:
+        trace.log_exception_quietly = _hooked_log_exception_quietly
+    _exception_logging_hooks.append(hook_function)
+
+
+def remove_exception_logging_hook(hook_function):
+    """Cease calling 'hook_function' whenever bzr logs an exception.
+
+    :param hook_function: A nullary callable that relies on sys.exc_info()
+        for exception information. It will be removed from the exception
+        logging hooks.
+    """
+    _exception_logging_hooks.remove(hook_function)
+    if len(_exception_logging_hooks) == 0:
+        trace.log_exception_quietly == _original_log_exception_quietly
+
+
+def make_oops_logging_exception_hook(error_utility, request):
+    """Make a hook for logging OOPSes."""
+    def log_oops():
+        error_utility.raising(sys.exc_info(), request)
+    return log_oops
+
+
+class BazaarOopsRequest(ScriptRequest):
+    """An OOPS request specific to bzr."""
+
+    def __init__(self, user_id):
+        """Construct a `BazaarOopsRequest`.
+
+        :param user_id: The database ID of the user doing this.
+        """
+        data = [('user_id', user_id)]
+        super(BazaarOopsRequest, self).__init__(data, URL=None)
+
+
+def make_error_utility(pid=None):
+    """Make an error utility for logging errors from bzr."""
+    if pid is None:
+        pid = os.getpid()
+    error_utility = ErrorReportingUtility()
+    error_utility.configure('bzr_lpserve')
+    error_utility.setOopsToken(str(pid))
+    return error_utility
+
+
+def install_oops_handler(user_id):
+    """Install an OOPS handler for a bzr process.
+
+    When installed, logs any exception passed to `log_exception_quietly`.
+
+    :param user_id: The database ID of the user the process is running as.
+    """
+    error_utility = make_error_utility()
+    request = BazaarOopsRequest(user_id)
+    hook = make_oops_logging_exception_hook(error_utility, request)
+    add_exception_logging_hook(hook)
+
+
 class HttpAsLocalTransport(LocalTransport):
     """A LocalTransport that works using http URLs.
 
@@ -171,4 +259,3 @@ class DenyingServer:
         """Prevent creation of transport for 'url'."""
         raise AssertionError(
             "Creation of transport for %r is currently forbidden" % url)
-

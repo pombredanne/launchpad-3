@@ -44,8 +44,9 @@ from zope.schema import (
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
+    call_with, collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_entry)
+    exported, operation_parameters, operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
 
@@ -300,8 +301,9 @@ class IBranchNavigationMenu(Interface):
 
 class IBranch(IHasOwner, IHasBranchTarget):
     """A Bazaar branch."""
+
     # Mark branches as exported entries for the Launchpad API.
-    export_as_webservice_entry()
+    export_as_webservice_entry(plural_name='branches')
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
@@ -519,16 +521,39 @@ class IBranch(IHasOwner, IHasBranchTarget):
         "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
-    bug_branches = exported(
-        CollectionField(
+    bug_branches = CollectionField(
             title=_("The bug-branch link objects that link this branch "
                     "to bugs."),
             readonly=True,
-            value_type=Reference(schema=Interface))) # Really IBugBranch
+            value_type=Reference(schema=Interface)) # Really IBugBranch
 
-    related_bugs = Attribute(
-        "The bugs related to this branch, likely branches on which "
-        "some work has been done to fix this bug.")
+    linked_bugs = exported(
+        CollectionField(
+            title=_("The bugs linked to this branch."),
+        readonly=True,
+        value_type=Reference(schema=Interface))) # Really IBug
+
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        bug=Reference(schema=Interface)) # Really IBug
+    @export_write_operation()
+    def linkBug(bug, registrant):
+        """Link a bug to this branch.
+
+        :param bug: IBug to link.
+        :param registrant: IPerson linking the bug.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        bug=Reference(schema=Interface)) # Really IBug
+    @export_write_operation()
+    def unlinkBug(bug, user):
+        """Unlink a bug to this branch.
+
+        :param bug: IBug to unlink.
+        :param user: IPerson unlinking the bug.
+        """
 
     # Specification attributes
     spec_links = exported(
@@ -536,6 +561,28 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_("Specification linked to this branch."),
             readonly=True,
             value_type=Reference(Interface))) # Really ISpecificationBranch
+
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        spec=Reference(schema=Interface)) # Really ISpecification
+    @export_write_operation()
+    def linkSpecification(spec, registrant):
+        """Link an ISpecification to a branch.
+
+        :param spec: ISpecification to link.
+        :param registrant: IPerson unlinking the spec.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        spec=Reference(schema=Interface)) # Really ISpecification
+    @export_write_operation()
+    def unlinkSpecification(spec, user):
+        """Unlink an ISpecification to a branch.
+
+        :param spec: ISpecification to unlink.
+        :param user: IPerson unlinking the spec.
+        """
 
     pending_writes = Attribute(
         "Whether there is new Bazaar data for this branch.")
@@ -731,6 +778,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
         series as a branch.
         """
 
+    def associatedSuiteSourcePackages():
+        """Return the suite source packages that this branch is linked to."""
+
     # subscription-related methods
     @operation_parameters(
         person=Reference(
@@ -892,6 +942,8 @@ class IBranch(IHasOwner, IHasBranchTarget):
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
+    export_as_webservice_collection(IBranch)
+
     def countBranchesWithAssociatedBugs():
         """Return the number of branches that have bugs associated.
 
@@ -985,6 +1037,33 @@ class IBranchSet(Interface):
         # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
         # to change for source package branches.
 
+    @operation_parameters(
+        unique_name=TextLine(title=_('Branch unique name'), required=True))
+    @operation_returns_entry(IBranch)
+    @export_read_operation()
+    def getByUniqueName(unique_name):
+        """Find a branch by its ~owner/product/name unique name.
+
+        Return None if no match was found.
+        """
+
+    @operation_parameters(
+        url=TextLine(title=_('Branch URL'), required=True))
+    @operation_returns_entry(IBranch)
+    @export_read_operation()
+    def getByUrl(url):
+        """Find a branch by URL.
+
+        Either from the external specified in Branch.url, from the URL on
+        http://bazaar.launchpad.net/ or the lp: URL.
+
+        Return None if no match was found.
+        """
+
+    @collection_default_content()
+    def getBranches(limit=50):
+        """Return a collection of branches."""
+
 
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered.
@@ -1020,7 +1099,7 @@ class IBranchCloud(Interface):
         """
 
 
-def bazaar_identity(branch, associated_series, is_dev_focus):
+def bazaar_identity(branch, is_dev_focus):
     """Return the shortest lp: style branch identity."""
     lp_prefix = config.codehosting.bzr_lp_prefix
 
@@ -1040,23 +1119,23 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
             return lp_prefix + branch.product.name
 
         # If there are no associated series, then use the unique name.
-        associated_series = list(associated_series)
-        if [] == associated_series:
+        associated_series = sorted(
+            branch.associatedProductSeries(), key=attrgetter('datecreated'))
+        if len(associated_series) == 0:
             return lp_prefix + branch.unique_name
-
-        use_series = sorted(
-            associated_series, key=attrgetter('datecreated'))[-1]
+        # Use the most recently created series.
+        use_series = associated_series[-1]
         return "%(prefix)s%(product)s/%(series)s" % {
             'prefix': lp_prefix,
             'product': use_series.product.name,
             'series': use_series.name}
 
     if branch.sourcepackage is not None:
-        sourcepackage = branch.sourcepackage
-        linked_branches = sourcepackage.linked_branches
-        for pocket, linked_branch in linked_branches:
-            if linked_branch == branch:
-                return lp_prefix + sourcepackage.getPocketPath(pocket)
+        suite_sourcepackages = branch.associatedSuiteSourcePackages()
+        # Take the first link if there is one.
+        if len(suite_sourcepackages) > 0:
+            suite_source_package = suite_sourcepackages[0]
+            return lp_prefix + suite_source_package.path
 
     return lp_prefix + branch.unique_name
 

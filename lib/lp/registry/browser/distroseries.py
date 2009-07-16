@@ -134,7 +134,8 @@ class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
 class DistroSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroSeries
-    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+    enable_only = ['overview', 'branches', 'bugs', 'specifications',
+                   'translations']
 
 
 class DistroSeriesOverviewMenu(ApplicationMenu):
@@ -399,6 +400,13 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
+
+    @property
+    def show_arch_selector(self):
+        """Display the architecture selector.
+
+        See `BuildRecordsView` for further details."""
+        return True
 
 
 class DistroSeriesEditView(LaunchpadEditFormView):

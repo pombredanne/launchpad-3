@@ -9,7 +9,7 @@ can only write to tables it controls. This will allow us to keep the
 SSO Service running during Launchpad outages.
 
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
-    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.signon.dbpolicy import SSODatabasePolicy
     >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
 
 
@@ -29,6 +29,7 @@ As well as these actions, there are a number of error handling code paths:
     ...     LoginServiceLoginView)
     >>> from canonical.signon.interfaces.openidserver import (
     ...     IOpenIDApplication)
+    >>> from canonical.signon.publisher import OpenIDServerTestRequest
     >>> from canonical.launchpad.webapp import LaunchpadFormView
 
     # Create a fake LoginServiceLoginView which stubs out OpenID-related bits
@@ -47,7 +48,12 @@ As well as these actions, there are a number of error handling code paths:
 A valid email address is required for any operation available on this form.
 
     >>> harness = LaunchpadFormHarness(
-    ...     getUtility(IOpenIDApplication), TestingLoginServiceLoginView)
+    ...     getUtility(IOpenIDApplication), TestingLoginServiceLoginView,
+    ...     request_class=OpenIDServerTestRequest)
+
+    # Make sure the right kind of request is used throughout the test.
+    >>> harness.request
+    <...OpenIDServerTestRequest...
 
     >>> harness.submit('continue', {'field.email': 'foo@'})
     >>> for message in harness.getFormErrors():
@@ -90,8 +96,8 @@ associated with a valid Launchpad account is not allowed.
     Sorry, someone has already registered the test@canonical.com email ...
 
 If the email address is associated with an invalid Launchpad account (aka
-placeholder profile), though, we let the user continue the registration as if
-we've never heard about that email address.
+placeholder profile), though, we ask the user to either go to Launchpad and
+claim that profile or register using another email address.
 
     >>> from canonical.launchpad.database import EmailAddress, Person
     >>> email_address = EmailAddress.selectOneBy(
@@ -101,8 +107,13 @@ we've never heard about that email address.
     False
     >>> harness.submit('continue', {'field.email': 'andrelop@debian.org',
     ...                             'field.action': 'createaccount'})
-    >>> print harness.getFormErrors()
-    []
+    >>> for message in harness.getFormErrors():
+    ...     print message
+    The email address andrelop@debian.org is already associated with the
+    Launchpad profile of <a href="http://launchpad.dev/~andrelop">...</a>.
+    You can either <a href="http://launchpad.dev/~andrelop/+claim">claim that
+    profile</a> and use it to log in or register with a different email
+    address.
 
 To recover the password of an existing account we obviously require a
 registered email address which doesn't belong to a team.

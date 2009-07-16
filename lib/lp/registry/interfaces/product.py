@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'InvalidProductName',
     'IProduct',
-    'IProductCommercialRestricted',
+    'IProductProjectReviewRestricted',
     'IProductDriverRestricted',
     'IProductEditRestricted',
     'IProductPublic',
@@ -276,8 +276,8 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
     """`IProduct` properties which require launchpad.Edit permission."""
 
 
-class IProductCommercialRestricted(Interface):
-    """`IProduct` properties which require launchpad.Commercial permission."""
+class IProductProjectReviewRestricted(Interface):
+    """`IProduct` properties which require launchpad.ProjectReview."""
 
     qualifies_for_free_hosting = exported(
         Bool(
@@ -661,6 +661,9 @@ class IProductPublic(
     def getRelease(version):
         """Return the release for this product that has the version given."""
 
+    def getMilestonesAndReleases():
+        """Return all the milestones and releases for this product."""
+
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
@@ -695,7 +698,7 @@ class IProductPublic(
         """Return basic timeline data useful for creating a diagram."""
 
 
-class IProduct(IProductEditRestricted, IProductCommercialRestricted,
+class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
                IProductDriverRestricted, IProductPublic):
     """A Product.
 

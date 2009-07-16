@@ -338,9 +338,6 @@
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt"/>
         <browser:page
-            name="+associations"
-            template="../templates/branch-associations.pt"/>
-        <browser:page
             name="+landing-candidates"
             template="../templates/branch-landing-candidates.pt"/>
         <browser:page
@@ -395,21 +392,21 @@
         class="lp.code.browser.branch.BranchEditWhiteboardView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../../../canonical/launchpad/templates/branch-edit.pt"/>
+        template="../templates/branch-edit.pt"/>
     <browser:page
         name="+edit"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../../../canonical/launchpad/templates/branch-edit.pt"/>
+        template="../templates/branch-edit.pt"/>
     <browser:page
         name="+reviewer"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchReviewerEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../../../canonical/launchpad/templates/branch-edit.pt"/>
+        template="../templates/branch-edit.pt"/>
     <browser:page
         name="+edit-import"
         for="lp.code.interfaces.branch.IBranch"
@@ -500,7 +497,7 @@
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.BranchVisibilityPolicyView"
-        permission="launchpad.Admin"
+        permission="launchpad.Commercial"
         template="../templates/branch-visibility.pt"/>
     <browser:page
         name="+addbranchvisibilitypolicy"
@@ -632,12 +629,33 @@
         name="+branches"
         template="../templates/sourcepackage-branches.pt"/>
     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.code.browser.branchlisting.DistributionBranchListingView"
+        permission="zope.Public"
+        facet="branches"
+        name="+branches"
+        template="../templates/distribution-branches.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.code.browser.branchlisting.DistroSeriesBranchListingView"
+        permission="zope.Public"
+        facet="branches"
+        name="+branches"
+        template="../templates/distribution-branches.pt"/>
+    <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="lp.code.browser.branchlisting.DistributionSourcePackageBranchesView"
         permission="zope.Public"
         facet="branches"
         name="+branches"
         template="../templates/distributionsourcepackage-branches.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.code.browser.branchlisting.GroupedDistributionSourcePackageBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+code-index"
+        template="../templates/distributionsourcepackage-branches-grouped.pt"/>
     <browser:page
         for="lp.registry.interfaces.project.IProject"
         class="lp.code.browser.branchlisting.ProjectBranchesView"
@@ -661,35 +679,35 @@
             permission="zope.Public"
             facet="branches"
             name="+branches"
-            template="../../../canonical/launchpad/templates/person-branches.pt"/>
+            template="../templates/person-branches.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchlisting.PersonOwnedBranchesView"
             permission="zope.Public"
             facet="branches"
             name="+ownedbranches"
-            template="../../../canonical/launchpad/templates/person-branches.pt"/>
+            template="../templates/person-branches.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchlisting.PersonSubscribedBranchesView"
             permission="zope.Public"
             facet="branches"
             name="+subscribedbranches"
-            template="../../../canonical/launchpad/templates/person-branches.pt"/>
+            template="../templates/person-branches.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchlisting.PersonRegisteredBranchesView"
             permission="zope.Public"
             facet="branches"
             name="+registeredbranches"
-            template="../../../canonical/launchpad/templates/person-branches.pt"/>
+            template="../templates/person-branches.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchlisting.PersonCodeSummaryView"
             permission="zope.Public"
             facet="branches"
             name="+codesummary"
-            template="../../../canonical/launchpad/templates/person-codesummary.pt"/>
+            template="../templates/person-codesummary.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchmergeproposallisting.PersonActiveReviewsView"
@@ -722,7 +740,7 @@
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchlisting.PersonTeamBranchesView"
             name="+portlet-teambranches"
-            template="../../../canonical/launchpad/templates/person-portlet-teambranches.pt"
+            template="../templates/person-portlet-teambranches.pt"
             permission="zope.Public"/>
     </facet>
 
@@ -793,6 +811,16 @@
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         layer="canonical.launchpad.layers.CodeLayer"
+        name="+code-index"/>
+
+    <browser:defaultView
+        for="lp.registry.interfaces.distribution.IDistribution"
+        layer="canonical.launchpad.layers.CodeLayer"
+        name="+branches"/>
+
+    <browser:defaultView
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        layer="canonical.launchpad.layers.CodeLayer"
         name="+branches"/>
 
     <browser:url
@@ -800,5 +828,37 @@
         path_expression="string:+preview-diff"
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        layer="canonical.launchpad.layers.CodeLayer"
+        name="+branches" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.branchlisting.PersonProductOwnedBranchesView"
+        permission="zope.Public"
+        facet="branches"
+        name="+branches"
+        template="../templates/personproduct-branches.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.branchlisting.PersonProductTeamBranchesView"
+        facet="branches"
+        name="+portlet-teambranches"
+        template="../templates/person-portlet-teambranches.pt"
+        permission="zope.Public"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.branchlisting.PersonProductCodeSummaryView"
+        facet="branches"
+        name="+codesummary"
+        template="../templates/person-codesummary.pt"
+        permission="zope.Public"
+        />
 
 </configure>

@@ -6,10 +6,12 @@ import unittest
 
 from canonical.testing import ZopelessDatabaseLayer
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.testing import TestCaseWithFactory, verifyObject
 
 
-class HasTranslationTemplatesMixin(TestCaseWithFactory):
+class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
     """Test behaviour of objects with translation templates."""
 
     layer = ZopelessDatabaseLayer
@@ -17,7 +19,7 @@ class HasTranslationTemplatesMixin(TestCaseWithFactory):
     def setUp(self):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
-        super(HasTranslationTemplatesMixin, self).setUp()
+        super(HasTranslationTemplatesTestMixin, self).setUp()
 
     def createTranslationTemplate(self, name, priority=0):
         """Attaches a template to appropriate container."""
@@ -128,8 +130,67 @@ class HasTranslationTemplatesMixin(TestCaseWithFactory):
             set([pofile_sr.id, pofile_es.id]),
             current_translations_ids)
 
+    def test_has_current_translation_templates(self):
+        # A series without templates has no current templates.
+        self.assertFalse(self.container.has_current_translation_templates)
 
-class TestProductSeries(HasTranslationTemplatesMixin):
+        # A series with a current template has current templates.
+        first_template = self.createTranslationTemplate("first")
+        self.assertTrue(self.container.has_current_translation_templates)
+
+        # A series with only non-current templates has no current
+        # templates.
+        first_template.iscurrent = False
+        self.assertFalse(self.container.has_current_translation_templates)
+
+        # A series with current and non-current templates has current
+        # templates.
+        second_template = self.createTranslationTemplate("second")
+        self.assertTrue(self.container.has_current_translation_templates)
+
+        # A product or distribution that doesn't use Launchpad for
+        # translations has no current templates.
+        self.product_or_distro.official_rosetta = False
+        self.assertFalse(self.container.has_current_translation_templates)
+
+    def test_getTranslationTemplateFormats(self):
+        # Check that translation_template_formats works properly.
+
+        # With no templates, empty list is returned.
+        all_formats = self.container.getTranslationTemplateFormats()
+        self.assertEquals([], all_formats)
+
+        # With one template, that template's format is returned.
+        template1 = self.createTranslationTemplate("one")
+        template1.source_file_format = TranslationFileFormat.PO
+        all_formats = self.container.getTranslationTemplateFormats()
+        self.assertEquals(
+            [TranslationFileFormat.PO],
+            all_formats)
+
+        # With multiple templates of the same format, that
+        # format is still returned only once.
+        template2 = self.createTranslationTemplate("two")
+        template2.source_file_format = TranslationFileFormat.PO
+        all_formats = self.container.getTranslationTemplateFormats()
+        self.assertEquals(
+            [TranslationFileFormat.PO],
+            all_formats)
+
+        # With another template of a different format,
+        # we get that format in a returned list.
+        template3 = self.createTranslationTemplate("three")
+        template3.source_file_format = TranslationFileFormat.XPI
+        all_formats = self.container.getTranslationTemplateFormats()
+
+        # Items are sorted by the format values, PO==1 < XPI==3.
+        self.assertEquals(
+            [TranslationFileFormat.PO, TranslationFileFormat.XPI],
+            all_formats)
+
+
+class TestProductSeriesHasTranslationTemplates(
+    HasTranslationTemplatesTestMixin):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -139,12 +200,14 @@ class TestProductSeries(HasTranslationTemplatesMixin):
         return potemplate
 
     def setUp(self):
-        super(TestProductSeries, self).setUp()
+        super(TestProductSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.container.product.official_rosetta = True
+        self.product_or_distro = self.container.product
+        self.product_or_distro.official_rosetta = True
 
 
-class TestSourcePackage(HasTranslationTemplatesMixin):
+class TestSourcePackageHasTranslationTemplates(
+    HasTranslationTemplatesTestMixin):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -155,12 +218,14 @@ class TestSourcePackage(HasTranslationTemplatesMixin):
         return potemplate
 
     def setUp(self):
-        super(TestSourcePackage, self).setUp()
+        super(TestSourcePackageHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeSourcePackage()
-        self.container.distroseries.distribution.official_rosetta = True
+        self.product_or_distro = self.container.distroseries.distribution
+        self.product_or_distro.official_rosetta = True
 
 
-class TestDistroSeries(HasTranslationTemplatesMixin):
+class TestDistroSeriesHasTranslationTemplates(
+    HasTranslationTemplatesTestMixin):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -173,15 +238,19 @@ class TestDistroSeries(HasTranslationTemplatesMixin):
         return potemplate
 
     def setUp(self):
-        super(TestDistroSeries, self).setUp()
+        super(TestDistroSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeDistroRelease()
-        self.container.distribution.official_rosetta = True
+        self.product_or_distro = self.container.distribution
+        self.product_or_distro.official_rosetta = True
 
 
 def test_suite():
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestProductSeries))
-    suite.addTest(loader.loadTestsFromTestCase(TestSourcePackage))
-    suite.addTest(loader.loadTestsFromTestCase(TestDistroSeries))
+    suite.addTest(loader.loadTestsFromTestCase(
+        TestProductSeriesHasTranslationTemplates))
+    suite.addTest(loader.loadTestsFromTestCase(
+        TestSourcePackageHasTranslationTemplates))
+    suite.addTest(loader.loadTestsFromTestCase(
+        TestDistroSeriesHasTranslationTemplates))
     return suite

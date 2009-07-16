@@ -8,7 +8,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.model.potemplate import POTemplateSet
+from lp.translations.model.pofile import DummyPOFile
+from lp.translations.model.potemplate import get_pofiles_for, POTemplateSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -243,22 +244,35 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
         }
         self._compareResult(expected, classes)
 
-    def test_GetSharingPOTemplates(self):
+    def _test_GetSharingPOTemplates(self, template_name, not_matching_name):
         # getSharingTemplates simply returns a list of sharing templates.
         warty_template = self.factory.makePOTemplate(
             distroseries=self.hoary, sourcepackagename=self.package,
-            name='foo')
+            name=template_name)
         hoary_template = self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.package,
-            name='foo')
+            name=template_name)
         other_hoary_template = self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.package,
-            name='foo-other')
+            name=not_matching_name)
         subset = getUtility(IPOTemplateSet).getSharingSubset(
             distribution=self.ubuntu, sourcepackagename=self.package)
 
-        templates = set(list(subset.getSharingPOTemplates('foo')))
+        templates = set(list(subset.getSharingPOTemplates(template_name)))
         self.assertEqual(set([warty_template, hoary_template]), templates)
+
+    def test_GetSharingPOTemplates(self):
+        # getSharingTemplates returns all sharing templates named foo.
+        self._test_GetSharingPOTemplates('foo', 'foo-other')
+
+    def test_GetSharingPOTemplates_special_name(self):
+        # Valid template names may also contain '+', '-' and '.' .
+        # But they must not be interpreted as regular expressions.
+        template_name = 'foo-bar.baz+'
+        # This name would match if the template_name was interpreted as a
+        # regular expression
+        not_matching_name = 'foo-barybazz'
+        self._test_GetSharingPOTemplates(template_name, not_matching_name)
 
     def test_GetSharingPOTemplates_NoSourcepackagename(self):
         # getSharingPOTemplates needs a sourcepackagename to be set.
@@ -377,6 +391,41 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         # Age also acts as a tie-breaker between disabled templates.
         self._enableTemplates(False)
         self.test_ageBreaksTie()
+
+
+class TestGetPOFilesFor(TestCaseWithFactory):
+    """Test `get_pofiles_for`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetPOFilesFor, self).setUp()
+        self.potemplate = self.factory.makePOTemplate()
+        self.greek = getUtility(ILanguageSet).getLanguageByCode('el')
+
+    def _makePOFile(self):
+        """Produce Greek `POFile` for `self.potemplate`."""
+        return self.factory.makePOFile('el', potemplate=self.potemplate)
+
+    def test_get_pofiles_for_empty_template_list(self):
+        # get_pofiles_for sensibly returns the empty list for an empty
+        # template list.
+        pofiles = get_pofiles_for([], self.greek)
+        self.assertEqual([], pofiles)
+
+    def test_get_pofiles_for_translated_template(self):
+        # get_pofiles_for finds a POFile for a given template in a given
+        # language.
+        greek_pofile = self._makePOFile()
+        pofiles = get_pofiles_for([self.potemplate], self.greek)
+        self.assertEqual([greek_pofile], pofiles)
+
+    def test_get_pofiles_for_untranslated_template(self):
+        # If there is no POFile for a template in a language,
+        # get_pofiles_for makes up a DummyPOFile.
+        pofiles = get_pofiles_for([self.potemplate], self.greek)
+        pofile = pofiles[0]
+        self.assertTrue(isinstance(pofile, DummyPOFile))
 
 
 def test_suite():
