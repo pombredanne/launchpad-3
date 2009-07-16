@@ -147,7 +147,6 @@ from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
-from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.answers.interfaces.questionenums import QuestionParticipation
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -179,6 +178,7 @@ from canonical.launchpad.interfaces.message import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.registry.interfaces.salesforce import (
@@ -2970,7 +2970,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     @cachedproperty
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return allvhosts.configs['openid'].rooturl + '+openid'
+        return CurrentOpenIDEndPoint.getServiceURL()
 
     @cachedproperty
     def openid_identity_url(self):

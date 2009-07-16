@@ -37,7 +37,6 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccountSet, AccountStatus
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonVisibility)
@@ -45,7 +44,8 @@ from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
 from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
-from lp.services.openid.adapters.openid import OpenIDPersistentIdentity
+from lp.services.openid.adapters.openid import (
+    CurrentOpenIDEndPoint, OpenIDPersistentIdentity)
 from canonical.signon.interfaces.openidserver import (
     ILoginServiceAuthorizeForm, ILoginServiceLoginForm,
     IOpenIDAuthorizationSet)

@@ -13,7 +13,7 @@ from openid.yadis.constants import YADIS_CONTENT_TYPE, YADIS_HEADER_NAME
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
 
-from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 
 
 class XRDSContentNegotiationMixin:
