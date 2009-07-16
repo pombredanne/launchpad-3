@@ -89,9 +89,6 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         "Return a list of CURRENT publishing records for this source "
         "package in this distribution.")
 
-    def __getitem__(version):
-        """Should map to getVersion."""
-
     def getVersion(version):
         """Return the a DistributionSourcePackageRelease with the given
         version, or None if there has never been a release with that
