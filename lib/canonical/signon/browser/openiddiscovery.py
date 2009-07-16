@@ -63,7 +63,8 @@ class OpenIDApplicationNavigation(Navigation):
 class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     """Render the OpenID identity page."""
 
-    xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
+    xrds_template = ViewPageTemplateFile(
+        "../../../lp/services/openid/templates/person-xrds.pt")
 
     @cachedproperty
     def openid_identity_url(self):
