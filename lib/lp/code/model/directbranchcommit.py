@@ -15,6 +15,7 @@ from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview
 
+from canonical.launchpad.interfaces import IMasterObject
 from lp.codehosting.vfs import make_branch_mirrorer
 
 
@@ -171,6 +172,8 @@ class DirectBranchCommit:
 
             revno, old_rev_id = self.bzrbranch.last_revision_info()
             self.bzrbranch.set_last_revision_info(revno + 1, new_rev_id)
+
+            IMasterObject(self.db_branch).requestMirror()
 
         finally:
             self.unlock()
