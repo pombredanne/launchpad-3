@@ -1,17 +1,21 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
+
+"""Tests for error logging & OOPS reporting."""
 
 __metaclass__ = type
 
-import sys
-import os
 import datetime
-import pytz
-import unittest
+import logging
+import os
 import shutil
 import StringIO
-from textwrap import dedent
+import sys
 import tempfile
+from textwrap import dedent
 import traceback
+import unittest
+
+import pytz
 
 from zope.app.publication.tests.test_zopepublication import (
     UnauthenticatedPrincipal)
@@ -26,9 +30,12 @@ from canonical.testing import reset_logging
 from canonical.launchpad import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest, _is_sensitive)
+    ErrorReport, ErrorReportingUtility, OopsLoggingHandler, ScriptRequest,
+    _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from lazr.restful.declarations import webservice_error
+from lp.services.osutils import remove_tree
+from lp.testing import TestCase
 
 
 UTC = pytz.timezone('UTC')
@@ -43,12 +50,8 @@ class TestErrorReport(unittest.TestCase):
     def tearDown(self):
         reset_logging()
 
-    def test_import(self):
-        from canonical.launchpad.webapp.errorlog import ErrorReport
-
     def test___init__(self):
         """Test ErrorReport.__init__()"""
-        from canonical.launchpad.webapp.errorlog import ErrorReport
         entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
                             'pageid', 'traceback-text', 'username', 'url', 42,
                             [('name1', 'value1'), ('name2', 'value2'),
@@ -75,7 +78,6 @@ class TestErrorReport(unittest.TestCase):
 
     def test_write(self):
         """Test ErrorReport.write()"""
-        from canonical.launchpad.webapp.errorlog import ErrorReport
         entry = ErrorReport('OOPS-A0001', 'NotFound', 'error message',
                             datetime.datetime(2005, 04, 01, 00, 00, 00,
                                               tzinfo=UTC),
@@ -112,7 +114,6 @@ class TestErrorReport(unittest.TestCase):
 
     def test_read(self):
         """Test ErrorReport.read()"""
-        from canonical.launchpad.webapp.errorlog import ErrorReport
         fp = StringIO.StringIO(dedent("""\
             Oops-Id: OOPS-A0001
             Exception-Type: NotFound
@@ -168,7 +169,7 @@ class TestErrorReportingUtility(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
-        test_config_data = config.pop('test_data')
+        config.pop('test_data')
         reset_logging()
 
     def test_configure(self):
@@ -716,12 +717,63 @@ class TestRequestWithPrincipal(TestRequest):
             return u'Login'
 
 
+class TestOopsLoggingHandler(TestCase):
+    """Tests for a Python logging handler that logs OOPSes."""
+
+    def assertOopsMatches(self, report, exc_type, exc_value):
+        """Assert that 'report' is an OOPS of a particular exception.
+
+        :param report: An `IErrorReport`.
+        :param exc_type: The string of an exception type.
+        :param exc_value: The string of an exception value.
+        """
+        self.assertEqual(exc_type, report.type)
+        self.assertEqual(exc_value, report.value)
+        self.assertTrue(
+            report.tb_text.startswith('Traceback (most recent call last):\n'),
+            report.tb_text)
+        self.assertEqual('', report.pageid)
+        self.assertEqual('None', report.username)
+        self.assertEqual('None', report.url)
+        self.assertEqual([], report.req_vars)
+        self.assertEqual([], report.db_statements)
+
+    def setUp(self):
+        TestCase.setUp(self)
+        self.logger = logging.getLogger(self.factory.getUniqueString())
+        self.error_utility = ErrorReportingUtility()
+        self.error_utility.error_dir = tempfile.mkdtemp()
+        self.logger.addHandler(
+            OopsLoggingHandler(error_utility=self.error_utility))
+        self.addCleanup(remove_tree, self.error_utility.error_dir)
+
+    def test_exception_records_oops(self):
+        # When OopsLoggingHandler is a handler for a logger, any exceptions
+        # logged will have OOPS reports generated for them.
+        error_message = self.factory.getUniqueString()
+        try:
+            1/0
+        except ZeroDivisionError:
+            self.logger.exception(error_message)
+        oops_report = self.error_utility.getLastOopsReport()
+        self.assertOopsMatches(
+            oops_report, 'ZeroDivisionError',
+            'integer division or modulo by zero')
+
+    def test_warning_does_nothing(self):
+        # Logging a warning doesn't generate an OOPS.
+        self.logger.warning("Cheeseburger")
+        self.assertIs(None, self.error_utility.getLastOopsReport())
+
+    def test_error_does_nothing(self):
+        # Logging an error without an exception does nothing.
+        self.logger.error("Delicious ponies")
+        self.assertIs(None, self.error_utility.getLastOopsReport())
+
+
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestErrorReport))
-    suite.addTest(unittest.makeSuite(TestErrorReportingUtility))
-    suite.addTest(unittest.makeSuite(TestSensitiveRequestVariables))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
+
 
 if __name__ == '__main__':
     unittest.main(defaultTest='test_suite')

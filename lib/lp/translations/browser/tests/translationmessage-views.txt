@@ -481,16 +481,27 @@ languages...
 
     >>> len(suggestions.submissions)
     1
-    >>> sorted(suggestions.submissions[0].items())
-    [('date_created', ...),
-     ('id', 703),
-     ('language', ...), ('person', ...),
-     ('plural_index', 0),
-     ('pofile', ...), ('potmsgset', ...),
-     ('suggestion_html_id', u'msgset_15_ja_suggestion_703_0'),
-     ('suggestion_text', u'Foo <code>%d</code>'),
-     ('translation_html_id', u'msgset_15_es_translation_0'),
-     ('translationmessage', ...)]
+    >>> submission = suggestions.submissions[0]
+    >>> for attr in sorted(dir(submission)):
+    ...     if not attr.startswith('_'):
+    ...         print "%s: %s" % (attr, getattr(submission, attr))
+    date_created: ...
+    id: 703
+    is_empty: False
+    is_local_to_pofile: False
+    language: ...
+    legal_warning: False
+    origin_html_id: msgset_15_ja_suggestion_703_0_origin
+    person: ...
+    plural_index: 0
+    pofile: ...
+    potmsgset: ...
+    row_html_id:
+    suggestion_dismissable_class: msgset_15_dismissable_button
+    suggestion_html_id: msgset_15_ja_suggestion_703_0
+    suggestion_text: Foo <code>%d</code>
+    translation_html_id: msgset_15_es_translation_0
+    translationmessage: ...
 
 Another reason why a suggestion might not have translations for all
 plural forms is that it was submitted as a translation for an English

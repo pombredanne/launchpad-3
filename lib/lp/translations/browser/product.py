@@ -14,11 +14,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadView, Link, canonical_url,
-    enabled_with_permission)
+    LaunchpadView, Link, canonical_url, enabled_with_permission)
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.browser.product import ProductEditView
 from lp.translations.browser.translations import TranslationsMixin
 
 class ProductTranslationsMenu(NavigationMenu):
@@ -60,7 +60,7 @@ class ProductTranslationsMenu(NavigationMenu):
         return Link(link, text, icon='translation')
 
 
-class ProductChangeTranslatorsView(TranslationsMixin, LaunchpadEditFormView):
+class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
     label = "Select a new translation group"
     field_names = ["translationgroup", "translationpermission"]
 

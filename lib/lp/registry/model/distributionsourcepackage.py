@@ -124,9 +124,6 @@ class DistributionSourcePackage(BugTargetBase,
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
 
-    def __getitem__(self, version):
-        return self.getVersion(version)
-
     @property
     def latest_overall_publication(self):
         """See `IDistributionSourcePackage`."""
@@ -251,6 +248,8 @@ class DistributionSourcePackage(BugTargetBase,
             (SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == self.sourcepackagename,
+            # Ensure that the package was not copied.
+            SourcePackageRelease.upload_archive == Archive.id,
             # Next, the joins for the ordering by soyuz karma of the
             # SPR creator.
             KarmaTotalCache.person == SourcePackageRelease.creatorID,

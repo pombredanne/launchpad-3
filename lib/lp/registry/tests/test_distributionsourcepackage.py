@@ -109,5 +109,21 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
 
         self.assertEqual(related_archive_names, ['gedit-nightly'])
 
+    def test_does_not_include_copied_packages(self):
+        # Packages that have been copied rather than uploaded are not
+        # included when determining related archives.
+
+        # Ensure that the gedit package in gedit-nightly was originally
+        # uploaded to gedit-beta (ie. copied from there).
+        gedit_release = self.gedit_nightly_src_hist.sourcepackagerelease
+        gedit_release.upload_archive = self.archives['gedit-beta']
+
+        related_archives = self.source_package.findRelatedArchives()
+        related_archive_names = [
+            archive.name for archive in related_archives]
+
+        self.assertEqual(related_archive_names, ['gedit-beta'])
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

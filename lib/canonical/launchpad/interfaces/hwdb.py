@@ -61,7 +61,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
-from lazr.restful.interfaces import ITopLevelEntryLink
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_read_operation, exported, operation_parameters,
@@ -1145,7 +1144,7 @@ class IHWSubmissionBugSet(Interface):
         """
 
 
-class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
+class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""
 
     export_as_webservice_entry('hwdb')
