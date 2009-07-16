@@ -49,9 +49,7 @@ using the changes file template (changes_template) above with the
 Launchpad-bugs-fixed header.  This is required so that we have some data
 for close_bugs to operate on.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     PackagePublishingPocket, PackageUploadStatus)
-
+    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
     >>> def add_package_upload(
     ...        source_release, fixing_text,
     ...        pocket=PackagePublishingPocket.RELEASE,
