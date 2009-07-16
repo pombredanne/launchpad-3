@@ -31,6 +31,7 @@ from email.Header import Header
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email import Charset
+import quopri
 from smtplib import SMTP
 
 from zope.app import zapi
@@ -172,9 +173,24 @@ class MailController(object):
             disposition_kwargs['filename'] = filename
         attachment.add_header(
             'Content-Disposition', disposition, **disposition_kwargs)
-        if not is_ascii_only(content):
-            encode_base64(attachment)
+        self.encodeOptimally(attachment)
         self.attachments.append(attachment)
+
+    @staticmethod
+    def encodeOptimally(part):
+        orig_payload = part.get_payload()
+        # Payloads which are completely ascii need no encoding.
+        if is_ascii_only(orig_payload):
+            return
+        quopri_bytes = quopri.encodestring(orig_payload)
+        # If 10% of characters need to be encoded, len is 1.2 times
+        # the original len.  If more than 10% need encoding, the result
+        # is unlikely to be readable.
+        if len(quopri_bytes) < len(orig_payload) * 1.2:
+            part.set_payload(quopri_bytes)
+            part['Content-Transfer-Encoding'] = 'quoted-printable'
+        else:
+            encode_base64(part)
 
     def makeMessage(self):
         # It's the caller's responsibility to either encode the address fields

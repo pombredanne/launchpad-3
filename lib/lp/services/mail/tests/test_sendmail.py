@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+from email.Message import Message
 import unittest
 
 from zope.testing.doctest import DocTestSuite
@@ -179,6 +180,34 @@ class TestMailController(TestCase):
             'text/plain', attachment['Content-Type'])
         self.assertEqual(
             'inline; filename="README"', attachment['Content-Disposition'])
+
+    def test_encodeOptimally_with_ascii_text(self):
+        """Mostly-ascii attachments should be encoded as quoted-printable."""
+        text = 'I went to the cafe today.'
+        part = Message()
+        part.set_payload(text)
+        MailController.encodeOptimally(part)
+        self.assertEqual(text, part.get_payload(decode=True))
+        self.assertIs(None, part['Content-Transfer-Encoding'])
+
+    def test_encodeOptimally_with_text(self):
+        """Mostly-ascii attachments should be encoded as quoted-printable."""
+        text = u'I went to the caf\u00e9 today.'.encode('utf-8')
+        part = Message()
+        part.set_payload(text)
+        MailController.encodeOptimally(part)
+        self.assertEqual(text, part.get_payload(decode=True))
+        self.assertEqual('quoted-printable',
+                         part['Content-Transfer-Encoding'])
+
+    def test_encodeOptimally_with_binary(self):
+        """Significantly non-ascii attachments should be base64-encoded."""
+        bytes = '\x00\xff\x44\x55\xaa\x99'
+        part = Message()
+        part.set_payload(bytes)
+        MailController.encodeOptimally(part)
+        self.assertEqual(bytes, part.get_payload(decode=True))
+        self.assertEqual('base64', part['Content-Transfer-Encoding'])
 
     def test_sendUsesRealTo(self):
         """MailController.envelope_to is provided as to_addrs."""
