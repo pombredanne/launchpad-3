@@ -22,6 +22,7 @@ from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
@@ -552,11 +553,13 @@ class POFile(SQLBase, POFileMixIn):
 
     def canEditTranslations(self, person):
         """See `IPOFile`."""
-        return _can_edit_translations(self, person)
+        return (not config.launchpad.read_only and
+                _can_edit_translations(self, person))
 
     def canAddSuggestions(self, person):
         """See `IPOFile`."""
-        return _can_add_suggestions(self, person)
+        return (not config.launchpad.read_only and
+                _can_add_suggestions(self, person))
 
     def translated(self):
         """See `IPOFile`."""
