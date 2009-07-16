@@ -6,6 +6,7 @@ import unittest
 
 from zope.testing.doctest import DocTestSuite
 
+from canonical.launchpad.helpers import is_ascii_only
 from lp.testing import TestCase
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
@@ -128,6 +129,26 @@ class TestMailController(TestCase):
         message.as_string()
         body, attachment = message.get_payload()
         self.assertEqual('Bj\xc3\xb6rn', body.get_payload(decode=True))
+        self.assertTrue(is_ascii_only(message.as_string()))
+
+    def test_MakeMessage_with_binary_attachment(self):
+        """Message should still encode as ascii with non-ascii attachments."""
+        ctrl = MailController(
+            'from@example.com', 'to@example.com', 'subject', u'Body')
+        ctrl.addAttachment('\x00\xffattach')
+        message = ctrl.makeMessage()
+        self.assertTrue(
+            is_ascii_only(message.as_string()), "Non-ascii message string.")
+
+    def test_MakeMessage_with_non_binary_attachment(self):
+        """Simple ascii attachments should not be encoded."""
+        ctrl = MailController(
+            'from@example.com', 'to@example.com', 'subject', u'Body')
+        ctrl.addAttachment('Hello, I am ascii')
+        message = ctrl.makeMessage()
+        body, attachment = message.get_payload()
+        self.assertEqual(
+            attachment.get_payload(), attachment.get_payload(decode=True))
 
     def test_MakeMessage_with_attachment(self):
         """A message with an attachment should be multipart."""
