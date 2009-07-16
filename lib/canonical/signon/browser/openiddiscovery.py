@@ -25,6 +25,7 @@ from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (
     Navigation, stepthrough, stepto)
 from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
+from canonical.signon.interfaces.ssoaccount import ISSOAccount
 
 
 class OpenIDApplicationURL:
@@ -142,3 +143,7 @@ class OpenIDApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
         "../templates/openid-index.pt")
     xrds_template = ViewPageTemplateFile(
         "../templates/openidapplication-xrds.pt")
+
+    @property
+    def sso_account(self):
+        return ISSOAccount(self.account)
