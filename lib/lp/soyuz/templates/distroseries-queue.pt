@@ -128,29 +128,7 @@
                   </span>
                 </td>
              </tr>
-             <tal:copy condition="packageupload/pending_delayed_copy">
-               <tr tal:attributes="class string:${filelist_class}"
-                   tal:define="archive
-                               packageupload/sourcepackagerelease/upload_archive"
-                   style="display:none">
-                 <td />
-                 <td tal:condition="view/availableActions" />
-                 <td>Copied from
-                   <tal:linked condition="archive/required:launchpad.View">
-                     <a tal:attributes="href archive/fmt:url"
-                        tal:content="archive/displayname" />
-                   </tal:linked>
-                   <tal:not_linked
-                     condition="not: archive/required:launchpad.View"
-                     replace="archive/displayname">
-                   </tal:not_linked>
-                 </td>
-                 <td colspan="6" />
-               </tr>
-             </tal:copy>
-             <tal:upload condition="not: packageupload/pending_delayed_copy">
-               <metal:filelist use-macro="template/macros/package-filelist"/>
-             </tal:upload>
+             <metal:filelist use-macro="template/macros/package-filelist"/>
            </tal:block>
          </tal:batch>
          <tr tal:condition="view/availableActions">
@@ -224,6 +202,28 @@
     :packageupload: A PackageUpload record for which we display files.
   </tal:comment>
 
+    <tal:copy condition="packageupload/pending_delayed_copy">
+      <tr tal:attributes="class string:${filelist_class}"
+          tal:define="archive
+                      packageupload/sourcepackagerelease/upload_archive"
+          style="display:none">
+        <td />
+        <td tal:condition="view/availableActions" />
+        <td>Copied from
+          <tal:linked condition="archive/required:launchpad.View">
+            <a tal:attributes="href archive/fmt:url"
+               tal:content="archive/displayname" />
+          </tal:linked>
+          <tal:not_linked
+            condition="not: archive/required:launchpad.View"
+            replace="archive/displayname">
+          </tal:not_linked>
+        </td>
+        <td colspan="6" />
+      </tr>
+    </tal:copy>
+
+    <tal:upload condition="not: packageupload/pending_delayed_copy">
       <tr tal:repeat="file packageupload/source_files"
           tal:attributes="class string:${filelist_class}"
           style="display:none">
@@ -281,6 +281,7 @@
         <td colspan="6"/>
       </tr>
     </tal:custom>
+    </tal:upload>
 
 </metal:macro>
 

@@ -3,19 +3,6 @@ Displaying delayed-copies
 
 Delayed copies can be browsed in the UI as if they were normal uploads.
 
-The show up in the ACCEPTED distroSeries queue when they exist.
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
-    >>> anon_browser.getLink("Show uploads").click()
-    >>> anon_browser.getControl(
-    ...     name="queue_state", index=0).displayValue = ['Accepted']
-    >>> anon_browser.getControl("Update").click()
-
-    >>> for message in get_feedback_messages(anon_browser.contents):
-    ...     print message
-    The Accepted queue is empty.
-
 We will create a testing delayed-copy for Ubuntu/breezy-autotest.
 
     # Create a delayed-copy in ubuntu/breezy-autotest.
@@ -46,9 +33,15 @@ We will create a testing delayed-copy for Ubuntu/breezy-autotest.
     >>> logout()
 
 Any user accessing the breezy-autotest ACCEPTED queue will notice the
-delayed-copy.
+delayed-copy. They show up in the ACCEPTED distro series queue while
+they are pending processing.
 
-    >>> anon_browser.reload()
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
+    >>> anon_browser.getLink("Show uploads").click()
+    >>> anon_browser.getControl(
+    ...     name="queue_state", index=0).displayValue = ['Accepted']
+    >>> anon_browser.getControl("Update").click()
 
 It's is listed as a normal upload, however there is no link to the
 'changesfile'.
@@ -65,12 +58,15 @@ It's is listed as a normal upload, however there is no link to the
 
 On the corresponding expandable area, below the row, there is no file
 information, since the delayed-copy is still pending processing. A
-user can simply view from where the delayed copy came from.
+user can simply view where the delayed copy came from.
 
     >>> print extract_text(
     ...     first_tag_by_class(anon_browser.contents,
     ...                        'queue-%s' % delayed_copy.id))
     Copied from PPA for Celso Providelo
+
+The delayed-copy source archive is not linked, since the requester has
+no permission to view it.
 
     >>> anon_browser.getLink('PPA for Celso Providelo')
     Traceback (most recent call last):
@@ -84,12 +80,7 @@ archive, nothing else.
 
     >>> cprov_browser = setupBrowser(
     ...       auth="Basic celso.providelo@canonical.com:cprov")
-
-    >>> cprov_browser.open(
-    ...     "http://launchpad.dev/ubuntu/breezy-autotest/+queue")
-    >>> cprov_browser.getControl(
-    ...     name="queue_state", index=0).displayValue = ['Accepted']
-    >>> cprov_browser.getControl("Update").click()
+    >>> cprov_browser.open(anon_browser.url)
 
     >>> for row in find_tags_by_class(cprov_browser.contents, "queue-row"):
     ...     print extract_text(row)

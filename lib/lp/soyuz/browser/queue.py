@@ -471,8 +471,9 @@ class CompletePackageUpload:
     def changesfile(self):
         """Return the upload changesfile object, even for delayed-copies.
 
-        If the context `PackageUpload` is a delayed-copy, return the
-        changesfile originally used to upload the contained source.
+        If the context `PackageUpload` is a delayed-copy, which doesn't
+        have '.changesfile' by design, return the changesfile originally
+        used to upload the contained source.
         """
         if self.is_delayed_copy:
             return self.sources[0].sourcepackagerelease.upload_changesfile
