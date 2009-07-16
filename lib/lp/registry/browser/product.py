@@ -32,7 +32,6 @@ __all__ = [
     'ProductSetReviewLicensesView',
     'ProductSetView',
     'ProductSpecificationsMenu',
-    'ProductTranslationsMenu',
     'ProductView',
     'SortSeriesMixin',
     'ProjectAddStepOne',
@@ -88,7 +87,6 @@ from lp.registry.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -108,7 +106,6 @@ from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import (
     LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
-from lp.registry.model.productseries import ProductSeries
 
 
 OR = '|'
@@ -504,45 +501,6 @@ class ProductBountiesMenu(ApplicationMenu):
     def link(self):
         text = 'Link existing bounty'
         return Link('+linkbounty', text, icon='edit')
-
-
-class ProductTranslationsMenu(NavigationMenu):
-
-    usedfor = IProduct
-    facet = 'translations'
-    links = (
-        'overview',
-        'translators',
-        'translationdownload',
-        'imports',
-        )
-
-    def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
-
-    @enabled_with_permission('launchpad.Edit')
-    def translators(self):
-        text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
-
-    @enabled_with_permission('launchpad.AnyPerson')
-    def translationdownload(self):
-        text = 'Download'
-        preferred_series = self.context.primary_translatable
-        enabled = (self.context.official_rosetta and
-            preferred_series is not None)
-        link = ''
-        if enabled:
-            link = '%s/+export' % preferred_series.name
-            text = 'Download "%s"' % preferred_series.name
-
-        return Link(link, text, icon='download', enabled=enabled)
-
-    def overview(self):
-        text = 'Overview'
-        link = canonical_url(self.context, rootsite='translations')
-        return Link(link, text, icon='translation')
 
 
 def _sort_distros(a, b):

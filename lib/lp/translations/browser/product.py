@@ -14,8 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadView, Link, canonical_url,
-    enabled_with_permission)
+    LaunchpadView, Link, canonical_url, enabled_with_permission)
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.productseries import ProductSeries
