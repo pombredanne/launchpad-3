@@ -37,8 +37,7 @@ delayed-copy. They show up in the ACCEPTED distro series queue while
 they are pending processing.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
-    >>> anon_browser.getLink("Show uploads").click()
+    ...     "http://launchpad.dev/ubuntu/breezy-autotest/+queue")
     >>> anon_browser.getControl(
     ...     name="queue_state", index=0).displayValue = ['Accepted']
     >>> anon_browser.getControl("Update").click()
