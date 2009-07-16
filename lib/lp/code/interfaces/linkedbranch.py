@@ -24,6 +24,15 @@ class ICanHasLinkedBranch(Interface):
 
     branch = Attribute("The linked branch.")
 
+    def setBranch(branch, registrant=None):
+        """Set the linked branch.
+
+        :param branch: An `IBranch`. After calling this,
+            `ICanHasLinkedBranch.branch` will be 'branch'.
+        :param registrant: The `IPerson` linking the branch. Not used by all
+            implementations.
+        """
+
 
 class CannotHaveLinkedBranch(Exception):
     """Raised when we try to get the linked branch for a thing that can't."""

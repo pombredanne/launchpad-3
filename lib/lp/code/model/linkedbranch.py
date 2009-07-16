@@ -33,6 +33,10 @@ class ProductSeriesLinkedBranch:
         """See `ICanHasLinkedBranch`."""
         return self.product_series.branch
 
+    def setBranch(self, branch, registrant=None):
+        """See `ICanHasLinkedBranch`."""
+        self.product_series.branch = branch
+
 
 class ProductLinkedBranch:
     """Implement a linked branch for a product."""
@@ -47,6 +51,10 @@ class ProductLinkedBranch:
     def branch(self):
         """See `ICanHasLinkedBranch`."""
         return ICanHasLinkedBranch(self.product.development_focus).branch
+
+    def setBranch(self, branch, registrant=None):
+        """See `ICanHasLinkedBranch`."""
+        ICanHasLinkedBranch(self.product.development_focus).setBranch(branch)
 
 
 class PackageLinkedBranch:
@@ -64,6 +72,12 @@ class PackageLinkedBranch:
         package = self.suite_sourcepackage.sourcepackage
         pocket = self.suite_sourcepackage.pocket
         return package.getBranch(pocket)
+
+    def setBranch(self, branch, registrant):
+        """See `ICanHasLinkedBranch`."""
+        package = self.suite_sourcepackage.sourcepackage
+        pocket = self.suite_sourcepackage.pocket
+        package.setBranch(pocket, branch, registrant)
 
 
 class DistributionPackageLinkedBranch:
@@ -83,3 +97,11 @@ class DistributionPackageLinkedBranch:
         suite_sourcepackage = development_package.getSuiteSourcePackage(
             PackagePublishingPocket.RELEASE)
         return ICanHasLinkedBranch(suite_sourcepackage).branch
+
+    def setBranch(self, branch, registrant):
+        """See `ICanHasLinkedBranch`."""
+        development_package = (
+            self._distribution_sourcepackage.development_version)
+        suite_sourcepackage = development_package.getSuiteSourcePackage(
+            PackagePublishingPocket.RELEASE)
+        ICanHasLinkedBranch(suite_sourcepackage).setBranch(branch, registrant)

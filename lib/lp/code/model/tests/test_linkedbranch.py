@@ -30,6 +30,14 @@ class TestProductSeriesLinkedBranch(TestCaseWithFactory):
         self.assertEqual(
             product_series.branch, ICanHasLinkedBranch(product_series).branch)
 
+    def test_setBranch(self):
+        # setBranch sets the linked branch of the product series.
+        product_series = self.factory.makeProductSeries()
+        branch = self.factory.makeProductBranch(
+            product=product_series.product)
+        ICanHasLinkedBranch(product_series).setBranch(branch)
+        self.assertEqual(branch, product_series.branch)
+
 
 class TestProductLinkedBranch(TestCaseWithFactory):
 
@@ -42,6 +50,14 @@ class TestProductLinkedBranch(TestCaseWithFactory):
         product = branch.product
         removeSecurityProxy(product).development_focus.branch = branch
         self.assertEqual(branch, ICanHasLinkedBranch(product).branch)
+
+    def test_setBranch(self):
+        # setBranch sets the linked branch of the development focus product
+        # series.
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(product).setBranch(branch)
+        self.assertEqual(branch, product.development_focus.branch)
 
 
 class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
@@ -62,6 +78,21 @@ class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
         suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
         self.assertEqual(
             branch, ICanHasLinkedBranch(suite_sourcepackage).branch)
+
+    def test_setBranch(self):
+        # setBranch sets the official branch for the appropriate pocket of the
+        # source package.
+        branch = self.factory.makeAnyBranch()
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
+        run_with_login(
+            registrant,
+            ICanHasLinkedBranch(suite_sourcepackage).setBranch,
+            branch, registrant)
+        self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
 
 class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
@@ -86,6 +117,22 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
         distribution_sourcepackage = sourcepackage.distribution_sourcepackage
         self.assertEqual(
             branch, ICanHasLinkedBranch(distribution_sourcepackage).branch)
+
+    def test_setBranch(self):
+        branch = self.factory.makeAnyBranch()
+        sourcepackage = self.factory.makeSourcePackage()
+        distribution_sourcepackage = sourcepackage.distribution_sourcepackage
+
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        run_with_login(
+            registrant,
+            ICanHasLinkedBranch(distribution_sourcepackage).setBranch,
+            branch, registrant)
+
+        dev_sourcepackage = sourcepackage.development_version
+        pocket = PackagePublishingPocket.RELEASE
+        self.assertEqual(branch, dev_sourcepackage.getBranch(pocket))
 
 
 class TestProjectLinkedBranch(TestCaseWithFactory):
