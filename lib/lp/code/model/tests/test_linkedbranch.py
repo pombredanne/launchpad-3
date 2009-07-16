@@ -38,6 +38,15 @@ class TestProductSeriesLinkedBranch(TestCaseWithFactory):
         ICanHasLinkedBranch(product_series).setBranch(branch)
         self.assertEqual(branch, product_series.branch)
 
+    def test_bzr_identity(self):
+        # The bzr_identity of a product series linked branch is
+        # product/product_series.
+        product_series = self.factory.makeProductSeries()
+        bzr_identity = '%s/%s' % (
+            product_series.product.name, product_series.name)
+        self.assertEqual(
+            bzr_identity, ICanHasLinkedBranch(product_series).bzr_identity)
+
 
 class TestProductLinkedBranch(TestCaseWithFactory):
 
@@ -58,6 +67,12 @@ class TestProductLinkedBranch(TestCaseWithFactory):
         product = removeSecurityProxy(branch.product)
         ICanHasLinkedBranch(product).setBranch(branch)
         self.assertEqual(branch, product.development_focus.branch)
+
+    def test_bzr_identity(self):
+        # The bzr_identity of a product linked branch is the product name.
+        product = self.factory.makeProduct()
+        self.assertEqual(
+            product.name, ICanHasLinkedBranch(product).bzr_identity)
 
 
 class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
@@ -94,6 +109,14 @@ class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
             branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
+    def test_bzr_identity(self):
+        # The bzr_identity of a suite source package linked branch is the path
+        # of that suite source package.
+        suite_sourcepackage = self.factory.makeSuiteSourcePackage()
+        self.assertEqual(
+            suite_sourcepackage.path,
+            ICanHasLinkedBranch(suite_sourcepackage).bzr_identity)
+
 
 class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
 
@@ -119,6 +142,9 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
             branch, ICanHasLinkedBranch(distribution_sourcepackage).branch)
 
     def test_setBranch(self):
+        # Setting the linked branch for a distribution source package links
+        # the branch to the release pocket of the development focus series for
+        # that package.
         branch = self.factory.makeAnyBranch()
         sourcepackage = self.factory.makeSourcePackage()
         distribution_sourcepackage = sourcepackage.distribution_sourcepackage
@@ -133,6 +159,17 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
         dev_sourcepackage = sourcepackage.development_version
         pocket = PackagePublishingPocket.RELEASE
         self.assertEqual(branch, dev_sourcepackage.getBranch(pocket))
+
+    def test_bzr_identity(self):
+        # The bzr_identity of a distribution source package linked branch is
+        # distro/package.
+        distribution_sourcepackage = (
+            self.factory.makeDistributionSourcePackage())
+        self.assertEqual(
+            '%s/%s' % (
+                distribution_sourcepackage.distribution.name,
+                distribution_sourcepackage.sourcepackagename.name),
+            ICanHasLinkedBranch(distribution_sourcepackage).bzr_identity)
 
 
 class TestProjectLinkedBranch(TestCaseWithFactory):

@@ -23,6 +23,7 @@ class ICanHasLinkedBranch(Interface):
     """Something that has a linked branch."""
 
     branch = Attribute("The linked branch.")
+    bzr_identity = Attribute('The Bazaar branch path for the linked branch.')
 
     def setBranch(branch, registrant=None):
         """Set the linked branch.
