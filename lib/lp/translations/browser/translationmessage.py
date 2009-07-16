@@ -1095,12 +1095,13 @@ class CurrentTranslationMessageView(LaunchpadView):
 
                 imported_submission = (
                     convert_translationmessage_to_submission(
-                        self.imported_translationmessage,
-                        self.context,
-                        index,
-                        self.pofile,
-                        False,
-                        is_empty=False))
+                        message=self.imported_translationmessage,
+                        current_message=self.context,
+                        plural_form=index,
+                        pofile=self.pofile,
+                        legal_warning_needed=False,
+                        is_empty=False,
+                        packaged=True))
 
             else:
                 imported_submission = None
@@ -1590,7 +1591,7 @@ class TranslationMessageSuggestions:
 
 def convert_translationmessage_to_submission(
     message, current_message, plural_form, pofile, legal_warning_needed,
-    is_empty=False):
+    is_empty=False, packaged=False):
     """Turn a TranslationMessage to an object used for rendering a submission.
 
     :param message: A TranslationMessage.
@@ -1619,9 +1620,16 @@ def convert_translationmessage_to_submission(
     submission.legal_warning = legal_warning_needed and (
         message.origin == RosettaTranslationOrigin.SCM)
     submission.suggestion_html_id = (
-        message.potmsgset.makeHTMLID(u'%s_suggestion_%s_%s' % (
+        current_message.potmsgset.makeHTMLID(u'%s_suggestion_%s_%s' % (
             message.language.code, message.id,
             plural_form)))
+    if packaged:
+        submission.row_html_id = current_message.potmsgset.makeHTMLID(
+            'packaged')
+        submission.origin_html_id = submission.row_html_id + '_origin'
+    else:
+        submission.row_html_id = ''
+        submission.origin_html_id = submission.suggestion_html_id + '_origin'
     submission.translation_html_id = (
         current_message.makeHTMLID(
             u'translation_%s' % (plural_form)))

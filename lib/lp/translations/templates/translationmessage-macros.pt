@@ -7,7 +7,7 @@
 <tal:submission condition="submission">
   <tal:not-empty condition="not:submission/is_empty">
     <tr tal:attributes="class string:secondary ${dismissable};
-                        id string:msgset_${context/potmsgset/id}_packaged">
+                        id submission/row_html_id">
       <th colspan="3" tal:content="section_title">
         Packaged:
       </th>
@@ -64,7 +64,7 @@
       </td>
     </tr>
     <tr
-      tal:attributes="id string:${submission/suggestion_html_id}_origin;
+      tal:attributes="id string:${submission/origin_html_id};
                       class string:discreet secondary ${dismissable}">
       <td colspan="3"></td>
       <td class="icon left right">
