@@ -383,6 +383,7 @@
                     canBeDeleted
                     deletionRequirements
                     associatedProductSeries
+                    associatedSuiteSourcePackages
                     subscribe
                     getSubscription
                     hasSubscription
