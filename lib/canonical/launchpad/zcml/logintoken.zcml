@@ -32,6 +32,14 @@
         />
 
     <browser:page
+        name="+newaccount"
+        for="canonical.launchpad.interfaces.ILoginToken"
+        class="canonical.launchpad.browser.logintoken.NewUserAccountView"
+        permission="zope.Public"
+        template="../../launchpad/templates/logintoken-newaccount.pt"
+        />
+
+    <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+resetpassword"
         permission="zope.Public"
