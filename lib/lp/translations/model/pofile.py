@@ -22,6 +22,7 @@ from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
@@ -140,6 +141,10 @@ def _can_edit_translations(pofile, person):
     translation team for the given `IPOFile`.translationpermission and the
     language associated with this `IPOFile`.
     """
+    # Nothing can be edited in read-only mode.
+    if config.launchpad.read_only:
+        return False
+
     # If the person is None, then they cannot edit
     if person is None:
         return False
@@ -181,6 +186,10 @@ def _can_add_suggestions(pofile, person):
     any logged-in user for translations in RESTRICTED mode that have a
     translation team assigned.
     """
+    # No suggestions can be added in read-only mode.
+    if config.launchpad.read_only:
+        return False
+
     if person is None:
         return False
 
