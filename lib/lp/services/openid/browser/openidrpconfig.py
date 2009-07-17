@@ -13,7 +13,7 @@ __all__ = []
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.signon.interfaces.openidserver import (
+from lp.services.openid.interfaces.openidrpconfig import (
     IOpenIDRPConfig, IOpenIDRPConfigSet)
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, Navigation, action,
