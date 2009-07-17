@@ -635,3 +635,42 @@ number ordering.
     ...     server_url=server_url)
     >>> pofile_view.initialize()
 
+== Sharing and diverging messages ==
+
+When there is an existing shared translation, one gets an option
+to diverge it when on a zoomed-in view (when looking that particular
+message).
+
+    >>> pofile = factory.makePOFile('sr')
+    >>> potemplate = pofile.potemplate
+    >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
+    >>> translationmessage = factory.makeTranslationMessage(
+    ...     potmsgset=potmsgset, translations = [u"shared translation"])
+    >>> translationmessage.setPOFile(pofile)
+    >>> server_url = '/'.join(
+    ...     [canonical_url(translationmessage), '+translate'])
+    >>> translationmessage_page_view = create_view(
+    ...     translationmessage, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> translationmessage_page_view.initialize()
+    >>> subview = translationmessage_page_view.translationmessage_view
+    >>> subview.initialize()
+    >>> subview.zoomed_in_view
+    True
+    >>> subview.allow_diverging
+    True
+
+When looking at the entire POFile, diverging is not allowed.
+
+    >>> server_url = '/'.join(
+    ...     [canonical_url(pofile), '+translate'])
+    >>> pofile_view = create_view(
+    ...     pofile, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pofile_view.initialize()
+    >>> subview = pofile_view.translationmessage_views[0]
+    >>> subview.initialize()
+    >>> subview.zoomed_in_view
+    False
+    >>> subview.allow_diverging
+    False

@@ -558,11 +558,35 @@
   </tal:locked>
   </tal:plural-form>
   </tal:translation-dictionaries>
-  <tr tal:attributes="class string:secondary ${view/dismissable_class}">
+  <tal:official_translator condition="view/allow_diverging">
+    <tr class="secondary" tal:condition="view/zoomed_in_view">
+      <td colspan="4" />
+      <td>
+         <label class="diverge-checkbox">
+           <input
+             type="checkbox"
+             value="diverge_translation"
+             tal:attributes="
+               checked view/force_diverge;
+               name string:${view/html_id}_diverge"
+             />
+           <tal:block condition="not:view/is_plural">
+             Make this translation specific to
+             <span tal:replace="structure view/current_series/fmt:link" />
+           </tal:block>
+           <tal:block condition="view/is_plural">
+             Make these translations specific to
+             <span tal:replace="structure view/current_series/fmt:link" />
+           </tal:block>
+         </label>
+      </td>
+    </tr>
+  </tal:official_translator>
+  <tr tal:attributes="class string:secondary ${view/dismissable_class}"
+      tal:condition="not:context/potmsgset/is_translation_credit">
     <td colspan="4" />
     <td>
       <div tal:condition="view/user_is_official_translator">
-       <tal:not-locked condition="not:context/potmsgset/is_translation_credit">
          <label class="fuzzy-checkbox">
            <input
              type="checkbox"
@@ -578,18 +602,6 @@
              Someone should review these translations
            </tal:block>
          </label>
-       </tal:not-locked>
-       <tal:locked condition="context/potmsgset/is_translation_credit">
-         <tal:comment condition="nothing">
-           We can't reliably export any credits when upstream translation is
-           fuzzy (eg. we might use the same algorithm in that case, but then
-           upstreams will complain that we got it wrong; or, we might discard
-           their credits altogether, when they will complain that we just credit
-           ourselves; so, lets not change the fuzzy flag, and rather keep it,
-           since we are mostly automating this to fix our issues with upstreams,
-           and I'd rather not introduce more issues with them).
-         </tal:comment>
-       </tal:locked>
       </div>
     </td>
   </tr>

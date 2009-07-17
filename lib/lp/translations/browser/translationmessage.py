@@ -410,6 +410,7 @@ class BaseTranslationView(LaunchpadView):
         self.form_posted_translations = {}
         self.form_posted_translations_has_store_flag = {}
         self.form_posted_needsreview = {}
+        self.form_posted_diverge = {}
         self.form_posted_dismiss_suggestions = {}
 
         if not self.has_plural_form_information:
@@ -577,12 +578,14 @@ class BaseTranslationView(LaunchpadView):
             return None
 
         force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
+        force_diverge = self.form_posted_diverge.get(potmsgset, False)
 
         try:
             potmsgset.updateTranslation(
                 self.pofile, self.user, translations,
                 is_imported=False, lock_timestamp=self.lock_timestamp,
-                force_suggestion=force_suggestion)
+                force_suggestion=force_suggestion,
+                force_diverged=force_diverge)
         except TranslationConflict:
             return (
                 u'Somebody else changed this translation since you started.'
@@ -630,9 +633,20 @@ class BaseTranslationView(LaunchpadView):
         else:
             force_suggestion = False
 
-        return view_class(current_translation_message, self.request,
-            plural_indices_to_store, translations, force_suggestion, error,
-            self.second_lang_code, self.form_is_writeable)
+        # Check if the current translation message is marked
+        # as needing to be diverged.
+        if current_translation_message.potmsgset in (
+            self.form_posted_diverge):
+            force_diverge = self.form_posted_needsreview[
+                current_translation_message.potmsgset]
+        else:
+            force_diverge = False
+
+        return view_class(
+            current_translation_message, self.request,
+            plural_indices_to_store, translations, force_suggestion,
+            force_diverge, error, self.second_lang_code,
+            self.form_is_writeable)
 
     #
     # Internals
@@ -758,12 +772,15 @@ class BaseTranslationView(LaunchpadView):
 
         msgset_ID_LANGCODE_needsreview = 'msgset_%d_%s_needsreview' % (
             potmsgset_ID, language_code)
-
         self.form_posted_needsreview[potmsgset] = (
             msgset_ID_LANGCODE_needsreview in form)
 
-        msgset_ID_dismiss = 'msgset_%d_dismiss' % potmsgset_ID
+        msgset_ID_diverge = 'msgset_%d_diverge' % (
+            potmsgset_ID)
+        self.form_posted_diverge[potmsgset] = (
+            msgset_ID_diverge in form)
 
+        msgset_ID_dismiss = 'msgset_%d_dismiss' % potmsgset_ID
         self.form_posted_dismiss_suggestions[potmsgset] = (
             msgset_ID_dismiss in form)
 
@@ -996,7 +1013,7 @@ class CurrentTranslationMessageView(LaunchpadView):
 
     def __init__(self, current_translation_message, request,
                  plural_indices_to_store, translations, force_suggestion,
-                 error, second_lang_code, form_is_writeable):
+                 force_diverge, error, second_lang_code, form_is_writeable):
         """Primes the view with information that is gathered by a parent view.
 
         :param plural_indices_to_store: A dictionary that indicates whether
@@ -1006,6 +1023,7 @@ class CurrentTranslationMessageView(LaunchpadView):
             BaseTranslationView constructed it based on form-submitted
             translations.
         :param force_suggestion: Should this be a suggestion even for editors.
+        :param force_diverge: Should this translation be diverged.
         :param error: The error related to self.context submission or None.
         :param second_lang_code: The result of submiting
             field.alternative_value.
@@ -1019,6 +1037,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.translations = translations
         self.error = error
         self.force_suggestion = force_suggestion
+        self.force_diverge = force_diverge
         self.user_is_official_translator = (
             current_translation_message.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
@@ -1047,6 +1066,9 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.can_dismiss_on_empty = False
         self.can_dismiss_on_plural = False
         self.can_dismiss_packaged = False
+
+        # Initialize to True, allowing POFileTranslateView to override.
+        self.zoomed_in_view = True
 
         # Set up alternative language variables.
         # XXX: kiko 2006-09-27:
@@ -1079,6 +1101,17 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.pluralform_indices = range(self.context.plural_forms)
 
         self._buildAllSuggestions()
+
+        # If existing translation is shared, and a user is
+        # an official translator, they can diverge a translation.
+        self.allow_diverging = (self.zoomed_in_view and
+                                self.user_is_official_translator and
+                                self.context.potemplate is None)
+        if self.allow_diverging:
+            if self.pofile.potemplate.productseries is not None:
+                self.current_series = self.pofile.potemplate.productseries
+            else:
+                self.current_series = self.pofile.potemplate.distroseries
 
         # Initialise the translation dictionaries used from the
         # translation form.
