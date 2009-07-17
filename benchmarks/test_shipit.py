@@ -10,9 +10,7 @@ import unittest
 
 from funkload.FunkLoadTestCase import FunkLoadTestCase
 from funkload.Lipsum import Lipsum
-from funkload.utils import Data
 import psycopg2
-from webunit.utility import Upload
 
 
 class ShipIt(FunkLoadTestCase):
@@ -29,6 +27,11 @@ class ShipIt(FunkLoadTestCase):
         self.lipsum = Lipsum()
 
         if ShipIt.db_connection is None:
+            # We use a class variable for the database connection so the
+            # same connection is shared between threads. This is important
+            # for when we are running with hundreds of threads.
+            assert psycopg2.threadsafety >= 2, (
+                "psycopg2 cannot share connections between threads")
             self.logi(
                 'Opening database connection "%s".' % self.database_conninfo)
             ShipIt.db_connection = psycopg2.connect(self.database_conninfo)
@@ -77,7 +80,7 @@ class ShipIt(FunkLoadTestCase):
         params['field.email'] = email
         params['field.action'] = 'createaccount'
         response = self.post(
-            self.relative_url(response, '/+login-register'),
+            self.absolute_url(response, '/+login-register'),
             params, "Post /+login-register - Create account")
         self.assertNoFormErrors(response)
 
@@ -85,7 +88,7 @@ class ShipIt(FunkLoadTestCase):
         # validate it.
         token = self.get_email_validation_token(email)
         response = self.get(
-            self.relative_url(response, '/token/%s/+newaccount' % token),
+            self.absolute_url(response, '/token/%s/+newaccount' % token),
             description="Get /token/[...]/+newaccount")
 
         # Complete the registration process.
@@ -117,7 +120,7 @@ class ShipIt(FunkLoadTestCase):
             'field.phone': self.lipsum.getPhoneNumber(),
             'field.actions.continue': 'Submit Request'})
         response = self.post(
-            self.relative_url(response, '/myrequest'),
+            self.absolute_url(response, '/myrequest'),
             params, "Post /myrequest - Request CDs")
         self.assertNoFormErrors(response)
 
@@ -148,7 +151,7 @@ class ShipIt(FunkLoadTestCase):
         params['field.password'] = password
         params['field.action'] = 'login'
         response = self.post(
-            self.relative_url(response, '/+login-register'),
+            self.absolute_url(response, '/+login-register'),
             params, "Post /+login-register - Login to existing account")
         self.assertNoFormErrors(response)
         self.assertEquals(response.url, '/myrequest')
@@ -156,7 +159,7 @@ class ShipIt(FunkLoadTestCase):
         # Cancel the CD request.
         params = response.extractForm([('form', 1)], include_submit=True)
         response = self.post(
-            self.relative_url(response, '/myrequest'),
+            self.absolute_url(response, '/myrequest'),
             params, description="Post /myrequest - Cancel CD order.")
         self.assertNoFormErrors(response)
         self.assert_(
@@ -166,7 +169,8 @@ class ShipIt(FunkLoadTestCase):
         # Don't log out - leave the session dangling like most real users
         # do.
 
-    def relative_url(self, response, path):
+    def absolute_url(self, response, path):
+        """Calculate an absolute URL using the response and the path."""
         return '%s://%s:%s%s' % (
             response.protocol, response.server, response.port, path)
 

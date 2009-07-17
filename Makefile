@@ -129,7 +129,7 @@ download-cache:
 bin/buildout: download-cache eggs
 	$(PYTHON) bootstrap.py
 
-$(PY): bin/buildout versions.cfg buildout.cfg
+$(PY): bin/buildout versions.cfg
 	./bin/buildout configuration:instance_name=${LPCONFIG}
 
 compile: $(PY)

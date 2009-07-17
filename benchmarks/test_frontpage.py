@@ -7,11 +7,8 @@ __all__ = []
 
 import unittest
 
-from funkload.utils import Data
 from funkload.FunkLoadTestCase import FunkLoadTestCase
-from webunit.utility import Upload
 
-from canonical.config import config
 
 class Frontpage(FunkLoadTestCase):
     """Test anonymous access to the Launchpad front page."""
@@ -19,10 +16,10 @@ class Frontpage(FunkLoadTestCase):
     def setUp(self):
         """Setting up test."""
         self.logd("setUp")
-        self.root_url = 'https://%s/' % config.vhost.mainsite.hostname
+        self.server_url = self.conf_get('main', 'url')
 
     def test_frontpage(self):
-        self.get(self.root_url, description="Get frontpage")
+        self.get(self.server_url, description="Get /")
 
     def tearDown(self):
         """Setting up test."""
