@@ -21,7 +21,7 @@ IMilestone.
     True
 
 The driver for the release's milestone target cannot change the release, but
-the driver of the milestone's series_target is a release manager can can
+the driver of the milestone's series_target is a release manager and can
 make changes.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission

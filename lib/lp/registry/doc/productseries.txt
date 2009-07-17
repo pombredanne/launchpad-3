@@ -43,8 +43,8 @@ And verify that it looks like the series we think it should be.
 
     >>> trunk.product == firefox
     True
-    >>> trunk.name
-    u'trunk'
+    >>> print trunk.name
+    trunk
 
 It's also possible to ask a product for all its associated series.
 
@@ -82,8 +82,8 @@ owner or driver can call Product.newSeries().
 A newly created series is assumed to be in the development state.
 
     >>> login(ANONYMOUS)
-    >>> emacs_series.status.title
-    'Active Development'
+    >>> print emacs_series.status.title
+    Active Development
 
 Let's check that the new series is properly associated to its product.
 
