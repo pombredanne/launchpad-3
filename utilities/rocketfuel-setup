@@ -301,9 +301,11 @@ bzr launchpad-login $lpusername
 cd $LP_SHARED_REPO
 if [ ! -d $LP_TRUNK_NAME ]; then
   echo "Making local branch of Launchpad trunk, this may take a while..."
-  # bzr up to 1.6b2 has a bug that causes this to oom, but since 1.10 is
-  # released now I hope nobody is using it.
-  bzr branch bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/ $LP_TRUNK_NAME
+  # We use "http://" instead of "bzr+ssh://" for the initial pull
+  # because it's the long pulls that are hardest on the server.  Once
+  # the bulk of the data is across, subsequent accesses can use
+  # bzr+ssh://, which will perform better.
+  bzr branch http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/ $LP_TRUNK_NAME
   if [ $? -ne 0 ]; then
     echo "ERROR: Unable to create local copy of Rocketfuel trunk"
     exit 1
