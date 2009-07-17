@@ -88,22 +88,31 @@ class ShipIt(FunkLoadTestCase):
         # validate it.
         token = self.get_email_validation_token(email)
         self.assert_(token is not None, "No login token created")
+        newaccount_url = self.absolute_url(
+            response, '/token/%s/+newaccount' % token)
         response = self.get(
-            self.absolute_url(response, '/token/%s/+newaccount' % token),
-            description="Get /token/[...]/+newaccount")
+            newaccount_url, description="Get /token/[...]/+newaccount")
 
         # Complete the registration process.
         displayname = self.lipsum.getSubject(2)
         password = self.lipsum.getWord()
-        response = response.postForm(
-            0, self.post, {
-                'field.displayname': displayname,
-                'field.hide_email_addresses': 'on',
-                'field.password': password,
-                'field.password_dupe': password,
-                'field.actions.continue': 'Continue'},
-            "Post /token/[...]/+newaccount")
-        self.assertNoFormErrors(response)
+        params = response.extractForm(include_submit=True)
+
+        params.update({
+            'field.displayname': displayname,
+            'field.hide_email_addresses': 'on',
+            'field.password': password,
+            'field.password_dupe': password,
+            'field.actions.continue': 'Continue'})
+        # At the moment, creating your account doesn't log you in
+        # immidiately so you might end up at a 403 page - Bug #400610
+        response = self.post(
+            newaccount_url, params, ok_codes=[200, 302,303,403],
+            description="Post /token/[...]/+newaccount")
+        # Keep hitting the /login link until it works.
+        while response.body.find('You are not logged in.') != -1:
+            login_url = self.absolute_url(response, '/login')
+            response = self.get(login_url, description="Get /login")
 
         # Registration succeeded - should be on the order details page now.
         self.assertEquals(response.get_base_url(), '/myrequest')
