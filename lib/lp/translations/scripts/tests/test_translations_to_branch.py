@@ -24,16 +24,23 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
     def test_translations_export_to_branch(self):
         # End-to-end test of the script doing its work.
+
+        # Set up a server for hosted branches.
         self.useBzrBranches(real_server=True)
+
+        # Set up a product and translatable series.
         product = self.factory.makeProduct(name='committobranch')
         product = removeSecurityProxy(product)
         series = product.getSeries('trunk')
+
+        # Set up a translations_branch for the series.
         db_branch, tree = self.create_branch_and_tree(
             hosted=True, product=product)
         removeSecurityProxy(db_branch).last_scanned_id = 'null:'
         product.official_rosetta = True
         series.translations_branch = db_branch
 
+        # Set up a template & Dutch translation for the series.
         template = self.factory.makePOTemplate(
             productseries=series, owner=product.owner, name='foo',
             path='po/messages.pot')
@@ -47,8 +54,10 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             translator=product.owner, reviewer=product.owner,
             translations=['Hallo Wereld'])
 
+        # Make all this visible to the script we're about to run.
         transaction.commit()
 
+        # Run The Script.
         retcode, stdout, stderr = run_script(
             'cronscripts/translations-export-to-branch.py', [])
 
@@ -61,6 +70,8 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             stderr)
         self.assertEqual(0, retcode)
 
+        # The branch now contains a snapshot of the translation.  (Only
+        # one file: the Dutch translation we set up earlier).
         branch_contents = map_branch_contents(db_branch.getPullURL())
         expected_contents = {
             'po/nl.po': """
