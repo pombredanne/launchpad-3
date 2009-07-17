@@ -8,8 +8,11 @@ import urlparse
 from canonical.lazr.utils import safe_hasattr
 from canonical.testing import reset_logging
 
+from lp.testing import TestCase
 
-class WalkerBase_Logging(unittest.TestCase):
+
+class WalkerBase_Logging(TestCase):
+
     def testCreatesDefaultLogger(self):
         """WalkerBase creates a default logger."""
         from lp.registry.scripts.productreleasefinder.walker import (
@@ -28,7 +31,8 @@ class WalkerBase_Logging(unittest.TestCase):
         self.assertEquals(w.log.parent, parent)
 
 
-class WalkerBase_Base(unittest.TestCase):
+class WalkerBase_Base(TestCase):
+
     def testSetsBase(self):
         """WalkerBase sets the base property."""
         from lp.registry.scripts.productreleasefinder.walker import (
@@ -165,7 +169,7 @@ class WalkerBase_Base(unittest.TestCase):
             WalkerBase.FRAGMENTS = False
 
 
-class WalkerBase_walk(unittest.TestCase):
+class WalkerBase_walk(TestCase):
     """Test the walk() method."""
 
     def tearDown(self):
@@ -175,6 +179,7 @@ class WalkerBase_walk(unittest.TestCase):
         """Verify that a UnicodeEncodeError is logged."""
         from lp.registry.scripts.productreleasefinder.walker import (
             WalkerBase)
+
         class TestWalker(WalkerBase):
 
             def list(self, sub_dir):
@@ -200,7 +205,8 @@ class WalkerBase_walk(unittest.TestCase):
             log_output.getvalue())
 
 
-class FTPWalker_Base(unittest.TestCase):
+class FTPWalker_Base(TestCase):
+
     def testFtpScheme(self):
         """FTPWalker works when initialised with an ftp-scheme URL."""
         from lp.registry.scripts.productreleasefinder.walker import (
@@ -236,7 +242,8 @@ class FTPWalker_Base(unittest.TestCase):
         self.assertEquals(w.passwd, "")
 
 
-class HTTPWalker_Base(unittest.TestCase):
+class HTTPWalker_Base(TestCase):
+
     def testHttpScheme(self):
         """HTTPWalker works when initialised with an http-scheme URL."""
         from lp.registry.scripts.productreleasefinder.walker import (
@@ -295,16 +302,18 @@ class HTTPWalker_url_schemes_and_handlers(unittest.TestCase):
         self.verify_url_scheme_and_handler('ftp', urllib2.FTPHandler)
 
 
-class HTTPWalker_ListDir(unittest.TestCase):
+class HTTPWalker_ListDir(TestCase):
 
     def tearDown(self):
         reset_logging()
 
-    def setUpWalker(self, listing_url, listing_content): 
+    def setUpWalker(self, listing_url, listing_content):
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker)
         test = self
+
         class TestHTTPWalker(HTTPWalker):
+
             def request(self, method, path):
                 test.assertEqual(method, 'GET')
                 test.assertEqual(urlparse.urljoin(self.base, path),
@@ -469,7 +478,7 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
         self.assertEqual(filenames, [])
 
 
-class HTTPWalker_IsDirectory(unittest.TestCase):
+class HTTPWalker_IsDirectory(TestCase):
     
     def tearDown(self):
         reset_logging()
@@ -491,7 +500,7 @@ class HTTPWalker_IsDirectory(unittest.TestCase):
         self.assertEqual(walker.isDirectory('/foo'), False)
 
 
-class Walker_CombineUrl(unittest.TestCase):
+class Walker_CombineUrl(TestCase):
     def testConstructsUrl(self):
         """combine_url constructs the URL correctly."""
         from lp.registry.scripts.productreleasefinder.walker import (
