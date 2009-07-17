@@ -572,11 +572,13 @@
              />
            <tal:block condition="not:view/is_plural">
              Make this translation specific to
-             <span tal:replace="structure view/current_series/fmt:link" />
+             <a tal:content="view/current_series_title"
+                tal:attributes="href view/current_series/fmt:url"/>
            </tal:block>
            <tal:block condition="view/is_plural">
              Make these translations specific to
-             <span tal:replace="structure view/current_series/fmt:link" />
+             <a tal:content="view/current_series_title"
+                tal:attributes="href view/current_series/fmt:url"/>
            </tal:block>
          </label>
       </td>

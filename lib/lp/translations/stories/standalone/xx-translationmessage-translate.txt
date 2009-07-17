@@ -490,3 +490,52 @@ packaged translation anymore.
     >>> packaged = find_tag_by_id(browser.contents, 'msgset_134_packaged')
     >>> print packaged
     None
+
+== Shared and diverged translations ==
+
+We create a POFile with one shared translation, which we want to diverge
+from.
+
+    >>> login('foo.bar@canonical.com')
+    >>> pofile = factory.makePOFile('sr')
+    >>> potmsgset = factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+    >>> translationmessage = factory.makeTranslationMessage(
+    ...     potmsgset=potmsgset, translations = [u"shared translation"])
+    >>> translationmessage.setPOFile(pofile)
+    >>> message_url = '/'.join(
+    ...     [canonical_url(translationmessage, rootsite='translations'),
+    ...      '+translate'])
+    >>> logout()
+
+    >>> browser.open(message_url)
+    >>> diverge_check_box = browser.getControl(
+    ...     name='msgset_%d_diverge' % (potmsgset.id))
+    >>> diverge_check_box.value
+    []
+
+We can check the box to add a new translation and diverge it.
+
+    >>> diverge_check_box.value = ['diverge_translation']
+    >>> html_id = 'msgset_%d_%s_translation_0' % (
+    ...     potmsgset.id, pofile.language.code)
+    >>> browser.getControl(name=html_id + '_radiobutton').value = [
+    ...         html_id + '_new']
+    >>> browser.getControl(name=html_id + '_new').value = 'diverged'
+    >>> browser.getControl(name='submit_translations').click()
+
+Since we've got only one message, this page is reloaded, and a "Shared"
+translation is shown separately, and there is no check box to diverge
+a translation.
+
+    >>> diverge_check_box = browser.getControl(
+    ...     name='msgset_%d_diverge' % (potmsgset.id))
+    Traceback (most recent call last):
+    ...
+    LookupError: name...
+
+    >>> shared_html_id = 'msgset_%d_%s_suggestion_%d_0' % (
+    ...     potmsgset.id, pofile.language.code, translationmessage.id)
+    >>> extract_text(find_tag_by_id(browser.contents, shared_html_id))
+    u'shared translation'
+    >>> extract_text(find_tag_by_id(browser.contents, html_id))
+    u'diverged'

@@ -1110,8 +1110,15 @@ class CurrentTranslationMessageView(LaunchpadView):
         if self.allow_diverging:
             if self.pofile.potemplate.productseries is not None:
                 self.current_series = self.pofile.potemplate.productseries
+                self.current_series_title = "%s %s" % (
+                    self.current_series.product.displayname,
+                    self.current_series.name)
             else:
                 self.current_series = self.pofile.potemplate.distroseries
+                self.current_series_title = "%s %s" % (
+                    self.current_series.distribution.displayname,
+                    self.current_series.name)
+
 
         # Initialise the translation dictionaries used from the
         # translation form.
@@ -1144,7 +1151,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                         message=self.imported_translationmessage,
                         current_message=self.context,
                         plural_form=index,
-                        pofile=self.pofile,
+                        pofile=self.imported_translationmessage.pofile,
                         legal_warning_needed=False,
                         is_empty=False,
                         packaged=True))
@@ -1158,7 +1165,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                         message=self.shared_translationmessage,
                         current_message=self.context,
                         plural_form=index,
-                        pofile=self.pofile,
+                        pofile=self.shared_translationmessage.pofile,
                         legal_warning_needed=False,
                         is_empty=False))
             else:
