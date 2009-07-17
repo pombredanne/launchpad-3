@@ -3523,7 +3523,7 @@ class PersonChangePasswordView(LaunchpadFormView):
         if not encryptor.validate(current_password, self.context.password):
             self.setFieldError('currentpassword', _(
                 "The provided password doesn't match your current password."))
-        # This is not part of the widget, since the a value may
+        # This is not part of the widget, since the value may
         # be optional in some forms.
         new_password = self.request.form.get('field.password', '')
         if new_password.strip() == '':

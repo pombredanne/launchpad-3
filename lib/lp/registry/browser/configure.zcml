@@ -2230,5 +2230,6 @@
         class="lp.registry.browser.sourcepackage.SourcePackageView"
         name="+edit-packaging"
         facet="overview"
-        template="../templates/sourcepackage-edit-packaging.pt"/>
+        template="../templates/sourcepackage-edit-packaging.pt"
+        />
 </configure>
