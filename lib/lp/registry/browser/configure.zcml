@@ -1371,7 +1371,7 @@
     <browser:page
         name="+pillar-table-row"
         for="lp.registry.interfaces.milestone.IMilestone"
-        class="lp.registry.browser.milestone.MilestoneViews"
+        class="lp.registry.browser.milestone.MilestonesView"
         facet="overview"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
