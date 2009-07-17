@@ -9,7 +9,7 @@ if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
 #
 # The ones you can set are:
 #
-# LP_PROJECT_ROOT - The root directory of all your Canonical stuff.  Your
+# LP_PROJECT_ROOT - The root directory of all your Launchpad stuff.  Your
 #                   Launchpad shared repository will live in a child directory
 #                   of this directory.
 # LP_SHARED_REPO  - Your Launchpad shared repository directory.  All of your
@@ -22,10 +22,10 @@ if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
 #                   path appended to it, since this is automatically added by
 #                   the scripts.
 
-LP_PROJECT_ROOT=\${LP_PROJECT_ROOT:=~/canonical}
+LP_PROJECT_ROOT=\${LP_PROJECT_ROOT:=~/launchpad}
 LP_SHARED_REPO=\${LP_SHARED_REPO:=lp-branches}
 LP_PROJECT_PATH=\$LP_PROJECT_ROOT/\$LP_SHARED_REPO
-LP_TRUNK_NAME=\${LP_TRUNK_NAME:=trunk}
+LP_TRUNK_NAME=\${LP_TRUNK_NAME:=devel}
 LP_TRUNK_PATH=\$LP_PROJECT_PATH/\$LP_TRUNK_NAME
 
 LP_SOURCEDEPS_DIR=\${LP_SOURCEDEPS_DIR:=lp-sourcedeps}
@@ -346,13 +346,11 @@ grep -q "\[${LP_PROJECT_PATH}\]" ~/.bazaar/locations.conf
 if [ $? -ne 0 ]; then
   cat >> ~/.bazaar/locations.conf << EOF
 [$LP_PROJECT_PATH]
-pqm_email = Launchpad PQM <launchpad@pqm.canonical.com>
 submit_branch = ${LP_TRUNK_PATH}
 public_branch = bzr+ssh://bazaar.launchpad.net/~${lpusername}/launchpad
 public_branch:policy = appendpath
 push_location = lp:~${lpusername}/launchpad
 push_location:policy = appendpath
-review_list = Launchpad Reviews <launchpad-reviews@lists.canonical.com>
 merge_target = ${LP_TRUNK_PATH}
 submit_to = merge@code.launchpad.net
 EOF
@@ -365,19 +363,7 @@ public_branch = bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel\
 " | tee -a ~/.bazaar/locations.conf > /dev/null
 fi
 
-if [ ! -e ~/.bazaar/bazaar.conf ]; then
-  touch ~/.bazaar/bazaar.conf
-fi
-grep -q "smtp_username" ~/.bazaar/bazaar.conf
-if [ $? -ne 0 ]; then
-  cat >> ~/.bazaar/bazaar.conf << EOF
-smtp_server = smtp.canonical.com:587
-smtp_username = canonical
-smtp_password = <find me at https://wiki.canonical.com/EmailSetup>
-EOF
-fi
-
-  echo "Bazaar branch configuration updated. You may need to set smtp_server in ~/.bazaar/locations.conf to something else if email to PQM does not work."
+echo "Bazaar branch configuration updated."
 
 fi
 
@@ -444,21 +430,19 @@ fi
 /usr/local/bin/rocketfuel-get
 
 echo "
-Thank you for using this script. You can improve it for everyone by
+Thank you for using this script.  You can improve it for everyone by
 committing changes to LP in utilities/rocketfuel-setup.
 
-Before you can submit branches to PQM, you need to visit:
-https://wiki.canonical.com/EmailSetup and find the current SMTP server
-password and enter it in the appropriate place in
-HOME/.bazaar/bazaar.conf.  Alternatively, configure it to use your own
-SMTP server locally.
+Please see http://dev.launchpad.net/ for more information on
+developing and testing Launchpad, and on submitting changes.
 
-You should use the following commands to manage your Rocketfuel:
+You can use the following commands to manage your Launchpad
+development environment:
 
  rocketfuel-get
-    Update your copy of trunk and the necessary source dependencies, and
-    make sure all source dependencies are properly linked in to all the
-    branches you are working on.
+    Update your copy of $LP_TRUNK_NAME and the necessary source
+    dependencies, and make sure all source dependencies are properly
+    linked in to all the branches you are working on.
 
  rocketfuel-branch foo
     Create a new branch of LP called \"foo\" in
