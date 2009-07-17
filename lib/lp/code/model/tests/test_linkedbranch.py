@@ -14,6 +14,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.linkedbranch import (
     CannotHaveLinkedBranch, get_linked_branch, ICanHasLinkedBranch)
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.testing import run_with_login, TestCaseWithFactory
 
@@ -165,6 +166,16 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
         dev_sourcepackage = sourcepackage.development_version
         pocket = PackagePublishingPocket.RELEASE
         self.assertEqual(branch, dev_sourcepackage.getBranch(pocket))
+
+    def test_setBranch_with_no_series(self):
+        distribution_sourcepackage = (
+            self.factory.makeDistributionSourcePackage())
+        linked_branch = ICanHasLinkedBranch(distribution_sourcepackage)
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        self.assertRaises(
+            NoSuchDistroSeries,
+            linked_branch.setBranch, self.factory.makeAnyBranch(), registrant)
 
     def test_bzr_identity(self):
         # The bzr_identity of a distribution source package linked branch is

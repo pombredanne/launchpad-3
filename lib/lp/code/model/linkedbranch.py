@@ -13,6 +13,7 @@ from zope.interface import implements
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
@@ -128,6 +129,8 @@ class DistributionPackageLinkedBranch:
         """See `ICanHasLinkedBranch`."""
         development_package = (
             self._distribution_sourcepackage.development_version)
+        if development_package is None:
+            raise NoSuchDistroSeries('no current series')
         suite_sourcepackage = development_package.getSuiteSourcePackage(
             PackagePublishingPocket.RELEASE)
         ICanHasLinkedBranch(suite_sourcepackage).setBranch(branch, registrant)

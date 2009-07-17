@@ -69,8 +69,9 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         "in this distribution.")
 
     development_version = Attribute(
-        'The development version of this source package. None if there is no '
-        'such package.')
+        "The development version of this source package. 'None' if there is "
+        "no such package -- this occurs when there is no current series for "
+        "the distribution.")
 
     def getReleasesAndPublishingHistory():
         """Return a list of all releases of this source package in this
