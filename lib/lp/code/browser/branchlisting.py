@@ -69,7 +69,7 @@ from lp.code.enums import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter,
     BranchMergeProposalStatus, BranchType)
 from lp.code.interfaces.branch import (
-    bazaar_identity,  DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    bazaar_identity, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchBatchNavigator)
 from lp.code.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
@@ -155,6 +155,10 @@ class BranchListingItem(BranchBadges):
         self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
 
+    def associatedProductSeries(self):
+        """Override the IBranch.associatedProductSeries."""
+        return self.associated_product_series
+
     @property
     def active_series(self):
         return [series for series in self.associated_product_series
@@ -163,9 +167,7 @@ class BranchListingItem(BranchBadges):
     @property
     def bzr_identity(self):
         """Produce the bzr identity from our known associated series."""
-        return bazaar_identity(
-            self.context, self.associated_product_series,
-            self.is_development_focus)
+        return bazaar_identity(self, self.is_development_focus)
 
     @property
     def since_updated(self):

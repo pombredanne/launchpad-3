@@ -165,12 +165,21 @@ patch_collection_return_type(
 patch_collection_return_type(
     IArchive, 'getUploadersForPackage', IArchivePermission)
 patch_collection_return_type(
+    IArchive, 'getUploadersForPackageset', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getPackagesetsForUploader', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getPackagesetsForSourceUploader', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getPackagesetsForSource', IArchivePermission)
+patch_collection_return_type(
     IArchive, 'getUploadersForComponent', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getQueueAdminsForComponent', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getComponentsForQueueAdmin', IArchivePermission)
 patch_entry_return_type(IArchive, 'newPackageUploader', IArchivePermission)
+patch_entry_return_type(IArchive, 'newPackagesetUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newComponentUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)

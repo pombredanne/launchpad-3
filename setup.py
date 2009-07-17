@@ -21,6 +21,7 @@ setup(
                  'for software projects.'),
     license='LGPL v3',
     install_requires=[
+        'bzr',
         'feedvalidator',
         'launchpadlib',
         'lazr.smtptest',

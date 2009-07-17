@@ -119,6 +119,8 @@ class CodeReviewCommentMailer(BMPMailer):
             to_person = self.merge_proposal.registrant
         else:
             to_person = self.message.parent.owner
+        if to_person.hide_email_addresses:
+            return [self.merge_proposal.address]
         # Ensure the to header matches the envelope-to address.
         if to_person == recipient:
             to_email = email

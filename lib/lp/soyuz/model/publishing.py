@@ -1173,7 +1173,8 @@ class PublishingSet:
 
         return self.getBuildsForSourceIds(source_publication_ids)
 
-    def _getSourceBinaryJoinForSources(self, source_publication_ids):
+    def _getSourceBinaryJoinForSources(self, source_publication_ids,
+        active_binaries_only=True):
         """Return the join linking sources with binaries."""
         # Import Build, BinaryPackageRelease and DistroArchSeries locally
         # to avoid circular imports, since Build uses
@@ -1185,7 +1186,7 @@ class PublishingSet:
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
-        return (
+        join = [
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 Build.sourcepackagereleaseID,
             BinaryPackageRelease.build == Build.id,
@@ -1201,9 +1202,18 @@ class PublishingSet:
                SourcePackagePublishingHistory.pocket,
             BinaryPackagePublishingHistory.archiveID ==
                SourcePackagePublishingHistory.archiveID,
-            In(BinaryPackagePublishingHistory.status,
-               [enum.value for enum in active_publishing_status]),
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            In(SourcePackagePublishingHistory.id, source_publication_ids)
+            ]
+
+        # If the call-site requested to join only on binaries published
+        # with an active publishing status then we need to further restrict
+        # the join.
+        if active_binaries_only:
+            join.append(
+                In(BinaryPackagePublishingHistory.status,
+                    [enum.value for enum in active_publishing_status]))
+
+        return join
 
     def getUnpublishedBuildsForSources(self,
                                        one_or_more_source_publications,
@@ -1227,7 +1237,8 @@ class PublishingSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         published_builds = store.find(
             (SourcePackagePublishingHistory, Build, DistroArchSeries),
-            self._getSourceBinaryJoinForSources(source_publication_ids),
+            self._getSourceBinaryJoinForSources(
+                source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
             Build.buildstate.is_in(build_states))
 
