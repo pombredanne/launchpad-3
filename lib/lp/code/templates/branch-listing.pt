@@ -59,22 +59,26 @@ function doUpdate(transaction_id, response, args) {
 
 
 function renderSpark() {
-    spark_div = 'dev_focus_spark';
 
-    if(Y.get('#' + spark_div) !== null) {
-        json_url = branch_sparks[0][1];
-        var container = spark_div;
-        var uri = json_url;
-        var xhr_config = {
-            on: {
-                success: doUpdate,
-            },
-            arguments: {
-                'container': container
-            }
-        };
+    for (spark_div in branch_sparks) {
 
-      Y.io(uri, xhr_config);
+        spark_div = branch_sparks[spark_div][0];
+
+        if(Y.get('#' + spark_div) !== null) {
+            json_url = branch_sparks[0][1];
+            var container = spark_div;
+            var uri = json_url;
+            var xhr_config = {
+                on: {
+                    success: doUpdate,
+                },
+                arguments: {
+                    'container': container
+                }
+            };
+
+          Y.io(uri, xhr_config);
+        }
     }
 }
 
