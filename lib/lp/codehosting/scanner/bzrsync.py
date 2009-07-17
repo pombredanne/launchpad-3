@@ -24,8 +24,9 @@ from bzrlib import urlutils
 from lazr.uri import URI
 
 from lp.codehosting import iter_list_chunks
-from lp.codehosting.puller.worker import BranchMirrorer, BranchPolicy
+from lp.codehosting.puller.worker import BranchMirrorer
 from lp.codehosting.scanner import events
+from lp.codehosting.vfs.branchfs import BranchPolicy
 from lp.code.interfaces.branch import (
     BranchFormat, ControlFormat, RepositoryFormat)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
