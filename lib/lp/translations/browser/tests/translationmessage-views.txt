@@ -681,7 +681,7 @@ When looking at the entire POFile, diverging is not allowed.
     >>> subview.allow_diverging
     False
 
-With a diverged translation, shared translation is explicitely offered
+With a diverged translation, the shared translation is explicitely offered
 among one of the suggestions, and we are not offered to diverge the
 translation further, since it's already diverged.
 

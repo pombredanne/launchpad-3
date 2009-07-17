@@ -505,7 +505,21 @@ from.
     >>> message_url = '/'.join(
     ...     [canonical_url(translationmessage, rootsite='translations'),
     ...      '+translate'])
+    >>> pofile_url = (
+    ...     canonical_url(pofile, rootsite='translations') + '/+translate')
     >>> logout()
+
+On the POFile +translate page, no divergence check box is shown.
+
+    >>> browser.open(pofile_url)
+    >>> diverge_check_box = browser.getControl(
+    ...     name='msgset_%d_diverge' % (potmsgset.id))
+    Traceback (most recent call last):
+    ...
+    LookupError: name...
+
+However, once we zoom in on the message, check box to diverge a
+translation is shown.
 
     >>> browser.open(message_url)
     >>> diverge_check_box = browser.getControl(

@@ -1059,7 +1059,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.pofile.language))
             if (self.shared_translationmessage ==
                 self.imported_translationmessage):
-                # If it matches imported message, we don't care.
+                # If it matches the imported message, we don't care.
                 self.shared_translationmessage = None
 
         self.can_confirm_and_dismiss = False
