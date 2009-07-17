@@ -21,19 +21,24 @@
   </p>
 
   <tal:milestones define="milestones context/all_milestones">
-    <table tal:condition="milestones" id="milestones" class="listing">
+    <table id="milestones" class="listing"
+      tal:define="has_series context/serieses|nothing"
+      tal:condition="milestones">
       <thead>
         <tr>
           <th>Version "Codename"</th>
-          <th>Series</th>
+          <th tal:condition="has_series">Series</th>
           <th>Expected</th>
           <th>Released</th>
           <th>Summary</th>
         </tr>
       </thead>
       <tbody>
-        <tal:row repeat="milestone context/all_milestones">
+        <tal:row condition="has_series" repeat="milestone milestones">
           <tal:milestone replace="structure milestone/@@+pillar-table-row" />
+        </tal:row>
+        <tal:row condition="not: has_series" repeat="milestone milestones">
+          <tal:milestone replace="structure milestone/@@+productseries-table-row" />
         </tal:row>
       </tbody>
     </table>
