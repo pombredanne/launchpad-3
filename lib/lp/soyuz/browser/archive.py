@@ -879,8 +879,12 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
     @cachedproperty
     def can_copy_to_context_ppa(self):
-        """Whether or not the current user can copy to the context PPA."""
-        return self.context.canUpload(self.user)
+        """Whether or not the current user can copy to the context PPA.
+
+        It's always False for non-PPA archives, copies to non-PPA archives
+        are explicitly denied in the UI.
+        """
+        return self.context.is_ppa and self.context.canUpload(self.user)
 
     def createDestinationArchiveField(self):
         """Create the 'destination_archive' field."""
