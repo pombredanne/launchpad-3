@@ -72,9 +72,6 @@ There is also a link which points to the registered branches page.
     lp://dev/~name12/landscape/feature-x      Development
     ...
 
-    >>> def print_branch_sparks(browser):
-    ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'branch-sparks'))
     >>> print_branch_sparks(browser)
     var branch_sparks = [["b-1", "http://.../+spark"], ...]];
 
@@ -94,9 +91,6 @@ branches.
     lp://dev/~launchpad/gnome-terminal/launchpad  Development           ...
     lp://dev/~name12/+junk/junk.dev               Experimental  ...
 
-    >>> def print_branch_sparks(browser):
-    ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'branch-sparks'))
     >>> print_branch_sparks(browser)
     var branch_sparks = [["b-1", "http://.../+spark"], ...]];
 
