@@ -308,10 +308,74 @@ class BranchListingItemsMixin:
         self._dev_series_map = {}
         self._now = datetime.now(pytz.UTC)
         self.view_user = user
+        self._dev_series_map = {}
 
     def getBranchCollection(self):
         """Should be a user restricted branch collection for the view."""
         raise NotImplementedError(self.getBranchCollection)
+
+    @cachedproperty
+    def branch_sparks(self):
+        return simplejson.dumps([
+                ('b-%s' % (count+1),
+                 canonical_url(branch, view_name='+spark'))
+                for count, branch
+                in enumerate(self._branches_for_current_batch)
+                if self.view.showSparkLineForBranch(branch)
+                ])
+
+    @cachedproperty
+    def _branches_for_current_batch(self):
+        branches = list(self.currentBatch())
+        # XXX: TimPenhey 2009-04-08 bug=324546
+        # Until there is an API to do this nicely, shove the launchpad.view
+        # permission into the request cache directly.
+        request = self.view.request
+        precache_permission_for_objects(request, 'launchpad.View', branches)
+        return branches
+
+    @cachedproperty
+    def branch_ids_with_bug_links(self):
+        """Return a set of branch ids that should show bug badges."""
+        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+            self._branches_for_current_batch, self.view.user)
+        return set(bug_branch.branch.id for bug_branch in bug_branches)
+
+    @cachedproperty
+    def branch_ids_with_spec_links(self):
+        """Return a set of branch ids that should show blueprint badges."""
+        spec_branches = getUtility(
+            ISpecificationBranchSet).getSpecificationBranchesForBranches(
+            self._branches_for_current_batch, self.view.user)
+        return set(spec_branch.branch.id for spec_branch in spec_branches)
+
+    @cachedproperty
+    def branch_ids_with_merge_proposals(self):
+        """Return a set of branches that should show merge proposal badges.
+
+        Branches have merge proposals badges if they've been proposed for
+        merging into another branch (source branches)
+        """
+        proposals = (
+            self.view._getCollection()
+            .visibleByUser(self.view.user)
+            .getMergeProposals(for_branches=self._branches_for_current_batch))
+        return set(proposal.source_branch.id for proposal in proposals)
+
+    @cachedproperty
+    def tip_revisions(self):
+        """Return a set of branch ids that should show blueprint badges."""
+        revisions = getUtility(IRevisionSet).getTipRevisionsForBranches(
+            self._branches_for_current_batch)
+        if revisions is None:
+            revision_map = {}
+        else:
+            # Key the revisions by revision id.
+            revision_map = dict((revision.revision_id, revision)
+                                for revision in revisions)
+        # Return a dict keyed on branch id.
+        return dict((branch.id, revision_map.get(branch.last_scanned_id))
+                     for branch in self._branches_for_current_batch)
 
     @cachedproperty
     def product_series_map(self):
@@ -535,6 +599,11 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         """All branches related to this target, sorted for display."""
         # Separate the public property from the underlying virtual method.
         return BranchListingBatchNavigator(self)
+
+    def showSparkLineForBranch(self, branch):
+        """Should the view render the code to generate the sparklines?"""
+        # Default to no for everything.
+        return False
 
     def getVisibleBranchesForUser(self):
         """Get branches visible to the user.
@@ -924,6 +993,11 @@ class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
         values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
         return values
 
+    def showSparkLineForBranch(self, branch):
+        """See `BranchListingView`."""
+        # Show the sparklines all branches on person views.
+        return True
+
     @property
     def user_in_context_team(self):
         if self.user is None:
@@ -1133,6 +1207,11 @@ class ProductBranchListingView(BranchListingView):
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context)
+
+    def showSparkLineForBranch(self, branch):
+        """See `BranchListingView`."""
+        # Show the sparklines for the development focus branch only.
+        return branch == self.development_focus_branch
 
     @cachedproperty
     def development_focus_branch(self):
