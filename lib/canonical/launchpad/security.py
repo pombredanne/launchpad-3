@@ -47,7 +47,9 @@ from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.entitlement import IEntitlement
-from canonical.launchpad.interfaces.hwdb import IHWSubmission
+from canonical.launchpad.interfaces.hwdb import (
+    IHWDBApplication, IHWDevice, IHWDriver, IHWDriverName,
+    IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -1800,6 +1802,49 @@ class ViewHWSubmission(AuthorizationBase):
 class EditHWSubmission(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IHWSubmission
+
+
+class ViewHWDBBase(AuthorizationBase):
+    """Base class to restrict access to HWDB data to members of the HWDB team.
+    """
+    permission = 'launchpad.View'
+
+    def checkAuthenticated(self, user):
+        """We give for now access only to Canonical employees."""
+        hwdb_team = getUtility(ILaunchpadCelebrities).hwdb_team
+        return user.inTeam(hwdb_team)
+
+    def checkUnauthenticated(self):
+        """No access for anonymous users."""
+        return False
+
+
+class ViewHWDriver(ViewHWDBBase):
+    usedfor = IHWDriver
+
+
+class ViewHWDriverName(ViewHWDBBase):
+    usedfor = IHWDriverName
+
+
+class ViewHWDriverPackageName(ViewHWDBBase):
+    usedfor = IHWDriverPackageName
+
+
+class ViewHWVendorID(ViewHWDBBase):
+    usedfor = IHWVendorID
+
+
+class ViewHWDevice(ViewHWDBBase):
+    usedfor = IHWDevice
+
+
+class ViewHWSubmissionDevice(ViewHWDBBase):
+    usedfor = IHWSubmissionDevice
+
+
+class ViewHWDBApplication(ViewHWDBBase):
+    usedfor = IHWDBApplication
 
 
 class ViewArchive(AuthorizationBase):

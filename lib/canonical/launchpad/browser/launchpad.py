@@ -74,7 +74,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
+from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -184,6 +184,15 @@ class LinkView(LaunchpadView):
     The link is not rendered if it's not enabled and we are not in development
     mode.
     """
+    AFTER_ICONS = ('edit', 'remove', 'trash-icon')
+
+    @property
+    def sprite_class(self):
+        """Return the class used to display the link's icon."""
+        if self.context.icon in self.AFTER_ICONS:
+            return 'sprite-after'
+        else:
+            return 'sprite'
 
     def render(self):
         """Render the menu link if it's enabled or we're in dev mode."""

@@ -1107,28 +1107,30 @@ class PillarFormatterAPI(CustomizableFormatter):
     def link(self, view_name):
         """The html to show a link to a Product, Project or distribution.
 
-        In the case of Products, we display the custom icon if one exists.
-        """
+        In the case of Products or Project groups we display the custom
+        icon, if one exists."""
+
         html = super(PillarFormatterAPI, self).link(view_name)
-        if IProduct.providedBy(self._context):
-            product = self._context
+        context = self._context
+        if IProduct.providedBy(context) or IProject.providedBy(context):
             custom_icon = ObjectImageDisplayAPI(
-                product)._get_custom_icon_url()
-            url = canonical_url(product, view_name=view_name)
+                context)._get_custom_icon_url()
+            url = canonical_url(context, view_name=view_name)
             summary = self._make_link_summary()
             if custom_icon is None:
-                css_class = ObjectImageDisplayAPI(product).sprite_css()
+                css_class = ObjectImageDisplayAPI(context).sprite_css()
                 html = (u'<a href="%s" class="%s">%s</a>') % (
                     url, css_class, summary)
             else:
                 html = (u'<a href="%s" class="bg-image" '
                          'style="background-image: url(%s)">%s</a>') % (
                     url, custom_icon, summary)
-            license_status = self._context.license_status
-            if license_status != LicenseStatus.OPEN_SOURCE:
-                html = '<span title="%s">%s (%s)</span>' % (
-                    license_status.description, html,
-                    license_status.title)
+            if IProduct.providedBy(context):
+                license_status = context.license_status
+                if license_status != LicenseStatus.OPEN_SOURCE:
+                    html = '<span title="%s">%s (%s)</span>' % (
+                            license_status.description, html,
+                            license_status.title)
         return html
 
 
@@ -1958,8 +1960,8 @@ class LinkFormatterAPI(ObjectFormatterAPI):
     """Adapter from Link objects to a formatted anchor."""
     final_traversable_names = {
         'icon': 'icon',
-        'icon-link': 'icon_link',
-        'link-icon': 'link_icon',
+        'icon-link': 'link',
+        'link-icon': 'link',
         }
 
     def icon(self):
@@ -1968,17 +1970,7 @@ class LinkFormatterAPI(ObjectFormatterAPI):
         return getMultiAdapter(
             (self._context, request), name="+inline-icon")()
 
-    def link_icon(self):
-        """Return the text and icon representation of the link."""
-        request = get_current_browser_request()
-        return getMultiAdapter(
-            (self._context, request), name="+inline-suffix")()
-
-    def icon_link(self):
-        """Return the icon and text representation of the link."""
-        return self.link(None)
-
-    def link(self, view_name, rootsite=None):
+    def link(self, view_name=None, rootsite=None):
         """Return the default representation of the link."""
         return self._context.render()
 

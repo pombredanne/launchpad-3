@@ -878,6 +878,12 @@ class Archive(SQLBase):
         return permission_set.newPackageUploader(
             self, person, source_package_name)
 
+    def newPackagesetUploader(self, person, packageset, explicit=False):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newPackagesetUploader(
+            self, person, packageset, explicit)
+
     def newComponentUploader(self, person, component_name):
         """See `IArchive`."""
         if self.is_ppa:
@@ -916,6 +922,42 @@ class Archive(SQLBase):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.deleteQueueAdmin(self, person, component_name)
+
+    def getUploadersForPackageset(self, packageset, direct_permissions=True):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.uploadersForPackageset(
+            self, packageset, direct_permissions)
+
+    def deletePackagesetUploader(self, person, packageset, explicit=False):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deletePackagesetUploader(
+            self, person, packageset, explicit)
+
+    def getPackagesetsForUploader(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.packagesetsForUploader(self, person)
+
+    def getPackagesetsForSourceUploader(self, sourcepackagename, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.packagesetsForSourceUploader(
+            self, sourcepackagename, person)
+
+    def getPackagesetsForSource(
+        self, sourcepackagename, direct_permissions=True):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.packagesetsForSource(
+            self, sourcepackagename, direct_permissions)
+
+    def isSourceUploadAllowed(self, sourcepackagename, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.isSourceUploadAllowed(
+            self, sourcepackagename, person)
 
     def getFileByName(self, filename):
         """See `IArchive`."""

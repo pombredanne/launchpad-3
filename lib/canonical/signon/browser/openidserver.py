@@ -44,9 +44,10 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
+from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from canonical.signon.interfaces.openidserver import (
     ILoginServiceAuthorizeForm, ILoginServiceLoginForm,
-    IOpenIDAuthorizationSet, IOpenIDRPConfigSet, IOpenIDRPSummarySet)
+    IOpenIDAuthorizationSet, IOpenIDRPSummarySet)
 from canonical.signon.interfaces.openidstore import IProviderOpenIDStore
 from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.validators.email import valid_email
@@ -367,13 +368,13 @@ class OpenIDMixin:
 
         self.checkTeamMembership(response)
 
-        # XXX flacoste 2008-11-13 bug=297816
-        # Add auth_time information. We need a newer version
-        # of python-openid to use this.
-        # last_login = self._getLoginTime()
-        #pape_response = pape.Response(
-        #    auth_time=last_login.strftime('%Y-%m-%dT%H:%M:%SZ'))
-        #response.addExtension(pape_response)
+        # If they use PAPE, let them know of the last logged in time.
+        pape_request = pape.Request.fromOpenIDRequest(self.openid_request)
+        if pape_request:
+            last_login = self._getLoginTime()
+            pape_response = pape.Response(
+                auth_time=last_login.strftime('%Y-%m-%dT%H:%M:%SZ'))
+            response.addExtension(pape_response)
 
         rp_summary_set = getUtility(IOpenIDRPSummarySet)
         rp_summary_set.record(self.account, self.openid_request.trust_root)
@@ -666,8 +667,9 @@ class LoginServiceMixinLoginView:
                     # Person table.
                     mapping = dict(
                         email=cgi.escape(email), 
-                        person_url=canonical_url(person),
-                        claim_url=canonical_url(person, view_name='+claim'),
+                        person_url=canonical_url(person, rootsite='mainsite'),
+                        claim_url=canonical_url(
+                            person, view_name='+claim', rootsite='mainsite'),
                         person_name=cgi.escape(person.displayname))
                     self.addError(structured(_(
                         'The email address ${email} is already associated '

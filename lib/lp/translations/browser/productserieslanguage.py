@@ -12,15 +12,19 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class ProductSeriesLanguageView(LaunchpadView):
-    """View class to render translation status for an IProductSeries."""
+    """View class to render translation status for an `IProductSeries`."""
+
+    pofiles = None
 
     def initialize(self):
         self.form = self.request.form
 
-        # Setup batching for this page.
         self.batchnav = BatchNavigator(
-            self.context.pofiles_or_dummies,
+            self.context.productseries.getCurrentTranslationTemplates(),
             self.request)
+
+        self.pofiles = self.context.getPOFilesFor(
+            self.batchnav.currentBatch())
 
     @cachedproperty
     def translation_group(self):

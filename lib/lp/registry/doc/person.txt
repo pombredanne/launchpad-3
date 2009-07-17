@@ -776,11 +776,11 @@ team list is actually sorted by date joined.
     >>> membership_list = foobar.getLatestApprovedMembershipsForPerson()
     >>> for membership in membership_list:
     ...     print membership.datejoined
+    2009-07-09 11:58:38.122886+00:00
     2008-05-14 12:07:14.227450+00:00
     2007-01-17 14:13:39.692693+00:00
     2006-05-15 22:23:29.062603+00:00
     2005-10-13 13:03:41.668724+00:00
-    2005-07-12 14:36:09.587753+00:00
 
 
 == Searching ==
@@ -835,6 +835,7 @@ Anonymous users cannot see non-public teams, such as 'myteam'.
     >>> print_people(personset.find('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
+    HWDB Team (hwdb-team): []
     Just a new team (new-team): []
     My Team (myteam): []
     No Team Memberships (no-team-memberships): [u'no-team-memberships@test.com']
@@ -854,6 +855,7 @@ But Owner, a member of that team, will see it in the results.
     >>> print_people(personset.find('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
+    HWDB Team (hwdb-team): []
     Just a new team (new-team): []
     My Team (myteam): []
     No Team Memberships (no-team-memberships): [u'no-team-memberships@test.com']
@@ -913,6 +915,7 @@ Searching only for Teams based on their names or email addresses:
     >>> print_people(personset.findTeam('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
+    HWDB Team (hwdb-team): []
     Just a new team (new-team): []
     My Team (myteam): []
     Other Team (otherteam): []
@@ -930,6 +933,7 @@ the previous search will include myteam in the results.
     >>> print_people(personset.findTeam('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
+    HWDB Team (hwdb-team): []
     Just a new team (new-team): []
     My Team (myteam): []
     Other Team (otherteam): []

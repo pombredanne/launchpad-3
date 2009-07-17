@@ -22,8 +22,10 @@ __all__ = [
     'simple_sendmail_from_person',
     'raw_sendmail']
 
+from binascii import b2a_qp
 import sha
 import sets
+from email.Encoders import encode_base64
 from email.Utils import getaddresses, make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
@@ -171,7 +173,38 @@ class MailController(object):
             disposition_kwargs['filename'] = filename
         attachment.add_header(
             'Content-Disposition', disposition, **disposition_kwargs)
+        self.encodeOptimally(attachment)
         self.attachments.append(attachment)
+
+    @staticmethod
+    def encodeOptimally(part, exact=True):
+        """Encode a message part as needed.
+
+        If the part is more than 10% high-bit characters, it will be encoded
+        using base64 encoding.  If the contents are 7-bit and exact is False,
+        the part will not be encoded.  Otherwise, the message will be encoded
+        as quoted-printable.
+
+        If quoted-printable encoding is used, exact will cause all line-ending
+        characters to be quoted.
+
+        :param part: The message part to encode.
+        :param exact: If True, the encoding will ensure newlines are not
+            mangled.  If False, 7-bit attachments will not be encoded.
+        """
+        orig_payload = part.get_payload()
+        if not exact and is_ascii_only(orig_payload):
+            return
+        # Payloads which are completely ascii need no encoding.
+        quopri_bytes = b2a_qp(orig_payload, istext=not exact)
+        # If 10% of characters need to be encoded, len is 1.2 times
+        # the original len.  If more than 10% need encoding, the result
+        # is unlikely to be readable.
+        if len(quopri_bytes) < len(orig_payload) * 1.2:
+            part.set_payload(quopri_bytes)
+            part['Content-Transfer-Encoding'] = 'quoted-printable'
+        else:
+            encode_base64(part)
 
     def makeMessage(self):
         # It's the caller's responsibility to either encode the address fields
