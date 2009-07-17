@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Security policies for using content objects."""
 
@@ -75,10 +75,11 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject, IProjectSet
 from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, IMakeOfficialBranchLinks)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -183,14 +184,31 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
                 or user.inTeam(celebrities.admin))
 
 
-class AdminByProjectReviewersOrAdmins(AuthorizationBase):
+class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
     permission = 'launchpad.ProjectReview'
-    usedfor = Interface
+    usedfor = None
 
     def checkAuthenticated(self, user):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.registry_experts)
                 or user.inTeam(celebrities.admin))
+
+class ReviewProduct(ReviewByRegistryExpertsOrAdmins):
+    usedfor = IProduct
+
+
+class ReviewProductSet(ReviewByRegistryExpertsOrAdmins):
+    usedfor = IProductSet
+
+
+class ReviewProject(ReviewByRegistryExpertsOrAdmins):
+    usedfor = IProject
+
+
+class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
+    usedfor = IProjectSet
+
+
 
 
 class ViewPillar(AuthorizationBase):
@@ -207,7 +225,6 @@ class ViewPillar(AuthorizationBase):
         else:
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
-                    or user.inTeam(celebrities.launchpad_developers)
                     or user.inTeam(celebrities.registry_experts)
                     or user.inTeam(celebrities.admin))
 
@@ -259,19 +276,11 @@ class EditByOwnersOrAdmins(AuthorizationBase):
                 or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
-class EditByRegistryExpertsOrOwnersOrAdmins(EditByOwnersOrAdmins):
-    usedfor = None
-    def checkAuthenticated(self, user):
-        if user.inTeam(getUtility(ILaunchpadCelebrities).registry_experts):
-            return True
-        return EditByOwnersOrAdmins.checkAuthenticated(self, user)
-
-
-class EditProduct(EditByRegistryExpertsOrOwnersOrAdmins):
+class EditProduct(EditByOwnersOrAdmins):
     usedfor = IProduct
 
 
-class EditPackaging(EditByRegistryExpertsOrOwnersOrAdmins):
+class EditPackaging(EditByOwnersOrAdmins):
     usedfor = IPackaging
 
 
@@ -511,8 +520,6 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
         """Authorize the product or distribution owner."""
         celebrities = getUtility(ILaunchpadCelebrities)
         if user.inTeam(celebrities.admin):
-            return True
-        if user.inTeam(celebrities.registry_experts):
             return True
         return user.inTeam(self.obj.target.owner)
 
@@ -831,7 +838,7 @@ class ViewProductSeries(AuthorizationBase):
         return True
 
 
-class EditProductSeries(EditByRegistryExpertsOrOwnersOrAdmins):
+class EditProductSeries(EditByOwnersOrAdmins):
     usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
@@ -843,7 +850,7 @@ class EditProductSeries(EditByRegistryExpertsOrOwnersOrAdmins):
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         if user.inTeam(rosetta_experts):
             return True
-        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
+        return EditByOwnersOrAdmins.checkAuthenticated(
             self, user)
 
 
@@ -1246,7 +1253,7 @@ class EditBugTracker(AuthorizationBase):
         return True
 
 
-class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
+class EditProductRelease(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IProductRelease
 
@@ -1254,7 +1261,7 @@ class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
         if (user.inTeam(self.obj.productseries.owner) or
             user.inTeam(self.obj.productseries.product.owner)):
             return True
-        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
+        return EditByOwnersOrAdmins.checkAuthenticated(
             self, user)
 
 
@@ -2113,7 +2120,6 @@ class ViewEmailAddress(AuthorizationBase):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
-                or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.registry_experts)
                 or user.inTeam(celebrities.admin))
 
