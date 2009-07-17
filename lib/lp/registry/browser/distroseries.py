@@ -285,6 +285,11 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
 
+    @cachedproperty
+    def unlinked_translatables(self):
+        """Return the sourcepackages that lack a link to a productseries."""
+        return self.context.getUnlinkedTranslatableSourcePackages()
+
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
 
