@@ -660,6 +660,12 @@ message).
     >>> subview.allow_diverging
     True
 
+A shared translation is not explicitely shown, since the current one is
+the shared translation.
+
+    >>> print subview.shared_translationmessage
+    None
+
 When looking at the entire POFile, diverging is not allowed.
 
     >>> server_url = '/'.join(
@@ -674,3 +680,24 @@ When looking at the entire POFile, diverging is not allowed.
     False
     >>> subview.allow_diverging
     False
+
+With a diverged translation, shared translation is explicitely offered
+among one of the suggestions, and we are not offered to diverge the
+translation further, since it's already diverged.
+
+    >>> diverged_message = factory.makeTranslationMessage(
+    ...     potmsgset=potmsgset, translations = [u"diverged translation"],
+    ...     force_diverged=True)
+    >>> diverged_message.setPOFile(pofile)
+    >>> translationmessage_page_view = create_view(
+    ...     diverged_message, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> translationmessage_page_view.initialize()
+    >>> subview = translationmessage_page_view.translationmessage_view
+    >>> subview.initialize()
+    >>> subview.zoomed_in_view
+    True
+    >>> subview.allow_diverging
+    False
+    >>> subview.shared_translationmessage == translationmessage
+    True
