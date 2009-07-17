@@ -87,6 +87,7 @@ class ShipIt(FunkLoadTestCase):
         # Pull the email validation token from the database and
         # validate it.
         token = self.get_email_validation_token(email)
+        self.assert_(token is not None, "No login token created")
         response = self.get(
             self.absolute_url(response, '/token/%s/+newaccount' % token),
             description="Get /token/[...]/+newaccount")
