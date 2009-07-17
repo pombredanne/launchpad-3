@@ -305,8 +305,9 @@ LP-admins can also 'edit' PPAs of other people:
     >>> admin_browser.getLink("Change details") is not None
     True
 
-But more importantly, only LP administrators can 'administer' Personal
-Package Archives.
+But more importantly, administering Personal Package Archives is
+restricted to LP administrators and LP commercial administrators, as
+they need to be able to make PPAs private.
 
     >>> sample_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> print sample_browser.getLink("Administer archive")
@@ -314,9 +315,17 @@ Package Archives.
     ...
     LinkNotFoundError
 
+    >>> admin_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> admin_browser.getLink("Administer archive").click()
     >>> print admin_browser.title
     Administer Hack PPA
+
+    >>> commercial_browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> commercial_browser.open("http://launchpad.dev/~jblack/+archive")
+    >>> commercial_browser.getLink("Administer archive") is not None
+    True
+
 
 Trying to shortcut the URL as a non-privileged user does not work:
 
@@ -334,7 +343,8 @@ The administration procedure allows administrators to:
  * For private PPAs, set the buildd secret.
  * Set whether the archive should be built on a virtualized machine.
  * Set a maximum disk size: uploads will be rejected if the resulting
-   PPA size is exceeding the authorized size. (not implemented yet)
+   PPA size is exceeding the authorized size.
+ * Set a per-archive build score delta.
 
 In this case, the administrator may wish to amend the PPA so that it is
 set up like the ubuntu security PPA, which is private but does not
@@ -346,6 +356,8 @@ build on a virtualized builder.
     False
     >>> admin_browser.getControl(name="field.require_virtualized").value
     True
+    >>> admin_browser.getControl(name="field.relative_build_score").value
+    '0'
 
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
@@ -353,10 +365,12 @@ build on a virtualized builder.
     >>> admin_browser.getControl(
     ...     name="field.require_virtualized").value = False
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
+    >>> admin_browser.getControl(
+    ...     name="field.relative_build_score").value = '199'
     >>> admin_browser.getControl("Save").click()
 
 Once confirmed the administrator is sent to the PPA page where he can
-see updated information.
+see some of the updated information.
 
     >>> print admin_browser.title
     Hack PPA
@@ -368,10 +382,16 @@ see updated information.
     >>> print_tag_with_id(admin_browser.contents, 'privacy')
     This archive is private
 
+We need go back to the "Administer archive" page to see the build score change
+that was made:
+
+    >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.getControl(name="field.relative_build_score").value
+    '199'
+
 When the archive is private, the buildd secret must also be set, or an
 error is issued:
 
-    >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = ""
     >>> admin_browser.getControl("Save").click()
@@ -561,9 +581,7 @@ An error is raised if Celso sets an invalid PPA name.
     >>> for error in get_feedback_messages(cprov_browser.contents):
     ...     print error
     There is 1 error.
-    Invalid name 'ExPeRiMeNtAl'. Names must start with a letter or
-    number and be lowercase. The characters +, - and . are also
-    allowed after the first character.
+    Invalid name 'ExPeRiMeNtAl'. Names must be at least two characters ...
 
 If Celso, by mistake, uses the same name of one of his existing PPAs
 (the default one is named 'ppa') an error is raised.

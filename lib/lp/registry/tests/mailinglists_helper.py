@@ -235,9 +235,8 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
         browser.getControl(
             name='field.subscriptionpolicy').displayValue = ['Open Team']
     browser.getControl('Create').click()
-    # Apply for the team's mailing list'
-    browser.open(rooturl + '~%s' % team_name)
-    browser.getLink('Configure mailing list').click()
+    # Apply for the team's mailing list.
+    browser.open('%s~%s/+mailinglist' % (rooturl, team_name))
     browser.getControl('Apply for Mailing List').click()
 
 

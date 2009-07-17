@@ -86,7 +86,7 @@ if __name__ == '__main__':
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
 
-    resource.setrlimit(resource.RLIMIT_AS, (1000000000, 1000000000))
+    resource.setrlimit(resource.RLIMIT_AS, (1500000000, 1500000000))
 
     protocol = PullerWorkerProtocol(sys.stdout)
     install_worker_ui_factory(protocol)

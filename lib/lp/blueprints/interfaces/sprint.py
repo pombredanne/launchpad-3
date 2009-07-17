@@ -26,7 +26,8 @@ from canonical.launchpad.fields import (
     ContentNameField, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     PublicPersonChoice)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.launchpad import IHasDrivers, IHasOwner
+from canonical.launchpad.interfaces.launchpad import IHasDrivers
+from lp.registry.interfaces.role import IHasOwner
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 class SprintNameField(ContentNameField):
 

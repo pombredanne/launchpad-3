@@ -90,7 +90,7 @@ class LoginToken(SQLBase):
         """See ILoginToken."""
         template = get_email_template('validate-email.txt')
         replacements = {'token_url': canonical_url(self),
-                        'requester': self.requester.browsername,
+                        'requester': self.requester.displayname,
                         'requesteremail': self.requesteremail,
                         'toaddress': self.email}
         message = template % replacements
@@ -116,7 +116,7 @@ class LoginToken(SQLBase):
 
         # Here are the instructions that need to be encrypted.
         template = get_email_template('validate-gpg.txt')
-        replacements = {'requester': self.requester.browsername,
+        replacements = {'requester': self.requester.displayname,
                         'requesteremail': self.requesteremail,
                         'displayname': key.displayname,
                         'fingerprint': key.fingerprint,
@@ -166,7 +166,7 @@ class LoginToken(SQLBase):
         """See ILoginToken."""
         template = get_email_template('profile-created.txt')
         replacements = {'token_url': canonical_url(self),
-                        'requester': self.requester.browsername,
+                        'requester': self.requester.displayname,
                         'comment': comment,
                         'profile_url': canonical_url(profile)}
         message = template % replacements
@@ -182,7 +182,7 @@ class LoginToken(SQLBase):
         from_name = "Launchpad Account Merge"
 
         dupe = getUtility(IPersonSet).getByEmail(self.email)
-        replacements = {'dupename': "%s (%s)" % (dupe.browsername, dupe.name),
+        replacements = {'dupename': "%s (%s)" % (dupe.displayname, dupe.name),
                         'requester': self.requester.name,
                         'requesteremail': self.requesteremail,
                         'toaddress': self.email,
@@ -198,9 +198,9 @@ class LoginToken(SQLBase):
 
         from_name = "Launchpad Email Validator"
         subject = "Launchpad: Validate your team's contact email address"
-        replacements = {'team': self.requester.browsername,
+        replacements = {'team': self.requester.displayname,
                         'requester': '%s (%s)' % (
-                            user.browsername, user.name),
+                            user.displayname, user.name),
                         'toaddress': self.email,
                         'admin_email': config.canonical.admin_address,
                         'token_url': canonical_url(self)}
@@ -213,7 +213,7 @@ class LoginToken(SQLBase):
         from_name = "Launchpad"
         profile = getUtility(IPersonSet).getByEmail(self.email)
         replacements = {'profile_name': (
-                            "%s (%s)" % (profile.browsername, profile.name)),
+                            "%s (%s)" % (profile.displayname, profile.name)),
                         'email': self.email,
                         'token_url': canonical_url(self)}
         message = template % replacements
@@ -227,9 +227,9 @@ class LoginToken(SQLBase):
         from_name = "Launchpad"
         profile = getUtility(IPersonSet).getByEmail(self.email)
         replacements = {'profile_name': (
-                            "%s (%s)" % (profile.browsername, profile.name)),
+                            "%s (%s)" % (profile.displayname, profile.name)),
                         'requester_name': (
-                            "%s (%s)" % (self.requester.browsername,
+                            "%s (%s)" % (self.requester.displayname,
                                          self.requester.name)),
                         'email': self.email,
                         'token_url': canonical_url(self)}

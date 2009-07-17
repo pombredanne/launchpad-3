@@ -26,7 +26,7 @@
     <p metal:fill-slot="extra_top">
       This mirror was registered by 
       <a tal:attributes="href context/owner/fmt:url"
-        ><span tal:replace="context/owner/browsername" /></a>
+        ><span tal:replace="context/owner/displayname" /></a>
       <tal:visible-email
         condition="context/owner/preferredemail/required:launchpad.View">
         (<span tal:replace="context/owner/preferredemail/email" />)

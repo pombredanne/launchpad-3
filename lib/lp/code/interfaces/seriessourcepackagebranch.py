@@ -33,6 +33,8 @@ class ISeriesSourcePackageBranch(Interface):
 
     sourcepackage = Attribute('The source package')
 
+    suite_sourcepackage = Attribute('The suite source package')
+
     sourcepackagename = Choice(
         title=_("Package"), required=True, vocabulary='SourcePackageName')
 
@@ -60,6 +62,13 @@ class IFindOfficialBranchLinks(Interface):
         """Get the links to branches from a source package.
 
         :param sourcepackage: An `ISourcePackage`.
+        :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
+        """
+
+    def findForDistributionSourcePackage(distrosourcepackage):
+        """Get the links to branches for a distribution source package.
+
+        :param distrosourcepackage: An `IDistributionSourcePackage`.
         :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
         """
 

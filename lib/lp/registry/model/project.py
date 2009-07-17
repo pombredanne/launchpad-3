@@ -32,7 +32,7 @@ from lp.blueprints.interfaces.sprintspecification import (
     SprintSpecificationStatus)
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.answers.interfaces.faqcollection import IFAQCollection

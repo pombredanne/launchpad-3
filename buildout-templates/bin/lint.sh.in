@@ -6,7 +6,7 @@
 # Runs xmlint, pyflakes and pylint on files changed from parent branch.
 # Use '-v' to run pylint under stricter conditions with additional messages.
 
-utilitiesdir=`dirname $0`
+utilitiesdir=`dirname $0`/../utilities
 [ -z "$utilitiesdir" ] && utilitiesdir=.
 
 # Fail if any of the required tools are not installed.

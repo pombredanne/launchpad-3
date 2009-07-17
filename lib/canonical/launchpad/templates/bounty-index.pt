@@ -59,8 +59,8 @@
           tal:content="message/datecreated/fmt:displaydate"
           >2 minutes ago</span>
         by <a href="#" tal:attributes="href message/owner/fmt:url" 
-                       tal:content="message/owner/browsername|string:(nobody)">
-          $Person.browsername</a>
+                       tal:content="message/owner/displayname|string:(nobody)">
+          $Person.displayname</a>
       </div>
 
       <div class="boardCommentBody">

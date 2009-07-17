@@ -60,7 +60,7 @@
   </p>
   <p tal:condition="view/is_person">
     This list describes bugs and blueprints that
-    <span tal:replace="context/browsername">Foo Bar</span>
+    <span tal:replace="context/displayname">Foo Bar</span>
     has offered to mentor.
   </p>
   <p tal:condition="view/is_team">

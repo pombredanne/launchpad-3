@@ -26,10 +26,10 @@
       projects</a> registered.
       <br />
       <br />
-      Only the Launchpad administrators can register new project groups. You can
-      register an individual application (what we call a project). To do so,
-      first <a href="/projects/">search to see if your project is already in
-      Launchpad</a>.
+      Only the Launchpad administrators and registry experts can register new
+      project groups. You can register an individual application (what we call
+      a project). To do so, first <a href="/projects/">search to see if your
+      project is already in Launchpad</a>.
     </div>
   </div>
 </metal:rightportlets>

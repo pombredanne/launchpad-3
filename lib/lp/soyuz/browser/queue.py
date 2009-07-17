@@ -416,7 +416,7 @@ class CompletePackageUpload:
     # Would be nice if there was a way of allowing writes to just work
     # (i.e. no proxying of __set__).
     pocket = None
-    datecreated = None
+    date_created = None
     sources = None
     builds = None
     customfiles = None
@@ -429,7 +429,7 @@ class CompletePackageUpload:
     def __init__(self, packageupload, build_upload_files,
                  source_upload_files):
         self.pocket = packageupload.pocket
-        self.datecreated = packageupload.datecreated
+        self.date_created = packageupload.date_created
         self.context = packageupload
         self.sources = list(packageupload.sources)
         self.contains_source = len(self.sources) > 0

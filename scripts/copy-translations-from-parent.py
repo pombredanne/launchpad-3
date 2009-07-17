@@ -13,12 +13,12 @@ Only current translations are copied.
 """
 
 import _pythonpath
+
 import sys
 from zope.component import getUtility
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.copy_distroseries_translations import (
+from lp.translations.scripts.copy_distroseries_translations import (
     copy_distroseries_translations)
 
 
@@ -41,11 +41,13 @@ class TranslationsCopier(LaunchpadCronScript):
 
     def _getTargetSeries(self):
         """Retrieve target `DistroSeries`."""
+        from lp.registry.interfaces.distribution import IDistributionSet
         distro = self.options.distro
         series = self.options.series
         return getUtility(IDistributionSet)[distro][series]
 
     def main(self):
+        from lp.registry.interfaces.distribution import IDistributionSet
         distribution = getUtility(IDistributionSet)[self.options.distro]
         series = self._getTargetSeries()
 

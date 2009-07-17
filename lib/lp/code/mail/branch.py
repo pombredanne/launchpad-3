@@ -170,6 +170,10 @@ class BranchMailer(BaseMailer):
                             notification_type)
         self.contents = contents
         self.diff = diff
+        if diff is None:
+            self.diff_size = 0
+        else:
+            self.diff_size = self.diff.count('\n') + 1
         self.revno = revno
 
     @classmethod
@@ -250,30 +254,6 @@ class BranchMailer(BaseMailer):
             return subject
         return '[Branch %s]' % (db_branch.unique_name)
 
-    def _diffText(self, max_diff):
-        """Determine the text to use for the diff.
-
-        If the diff's length exceeds the user preferences, a message
-        about this is returned.  Otherwise, the diff is returned.
-        """
-        if self.diff is None:
-            return self.contents or ''
-        diff_size = self.diff.count('\n') + 1
-        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
-            if max_diff == BranchSubscriptionDiffSize.NODIFF:
-                contents = self.contents
-            elif diff_size > max_diff.value:
-                diff_msg = (
-                    'The size of the diff (%d lines) is larger than your '
-                    'specified limit of %d lines' % (
-                    diff_size, max_diff.value))
-                contents = "%s\n%s" % (self.contents, diff_msg)
-            else:
-                contents = "%s\n%s" % (self.contents, self.diff)
-        else:
-            contents = "%s\n%s" % (self.contents, self.diff)
-        return contents
-
     def _getHeaders(self, email):
         headers = BaseMailer._getHeaders(self, email)
         reason, rationale = self._recipients.getReason(email)
@@ -296,9 +276,55 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
-        params['diff'] = self._diffText(reason.max_diff_lines)
+        params['diff'] = self.contents or ''
+        if not self._includeDiff(email):
+            params['diff'] += self._explainNotPresentDiff(email)
         params.setdefault('delta', '')
         return params
+
+    def _includeDiff(self, email):
+        """Determine whether to include a diff, and explanation.
+
+        Explanation is provided if the diff is wanted and present, but is
+        too large.
+        """
+        if self.diff_size == 0:
+            return False
+        reason, rationale = self._recipients.getReason(email)
+        if reason.max_diff_lines == BranchSubscriptionDiffSize.NODIFF:
+            return False
+        if (reason.max_diff_lines != BranchSubscriptionDiffSize.WHOLEDIFF and
+            self.diff_size > reason.max_diff_lines.value):
+            return False
+        return True, ''
+
+    def _explainNotPresentDiff(self, email):
+        """Provide an explanation why the diff is not being included.
+
+        No explanation is provided where the diff is empty or where the
+        user has requested to never have diffs sent.
+        """
+        if self.diff_size == 0:
+            return ''
+        reason, rationale = self._recipients.getReason(email)
+        if reason.max_diff_lines == BranchSubscriptionDiffSize.NODIFF:
+            return ''
+        return (
+            'The size of the diff (%d lines) is larger than your '
+            'specified limit of %d lines' % (
+            self.diff_size, reason.max_diff_lines.value))
+
+    def _addAttachments(self, ctrl, email):
+        """Attach the diff, if present and not too large.
+
+        :param ctrl: The MailController to attach the diff to.
+        :param email: Email address of the recipient.
+        """
+        if not self._includeDiff(email):
+            return
+        ctrl.addAttachment(
+            self.diff, content_type='text/x-diff', inline=True,
+                filename='revision.diff')
 
     @staticmethod
     def _format_user_address(user):

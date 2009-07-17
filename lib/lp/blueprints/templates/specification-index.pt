@@ -224,9 +224,9 @@
          tal:condition="context/whiteboard"
     >Whiteboard text goes here.</div>
 
-      <div tal:condition="view/branch_links" id="branch_links">
+      <div tal:condition="view/linked_branches" id="linked_branches">
         <h2>Related branches</h2>
-        <tal:branch repeat="branchlink view/branch_links">
+        <tal:branch repeat="branchlink view/linked_branches">
         <dt>
           <tal:branchlink
               replace="structure branchlink/branch/fmt:link"/>

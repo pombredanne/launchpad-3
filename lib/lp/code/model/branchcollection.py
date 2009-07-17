@@ -189,6 +189,27 @@ class GenericBranchCollection:
             table=Product,
             join=Join(Product, Branch.product == Product.id))
 
+    def inDistribution(self, distribution):
+        """See `IBranchCollection`."""
+        return self._filterBy(
+            [DistroSeries.distribution == distribution],
+            table=Distribution,
+            join=Join(DistroSeries, Branch.distroseries == DistroSeries.id))
+
+    def inDistroSeries(self, distro_series):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.distroseries == distro_series])
+
+    def inDistributionSourcePackage(self, distro_source_package):
+        """See `IBranchCollection`."""
+        distribution = distro_source_package.distribution
+        sourcepackagename = distro_source_package.sourcepackagename
+        return self._filterBy(
+            [DistroSeries.distribution == distribution,
+             Branch.sourcepackagename == sourcepackagename],
+            table=Distribution,
+            join=Join(DistroSeries, Branch.distroseries == DistroSeries.id))
+
     def inSourcePackage(self, source_package):
         """See `IBranchCollection`."""
         return self._filterBy([

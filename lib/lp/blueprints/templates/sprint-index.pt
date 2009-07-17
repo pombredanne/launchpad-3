@@ -65,7 +65,7 @@
     <ul>
       <li class="person" tal:repeat="driver context/drivers">
         <a tal:attributes="href driver/fmt:url"
-           tal:content="driver/browsername" />
+           tal:content="driver/displayname" />
       </li>
     </ul>
 

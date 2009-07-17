@@ -22,7 +22,9 @@ __all__ = [
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
+    'DecoratedBug',
     'RegisterBranchMergeProposalView',
+    'TryImportAgainView',
     ]
 
 import cgi
@@ -66,6 +68,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
+from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
 from lp.code.enums import BranchType, UICreatableBranchType
 from lp.code.interfaces.branch import (
@@ -74,6 +77,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -126,7 +130,7 @@ class BranchNavigation(Navigation):
         """Traverses to an `IBugBranch`."""
         bug = getUtility(IBugSet).get(bugid)
 
-        for bug_branch in bug.bug_branches:
+        for bug_branch in bug.linked_branches:
             if bug_branch.branch == self.context:
                 return bug_branch
 
@@ -264,7 +268,7 @@ class BranchContextMenu(ContextMenu):
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
     def link_bug(self):
-        if self.context.related_bugs:
+        if self.context.linked_bugs:
             text = 'Link to another bug report'
         else:
             text = 'Link to a bug report'
@@ -288,6 +292,20 @@ class BranchContextMenu(ContextMenu):
         text = 'Edit import source or review import'
         return Link('+edit-import', text, icon='edit', enabled=True)
 
+
+class DecoratedBug:
+    """Provide some additional attributes to a normal bug."""
+    delegates(IBug)
+
+    def __init__(self, context, branch):
+        self.context = context
+        self.branch = branch
+
+    @property
+    def bugtask(self):
+        """Return the bugtask for the branch project, or the default bugtask.
+        """
+        return self.branch.target.getBugTask(self.context)
 
 class BranchView(LaunchpadView, FeedsMixin):
 
@@ -444,6 +462,12 @@ class BranchView(LaunchpadView, FeedsMixin):
     def show_candidate_more_link(self):
         """Only show the link if there are more than five."""
         return len(self.landing_candidates) > 5
+
+    @cachedproperty
+    def linked_bugs(self):
+        """Return a list of DecoratedBugs linked to the branch."""
+        return [DecoratedBug(bug, self.context)
+            for bug in self.context.linked_bugs]
 
     @cachedproperty
     def latest_code_import_results(self):
@@ -1162,10 +1186,10 @@ class BranchRequestImportView(LaunchpadFormView):
         if self.context.code_import.import_job is None:
             self.request.response.addNotification(
                 "This import is no longer being updated automatically.")
-        elif self.context.code_import.import_job.state != \
-                 CodeImportJobState.PENDING:
-            assert self.context.code_import.import_job.state == \
-                   CodeImportJobState.RUNNING
+        elif (self.context.code_import.import_job.state !=
+              CodeImportJobState.PENDING):
+            assert (self.context.code_import.import_job.state ==
+                    CodeImportJobState.RUNNING)
             self.request.response.addNotification(
                 "The import is already running.")
         elif self.context.code_import.import_job.requesting_user is not None:
@@ -1187,6 +1211,37 @@ class BranchRequestImportView(LaunchpadFormView):
     @property
     def action_url(self):
         return "%s/@@+request-import" % canonical_url(self.context)
+
+
+class TryImportAgainView(LaunchpadFormView):
+    """The view to provide an 'Try again' button on the branch index page.
+
+    This only appears on the page of a branch with an associated code import
+    that is marked as failing.
+    """
+
+    schema = IBranch
+    field_names = []
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Try Again', name='tryagain')
+    def request_try_again(self, action, data):
+        if (self.context.code_import.review_status !=
+            CodeImportReviewStatus.FAILING):
+            self.request.response.addNotification(
+                "The import is now %s."
+                % self.context.code_import.review_status.name)
+        else:
+            self.context.code_import.tryFailingImportAgain(self.user)
+            self.request.response.addNotification(
+                "Import will be tried again as soon as possible.")
+
+    @property
+    def prefix(self):
+        return "tryagain"
 
 
 class BranchSparkView(LaunchpadView):

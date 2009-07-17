@@ -64,8 +64,7 @@
           <tr tal:repeat="membership membership_batch">
             <tal:block define="member membership/person">
               <td>
-                <a tal:attributes="href member/fmt:url"
-                   tal:content="member/displayname" />
+                <a tal:replace="structure member/fmt:link"/>
               </td>
               <td>
                 <span class="sortkey"

@@ -26,7 +26,7 @@ from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, SQL
+from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, Or, SQL
 from storm.sqlobject import SQLObjectResultSet
 from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
@@ -42,7 +42,8 @@ from lazr.enum import DBItem
 from canonical.config import config
 
 from canonical.database.sqlbase import (
-    block_implicit_flushes, cursor, SQLBase, sqlvalues, quote, quote_like)
+    SQLBase, block_implicit_flushes, convert_storm_clause_to_string, cursor,
+    quote, quote_like, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -59,6 +60,7 @@ from lp.bugs.interfaces.bugtask import (
     INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
+from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -1145,6 +1147,88 @@ def get_bug_privacy_filter(user):
                      """ % sqlvalues(personid=user.id)
 
 
+def build_tag_set_query(joiner, tags):
+    """Return an SQL snippet to find bugs matching the given tags.
+
+    The tags are sorted so that testing the generated queries is
+    easier and more reliable.
+
+    :param joiner: The SQL set term used to join the individual tag
+        clauses, typically "INTERSECT" or "UNION".
+    :param tags: An iterable of valid tag names (not prefixed minus
+        signs, not wildcards).
+    """
+    joiner = " %s " % joiner
+    return joiner.join(
+        "SELECT bug FROM BugTag WHERE tag = %s" % quote(tag)
+        for tag in sorted(tags))
+
+
+def build_tag_search_clause(tags_spec):
+    """Return a tag search clause.
+
+    :param tags_spec: An instance of `any` or `all` containing tag
+        "specifications". A tag specification is a valid tag name
+        optionally prefixed by a minus sign (denoting "not"), or an
+        asterisk (denoting "any tag"), again optionally prefixed by a
+        minus sign (and thus denoting "not any tag").
+    """
+    tags = set(tags_spec.query_values)
+    wildcards = [tag for tag in tags if tag in ('*', '-*')]
+    tags.difference_update(wildcards)
+    include = [tag for tag in tags if not tag.startswith('-')]
+    exclude = [tag[1:] for tag in tags if tag.startswith('-')]
+
+    # Should we search for all specified tags or any of them?
+    find_all = zope_isinstance(tags_spec, all)
+
+    if find_all:
+        # How to combine an include clause and an exclude clause when
+        # both are generated.
+        combine_with = 'AND'
+        # The set of bugs that have *all* of the tags requested for
+        # *inclusion*.
+        include_clause = build_tag_set_query("INTERSECT", include)
+        # The set of bugs that have *any* of the tags requested for
+        # *exclusion*.
+        exclude_clause = build_tag_set_query("UNION", exclude)
+    else:
+        # How to combine an include clause and an exclude clause when
+        # both are generated.
+        combine_with = 'OR'
+        # The set of bugs that have *any* of the tags requested for
+        # inclusion.
+        include_clause = build_tag_set_query("UNION", include)
+        # The set of bugs that have *all* of the tags requested for
+        # exclusion.
+        exclude_clause = build_tag_set_query("INTERSECT", exclude)
+
+    # Search for the *presence* of any tag.
+    if '*' in wildcards:
+        # Only clobber the clause if not searching for all tags.
+        if len(include_clause) == 0 or not find_all:
+            include_clause = "SELECT bug FROM BugTag"
+
+    # Search for the *absence* of any tag.
+    if '-*' in wildcards:
+        # Only clobber the clause if searching for all tags.
+        if len(exclude_clause) == 0 or find_all:
+            exclude_clause = "SELECT bug FROM BugTag"
+
+    # Combine the include and exclude sets.
+    if len(include_clause) > 0 and len(exclude_clause) > 0:
+        return "(BugTask.bug IN (%s) %s BugTask.bug NOT IN (%s))" % (
+            include_clause, combine_with, exclude_clause)
+    elif len(include_clause) > 0:
+        return "BugTask.bug IN (%s)" % include_clause
+    elif len(exclude_clause) > 0:
+        return "BugTask.bug NOT IN (%s)" % exclude_clause
+    else:
+        # This means that there were no tags (wildcard or specific) to
+        # search for (which is allowed, even if it's a bit weird).
+        return None
+
+
 class BugTaskSet:
     """See `IBugTaskSet`."""
     implements(IBugTaskSet)
@@ -1469,76 +1553,9 @@ class BugTaskSet:
             extra_clauses.append(upstream_clause)
 
         if params.tag:
-            tags = set(params.tag.query_values)
-            tags_wildcards = [tag for tag in tags if tag in ('*', '-*')]
-            tags.difference_update(tags_wildcards)
-            tags_include = [tag for tag in tags if not tag.startswith('-')]
-            tags_exclude = [tag[1:] for tag in tags if tag.startswith('-')]
-            tags_clauses = []
-
-            # Search for the *presence* of any tag.
-            if '*' in tags_wildcards:
-                tags_clauses.append(
-                    "BugTag.bug = BugTask.bug")
-                clauseTables.append('BugTag')
-
-            # Search for the *absence* of any tag.
-            if '-*' in tags_wildcards:
-                tags_clauses.append(
-                    "BugTask.bug NOT IN ("
-                    "    SELECT BugTag.bug FROM BugTag)")
-
-            def tags_set_query(joiner, tags):
-                # Return an SQL snippet that identifies a set of bugs
-                # based on tags.
-                joiner = " %s " % joiner
-                return "(%s)" % joiner.join(
-                    "SELECT BugTag.bug FROM BugTag"
-                    " WHERE BugTag.tag = %s" % quote(tag)
-                    for tag in tags)
-
-            if zope_isinstance(params.tag, all):
-                tags_combinator = ' AND '
-                # The set of bugs that have *all* of the tags
-                # requested for *inclusion*.
-                tags_include_clause = tags_set_query(
-                    "INTERSECT", tags_include)
-                # The set of bugs that have *any* of the tags
-                # requested for *exclusion*.
-                tags_exclude_clause = tags_set_query(
-                    "UNION", tags_exclude)
-            else:
-                tags_combinator = ' OR '
-                # The set of bugs that have *any* of the tags
-                # requested for inclusion.
-                tags_include_clause = tags_set_query(
-                    "UNION", tags_include)
-                # The set of bugs that have *all* of the tags
-                # requested for exclusion.
-                tags_exclude_clause = tags_set_query(
-                    "INTERSECT", tags_exclude)
-
-            # Combine the include and exclude sets.
-            if len(tags_include) > 0 and len(tags_exclude) > 0:
-                tags_clauses.append(
-                    "BugTask.bug IN (%s EXCEPT %s)" % (
-                        tags_include_clause, tags_exclude_clause))
-            elif len(tags_include) > 0:
-                tags_clauses.append(
-                    "BugTask.bug IN %s" % tags_include_clause)
-            elif len(tags_exclude) > 0:
-                tags_clauses.append(
-                    "BugTask.bug NOT IN %s" % tags_exclude_clause)
-            else:
-                # This means that the query was only wildcards, or
-                # nothing at all (which is allowed, even if it's a
-                # bit weird).
-                pass
-
-            # Add any generated tag clauses to the main query.
-            if len(tags_clauses) > 0:
-                extra_clauses.append(
-                    '(%s)' % tags_combinator.join(tags_clauses))
+            tag_clause = build_tag_search_clause(params.tag)
+            if tag_clause is not None:
+                extra_clauses.append(tag_clause)
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine
@@ -1624,6 +1641,10 @@ class BugTaskSet:
         clause = get_bug_privacy_filter(params.user)
         if clause:
             extra_clauses.append(clause)
+
+        hw_clause = self._buildHardwareRelatedClause(params)
+        if hw_clause is not None:
+            extra_clauses.append(hw_clause)
 
         orderby_arg = self._processOrderBy(params)
 
@@ -1783,6 +1804,80 @@ class BugTaskSet:
 
         return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
 
+    def _buildHardwareRelatedClause(self, params):
+        """Hardware related SQL expressions and tables for bugtask searches.
+
+        :return: (tables, clauses) where clauses is a list of SQL expressions
+            which limit a bugtask search to bugs related to a device or
+            driver specified in search_params. If search_params contains no
+            hardware related data, empty lists are returned.
+        :param params: A `BugTaskSearchParams` instance.
+
+        Device related WHERE clauses are returned if
+        params.hardware_bus, params.hardware_vendor_id,
+        params.hardware_product_id are all not None.
+        """
+        # Avoid cyclic imports.
+        from canonical.launchpad.database.hwdb import (
+            HWSubmission, HWSubmissionBug, HWSubmissionDevice,
+            _userCanAccessSubmissionStormClause,
+            make_submission_device_statistics_clause)
+        from lp.bugs.model.bug import Bug, BugAffectsPerson
+
+        bus = params.hardware_bus
+        vendor_id = params.hardware_vendor_id
+        product_id = params.hardware_product_id
+        driver_name = params.hardware_driver_name
+        package_name = params.hardware_driver_package_name
+
+        if (bus is not None and vendor_id is not None and
+            product_id is not None):
+            tables, clauses = make_submission_device_statistics_clause(
+                bus, vendor_id, product_id, driver_name, package_name, False)
+        elif driver_name is not None or package_name is not None:
+            tables, clauses = make_submission_device_statistics_clause(
+                None, None, None, driver_name, package_name, False)
+        else:
+            return None
+
+        tables.append(HWSubmission)
+        tables.append(Bug)
+        clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
+        bug_link_clauses = []
+        if params.hardware_owner_is_bug_reporter:
+            bug_link_clauses.append(
+                HWSubmission.ownerID == Bug.ownerID)
+        if params.hardware_owner_is_affected_by_bug:
+            bug_link_clauses.append(
+                And(BugAffectsPerson.personID == HWSubmission.ownerID,
+                    BugAffectsPerson.bug == Bug.id,
+                    BugAffectsPerson.affected))
+            tables.append(BugAffectsPerson)
+        if params.hardware_owner_is_subscribed_to_bug:
+            bug_link_clauses.append(
+                And(BugSubscription.personID == HWSubmission.ownerID,
+                    BugSubscription.bugID == Bug.id))
+            tables.append(BugSubscription)
+        if params.hardware_is_linked_to_bug:
+            bug_link_clauses.append(
+                And(HWSubmissionBug.bugID == Bug.id,
+                    HWSubmissionBug.submissionID == HWSubmission.id))
+            tables.append(HWSubmissionBug)
+
+        if len(bug_link_clauses) == 0:
+            return None
+
+        clauses.append(Or(*bug_link_clauses))
+        clauses.append(_userCanAccessSubmissionStormClause(params.user))
+
+        tables = [convert_storm_clause_to_string(table) for table in tables]
+        clauses = ['(%s)' % convert_storm_clause_to_string(clause)
+                   for clause in clauses]
+        clause = 'Bug.id IN (SELECT DISTINCT Bug.id from %s WHERE %s)' % (
+            ', '.join(tables), ' AND '.join(clauses))
+        return clause
+
+
     def search(self, params, *args):
         """See `IBugTaskSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -1910,6 +2005,29 @@ class BugTaskSet:
         bugtask.updateTargetNameCache()
 
         return bugtask
+
+    def getStatusCountsForProductSeries(self, user, product_series):
+        """See `IBugTaskSet`."""
+        bug_privacy_filter = get_bug_privacy_filter(user)
+        if bug_privacy_filter != "":
+            bug_privacy_filter = ' AND ' + bug_privacy_filter
+        cur = cursor()
+        condition = """
+            (BugTask.productseries = %s
+                 OR Milestone.productseries = %s)
+            """ % sqlvalues(product_series, product_series)
+        query = """
+            SELECT BugTask.status, count(*)
+            FROM BugTask
+                JOIN Bug ON BugTask.bug = Bug.id
+                LEFT JOIN Milestone ON BugTask.milestone = Milestone.id
+            WHERE
+                %s
+                %s
+            GROUP BY BugTask.status
+            """ % (condition, bug_privacy_filter)
+        cur.execute(query)
+        return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
                               bug=None, target=None):

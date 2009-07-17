@@ -44,7 +44,7 @@
           Current:
         </td>
         <td>
-          <span tal:replace="view/ownerOrMaintainer/browsername" />
+          <span tal:replace="view/ownerOrMaintainer/displayname" />
         </td>
       </tr>
 

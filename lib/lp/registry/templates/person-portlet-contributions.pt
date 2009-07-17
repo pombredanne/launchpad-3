@@ -18,10 +18,7 @@
         <tr tal:define="project contribution/project;
                         project_categories contribution/categories">
           <th>
-            <img tal:replace="structure project/image:icon"
-                 src="/@@/product" />
-            <a tal:attributes="href project/fmt:url"
-               tal:content="project/title/fmt:shorten/28">Project</a>
+            <a tal:replace="structure project/fmt:link">Project</a>
           </th>
           <td tal:repeat="category view/contributed_categories">
             <tal:icon condition="python: category in project_categories"

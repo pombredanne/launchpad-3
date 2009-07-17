@@ -7,6 +7,7 @@ import os
 import md5
 import sha
 import errno
+import shutil
 import tempfile
 
 from zope.component import getUtility
@@ -171,7 +172,7 @@ class LibraryFileUpload(object):
             # If the directory already exists, that's ok.
             if e.errno != errno.EEXIST:
                 raise
-        os.rename(self.tmpfilepath, location)
+        shutil.move(self.tmpfilepath, location)
 
 
 def _sameFile(path1, path2):

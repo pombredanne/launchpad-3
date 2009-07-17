@@ -46,7 +46,8 @@
       <li tal:repeat="drbp context/sample_binary_packages">
         <strong>
           <a tal:attributes="href drbp/fmt:url"
-             tal:content="drbp/name">apache-utils</a>:
+             tal:content="drbp/name"
+             class="sprite package-binary">apache-utils</a>:
           <span tal:replace="drbp/summary">package summary</span>
         </strong>
         <div>

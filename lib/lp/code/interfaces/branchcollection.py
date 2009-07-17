@@ -89,7 +89,20 @@ class IBranchCollection(Interface):
         """Restrict the collection to branches in 'project'."""
 
     def inSourcePackage(package):
-        """Restrict the collection to branches in 'package'."""
+        """Restrict the collection to branches in 'package'.
+
+        A source package is effectively a sourcepackagename in a distro
+        series.
+        """
+
+    def inDistribution(distribution):
+        """Restrict the collection to branches in 'distribution'."""
+
+    def inDistroSeries(distro_series):
+        """Restrict the collection to branches in 'distro_series'."""
+
+    def inDistributionSourcePackage(distro_source_package):
+        """Restrict to branches in a 'package' for a 'distribution'."""
 
     def isJunk():
         """Restrict the collection to junk branches.

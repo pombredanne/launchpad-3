@@ -16,7 +16,7 @@
         </tr>
         <tr>
             <td>Person</td>
-            <td tal:content="bag/person/browsername|nothing" />
+            <td tal:content="bag/person/displayname|nothing" />
         </tr>
         <tr>
             <td>Project Group</td>
@@ -44,7 +44,7 @@
         </tr>
         <tr>
             <td>User</td>
-            <td tal:content="bag/user/browsername|nothing" />
+            <td tal:content="bag/user/displayname|nothing" />
         </tr>
     </table>
 </div>

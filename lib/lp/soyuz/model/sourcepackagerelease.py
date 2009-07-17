@@ -33,7 +33,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -42,9 +42,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
@@ -530,6 +528,11 @@ class SourcePackageRelease(SQLBase):
     def package_upload(self):
         """See `ISourcepackageRelease`."""
         store = Store.of(self)
+        # The join on 'changesfile' is not only used only for
+        # pre-fetching the corresponding library file, so callsites
+        # don't have to issue an extra query. It is also important
+        # for excluding delayed-copies, because they might match
+        # the publication context but will not contain as changesfile.
         origin = [
             PackageUploadSource,
             Join(PackageUpload,
@@ -542,7 +545,6 @@ class SourcePackageRelease(SQLBase):
         results = store.using(*origin).find(
             (PackageUpload, LibraryFileAlias, LibraryFileContent),
             PackageUploadSource.sourcepackagerelease == self,
-            PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.archive == self.upload_archive,
             PackageUpload.distroseries == self.upload_distroseries)
 

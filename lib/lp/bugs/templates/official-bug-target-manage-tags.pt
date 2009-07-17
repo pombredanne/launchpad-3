@@ -43,9 +43,9 @@
 
     <table id="layout-table" class="official-tags-layout-table" style="display:none">
       <tr>
-        <th>Official Tags</th>
+        <th>Official tags</th>
         <th />
-        <th>Other Tags</th>
+        <th>Other tags</th>
       </tr>
       <tr>
         <td id="left-column" class="left-column">

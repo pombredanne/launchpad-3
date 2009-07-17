@@ -42,7 +42,7 @@
         by
         <a
           tal:attributes="href context/owner/fmt:url"
-          tal:content="context/owner/browsername">Foo Bar</a>
+          tal:content="context/owner/displayname">Foo Bar</a>
       </div>
       <h1 tal:content="context/title">Bar doesn't work</h1>
     </metal:heading>
@@ -109,7 +109,7 @@
 
           <p>
             Provide an answer of your own, or ask 
-            <span tal:replace="context/owner/browsername"></span>
+            <span tal:replace="context/owner/displayname"></span>
             for more information if necessary.
           </p>
         </div>

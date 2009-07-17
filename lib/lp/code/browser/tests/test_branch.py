@@ -289,7 +289,7 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         view = PersonOwnedBranchesView(branch.owner, LaunchpadTestRequest())
         view.initialize()
         navigator = view.branches()
-        [decorated_branch] = navigator.branches()
+        [decorated_branch] = navigator.branches
         self.assertEqual("lp://dev/fooix", decorated_branch.bzr_identity)
 
 

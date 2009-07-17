@@ -183,8 +183,18 @@ YUI().use('node', 'lazr.effects', function(Y) {
              */
             details_buttons.addClass('unseen');
 
-            /* Slide out the registration details widgets. */
-            Y.lazr.effects.slide_out(form_widgets).run();
+            /* Slide out the registration details widgets, but add an 'end'
+             * event handler so that the height style left by lazr.effects is
+             * removed when the animation is done.  We're never going to slide
+             * the form widgets back in, and the height style causes the
+             * license widget to dive under the Complete Registration button.
+             * See bug 391138 for details.
+             */
+            var anim = Y.lazr.effects.slide_out(form_widgets);
+            anim.on('end', function() {
+                form_widgets.setStyle('height', null);
+            });
+            anim.run();
 
             /* Toggle the visibility of the various other widgets. */
             form_actions.removeClass('unseen');

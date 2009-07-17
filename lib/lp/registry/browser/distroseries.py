@@ -11,10 +11,8 @@ __all__ = [
     'DistroSeriesBreadcrumbBuilder',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
-    'DistroSeriesLanguagePackView',
     'DistroSeriesPackageSearchView',
     'DistroSeriesNavigation',
-    'DistroSeriesTranslationsAdminView',
     'DistroSeriesView',
     ]
 
@@ -33,16 +31,14 @@ from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.browser.queue import QueueItemsView
-from canonical.launchpad.browser.translations import TranslationsMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from canonical.launchpad.interfaces.distroserieslanguage import (
+from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+    ILaunchBag, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -50,10 +46,11 @@ from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
+    ApplicationMenu, Link, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView, stepthrough, stepto)
+    canonical_url, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -119,6 +116,10 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         else:
             return self.context.last_delta_language_pack_exported.file
 
+    @stepthrough('+upload')
+    def traverse_queue(self, id):
+        return getUtility(IPackageUploadSet).get(id)
+
 
 class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IDistroSeries`."""
@@ -130,7 +131,8 @@ class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
 class DistroSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroSeries
-    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+    enable_only = ['overview', 'branches', 'bugs', 'specifications',
+                   'translations']
 
 
 class DistroSeriesOverviewMenu(ApplicationMenu):
@@ -257,31 +259,6 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
         return Link('+addspec', text, summary, icon='add')
 
 
-class DistroSeriesTranslationsMenu(NavigationMenu):
-
-    usedfor = IDistroSeries
-    facet = 'translations'
-    links = [
-        'translations', 'templates', 'admin', 'language_packs', 'imports']
-
-    def translations(self):
-        return Link('', 'Overview')
-
-    def imports(self):
-        return Link('+imports', 'Import queue')
-
-    @enabled_with_permission('launchpad.TranslationsAdmin')
-    def admin(self):
-        return Link('+admin', 'Settings')
-
-    @enabled_with_permission('launchpad.Edit')
-    def templates(self):
-        return Link('+templates', 'Templates')
-
-    def language_packs(self):
-        return Link('+language-packs', 'Language packs')
-
-
 class DistroSeriesPackageSearchView(PackageSearchViewBase):
     """Customised PackageSearchView for DistroSeries"""
 
@@ -290,7 +267,7 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
         return self.context.searchPackages(self.text)
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
+class DistroSeriesView(BuildRecordsView, QueueItemsView):
 
     def initialize(self):
         self.displayname = '%s %s' % (
@@ -303,85 +280,11 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         # multiple times, in particular because it's gnarly.
         return list(self.context.packagings)
 
-    def requestDistroLangs(self):
-        """Produce a set of DistroSeriesLanguage and
-        DummyDistroSeriesLanguage objects for the languages the user
-        currently is interested in (or which the users location and browser
-        language prefs indicate might be interesting.
-        """
-        distroserieslangs = []
-        for language in self.translatable_languages:
-            distroserieslang = self.context.getDistroSeriesLanguageOrDummy(
-                language)
-            distroserieslangs.append(distroserieslang)
-        return distroserieslangs
-
     def requestCountry(self):
         return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
-
-    def checkTranslationsViewable(self):
-        """Check that these translations are visible to the current user.
-
-        Launchpad admins, Translations admins, and users with admin
-        rights on the `DistroSeries` are always allowed.  For others
-        this delegates to `IDistroSeries.checkTranslationsViewable`,
-        which raises `TranslationUnavailable` if the translations are
-        set to be hidden.
-
-        :return: Returns normally if this series' translations are
-            viewable to the current user.
-        :raise TranslationUnavailable: if this series' translations are
-            hidden and the user is not one of the limited caste that is
-            allowed to access them.
-        """
-        if check_permission('launchpad.Admin', self.context):
-            # Anyone with admin rights on this series passes.  This
-            # includes Launchpad admins.
-            return
-
-        user = self.user
-        experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-        if user is not None and user.inTeam(experts):
-            # Translations admins also pass.
-            return
-
-        # Everyone else passes only if translations are viewable to the
-        # public.
-        self.context.checkTranslationsViewable()
-
-    def distroserieslanguages(self):
-        """Produces a list containing a DistroSeriesLanguage object for
-        each language this distro has been translated into, and for each
-        of the user's preferred languages. Where the series has no
-        DistroSeriesLanguage for that language, we use a
-        DummyDistroSeriesLanguage.
-        """
-
-        # find the existing DRLanguages
-        distroserieslangs = list(self.context.distroserieslanguages)
-
-        # make a set of the existing languages
-        existing_languages = set([drl.language for drl in distroserieslangs])
-
-        # find all the preferred languages which are not in the set of
-        # existing languages, and add a dummydistroserieslanguage for each
-        # of them
-        distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-        for lang in self.translatable_languages:
-            if lang not in existing_languages:
-                distroserieslang = distroserieslangset.getDummy(
-                    self.context, lang)
-                distroserieslangs.append(distroserieslang)
-
-        return sorted(distroserieslangs, key=lambda a: a.language.englishname)
-
-    @cachedproperty
-    def unlinked_translatables(self):
-        """Return the sourcepackages that lack a link to a productseries."""
-        return self.context.getUnlinkedTranslatableSourcePackages()
 
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
@@ -391,6 +294,13 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
+
+    @property
+    def show_arch_selector(self):
+        """Display the architecture selector.
+
+        See `BuildRecordsView` for further details."""
+        return True
 
 
 class DistroSeriesEditView(LaunchpadEditFormView):
@@ -533,138 +443,3 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-
-class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
-    schema = IDistroSeries
-
-    field_names = ['hide_all_translations', 'defer_translation_imports']
-
-    def initialize(self):
-        LaunchpadEditFormView.initialize(self)
-        self.label = 'Change translation options of %s' % self.context.title
-
-    @action("Change")
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-        self.request.response.addInfoNotification(
-            'Your changes have been applied.')
-
-        self.next_url = canonical_url(self.context)
-
-
-class DistroSeriesLanguagePackView(LaunchpadEditFormView):
-    """Browser view to manage used language packs."""
-    schema = IDistroSeries
-    label = ""
-
-    def is_langpack_admin(self, action=None):
-        """Find out if the current user is a Language Packs Admin.
-
-        This group of users have launchpad.LanguagePacksAdmin rights on
-        the DistroSeries but are not general Rosetta admins.
-
-        :returns: True if the user is a Language Pack Admin (but not a 
-            Rosetta admin)."""
-        return (check_permission("launchpad.LanguagePacksAdmin",
-                                 self.context) and not
-                check_permission("launchpad.TranslationsAdmin", self.context))
-
-    def is_translations_admin(self, action=None):
-        """Find out if the current user is a Rosetta Admin.
-
-        :returns: True if the user is a Rosetta Admin.
-        """
-        return check_permission("launchpad.TranslationsAdmin", self.context)
-
-    @property
-    def is_admin(self):
-        return self.is_langpack_admin() or self.is_translations_admin()
-
-    def initialize(self):
-        self.old_request_value = (
-            self.context.language_pack_full_export_requested)
-        if self.is_translations_admin():
-            self.field_names = [
-                'language_pack_base',
-                'language_pack_delta',
-                'language_pack_proposed',
-                'language_pack_full_export_requested',
-            ]
-        elif self.is_langpack_admin():
-            self.field_names = ['language_pack_full_export_requested']
-        else:
-            self.field_names = []
-        super(DistroSeriesLanguagePackView, self).initialize()
-        self.displayname = '%s %s' % (
-            self.context.distribution.displayname,
-            self.context.version)
-        self.page_title = "Language packs for %s" % self.displayname
-        if self.is_langpack_admin():
-            self.adminlabel = 'Request a full language pack export of %s' % (
-                self.displayname)
-        else:
-            self.adminlabel = 'Settings for language packs'
-
-
-    @cachedproperty
-    def unused_language_packs(self):
-        unused_language_packs = helpers.shortlist(self.context.language_packs)
-
-        if self.context.language_pack_base is not None:
-            unused_language_packs.remove(self.context.language_pack_base)
-        if self.context.language_pack_delta is not None:
-            unused_language_packs.remove(self.context.language_pack_delta)
-        if self.context.language_pack_proposed is not None:
-            unused_language_packs.remove(self.context.language_pack_proposed)
-
-        return unused_language_packs
-
-    def _request_full_export(self):
-        if (self.old_request_value !=
-            self.context.language_pack_full_export_requested):
-            # There are changes.
-            if self.context.language_pack_full_export_requested:
-                self.request.response.addInfoNotification(
-                    "Your request has been noted. Next language pack export "
-                    "will include all available translations.")
-            else:
-                self.request.response.addInfoNotification(
-                    "Your request has been noted. Next language pack "
-                    "export will be made relative to the current base "
-                    "language pack.")
-        else:
-            self.request.response.addInfoNotification(
-                "You didn't change anything.")
-
-    @action("Change Settings", condition=is_translations_admin)
-    def change_action(self, action, data):
-        if ('language_pack_base' in data and
-            data['language_pack_base'] != self.context.language_pack_base):
-            # language_pack_base changed, the delta one must be invalidated.
-            data['language_pack_delta'] = None
-        self.updateContextFromData(data)
-        self._request_full_export()
-        self.request.response.addInfoNotification(
-            'Your changes have been applied.')
-        self.next_url = '%s/+language-packs' % canonical_url(self.context)
-
-    @action("Request", condition=is_langpack_admin)
-    def request_action(self, action, data):
-        self.updateContextFromData(data)
-        self._request_full_export()
-        self.next_url = '/'.join(
-            [canonical_url(self.context), '+language-packs'])
-
-
-class DistroSeriesTemplatesView(LaunchpadView):
-    """Show a list of all templates for the DistroSeries."""
-
-    is_distroseries = True
-
-    def iter_templates(self):
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(distroseries=self.context)
-
-    def can_administer(self, template):
-        return check_permission('launchpad.Admin', template)

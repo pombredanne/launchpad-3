@@ -79,16 +79,16 @@
                         <div class="columns">
                           <div class="three column left" id="recent-imports">
                             <h2>Recent imports</h2>
-                            <ul class="branch">
+                            <ul>
                               <li tal:repeat="
                                       branch view/recently_imported_branches">
                                 <a tal:attributes="href branch/fmt:url;
                                                    title branch/displayname"
-                                   tal:content="branch/displayname/fmt:shorten/40">
+                                   tal:content="branch/displayname/fmt:shorten/40"
+                                   class="sprite branch">
                                 Title Goes Here!</a>
-                                <img
-                                  src="/@@/private"
-                                  alt="(private branch)"
+                                <span
+                                  class="sprite private"
                                   tal:condition="branch/private"
                                 />
                               </li>
@@ -97,15 +97,15 @@
                           </div>
                           <div class="three column middle" id="recently-registered">
                             <h2>Recently registered</h2>
-                            <ul class="branch">
+                            <ul>
                               <li tal:repeat="branch view/recently_registered_branches">
                                 <a tal:attributes="href branch/fmt:url;
                                                    title branch/displayname"
-                                   tal:content="branch/displayname/fmt:shorten/40">
+                                   tal:content="branch/displayname/fmt:shorten/40"
+                                   class="sprite branch">
                                 Title Goes Here!</a>
-                                <img
-                                  src="/@@/private"
-                                  alt="(private branch)"
+                                <span
+                                  class="sprite private"
                                   tal:condition="branch/private"
                                 />
                               </li>
@@ -114,15 +114,15 @@
                           </div>
                           <div class="three column right" id="recently-changed">
                             <h2>Recently changed</h2>
-                            <ul class="branch">
+                            <ul>
                               <li tal:repeat="branch view/recently_changed_branches">
                                 <a tal:attributes="href branch/fmt:url;
                                                    title branch/displayname"
-                                   tal:content="branch/displayname/fmt:shorten/40">
+                                   tal:content="branch/displayname/fmt:shorten/40"
+                                   class="sprite branch">
                                 Title Goes Here!</a>
-                                <img
-                                  src="/@@/private"
-                                  alt="private branch"
+                                <span
+                                  class="sprite private"
                                   tal:condition="branch/private"
                                 />
                               </li>

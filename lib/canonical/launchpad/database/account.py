@@ -6,13 +6,10 @@
 __metaclass__ = type
 __all__ = ['Account', 'AccountPassword', 'AccountSet']
 
-import random
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements
 
-from storm.expr import Desc, Or
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -21,18 +18,13 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.database.authtoken import AuthToken
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.signon.model.openidserver import OpenIDRPSummary
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddress, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.signon.interfaces.openidserver import IOpenIDRPSummarySet
-from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class Account(SQLBase):
@@ -55,12 +47,6 @@ class Account(SQLBase):
     openid_identifier = StringCol(
         dbName='openid_identifier', notNull=True, default=DEFAULT)
 
-    # XXX sinzui 2008-09-04 bug=264783:
-    # Remove this attribute, in the DB, drop openid_identifier, then
-    # rename new_openid_identifier => openid_identifier.
-    new_openid_identifier = StringCol(
-        dbName='old_openid_identifier', notNull=False, default=DEFAULT)
-
     def _getEmails(self, status):
         """Get related `EmailAddress` objects with the given status."""
         result = IStore(EmailAddress).find(
@@ -82,13 +68,6 @@ class Account(SQLBase):
     def guessed_emails(self):
         """See `IAccount`."""
         return self._getEmails(EmailAddressStatus.NEW)
-
-    def getUnvalidatedEmails(self):
-        """See `IAccount`."""
-        result = IMasterStore(AuthToken).find(
-            AuthToken, requester_account=self,
-            tokentype=LoginTokenType.VALIDATEEMAIL, date_consumed=None)
-        return sorted(set(result.values(AuthToken.email)))
 
     def setPreferredEmail(self, email):
         """See `IAccount`."""
@@ -147,13 +126,6 @@ class Account(SQLBase):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
-
-    @property
-    def recently_authenticated_rps(self):
-        """See `IAccount`."""
-        result = Store.of(self).find(OpenIDRPSummary, account=self)
-        result.order_by(Desc(OpenIDRPSummary.date_last_used))
-        return result.config(limit=10)
 
     def activate(self, comment, password, preferred_email):
         """See `IAccountSpecialRestricted`."""
@@ -247,20 +219,12 @@ class AccountSet:
     """See `IAccountSet`."""
     implements(IAccountSet)
 
-    def new(self, rationale, displayname, openid_mnemonic=None,
-            password=None, password_is_encrypted=False):
+    def new(self, rationale, displayname, password=None,
+            password_is_encrypted=False):
         """See `IAccountSet`."""
 
-        # Create the openid_identifier for the OpenID identity URL.
-        if openid_mnemonic is not None:
-            new_openid_identifier = self.createOpenIDIdentifier(
-                openid_mnemonic)
-        else:
-            new_openid_identifier = None
-
         account = Account(
-                displayname=displayname, creation_rationale=rationale,
-                new_openid_identifier=new_openid_identifier)
+            displayname=displayname, creation_rationale=rationale)
 
         # Create the password record.
         if password is not None:
@@ -280,13 +244,11 @@ class AccountSet:
     def createAccountAndEmail(self, email, rationale, displayname, password,
                               password_is_encrypted=False):
         """See `IAccountSet`."""
-        from lp.registry.model.person import generate_nick
-        openid_mnemonic = generate_nick(email)
         # Convert the PersonCreationRationale to an AccountCreationRationale.
         account_rationale = getattr(AccountCreationRationale, rationale.name)
         account = self.new(
-            account_rationale, displayname, openid_mnemonic,
-            password=password, password_is_encrypted=password_is_encrypted)
+            account_rationale, displayname, password=password,
+            password_is_encrypted=password_is_encrypted)
         account.status = AccountStatus.ACTIVE
         email = getUtility(IEmailAddressSet).new(
             email, status=EmailAddressStatus.PREFERRED, account=account)
@@ -305,48 +267,11 @@ class AccountSet:
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
         store = IStore(Account)
-        # XXX sinzui 2008-09-09 bug=264783:
-        # Remove the OR clause, only openid_identifier should be used.
-        conditions = Or(Account.openid_identifier == openid_identifier,
-                        Account.new_openid_identifier == openid_identifier)
-        account = store.find(Account, conditions).one()
+        account = store.find(
+            Account, Account.openid_identifier == openid_identifier).one()
         if account is None:
             raise LookupError(openid_identifier)
         return account
-
-    _MAX_RANDOM_TOKEN_RANGE = 1000
-
-    def createOpenIDIdentifier(self, mnemonic):
-        """See `IAccountSet`.
-
-        The random component of the identifier is a number between 000 and
-        999.
-        """
-        assert isinstance(mnemonic, (str, unicode)) and mnemonic is not '', (
-            'The mnemonic must be a non-empty string.')
-        identity_url_root = allvhosts.configs['id'].rooturl
-        openidrpsummaryset = getUtility(IOpenIDRPSummarySet)
-        tokens = range(0, self._MAX_RANDOM_TOKEN_RANGE)
-        random.shuffle(tokens)
-        # This method might be faster by collecting all accounts and summaries
-        # that end with the mnemonic. The chances of collision seem minute,
-        # given that the intended mnemonic is a unique user name.
-        for token in tokens:
-            openid_identifier = '%03d/%s' % (token, mnemonic)
-            try:
-                account = self.getByOpenIDIdentifier(openid_identifier)
-            except LookupError:
-                # The identifier is free, so we'll just use it.
-                pass
-            else:
-                continue
-            summaries = openidrpsummaryset.getByIdentifier(
-                identity_url_root + openid_identifier)
-            if summaries.count() == 0:
-                return openid_identifier.encode('ascii')
-        raise AssertionError(
-            'An openid_identifier could not be created with the mnemonic '
-            "'%s'." % mnemonic)
 
 
 class AccountPassword(SQLBase):

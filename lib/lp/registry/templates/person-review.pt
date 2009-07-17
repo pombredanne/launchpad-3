@@ -65,10 +65,6 @@
                 <td><tal:openid replace="view/context/openid_identifier" /></td>
               </tr>
               <tr>
-                <th>Beta OpenID Identifier:</th>
-                <td><tal:openid replace="view/context/new_openid_identifier" /></td>
-              </tr>
-              <tr>
                 <th>Email Addresses:</th>
                 <td>
                   <tal:emails repeat="email view/email_addresses">

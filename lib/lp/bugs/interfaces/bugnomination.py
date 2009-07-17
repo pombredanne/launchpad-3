@@ -22,8 +22,11 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated, IHasOwner
-from canonical.launchpad.interfaces.validation import can_be_nominated_for_serieses
+from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
+from lp.registry.interfaces.role import IHasOwner
+from canonical.launchpad.interfaces.validation import (
+    can_be_nominated_for_serieses)
+
 class NominationError(Exception):
     """The bug cannot be nominated for this release."""
 

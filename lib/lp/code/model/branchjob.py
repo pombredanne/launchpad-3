@@ -8,46 +8,69 @@ __all__ = [
     'RosettaUploadJob',
 ]
 
+import os
+import shutil
 from StringIO import StringIO
 
+from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from bzrlib.upgrade import upgrade
+
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
+
 import simplejson
+
 from sqlobject import ForeignKey, StringCol
-from storm.expr import And
+from storm.expr import And, SQL
+from storm.locals import Store
+
 import transaction
+
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.config import config
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.webapp import canonical_url
+from lp.code.bzr import (
+    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
+from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
+from lp.code.model.revision import RevisionSet
+from lp.codehosting.vfs import branch_id_to_path
 from lp.services.job.model.job import Job
+from lp.services.job.interfaces.job import JobStatus
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.database.translationbranchapprover import (
+from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IRevisionMailJob,
-    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
-from canonical.launchpad.interfaces.translations import (
+    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
+    IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
+    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRevisionMailJobSource,
+    IRosettaUploadJob, IRosettaUploadJobSource)
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from lp.code.mail.branch import BranchMailer
-from canonical.launchpad.translationformat.translation_import import (
+from lp.translations.utilities.translation_import import (
     TranslationImporter)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-# Use at most the first 100 characters of the commit message.
+
+# Use at most the first 100 characters of the commit message for the subject
+# the mail describing the revision.
 SUBJECT_COMMIT_MESSAGE_LENGTH = 100
+
 
 class BranchJobType(DBEnumeratedType):
     """Values that ICodeImportJob.state can take."""
@@ -76,6 +99,19 @@ class BranchJobType(DBEnumeratedType):
         This job runs against a branch to upload translation files to rosetta.
         """)
 
+    UPGRADE_BRANCH = DBItem(4, """
+        Upgrade Branch
+
+        This job upgrades the branch in the hosted area.
+        """)
+
+    RECLAIM_BRANCH_SPACE = DBItem(5, """
+        Reclaim Branch Space
+
+        This job removes a branch that have been deleted from the database
+        from disk.
+        """)
+
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
@@ -86,7 +122,7 @@ class BranchJob(SQLBase):
 
     job = ForeignKey(foreignKey='Job', notNull=True)
 
-    branch = ForeignKey(foreignKey='Branch', notNull=True)
+    branch = ForeignKey(foreignKey='Branch')
 
     job_type = EnumCol(enum=BranchJobType, notNull=True)
 
@@ -96,8 +132,11 @@ class BranchJob(SQLBase):
     def metadata(self):
         return simplejson.loads(self._json_data)
 
-    def __init__(self, branch, job_type, metadata):
+    def __init__(self, branch, job_type, metadata, **job_args):
         """Constructor.
+
+        Extra keyword parameters are used to construct the underlying Job
+        object.
 
         :param branch: The database branch this job relates to.
         :param job_type: The BranchJobType of this job.
@@ -106,7 +145,7 @@ class BranchJob(SQLBase):
         """
         json_data = simplejson.dumps(metadata)
         SQLBase.__init__(
-            self, job=Job(), branch=branch, job_type=job_type,
+            self, job=Job(**job_args), branch=branch, job_type=job_type,
             _json_data=json_data)
 
     def destroySelf(self):
@@ -185,6 +224,43 @@ class BranchDiffJob(BranchJobDerived):
         static_diff = StaticDiff.acquire(
             from_revision_id, to_revision_id, bzr_branch.repository)
         return static_diff
+
+
+class BranchUpgradeJob(BranchJobDerived):
+    """A Job that upgrades branches to the current stable format."""
+
+    implements(IBranchUpgradeJob)
+
+    classProvides(IBranchUpgradeJobSource)
+    @classmethod
+    def create(cls, branch):
+        """See `IBranchUpgradeJobSource`."""
+        branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
+        return cls(branch_job)
+
+    def run(self):
+        """See `IBranchUpgradeJob`."""
+        branch = self.branch.getBzrBranch()
+        to_format = self.upgrade_format
+        upgrade(branch.base, to_format)
+
+    @property
+    def upgrade_format(self):
+        """See `IBranch`."""
+        format = BzrDirMetaFormat1()
+        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(
+            self.branch.branch_format)
+        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
+            self.branch.repository_format)
+        if branch_format is None or repository_format is None:
+            branch = self.branch.getBzrBranch()
+            if branch_format is None:
+                branch_format = type(branch._format)
+            if repository_format is None:
+                repository_format = type(branch.repository._format)
+        format.set_branch_format(branch_format())
+        format._set_repository_format(repository_format())
+        return format
 
 
 class RevisionMailJob(BranchDiffJob):
@@ -391,6 +467,49 @@ class RevisionsAddedJob(BranchJobDerived):
             self.branch, revno, self.from_address, message, diff_text,
             subject)
 
+    def getMergedRevisionIDs(self, revision_id, graph):
+        """Determine which revisions were merged by this revision.
+
+        :param revision_id: ID of the revision to examine.
+        :param graph: a bzrlib.graph.Graph.
+        :return: a set of revision IDs.
+        """
+        parents = graph.get_parent_map([revision_id])[revision_id]
+        merged_revision_ids = set()
+        for merge_parent in parents[1:]:
+            merged = graph.find_difference(parents[0], merge_parent)[1]
+            merged_revision_ids.update(merged)
+        return merged_revision_ids
+
+    def getAuthors(self, revision_ids, graph):
+        """Determine authors of the revisions merged by this revision.
+
+        Ghost revisions are skipped.
+        :param revision_ids: The revision to examine.
+        :return: a set of author commit-ids
+        """
+        present_ids = graph.get_parent_map(revision_ids).keys()
+        present_revisions = self.bzr_branch.repository.get_revisions(
+            present_ids)
+        authors = set()
+        for revision in present_revisions:
+            authors.update(revision.get_apparent_authors())
+        return authors
+
+    def findRelatedBMP(self, revision_ids):
+        """Find merge proposals related to the revision-ids and branch.
+
+        Only proposals whose source branch last-scanned-id is in the set of
+        revision-ids and whose target_branch is the BranchJob branch are
+        returned.
+        """
+        store = Store.of(self.branch)
+        result = store.find(BranchMergeProposal,
+                            BranchMergeProposal.target_branch==self.branch.id,
+                            BranchMergeProposal.source_branch==Branch.id,
+                            Branch.last_scanned_id.is_in(revision_ids))
+        return result
+
     def getRevisionMessage(self, revision_id, revno):
         """Return the log message for a revision.
 
@@ -398,14 +517,51 @@ class RevisionsAddedJob(BranchJobDerived):
         :param revno: The revno of the revision in the branch.
         :return: The log message entered for this revision.
         """
-        info = RevisionInfo(self.bzr_branch, revno, revision_id)
-        outf = StringIO()
-        lf = log_formatter('long', to_file=outf)
-        show_log(self.bzr_branch,
-                 lf,
-                 start_revision=info,
-                 end_revision=info,
-                 verbose=True)
+        self.bzr_branch.lock_read()
+        try:
+            graph = self.bzr_branch.repository.get_graph()
+            merged_revisions = self.getMergedRevisionIDs(revision_id, graph)
+            authors = self.getAuthors(merged_revisions, graph)
+            revision_set = RevisionSet()
+            rev_authors = set(revision_set.acquireRevisionAuthor(author) for
+                              author in authors)
+            outf = StringIO()
+            pretty_authors = []
+            for rev_author in rev_authors:
+                if rev_author.person is None:
+                    displayname = rev_author.name
+                else:
+                    displayname = rev_author.person.unique_displayname
+                pretty_authors.append('  %s' % displayname)
+
+            if len(pretty_authors) > 0:
+                outf.write('Merge authors:\n')
+                pretty_authors.sort(key=lambda x: x.lower())
+                outf.write('\n'.join(pretty_authors[:5]))
+                if len(pretty_authors) > 5:
+                    outf.write('...\n')
+                outf.write('\n')
+            bmps = list(self.findRelatedBMP(merged_revisions))
+            if len(bmps) > 0:
+                outf.write('Related merge proposals:\n')
+            for bmp in bmps:
+                outf.write('  %s\n' % canonical_url(bmp))
+                proposer = bmp.registrant
+                outf.write('  proposed by: %s\n' %
+                           proposer.unique_displayname)
+                for review in bmp.votes:
+                    outf.write('  review: %s - %s\n' %
+                        (review.comment.vote.title,
+                         review.reviewer.unique_displayname))
+            info = RevisionInfo(self.bzr_branch, revno, revision_id)
+            lf = log_formatter('long', to_file=outf)
+            show_log(self.bzr_branch,
+                     lf,
+                     start_revision=info,
+                     end_revision=info,
+                     verbose=True)
+        finally:
+            self.bzr_branch.unlock()
         return outf.getvalue()
 
 
@@ -647,4 +803,53 @@ class RosettaUploadJob(BranchJobDerived):
                 Branch.last_mirrored_id == Branch.last_scanned_id,
                 Job.id.is_in(Job.ready_jobs)))
         return (RosettaUploadJob(job) for job in jobs)
+
+    @staticmethod
+    def findUnfinishedJobs(branch):
+        """See `IRosettaUploadJobSource`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        jobs = store.using(BranchJob, Job).find((BranchJob), And(
+            Job.id == BranchJob.id,
+            BranchJob.branch == branch,
+            BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
+            Job._status != JobStatus.COMPLETED,
+            Job._status != JobStatus.FAILED))
+        return jobs
+
+
+class ReclaimBranchSpaceJob(BranchJobDerived):
+    """Reclaim the disk space used by a branch that's deleted from the DB."""
+
+    implements(IReclaimBranchSpaceJob)
+
+    classProvides(IReclaimBranchSpaceJobSource)
+
+    class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
+
+    @classmethod
+    def create(cls, branch_id):
+        """See `IBranchDiffJobSource`."""
+        metadata = {'branch_id': branch_id}
+        # The branch_job has a branch of None, as there is no branch left in
+        # the database to refer to.
+        start = SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '7 days'")
+        branch_job = BranchJob(
+            None, cls.class_job_type, metadata, scheduled_start=start)
+        return cls(branch_job)
+
+    @property
+    def branch_id(self):
+        return self.metadata['branch_id']
+
+    def run(self):
+        mirrored_path = os.path.join(
+            config.codehosting.mirrored_branches_root,
+            branch_id_to_path(self.branch_id))
+        hosted_path = os.path.join(
+            config.codehosting.hosted_branches_root,
+            branch_id_to_path(self.branch_id))
+        if os.path.exists(mirrored_path):
+            shutil.rmtree(mirrored_path)
+        if os.path.exists(hosted_path):
+            shutil.rmtree(hosted_path)
 

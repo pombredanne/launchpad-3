@@ -25,6 +25,7 @@ __metaclass__ = type
 
 __all__ = [
     'ActiveMailingListVocabulary',
+    'AdminMergeablePersonVocabulary',
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectVocabulary',
     'DistributionOrProductVocabulary',
@@ -58,7 +59,7 @@ from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR
 
-from storm.expr import Alias, And, Join, LeftJoin, Lower, Not, Or, SQL
+from storm.expr import Alias, And, Desc, Join, LeftJoin, Lower, Not, Or, SQL
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -351,6 +352,7 @@ class PersonAccountToMergeVocabulary(
 
     _orderBy = ['displayname']
     displayname = 'Select a Person to Merge'
+    must_have_email = True
 
     def __contains__(self, obj):
         return obj in self._select()
@@ -358,7 +360,8 @@ class PersonAccountToMergeVocabulary(
     def _select(self, text=""):
         """Return `IPerson` objects that match the text."""
         return getUtility(IPersonSet).findPerson(
-            text, exclude_inactive_accounts=False, must_have_email=True)
+            text, exclude_inactive_accounts=False,
+            must_have_email=self.must_have_email)
 
     def search(self, text):
         """See `SQLObjectVocabularyBase`.
@@ -370,6 +373,15 @@ class PersonAccountToMergeVocabulary(
 
         text = text.lower()
         return self._select(text)
+
+
+class AdminMergeablePersonVocabulary(PersonAccountToMergeVocabulary):
+    """The set of all non-merged people.
+
+    This vocabulary is a very specialized one, meant to be used only for
+    admins to choose accounts to merge. You *don't* want to use it.
+    """
+    must_have_email = False
 
 
 class ValidPersonOrTeamVocabulary(
@@ -400,7 +412,7 @@ class ValidPersonOrTeamVocabulary(
     # Cache table to use for checking validity.
     cache_table_name = 'ValidPersonOrTeamCache'
 
-    LIMIT = 500
+    LIMIT = 100
 
     def __contains__(self, obj):
         return obj in self._doSearch()
@@ -437,6 +449,7 @@ class ValidPersonOrTeamVocabulary(
         """Return the people/teams whose fti or email address match :text:"""
 
         logged_in_user = getUtility(ILaunchBag).user
+        exact_match = None
 
         # Short circuit if there is no search text - all valid people and
         # teams have been requested.
@@ -480,25 +493,38 @@ class ValidPersonOrTeamVocabulary(
             # Create an inner query that will match public persons and teams
             # that have the search text in the fti, at the start of the email
             # address, or as their full IRC nickname.
-
+            # Since we may be eliminating results with the limit to improve
+            # performance, we sort by the rank, so that we will always get
+            # the best results. The fti rank will be between 0 and 1.
             # Note we use lower() instead of the non-standard ILIKE because
             # ILIKE doesn't hit the indexes.
+            # The '%%%%' is necessary, since the first variable substitution
+            # converts it to '%%' and the storm variable substitution converts
+            # it to '%'.
             public_inner_textual_select = SQL("""
-                SELECT Person.id
-                FROM Person
-                WHERE Person.fti @@ ftq(%s)
-                UNION ALL
-                SELECT Person.id
-                FROM Person, IrcId
-                WHERE IrcId.person = Person.id
-                    AND lower(IrcId.nickname) = %s
-                UNION ALL
-                SELECT Person.id
-                FROM Person, EmailAddress
-                WHERE EmailAddress.person = Person.id
-                    AND lower(email) LIKE %s || '%%%%'
-                """ % (
-                    quote(text), quote(text), quote_like(text)))
+                SELECT id FROM (
+                    SELECT Person.id, 100 AS rank
+                    FROM Person
+                    WHERE name = %(text)s
+                    UNION ALL
+                    SELECT Person.id, rank(fti, ftq(%(text)s))
+                    FROM Person
+                    WHERE Person.fti @@ ftq(%(text)s)
+                    UNION ALL
+                    SELECT Person.id, 10 AS rank
+                    FROM Person, IrcId
+                    WHERE IrcId.person = Person.id
+                        AND lower(IrcId.nickname) = %(text)s
+                    UNION ALL
+                    SELECT Person.id, 1 AS rank
+                    FROM Person, EmailAddress
+                    WHERE EmailAddress.person = Person.id
+                        AND lower(email) LIKE %(like_text)s || '%%%%'
+                    ) AS public_subquery
+                ORDER BY rank DESC
+                LIMIT %(limit)d
+                """ % dict(text=quote(text), like_text=quote_like(text),
+                           limit=self.LIMIT))
 
             public_result = self.store.using(*public_tables).find(
                 Person,
@@ -535,7 +561,8 @@ class ValidPersonOrTeamVocabulary(
                 SELECT Person.id
                 FROM Person
                 WHERE Person.fti @@ ftq(%s)
-                """ % quote(text))
+                LIMIT %d
+                """ % (quote(text), self.LIMIT))
             private_result = self.store.using(*private_tables).find(
                 Person,
                 And(
@@ -545,23 +572,35 @@ class ValidPersonOrTeamVocabulary(
                 )
 
             # The private query doesn't need to be ordered as it will be done
-            # at the end.
+            # at the end, and we need to eliminate the default ordering.
             private_result.order_by()
 
             combined_result = public_result.union(private_result)
+            # Eliminate default ordering.
             combined_result.order_by()
             # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
             # is a work-around for .count() not working with the 'distinct'
             # option.
             subselect = Alias(combined_result._get_select(), 'Person')
-            result = self.store.using(subselect).find(Person)
+            exact_match = (Person.name == text)
+            result = self.store.using(subselect).find((Person, exact_match))
         # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
         # setting the 'distinct' and 'limit' options in a single call to
         # .config().  The work-around is to split them up.  Note the limit has
         # to be after the call to 'order_by' for this work-around to be
         # effective.
         result.config(distinct=True)
-        result.order_by(Person.displayname, Person.name)
+        if exact_match is not None:
+            # A DISTINCT requires that the sort parameters appear in the
+            # select, but it will break the vocabulary if it returns a list of
+            # tuples instead of a list of Person objects, so we create
+            # another subselect to sort after the DISTINCT is done.
+            distinct_subselect = Alias(result._get_select(), 'Person')
+            result = self.store.using(distinct_subselect).find(Person)
+            result.order_by(
+                Desc(exact_match), Person.displayname, Person.name)
+        else:
+            result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
         # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
         # ensure the .count() method works until the Storm bug is fixed and
@@ -1179,7 +1218,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     A commercial project is one that does not qualify for free hosting.  For
     normal users only commercial projects for which the user is the
     maintainer, or in the maintainers team, will be listed.  For users with
-    launchpad.Commercial permission, all commercial projects are returned.
+    launchpad.ProjectReview permission, all commercial projects are returned.
     """
 
     implements(IHugeVocabulary)
@@ -1207,7 +1246,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         user = self.context
         if user is None:
             return self.emptySelectResults()
-        if check_permission('launchpad.Commercial', user):
+        if check_permission('launchpad.ProjectReview', user):
             product_set = getUtility(IProductSet)
             projects = product_set.forReview(
                 search_text=query, licenses=[License.OTHER_PROPRIETARY],

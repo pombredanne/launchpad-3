@@ -71,9 +71,7 @@
             </td>
             <td>
               <div>
-                <a tal:attributes="href team_via/team/fmt:url"
-                   tal:content="team_via/team/browsername"
-                   >Team name</a>
+                <a tal:replace="structure team_via/team/fmt:link">Team name</a>
               </div>
               <div>
                 Via

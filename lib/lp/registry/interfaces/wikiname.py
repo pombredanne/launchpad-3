@@ -17,7 +17,7 @@ from lazr.restful.declarations import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 
 
 class IWikiName(IHasOwner):

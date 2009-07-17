@@ -15,7 +15,7 @@ __all__ = [
     'NoSuchProductSeries',
     ]
 
-from zope.schema import Choice, Datetime, Int, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
@@ -24,26 +24,30 @@ from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers)
+    IHasAppointedDriver, IHasDrivers)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone)
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad import _
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+
 from lazr.restful.declarations import (
     export_as_webservice_entry, export_factory_operation, export_operation_as,
-    export_read_operation, exported, rename_parameters_as)
+    export_read_operation, exported, operation_parameters,
+    rename_parameters_as)
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -65,7 +69,11 @@ class ProductSeriesNameField(ContentNameField):
 
 def validate_release_glob(value):
     """Validate that the URL is supported."""
-    if validate_url(value, ["http", "https", "ftp"]):
+    parts = urlparse(value)
+    if (validate_url(value, ["http", "https", "ftp"])
+        and '*' in parts[2]):
+        # The product release finder does support the url scheme and
+        # can match more than one file to the url's path part.
         return True
     else:
         raise LaunchpadValidationError('Invalid release URL pattern.')
@@ -234,6 +242,15 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     productserieslanguages = Attribute(
         "The set of ProductSeriesLanguages for this series.")
 
+    translations_branch = ReferenceChoice(
+        title=_("Translations export branch"),
+        vocabulary='HostedBranchRestrictedOnOwner',
+        schema=IBranch,
+        required=False,
+        description=_(
+            "A Bazaar branch to commit translation snapshots to. "
+            "Leave blank to disable."))
+
     def getRelease(version):
         """Get the release in this series that has the specified version.
         Return None is there is no such release.
@@ -273,9 +290,12 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
 
+    @operation_parameters(
+        include_inactive=Bool(title=_("Include inactive"),
+                              required=False, default=False))
     @export_read_operation()
     @export_operation_as('get_timeline')
-    def getTimeline():
+    def getTimeline(include_inactive):
         """Return basic timeline data useful for creating a diagram."""
 
 

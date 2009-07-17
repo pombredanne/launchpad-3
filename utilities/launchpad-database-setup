@@ -19,12 +19,12 @@ fi
 
 if [ -e /etc/init.d/postgresql-8.3 ]; then
   pgversion=8.3
-  echo "Using PostGRES 8.3"
+  echo "Using postgres 8.3"
 elif [ -e /etc/init.d/postgresql-8.2]; then
   pgversion=8.2
-  echo "Using PostGRES 8.2"
+  echo "Using postgres 8.2"
 else
-  echo "Unable to determine your PostGRES version."
+  echo "Unable to determine your postgres version."
   exit 1
 fi
 
@@ -32,7 +32,7 @@ fi
 sudo grep -q "port.*5432" /etc/postgresql/$pgversion/main/postgresql.conf
 if [ $? -ne 0 ]; then
   echo "Please check /etc/postgresql/$pgversion/main/postgresql.conf and"
-  echo "ensure PostGRES is running on port 5432."
+  echo "ensure postgres is running on port 5432."
 fi;
 
 sudo /etc/init.d/postgresql-$pgversion stop

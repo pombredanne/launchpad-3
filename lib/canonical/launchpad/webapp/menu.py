@@ -28,7 +28,7 @@ from zope.i18n import translate, Message
 from zope.interface import implements
 from zope.component import getMultiAdapter
 from zope.security.proxy import (
-    isinstance as zope_isinstance, ProxyFactory, removeSecurityProxy)
+    isinstance as zope_isinstance, removeSecurityProxy)
 
 from lazr.delegates import delegates
 
@@ -83,10 +83,10 @@ def get_current_view(request=None):
     # among the traversed_names. We need to get it from a private attribute.
     view = request._last_obj_traversed
     # Note: The last traversed object may be a view's instance method.
+    bare =  removeSecurityProxy(view)
     if zope_isinstance(view, types.MethodType):
-        bare =  removeSecurityProxy(view)
-        return ProxyFactory(bare.im_self)
-    return view
+        return bare.im_self
+    return bare
 
 
 def get_facet(view):

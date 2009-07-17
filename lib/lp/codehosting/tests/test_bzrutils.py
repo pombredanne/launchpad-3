@@ -6,15 +6,23 @@
 __metaclass__ = type
 
 import gc
+import sys
 
 from bzrlib import errors
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import format_registry
+from bzrlib import trace
 from bzrlib.tests import (
-    TestCaseWithTransport, TestLoader, TestNotApplicable)
-from bzrlib.tests.branch_implementations import TestCaseWithBzrDir
+    multiply_tests, TestCase, TestCaseWithTransport, TestLoader,
+    TestNotApplicable)
+try:
+    from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
+except ImportError:
+    from bzrlib.tests.branch_implementations import (
+        TestCaseWithBzrDir, branch_scenarios)
 from lp.codehosting.bzrutils import (
-    DenyingServer, get_branch_stacked_on_url, is_branch_stackable)
+    add_exception_logging_hook, DenyingServer, get_branch_stacked_on_url,
+    is_branch_stackable, remove_exception_logging_hook)
 from lp.codehosting.tests.helpers import TestResultWrapper
 
 
@@ -41,7 +49,7 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
 
     def testGetBranchStackedOnUrl(self):
         # get_branch_stacked_on_url returns the URL of the stacked-on branch.
-        stacked_on_branch = self.make_branch('stacked-on')
+        self.make_branch('stacked-on')
         stacked_branch = self.make_branch('stacked')
         try:
             stacked_branch.set_stacked_on_url('../stacked-on')
@@ -127,22 +135,52 @@ class TestDenyingServer(TestCaseWithTransport):
         Branch.open(branch.base)
 
 
+class TestExceptionLoggingHooks(TestCase):
+
+    def logException(self, exception):
+        """Log exception with Bazaar's exception logger."""
+        try:
+            raise exception
+        except exception.__class__:
+            trace.log_exception_quietly()
+
+    def test_calls_hook_when_added(self):
+        # add_exception_logging_hook adds a hook function that's called
+        # whenever Bazaar logs an exception.
+        exceptions = []
+        def hook():
+            exceptions.append(sys.exc_info()[:2])
+        add_exception_logging_hook(hook)
+        self.addCleanup(remove_exception_logging_hook, hook)
+        exception = RuntimeError('foo')
+        self.logException(exception)
+        self.assertEqual([(RuntimeError, exception)], exceptions)
+
+    def test_doesnt_call_hook_when_removed(self):
+        # remove_exception_logging_hook removes the hook function, ensuring
+        # it's not called when Bazaar logs an exception.
+        exceptions = []
+        def hook():
+            exceptions.append(sys.exc_info()[:2])
+        add_exception_logging_hook(hook)
+        remove_exception_logging_hook(hook)
+        self.logException(RuntimeError('foo'))
+        self.assertEqual([], exceptions)
+
+
 def load_tests(basic_tests, module, loader):
     """Parametrize the tests of get_branch_stacked_on_url by branch format."""
     result = loader.suiteClass()
 
     get_branch_stacked_on_url_tests = loader.loadTestsFromTestCase(
         TestGetBranchStackedOnURL)
-
-    from bzrlib.tests import multiply_tests
-    from bzrlib.tests.branch_implementations import branch_scenarios
-
     scenarios = [scenario for scenario in branch_scenarios()
                  if scenario[0] != 'BranchReferenceFormat']
     multiply_tests(get_branch_stacked_on_url_tests, scenarios, result)
 
     result.addTests(loader.loadTestsFromTestCase(TestIsBranchStackable))
     result.addTests(loader.loadTestsFromTestCase(TestDenyingServer))
+    result.addTests(loader.loadTestsFromTestCase(TestExceptionLoggingHooks))
     return result
 
 

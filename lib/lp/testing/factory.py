@@ -55,11 +55,11 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
@@ -290,6 +290,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             hide_email_addresses=hide_email_addresses)
         person = removeSecurityProxy(person)
         email = removeSecurityProxy(email)
+        person._password_cleartext_cached = password
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')
@@ -622,13 +623,25 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
-    def makePackageBranch(self, sourcepackage=None, **kwargs):
+    def makePackageBranch(self, sourcepackage=None, distroseries=None,
+                          sourcepackagename=None, **kwargs):
         """Make a package branch on an arbitrary package.
 
         See `makeBranch` for more information on arguments.
+
+        You can pass in either `sourcepackage` or one or both of
+        `distroseries` and `sourcepackagename`, but not combinations or all of
+        them.
         """
+        assert not(sourcepackage is not None and distroseries is not None), (
+            "Don't pass in both sourcepackage and distroseries")
+        assert not(sourcepackage is not None
+                   and sourcepackagename is not None), (
+            "Don't pass in both sourcepackage and sourcepackagename")
         if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage()
+            sourcepackage = self.makeSourcePackage(
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries)
         return self.makeBranch(sourcepackage=sourcepackage, **kwargs)
 
     def makePersonalBranch(self, owner=None, **kwargs):
@@ -1257,7 +1270,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             expires=expires, restricted=restricted)
         return library_file_alias
 
-    def makeDistribution(self, name=None, displayname=None):
+    def makeDistribution(self, name=None, displayname=None, owner=None,
+                         members=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString()
@@ -1267,8 +1281,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         description = self.getUniqueString()
         summary = self.getUniqueString()
         domainname = self.getUniqueString()
-        owner = self.makePerson()
-        members = self.makeTeam(owner)
+        if owner is None:
+            owner = self.makePerson()
+        if members is None:
+            members = self.makeTeam(owner)
         return getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
             members, owner)
@@ -1290,7 +1306,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         series = naked_distribution.newSeries(
             version=version,
             name=name,
-            displayname=name,
+            displayname=name.capitalize(),
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
@@ -1317,7 +1333,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
-        
+
         :param distribution: Supply IDistribution, defaults to a new one
             made with makeDistribution().
         :param owner: Supper IPerson, defaults to a new one made with
@@ -1469,13 +1485,21 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
-    def makeTeamAndMailingList(self, team_name, owner_name, visibility=None):
+    def makeTeamAndMailingList(
+        self, team_name, owner_name,
+        visibility=None,
+        subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
         :type team_name: string
         :param owner_name: The name of the team's owner.
         :type owner: string
+        :param visibility: The team's visibility. If it's None, the default
+            (public) will be used.
+        :type visibility: `PersonVisibility`
+        :param subscription_policy: The subscription policy of the team.
+        :type subscription_policy: `TeamSubscriptionPolicy`
         :return: The new team and mailing list.
         :rtype: (`ITeam`, `IMailingList`)
         """
@@ -1486,7 +1510,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if team is None:
             team = self.makeTeam(
                 owner, displayname=display_name, name=team_name,
-                visibility=visibility)
+                visibility=visibility,
+                subscription_policy=subscription_policy)
         # Any member of the mailing-list-experts team can review a list
         # registration.  It doesn't matter which one.
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts

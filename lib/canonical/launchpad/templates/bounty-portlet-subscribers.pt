@@ -14,7 +14,7 @@
     <ul class="person">
       <li tal:repeat="sub context/subscriptions">
         <a href="#"
-           tal:content="sub/person/browsername"
+           tal:content="sub/person/displayname"
            tal:attributes="href sub/person/fmt:url">Dafydd Harries</a>
       </li>
       <li class="info" tal:condition="not: context/subscriptions">

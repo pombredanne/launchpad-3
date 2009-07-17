@@ -21,8 +21,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.interfaces.bugbranch import (
-    BugBranchStatus, IBugBranch, IBugBranchSet)
+from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import validate_public_person
 
@@ -35,10 +34,6 @@ class BugBranch(SQLBase):
     bug = ForeignKey(dbName="bug", foreignKey="Bug", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
     revision_hint = StringCol(default=None)
-    status = EnumCol(
-        dbName="status", enum=BugBranchStatus, notNull=False,
-        default=BugBranchStatus.INPROGRESS)
-    whiteboard = StringCol(notNull=False, default=None)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -109,6 +104,6 @@ class BugBranchSet:
         if not bug_ids:
             return []
         bugbranches = BugBranch.select(IN(BugBranch.q.bugID, bug_ids),
-                                       orderBy=['status', 'branch'])
+                                       orderBy=['branch'])
         return bugbranches.prejoin(
             ['branch', 'branch.owner', 'branch.product'])

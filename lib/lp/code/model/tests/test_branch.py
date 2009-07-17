@@ -10,6 +10,7 @@ from unittest import TestLoader
 
 from pytz import UTC
 
+from storm.locals import Store
 from sqlobject import SQLObjectNotFound
 
 import transaction
@@ -24,7 +25,8 @@ from lp.code.model.branch import (
     ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
     DeleteCodeImport, DeletionCallable, DeletionOperation,
     update_trigger_modified_fields)
-from lp.code.model.branchjob import BranchDiffJob
+from lp.code.model.branchjob import (
+    BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob)
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.bugs.model.bugbranch import BugBranch
@@ -342,8 +344,8 @@ class TestBranch(TestCaseWithFactory):
 
     def test_needsUpgrading_branch_format_unrecognized(self):
         # A branch has a needs_upgrading attribute that returns whether or not
-        # a branch needs to be upgraded or not.  If the format is unrecognized,
-        # we don't try to upgrade it.
+        # a branch needs to be upgraded or not.  If the format is
+        # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
             branch_format=BranchFormat.UNRECOGNIZED)
         self.assertFalse(branch.needs_upgrading)
@@ -492,9 +494,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         # unsubscribe the branch owner here.
         self.branch.unsubscribe(self.branch.owner)
 
-    def tearDown(self):
-        logout()
-
     def test_deletable(self):
         """A newly created branch can be deleted without any problems."""
         self.assertEqual(self.branch.canBeDeleted(), True,
@@ -532,7 +531,7 @@ class TestBranchDeletion(TestCaseWithFactory):
             owner=self.user, title='Firefox bug', comment='blah')
         params.setBugTarget(product=self.product)
         bug = getUtility(IBugSet).createBug(params)
-        bug.addBranch(self.branch, self.user)
+        bug.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a bug is not deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
@@ -614,6 +613,20 @@ class TestBranchDeletion(TestCaseWithFactory):
         branch.destroySelf()
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
+
+    def test_createsJobToReclaimSpace(self):
+        # When a branch is deleted from the database, a job to remove the
+        # branch from disk as well.
+        branch = self.factory.makeAnyBranch()
+        branch_id = branch.id
+        store = Store.of(branch)
+        branch.destroySelf()
+        jobs = store.find(
+            BranchJob,
+            BranchJob.job_type == BranchJobType.RECLAIM_BRANCH_SPACE)
+        self.assertEqual(
+            [branch_id],
+            [ReclaimBranchSpaceJob(job).branch_id for job in jobs])
 
 
 class TestBranchDeletionConsequences(TestCase):
@@ -735,8 +748,8 @@ class TestBranchDeletionConsequences(TestCase):
     def test_branchWithBugRequirements(self):
         """Deletion requirements for a branch with a bug are right."""
         bug = self.factory.makeBug()
-        bug.addBranch(self.branch, self.branch.owner)
-        self.assertEqual({bug.bug_branches[0]:
+        bug.linkBranch(self.branch, self.branch.owner)
+        self.assertEqual({bug.linked_branches[0]:
             ('delete', _('This bug is linked to this branch.'))},
             self.branch.deletionRequirements())
 
@@ -744,8 +757,8 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a branch with a bug."""
         bug1 = self.factory.makeBug()
         bug2 = self.factory.makeBug()
-        bug1.addBranch(self.branch, self.branch.owner)
-        bug_branch1 = bug1.bug_branches[0]
+        bug1.linkBranch(self.branch, self.branch.owner)
+        bug_branch1 = bug1.linked_branches[0]
         bug_branch1_id = bug_branch1.id
         self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound, BugBranch.get, bug_branch1_id)
@@ -1139,7 +1152,7 @@ class BranchDateLastModified(TestCaseWithFactory):
         params.setBugTarget(product=branch.product)
         bug = getUtility(IBugSet).createBug(params)
 
-        bug.addBranch(branch, branch.owner)
+        bug.linkBranch(branch, branch.owner)
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 
@@ -1542,6 +1555,76 @@ class TestBranchCommitsForDays(TestCaseWithFactory):
         day = datetime(start.year, start.month, start.day)
         commits = [(day, 1)]
         self.assertEqual(commits, branch.commitsForDays(self.epoch))
+
+
+class TestBranchBugLinks(TestCaseWithFactory):
+    """Tests for bug linkages in `Branch`"""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+
+    def test_bug_link(self):
+        # Branches can be linked to bugs through the Branch interface.
+        branch = self.factory.makeAnyBranch()
+        bug = self.factory.makeBug()
+        branch.linkBug(bug, self.user)
+
+        self.assertEqual(branch.linked_bugs.count(), 1)
+
+        linked_bug = branch.linked_bugs[0]
+
+        self.assertEqual(linked_bug.id, bug.id)
+
+    def test_bug_unlink(self):
+        # Branches can be unlinked from the bug as well.
+        branch = self.factory.makeAnyBranch()
+        bug = self.factory.makeBug()
+        branch.linkBug(bug, self.user)
+
+        self.assertEqual(branch.linked_bugs.count(), 1)
+
+        branch.unlinkBug(bug, self.user)
+
+        self.assertEqual(branch.linked_bugs.count(), 0)
+
+
+class TestBranchSpecLinks(TestCaseWithFactory):
+    """Tests for bug linkages in `Branch`"""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+
+    def test_spec_link(self):
+        # Branches can be linked to specs through the Branch interface.
+        branch = self.factory.makeAnyBranch()
+        spec = self.factory.makeSpecification()
+        branch.linkSpecification(spec, self.user)
+
+        self.assertEqual(branch.spec_links.count(), 1)
+
+        spec_branch = branch.spec_links[0]
+
+        self.assertEqual(spec_branch.specification.id, spec.id)
+        self.assertEqual(spec_branch.branch.id, branch.id)
+
+    def test_spec_unlink(self):
+        # Branches can be unlinked from the spec as well.
+        user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        branch = self.factory.makeAnyBranch()
+        spec = self.factory.makeSpecification()
+        branch.linkSpecification(spec, self.user)
+
+        self.assertEqual(branch.spec_links.count(), 1)
+
+        branch.unlinkSpecification(spec, self.user)
+
+        self.assertEqual(branch.spec_links.count(), 0)
 
 
 def test_suite():

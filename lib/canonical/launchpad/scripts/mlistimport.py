@@ -11,12 +11,14 @@ __all__ = [
 
 from email.Utils import parseaddr
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from lp.registry.interfaces.mailinglist import (
     CannotSubscribe, IMailingListSet, MailingListStatus)
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.scripts import QuietFakeLogger
 
 
@@ -70,7 +72,11 @@ class Importer:
             # Turn off may_subscribe_to_list because we want to explicitly
             # force subscription without relying on the person's
             # auto-subscribe policy.
-            person.join(self.team, may_subscribe_to_list=False)
+            naked_team = removeSecurityProxy(self.team)
+            naked_team.addMember(person, reviewer=person,
+                                 status=TeamMembershipStatus.APPROVED,
+                                 force_team_add=True,
+                                 may_subscribe_to_list=False)
             try:
                 self.mailing_list.subscribe(person, email)
             except CannotSubscribe, error:

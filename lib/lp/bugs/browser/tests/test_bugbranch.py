@@ -23,7 +23,7 @@ class TestBugBranchPrimaryContext(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         bug = self.factory.makeBug(product=branch.product)
         login_person(branch.owner)
-        bugbranch = bug.addBranch(branch, branch.owner)
+        bugbranch = bug.linkBranch(branch, branch.owner)
         self.assertEqual(
             IPrimaryContext(bugbranch).context,
             IPrimaryContext(bugbranch.branch).context)

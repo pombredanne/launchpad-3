@@ -18,7 +18,7 @@
           tal:condition="subscription/person/name|nothing"
           tal:attributes="href subscription/person/fmt:url">
 
-          <tal:block replace="structure subscription/person/image:icon" />
+          <tal:block replace="structure subscription/person/fmt:icon" />
           <tal:block replace="subscription/person/fmt:displayname/fmt:shorten/20" />
         </a>
 

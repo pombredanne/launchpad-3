@@ -314,7 +314,7 @@
 
     <tal:is-a-subteam condition="context/super_teams">
       <p>
-        &#8220;<span tal:replace="context/browsername"/>&#8221;
+        &#8220;<span tal:replace="context/displayname"/>&#8221;
         is a member of these teams:
       </p>
       <ul class="iconed">

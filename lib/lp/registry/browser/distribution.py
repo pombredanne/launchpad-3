@@ -35,7 +35,6 @@ __all__ = [
     ]
 
 import datetime
-import operator
 import urllib
 
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -64,7 +63,6 @@ from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -177,8 +175,8 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
-    enable_only = ['overview', 'bugs', 'answers', 'specifications',
-                   'translations']
+    enable_only = ['overview', 'branches', 'bugs', 'answers',
+                   'specifications', 'translations']
 
     def specifications(self):
         text = 'Blueprints'
@@ -517,32 +515,6 @@ class DistributionSpecificationsMenu(ApplicationMenu):
         return Link('+addspec', text, summary, icon='add')
 
 
-class DistributionTranslationsMenu(NavigationMenu):
-
-    usedfor = IDistribution
-    facet = 'translations'
-    links = ['overview', 'settings', 'language_pack_admin', 'imports']
-
-    def overview(self):
-        text = 'Overview'
-        link = canonical_url(self.context, rootsite='translations')
-        return Link(link, text)
-
-    @enabled_with_permission('launchpad.Edit')
-    def settings(self):
-        text = 'Settings'
-        return Link('+settings', text)
-
-    @enabled_with_permission('launchpad.TranslationsAdmin')
-    def language_pack_admin(self):
-        text = 'Language pack admin'
-        return Link('+select-language-pack-admin', text, icon='edit')
-
-    def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
-
-
 class DistributionPackageSearchView(PackageSearchViewBase):
     """Customised PackageSearchView for Distribution"""
 
@@ -686,34 +658,6 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
                        UsesLaunchpadMixin):
     """Default Distribution view class."""
-
-    @cachedproperty
-    def translation_focus(self):
-        """Return the IDistroSeries where the translators should work.
-
-        If ther isn't a defined focus, we return latest series.
-        """
-        if self.context.translation_focus is None:
-            return self.context.currentseries
-        else:
-            return self.context.translation_focus
-
-    def secondary_translatable_serieses(self):
-        """Return a list of IDistroSeries that aren't the translation_focus.
-
-        It only includes the ones that are still supported.
-        """
-        serieses = [
-            series
-            for series in self.context.serieses
-            if (series.status != DistroSeriesStatus.OBSOLETE
-                and (self.translation_focus is None or
-                     self.translation_focus.id != series.id))
-            ]
-
-        return sorted(serieses, key=operator.attrgetter('version'),
-                      reverse=True)
-
 
     def linkedMilestonesForSeries(self, series):
         """Return a string of linkified milestones in the series."""
@@ -884,18 +828,6 @@ class DistributionEditView(LaunchpadEditFormView):
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
-
-
-class DistributionLanguagePackAdminView(LaunchpadEditFormView):
-    """Browser view to change the language pack administrator."""
-
-    schema = IDistribution
-    label = "Change the language pack administrator"
-    field_names = ['language_pack_admin']
-
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
 
 
 class DistributionCountryArchiveMirrorsView(LaunchpadView):

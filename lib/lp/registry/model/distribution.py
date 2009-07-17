@@ -37,7 +37,7 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
-from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
+from lp.translations.model.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distributionbounty import DistributionBounty
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
@@ -46,7 +46,8 @@ from lp.registry.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.distroarchseries import (
+    DistroArchSeries, DistroArchSeriesSet)
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.model.distroseriespackagecache import (
     DistroSeriesPackageCache)
@@ -68,7 +69,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
@@ -100,7 +101,7 @@ from lp.blueprints.interfaces.specification import (
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -331,6 +332,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         ret = DistroSeries.selectBy(distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
+
+    @property
+    def architectures(self):
+        """See `IDistribution`."""
+        architectures = []
+
+        # Concatenate architectures list since they are distinct.
+        for series in self.serieses:
+            architectures += series.architectures
+
+        return architectures
 
     @property
     def mentoring_offers(self):
@@ -766,17 +778,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         raise NotFoundError(filename)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None):
+                        arch_tag=None, user=None):
         """See `IHasBuildRecords`"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
 
         # Find out the distroarchseries in question.
-        arch_ids = []
-        # Concatenate architectures list since they are distinct.
-        for series in self.serieses:
-            arch_ids += [arch.id for arch in series.architectures]
+        arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
+            self.architectures, arch_tag)
 
         # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(

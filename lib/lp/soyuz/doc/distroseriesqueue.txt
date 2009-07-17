@@ -47,7 +47,6 @@ We need some setup for the upload handler.
   >>> from lp.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
-
 Since we landed correct security adapters for PackageUpload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
@@ -187,7 +186,7 @@ Check the behaviour of @cachedproperty  attributes:
 
   >>> qitem = qset.get(1)
 
-  >>> qitem.datecreated
+  >>> qitem.date_created
   datetime.datetime(...)
 
   >>> print qitem.changesfile.filename
@@ -213,7 +212,7 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
 
   >>> custom_item = qset.get(5)
 
-  >>> custom_item.datecreated
+  >>> custom_item.date_created
   datetime.datetime(...)
 
   >>> print custom_item.changesfile.filename
@@ -228,11 +227,8 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
   >>> print custom_item.displayarchs
   raw-translations
 
-  >>> custom_item.sourcepackagerelease
-  Traceback (most recent call last):
-  ...
-  AssertionError: No source available.
-
+  >>> print custom_item.sourcepackagerelease
+  None
 
 The method getBuildByBuildIDs() will return all the PackageUploadBuild
 records that match the supplied build IDs.
@@ -716,7 +712,8 @@ version of pmount (0.1-2) into the binary pmount upload we already
 have in the sampledata.
 
   >>> [binary_queue] = queue_items
-  >>> non_matching_pmount = ubuntu.getSourcePackage('pmount')['0.1-2']
+  >>> pmount = ubuntu.getSourcePackage('pmount')
+  >>> non_matching_pmount = pmount.getVersion('0.1-2')
   >>> unused = binary_queue.addSource(
   ...    non_matching_pmount.sourcepackagerelease)
 
@@ -736,7 +733,7 @@ breezy-autotest context. It also becomes part of the lookup results.
   ...     PackagePublishingPocket.RELEASE,
   ...     'pmount_0.1-1_source.changes', 'some content',
   ...     breezy_autotest.main_archive)
-  >>> matching_pmount = ubuntu.getSourcePackage('pmount')['0.1-1']
+  >>> matching_pmount = pmount.getVersion('0.1-1')
   >>> unused = candidate_queue.addSource(
   ...     matching_pmount.sourcepackagerelease)
 
@@ -889,6 +886,87 @@ Similarly for binaries:
     restricted/web/Extra
 
 
+== Queue items retrieval ==
+
+IPackageUploadSet.getPackageUploads() returns an optionally filtered list of
+PackageUpload records for the supplied distroseries.
+
+    >>> warty = distro['warty']
+    >>> warty.getPackageUploads().count()
+    1
+
+Filtering by status:
+
+    >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
+    >>> warty.getPackageUploads(
+    ...     status=PackageUploadStatus.DONE).count()
+    1
+
+Filtering by archive:
+
+    >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+    >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+    ...     warty.distribution, ArchivePurpose.PARTNER)
+    >>> warty.getPackageUploads(archive=partner_archive).count()
+    0
+
+Filtering by pocket:
+
+    >>> warty.getPackageUploads(
+    ...     pocket=PackagePublishingPocket.RELEASE).count()
+    1
+
+Filtering by custom_type.  We need to add some custom uploads to show this.
+
+    >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+    >>> static_xlat = PackageUploadCustomFormat.STATIC_TRANSLATIONS
+    >>> def add_static_xlat_upload():
+    ...     upload = warty.createQueueEntry(
+    ...         pocket=PackagePublishingPocket.RELEASE,
+    ...         changesfilename="test", changesfilecontent="test",
+    ...         archive=warty.main_archive)
+    ...     arbitrary_file = factory.makeLibraryFileAlias()
+    ...     custom = upload.addCustom(arbitrary_file, static_xlat)
+
+    >>> add_static_xlat_upload()
+
+    >>> print warty.getPackageUploads(
+    ...     custom_type=static_xlat).count()
+    1
+
+There is also a created_since_date filter that will only return packages
+uploaded since the timestamp specified.  This is most useful when retrieving
+static translation files.  Static translation files are Gnome help files that
+are stripped from built packages and uploaded with the binary as a custom file.
+Providing the timestamp of the last one returned in the previous call is a
+convenient way to continue from where the caller left off.
+
+Add another custom upload.
+
+    >>> add_static_xlat_upload()
+    >>> uploads = warty.getPackageUploads(custom_type=static_xlat)
+    >>> print uploads.count()
+    2
+
+Commit a transaction to ensure new DB objects get a later timestamp.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> last_custom_time = uploads[1].date_created
+    >>> add_static_xlat_upload()
+    >>> uploads = warty.getPackageUploads(
+    ...     created_since_date=last_custom_time, custom_type=static_xlat)
+
+Only the just-created file is returned:
+
+    >>> uploads.count()
+    1
+
+    >>> uploads[0].date_created > last_custom_time
+    True
+
+
 == Queue Manipulation ==
 
 Two convenience methods exist, acceptFromQueue and rejectFromQueue that will
@@ -948,3 +1026,129 @@ Clean up the librarian files:
    >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
    >>> cleanupLibrarianFiles()
 
+
+== Delayed copies ==
+
+IPackageUploadSet allows call sites to create 'delayed-copy'
+PackageUpload records.
+
+   >>> from lp.registry.interfaces.gpg import IGPGKeySet
+   >>> testing_key = getUtility(IGPGKeySet).get(1)
+
+   >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+   ...     ubuntu.main_archive, breezy_autotest,
+   ...     PackagePublishingPocket.RELEASE, testing_key)
+
+A 'delayed-copy' is a PackageUpload record.
+
+   >>> verifyObject(IPackageUpload, delayed_copy)
+   True
+
+The distinction between normal uploads and delayed-copies can be made
+by checking IPackageUpload.is_delayed_copy.
+
+   >>> delayed_copy.is_delayed_copy
+   True
+
+   >>> normal_upload = breezy_autotest.createQueueEntry(
+   ...     PackagePublishingPocket.RELEASE, 'foo.changes',
+   ...     'something', ubuntu.main_archive)
+
+   >>> normal_upload.is_delayed_copy
+   False
+
+Delayed-copies are targeted to a publication context (archive,
+distroseries, pocket).
+
+   >>> print delayed_copy.archive.displayname
+   Primary Archive for Ubuntu Linux
+
+   >>> print delayed_copy.distroseries.displayname
+   Breezy Badger Autotest
+
+   >>> print delayed_copy.pocket.name
+   RELEASE
+
+And are created in NEW state, so they have to pass through the upload
+state-machine.
+
+   >>> print delayed_copy.status.name
+   NEW
+
+However they have no 'changesfile', only a signing_key representing the
+requester of the copy.
+
+   >>> print delayed_copy.changesfile
+   None
+
+   >>> print delayed_copy.signing_key.owner.displayname
+   Foo Bar
+
+Delayed copies are further manipulated exactly as normal uploads
+are. Contents can be attached to it.
+
+   # Retrieve a SourcePackageRelease from the sampledata.
+   >>> a_source_package = pmount.getVersion('0.1-2')
+   >>> a_source_release = a_source_package.sourcepackagerelease
+
+   >>> unused = delayed_copy.addSource(a_source_release)
+
+IPackageUpload.acceptFromCopy() checks and accepts a delayed-copy
+record. It also closes related bug reports and grant karma to people
+related with the upload, although it doesn't send any emails.
+
+   >>> delayed_copy.acceptFromCopy()
+
+   >>> transaction.commit()
+   >>> pop_notifications()
+   []
+
+   >>> print delayed_copy.status.name
+   ACCEPTED
+
+Once accepted a delayed-copy is published as a normal upload, via
+IPackageUpload.realiseUpload().
+
+   >>> publishing_records = delayed_copy.realiseUpload()
+
+   >>> for pub_record in publishing_records:
+   ...     print pub_record.displayname, pub_record.status.name
+   pmount 0.1-2 in breezy-autotest PENDING
+
+   >>> print delayed_copy.status.name
+   DONE
+
+As mentioned above, delayed copies wait in the ACCEPTED upload queue
+until they get processed, resulting in the corresponding publishing
+records.
+
+For that period of time, between creation and processing, a
+delayed-copy existence is not apparent in the publishing domain and
+creating a duplicated delayed-copy is perfectly possible.
+
+   >>> dup_delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+   ...     ubuntu.main_archive, breezy_autotest,
+   ...     PackagePublishingPocket.RELEASE, testing_key)
+
+   >>> unused = dup_delayed_copy.addSource(a_source_release)
+
+Although it cannot be accepted.
+
+   >>> dup_delayed_copy.acceptFromCopy()
+   Traceback (most recent call last):
+   ...
+   QueueInconsistentStateError: The source pmount - 0.1-2 is already
+   accepted in ubuntu/breezy-autotest and you cannot upload the same
+   version within the same distribution. You have to modify the source
+   version and re-upload.
+
+For detecting conflicting delayed copies we have to inspect the
+ACCEPTED and DONE queue for uploads of sources matching a given
+(name, version) pair in a publishing context, archive and
+distribution.
+
+   >>> conflict = getUtility(IPackageUploadSet).findSourceUpload(
+   ...     'pmount', '0.1-2', ubuntu.main_archive, ubuntu)
+
+   >>> conflict.id == delayed_copy.id
+   True

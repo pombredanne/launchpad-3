@@ -17,7 +17,6 @@ from canonical.launchpad.mailman.config import (
     configure_prefix, configure_siteowner)
 from canonical.launchpad.mailman.monkeypatches import monkey_patch
 from lazr.config import as_username_groupname
-from configs import generate_overrides
 
 basepath = [part for part in sys.path if part]
 
@@ -175,9 +174,6 @@ def configure_site_list(mailman_bin, site_list_name):
 
 
 def main():
-    # Sort ZCML overrides for our current config
-    generate_overrides()
-
     # setting python paths
     program = sys.argv[0]
 

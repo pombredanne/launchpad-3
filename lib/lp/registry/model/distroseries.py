@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeries',
     'DistroSeriesSet',
+    'SeriesMixin',
     ]
 
 import logging
@@ -19,7 +20,7 @@ from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
 
-from storm.locals import Desc, SQL, Join
+from storm.locals import And, Desc, Join, SQL
 from storm.store import Store
 
 from zope.component import getUtility
@@ -35,10 +36,9 @@ from canonical.database.sqlbase import (
     quote, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
-from canonical.launchpad.database.pofiletranslator import (
+from lp.translations.model.pofiletranslator import (
     POFileTranslator)
-from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.potemplate import POTemplate
+from lp.translations.model.pofile import POFile
 from canonical.launchpad.interfaces import IStore
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -50,29 +50,31 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
-    DistroArchSeries, PocketChroot)
+    DistroArchSeries, DistroArchSeriesSet, PocketChroot)
 from lp.soyuz.model.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
-from canonical.launchpad.database.distroserieslanguage import (
+from lp.translations.model.distroserieslanguage import (
     DistroSeriesLanguage, DummyDistroSeriesLanguage)
 from lp.soyuz.model.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
-from canonical.launchpad.database.distroseries_translations_copy import (
+from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations)
 from lp.services.worlddata.model.language import Language
-from canonical.launchpad.database.languagepack import LanguagePack
+from lp.translations.model.languagepack import LanguagePack
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.soyuz.model.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.person import Person
-from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from lp.translations.model.potemplate import (
+    HasTranslationTemplatesMixin,
+    POTemplate)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadQueue)
+from lp.soyuz.model.queue import PackageUpload, PackageUploadQueue
 from lp.soyuz.model.section import Section
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -80,7 +82,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -92,17 +94,17 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
 from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
-from canonical.launchpad.interfaces.languagepack import LanguagePackType
+    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet, ISeriesMixin)
+from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, ICanPublishPackages, PackagePublishingPocket,
     PackagePublishingStatus, pocketsuffix)
-from lp.soyuz.interfaces.queue import IHasQueueItems
+from lp.soyuz.interfaces.queue import IHasQueueItems, IPackageUploadSet
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
 from lp.registry.interfaces.sourcepackagename import (
@@ -117,11 +119,25 @@ from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
-from lp.services.worlddata.model.language import Language
+
+
+class SeriesMixin:
+    """See `ISeriesMixin`."""
+    implements(ISeriesMixin)
+
+    @property
+    def active(self):
+        return self.status in [
+            DistroSeriesStatus.DEVELOPMENT,
+            DistroSeriesStatus.FROZEN,
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED
+            ]
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasTranslationImportsMixin, HasMilestonesMixin,
+                   HasTranslationImportsMixin, HasTranslationTemplatesMixin,
+                   HasMilestonesMixin, SeriesMixin,
                    StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
@@ -220,9 +236,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def enabled_architectures(self):
-        # Avoiding circular imports.
-        from canonical.launchpad.database.librarian import (
-            LibraryFileAlias)
         store = Store.of(self)
         origin = [
             DistroArchSeries,
@@ -258,7 +271,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         drivers.add(self.driver)
         drivers = drivers.union(self.distribution.drivers)
         drivers.discard(None)
-        return sorted(drivers, key=lambda driver: driver.browsername)
+        return sorted(drivers, key=lambda driver: driver.displayname)
 
     @property
     def bug_supervisor(self):
@@ -302,15 +315,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def supported(self):
         return self.status in [
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED
-            ]
-
-    @property
-    def active(self):
-        return self.status in [
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.FROZEN,
             DistroSeriesStatus.CURRENT,
             DistroSeriesStatus.SUPPORTED
             ]
@@ -623,7 +627,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Language.id,
             Language.visible == True,
             Language.id == POFile.languageID,
-            Language.code <> 'en',
+            Language.code != 'en',
             POFile.potemplateID == POTemplate.id,
             POTemplate.distroseries == self,
             POTemplate.iscurrent == True).config(distinct=True))
@@ -973,14 +977,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 for pubrecord in result]
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None):
+                        arch_tag=None, user=None):
         """See IHasBuildRecords"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
 
         # Find out the distroarchseries in question.
-        arch_ids = [arch.id for arch in self.architectures]
+        arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
+            self.architectures, arch_tag)
+
         # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
@@ -1277,9 +1283,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return PackageUploadQueue(self, state)
 
+    def getPackageUploads(self, created_since_date=None, status=None,
+                          archive=None, pocket=None, custom_type=None):
+        """See `IDistroSeries`."""
+        return getUtility(IPackageUploadSet).getAll(
+            self, created_since_date, status, archive, pocket, custom_type)
+
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):
         """See `IDistroSeries`."""
+        # XXX Julian 2009-07-02 bug=394645
+        # This method is partially deprecated by getPackageUploads(),
+        # see the bug for more info.
 
         default_clauses = ["""
             packageupload.distroseries = %s""" % sqlvalues(self)]
@@ -1684,18 +1699,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                      orderBy=['-priority', 'name'])
         return shortlist(result, 2000)
 
-    def getCurrentTranslationTemplates(self):
+    def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            iscurrent IS TRUE AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            Distribution.official_rosetta IS TRUE
-            ''' % sqlvalues(self),
-            clauseTables = ['DistroSeries', 'Distribution'],
-            orderBy=['-priority', 'name'])
-        return shortlist(result, 2000)
+        store = Store.of(self)
+        if just_ids:
+            looking_for = POTemplate.id
+        else:
+            looking_for = POTemplate
+
+        # Select all current templates for this series, if the Product
+        # actually uses Launchpad Translations.  Otherwise, return an
+        # empty result.
+        result = store.find(looking_for, And(
+            self.distribution.official_rosetta == True,
+            POTemplate.iscurrent == True,
+            POTemplate.distroseries == self))
+        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

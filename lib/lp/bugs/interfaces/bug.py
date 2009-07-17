@@ -40,6 +40,7 @@ from lp.bugs.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -146,7 +147,7 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
-class IBug(ICanBeMentored):
+class IBug(ICanBeMentored, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
 
@@ -241,7 +242,7 @@ class IBug(ICanBeMentored):
             readonly=True))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
-    bug_branches = Attribute(
+    linked_branches = Attribute(
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
     tags = exported(
@@ -447,35 +448,6 @@ class IBug(ICanBeMentored):
 
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
-
-    @call_with(registrant=REQUEST_USER, whiteboard=None, status=None)
-    @operation_parameters(
-        branch=Reference(schema=IBranch))
-    @operation_returns_entry(Interface) # Really IBugBranch
-    @export_operation_as('linkBranch')
-    @export_write_operation()
-    def addBranch(branch, registrant, whiteboard=None, status=None):
-        """Associate a branch with this bug.
-
-        :param branch: The branch being linked to the bug
-        :param registrant: The user making the link.
-        :param whiteboard: A space where people can write about the bug fix
-        :param status: The status of the fix in the branch
-
-        Returns an IBugBranch.
-        """
-
-    @call_with(user=REQUEST_USER)
-    @operation_parameters(
-        branch=Reference(schema=IBranch))
-    @export_operation_as('unlinkBranch')
-    @export_write_operation()
-    def removeBranch(branch, user):
-        """Unlink a branch from this bug.
-
-        :param branch: The branch being unlinked from the bug
-        :param user: The user unlinking the branch
-        """
 
     @call_with(owner=REQUEST_USER)
     @operation_parameters(

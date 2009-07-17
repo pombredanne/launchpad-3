@@ -19,7 +19,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 from lazr.restful.fields import Reference

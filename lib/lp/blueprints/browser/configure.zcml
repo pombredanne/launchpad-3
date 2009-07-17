@@ -227,13 +227,6 @@
             class="lp.blueprints.browser.specificationbranch.SpecificationBranchStatusView"
             permission="launchpad.AnyPerson"
             template="../templates/specificationbranch-status.pt"/>
-        <browser:page
-            name="+branch-edit"
-            for="lp.blueprints.interfaces.specificationbranch.ISpecificationBranch"
-            class="lp.blueprints.browser.specificationbranch.SpecificationBranchBranchInlineEditView"
-            facet="branches"
-            permission="launchpad.AnyPerson"
-            template="../../bugs/templates/bugbranch-inline-edit.pt"/>
     </facet>
     <facet
         facet="specifications">

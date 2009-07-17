@@ -515,6 +515,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
 
     def assertBranchIsAquired(self, branch):
         """See `AcquireBranchToPullTests`."""
+        branch = removeSecurityProxy(branch)
         pull_info = self.storage.acquireBranchToPull()
         default_branch = branch.target.default_stacked_on_branch
         if default_branch:
@@ -561,7 +562,22 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         _, _, _, default_stacked_on_branch, _ = pull_info
         self.assertEqual(
             default_stacked_on_branch,
-            branch.target.default_stacked_on_branch.unique_name)
+            '/' + branch.target.default_stacked_on_branch.unique_name)
+
+    def test_private_default_stacked_not_returned_for_mirrored_branch(self):
+        # We don't stack mirrored branches on a private default stacked on
+        # branch.
+        product = self.factory.makeProduct()
+        default_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        self.factory.enableDefaultStackingForProduct(product, default_branch)
+        mirrored_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED, product=product)
+        mirrored_branch.requestMirror()
+        pull_info = self.storage.acquireBranchToPull()
+        _, _, _, default_stacked_on_branch, _ = pull_info
+        self.assertEqual(
+            '', default_stacked_on_branch)
 
 
 class BranchFileSystemTest(TestCaseWithFactory):

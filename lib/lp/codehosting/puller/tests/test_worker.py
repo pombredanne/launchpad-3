@@ -476,7 +476,10 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         # checkSource raises StackingLoopError if a branch is stacked on
         # itself. This avoids infinite recursion errors.
         a = self.make_branch('a', format='1.6')
-        a.set_stacked_on_url(a.base)
+        # Bazaar 1.17 and up make it harder to create branches like this.
+        # It's still worth testing that we don't blow up in the face of them,
+        # so we grovel around a bit to create one anyway.
+        a.get_config().set_user_option('stacked_on_location', a.base)
         opener = self.makeBranchMirrorer([a.base])
         self.assertRaises(BranchLoopError, opener.open, a.base)
 

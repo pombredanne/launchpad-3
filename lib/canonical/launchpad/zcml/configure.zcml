@@ -16,15 +16,11 @@
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="crowd.zcml" />
-    <include file="customlanguagecode.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
-    <include file="distroserieslanguage.zcml" />
     <include file="emailaddress.zcml" />
     <include file="feeds.zcml" />
     <include file="hwdb.zcml" />
-    <include file="language.zcml" />
-    <include file="languagepack.zcml" />
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
@@ -39,35 +35,15 @@
     <include file="packaging.zcml" />
     <include file="personnotification.zcml" />
     <include file="personproduct.zcml" />
-    <include file="poexportrequest.zcml" />
-    <include file="pofile.zcml" />
-    <include file="pofiletranslator.zcml" />
-    <include file="pomsgid.zcml" />
-    <include file="potemplate.zcml" />
-    <include file="potmsgset.zcml" />
-    <include file="potranslation.zcml" />
-    <include file="precache.zcml" />
-    <include file="productserieslanguage.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="structuralsubscription.zcml" />
     <include file="temporaryblobstorage.zcml" />
-    <include file="translationexport.zcml" />
-    <include file="translationimport.zcml" />
-    <include file="translationmessage.zcml" />
-    <include file="translationcommonformat.zcml" />
-    <include file="translationgroup.zcml" />
-    <include file="translationimportqueue.zcml" />
-    <include file="translationtemplateitem.zcml" />
-    <include file="translator.zcml" />
-    <include file="vpoexport.zcml" />
-    <include file="vpotexport.zcml" />
     <include file="webservice.zcml" />
 
     <include file="fields.zcml" />
     <include file="widgets.zcml" />
 
     <!-- System homepages -->
-    <include file="translations.zcml" />
 
     <!-- Event configuration -->
 

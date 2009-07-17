@@ -30,7 +30,6 @@ The reviewer table shows both the Vikings team and Eric himself.
     ...     eric_browser.contents, 'code-review-votes'))
     Reviewer         Review Type    Date Requested    Status
     Vikings                         ...               Pending [Review]
-    Eric the Viking                                   [Review]
     Review via email: mp+1@code.launchpad.dev
                                                      Request another review
 
@@ -46,7 +45,7 @@ The team review has been claimed.
 
     >>> print extract_text(find_tag_by_id(
     ...     eric_browser.contents, 'code-review-votes'))
-    Reviewer         Review Type    Date Requested    Status
-    Eric the Viking                                   Approve ... ago
+    Reviewer                   Review Type    Date Requested  Status
+    Eric the Viking (community)                               Approve ... ago
     Review via email: mp+1@code.launchpad.dev
                                                       Request another review

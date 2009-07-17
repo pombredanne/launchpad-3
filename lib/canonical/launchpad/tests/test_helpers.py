@@ -10,7 +10,7 @@ from zope.interface import implements
 
 from canonical.launchpad import helpers
 from canonical.launchpad.ftests import login
-from canonical.launchpad.translationformat import LaunchpadWriteTarFile
+from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
 from lp.testing.factory import LaunchpadObjectFactory
 

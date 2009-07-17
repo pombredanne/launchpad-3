@@ -16,7 +16,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
 
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad import _
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (

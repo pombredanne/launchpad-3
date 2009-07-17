@@ -9,16 +9,9 @@
   omit-tag="">
 
 <tr>
-  <td><img src="/@@/team"
-           tal:replace="structure context/team/image:icon" /></td>
-  <td>
+  <td colspan="2">
     <div>
-      <a
-        tal:attributes="
-          href context/team/fmt:url;
-          title context/team/teamdescription/fmt:shorten/80"
-        tal:content="context/team/browsername"
-      >Team name</a>
+      <a tal:replace="structure context/team/fmt:link">Team name</a>
     </div>
     <div>
       Joined

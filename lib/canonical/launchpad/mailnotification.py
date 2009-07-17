@@ -832,9 +832,9 @@ def notify_invitation_to_join_team(event):
     templatename = 'membership-invitation.txt'
     template = get_email_template(templatename)
     replacements = {
-        'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
-        'member': '%s (%s)' % (member.browsername, member.name),
-        'team': '%s (%s)' % (team.browsername, team.name),
+        'reviewer': '%s (%s)' % (reviewer.displayname, reviewer.name),
+        'member': '%s (%s)' % (member.displayname, member.name),
+        'team': '%s (%s)' % (team.displayname, team.name),
         'team_url': canonical_url(team),
         'membership_invitations_url':
             "%s/+invitation/%s" % (canonical_url(member), team.name)}
@@ -880,10 +880,10 @@ def notify_team_join(event):
 
         template = get_email_template(templatename)
         replacements = {
-            'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
+            'reviewer': '%s (%s)' % (reviewer.displayname, reviewer.name),
             'team_url': canonical_url(team),
-            'member': '%s (%s)' % (person.browsername, person.name),
-            'team': '%s (%s)' % (team.browsername, team.name)}
+            'member': '%s (%s)' % (person.displayname, person.name),
+            'team': '%s (%s)' % (team.displayname, team.name)}
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
@@ -900,9 +900,9 @@ def notify_team_join(event):
         return
 
     replacements = {
-        'person_name': "%s (%s)" % (person.browsername, person.name),
-        'team_name': "%s (%s)" % (team.browsername, team.name),
-        'reviewer_name': "%s (%s)" % (reviewer.browsername, reviewer.name),
+        'person_name': "%s (%s)" % (person.displayname, person.name),
+        'team_name': "%s (%s)" % (team.displayname, team.name),
+        'reviewer_name': "%s (%s)" % (reviewer.displayname, reviewer.name),
         'url': canonical_url(membership)}
 
     headers = {}
@@ -1130,7 +1130,7 @@ def notify_new_ppa_subscription(subscription, event):
 
     registrant_name = subscription.registrant.displayname
     ppa_name = subscription.archive.displayname
-    subject = 'New PPA subscription for ' + ppa_name
+    subject = 'PPA access granted for ' + ppa_name
 
     template = get_email_template('ppa-subscription-new.txt')
 

@@ -62,6 +62,15 @@ class AnnouncementContextMenu(ContextMenu):
         return Link('+retract', text, icon='edit')
 
 
+class AnnouncementFormMixin:
+    """A mixin to provide the common form features."""
+
+    @property
+    def cancel_url(self):
+        """The announcements URL."""
+        return canonical_url(self.context.target, view_name='+announcements')
+
+
 class AddAnnouncementForm(Interface):
     """Form definition for the view which creates new Announcements."""
 
@@ -96,8 +105,13 @@ class AnnouncementAddView(LaunchpadFormView):
     def action_url(self):
         return "%s/+announce" % canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        """The project's URL."""
+        return canonical_url(self.context)
 
-class AnnouncementEditView(LaunchpadFormView):
+
+class AnnouncementEditView(AnnouncementFormMixin, LaunchpadFormView):
     """A view which allows you to edit the announcement."""
 
     schema = AddAnnouncementForm
@@ -119,10 +133,6 @@ class AnnouncementEditView(LaunchpadFormView):
                             url=data.get('url'))
         self.next_url = canonical_url(self.context.target)+'/+announcements'
 
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
-
 
 class AnnouncementRetargetForm(Interface):
     """Form that requires the user to choose a pillar for the Announcement."""
@@ -133,7 +143,7 @@ class AnnouncementRetargetForm(Interface):
         required=True, vocabulary='DistributionOrProductOrProject')
 
 
-class AnnouncementRetargetView(LaunchpadFormView):
+class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
 
     schema = AnnouncementRetargetForm
     field_names = ['target']
@@ -166,12 +176,8 @@ class AnnouncementRetargetView(LaunchpadFormView):
         self.context.retarget(target)
         self.next_url = canonical_url(self.context.target)+'/+announcements'
 
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
-
-class AnnouncementPublishView(LaunchpadFormView):
+class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
 
     schema = AddAnnouncementForm
     field_names = ['publication_date']
@@ -185,12 +191,8 @@ class AnnouncementPublishView(LaunchpadFormView):
         self.context.set_publication_date(publication_date)
         self.next_url = canonical_url(self.context.target)+'/+announcements'
 
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
-
-class AnnouncementRetractView(LaunchpadFormView):
+class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
 
     schema = IAnnouncement
     label = _('Retract this announcement')
@@ -200,19 +202,11 @@ class AnnouncementRetractView(LaunchpadFormView):
         self.context.retract()
         self.next_url = canonical_url(self.context.target)+'/+announcements'
 
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
-
-class AnnouncementDeleteView(LaunchpadFormView):
+class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
 
     schema = IAnnouncement
     label = _('Delete this announcement')
-
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
     @action(_("Delete"), name="delete", validator='validate_cancel')
     def action_delete(self, action, data):

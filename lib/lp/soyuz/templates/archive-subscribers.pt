@@ -22,22 +22,21 @@
   <div metal:fill-slot="main">
 
     <h1 tal:content="CONTEXTS/fmt:pagetitle">
-      Manage subscribers for Blah PPA
+      Manage access to Blah PPA
     </h1>
-    <p>Subscribers are people or teams who can install software
+    <p>You can grant access to people or teams to install software
        from your PPA.
     </p>
 
     <div class="subscribers">
       <p tal:condition="not: view/has_subscriptions" id="no-subscribers">
-        This PPA does not yet
-        have any subscribers.
+        No one has access to install software from this PPA.
       </p>
 
       <p class="error message" tal:condition="view/errors"
          tal:content="view/error_count" />
 
-      <h2>PPA Subscribers</h2>
+      <h2>Authorisations for access to this PPA</h2>
 
       <form action="."
         tal:attributes="action view/action_url"

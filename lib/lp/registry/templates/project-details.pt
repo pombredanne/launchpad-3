@@ -27,7 +27,7 @@
           <th>Maintainer:</th>
           <td>
             <a
-              tal:content="context/owner/browsername"
+              tal:content="context/owner/displayname"
               tal:attributes="href context/owner/fmt:url"
             >ownername</a>
           </td>
@@ -37,7 +37,7 @@
           <td tal:condition="not:context/driver">Not yet appointed</td>
           <td tal:condition="context/driver">
             <a
-              tal:content="context/driver/browsername"
+              tal:content="context/driver/displayname"
               tal:attributes="href context/driver/fmt:url"
             >Carlos Perello</a>
           </td>

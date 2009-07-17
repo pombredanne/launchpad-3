@@ -63,7 +63,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
-from lazr.restful.interfaces import ITopLevelEntryLink
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_read_operation, exported, operation_parameters,
@@ -274,18 +273,19 @@ class IHWSubmissionSet(Interface):
         Only one of :distribution: or :distroseries: may be supplied.
         """
 
-    def numSubmissionsWithDevice(bus, vendor_id, product_id, driver_name=None,
-                                 package_name=None, distro_target=None):
-        """Count the number of submissions mentioning a device.
+    def numSubmissionsWithDevice(bus=None, vendor_id=None, product_id=None,
+                                 driver_name=None, package_name=None,
+                                 distro_target=None):
+        """Count the number of submissions mentioning a device or a driver.
 
         :return: A tuple (submissions_with_device, all_submissions)
-           where submissions_with_device is the number of submissions having
-           the given device and matching the distro_target criterion and where
-           all_submissions is the number of submissions matching the
-           distro_target criterion.
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+            where submissions_with_device is the number of submissions having
+            the given device or driver and matching the distro_target
+            criterion and where all_submissions is the number of submissions
+            matching the distro_target criterion.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: The name of the driver used for the device
             (optional).
         :param package_name: The name of the package the driver is a part of.
@@ -293,24 +293,26 @@ class IHWSubmissionSet(Interface):
         :param distro_target: Limit the count to submissions made for the
             given distribution, distroseries or distroarchseries.
             (optional).
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
-    def numOwnersOfDevice(bus, vendor_id, product_id, driver_name=None,
-                          package_name=None, distro_target=None):
-        """Count the number who subitted hardware reports mentioning a device.
+    def numOwnersOfDevice(bus=None, vendor_id=None, product_id=None,
+                          driver_name=None, package_name=None,
+                          distro_target=None):
+        """The number of people owning a device or using a driver.
 
         :return: A tuple (device_owners, all_hardware_reporters)
-           where device_owners is the number of people who made a HWDB
-           submission containing the given device, optionally limited
-           to submissions where the device is controlled by a given
-           driver from the given package, and/or limited to submissions
-           made for the given distro_target.
-           all_hardware_reporters is the number of persons who made
-           a HWDB submission, optionally limited to submission made
-           on the given distro_target installation.
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+            where device_owners is the number of people who made a HWDB
+            submission containing the given device or driver, optionally
+            limited to submissions made for the given distro_target.
+            all_hardware_reporters is the number of persons who made
+            a HWDB submission, optionally limited to submission made
+            on the given distro_target installation.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: The name of the driver used for the device
             (optional).
         :param package_name: The name of the package the driver is a part of.
@@ -318,6 +320,9 @@ class IHWSubmissionSet(Interface):
         :param distro_target: Limit the count to submissions made for the
             given distribution, distroseries or distroarchseries.
             (optional).
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
     def deviceDriverOwnersAffectedByBugs(
@@ -1080,15 +1085,15 @@ class IHWSubmissionDeviceSet(Interface):
         """
 
     def numDevicesInSubmissions(
-        bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distro_target=None):
-        """Count how often a device appears in HWDB submissions.
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distro_target=None):
+        """Count how often a device or a driver appears in HWDB submissions.
 
         :return: The number how often the given device appears in HWDB
             submissions.
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: Limit the count to devices controlled by the given
             driver (optional).
         :param package_name: Limit the count to devices controlled by a driver
@@ -1096,6 +1101,9 @@ class IHWSubmissionDeviceSet(Interface):
         :param distro_target: Limit the count to devices appearing in HWDB
             submissions made for the given distribution, distroseries
             or distroarchseries (optional).
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
 
@@ -1138,7 +1146,7 @@ class IHWSubmissionBugSet(Interface):
         """
 
 
-class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
+class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""
 
     export_as_webservice_entry('hwdb')
@@ -1208,13 +1216,13 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
     @operation_parameters(
         bus=Choice(
-            title=u'The device bus', vocabulary=HWBus, required=True),
+            title=u'The device bus', vocabulary=HWBus, required=False),
         vendor_id=TextLine(
             title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
-             required=True),
+             required=False),
         product_id=TextLine(
             title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
-            required=True),
+            required=False),
         driver_name=TextLine(
             title=u'A driver name', required=False,
             description=u'If specified, the count is limited to devices '
@@ -1246,19 +1254,20 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
             required=False))
     @export_read_operation()
     def numSubmissionsWithDevice(
-        bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
-        """Count the number of submissions mentioning a device.
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """Count the number of submissions mentioning a device  or a driver.
 
         Returns a dictionary {'submissions_with_device: n1,
         'all_submissions': n2}, where submissions_with_device is the number
-        of submissions having the given device and matching the
+        of submissions having the given device or driver and matching the
         distro target criterion and where all_submissions is the number of
         submissions matching the distro target criterion.
 
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: The name of the driver used for the device
             (optional).
         :param package_name: The name of the package the driver is a part of.
@@ -1275,17 +1284,20 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
         You may specify at most one of the parameters distribution,
         distroseries or distroarchseries.
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
     @operation_parameters(
         bus=Choice(
-            title=u'The device bus', vocabulary=HWBus, required=True),
+            title=u'The device bus', vocabulary=HWBus, required=False),
         vendor_id=TextLine(
             title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
-             required=True),
+             required=False),
         product_id=TextLine(
             title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
-            required=True),
+            required=False),
         driver_name=TextLine(
             title=u'A driver name', required=False,
             description=u'If specified, the count is limited to devices '
@@ -1317,23 +1329,22 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
             required=False))
     @export_read_operation()
     def numOwnersOfDevice(
-        bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
-        """Count the number who subitted hardware reports mentioning a device.
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """The number of people owning a device or using a driver.
 
         Returns a dictionary {'owners': n1, 'all_submitters': n2}
         where owners is the number of people who made a HWDB
-        submission containing the given device, optionally limited
-        to submissions where the device is controlled by a given
-        driver from the given package, and/or limited to submissions
-        made for the given distro target.
+        submission containing the given device or driver, optionally
+        limited to submissions made for the given distro target.
         all_submitters is the number of persons who made
         a HWDB submission, optionally limited to submission made
         on the given distro target installation.
 
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: The name of the driver used for the device
             (optional).
         :param package_name: The name of the package the driver is a part of.
@@ -1350,17 +1361,20 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
         You may specify at most one of the parameters distribution,
         distroseries or distroarchseries.
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
     @operation_parameters(
         bus=Choice(
-            title=u'The device bus', vocabulary=HWBus, required=True),
+            title=u'The device bus', vocabulary=HWBus, required=False),
         vendor_id=TextLine(
             title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
-             required=True),
+             required=False),
         product_id=TextLine(
             title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
-            required=True),
+            required=False),
         driver_name=TextLine(
             title=u'A driver name', required=False,
             description=u'If specified, the count is limited to devices '
@@ -1392,15 +1406,16 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
             required=False))
     @export_read_operation()
     def numDevicesInSubmissions(
-        bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
-        """Count how often a device appears in HWDB submissions.
+        bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """Count how often a device or a driver appears in HWDB submissions.
 
-        Returns The number how often the given device appears in HWDB
-
-        :param bus: The `HWBus` of the device.
-        :param vendor_id: The vendor ID of the device.
-        :param product_id: The product ID of the device.
+        :return: The number how often the given device appears in HWDB
+            submissions.
+        :param bus: The `HWBus` of the device (optional).
+        :param vendor_id: The vendor ID of the device (optional).
+        :param product_id: The product ID of the device (optional).
         :param driver_name: Limit the count to devices controlled by the given
             driver (optional).
         :param package_name: Limit the count to devices controlled by a driver
@@ -1417,6 +1432,9 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
         You may specify at most one of the parameters distribution,
         distroseries or distroarchseries.
+
+        At least each of bus, vendor_id, product_id must not be None or
+        driver_name must not be None.
         """
 
     @operation_parameters(

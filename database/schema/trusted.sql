@@ -79,9 +79,10 @@ $$
         datid, datname, procpid, usesysid, usename,
         CASE
             WHEN current_query LIKE '<IDLE>%'
+                OR current_query LIKE 'autovacuum:%'
                 THEN current_query
             ELSE
-                NULL
+                '<HIDDEN>'
         END AS current_query,
         waiting, xact_start, query_start,
         backend_start, client_addr, client_port

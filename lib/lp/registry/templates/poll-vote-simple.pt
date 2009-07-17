@@ -146,7 +146,7 @@
 
     <p tal:condition="not: view/userCanVote" class="informational message">
       You can&#8217;t vote in this poll because you&#8217;re not
-      a member of <span tal:replace="context/team/browsername" />.
+      a member of <span tal:replace="context/team/displayname" />.
     </p>
 
     </tal:open-poll> 

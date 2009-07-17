@@ -20,7 +20,7 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <h1 metal:fill-slot="heading">
-      Claim &#8220;<span tal:replace="context/browsername" />&#8221;
+      Claim &#8220;<span tal:replace="context/displayname" />&#8221;
       in Launchpad
     </h1>
 
@@ -28,7 +28,7 @@
       <p>
         To claim this team, enter one of the e-mail addresses it is
         associated with. (We are not showing you the list of addresses to
-        protect <span tal:replace="context/browsername" />'s privacy in case
+        protect <span tal:replace="context/displayname" />'s privacy in case
         you don't run it.) We will e-mail that address to ask for confirmation.
       </p>
     </metal:extra-info>

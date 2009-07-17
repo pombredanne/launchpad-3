@@ -170,7 +170,7 @@ class BuildQueue(SQLBase):
             msg += "LPack => score zero"
         elif self.build.archive.purpose == ArchivePurpose.COPY:
             score = rebuild_archive_score
-            msg += "Rebuild archive => -1"
+            msg += "Rebuild archive => -10"
         else:
             # Calculates the urgency-related part of the score.
             urgency = score_urgency[self.urgency]
@@ -202,6 +202,11 @@ class BuildQueue(SQLBase):
             # Private builds get uber score.
             if self.build.archive.private:
                 score += private_archive_increment
+
+            # Lastly, apply the archive score delta.  This is to boost
+            # or retard build scores for any build in a particular
+            # archive.
+            score += self.build.archive.relative_build_score
 
         # Store current score value.
         self.lastscore = score

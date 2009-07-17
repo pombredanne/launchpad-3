@@ -44,7 +44,6 @@ __all__ = [
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
-    'IHasOwner',
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
@@ -103,30 +102,33 @@ class ILaunchpadCelebrities(Interface):
     bazaar_experts = Attribute("The Bazaar Experts team.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
+    buildd_admin = Attribute("The Build Daemon administrator.")
     commercial_admin = Attribute("The Launchpad Commercial team.")
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
     english = Attribute("The English language.")
     gnome_bugzilla = Attribute("The Gnome Bugzilla.")
+    hwdb_team = Attribute("The HWDB team.")
     janitor = Attribute("The Launchpad Janitor.")
     katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
+    lp_translations = Attribute("The Launchpad Translations product.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
     obsolete_junk = Attribute("The Obsolete Junk project.")
+    ppa_key_guard = Attribute("The PPA signing keys owner.")
+    registry_experts = Attribute("The Registry Administrators team.")
     rosetta_experts = Attribute("The Rosetta Experts team.")
     savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
     shipit_admin = Attribute("The ShipIt Administrators.")
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
-    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
     ubuntu = Attribute("The Ubuntu Distribution.")
+    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
     ubuntu_branches = Attribute("The Ubuntu branches team")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
-    lp_translations = Attribute("The Launchpad Translations product.")
-    ppa_key_guard = Attribute("The PPA signing keys owner.")
 
 
 
@@ -301,12 +303,6 @@ class IWriteZODBAnnotation(Interface):
 
 class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
-
-
-class IHasOwner(Interface):
-    """An object that has an owner."""
-
-    owner = Attribute("The object's owner, which is an IPerson.")
 
 
 class IHasDrivers(Interface):

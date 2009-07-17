@@ -7,7 +7,11 @@ __metaclass__ = type
 
 import unittest
 
-from bzrlib.tests import test_transport_implementations
+try:
+    from bzrlib.tests import per_transport
+except ImportError:
+    from bzrlib.tests import test_transport_implementations as per_transport
+
 from bzrlib.transport import chroot, get_transport, Transport
 from bzrlib.transport.local import LocalTransport
 from bzrlib.urlutils import local_path_to_url
@@ -75,8 +79,7 @@ class TestingServer(LaunchpadInternalServer):
         LaunchpadInternalServer.tearDown(self)
 
 
-class TestLaunchpadTransportImplementation(
-        test_transport_implementations.TransportTests):
+class TestLaunchpadTransportImplementation(per_transport.TransportTests):
     """Implementation tests for `LaunchpadTransport`.
 
     We test the transport chrooted to the .bzr directory of a branch -- see

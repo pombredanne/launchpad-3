@@ -5,7 +5,7 @@
 
 """Print the YUI modules we are using.
 
-It looks into the main-template-macros.pt file for the yui modules included.
+It looks into the base-layout-macros.pt file for the yui modules included.
 It prints the path to the minified version of these modules.
 
 The output of this script is meant to be given to the lazr-js build.py script
@@ -23,8 +23,7 @@ TOP = os.path.normpath(
     os.path.join(os.path.dirname(__file__), '..'))
 ICING_ROOT = os.path.join(TOP, 'lib', 'canonical', 'launchpad', 'icing')
 MAIN_TEMPLATE = os.path.join(
-    TOP, 'lib', 'canonical', 'launchpad', 'templates',
-    'main-template-macros.pt')
+    TOP, 'lib', 'lp', 'app', 'templates', 'base-layout-macros.pt')
 
 YUI_ROOT_RE = re.compile('yui string:\${icingroot}/(.*);')
 YUI_MOD_RE = re.compile('\${yui}/(.*?)\.js')

@@ -23,7 +23,7 @@
   <div metal:fill-slot="main">
 
     <h2>Current polls for 
-      &#8220;<span tal:replace="context/browsername" />&#8221;
+      &#8220;<span tal:replace="context/displayname" />&#8221;
     </h2>
 
     <p tal:condition="not: view/hasCurrentPolls">

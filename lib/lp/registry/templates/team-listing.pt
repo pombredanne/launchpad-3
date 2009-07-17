@@ -14,8 +14,8 @@
   </tal:block>
 
   <p tal:condition="not: context/isTeam" class="error message">
-    <span tal:replace="context/browsername" /> does not have members,
-    because <span tal:replace="context/browsername" /> is not a team.
+    <span tal:replace="context/displayname" /> does not have members,
+    because <span tal:replace="context/displayname" /> is not a team.
   </p>
 
   <table class="listing" tal:condition="context/isTeam">
@@ -30,7 +30,7 @@
     <tbody>
       <tr tal:repeat="membership context/member_memberships">
         <td>
-          <a tal:content="membership/person/browsername"
+          <a tal:content="membership/person/displayname"
              tal:attributes="href membership/person/fmt:url" />
         </td>
         <td>

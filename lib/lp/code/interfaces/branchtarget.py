@@ -110,3 +110,6 @@ class IBranchTarget(IPrimaryContext):
 
     def assignKarma(person, action_name):
         """Assign karma to the person on the appropriate target."""
+
+    def getBugTask(bug):
+        """Get the BugTask for a given bug related to the branch target."""

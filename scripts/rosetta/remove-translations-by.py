@@ -11,7 +11,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launchpad.scripts.remove_translations import RemoveTranslations
+from lp.translations.scripts.remove_translations import RemoveTranslations
 
 
 if __name__ == '__main__':

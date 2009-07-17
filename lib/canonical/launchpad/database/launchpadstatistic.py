@@ -22,10 +22,10 @@ from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import BugTask
 from lp.services.worlddata.model.language import Language
-from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.pofile import POFile
+from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.pofile import POFile
 from lp.registry.model.product import Product
-from canonical.launchpad.database.pomsgid import POMsgID
+from lp.translations.model.pomsgid import POMsgID
 from lp.answers.model.question import Question
 
 from canonical.launchpad.interfaces import (

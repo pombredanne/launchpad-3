@@ -15,6 +15,8 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
+from storm.expr import State
+from storm.expr import compile as storm_compile
 from storm.locals import Storm, Store
 from storm.zope.interfaces import IZStorm
 
@@ -39,6 +41,7 @@ __all__ = [
     'commit',
     'ConflictingTransactionManagerError',
     'connect',
+    'convert_storm_clause_to_string',
     'cursor',
     'expire_from_cache',
     'flush_database_caches',
@@ -57,6 +60,7 @@ __all__ = [
     'rollback',
     'SQLBase',
     'sqlvalues',
+    'StupidCache',
     'ZopelessTransactionManager',]
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
@@ -105,11 +109,6 @@ class StupidCache:
 
     def get_cached(self):
         return self._cache.keys()
-
-
-# Monkey patch the cache into storm.store to override the standard
-# cache implementation for all stores.
-storm.store.Cache = StupidCache
 
 
 def _get_sqlobject_store():
@@ -605,6 +604,51 @@ def quote_identifier(identifier):
 
 quoteIdentifier = quote_identifier # Backwards compatibility for now.
 
+
+def convert_storm_clause_to_string(storm_clause):
+    """Convert a Storm expression into a plain string.
+
+    :param storm_clause: A Storm expression
+
+    A helper function allowing to use a Storm expressions in old-style
+    code which builds for example WHERE expressions as plain strings.
+
+    >>> from lp.bugs.model.bug import Bug
+    >>> from lp.bugs.model.bugtask import BugTask
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
+    >>> from storm.expr import And, Or
+
+    >>> print convert_storm_clause_to_string(BugTask)
+    BugTask
+
+    >>> print convert_storm_clause_to_string(BugTask.id == 16)
+    BugTask.id = 16
+
+    >>> print convert_storm_clause_to_string(
+    ...     BugTask.importance == BugTaskImportance.UNKNOWN)
+    BugTask.importance = 999
+
+    >>> print convert_storm_clause_to_string(Bug.title == "foo'bar'")
+    Bug.title = 'foo''bar'''
+
+    >>> print convert_storm_clause_to_string(
+    ...     Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...        BugTask.importance == BugTaskImportance.HIGH))
+    BugTask.importance = 999 OR BugTask.importance = 40
+
+    >>> print convert_storm_clause_to_string(
+    ...    And(Bug.title == 'foo', BugTask.bug == Bug.id,
+    ...        Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...           BugTask.importance == BugTaskImportance.HIGH)))
+    Bug.title = 'foo' AND BugTask.bug = Bug.id AND
+    (BugTask.importance = 999 OR BugTask.importance = 40)
+    """
+    state = State()
+    clause = storm_compile(storm_clause, state)
+    if len(state.parameters):
+        parameters = [param.get(to_db=True) for param in state.parameters]
+        clause = clause.replace('?', '%s') % sqlvalues(*parameters)
+    return clause
 
 def flush_database_updates():
     """Flushes all pending database updates.

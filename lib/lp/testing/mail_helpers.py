@@ -29,10 +29,12 @@ def pop_notifications(sort_key=None, commit=True):
     if sort_key is None:
         sort_key = operator.itemgetter('To')
 
-    notifications = [
-        email.message_from_string(raw_message)
-        for fromaddr, toaddrs, raw_message in stub.test_emails
-        ]
+    notifications = []
+    for fromaddr, toaddrs, raw_message in stub.test_emails:
+        notification = email.message_from_string(raw_message)
+        notification['X-Envelope-To'] = ', '.join(toaddrs)
+        notification['X-Envelope-From'] = fromaddr
+        notifications.append(notification)
     stub.test_emails = []
 
     return sorted(notifications, key=sort_key)

@@ -33,7 +33,6 @@ class ISpecificationBranch(IHasDateCreated):
     export_as_webservice_entry()
 
     id = Int(title=_("Specification Branch #"))
-
     specification = exported(
         ReferenceChoice(
             title=_("Blueprint"), vocabulary="Specification",
@@ -45,7 +44,6 @@ class ISpecificationBranch(IHasDateCreated):
             vocabulary="Branch",
             required=True,
             schema=IBranch))
-    summary = Summary(title=_("Summary"), required=False)
 
     registrant = exported(
         Reference(

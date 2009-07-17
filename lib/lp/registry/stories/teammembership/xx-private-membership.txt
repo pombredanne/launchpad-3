@@ -68,6 +68,7 @@ overview page or the +assignedbugs page because it has a private membership.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'Other Team']
 
     >>> user_browser.open('http://launchpad.dev/~owner/+assignedbugs')
@@ -76,6 +77,7 @@ overview page or the +assignedbugs page because it has a private membership.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'Other Team']
 
     >>> user_browser.open('http://launchpad.dev/~owner/+teamhierarchy')
@@ -83,6 +85,7 @@ overview page or the +assignedbugs page because it has a private membership.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print extract_text(a_tag)
+    HWDB Team
     Other Team
 
 A member of a team with private membership (MyTeam) can see that team
@@ -93,6 +96,7 @@ on other members' overview or +assignedbugs pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'Other Team']
     [u'My Team']
 
@@ -102,6 +106,7 @@ on other members' overview or +assignedbugs pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'My Team']
     [u'Other Team']
 
@@ -110,6 +115,7 @@ on other members' overview or +assignedbugs pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print extract_text(a_tag)
+    HWDB Team
     My Team
     Other Team
 
@@ -233,6 +239,7 @@ MyTeam as an option in the +mentor form.
     >>> team_select = find_tag_by_id(owner_browser.contents, 'field.team')
     >>> for option in team_select.findAll('option'):
     ...     print option['value']
+    hwdb-team
     otherteam
 
 
@@ -474,45 +481,3 @@ restricted, if the visibility is private-membership.
     ...     print message
     There is 1 error.
     Private teams must have a Restricted subscription policy.
-
-A team cannot have its visibility set to private-membership if it is connected
-to other objects which might allow users to infer the membership.
-
-First, subscribe the team to a bug.
-
-    >>> admin_browser.open('http://launchpad.dev/~otherteam/+edit')
-    >>> admin_browser.getControl('Visibility').value = [
-    ...     'PUBLIC']
-    >>> admin_browser.getControl('Save').click()
-    >>> admin_browser.open(
-    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+addsubscriber')
-    >>> admin_browser.getControl('Person').value = 'otherteam'
-    >>> admin_browser.getControl('Add').click()
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    Other Team team has been subscribed to this bug.
-
-Second, ask a question.
-
-    >>> owner_browser.open(
-    ...     'http://launchpad.dev/firefox/+answer-contact')
-    >>> owner_browser.getControl("Other Team").selected = True
-    >>> owner_browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(owner_browser.contents):
-    ...     print message
-    English was added to Other Team's preferred languages.
-    Other Team has been added as an answer contact for Mozilla Firefox.
-
-Finally, change the visibility to Private Membership which will fail.
-
-    >>> admin_browser.open('http://launchpad.dev/~otherteam/+edit')
-    >>> admin_browser.getControl(name='field.subscriptionpolicy').value = [
-    ...     'RESTRICTED']
-    >>> admin_browser.getControl('Visibility').value = [
-    ...     'PRIVATE_MEMBERSHIP']
-    >>> admin_browser.getControl('Save').click()
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    There is 1 error.
-    This team cannot be converted to Private Membership since it is
-    referenced by a bugsubscription and an answercontact.

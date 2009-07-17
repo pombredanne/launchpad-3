@@ -51,7 +51,7 @@
 <metal:macros fill-slot="bogus">
   <metal:macro define-macro="person">
       <a tal:attributes="href context/person/fmt:url"
-        tal:content="string: ${context/person/browsername}
+        tal:content="string: ${context/person/displayname}
                              (${context/person/name})"></a>
   </metal:macro>
   <metal:macro define-macro="error">
@@ -98,12 +98,12 @@
 
       <div tal:condition="view/isActive">
 
-        <h1>Active member <tal:who replace="context/person/browsername" /></h1>
+        <h1>Active member <tal:who replace="context/person/displayname" /></h1>
 
         <p>
           <metal:person use-macro="template/macros/person" />
           is an <em>Active Member</em> of
-          <span tal:replace="context/team/browsername" />.
+          <span tal:replace="context/team/displayname" />.
         </p>
 
         <form action="" method="POST" name="editactive">
@@ -168,17 +168,17 @@
 
       <div tal:condition="view/isInactive">
 
-        <h1>Inactive member <tal:who replace="context/person/browsername" /></h1>
+        <h1>Inactive member <tal:who replace="context/person/displayname" /></h1>
         <p tal:condition="view/isExpired">
           <metal:person use-macro="template/macros/person" />
           is an <em>Expired Member</em> of
-          <span tal:replace="context/team/browsername" />.
+          <span tal:replace="context/team/displayname" />.
         </p>
 
         <p tal:condition="view/isDeactivated">
           <metal:person use-macro="template/macros/person" />
           is a <em>Deactivated Member</em> of
-          <span tal:replace="context/team/browsername" />.
+          <span tal:replace="context/team/displayname" />.
         </p>
 
         <form action="" method="POST" name="editinactive">
@@ -253,7 +253,7 @@
 
       <div tal:condition="view/isProposed">
 
-        <h1>Proposed member <tal:who replace="context/person/browsername" /></h1>
+        <h1>Proposed member <tal:who replace="context/person/displayname" /></h1>
         <p>
           <metal:person use-macro="template/macros/person" />
           wants to join this team.
@@ -301,7 +301,7 @@
 
       <div tal:condition="view/isDeclined">
 
-        <h1>Declined member <tal:who replace="context/person/browsername"
+        <h1>Declined member <tal:who replace="context/person/displayname"
         /></h1>
         <p>
           <metal:person use-macro="template/macros/person" />

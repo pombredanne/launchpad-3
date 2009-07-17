@@ -1,4 +1,5 @@
-= IBranchSetAPI =
+IBranchSetAPI
+=============
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime
@@ -10,7 +11,8 @@
     ...     transport=XMLRPCTestTransport())
 
 
-== register_branch ==
+register_branch
+===============
 
 register_branch(branch_url, branch_name, branch_title,
                 branch_description, author_email, product_name,
@@ -268,44 +270,31 @@ Crazy unicode characters are also invalid:
     Fault: <Fault 260: u"Invalid branch name '\xe9'. Branch names must ...
 
 
-== link_branch_to_bug(branch_url, bug_id, whiteboard) ==
+link_branch_to_bug(branch_url, bug_id)
+======================================
 
 link_branch_to_bug() associates a branch with a bug. Let's associate
 the branch we registered with bug 1. If the link is successful, the bug
 URL is returned.
 
-    >>> branchset_api.link_branch_to_bug(other_branch_url, '1', '')
+    >>> branchset_api.link_branch_to_bug(other_branch_url, '1')
     'http://bugs.launchpad.dev/bugs/1'
 
 Let's take a look to see that the branch actually got linked to the bug:
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
-    >>> for bug_branch in bug_one.bug_branches:
-    ...     print "%s, %s, %s" % (
-    ...         bug_branch.branch.url, bug_branch.status.title,
-    ...         bug_branch.whiteboard)
-    http://foo.com/other_branch, Fix In Progress, None
-
-We can set the whiteboard:
-
-    >>> branchset_api.link_branch_to_bug(
-    ...     branch_url, 1, "i'm working on it today.")
-    'http://bugs.launchpad.dev/bugs/1'
-    >>> for bug_branch in bug_one.bug_branches:
-    ...     print "%s, %s, %s" % (
-    ...         bug_branch.branch.url, bug_branch.status.title,
-    ...         bug_branch.whiteboard)
-    http://foo.com/other_branch, Fix In Progress, None
-    http://foo.com/branch, Fix In Progress, i'm working on it today.
+    >>> for bug_branch in bug_one.linked_branches:
+    ...     print bug_branch.branch.url
+    http://foo.com/other_branch
 
 We get an error if we try to specify a non-existant branch or bug:
 
-    >>> branchset_api.link_branch_to_bug('http://foo.com/unknown', '1', '')
+    >>> branchset_api.link_branch_to_bug('http://foo.com/unknown', '1')
     Traceback (most recent call last):
     ...
     Fault: <Fault 30: 'No such branch: http://foo.com/unknown'>
-    >>> branchset_api.link_branch_to_bug(branch_url, '99', '')
+    >>> branchset_api.link_branch_to_bug(branch_url, '99')
     Traceback (most recent call last):
     ...
     Fault: <Fault 40: 'No such bug: 99'>
@@ -350,7 +339,8 @@ The URLs that are likely to be faster or provide write access appear
 earlier in the list.
 
 
-=== lp:project ===
+lp:project
+==========
 
 If you specify a path with a single segment, then Launchpad treats that
 path as the name of a project, and returns URLs to the branch
@@ -380,7 +370,8 @@ Launchpad also returns a fault if the project doesn't exist.
     Fault: <Fault 10: 'No such project: doesntexist'>
 
 
-=== lp:project/series ===
+lp:project/series
+=================
 
 If you specify a path with two segments, Launchpad treats that as a
 reference to a particular series on a project.
@@ -408,7 +399,8 @@ Similarly if the project doesn't exist:
     Fault: <Fault 10: 'No such project: doesntexist'>
 
 
-=== lp:~owner/product/branch ===
+lp:~owner/product/branch
+========================
 
 Anything longer than two segments is treated as a unique branch name
 followed by an arbitrary path:
@@ -442,7 +434,8 @@ But if the project or the user doesn't exist, Launchpad will return a fault:
     Fault: <Fault 10: 'No such project: doesntexist'>
 
 
-=== Remote branches ===
+Remote branches
+===============
 
 Some branches on Launchpad are 'remote' branches. These branches are
 not hosted on Launchpad and are only available (if at all) on remote

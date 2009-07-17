@@ -75,12 +75,14 @@ class TestBranchRewriter(TestCase):
             output)
 
     def test_translateLine_not_found(self):
-        # If the branch behind a request is not foudn, rewriteLine returns
-        # "NULL", the way of saying "I don't know how to rewrite this" to
-        # Apache.
+        # If the request does not map to a branch, we redirect it to
+        # codebrowse as it can generate a 404.
         rewriter = self.makeRewriter()
-        output = rewriter.rewriteLine("/~nouser/noproduct/nobranch/changes")
-        self.assertEqual("NULL", output)
+        not_found_path = "/~nouser/noproduct"
+        output = rewriter.rewriteLine(not_found_path)
+        self.assertEqual(
+            'http://localhost:8080%s' % not_found_path,
+            output)
 
 
 class TestBranchRewriterScript(TestCaseWithFactory):

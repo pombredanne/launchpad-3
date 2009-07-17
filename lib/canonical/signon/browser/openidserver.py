@@ -44,14 +44,15 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
+from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from canonical.signon.interfaces.openidserver import (
     ILoginServiceAuthorizeForm, ILoginServiceLoginForm,
-    IOpenIDAuthorizationSet, IOpenIDRPConfigSet, IOpenIDRPSummarySet)
+    IOpenIDAuthorizationSet, IOpenIDRPSummarySet)
 from canonical.signon.interfaces.openidstore import IProviderOpenIDStore
 from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
-    action, custom_widget, LaunchpadFormView, LaunchpadView)
+    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
@@ -367,13 +368,13 @@ class OpenIDMixin:
 
         self.checkTeamMembership(response)
 
-        # XXX flacoste 2008-11-13 bug=297816
-        # Add auth_time information. We need a newer version
-        # of python-openid to use this.
-        # last_login = self._getLoginTime()
-        #pape_response = pape.Response(
-        #    auth_time=last_login.strftime('%Y-%m-%dT%H:%M:%SZ'))
-        #response.addExtension(pape_response)
+        # If they use PAPE, let them know of the last logged in time.
+        pape_request = pape.Request.fromOpenIDRequest(self.openid_request)
+        if pape_request:
+            last_login = self._getLoginTime()
+            pape_response = pape.Response(
+                auth_time=last_login.strftime('%Y-%m-%dT%H:%M:%SZ'))
+            response.addExtension(pape_response)
 
         rp_summary_set = getUtility(IOpenIDRPSummarySet)
         rp_summary_set.record(self.account, self.openid_request.trust_root)
@@ -658,10 +659,29 @@ class LoginServiceMixinLoginView:
                     "change it.",
                     mapping=dict(email=cgi.escape(email))))
             else:
-                # This is either an email address we've never seen or it's
-                # associated with an unvalidated profile, so we just move
-                # on with the registration process as if we had never seen it.
-                pass
+                person = getUtility(IPersonSet).getByEmail(email)
+                if person is not None:
+                    # This is an email address that's associated with an 
+                    # unvalidated profile, so we must ask the user to validate
+                    # it as we can't do it from here -- we can't write to the
+                    # Person table.
+                    mapping = dict(
+                        email=cgi.escape(email), 
+                        person_url=canonical_url(person, rootsite='mainsite'),
+                        claim_url=canonical_url(
+                            person, view_name='+claim', rootsite='mainsite'),
+                        person_name=cgi.escape(person.displayname))
+                    self.addError(structured(_(
+                        'The email address ${email} is already associated '
+                        'with the Launchpad profile of '
+                        '<a href="${person_url}">${person_name}</a>. '
+                        'You can either <a href="${claim_url}">claim that '
+                        'profile</a> and use it to log in or register with a '
+                        'different email address.', mapping=mapping)))
+                else:
+                    # This email address is not registered, so we can move on
+                    # with the registration.
+                    pass
         else:
             raise UnexpectedFormData("Unknown action")
 

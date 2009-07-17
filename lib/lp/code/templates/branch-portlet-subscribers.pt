@@ -52,9 +52,10 @@
       <div
         tal:define="link context_menu/subscription"
         tal:condition="link/enabled"
+        id="selfsubscriptioncontainer"
         >
         <a id="selfsubscription"
-           class="bg-image add"
+           class="sprite add"
            tal:attributes="href link/url"
            tal:content="link/text" />
       </div>
@@ -81,7 +82,7 @@
     string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
     <!--
 
-    YUI().use('io-base', 'node', function(Y) {
+    YUI().use('io-base', 'node', 'code.branchsubscription', function(Y) {
 
     if(Y.UA.ie) {
         Y.get('#subscriber-list').set('innerHTML',
@@ -90,29 +91,8 @@
     }
 
     Y.on('domready', function() {
-        update_subscriber_list();
+        Y.code.branchsubscription.update_subscriber_list();
     });
-
-    /*
-     * Update the subscriber list via Ajax.
-     */
-    function update_subscriber_list() {
-
-        Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
-        Y.io('+branch-portlet-subscriber-content', {
-            on: {
-                complete: function(id, response) {
-                    Y.get('#subscribers-portlet-spinner').setStyle(
-                        'display', 'none');
-                    Y.get('#subscriber-list').set(
-                        'innerHTML', response.responseText);
-
-                    var element = Y.get('.menu-link-subscription');
-                    if (element.get('innerHTML') == 'Edit your subscription') {
-                        element.setStyle('display', 'none');
-                    }
-                }}});
-    }
 
     });
     -->

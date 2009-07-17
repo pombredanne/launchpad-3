@@ -24,7 +24,7 @@ from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 
 
 def valid_fingerprint(fingerprint):

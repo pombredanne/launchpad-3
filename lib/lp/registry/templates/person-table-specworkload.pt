@@ -9,7 +9,7 @@
   omit-tag="">
 
 <p tal:condition="not: view/workload">
-  <i><span tal:replace="context/browsername">James Blackwell</span> is not
+  <i><span tal:replace="context/displayname">James Blackwell</span> is not
   currently responsible for any specifications that meet your criteria.</i>
 </p>
 

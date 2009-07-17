@@ -39,7 +39,7 @@
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+resetpassword"
         permission="zope.Public"
-        class="canonical.launchpad.browser.logintoken.ResetPersonPasswordView"
+        class="canonical.launchpad.browser.logintoken.ResetPasswordView"
         template="../templates/logintoken-resetpassword.pt"
         />
 

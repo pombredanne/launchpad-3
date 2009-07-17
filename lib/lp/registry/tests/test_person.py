@@ -8,6 +8,7 @@ from datetime import datetime
 import pytz
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
@@ -24,12 +25,13 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import (
     AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscription)
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import create_initialized_view
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
-
 
 class TestPerson(TestCaseWithFactory):
 
@@ -142,6 +144,19 @@ class TestPerson(TestCaseWithFactory):
                 str(exc),
                 'This team cannot be converted to Private Membership since '
                 'it is referenced by an announcement.')
+
+    def test_visibility_validator_caching(self):
+        # The method Person.visibilityConsistencyWarning can be called twice
+        # when editing a team.  The first is part of the form validator.  It
+        # is then called again as part of the database validator.  The test
+        # can be expensive so the value is cached so that the queries are
+        # needlessly run.
+        fake_warning = 'Warning!  Warning!'
+        naked_team = removeSecurityProxy(self.otherteam)
+        naked_team._visibility_warning_cache = fake_warning
+        warning = self.otherteam.visibilityConsistencyWarning(
+            PersonVisibility.PRIVATE_MEMBERSHIP)
+        self.assertEqual(fake_warning, warning)
 
     def test_visibility_validator_answer_contact(self):
         answer_contact = AnswerContact(
@@ -345,6 +360,15 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(len(view.request.notifications), 1)
         self.assertEqual(view.request.notifications[0].message,
                          'A private team cannot change visibility.')
+
+    def test_visibility_validator_team_ss_prod_pub_to_private(self):
+        # A PUBLIC team with a structural subscription to a product can
+        # convert to a PRIVATE team.
+        foo_bar = Person.byName('name16')
+        sub = StructuralSubscription(
+            product=self.bzr, subscriber=self.otherteam,
+            subscribed_by=foo_bar)
+        self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_private_to_public(self):
         # A PRIVATE team cannot convert to PUBLIC.

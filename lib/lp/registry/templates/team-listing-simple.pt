@@ -9,12 +9,9 @@
   omit-tag="">
 
 <tr>
-  <td><img src="/@@/team"
-           tal:replace="structure context/image:icon" /></td>
-  <td>
+  <td colspan="2">
     <a
-      tal:attributes="href context/fmt:url"
-      tal:content="context/browsername"
+      tal:replace="structure context/fmt:link"
     >Team name</a>
   </td>
 </tr>

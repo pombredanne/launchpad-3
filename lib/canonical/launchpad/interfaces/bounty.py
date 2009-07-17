@@ -24,7 +24,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, PublicPersonChoice
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 
 
 class BountyDifficulty(DBEnumeratedType):

@@ -32,7 +32,7 @@ echo -n "Running germinate... "
 cd $GERMINATEROOT
 
 # Clean up temporary files
-rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MOBILE-* MYTHBUNTU-*
+rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MOBILE-* MYTHBUNTU-* UNR-*
 rm -f all_* all.sources_*
 
 # Grab a local copy of Sources files
@@ -41,7 +41,7 @@ for component in main universe restricted; do
 done
 
 > "$MISCROOT/more-extra.override.$suite.main.new"
-for distro in ubuntu kubuntu edubuntu xubuntu mobile mythbuntu; do
+for distro in ubuntu kubuntu edubuntu xubuntu mobile mythbuntu unr; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
   germinate_components=main,universe,restricted
@@ -88,7 +88,10 @@ for distro in ubuntu kubuntu edubuntu xubuntu mobile mythbuntu; do
       if ! grep -iq '^Task-' "$seed.seedtext"; then
 	continue
       fi
-      if grep -iq '^Task-Per-Derivative:' "$seed.seedtext"; then
+      # If the seed contains Task-Name header, override the normal behavior
+      if grep -iq '^Task-Name:' "$seed.seedtext"; then
+	task=$(grep '^Task-Name:' "$seed.seedtext" | cut -d: -f2)
+      elif grep -iq '^Task-Per-Derivative:' "$seed.seedtext"; then
 	task="$distro-$seed"
       else
 	# If a seed is not per-derivative, then we only honour it for Ubuntu,

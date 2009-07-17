@@ -42,8 +42,6 @@
         preferred languages</a> to modify the list of languages available
         for writing the question.
       </p>
-      <metal:unsupported_languages_warning
-        use-macro="view/unsupported_languages_warning" />
     </metal:extra_info>
   </div>
 

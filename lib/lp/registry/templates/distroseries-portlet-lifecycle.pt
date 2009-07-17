@@ -16,7 +16,7 @@
           <td>
             <a
               tal:attributes="href context/owner/fmt:url"
-              tal:content="context/owner/browsername"
+              tal:content="context/owner/displayname"
             />
           </td>
         </tr>

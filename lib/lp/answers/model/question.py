@@ -90,7 +90,8 @@ class notify_question_modified:
 
             edited_fields = ['messages']
             for field in ['status', 'date_solved', 'answerer', 'answer',
-                          'datelastquery', 'datelastresponse', 'target']:
+                          'datelastquery', 'datelastresponse', 'target',
+                          'assignee']:
                 if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
 
@@ -913,11 +914,15 @@ class QuestionSearch:
         query = ''
         constraints = self.getConstraints()
         if constraints:
-            query += (
-                'Question.id IN ('
-                    'SELECT Question.id FROM Question %s WHERE %s)' % (
-                        '\n'.join(self.getTableJoins()),
-                        ' AND '.join(constraints)))
+            joins = self.getTableJoins()
+            if len(joins) > 0:
+                # Make a slower query to accommodate the joins.
+                query += (
+                    'Question.id IN ('
+                        'SELECT Question.id FROM Question %s WHERE %s)' % (
+                            '\n'.join(joins), ' AND '.join(constraints)))
+            else:
+                query += ' AND '.join(constraints)
         return Question.select(
             query, prejoins=self.getPrejoins(),
             prejoinClauseTables=self.getPrejoinClauseTables(),

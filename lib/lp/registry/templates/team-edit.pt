@@ -19,7 +19,7 @@
     tal:define="overview_menu context/menu:overview">
 
     <h1>
-      Edit &#8220;<span tal:replace="context/browsername">
+      Edit &#8220;<span tal:replace="context/displayname">
       Foo</span>&#8221; team
     </h1>
 

@@ -26,7 +26,7 @@
     </tal:memberships>
 
     <p tal:condition="not: memberships">
-      <tal:name replace="context/browsername">Foo Bar</tal:name> is not an
+      <tal:name replace="context/displayname">Foo Bar</tal:name> is not an
       active member of any Launchpad teams.
     </p>
   </div>

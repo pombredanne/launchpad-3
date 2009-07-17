@@ -16,7 +16,7 @@
         <th>Registered by:</th>
         <td>
           <a
-            tal:content="context/registrant/browsername"
+            tal:content="context/registrant/displayname"
             tal:attributes="href context/registrant/fmt:url"
           >Foo Bar</a>
         </td>

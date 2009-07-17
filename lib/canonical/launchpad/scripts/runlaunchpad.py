@@ -94,9 +94,9 @@ class TacFile(Service):
             "--logfile", logfile,
             ]
 
-        # We want to make sure that the Launchpad process will have the benefit
-        # of all of the dependency paths inserted by the buildout bin/run
-        # script. We pass them via PYTHONPATH.
+        # We want to make sure that the Launchpad process will have the 
+        # benefit # of all of the dependency paths inserted by the buildout 
+        # bin/run script. We pass them via PYTHONPATH.
         env = dict(os.environ)
         env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
 
@@ -229,8 +229,20 @@ def split_out_runlaunchpad_arguments(args):
         return args[1].split(','), args[2:]
     return [], args
 
-def process_config_file_argument(args):
-    """Add the default -C argument based on the value of LPCONFIG."""
+
+def process_config_arguments(args):
+    """Process the arguments related to the config.
+
+    -i  Will set the instance name aka LPCONFIG env.
+
+    If there is no ZConfig file passed, one will add to the argument
+    based on the selected instance.
+    """
+    if '-i' in args:
+        index = args.index('-i')
+        config.setInstance(args[index+1])
+        del args[index:index+2]
+
     if '-C' not in args:
         zope_config_file = config.zope_config_file
         if not os.path.isfile(zope_config_file):
@@ -243,12 +255,12 @@ def process_config_file_argument(args):
 
 def start_launchpad(argv=list(sys.argv)):
     global TWISTD_SCRIPT
-    TWISTD_SCRIPT = make_abspath('sourcecode/twisted/bin/twistd')
+    TWISTD_SCRIPT = make_abspath('bin/twistd')
 
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
-    argv = process_config_file_argument(argv)
+    argv = process_config_arguments(argv)
     services = get_services_to_run(services)
     for service in services:
         service.launch()
@@ -258,4 +270,8 @@ def start_launchpad(argv=list(sys.argv)):
 
     # Create a new compressed +style-slimmer.css from style.css in +icing.
     make_css_slimmer()
+
+    # Create the ZCML override file based on the instance.
+    config.generate_overrides()
+
     main(argv)

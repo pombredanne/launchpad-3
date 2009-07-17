@@ -25,6 +25,17 @@
                                   value option/value"
                   tal:content="option/name" />
           </select>
+          <tal:arch_selector condition="view/show_arch_selector">
+          for
+          <select id="arch_tag" name="arch_tag" size="1">
+            <option tal:repeat="option view/architecture_options"
+                    tal:attributes="selected option/selected;
+                                    value option/value"
+                    tal:content="option/name">
+              i386
+            </option>
+          </select>
+          </tal:arch_selector>
           <input type="submit" value="Update" />
      </form>
     </div>

@@ -52,6 +52,12 @@
     />
 
   <utility
+    name="AdminMergeablePerson"
+    component="lp.registry.vocabularies.AdminMergeablePersonVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    />
+
+  <utility
     name="PersonAccountToMerge"
     component="lp.registry.vocabularies.PersonAccountToMergeVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"

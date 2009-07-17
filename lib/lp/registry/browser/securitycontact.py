@@ -43,7 +43,7 @@ class SecurityContactEditView(LaunchpadFormView):
                 # so it must be a team.
                 assert security_contact.isTeam(), (
                     "Expected security contact with no email address to be a team.")
-                security_contact_display_value = security_contact.browsername
+                security_contact_display_value = security_contact.displayname
 
             self.request.response.addNotification(
                 "Successfully changed the security contact to %s" %

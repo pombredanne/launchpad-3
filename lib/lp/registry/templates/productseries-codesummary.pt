@@ -72,7 +72,7 @@
   <p>The following branch has been registered as the mainline branch
   for this release series:</p>
 
-  <ul class="branch" id="branch-details"
+  <ul id="branch-details"
       tal:content="structure context/branch/@@+product-summary-listing" />
 </tal:block>
 

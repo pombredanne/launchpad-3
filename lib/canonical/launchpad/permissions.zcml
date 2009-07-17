@@ -37,8 +37,13 @@
     id="launchpad.Admin" title="Administer something" access_level="write" />
 
   <permission
-    id="launchpad.Commercial" 
-    title="Administer something related to commercial offering." 
+    id="launchpad.Commercial"
+    title="Administer something related to commercial offering."
+    access_level="write" />
+
+  <permission
+    id="launchpad.ProjectReview"
+    title="Review Launchpad projects"
     access_level="write" />
 
   <!-- There are some translation-related fields that need to be set
@@ -64,7 +69,7 @@
        establish roles. If this works we should consider a parallel "roles"
        system that is similar to the permissions system, or just extending
        our permissions vocabulary to include these roles. -->
-  <permission 
+  <permission
     id="launchpad.Driver"
     title="The role of deciding what bug fixes and features should be goals
            for a series or release."

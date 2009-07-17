@@ -19,13 +19,14 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import List, Object, Text
+from zope.schema import Bool, Choice, List, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Tag
 from lp.bugs.interfaces.bugtask import (
     BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from lp.registry.interfaces.person import IPerson
+from lazr.enum import DBEnumeratedType
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
@@ -89,7 +90,75 @@ class IHasBugs(Interface):
         milestone=copy_field(IBugTaskSearch['milestone']),
         component=copy_field(IBugTaskSearch['component']),
         nominated_for=Reference(schema=Interface),
-        has_no_package=copy_field(IBugTaskSearch['has_no_package']))
+        has_no_package=copy_field(IBugTaskSearch['has_no_package']),
+        hardware_bus=Choice(
+            title=u'The bus of a hardware device related to a bug',
+            # The vocabulary should be HWBus; this is fixed in
+            # _schema_circular_imports to avoid circular imports.
+            vocabulary=DBEnumeratedType, required=False),
+        hardware_vendor_id=TextLine(
+            title=(
+                u"The vendor ID of a hardware device related to a bug."),
+            description=(
+                u"Allowed values of the vendor ID depend on the bus of the "
+                "device.\n\n"
+                "Vendor IDs of PCI, PCCard and USB devices are hexadecimal "
+                "string representations of 16 bit integers in the format "
+                "'0x01ab': The prefix '0x', followed by exactly 4 digits; "
+                "where a digit is one of the characters 0..9, a..f. The "
+                "characters A..F are not allowed.\n\n"
+                "SCSI vendor IDs are strings with exactly 8 characters. "
+                "Shorter names are right-padded with space (0x20) characters."
+                "\n\n"
+                "IDs for other buses may be arbitrary strings."),
+            required=False),
+        hardware_product_id=TextLine(
+            title=(
+                u"The product ID of a hardware device related to a bug."),
+            description=(
+                u"Allowed values of the product ID depend on the bus of the "
+                "device.\n\n"
+                "Product IDs of PCI, PCCard and USB devices are hexadecimal "
+                "string representations of 16 bit integers in the format "
+                "'0x01ab': The prefix '0x', followed by exactly 4 digits; "
+                "where a digit is one of the characters 0..9, a..f. The "
+                "characters A..F are not allowed.\n\n"
+                "SCSI product IDs are strings with exactly 16 characters. "
+                "Shorter names are right-padded with space (0x20) characters."
+                "\n\n"
+                "IDs for other buses may be arbitrary strings."),
+            required=False),
+        hardware_driver_name=TextLine(
+            title=(
+                u"The driver controlling a hardware device related to a "
+                "bug."),
+            required=False),
+        hardware_driver_package_name=TextLine(
+            title=(
+                u"The package of the driver which controls a hardware "
+                "device related to a bug."),
+            required=False),
+        hardware_owner_is_bug_reporter=Bool(
+            title=(
+                u"Search for bugs reported by people who own the given "
+                "device or who use the given hardware driver."),
+            required=False),
+        hardware_owner_is_affected_by_bug=Bool(
+            title=(
+                u"Search for bugs where people affected by a bug own the "
+                "given device or use the given hardware driver."),
+            required=False),
+        hardware_owner_is_subscribed_to_bug=Bool(
+            title=(
+                u"Search for bugs where a bug subscriber owns the "
+                "given device or uses the given hardware driver."),
+            required=False),
+        hardware_is_linked_to_bug=Bool(
+            title=(
+                u"Search for bugs which are linked to hardware reports "
+                "wich contain the given device or whcih contain a device"
+                "contolled by the given driver."),
+            required=False))
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
     def searchTasks(search_params, user=None,
@@ -103,7 +172,14 @@ class IHasBugs(Interface):
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    sourcepackagename=None, has_no_package=None):
+                    sourcepackagename=None, has_no_package=None,
+                    hardware_bus=None, hardware_vendor_id=None,
+                    hardware_product_id=None, hardware_driver_name=None,
+                    hardware_driver_package_name=None,
+                    hardware_owner_is_bug_reporter=None,
+                    hardware_owner_is_affected_by_bug=False,
+                    hardware_owner_is_subscribed_to_bug=False,
+                    hardware_is_linked_to_bug=False):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -112,6 +188,14 @@ class IHasBugs(Interface):
 
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
+
+        In order to search bugs that are related to a given hardware
+        device, you must specify the bus, the vendor ID, the product
+        ID of the device and set at least one of
+        hardware_owner_is_bug_reporter,
+        hardware_owner_is_affected_by_bug,
+        hardware_owner_is_subscribed_to_bug,
+        hardware_is_linked_to_bug to True.
         """
 
     def getUsedBugTags():

@@ -7,85 +7,82 @@
 # sure all source dependencies are properly linked in to all the branches you
 # are working on.
 
-here=`pwd`
+# Stop if there's an error, and treat unset variables as errors.
+set -eu
 
-source "$HOME/.rocketfuel-env.sh"
-if [ "$?" != 0 ]; then
-    echo "Please run rocketfuel-setup first."
+# Helper function to run a child process, indenting stdout to aid
+# readability.
+run-child() {
+    "$@" | sed -e "s/^/        /"
+}
+
+# Load local settings.
+if [ -e "$HOME/.rocketfuel-env.sh" ]
+then
+    source "$HOME/.rocketfuel-env.sh"
+else
+    echo "Please run rocketfuel-setup first." >&2
     exit 1
 fi
 
-LP_DOWNLOAD_CACHE_PATH=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/download-cache
-LP_EGGS_PATH=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs
-LP_DOWNLOAD_CACHE_PATH=$(eval echo ${LP_DOWNLOAD_CACHE_PATH})
-LP_EGGS_PATH=$(eval echo ${LP_EGGS_PATH})
+LP_DOWNLOAD_CACHE_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/download-cache"
+LP_EGGS_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs"
+LP_DOWNLOAD_CACHE_PATH="$(eval echo ${LP_DOWNLOAD_CACHE_PATH})"
+LP_EGGS_PATH="$(eval echo ${LP_EGGS_PATH})"
 
-# Pull launchpad devel from launchpad
-cd $LP_TRUNK_PATH
-INITIAL_REV=$(bzr revno)
-bzr pull
-FINAL_REV=$(bzr revno)
+# Pull launchpad devel from launchpad.
+INITIAL_REV=$(bzr revno "$LP_TRUNK_PATH")
+bzr pull -d "$LP_TRUNK_PATH"
+FINAL_REV=$(bzr revno "$LP_TRUNK_PATH")
 
-# Make sure our directories are around
-if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
-if [ ! -d $LP_EGGS_PATH ]; then mkdir -p $LP_EGGS_PATH; fi
+# Make sure our directories are around.
+mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH"
 
-# Get/update the download cache
-if [ ! -d $LP_DOWNLOAD_CACHE_PATH ]
-    then bzr co lp:lp-source-dependencies $LP_DOWNLOAD_CACHE_PATH
+# Get/update the download cache.
+if [ -d "$LP_DOWNLOAD_CACHE_PATH" ]
+then
+    bzr up "$LP_DOWNLOAD_CACHE_PATH"
+else
+    bzr co lp:lp-source-dependencies "$LP_DOWNLOAD_CACHE_PATH"
 fi
-bzr up $LP_DOWNLOAD_CACHE_PATH
-
-# Create the source dependencies dir if this is the first time.
-if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
 
 # Add or update sourcepackages.
-local_deps="$here/"`dirname $0`'/sourcedeps.conf'
-if [ -e $local_deps ]
+sourcedeps_conf="$(dirname "$0")/sourcedeps.conf"
+if [ ! -e "$sourcedeps_conf" ]
 then
-    # Load the local deps, which the developer may be developing.
-    source $local_deps
-else
-    # Load the global deps which are stable.
-    echo could not find $local_deps
-    source $LP_TRUNK_PATH/utilities/sourcedeps.conf
+    # Use the global deps which are stable.
+    echo "Could not find $sourcedeps_conf" >&2
+    sourcedeps_conf="$LP_TRUNK_PATH/utilities/sourcedeps.conf"
 fi
 
 echo "Updating sourcecode dependencies in rocketfuel:"
 echo "    Sourcedeps: $LP_SOURCEDEPS_PATH"
-package_pattern="s,.*/\([^/]*\)/[^/]*/,\1,;"
-for dep in $sourcedeps
+while IFS="=" read package branch
 do
-    package=`echo $dep | cut -d= -f1`
-    branch=`echo $dep | cut -d= -f2`
     package_path="$LP_SOURCEDEPS_PATH/$package"
     echo "    Checking $package_path"
-    if [ -d $package_path ]
+    if [ -d "$package_path" ]
     then
-        cd $package_path
-        bzr pull --remember $branch | sed -e 's,.*,        \0,'
+        run-child bzr pull --remember "$branch" --directory "$package_path"
     else
-        cd $LP_SOURCEDEPS_PATH
-        bzr branch $branch $package | sed -e 's,.*,        \0,'
+        run-child bzr branch --standalone "$branch" "$package_path"
     fi
-done
+done < "$sourcedeps_conf"
 
 # Update the current trees in the repo.
 echo "Updating sourcecode dependencies in current local branches:"
-cd $LP_PROJECT_PATH
-for branch in *; do
-  if [ -d $branch/sourcecode ]
-  then
-    echo "    ${branch}"
-    $LP_TRUNK_NAME/utilities/link-external-sourcecode \
-        --target=$branch --parent=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR | \
-        sed -e 's,.*,        \0,'
-  fi
+for branch in "$LP_PROJECT_PATH"/*
+do
+    if [ -d "$branch/sourcecode" ]
+    then
+        echo "    ${branch}"
+        run-child "$LP_TRUNK_PATH/utilities/link-external-sourcecode" \
+            --parent="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR" --target="$branch"
+    fi
 done
 
-# Build launchpad if there were changes
+# Build launchpad if there were changes.
 if [ $FINAL_REV != $INITIAL_REV ];
 then
-    cd $LP_TRUNK_NAME
-    make
+    make -C "$LP_TRUNK_PATH"
 fi

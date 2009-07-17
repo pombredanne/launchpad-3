@@ -10,7 +10,7 @@
 import _pythonpath
 
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.verify_pofile_stats import (
+from lp.translations.scripts.verify_pofile_stats import (
     VerifyPOFileStatsProcess)
 
 

@@ -98,14 +98,14 @@ def sane_version(version):
     >>> sane_version('uncle sam')
     False
     >>> sane_version('uncle_sam')
-    False
+    True
     >>> sane_version('uncle-sam')
     True
     '''
     import re
     if re.search("""^(?ix)
         [0-9a-z]
-        ( [0-9a-z] | [0-9a-z.-]*[0-9a-z] )*
+        ( [0-9a-z] | [0-9a-z._-]*[0-9a-z] )*
         $""", version):
         return True
     return False

@@ -50,7 +50,7 @@ warned_database_imports = text_lines_to_set("""
     canonical.launchpad.scripts.gina.handlers
     canonical.launchpad.browser.distroseries
     canonical.launchpad.scripts.builddmaster
-    canonical.launchpad.scripts.po_import
+    lp.translations.scripts.po_import
     canonical.launchpad.systemhomes
     canonical.rosetta
     """)

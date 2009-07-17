@@ -21,7 +21,9 @@ from zope.schema import Bool, Choice, Datetime, Int
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import (
+    ParticipatingPersonChoice, PublicPersonChoice)
+
 
 class BugNotificationLevel(DBEnumeratedType):
     """Bug Notification Level.
@@ -93,7 +95,7 @@ class IStructuralSubscription(Interface):
         title=_('Distribution series'), required=False, readonly=True)
     sourcepackagename = Int(
         title=_('Source package name'), required=False, readonly=True)
-    subscriber = PublicPersonChoice(
+    subscriber = ParticipatingPersonChoice(
         title=_('Subscriber'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person subscribed."))
     subscribed_by = PublicPersonChoice(

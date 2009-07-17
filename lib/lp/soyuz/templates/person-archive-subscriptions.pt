@@ -1,0 +1,70 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+  >
+<body>
+  <div metal:fill-slot="main">
+
+    <h1 tal:content="CONTEXTS/fmt:pagetitle">
+      Private PPA access
+    </h1>
+  <tal:has_subscriptions condition="view/subscriptions_with_tokens">
+    <div id="current_subscriptions">
+      <p>Here's a list of all the private archives to which you have
+         been granted access.
+      </p>
+      <table summary="CONTEXTS/fmt:pagetitle" id="archive-subscriptions"
+        class="listing">
+        <thead>
+          <tr class="archive-subscription-row">
+            <th>Archive</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="subscription_with_token view/subscriptions_with_tokens"
+              class="archive-subscription-row">
+            <tal:subscription_and_token
+                define="subscription subscription_with_token/subscription;
+                        token subscription_with_token/token">
+            <td tal:content="subscription/archive/displayname"
+                class="ppa_display_name">Private PPA for Celso
+            </td>
+            <td>
+              <tal:active condition="token">
+                <a tal:attributes="href subscription/fmt:url" class="info">
+                  View
+                </a>
+              </tal:active>
+              <tal:pending condition="not: token">
+                <form method="post" class="archive-subscription-activation"
+                      tal:attributes="action subscription/fmt:url">
+                  <button type="submit" name="activate" value="1">
+                    View
+                  </button>
+                </form>
+              </tal:pending>
+            </td>
+            </tal:subscription_and_token>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </tal:has_subscriptions>
+  <tal:has_no_subscriptions condition="not: view/subscriptions_with_tokens">
+    <p>You do not have any current subscriptions to private archives.
+    </p>
+  </tal:has_no_subscriptions>
+  </div>
+</body>
+</html>

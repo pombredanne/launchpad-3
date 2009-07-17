@@ -116,6 +116,14 @@
       provides="lp.code.interfaces.branchcollection.IAllBranches">
     <allow interface="lp.code.interfaces.branchcollection.IAllBranches"/>
   </securedutility>
+  <class class="lp.code.model.revisioncache.GenericRevisionCollection">
+    <allow interface="lp.code.interfaces.revisioncache.IRevisionCollection"/>
+  </class>
+  <securedutility
+      class="lp.code.model.revisioncache.GenericRevisionCollection"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache">
+    <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
+  </securedutility>
   <securedutility
       class="lp.code.model.branchpuller.BranchPuller"
       provides="lp.code.interfaces.branchpuller.IBranchPuller">
@@ -188,6 +196,7 @@
         set_attributes="whiteboard merged_revno commit_message                                                                                                 root_message_id review_diff"
         attributes="
                     deleteProposal
+                    setStatus
                     setAsWorkInProgress
                     requestReview
                     approveBranch
@@ -355,8 +364,12 @@
                     revision_count
                     warehouse_url
                     bug_branches
-                    related_bugs
+                    linked_bugs
+                    linkBug
+                    unlinkBug
                     spec_links
+                    linkSpecification
+                    unlinkSpecification
                     revision_history
                     subscriptions
                     subscribers
@@ -375,6 +388,7 @@
                     canBeDeleted
                     deletionRequirements
                     associatedProductSeries
+                    associatedSuiteSourcePackages
                     subscribe
                     getSubscription
                     hasSubscription
@@ -410,6 +424,7 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
+                    getUpgradeFormat
                     isBranchMergeable
                     "/>
     <require
@@ -497,6 +512,7 @@
       provides="lp.code.interfaces.branch.IBranchCloud">
     <allow interface="lp.code.interfaces.branch.IBranchCloud"/>
   </securedutility>
+
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
@@ -606,6 +622,10 @@
     <allow interface="lp.code.interfaces.branchjob.IRosettaUploadJob"/>
     <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
   </class>
+  <class class="lp.code.model.branchjob.ReclaimBranchSpaceJob">
+    <allow interface="lp.code.interfaces.branchjob.IReclaimBranchSpaceJob"/>
+    <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
+  </class>
   <securedutility
       component="lp.code.model.branchjob.BranchDiffJob"
       provides="lp.code.interfaces.branchjob.IBranchDiffJobSource">
@@ -626,37 +646,44 @@
       provides="lp.code.interfaces.branchjob.IRosettaUploadJobSource">
     <allow interface="lp.code.interfaces.branchjob.IRosettaUploadJobSource"/>
   </securedutility>
+  <securedutility
+      component="lp.code.model.branchjob.ReclaimBranchSpaceJob"
+      provides="lp.code.interfaces.branchjob.IReclaimBranchSpaceJobSource">
+    <allow interface="lp.code.interfaces.branchjob.IReclaimBranchSpaceJobSource"/>
+  </securedutility>
 
   <!-- CodeImport -->
 
   <class class="lp.code.model.codeimport.CodeImport">
     <implements interface="lp.code.interfaces.codeimport.ICodeImport"/>
-    <allow attributes="
-                    id
-                    date_created
-                    branch
-                    registrant
-                    owner
-                    assignee
-                    product
-                    series
-                    review_status
-                    rcs_type
-                    cvs_root
-                    cvs_module
-                    svn_branch_url
-                    git_repo_url
-                    date_last_successful
-                    source_product_series
-                    update_interval
-                    effective_update_interval
-                    import_job
-                    results
-                    consecutive_failure_count
-                    getImportDetailsForDisplay"/>
+    <allow attributes="id
+                       date_created
+                       branch
+                       registrant
+                       owner
+                       assignee
+                       product
+                       series
+                       review_status
+                       rcs_type
+                       cvs_root
+                       cvs_module
+                       svn_branch_url
+                       git_repo_url
+                       date_last_successful
+                       source_product_series
+                       update_interval
+                       effective_update_interval
+                       import_job
+                       results
+                       consecutive_failure_count
+                       getImportDetailsForDisplay"/>
     <require
-        permission="launchpad.Edit"
-        attributes="updateFromData"/>
+       permission="launchpad.AnyPerson"
+       attributes="tryFailingImportAgain"/>
+    <require
+       permission="launchpad.Edit"
+       attributes="updateFromData"/>
 
     <!-- ICodeImport has no set_schema, because all modifications should be
          done through methods that create CodeImportEvent objects when

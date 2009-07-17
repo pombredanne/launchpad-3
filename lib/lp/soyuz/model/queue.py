@@ -21,10 +21,11 @@ import tempfile
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 
+from storm.locals import Desc, In, Join
+from storm.store import Store
+from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
-
-from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
@@ -38,6 +39,7 @@ from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
@@ -67,10 +69,13 @@ from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_queue_item)
+from lp.soyuz.scripts.packagecopier import update_files_privacy
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -142,15 +147,16 @@ class PackageUpload(SQLBase):
                      schema=PackageUploadStatus,
                      storm_validator=validate_status)
 
+    date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+
     distroseries = ForeignKey(dbName="distroseries",
                                foreignKey='DistroSeries')
 
     pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
                      schema=PackagePublishingPocket)
 
-    # XXX: kiko 2007-02-10: This is NULLable. Fix sampledata?
-    changesfile = ForeignKey(dbName='changesfile',
-                             foreignKey="LibraryFileAlias")
+    changesfile = ForeignKey(
+        dbName='changesfile', foreignKey="LibraryFileAlias", notNull=False)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
@@ -158,8 +164,8 @@ class PackageUpload(SQLBase):
                              notNull=False)
 
     # XXX julian 2007-05-06:
-    # Sources and builds should not be SQLMultipleJoin, there is only
-    # ever one of each at most.
+    # Sources should not be SQLMultipleJoin, there is only ever one
+    # of each at most.
 
     # Join this table to the PackageUploadBuild and the
     # PackageUploadSource objects which are related.
@@ -172,6 +178,11 @@ class PackageUpload(SQLBase):
     customfiles = SQLMultipleJoin('PackageUploadCustom',
                                   joinColumn='packageupload')
 
+    @property
+    def custom_file_urls(self):
+        """See `IPackageUpload`."""
+        return tuple(
+            file.libraryfilealias.getURL() for file in self.customfiles)
 
     def setNew(self):
         """See `IPackageUpload`."""
@@ -302,6 +313,8 @@ class PackageUpload(SQLBase):
 
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
+        assert not self.is_delayed_copy, 'Cannot process delayed copies.'
+
         debug(logger, "Setting it to ACCEPTED")
         self.setAccepted()
 
@@ -324,6 +337,8 @@ class PackageUpload(SQLBase):
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
+        assert not self.is_delayed_copy, 'Cannot process delayed copies.'
+
         self.setAccepted()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
         self.notify(
@@ -348,6 +363,26 @@ class PackageUpload(SQLBase):
         # Give some karma!
         self._giveKarma()
 
+    def acceptFromCopy(self):
+        """See `IPackageUpload`."""
+        assert self.is_delayed_copy, 'Can only process delayed-copies.'
+        assert self.sources.count() == 1, (
+            'Source is mandatory for delayed copies.')
+
+        self.setAccepted()
+
+        # XXX cprov 2009-06-22 bug=390851: self.sourcepackagerelease
+        # is cached, we cannot rely on it.
+        sourcepackagerelease = self.sources[0].sourcepackagerelease
+
+        # Close bugs if possible, skip imported sources.
+        original_changesfile = sourcepackagerelease.upload_changesfile
+        if original_changesfile is not None:
+            changesfile_object = StringIO.StringIO(
+                original_changesfile.read())
+            close_bugs_for_queue_item(
+                self, changesfile_object=changesfile_object)
+
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()
@@ -356,6 +391,11 @@ class PackageUpload(SQLBase):
             logger=logger, dry_run=dry_run,
             changes_file_object=changes_file_object)
         self.syncUpdate()
+
+    @property
+    def is_delayed_copy(self):
+        """See `IPackageUpload`."""
+        return self.changesfile is None
 
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
@@ -414,11 +454,6 @@ class PackageUpload(SQLBase):
                 in self._customFormats)
 
     @cachedproperty
-    def datecreated(self):
-        """See `IPackageUpload`."""
-        return self.changesfile.content.datecreated
-
-    @cachedproperty
     def displayname(self):
         """See `IPackageUpload`"""
         names = []
@@ -442,7 +477,7 @@ class PackageUpload(SQLBase):
             archs.append(queue_build.build.distroarchseries.architecturetag)
         for queue_custom in self.customfiles:
             archs.append(queue_custom.customformat.title)
-        return ",".join(archs)
+        return ", ".join(archs)
 
     @cachedproperty
     def displayversion(self):
@@ -460,11 +495,12 @@ class PackageUpload(SQLBase):
 
         This is currently heuristic but may be more easily calculated later.
         """
-        assert self.sources or self.builds, ('No source available.')
         if self.sources:
             return self.sources[0].sourcepackagerelease
-        if self.builds:
+        elif self.builds:
             return self.builds[0].build.sourcepackagerelease
+        else:
+            return None
 
     def realiseUpload(self, logger=None):
         """See `IPackageUpload`."""
@@ -493,7 +529,15 @@ class PackageUpload(SQLBase):
             except CustomUploadError, e:
                 if logger is not None:
                     logger.error("Queue item ignored: %s" % e)
-                return
+                    return []
+
+        # Adjust component and file privacy of delayed_copies.
+        if self.is_delayed_copy:
+            for pub_record in publishing_records:
+                pub_record.overrideFromAncestry()
+                for new_file in update_files_privacy(pub_record):
+                    debug(logger,
+                          "Re-uploaded %s to librarian" % new_file.filename)
 
         self.setDone()
 
@@ -663,14 +707,14 @@ class PackageUpload(SQLBase):
         class PPARejectedMessage:
             """PPA rejected message."""
             template = get_email_template('ppa-upload-rejection.txt')
-            SUMMARY = summary_text
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            SUMMARY = sanitize_string(summary_text)
+            CHANGESFILE = sanitize_string("".join(changes_lines))
             USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
             template = get_email_template('upload-rejection.txt')
-            SUMMARY = summary_text
+            SUMMARY = sanitize_string(summary_text)
             CHANGESFILE = sanitize_string(changes['changes'])
             CHANGEDBY = ''
             ORIGIN = ''
@@ -694,7 +738,7 @@ class PackageUpload(SQLBase):
             attach_changes = True
 
         self._handleCommonBodyContent(message, changes)
-        if message.SUMMARY is None:
+        if summary_text is None:
             message.SUMMARY = 'Rejected by archive administrator.'
 
         body = message.template % message.__dict__
@@ -960,8 +1004,16 @@ class PackageUpload(SQLBase):
                 "Changes file is unsigned, adding changer as recipient")
             candidate_recipients.append(changer)
 
-        # PPA uploads only email the uploader but for everything else
-        # we consider maintainer and changed-by also.
+        if self.isPPA():
+            # For PPAs, any person or team mentioned explicitly in the
+            # ArchivePermissions as uploaders for the archive will also
+            # get emailed.
+            uploaders = [
+                permission.person for permission in
+                    self.archive.getUploadersForComponent()]
+            candidate_recipients.extend(uploaders)
+
+        # If this is not a PPA, we also consider maintainer and changed-by.
         if self.signing_key and not self.isPPA():
             maintainer = self._emailToPerson(changes['maintainer'])
             if (maintainer and maintainer != signer and
@@ -1352,55 +1404,24 @@ class PackageUploadSource(SQLBase):
             break
         return ancestry
 
-    def _conflictWith(self, upload_source):
-        """Whether a given PackageUploadSource conflicts with the context.
-
-        :param upload_source: a `PackageUploadSource` to be checked
-            against this context for source 'name' and 'version' conflict.
-        :return: True if the checked `PackageUploadSource` contains a
-            `SourcePackageRelease` with the same name and version.
-             Otherwise, False is returned.
-        """
-        conflict_release = upload_source.sourcepackagerelease
-        proposed_name = self.sourcepackagerelease.name
-        proposed_version = self.sourcepackagerelease.version
-
-        if (conflict_release.name == proposed_name and
-            conflict_release.version == proposed_version):
-            return True
-
-        return False
-
     def verifyBeforeAccept(self):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
-        for distroseries in self.packageupload.distroseries.distribution:
-            uploads = distroseries.getQueueItems(
-                status=[PackageUploadStatus.ACCEPTED,
-                        PackageUploadStatus.DONE],
-                name=self.sourcepackagerelease.name,
-                version=self.sourcepackagerelease.version,
-                archive=self.packageupload.archive,
-                exact_match=True)
-            # Isolate conflicting PackageUploadSources.
-            conflict_candidates = [
-                upload.sources[0] for upload in uploads
-                if len(list(upload.sources)) > 0]
-            # Isolate only conflicting SourcePackageRelease.
-            conflicts = [
-                upload_source for upload_source in conflict_candidates
-                if self._conflictWith(upload_source)]
-            # If there are any conflicting SourcePackageRelease the
-            # upload cannot be accepted.
-            if len(conflicts) > 0:
-                raise QueueInconsistentStateError(
-                    "The source %s is already accepted in %s/%s and you "
-                    "cannot upload the same version within the same "
-                    "distribution. You have to modify the source version "
-                    "and re-upload." % (
-                        self.sourcepackagerelease.title,
-                        distroseries.distribution.name,
-                        distroseries.name))
+        conflict = getUtility(IPackageUploadSet).findSourceUpload(
+            self.sourcepackagerelease.name,
+            self.sourcepackagerelease.version,
+            self.packageupload.archive,
+            self.packageupload.distroseries.distribution)
+
+        if conflict is not None:
+            raise QueueInconsistentStateError(
+                "The source %s is already accepted in %s/%s and you "
+                "cannot upload the same version within the same "
+                "distribution. You have to modify the source version "
+                "and re-upload." % (
+                    self.sourcepackagerelease.title,
+                    conflict.distroseries.distribution.name,
+                    conflict.distroseries.name))
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""
@@ -1612,6 +1633,14 @@ class PackageUploadCustom(SQLBase):
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %
                     self.libraryfilealias.http_url)
 
+    def publish_STATIC_TRANSLATIONS(self, logger=None):
+        """See `IPackageUploadCustom`."""
+        # Static translations are not published.  Currently, they're
+        # only exposed via webservice methods so that third parties can
+        # retrieve them from the librarian.
+        debug(logger, "Skipping publishing of static translations.")
+        return
+
 
 class PackageUploadSet:
     """See `IPackageUploadSet`"""
@@ -1635,6 +1664,49 @@ class PackageUploadSet:
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
+    def createDelayedCopy(self, archive, distroseries, pocket,
+                          signing_key):
+        """See `IPackageUploadSet`."""
+        return PackageUpload(
+            archive=archive, distroseries=distroseries, pocket=pocket,
+            status=PackageUploadStatus.NEW, signing_key=signing_key)
+
+    def findSourceUpload(self, name, version, archive, distribution):
+        """See `IPackageUploadSet`."""
+        # Avoiding circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.sourcepackagename import SourcePackageName
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+        store = IMasterStore(PackageUpload)
+        origin = (
+            PackageUpload,
+            Join(DistroSeries,
+                 DistroSeries.id == PackageUpload.distroseriesID),
+            Join(PackageUploadSource,
+                 PackageUploadSource.packageuploadID == PackageUpload.id),
+            Join(SourcePackageRelease,
+                 SourcePackageRelease.id ==
+                     PackageUploadSource.sourcepackagereleaseID),
+            Join(SourcePackageName,
+                 SourcePackageName.id ==
+                     SourcePackageRelease.sourcepackagenameID),
+            )
+
+        approved_status = (
+            PackageUploadStatus.ACCEPTED,
+            PackageUploadStatus.DONE,
+            )
+        conflicts = store.using(*origin).find(
+            PackageUpload,
+            PackageUpload.status.is_in(approved_status),
+            PackageUpload.archive == archive,
+            DistroSeries.distribution == distribution,
+            SourcePackageRelease.version == version,
+            SourcePackageName.name == name)
+
+        return conflicts.one()
+
     def count(self, status=None, distroseries=None, pocket=None):
         """See `IPackageUploadSet`."""
         clauses = []
@@ -1649,6 +1721,59 @@ class PackageUploadSet:
 
         query = " AND ".join(clauses)
         return PackageUpload.select(query).count()
+
+    def getAll(self, distroseries, created_since_date=None, status=None,
+               archive=None, pocket=None, custom_type=None):
+        """See `IPackageUploadSet`."""
+        # XXX Julian 2009-07-02 bug=394645
+        # This method is an incremental deprecation of
+        # IDistroSeries.getQueueItems(). It's basically re-writing it
+        # using Storm queries instead of SQLObject, but not everything
+        # is implemented yet.  When it is, this comment and the old
+        # method can be removed and call sites updated to use this one.
+        store = Store.of(distroseries)
+
+        def dbitem_values_tuple(item_or_list):
+            if not isinstance(item_or_list, list):
+                return (item_or_list.value,)
+            else:
+                return tuple(item.value for item in item_or_list)
+
+        timestamp_query_clause = ()
+        if created_since_date is not None:
+            timestamp_query_clause = (
+                PackageUpload.date_created > created_since_date,)
+
+        status_query_clause = ()
+        if status is not None:
+            status = dbitem_values_tuple(status)
+            status_query_clause = (
+                In(PackageUpload.status, status),)
+
+        archives = distroseries.distribution.getArchiveIDList(archive)
+        archive_query_clause = (
+            In(PackageUpload.archiveID, archives),)
+
+        pocket_query_clause = ()
+        if pocket is not None:
+            pocket = dbitem_values_tuple(pocket)
+            pocket_query_clause = (
+                In(PackageUpload.pocket, pocket),)
+
+        custom_type_query_clause = ()
+        if custom_type is not None:
+            custom_type = dbitem_values_tuple(custom_type)
+            custom_type_query_clause = (
+                PackageUpload.id == PackageUploadCustom.packageuploadID,
+                In(PackageUploadCustom.customformat, custom_type))
+
+        return store.find(
+            PackageUpload,
+            PackageUpload.distroseries == distroseries,
+            *(status_query_clause + archive_query_clause +
+              pocket_query_clause + timestamp_query_clause +
+              custom_type_query_clause)
+            ).order_by(Desc(PackageUpload.id)).config(distinct=True)
 
     def getBuildByBuildIDs(self, build_ids):
         """See `IPackageUploadSet`."""

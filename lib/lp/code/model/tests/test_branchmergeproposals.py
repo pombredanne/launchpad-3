@@ -266,6 +266,91 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertIs(None, proposal.reviewed_revision_id)
 
 
+class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
+    """Test the setStatus method of BranchMergeProposal."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.target_branch = self.factory.makeProductBranch()
+        login_person(self.target_branch.owner)
+
+    def test_set_status_approved_to_work_in_progress(self):
+        # setState can change an approved merge proposal to Work In Progress.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+        proposal.setStatus(BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+    def test_set_status_wip_to_needs_review(self):
+        # setState can change the merge proposal to Needs Review.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal.setStatus(BranchMergeProposalStatus.NEEDS_REVIEW)
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.NEEDS_REVIEW)
+
+    def test_set_status_wip_to_code_approved(self):
+        # setState can change the merge proposal to Approved, which will
+        # also set the reviewed_revision_id to the approved revision id.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal.setStatus(BranchMergeProposalStatus.CODE_APPROVED,
+            user=self.target_branch.owner, revision_id='500')
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.CODE_APPROVED)
+        self.assertEqual(proposal.reviewed_revision_id, '500')
+
+    def test_set_status_wip_to_queued(self):
+        # setState can change the merge proposal to Queued, which will
+        # also set the queued_revision_id to the specified revision id.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal.setStatus(BranchMergeProposalStatus.QUEUED,
+            user=self.target_branch.owner, revision_id='250')
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.QUEUED)
+        self.assertEqual(proposal.queued_revision_id, '250')
+
+    def test_set_status_wip_to_rejected(self):
+        # setState can change the merge proposal to Rejected, which also
+        # marks the reviewed_revision_id to the rejected revision id.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal.setStatus(BranchMergeProposalStatus.REJECTED,
+            user=self.target_branch.owner, revision_id='1000')
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.REJECTED)
+        self.assertEqual(proposal.reviewed_revision_id, '1000')
+
+    def test_set_status_wip_to_merged(self):
+        # setState can change the merge proposal to Merged.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal.setStatus(BranchMergeProposalStatus.MERGED)
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.MERGED)
+
+    def test_set_status_invalid_status(self):
+        # IBranchMergeProposal.setStatus doesn't work in the case of superseded
+        # branches since a superseded branch requires more than just changing a
+        # few settings.  Because it's unknown, it should raisse an
+        # AssertionError.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        self.assertRaises(AssertionError, proposal.setStatus,
+            BranchMergeProposalStatus.SUPERSEDED)
+
+
 class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     """Test the resetting of date_review_reqeuested."""
 

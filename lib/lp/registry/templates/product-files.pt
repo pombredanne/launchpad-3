@@ -20,6 +20,16 @@
      tal:define="has_edit context/required:launchpad.Edit">
   <h1>Download project files</h1>
 
+  <p tal:condition="view/has_download_files">
+    After you've downloaded a file, you can verify its authenticity using
+    <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
+    either </tal:hasdownloadfiles>its MD5 sum
+    <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
+    or signature</tal:hasdownloadfiles>. (<a
+    href="/+help/verify-downloads.html" target="help">How do I verify a
+    download?</a>)
+  </p>
+
   <form id="project-downloads" method="POST"
         tal:attributes="action request/URL">
 
@@ -100,16 +110,6 @@
         value="Delete Files" />
 
   </form>
-  <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
-  <p>
-    If a file has a signature associated with it, download both the file and
-    the signature file.  You can then verify the file by
-    doing the following:
-  </p>
-  <p>
-    <code> % gpg --verify &lt;filename.asc&gt;</code>
-  </p>
-  </tal:hasdownloadfiles>
 </div>
 </body>
 </html>

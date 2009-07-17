@@ -36,7 +36,7 @@
 
       <tal:block condition="context/recipient">
          <p><dfn>Recipient:</dfn>
-         <span tal:replace="context/recipient/browsername">RECIPIENT</span></p>
+         <span tal:replace="context/recipient/displayname">RECIPIENT</span></p>
       </tal:block>
 
       <tal:block condition="context/admincomment">

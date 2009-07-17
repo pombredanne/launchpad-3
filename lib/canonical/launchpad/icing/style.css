@@ -35,7 +35,6 @@
 /* == Sprites == */
 
 #subscribers-direct a, #portlet-subscribers a, #subscribers-indirect a, .bug-branch-summary {
-   display: block;
    line-height: 1.4em;
 }
 #lp-hierarchy a.bzr-favicon, #lp-hierarchy a.person-tabs {
@@ -49,19 +48,19 @@ h1 .edit {
 }
 .offscreen {
     position: absolute;
-    left: -999em; 
+    left: -999em;
 }
-span.invisible-link {display:none;} 
-span.invisible {left:-9999em;display:block;} 
+span.invisible-link {display:none;}
+span.invisible {left:-9999em;display:block;}
 .sprite {padding:2px 0 0 18px;}
-.sprite-left {padding:2px 18px 0 0; background-position:left;}
+.sprite-after {padding: 2px 18px 0 0;}
 
 .add {background:url(icon-sprites) 0 0 no-repeat;}
-.edit {background:url(icon-sprites) 0 -32px no-repeat;}
-.remove {background:url(icon-sprites) 0 -64px no-repeat;}
+.edit {background:url(icon-sprites) 100% -32px no-repeat;}
+.remove {background:url(icon-sprites) 100% -64px no-repeat;}
 .info {background:url(icon-sprites) 0 -96px no-repeat;}
 .question {background:url(icon-sprites) 0 -128px no-repeat;}
-.download {background:url(icon-sprites) 0 -160px no-repeat;}
+.download-icon {background:url(icon-sprites) 0 -160px no-repeat;}
 .search-icon {background:url(icon-sprites) 0 -187px no-repeat;}
 .no {background:url(icon-sprites) 0 -224px no-repeat;}
 .yes {background:url(icon-sprites) 0 -256px no-repeat;}
@@ -119,13 +118,13 @@ span.invisible {left:-9999em;display:block;}
 .product-badge {background:url(icon-sprites-2) 0 -608px no-repeat;}
 .product {background:url(icon-sprites-2) 0 -640px no-repeat;}
 .read-only {background:url(icon-sprites-2) 0 -672px no-repeat;}
-.warning, .security {background:url(icon-sprites-2) 0 -704px no-repeat;}
+.warning-icon, .security {background:url(icon-sprites-2) 0 -704px no-repeat;}
 .private {background:url(icon-sprites-2) 0 -736px no-repeat;}
 .meeting {background:url(icon-sprites-2) 0 -768px no-repeat;}
-.translate {background:url(icon-sprites-2) 0 -800px no-repeat;}
+.translate-icon {background:url(icon-sprites-2) 0 -800px no-repeat;}
 .translation-file {background:url(icon-sprites-2) 0 -832px no-repeat;}
 .translation-template {background:url(icon-sprites-2) 0 -864px no-repeat;}
-.trash {background:url(icon-sprites-2) 0 -896px no-repeat;}
+.trash-icon {background:url(icon-sprites-2) 100% -896px no-repeat;}
 .stop {background:url(icon-sprites-2) 0 -928px no-repeat;}
 .bounty {background:url(icon-sprites-2) 0 -960px no-repeat;}
 .list {background:url(icon-sprites-2) 0 -992px no-repeat;}
@@ -271,13 +270,19 @@ code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
 /* Links that don't open separate pages are green to denote their behavior: */
-a[onclick], .collapsible legend a, a.js-action               {color: #063;}
+a[onclick], .collapsible legend a, a.js-action               {color: #093;}
 a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
+a.js-action:active {color: #093;}
+
+/* The js-action class is also used for non-links, for example, with
+ * expand/collapse sections. */
+.widget-hd.js-action {color: #093; cursor:pointer}
+.widget-hd.js-action:hover {text-decoration: underline;}
 
 /* Help links */
 a.help {
   border-bottom: 1px dotted #03a;
-  cursor: help;}
+  cursor: help;
 }
 a.help:hover, a.help:hover {
   text-decoration: none;
@@ -308,10 +313,10 @@ ul {
 
 .exception {color: #cc0000;}
 .discreet, .lesser, .duplicate-details {font-size: 90%;}
+.extra-discreet {font-size: 75%;}
 .offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
-.duplicate-details { margin-bottom: 1em; }
 .duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
 
 /* Blank space at the top of the page makes the location bar more noticable.
@@ -930,12 +935,16 @@ hierarchy, and the application tabs. */
 /* === Help pane === */
 /*
 Inline help is contained in a <div> and dynamically positioned by JavaScript.
+
+This should appear above all other content.  Needs to be
+above the Google Maps element on the profile pages, which
+has a z-index of 9999.  See bug #380349.
 */
 #help-pane {
   position: absolute;
   border: 1px solid black;
   padding: 1px 1px 5px 10px;
-  z-index: 3000;  /* This should appear above all other content. */
+  z-index: 11000; /* Needs to be at least 9999.  See bug #380349. */
   background-color: #fff;
   width: 600px; /* based on the help wiki, should change later */
 }
@@ -1458,7 +1467,6 @@ ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.build-success, li.build-success   {list-style-image: url(/@@/build-success);}
 ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
 ul.cve, li.cve                       {list-style-image: url(/@@/cve);}
-ul.faq, li.faq                       {list-style-image: url(/@@/faq);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
@@ -1466,8 +1474,6 @@ ul.news, li.news {
   list-style-type: none;
   margin-bottom: 1em;
 }
-ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
-ul.package.source, li.package.source {list-style-image: url(/@@/package-source);}
 ul.rss, li.rss                       {list-style-image: url(/@@/rss);}
 ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
@@ -1509,10 +1515,20 @@ a.info {
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
+
 .boardCommentDetails {
   background-color: #eee;
+  border-bottom: 1px solid #ddd;
   padding: 0.5em 12px;
-  border-bottom: 1px solid #ddd
+}
+.boardCommentDetails table {
+  margin: -0.5em -12px;
+}
+.boardCommentDetails td {
+    padding: 0.5em 12px;
+}
+.boardCommentDetails td.bug-comment-index {
+    border-right: 1px solid #ddd;
 }
 .boardCommentBody {padding: 0.5em 12px 0;}
 .boardBugActivityBody {
@@ -1526,6 +1542,7 @@ a.info {
 .boardCommentContent { line-height: 1.5em;}
 .boardCommentFooter {
   background-color: #eee;
+  color: #555;
   padding: 0.5em 12px;
   border-top: 1px solid #ddd;
 }
@@ -1578,6 +1595,15 @@ body.tab-overview #description fieldset, div#branch-description fieldset {
 
 div#branch-description {
     margin-top: 1em;
+}
+
+/* Timeline Graph */
+div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
+  visibility: hidden;
+}
+
+div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
+  visibility: visible;
 }
 
 /* The top-most Person portlet, Contact Details, is allowed to float up and
@@ -1689,11 +1715,6 @@ beside the mugshot. */
   float: left; /* So the border doesn't use 100% of the page */
 }
 
-#package_counters {
-    clear: both;
-    float: left;
-}
-
 div#build-status-summary {
     clear:right;
     float:right;
@@ -1745,7 +1766,7 @@ table#package-requests td {
 form.package-search-filter {
     clear: both;
 }
-h1.disabled {
+h1.disabled, .greyed-out {
     color: grey;
 }
 table#packages_list {
@@ -1764,6 +1785,48 @@ p.update-failure-message {
 a.update-retry {
     padding-left: 1em;
 }
+
+/* Brand the related PPA versions with the PPA icon (not currently
+   in the sprite image.) */
+div#slide-trigger {
+    padding:8px 0 8px 32px;
+    background:url('/@@/ppa-large') 0 0 no-repeat;
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
+}
+div#slide-trigger:hover {
+    text-decoration: underline
+}
+dl#ppa_packaging dd {
+    margin-left: 16px;
+}
+#related-ppa-versions .widget-bd {
+    margin-left: 2em;
+}
+/* Ensure that when we add the lazr-closed class via js that the
+ * slider body will not be visible. */
+#related-ppa-versions .widget-bd.lazr-closed {
+    height: 0px;
+    overflow: hidden;
+    display: block;
+}
+
+/* Archive subscription confirmation should be transparent
+ * to users, hence the button styled as a link. */
+form.archive-subscription-activation button {
+    border: none;
+    float:left; /* Enables underline on hover below. See http://is.gd/1i7TB */
+    color: #0033AA;
+    background:transparent url(/@@/info) no-repeat scroll left center;
+    padding: 0 0 0 15px;
+    margin:0;
+    cursor: pointer;
+    font-size: 100%;
+}
+form.archive-subscription-activation button:hover {
+    text-decoration: underline;
+}
+
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
@@ -1821,6 +1884,12 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .mergestatusQUEUED            {color: black;}
 .mergestatusSUPERSEDED        {color: grey;}
 
+.codeimportNEW       {color: #930;}
+.codeimportINVALID   {color: red;}
+.codeimportREVIEWED  {color: green;}
+.codeimportSUSPENDED {color: red;}
+.codeimportFAILING   {color: red;}
+
 .stale-diff { color: #f60; }
 .conflicts-diff { color: red; }
 
@@ -1866,6 +1935,9 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .commentVote {
   float: right;
 }
+.replyLink {
+  text-align: right;
+}
 .codereviewcomment {font: 120% monospace;}
 .codereviewcomment .attachment, #review-diff .attachment {
   background-color: #f6f6f6;
@@ -1873,6 +1945,10 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 
 body.tab-branches table.listing .section-heading {
   color: #d18b39;
+}
+
+body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead {
+  color: #666666;
 }
 
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
@@ -1959,6 +2035,10 @@ div#sub-unsub-spinner {
 }
 .unsub-icon, .editsub-icon {position:absolute; right:8px;}
 
+.highlight-message {
+  margin: 2em 0 2em 0;
+  font-size: 120%;
+}
 
 /* --- Blueprints --- */
 

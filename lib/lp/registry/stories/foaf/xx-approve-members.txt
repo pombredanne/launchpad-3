@@ -11,11 +11,9 @@ proposed members at once.
 
 Let's have a look at the proposed members that we have.
 
-    >>> table = find_tag_by_id(browser.contents, 'member-list')
-    >>> for tag in table.findAll('a'):
-    ...     print tag.span.renderContents()
-    Andrew Bennetts
-    Sample Person
+    >>> print extract_text(find_tag_by_id(browser.contents, 'member-list'))
+    Andrew Bennetts (Applied on ...)     Approve Decline Hold
+    Sample Person (Applied on ...)       Approve Decline Hold
 
 The team admin approves Andrew Bennetts' membership and declines Sample
 Person's. A comment is also sent to the applying users and the team admins.

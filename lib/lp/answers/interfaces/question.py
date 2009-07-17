@@ -21,7 +21,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.questionenums import (

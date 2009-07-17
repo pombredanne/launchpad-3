@@ -21,11 +21,10 @@ import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
     StringCol)
-from storm.locals import And, Join, SQL, Store, Unicode
+from storm.locals import And, Desc, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
-from canonical.launchpad.components.precache import precache
 from canonical.cachedproperty import cachedproperty
 from lazr.delegates import delegates
 from canonical.lazr.utils import safe_hasattr
@@ -46,8 +45,8 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
-from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
-from canonical.launchpad.database.potemplate import POTemplate
+from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.potemplate import POTemplate
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.karma import KarmaContextMixin
@@ -65,12 +64,13 @@ from canonical.launchpad.database.productbounty import ProductBounty
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.services.database.precache import precache
 from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -93,7 +93,7 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from canonical.launchpad.webapp.interfaces import (
@@ -168,8 +168,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin, OfficialBugTagTargetMixin,
-              HasBranchesMixin, HasMergeProposalsMixin):
+              HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
+              HasMergeProposalsMixin):
 
     """A Product."""
 
@@ -556,7 +556,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 drivers.add(self.project.owner)
             else:
                 drivers.add(self.owner)
-        return sorted(drivers, key=lambda driver: driver.browsername)
+        return sorted(drivers, key=lambda driver: driver.displayname)
 
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
@@ -689,8 +689,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def translatable_packages(self):
         """See `IProduct`."""
-        packages = set(package for package in self.sourcepackages
-                       if len(package.getCurrentTranslationTemplates()) > 0)
+        packages = set(
+            package
+            for package in self.sourcepackages
+            if package.has_current_translation_templates)
+
         # Sort packages by distroseries.name and package.name
         return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 
@@ -698,8 +701,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def translatable_series(self):
         """See `IProduct`."""
         translatable_product_series = set(
-            product_series for product_series in self.serieses
-            if len(product_series.getCurrentTranslationTemplates()) > 0)
+            product_series
+            for product_series in self.serieses
+            if product_series.has_current_translation_templates)
         return sorted(
             translatable_product_series,
             key=operator.attrgetter('datecreated'))
@@ -909,6 +913,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(Milestone.product == self,
                 Milestone.name == version)).one()
 
+    def getMilestonesAndReleases(self):
+        """See `IProduct`."""
+        store = Store.of(self)
+        result = store.find(
+            (Milestone, ProductRelease),
+            And(ProductRelease.milestone == Milestone.id,
+                Milestone.productseries == ProductSeries.id,
+                ProductSeries.product == self))
+        return result.order_by(Desc(ProductRelease.datereleased))
+
     def packagedInDistros(self):
         return IStore(Distribution).find(
             Distribution,
@@ -965,7 +979,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         series_list.insert(0, self.development_focus)
         series_list.reverse()
         return [series.getTimeline(include_inactive=include_inactive)
-                for series in series_list]
+                for series in series_list
+                if include_inactive or series.active]
 
 
 class ProductSet:

@@ -11,7 +11,7 @@
   title=""
   tal:condition="context/icon"
   tal:attributes="
-    class string:menu-link-${context/name} sprite ${context/icon};
+    class string:menu-link-${context/name} ${view/sprite_class} ${context/icon};
     href context/url;
     title context/summary;
   "

@@ -17,7 +17,7 @@ from zope.schema import Bool, Datetime, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import BugField
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 
 
 class IBugNotification(IHasOwner):

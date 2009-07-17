@@ -24,6 +24,7 @@ __all__ = [
     'IArchiveSet',
     'IArchiveSourceSelectionForm',
     'IDistributionArchive',
+    'InvalidComponent',
     'IPPA',
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
@@ -43,7 +44,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ParticipatingPersonChoice, PublicPersonChoice, StrippedTextLine)
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
@@ -104,6 +105,10 @@ class ArchiveNotPrivate(Exception):
 
 class ComponentNotFound(Exception):
     """Invalid source name."""
+    webservice_error(400) #Bad request.
+
+class InvalidComponent(Exception):
+    """Invalid component name."""
     webservice_error(400) #Bad request.
 
 
@@ -241,6 +246,11 @@ class IArchivePublic(IHasOwner):
     date_created = Datetime(
         title=_('Date created'), required=False, readonly=True,
         description=_("The time when the archive was created."))
+
+    relative_build_score = Int(
+        title=_("Relative Build Score"), required=True, readonly=False,
+        description=_(
+            "A delta to apply to all build scores for this archive."))
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -464,6 +474,8 @@ class IArchivePublic(IHasOwner):
         :param component: An `IComponent` or textual component name.
         :return: An `IArchivePermission` which is the newly-created
             permission.
+        :raises InvalidComponent: if this archive is a PPA and the component
+            is not 'main'.
         """
 
     @operation_parameters(
@@ -581,6 +593,166 @@ class IArchivePublic(IHasOwner):
         :param date_created: Optional, defaults to now
 
         :return: A new IArchiveAuthToken
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        packageset=TextLine(
+            title=_("Package set"), required=True),
+        explicit=Bool(
+            title=_("Explicit"), required=False))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @export_factory_operation(Interface, [])
+    def newPackagesetUploader(person, packageset, explicit=False):
+        """Add a package set based permission for a person.
+
+        :param person: An `IPerson` for whom you want to add permission.
+        :param packageset: An `IPackageset` or a string package set name.
+        :param explicit: True if the package set in question requires
+            specialist skills for proper handling.
+
+        :return: The new `ArchivePermission`, or the existing one if it
+            already exists.
+        """
+
+    @operation_parameters(
+        packageset=TextLine(
+            title=_("Package set"), required=True),
+        direct_permissions=Bool(
+            title=_("Ignore package set hierarchy"), required=False))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getUploadersForPackageset(packageset, direct_permissions=True):
+        """The `ArchivePermission` records for uploaders to the package set.
+
+        :param packageset: An `IPackageset` or a string package set name.
+        :param direct_permissions: If True, only consider permissions granted
+            directly for the package set at hand. Otherwise, include any
+            uploaders for package sets that include this one.
+
+        :return: `ArchivePermission` records for all the uploaders who are
+            authorized to upload to the named source package set.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        packageset=TextLine(
+            title=_("Package set"), required=True),
+        explicit=Bool(
+            title=_("Explicit"), required=False))
+    @export_write_operation()
+    def deletePackagesetUploader(person, packageset, explicit=False):
+        """Revoke upload permissions for a person.
+
+        :param person: An `IPerson` for whom you want to revoke permission.
+        :param packageset: An `IPackageset` or a string package set name.
+        :param explicit: The value of the 'explicit' flag for the permission
+            to be revoked.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPackagesetsForUploader(person):
+        """The `ArchivePermission` records for the person's package sets.
+
+        :param person: An `IPerson` for whom you want to find out which
+            package sets he has access to.
+
+        :return: `ArchivePermission` records for all the package sets that
+            'person' is allowed to upload to.
+        """
+
+    @operation_parameters(
+        sourcepackagename=TextLine(
+            title=_("Source package name"), required=True),
+        person=Reference(schema=IPerson))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPackagesetsForSourceUploader(sourcepackagename, person):
+        """The package set based permissions for a given source and uploader.
+
+        Return the `IArchivePermission` records that
+            * apply to this archive
+            * relate to
+                - package sets that include the given source package name
+                - the given `person`
+
+        :param sourcepackagename: the source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param person: An `IPerson` for whom you want to find out which
+            package sets he has access to.
+
+        :raises SourceNotFound: if a source package with the given
+            name could not be found.
+        :return: `ArchivePermission` records for the package sets that
+            include the given source package name and to which the given
+            person may upload.
+        """
+
+    @operation_parameters(
+        sourcepackagename=TextLine(
+            title=_("Source package name"), required=True),
+        direct_permissions=Bool(
+            title=_("Ignore package set hierarchy"), required=False))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPackagesetsForSource(
+        sourcepackagename, direct_permissions=True):
+        """All package set based permissions for the given source.
+
+        This method is meant to aid the process of "debugging" package set
+        based archive permission since It allows the listing of permissions
+        for the given source package in this archive (irrespective of the
+        principal).
+
+        :param sourcepackagename: the source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param direct_permissions: If set only package sets that directly
+            include the given source will be considered.
+
+        :raises SourceNotFound: if a source package with the given
+            name could not be found.
+        :return: `ArchivePermission` records for the package sets that
+            include the given source package name and apply to the
+            archive in question.
+        """
+
+    @operation_parameters(
+        sourcepackagename=TextLine(
+            title=_("Source package name"), required=True),
+        person=Reference(schema=IPerson))
+    @export_read_operation()
+    def isSourceUploadAllowed(sourcepackagename, person):
+        """True if the person is allowed to upload the given source package.
+
+        Return True if there exists a permission that combines
+            * this archive
+            * a package set that includes the given source package name
+            * the given person or a team he is a member of
+
+        If the source package name is included by *any* package set with
+        an explicit permission then only such explicit permissions will
+        be considered.
+
+        :param sourcepackagename: the source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param person: An `IPerson` for whom you want to find out which
+            package sets he has access to.
+
+        :raises SourceNotFound: if a source package with the given
+            name could not be found.
+        :return: True if the person is allowed to upload the source package.
         """
 
 
@@ -774,8 +946,13 @@ class IArchiveAppend(Interface):
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
 
-        This method takes string-based paramters and is intended for use
-        in the API.
+        It will copy the most recent versions of the named sources to
+        the destination archive if necessary.
+
+        This operation will only succeeds when all requested packages
+        are synchronised between the archives. If any of the requested
+        copies cannot be performed, the whole operation will fail. There
+        will be no partial changes of the destination archive.
 
         :param source_names: a list of string names of packages to copy.
         :param from_archive: the source archive from which to copy.
@@ -789,8 +966,6 @@ class IArchiveAppend(Interface):
         :raises PocketNotFound: if the pocket name is invalid
         :raises DistroSeriesNotFound: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
-
-        :return: a list of string names of packages that could be copied.
         """
 
     @operation_parameters(
@@ -814,8 +989,8 @@ class IArchiveAppend(Interface):
                    to_series=None, include_binaries=False):
         """Synchronise (copy) a single named source into this archive.
 
-        This method takes string-based paramters and is intended for use
-        in the API.
+        Copy a specific version of a named source to the destination
+        archive if necessary.
 
         :param source_name: a string name of the package to copy.
         :param version: the version of the package to copy.
@@ -998,7 +1173,7 @@ class IArchiveSet(Interface):
     def getPPAsForUser(user):
         """Return all PPAs the given user can participate.
 
-        The result is ordered by PPA owner's displayname.
+        The result is ordered by PPA displayname.
         """
 
     def getPPAsPendingSigningKey():
@@ -1067,6 +1242,20 @@ class IArchiveSet(Interface):
 
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
+
+    def getPublicationsInArchives(source_package_name, archive_list,
+                                  distribution):
+        """Return a result set of publishing records for the source package.
+
+        :param source_package_name: an `ISourcePackageName` identifying the
+            source package for which the publishings will be returned.
+        :param archive_list: a list of at least one archive with which to
+            restrict the search.
+        :param distribution: the distribution by which the results will
+            be limited.
+        :return: a resultset of the `ISourcePackagePublishingHistory` objects
+            that are currently published in the given archives.
+        """
 
 
 class ArchivePurpose(DBEnumeratedType):

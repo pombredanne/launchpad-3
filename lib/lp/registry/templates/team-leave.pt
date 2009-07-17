@@ -25,7 +25,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Leaving &#8220;<span tal:replace="context/browsername" />&#8221;</h1>
+  <h1>Leaving &#8220;<span tal:replace="context/displayname" />&#8221;</h1>
   <tal:block tal:condition="view/userCanRequestToLeave">
 
       <p>Are you sure you want to leave this team?</p>
@@ -42,7 +42,7 @@
     </p>
     <p>
       <a tal:attributes="href context/fmt:url">
-        Back to <span tal:replace="context/browsername" />
+        Back to <span tal:replace="context/displayname" />
       </a>
     </p>
   </tal:block>

@@ -45,7 +45,7 @@
                      id string:req_${fbreq/requester/name}" />
           </td>
           <td>
-            <label tal:content="fbreq/requester/browsername"
+            <label tal:content="fbreq/requester/displayname"
                    tal:attributes="
                      for string:req_${fbreq/requester/name}">Foo
                      Bar</label>

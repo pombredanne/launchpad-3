@@ -17,6 +17,7 @@ from canonical.launchpad.webapp.menu import structured
 valid_name_pattern = re.compile(r"^[a-z0-9][a-z0-9\+\.\-]+$")
 invalid_name_pattern = re.compile(r"^[^a-z0-9]+|[^a-z0-9\\+\\.\\-]+")
 
+
 def sanitize_name(name):
     """Remove from the given name all characters that are not allowed
     on names.
@@ -30,6 +31,7 @@ def sanitize_name(name):
     'bazbarfd'
     """
     return invalid_name_pattern.sub('', name)
+
 
 def valid_name(name):
     """Return True if the name is valid, otherwise False.
@@ -54,16 +56,18 @@ def valid_name(name):
         return True
     return False
 
+
 def name_validator(name):
     """Return True if the name is valid, or raise a
     LaunchpadValidationError.
     """
     if not valid_name(name):
         message = _(dedent("""
-            Invalid name '${name}'. Names must start with a letter or
-            number and be lowercase. The characters <samp>+</samp>,
-            <samp>-</samp> and <samp>.</samp> are also allowed after the
-            first character."""), mapping={'name': escape(name)})
+            Invalid name '${name}'. Names must be at least two characters long
+            and start with a letter or number. All letters must be lower-case.
+            The characters <samp>+</samp>, <samp>-</samp> and <samp>.</samp>
+            are also allowed after the first character."""),
+            mapping={'name': escape(name)})
 
         raise LaunchpadValidationError(structured(message))
     return True
