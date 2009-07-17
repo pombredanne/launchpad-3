@@ -492,6 +492,7 @@ class POFileTranslateView(BaseTranslationView):
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
                 self.errors.get(potmsgset))
+            view.zoomed_in_view = False
             self.translationmessage_views.append(view)
 
     def _submitTranslations(self):
