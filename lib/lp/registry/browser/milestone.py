@@ -239,7 +239,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         return len(self.bugtasks) > 0  or len(self.specifications) > 0
 
 
-class MilestoneViews(MilestoneView):
+class MilestonesView(MilestoneView):
     """Show a milestone in a list of milestones."""
     show_series_context = True
 
