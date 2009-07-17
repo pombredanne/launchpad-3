@@ -32,11 +32,27 @@
         />
 
     <browser:page
+        name="+newaccount"
+        for="canonical.launchpad.interfaces.ILoginToken"
+        class="canonical.launchpad.browser.logintoken.NewUserAccountView"
+        permission="zope.Public"
+        template="../../launchpad/templates/logintoken-newaccount.pt"
+        />
+
+    <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+resetpassword"
         permission="zope.Public"
         class="canonical.launchpad.browser.logintoken.ResetPasswordView"
         template="../templates/logintoken-resetpassword.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
+        name="+validateemail"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.logintoken.ValidateEmailView"
+        template="../../launchpad/templates/logintoken-validateemail.pt"
         />
 
     <browser:page

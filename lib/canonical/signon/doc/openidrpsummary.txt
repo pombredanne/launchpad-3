@@ -16,8 +16,8 @@ It implements the IOpenIDRPSummarySet interface to retrieve and create
 OpenIDRPSummary objects.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.signon.interfaces.openidserver import (
-    ...      IOpenIDRPSummarySet)
+    >>> from lp.services.openid.interfaces.openidrpsummary import (
+    ...      IOpenIDRPSummary, IOpenIDRPSummarySet)
 
     >>> rp_summary_set = getUtility(IOpenIDRPSummarySet)
     >>> verifyObject(IOpenIDRPSummarySet, rp_summary_set)
@@ -84,9 +84,6 @@ IOpenIDRPConfig entry.
 == IOpenIDRPSummary ==
 
 The OpenIDRPSummary object implements the IOpenIDRPSummary interface.
-
-    >>> from canonical.signon.interfaces.openidserver import (
-    ...     IOpenIDRPSummary)
 
     >>> nopriv_oid_store = nopriv_oid_summaries[0]
     >>> verifyObject(IOpenIDRPSummary, nopriv_oid_store)
@@ -266,7 +263,7 @@ database does not have a constraint to guard against this.
     >>> # Create an integrity error in the data by assigning No Privileges
     >>> # Person's openid_identifier to Sample Person.
     >>> from canonical.launchpad.interfaces import IMasterStore
-    >>> from canonical.signon.model.openidserver import OpenIDRPSummary
+    >>> from lp.services.openid.model.openidrpsummary import OpenIDRPSummary
     >>> store = IMasterStore(OpenIDRPSummary)
     >>> store.execute("""
     ...     INSERT INTO OpenIDRPSummary (
