@@ -272,10 +272,11 @@ class HTTPWalker_Base(TestCase):
         self.assertRaises(WalkerError, HTTPWalker, "foo://localhost/")
 
 
-class HTTPWalker_url_schemes_and_handlers(unittest.TestCase):
+class HTTPWalker_url_schemes_and_handlers(TestCase):
     """Verify there is a handler for each URL scheme."""
 
     def setUp(self):
+        TestCase.setUp(self)
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker)
         self.walker = HTTPWalker("http://localhost/")
