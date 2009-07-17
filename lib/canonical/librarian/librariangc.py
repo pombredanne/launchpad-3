@@ -19,7 +19,7 @@ from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
 
-log = None
+log = None # This is set by cronscripts/librarian-gc.py
 debug = False
 
 def confirm_no_clock_skew(con):
@@ -384,7 +384,6 @@ class UnreferencedContentPruner:
             path = get_file_path(content_id)
             try:
                 os.unlink(path)
-                log.debug("Deleted %s", path)
             except OSError, e:
                 if e.errno != errno.ENOENT:
                     raise
@@ -394,6 +393,8 @@ class UnreferencedContentPruner:
                     # Librarian, such as on staging. Don't annoy the
                     # operator with noise in this case.
                     log.info("%s already deleted", path)
+            else:
+                log.debug("Deleted %s", path)
 
         self.index += chunksize
 
