@@ -550,3 +550,20 @@ An admin can access 'forReview'.
     applets
     gnomebaker
     python-gnome2-dev
+
+Members of the registry experts celebrity have permission to review
+IProduct and IProject objects and access an IProjectSet.
+
+    >>> from lp.registry.interfaces.project import IProjectSet
+
+    >>> project_set = getUtility(IProjectSet)
+    >>> product = factory.makeProduct(name='dog')
+    >>> project = factory.makeProject(name='cat')
+
+    >>> login_person(registry_member)
+    >>> check_permission('launchpad.ProjectReview', project_set)
+    True
+    >>> check_permission('launchpad.ProjectReview', project)
+    True
+    >>> check_permission('launchpad.ProjectReview', product)
+    True
