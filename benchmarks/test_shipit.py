@@ -131,20 +131,23 @@ class ShipIt(FunkLoadTestCase):
         # Request some CDs.
         params = response.extractForm(include_submit=True)
         params.update({
-            'field.recipientdisplayname': displayname[:18],
-            'field.addressline1': self.lipsum.getSubject(3, length_max=26),
-            'field.addressline2': self.lipsum.getSubject(3, length_max=26),
-            'field.city': self.lipsum.getSubject(1, length_max=26),
-            'field.province': self.lipsum.getSubject(2, length_max=26),
-            'field.postcode': self.lipsum.getSubject(1, length_max=26),
+            'field.recipientdisplayname': displayname[:20],
+            'field.addressline1': self.lipsum.getSubject(3)[:30],
+            'field.addressline2': self.lipsum.getSubject(3)[:30],
+            'field.city': self.lipsum.getSubject(1)[:30],
+            'field.province': self.lipsum.getSubject(2)[:30],
+            'field.postcode': self.lipsum.getSubject(1)[:20],
             'field.country': '212',
             'field.country-empty-marker': '1',
-            'field.phone': self.lipsum.getPhoneNumber(),
+            'field.phone': self.lipsum.getPhoneNumber()[:16],
             'field.actions.continue': 'Submit Request'})
         response = self.post(
             self.absolute_url(response, '/myrequest'),
             params, "Post /myrequest - Request CDs")
         self.assertNoFormErrors(response)
+
+        if response.body.find('Cancel Request') == -1:
+            open('dud.html', 'w').write(response.body)
 
         # Confirm the request worked.
         self.assert_(
