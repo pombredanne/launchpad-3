@@ -20,9 +20,30 @@ IMilestone.
     >>> verifyObject(IProductRelease, firefox_109)
     True
 
+The driver for the release's milestone target cannot change the release, but
+the driver of the milestone's series_target is a release manager can can
+make changes.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> driver = factory.makePerson(name='driver')
+    >>> firefox_109.milestone.target.driver = driver
+
+    >>> release_manager = factory.makePerson(name='release-manager')
+    >>> firefox_109.milestone.series_target.driver = release_manager
+
+    >>> login_person(driver)
+    >>> check_permission('launchpad.Edit', firefox_109)
+    False
+
+    >>> login_person(release_manager)
+    >>> check_permission('launchpad.Edit', firefox_109)
+    True
+
 A product release can be deleted using its destroySelf() method, as long
 as it doesn't have any IProductReleaseFiles associated with it.
 
+    >>> login_person(owner)
     >>> firefox_109.files.count()
     0
     >>> firefox_109.destroySelf()

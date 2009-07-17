@@ -514,6 +514,9 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
             return True
         if user.inTeam(celebrities.registry_experts):
             return True
+        if user.inTeam(self.obj.series_target.driver):
+            # The user is a release manager.
+            return True
         return user.inTeam(self.obj.target.owner)
 
 
@@ -836,8 +839,9 @@ class EditProductSeries(EditByRegistryExpertsOrOwnersOrAdmins):
 
     def checkAuthenticated(self, user):
         """Allow product owner, Rosetta Experts, or admins."""
-        if user.inTeam(self.obj.product.owner):
-            # The user is the owner of the product.
+        if (user.inTeam(self.obj.product.owner) or
+            user.inTeam(self.obj.driver)):
+            # The user is the owner of the product, or the release manager.
             return True
         # Rosetta experts need to be able to upload translations.
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
@@ -1252,7 +1256,9 @@ class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
 
     def checkAuthenticated(self, user):
         if (user.inTeam(self.obj.productseries.owner) or
-            user.inTeam(self.obj.productseries.product.owner)):
+            user.inTeam(self.obj.productseries.product.owner) or
+            user.inTeam(self.obj.productseries.driver)):
+            # The user is an owner or a release manager.
             return True
         return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
             self, user)
