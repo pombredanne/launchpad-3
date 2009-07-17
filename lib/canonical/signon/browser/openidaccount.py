@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, IPasswordEncryptor)
 from canonical.launchpad.validators.email import valid_email
 from canonical.signon.interfaces.openidserver import IOpenIDApplication
+from canonical.signon.interfaces.ssoaccount import ISSOAccount
 from lp.registry.interfaces.person import (
     IPersonSet, IPersonChangePassword, ITeam)
 from canonical.launchpad.webapp import (
@@ -226,7 +227,7 @@ class AccountEditEmailsView(LaunchpadFormView):
         The guessed emails will be EmailAddress objects, and the
         unvalidated emails will be unicode strings.
         """
-        emailset = set(self.context.getUnvalidatedEmails())
+        emailset = set(ISSOAccount(self.context).getUnvalidatedEmails())
         emailset = emailset.union(
             [guessed for guessed in self.context.guessed_emails
              if not guessed.email in emailset])

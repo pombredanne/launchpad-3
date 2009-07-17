@@ -1,4 +1,4 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0231
 
 """Unit tests for worker.py."""
@@ -23,13 +23,14 @@ from bzrlib.transport import get_transport
 
 from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.puller.worker import (
-    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchLoopError,
-    BranchMirrorer, BranchPolicy, BranchReferenceForbidden,
-    HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy,
+    BranchLoopError, BranchMirrorer, BranchReferenceForbidden,
     PullerWorkerProtocol, StackedOnBranchNotFound, get_vfs_format_classes,
     install_worker_ui_factory, WORKER_ACTIVITY_NETWORK)
 from lp.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
+from lp.codehosting.vfs.branchfs import (
+    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchPolicy,
+    HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy)
 from lp.code.enums import BranchType
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory

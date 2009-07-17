@@ -1,0 +1,69 @@
+SSOAccount
+==========
+
+An SSOAccount is just an IAccount which has a couple extra methods/attributes
+that are specific to the SSO server.  You can get it by adapting any IAccount
+into an ISSOAccount.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.signon.dbpolicy import SSODatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
+    >>> from canonical.signon.interfaces.ssoaccount import ISSOAccount
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> account = factory.makeAccount(
+    ...     'Test Account', 'test-email@example.com')
+    >>> login('test-email@example.com')
+    >>> sso_account = ISSOAccount(account)
+    >>> verifyObject(ISSOAccount, sso_account)
+    True
+
+The getUnvalidatedEmails() will return a list of email addresses that were
+claimed by that account but not yet confirmed.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IAuthTokenSet, LoginTokenType)
+    >>> token = getUtility(IAuthTokenSet).new(
+    ...     account, u"test@canonical.com", u"unvalidated-email@example.com",
+    ...     LoginTokenType.VALIDATEEMAIL, None)
+    >>> sso_account.getUnvalidatedEmails()
+    [u'unvalidated-email@example.com']
+
+Whenever a user authenticates to a relying party using our OpenID server, we
+store that information, which can then later be shown to the account's owner
+using IAccount.recently_authenticated_rps.  These are sorted descending by
+date.
+
+    >>> from canonical.signon.interfaces.openidserver import (
+    ...     IOpenIDRPSummarySet)
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> two_thousand_and_seven = datetime(2007, 1, 1, tzinfo=pytz.UTC)
+    >>> two_thousand_and_eight = datetime(2008, 1, 1, tzinfo=pytz.UTC)
+    >>> summary = getUtility(IOpenIDRPSummarySet).record(
+    ...     account, 'http://example.com/',
+    ...     date_used=two_thousand_and_eight)
+    >>> summary = getUtility(IOpenIDRPSummarySet).record(
+    ...     account, 'http://blog.example.com/',
+    ...     date_used=two_thousand_and_seven)
+    >>> transaction.commit()
+
+    >>> [summary.date_last_used.strftime('%Y-%m-%d')
+    ...  for summary in sso_account.recently_authenticated_rps]
+    ['2008-01-01', '2007-01-01']
+
+Both recently_authenticated_rps and getUnvalidatedEmails() are restricted to
+the account owner.
+
+    >>> login(ANONYMOUS)
+    >>> sso_account.recently_authenticated_rps
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+    >>> sso_account.getUnvalidatedEmails()
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    # Pop the database policy we pushed at the beginning of the test.
+    >>> db_policy = getUtility(IStoreSelector).pop()

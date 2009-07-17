@@ -230,11 +230,6 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
 
         return sorted(distroserieslangs, key=lambda a: a.language.englishname)
 
-    @cachedproperty
-    def unlinked_translatables(self):
-        """Return the sourcepackages that lack a link to a productseries."""
-        return self.context.getUnlinkedTranslatableSourcePackages()
-
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
