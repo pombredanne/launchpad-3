@@ -383,6 +383,25 @@ a product.
     >>> print fizzy_milestone.productseries.name
     2.0
 
+The driver for a milestone's target cannot change a milestone, but the driver
+of the series_target is a release manager can can make changes.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> driver = factory.makePerson(name='driver')
+    >>> fizzy_milestone.target.driver = driver
+
+    >>> release_manager = factory.makePerson(name='release-manager')
+    >>> fizzy_milestone.series_target.driver = release_manager
+
+    >>> login_person(driver)
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    False
+
+    >>> login_person(release_manager)
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    True
+
 The distroseries attribute can be edited if the milestone belongs to
 a distribution.
 
