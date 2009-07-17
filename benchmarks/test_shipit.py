@@ -107,12 +107,21 @@ class ShipIt(FunkLoadTestCase):
         # At the moment, creating your account doesn't log you in
         # immidiately so you might end up at a 403 page - Bug #400610
         response = self.post(
-            newaccount_url, params, ok_codes=[200, 302,303,403],
+            newaccount_url, params, ok_codes=[200, 302, 303, 403],
             description="Post /token/[...]/+newaccount")
         # Keep hitting the /login link until it works.
-        while response.body.find('You are not logged in.') != -1:
+        while response.code == 403:
             login_url = self.absolute_url(response, '/login')
             response = self.get(login_url, description="Get /login")
+            response = response.postForm(
+                0, self.post, {}, "Post /+openid")
+            if response.get_base_url() == '/+openid':
+                params = response.extractForm()
+                params['field.actions.auth'] = 'Sign In'
+                response = self.post(
+                    self.absolute_url(response, '/+decide'), params,
+                    description = "Post /+decide",
+                    ok_codes=[200, 302, 303, 403])
 
         # Registration succeeded - should be on the order details page now.
         self.assertEquals(response.get_base_url(), '/myrequest')
