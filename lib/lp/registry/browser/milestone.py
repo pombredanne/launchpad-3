@@ -240,7 +240,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
 
 
 class MilestoneViews(MilestoneView):
-    """A view for show a milestone in in a list of milestones."""
+    """Show a milestone in a list of milestones."""
     show_series_context = True
 
 
