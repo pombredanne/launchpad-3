@@ -23,7 +23,7 @@
             because that will change the project group&#8217;s <abbr>URL</abbr>,
             which will break all links from outside Launchpad.
             Take care with your changes,
-            because they will be visible immediately.
+            because they will be visible to other users after you submit them.
           </p>
 
       </div>
