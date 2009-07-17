@@ -195,6 +195,7 @@ class WalkerBase_walk(TestCase):
 
         log_output = StringIO.StringIO()
         logger = logging.getLogger()
+        self.addCleanup(logger.setLevel, logger.level)
         logger.setLevel(logging.DEBUG)
         logger.addHandler(logging.StreamHandler(log_output))
         walker = TestWalker('http://example.org/foo', logger)
