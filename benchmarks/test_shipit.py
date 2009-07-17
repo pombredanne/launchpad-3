@@ -113,6 +113,8 @@ class ShipIt(FunkLoadTestCase):
         while response.code == 403:
             login_url = self.absolute_url(response, '/login')
             response = self.get(login_url, description="Get /login")
+            if response.get_base_url() == '/myrequest':
+                break
             response = response.postForm(
                 0, self.post, {}, "Post /+openid")
             if response.get_base_url() == '/+openid':
@@ -129,11 +131,12 @@ class ShipIt(FunkLoadTestCase):
         # Request some CDs.
         params = response.extractForm(include_submit=True)
         params.update({
-            'field.recipientdisplayname': displayname,
-            'field.addressline1': self.lipsum.getSubject(3),
-            'field.addressline2': self.lipsum.getSubject(3),
-            'field.city': self.lipsum.getWord(),
-            'field.postcode': self.lipsum.getWord(),
+            'field.recipientdisplayname': displayname[:18],
+            'field.addressline1': self.lipsum.getSubject(3, length_max=26),
+            'field.addressline2': self.lipsum.getSubject(3, length_max=26),
+            'field.city': self.lipsum.getSubject(1, length_max=26),
+            'field.province': self.lipsum.getSubject(2, length_max=26),
+            'field.postcode': self.lipsum.getSubject(1, length_max=26),
             'field.country': '212',
             'field.country-empty-marker': '1',
             'field.phone': self.lipsum.getPhoneNumber(),
