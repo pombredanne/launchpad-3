@@ -221,9 +221,11 @@ class InvalidBatchSizeView(SystemErrorView):
         return False
 
     @property
-    def max_batch_size(self):
-        """Return the maximum configured batch size."""
-        return config.launchpad.max_batch_size
+    def error_message(self):
+        """Return the error message from the exception."""
+        if len(self.context.args) > 0:
+            return self.context.args[0]
+        return ""
 
 
 class TranslationUnavailableView(SystemErrorView):

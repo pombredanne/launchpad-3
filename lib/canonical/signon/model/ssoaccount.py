@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 
 from canonical.signon.interfaces.ssoaccount import ISSOAccount
 from canonical.signon.model.authtoken import AuthToken
-from canonical.signon.model.openidserver import OpenIDRPSummary
+from lp.services.openid.model.openidrpsummary import OpenIDRPSummary
 
 
 class SSOAccount:

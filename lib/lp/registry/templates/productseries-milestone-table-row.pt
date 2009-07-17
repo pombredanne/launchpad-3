@@ -10,6 +10,11 @@
       <a tal:content="milestone/title"
          tal:attributes="href milestone/fmt:url">version</a>
     </td>
+    <td tal:condition="view/show_series_context">
+      <a
+        tal:attributes="href milestone/series_target/fmt:url"
+        tal:content="milestone/series_target/displayname">trunk</a>
+    </td>
     <td>
       <span
         tal:attributes="title milestone/dateexpected/fmt:datetime"

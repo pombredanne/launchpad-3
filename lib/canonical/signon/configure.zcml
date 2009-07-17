@@ -8,7 +8,6 @@
   </securedutility>
 
   <include package=".model" />
-  <include package=".adapters" />
   <include package=".browser" /> 
   <publisher
       name="openid"

@@ -17,7 +17,7 @@ casting the account to the IOpenIDPersistentIdentity interface.
     >>> from zope.interface.verify import verifyObject
 
     >>> from canonical.launchpad.interfaces.account import IAccountSet
-    >>> from canonical.signon.interfaces.openidserver import (
+    >>> from lp.services.openid.interfaces.openid import (
     ...     IOpenIDPersistentIdentity)
 
     >>> accountset = getUtility(IAccountSet)
@@ -61,17 +61,10 @@ for the OpenID service URL.  It provides the supportsURL() staticmethod to
 test if the format of the identity URL is supported. This verifies that the
 vhost and path are a valid combination.
 
-    >>> from zope.interface import implements
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.signon.layers import OpenIDLayer
+    >>> from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+    >>> from canonical.signon.publisher import OpenIDServerTestRequest
 
-    >>> from canonical.signon.adapters.openidserver import (
-    ...     CurrentOpenIDEndPoint)
-
-    >>> class OpenIDTestRequest(LaunchpadTestRequest):
-    ...     implements(OpenIDLayer)
-
-    >>> request = OpenIDTestRequest(
+    >>> request = OpenIDServerTestRequest(
     ...     SERVER_URL='http://openid.launchpad.dev',
     ...     PATH_INFO='/+id/name12_oid')
     >>> login('test@canonical.com', request)
@@ -107,7 +100,7 @@ identity end point. It provides two URLs for navigation.
     >>> from openid.yadis.constants import YADIS_CONTENT_TYPE
     >>> from zope.component import getMultiAdapter
 
-    >>> request = LaunchpadTestRequest(
+    >>> request = OpenIDServerTestRequest(
     ...     SERVER_URL='http://openid.launchpad.dev',
     ...     PATH_INFO='/+id/name12_oid',
     ...     HTTP_ACCEPT=YADIS_CONTENT_TYPE)
@@ -139,7 +132,7 @@ the HTTP_ACCEPT header, XRDS XML is rendered.
 
 If YADIS is not in the HTTP_ACCEPT header, HTML is rendered().
 
-    >>> request = LaunchpadTestRequest(
+    >>> request = OpenIDServerTestRequest(
     ...     SERVER_URL='http://openid.launchpad.dev',
     ...     PATH_INFO='/+id/name12_oid',
     ...     HTTP_ACCEPT='text/html')
@@ -152,7 +145,7 @@ If YADIS is not in the HTTP_ACCEPT header, HTML is rendered().
 If the requested URL does not match the expected identity URL, nothing
 is rendered.
 
-    >>> request = LaunchpadTestRequest(
+    >>> request = OpenIDServerTestRequest(
     ...     SERVER_URL='http://openid.launchpad.dev',
     ...     PATH_INFO='/+id/name12_oid/bogus_info',
     ...     HTTP_ACCEPT=YADIS_CONTENT_TYPE)
@@ -171,7 +164,7 @@ application. It is a used by the OpenID Discovery process.
     ...     IOpenIDApplication)
 
     >>> openid_app = getUtility(IOpenIDApplication)
-    >>> request = LaunchpadTestRequest(
+    >>> request = OpenIDServerTestRequest(
     ...     SERVER_URL='http://openid.launchpad.dev',
     ...     PATH_INFO='/',
     ...     HTTP_ACCEPT=YADIS_CONTENT_TYPE)
@@ -198,7 +191,7 @@ the HTTP_ACCEPT header, XRDS XML is rendered.
 
 If YADIS is not in the HTTP_ACCEPT header, HTML is rendered().
 
-    >>> request = LaunchpadTestRequest(
+    >>> request = OpenIDServerTestRequest(
     ...     SERVER_URL='http://openid.launchpad.dev',
     ...     PATH_INFO='/+id/name12_oid',
     ...     HTTP_ACCEPT='text/html')
@@ -210,7 +203,7 @@ If YADIS is not in the HTTP_ACCEPT header, HTML is rendered().
 
 Nothing is rendered if the URL is not the expected URL.
 
-    >>> request = LaunchpadTestRequest(
+    >>> request = OpenIDServerTestRequest(
     ...     SERVER_URL='http://openid.launchpad.dev',
     ...     PATH_INFO='/unexpected/content',
     ...     HTTP_ACCEPT=YADIS_CONTENT_TYPE)
