@@ -421,7 +421,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         product = removeSecurityProxy(branch.product)
         linked_branch = ICanHasLinkedBranch(product)
         linked_branch.setBranch(branch)
-        self.assertBzrIdentity(branch, linked_branch.bzr_identity)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
     def test_linked_to_product_series(self):
         # If a branch is the development focus branch for a product series,
@@ -431,7 +431,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         series = self.factory.makeProductSeries(product=product)
         linked_branch = ICanHasLinkedBranch(series)
         linked_branch.setBranch(branch)
-        self.assertBzrIdentity(branch, linked_branch.bzr_identity)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
     def test_private_linked_to_product(self):
         # If a branch is private, then the bzr identity is the unique name,
@@ -456,7 +456,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         series_link = ICanHasLinkedBranch(series)
         product_link.setBranch(branch)
         series_link.setBranch(branch)
-        self.assertBzrIdentity(branch, product_link.bzr_identity)
+        self.assertBzrIdentity(branch, product_link.bzr_path)
 
     def test_junk_branch_always_unique_name(self):
         # For junk branches, the bzr identity is always based on the unique
@@ -482,7 +482,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         linked_branch.setBranch(branch, registrant)
         logout()
         login(ANONYMOUS)
-        self.assertBzrIdentity(branch, linked_branch.bzr_identity)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
     def test_linked_to_dev_package(self):
         # If a branch is linked to the development focus version of a package
@@ -497,7 +497,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         run_with_login(
             registrant,
             linked_branch.setBranch, branch, registrant)
-        self.assertBzrIdentity(branch, linked_branch.bzr_identity)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
 
 class TestBranchDeletion(TestCaseWithFactory):

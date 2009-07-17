@@ -39,14 +39,14 @@ class TestProductSeriesLinkedBranch(TestCaseWithFactory):
         ICanHasLinkedBranch(product_series).setBranch(branch)
         self.assertEqual(branch, product_series.branch)
 
-    def test_bzr_identity(self):
-        # The bzr_identity of a product series linked branch is
+    def test_bzr_path(self):
+        # The bzr_path of a product series linked branch is
         # product/product_series.
         product_series = self.factory.makeProductSeries()
-        bzr_identity = '%s/%s' % (
+        bzr_path = '%s/%s' % (
             product_series.product.name, product_series.name)
         self.assertEqual(
-            bzr_identity, ICanHasLinkedBranch(product_series).bzr_identity)
+            bzr_path, ICanHasLinkedBranch(product_series).bzr_path)
 
 
 class TestProductLinkedBranch(TestCaseWithFactory):
@@ -69,11 +69,11 @@ class TestProductLinkedBranch(TestCaseWithFactory):
         ICanHasLinkedBranch(product).setBranch(branch)
         self.assertEqual(branch, product.development_focus.branch)
 
-    def test_bzr_identity(self):
-        # The bzr_identity of a product linked branch is the product name.
+    def test_bzr_path(self):
+        # The bzr_path of a product linked branch is the product name.
         product = self.factory.makeProduct()
         self.assertEqual(
-            product.name, ICanHasLinkedBranch(product).bzr_identity)
+            product.name, ICanHasLinkedBranch(product).bzr_path)
 
 
 class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
@@ -110,13 +110,13 @@ class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
             suite_sourcepackage.sourcepackage.getBranch(
                 suite_sourcepackage.pocket))
 
-    def test_bzr_identity(self):
-        # The bzr_identity of a suite source package linked branch is the path
+    def test_bzr_path(self):
+        # The bzr_path of a suite source package linked branch is the path
         # of that suite source package.
         suite_sourcepackage = self.factory.makeSuiteSourcePackage()
         self.assertEqual(
             suite_sourcepackage.path,
-            ICanHasLinkedBranch(suite_sourcepackage).bzr_identity)
+            ICanHasLinkedBranch(suite_sourcepackage).bzr_path)
 
 
 class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
@@ -177,8 +177,8 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
             NoSuchDistroSeries,
             linked_branch.setBranch, self.factory.makeAnyBranch(), registrant)
 
-    def test_bzr_identity(self):
-        # The bzr_identity of a distribution source package linked branch is
+    def test_bzr_path(self):
+        # The bzr_path of a distribution source package linked branch is
         # distro/package.
         distribution_sourcepackage = (
             self.factory.makeDistributionSourcePackage())
@@ -186,7 +186,7 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
             '%s/%s' % (
                 distribution_sourcepackage.distribution.name,
                 distribution_sourcepackage.sourcepackagename.name),
-            ICanHasLinkedBranch(distribution_sourcepackage).bzr_identity)
+            ICanHasLinkedBranch(distribution_sourcepackage).bzr_path)
 
 
 class TestProjectLinkedBranch(TestCaseWithFactory):

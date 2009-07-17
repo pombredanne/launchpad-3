@@ -536,7 +536,7 @@ class TestGetByLPPath(TestCaseWithFactory):
 
     def test_distribution_with_no_series(self):
         distro_package = self.factory.makeDistributionSourcePackage()
-        path = ICanHasLinkedBranch(distro_package).bzr_identity
+        path = ICanHasLinkedBranch(distro_package).bzr_path
         self.assertRaises(
             NoLinkedBranch, self.branch_lookup.getByLPPath, path)
 

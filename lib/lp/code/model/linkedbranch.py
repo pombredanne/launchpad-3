@@ -35,7 +35,7 @@ class ProductSeriesLinkedBranch:
         return self._product_series.branch
 
     @property
-    def bzr_identity(self):
+    def bzr_path(self):
         """See `ICanHasLinkedBranch`."""
         return '/'.join(
             [self._product_series.product.name, self._product_series.name])
@@ -60,7 +60,7 @@ class ProductLinkedBranch:
         return ICanHasLinkedBranch(self._product.development_focus).branch
 
     @property
-    def bzr_identity(self):
+    def bzr_path(self):
         """See `ICanHasLinkedBranch`."""
         return self._product.name
 
@@ -87,7 +87,7 @@ class PackageLinkedBranch:
         return package.getBranch(pocket)
 
     @property
-    def bzr_identity(self):
+    def bzr_path(self):
         """See `ICanHasLinkedBranch`."""
         return self._suite_sourcepackage.path
 
@@ -119,7 +119,7 @@ class DistributionPackageLinkedBranch:
         return ICanHasLinkedBranch(suite_sourcepackage).branch
 
     @property
-    def bzr_identity(self):
+    def bzr_path(self):
         """See `ICanHasLinkedBranch`."""
         return '/'.join(
             [self._distribution_sourcepackage.distribution.name,

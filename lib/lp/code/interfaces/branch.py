@@ -1133,7 +1133,7 @@ def bazaar_identity(branch, is_dev_focus):
         distro_package = branch.sourcepackage.distribution_sourcepackage
         linked_branch = ICanHasLinkedBranch(distro_package)
         if linked_branch.branch == branch:
-            return lp_prefix + linked_branch.bzr_identity
+            return lp_prefix + linked_branch.bzr_path
         suite_sourcepackages = branch.associatedSuiteSourcePackages()
         # Take the first link if there is one.
         if len(suite_sourcepackages) > 0:
