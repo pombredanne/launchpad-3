@@ -7,7 +7,6 @@ __all__ = [
     'AuthTokenView',
     'NewAccountView',
     'ResetAccountPasswordView',
-    'ValidateEmailView',
     ]
 
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -16,13 +15,11 @@ from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation)
+from canonical.launchpad.webapp import action, GetitemNavigation
 
 from canonical.signon.browser.openidserver import OpenIDMixin
 from canonical.launchpad.browser.logintoken import (
-    LoginTokenView, NewUserAccountView, ResetPasswordView,
-    ValidateTeamEmailView)
+    LoginTokenView, NewUserAccountView, ResetPasswordView)
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
@@ -111,33 +108,6 @@ class ResetAccountPasswordView(AuthTokenOpenIDMixinView, ResetPasswordView):
     def continue_action(self, action, data):
         super(ResetAccountPasswordView, self).continue_action.success(data)
         return self.maybeCompleteOpenIDRequest()
-
-
-class ValidateEmailView(AuthTokenOpenIDMixinView, ValidateTeamEmailView):
-
-    expected_token_types = (LoginTokenType.VALIDATEEMAIL,)
-
-    @property
-    def next_url(self):
-        if self.has_openid_request:
-            return None
-        elif self.context.redirection_url is not None:
-            return self.context.redirection_url
-        elif self.context.requester is not None:
-            return canonical_url(self.context.requester)
-        else:
-            raise AssertionError(
-                'No redirection URL specified and this is not part of an '
-                'OpenID authentication.')
-
-    @action(_('Continue'), name='continue')
-    def continue_action(self, action, data):
-        super(ValidateEmailView, self).continue_action.success(data)
-        return self.maybeCompleteOpenIDRequest()
-
-    def markEmailAsValid(self, email):
-        """See `ValidateEmailView`"""
-        self.context.requester_account.validateAndEnsurePreferredEmail(email)
 
 
 class NewAccountView(AuthTokenOpenIDMixinView, NewUserAccountView):

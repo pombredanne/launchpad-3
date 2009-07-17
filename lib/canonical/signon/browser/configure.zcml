@@ -205,7 +205,7 @@
         for="canonical.launchpad.interfaces.IAuthToken"
         name="+validateemail"
         permission="zope.Public"
-        class="canonical.signon.browser.authtoken.ValidateEmailView"
+        class="canonical.launchpad.browser.logintoken.ValidateEmailView"
         template="../../launchpad/templates/logintoken-validateemail.pt"
         />
 

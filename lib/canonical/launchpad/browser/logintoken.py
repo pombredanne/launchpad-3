@@ -12,6 +12,7 @@ __all__ = [
     'MergePeopleView',
     'NewUserAccountView',
     'ResetPasswordView',
+    'ValidateEmailView',
     'ValidateTeamEmailView',
     'ValidateGPGKeyView',
     ]
@@ -564,15 +565,15 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
         return key
 
 
-class ValidateTeamEmailView(BaseTokenView, LaunchpadFormView):
+class ValidateEmailView(BaseTokenView, LaunchpadFormView):
 
     schema = Interface
     field_names = []
-    expected_token_types = (LoginTokenType.VALIDATETEAMEMAIL,)
+    expected_token_types = (LoginTokenType.VALIDATEEMAIL,)
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
-        super(ValidateTeamEmailView, self).initialize()
+        super(ValidateEmailView, self).initialize()
 
     def validate(self, data):
         """Make sure the email address this token refers to is not in use."""
@@ -662,6 +663,15 @@ class ValidateTeamEmailView(BaseTokenView, LaunchpadFormView):
 
     def markEmailAsValid(self, email):
         """Mark the given email address as valid."""
+        self.context.requester_account.validateAndEnsurePreferredEmail(email)
+
+
+class ValidateTeamEmailView(ValidateEmailView):
+
+    expected_token_types = (LoginTokenType.VALIDATETEAMEMAIL,)
+
+    def markEmailAsValid(self, email):
+        """See `ValidateEmailView`"""
         self.context.requester.setContactAddress(email)
 
 
