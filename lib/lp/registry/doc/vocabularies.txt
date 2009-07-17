@@ -240,12 +240,13 @@ All the teams the person is an active member of.
     >>> person_active_membership = vocabulary_registry.get(
     ...     foo_bar, 'PersonActiveMembership')
     >>> len(person_active_membership)
-    9
+    10
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
     canonical-partner-dev Canonical Partner Developers
         Canonical Partner Developers
     guadamen GuadaMen GuadaMen
+    hwdb-team HWDB Team HWDB Team
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
     launchpad Launchpad Developers Launchpad Developers
@@ -274,6 +275,7 @@ membership is public.
     canonical-partner-dev Canonical Partner Developers
         Canonical Partner Developers
     guadamen GuadaMen GuadaMen
+    hwdb-team HWDB Team HWDB Team
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
     launchpad Launchpad Developers Launchpad Developers
@@ -289,6 +291,7 @@ membership is public.
     canonical-partner-dev Canonical Partner Developers
         Canonical Partner Developers
     guadamen GuadaMen GuadaMen
+    hwdb-team HWDB Team HWDB Team
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
     launchpad Launchpad Developers Launchpad Developers
@@ -325,15 +328,17 @@ through direct or indirect participations.
     >>> sample_person = person_set.getByName('name12')
     >>> [membership.team.name
     ...  for membership in sample_person.myactivememberships]
-    [u'landscape-developers', u'launchpad-users', u'name20']
+    [u'hwdb-team', u'landscape-developers', u'launchpad-users', u'name20']
     >>> [team.name for team in sample_person.teams_participated_in]
-    [u'landscape-developers', u'launchpad-users', u'name18', u'name20']
+    [u'hwdb-team', u'landscape-developers', u'launchpad-users', u'name18',
+     u'name20']
 
     >>> sample_person_teams_vocabulary = vocabulary_registry.get(
     ...     sample_person, 'PersonTeamParticipations')
 
     >>> for term in sample_person_teams_vocabulary:
     ...     print "%s: %s (%s)" % (term.token, term.title, term.value.name)
+    hwdb-team: HWDB Team (hwdb-team)
     landscape-developers: Landscape Developers (landscape-developers)
     launchpad-users: Launchpad Users (launchpad-users)
     name18: Ubuntu Gnome Team (name18)
@@ -773,7 +778,7 @@ for 'team' should give us some of them.  Notice that the
 PRIVATE_MEMBERSHIP_TEAM 'myteam' is not included in the results.
 
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name20', u'name21', u'no-team-memberships',
+    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
      u'otherteam', u'simple-team', u'testing-spanish-team',
      u'ubuntu-team', u'warty-gnome']
 
@@ -782,7 +787,7 @@ lookup still omits myteam.
 
     >>> login('owner@canonical.com')
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name20', u'name21', u'no-team-memberships',
+    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
      u'otherteam', u'simple-team', u'testing-spanish-team',
      u'ubuntu-team', u'warty-gnome']
 
@@ -797,17 +802,17 @@ A PRIVATE team is displayed when the logged in user is a member of the team.
     ...     owner=commercial,
     ...     visibility=PersonVisibility.PRIVATE)
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name20', u'name21', u'no-team-memberships', u'otherteam',
-     u'private-team',
-     u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
+    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
+     u'otherteam', u'private-team', u'simple-team', u'testing-spanish-team',
+     u'ubuntu-team', u'warty-gnome']
 
 The PRIVATE team is also displayed for Launchpad admins.
 
     >>> login('foo.bar@canonical.com')
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name20', u'name21', u'no-team-memberships', u'otherteam',
-     u'private-team',
-     u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
+    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
+     u'otherteam', u'private-team', u'simple-team', u'testing-spanish-team',
+     u'ubuntu-team', u'warty-gnome']
 
 The PRIVATE team can be looked up via getTermByToken for a member of the team.
 
@@ -819,7 +824,7 @@ The PRIVATE team is not returned for a user who is not part of the team.
 
     >>> login('owner@canonical.com')
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name20', u'name21', u'no-team-memberships',
+    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
      u'otherteam', u'simple-team', u'testing-spanish-team',
      u'ubuntu-team', u'warty-gnome']
 
@@ -827,7 +832,7 @@ The anonymous user will not see the private team either.
 
     >>> login(ANONYMOUS)
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name20', u'name21', u'no-team-memberships',
+    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
      u'otherteam', u'simple-team', u'testing-spanish-team',
      u'ubuntu-team', u'warty-gnome']
 
@@ -884,9 +889,9 @@ displayname and the first set of those are the ones returned
 
     >>> login(ANONYMOUS)
     >>> [person.displayname for person in vocab.search('team')]
-    [u'Hoary Gnome Team', u'No Team Memberships', u'Other Team', u'Simple Team',
-     u'Ubuntu Gnome Team', u'Ubuntu Team', u'Warty Gnome Team', u'Warty Security Team',
-     u'testing Spanish team']
+    [u'HWDB Team', u'Hoary Gnome Team', u'No Team Memberships',
+     u'Other Team', u'Simple Team', u'Ubuntu Gnome Team', u'Ubuntu Team',
+     u'Warty Gnome Team', u'Warty Security Team', u'testing Spanish team']
 
     >>> login(ANONYMOUS)
     >>> vocab.LIMIT
@@ -896,7 +901,7 @@ displayname and the first set of those are the ones returned
     # The limit gets applied in multiple subselects, so the result
     # can actually be less than the limit.
     >>> [person.displayname for person in vocab.search('team')]
-    [u'No Team Memberships', u'Simple Team', u'testing Spanish team']
+    [u'HWDB Team', u'No Team Memberships', u'testing Spanish team']
 
 
 === ValidOwner ===
@@ -915,8 +920,9 @@ Almost all teams have the word 'team' as part of their names, so a
 search for 'team' should give us some of them:
 
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name20', u'name21', u'no-team-memberships', u'otherteam',
-     u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
+    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
+     u'otherteam', u'simple-team', u'testing-spanish-team', u'ubuntu-team',
+     u'warty-gnome']
 
 
 === ValidTeam ===
@@ -939,6 +945,7 @@ returned.
      (u'Flautists', u'David Allouche'),
      (u'GuadaMen', u'Foo Bar'),
      (u'Guitar Players', u'David Allouche'),
+     (u'HWDB Team', u'Foo Bar'),
      (u'Hoary Gnome Team', u'Mark Shuttleworth'),
      (u'Landscape Developers', u'Sample Person'),
      (u'Launchpad Administrators', u'Mark Shuttleworth'),
@@ -980,7 +987,8 @@ text to match against the team name.  Still, you only get teams back.
 
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search('team'))
-    [(u'Hoary Gnome Team', u'Mark Shuttleworth'),
+    [(u'HWDB Team', u'Foo Bar'),
+     (u'Hoary Gnome Team', u'Mark Shuttleworth'),
      (u'Other Team', u'Owner'),
      (u'Simple Team', u'One Membership'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
@@ -994,7 +1002,8 @@ A user who is a member of a private team will see that team in his search.
     >>> login('commercial-member@canonical.com')
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search('team'))
-    [(u'Hoary Gnome Team', u'Mark Shuttleworth'),
+    [(u'HWDB Team', u'Foo Bar'),
+     (u'Hoary Gnome Team', u'Mark Shuttleworth'),
      (u'Other Team', u'Owner'),
      (u'Private Team', u'Commercial Member'),
      (u'Simple Team', u'One Membership'),

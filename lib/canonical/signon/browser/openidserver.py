@@ -44,9 +44,10 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
+from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from canonical.signon.interfaces.openidserver import (
     ILoginServiceAuthorizeForm, ILoginServiceLoginForm,
-    IOpenIDAuthorizationSet, IOpenIDRPConfigSet, IOpenIDRPSummarySet)
+    IOpenIDAuthorizationSet, IOpenIDRPSummarySet)
 from canonical.signon.interfaces.openidstore import IProviderOpenIDStore
 from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.validators.email import valid_email
