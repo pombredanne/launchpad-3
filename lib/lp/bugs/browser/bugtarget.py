@@ -332,7 +332,6 @@ class FileBugViewBase(LaunchpadFormView):
 
     def validate(self, data):
         """Make sure the package name, if provided, exists in the distro."""
-
         # The comment field is only required if filing a new bug.
         if self.submit_bug_action.submitted():
             comment = data.get('comment')
@@ -927,6 +926,11 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
     _FILEBUG_FORM = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-submit-bug.pt")
 
+    # XXX 2009-07-17 Graham Binns
+    #     As above, this assignment to actions is to make sure that the
+    #     actions from the ancestor views are preserved, otherwise they
+    #     get nuked.
+    actions = FilebugShowSimilarBugsView.actions
     template = _SEARCH_FOR_DUPES
 
     focused_element_id = 'field.title'
