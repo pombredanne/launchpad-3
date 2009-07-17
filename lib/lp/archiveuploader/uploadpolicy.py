@@ -285,8 +285,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
-        If the upload is target to any PPA it checks if the signer is an
-        Ubuntu Code of Conduct signer and if it is member of
+        If the upload is targeted to any PPA, checks if the signer is an
+        Ubuntu Code of Conduct signer, and if so is a member of
         'launchpad-beta-tests'.
         """
         if upload.is_ppa:
