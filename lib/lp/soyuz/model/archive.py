@@ -889,7 +889,7 @@ class Archive(SQLBase):
         if self.is_ppa:
             if IComponent.providedBy(component_name):
                 name = component_name.name
-            elif isinstance(component_name, str):
+            elif isinstance(component_name, basestring):
                 name = component_name
             else:
                 name = None
