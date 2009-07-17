@@ -384,7 +384,7 @@
       </tr>
     </tal:has-submitter>
 
-    <tal:variables
+    <tal:imported_translation
       define="
         section_title string:Packaged:;
         submission translation_dictionary/imported_translation_message;
@@ -394,7 +394,19 @@
         ">
       <metal:suggestion
          use-macro="context/@@+translationmessage-macros/render-suggestion" />
-    </tal:variables>
+    </tal:imported_translation>
+    <tal:shared_translation
+      condition="translation_dictionary/shared_translation_message"
+      define="
+        section_title string:Shared:;
+        submission translation_dictionary/shared_translation_message;
+        dismissable view/dismissable_class_packaged;
+        form_is_writeable view/form_is_writeable;
+        user_is_official_translator view/user_is_official_translator;
+        ">
+      <metal:suggestion
+         use-macro="context/@@+translationmessage-macros/render-suggestion" />
+    </tal:shared_translation>
     <tal:locked condition="not:context/potmsgset/is_translation_credit">
       <tal:suggestions-title
          condition="translation_dictionary/suggestions_count">
@@ -546,11 +558,37 @@
   </tal:locked>
   </tal:plural-form>
   </tal:translation-dictionaries>
-  <tr tal:attributes="class string:secondary ${view/dismissable_class}">
+  <tal:official_translator condition="view/allow_diverging">
+    <tr class="secondary" tal:condition="view/zoomed_in_view">
+      <td colspan="4" />
+      <td>
+         <label class="diverge-checkbox">
+           <input
+             type="checkbox"
+             value="diverge_translation"
+             tal:attributes="
+               checked view/force_diverge;
+               name string:${view/html_id}_diverge"
+             />
+           <tal:block condition="not:view/is_plural">
+             Make this translation specific to
+             <a tal:content="view/current_series_title"
+                tal:attributes="href view/current_series/fmt:url"/>
+           </tal:block>
+           <tal:block condition="view/is_plural">
+             Make these translations specific to
+             <a tal:content="view/current_series_title"
+                tal:attributes="href view/current_series/fmt:url"/>
+           </tal:block>
+         </label>
+      </td>
+    </tr>
+  </tal:official_translator>
+  <tr tal:attributes="class string:secondary ${view/dismissable_class}"
+      tal:condition="not:context/potmsgset/is_translation_credit">
     <td colspan="4" />
     <td>
       <div tal:condition="view/user_is_official_translator">
-       <tal:not-locked condition="not:context/potmsgset/is_translation_credit">
          <label class="fuzzy-checkbox">
            <input
              type="checkbox"
@@ -566,18 +604,6 @@
              Someone should review these translations
            </tal:block>
          </label>
-       </tal:not-locked>
-       <tal:locked condition="context/potmsgset/is_translation_credit">
-         <tal:comment condition="nothing">
-           We can't reliably export any credits when upstream translation is
-           fuzzy (eg. we might use the same algorithm in that case, but then
-           upstreams will complain that we got it wrong; or, we might discard
-           their credits altogether, when they will complain that we just credit
-           ourselves; so, lets not change the fuzzy flag, and rather keep it,
-           since we are mostly automating this to fix our issues with upstreams,
-           and I'd rather not introduce more issues with them).
-         </tal:comment>
-       </tal:locked>
       </div>
     </td>
   </tr>

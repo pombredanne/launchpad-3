@@ -14,5 +14,5 @@ large and what is the current maximum.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Invalid Batch Size
-    Your requested batch size exceeded the maximum batch size allowed which
-    is ...
+    Your requested batch size exceeded the maximum batch size allowed.
+    ...

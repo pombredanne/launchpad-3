@@ -1279,6 +1279,14 @@ class TestBugChanges(unittest.TestCase):
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
         self.saveOldChanges(duplicate_bug)
+        # Save the people that are notified about the bug before it's
+        # made a duplicate, so that we don't get extra people by
+        # mistake. Only the people subscribed to the bug that gets marked
+        # as a duplicate are notified. People who are subscribed to the
+        # master bug aren't, to avoid them getting spammed with
+        # unimportant bug notifications.
+        duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
 
         expected_activity = {
@@ -1292,6 +1300,7 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'text': ("** This bug has been marked a duplicate of bug %d\n"
                      "   %s" % (self.bug.id, self.bug.title)),
+            'recipients': duplicate_bug_recipients,
             }
 
         self.assertRecordedChange(
@@ -1303,6 +1312,8 @@ class TestBugChanges(unittest.TestCase):
         # When a bug is unmarked as a duplicate, activity is recorded
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
+        duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA).getRecipients()
         duplicate_bug.duplicateof = self.bug
         self.saveOldChanges(duplicate_bug)
         self.changeAttribute(duplicate_bug, 'duplicateof', None)
@@ -1318,6 +1329,7 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'text': ("** This bug is no longer a duplicate of bug %d\n"
                      "   %s" % (self.bug.id, self.bug.title)),
+            'recipients': duplicate_bug_recipients,
             }
 
         self.assertRecordedChange(
@@ -1331,6 +1343,8 @@ class TestBugChanges(unittest.TestCase):
         # notification is sent.
         bug_one = self.factory.makeBug()
         bug_two = self.factory.makeBug()
+        bug_recipients = self.bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA).getRecipients()
         self.bug.duplicateof = bug_one
         self.saveOldChanges()
         self.changeAttribute(self.bug, 'duplicateof', bug_two)
@@ -1349,6 +1363,7 @@ class TestBugChanges(unittest.TestCase):
                      "** This bug has been marked a duplicate of bug %d\n"
                      "   %s" % (bug_one.id, bug_one.title,
                                 bug_two.id, bug_two.title)),
+            'recipients': bug_recipients,
             }
 
         self.assertRecordedChange(

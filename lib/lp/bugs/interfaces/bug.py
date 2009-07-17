@@ -392,7 +392,8 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
     def getSubscribersFromDuplicates():
         """Return IPersons subscribed from dupes of this bug."""
 
-    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
+    def getBugNotificationRecipients(duplicateof=None, old_bug=None,
+                                     include_master_dupe_subscribers=True):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -401,6 +402,8 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
         rationales. See
         canonical.launchpad.interfaces.BugNotificationRecipients for
         details of this implementation.
+        If this bug is a dupe, set include_master_dupe_subscribers to
+        False to not include the master bug's subscribers.
         """
 
     def addChangeNotification(text, person, recipients=None, when=None):

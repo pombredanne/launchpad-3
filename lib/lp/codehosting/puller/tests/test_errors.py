@@ -16,9 +16,10 @@ from bzrlib.errors import (
     NotBranchError)
 
 from lp.codehosting.puller.worker import (
-    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchMirrorer,
-    BranchReferenceForbidden, BranchLoopError, PullerWorker,
+    BranchMirrorer, BranchReferenceForbidden, BranchLoopError, PullerWorker,
     PullerWorkerProtocol, StackedOnBranchNotFound)
+from lp.codehosting.vfs.branchfs import (
+    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh)
 from lp.code.enums import BranchType
 from lazr.uri import InvalidURIError
 

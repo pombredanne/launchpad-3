@@ -66,6 +66,7 @@ from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -593,14 +594,23 @@ class Archive(SQLBase):
     def binaries_size(self):
         """See `IArchive`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(
-            (LibraryFileContent),
+
+        clauses = [
             BinaryPackagePublishingHistory.archive == self.id,
             BinaryPackagePublishingHistory.dateremoved == None,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageFile.binarypackagereleaseID,
             BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
-            LibraryFileAlias.contentID == LibraryFileContent.id)
+            LibraryFileAlias.contentID == LibraryFileContent.id
+            ]
+
+        # Exclude DDEBs from the repository size, they are not published
+        # on disk for PPAs. See bug #399444 for more information.
+        if self.is_ppa:
+            clauses.append(
+                BinaryPackageFile.filetype != BinaryPackageFileType.DDEB)
+
+        result = store.find(LibraryFileContent, *clauses)
 
         # See `IArchive.sources_size`.
         result = result.config(distinct=True)

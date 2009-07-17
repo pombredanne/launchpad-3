@@ -412,6 +412,7 @@ class BaseTranslationView(LaunchpadView):
         self.form_posted_translations = {}
         self.form_posted_translations_has_store_flag = {}
         self.form_posted_needsreview = {}
+        self.form_posted_diverge = {}
         self.form_posted_dismiss_suggestions = {}
 
         if not self.has_plural_form_information:
@@ -579,12 +580,14 @@ class BaseTranslationView(LaunchpadView):
             return None
 
         force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
+        force_diverge = self.form_posted_diverge.get(potmsgset, False)
 
         try:
             potmsgset.updateTranslation(
                 self.pofile, self.user, translations,
                 is_imported=False, lock_timestamp=self.lock_timestamp,
-                force_suggestion=force_suggestion)
+                force_suggestion=force_suggestion,
+                force_diverged=force_diverge)
         except TranslationConflict:
             return (
                 u'Somebody else changed this translation since you started.'
@@ -632,9 +635,20 @@ class BaseTranslationView(LaunchpadView):
         else:
             force_suggestion = False
 
-        return view_class(current_translation_message, self.request,
-            plural_indices_to_store, translations, force_suggestion, error,
-            self.second_lang_code, self.form_is_writeable)
+        # Check if the current translation message is marked
+        # as needing to be diverged.
+        if current_translation_message.potmsgset in (
+            self.form_posted_diverge):
+            force_diverge = self.form_posted_needsreview[
+                current_translation_message.potmsgset]
+        else:
+            force_diverge = False
+
+        return view_class(
+            current_translation_message, self.request,
+            plural_indices_to_store, translations, force_suggestion,
+            force_diverge, error, self.second_lang_code,
+            self.form_is_writeable)
 
     #
     # Internals
@@ -760,12 +774,15 @@ class BaseTranslationView(LaunchpadView):
 
         msgset_ID_LANGCODE_needsreview = 'msgset_%d_%s_needsreview' % (
             potmsgset_ID, language_code)
-
         self.form_posted_needsreview[potmsgset] = (
             msgset_ID_LANGCODE_needsreview in form)
 
-        msgset_ID_dismiss = 'msgset_%d_dismiss' % potmsgset_ID
+        msgset_ID_diverge = 'msgset_%d_diverge' % (
+            potmsgset_ID)
+        self.form_posted_diverge[potmsgset] = (
+            msgset_ID_diverge in form)
 
+        msgset_ID_dismiss = 'msgset_%d_dismiss' % potmsgset_ID
         self.form_posted_dismiss_suggestions[potmsgset] = (
             msgset_ID_dismiss in form)
 
@@ -998,7 +1015,7 @@ class CurrentTranslationMessageView(LaunchpadView):
 
     def __init__(self, current_translation_message, request,
                  plural_indices_to_store, translations, force_suggestion,
-                 error, second_lang_code, form_is_writeable):
+                 force_diverge, error, second_lang_code, form_is_writeable):
         """Primes the view with information that is gathered by a parent view.
 
         :param plural_indices_to_store: A dictionary that indicates whether
@@ -1008,6 +1025,7 @@ class CurrentTranslationMessageView(LaunchpadView):
             BaseTranslationView constructed it based on form-submitted
             translations.
         :param force_suggestion: Should this be a suggestion even for editors.
+        :param force_diverge: Should this translation be diverged.
         :param error: The error related to self.context submission or None.
         :param second_lang_code: The result of submiting
             field.alternative_value.
@@ -1021,6 +1039,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.translations = translations
         self.error = error
         self.force_suggestion = force_suggestion
+        self.force_diverge = force_diverge
         self.user_is_official_translator = (
             current_translation_message.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
@@ -1032,10 +1051,26 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.potmsgset.getImportedTranslationMessage(
                     self.pofile.potemplate,
                     self.pofile.language))
+
+        if self.context.potemplate is None:
+            # Shared translation is current.
+            self.shared_translationmessage = None
+        else:
+            self.shared_translationmessage = (
+                self.context.potmsgset.getSharedTranslationMessage(
+                    self.pofile.language))
+            if (self.shared_translationmessage ==
+                self.imported_translationmessage):
+                # If it matches the imported message, we don't care.
+                self.shared_translationmessage = None
+
         self.can_confirm_and_dismiss = False
         self.can_dismiss_on_empty = False
         self.can_dismiss_on_plural = False
         self.can_dismiss_packaged = False
+
+        # Initialize to True, allowing POFileTranslateView to override.
+        self.zoomed_in_view = True
 
         # Set up alternative language variables.
         # XXX: kiko 2006-09-27:
@@ -1069,12 +1104,31 @@ class CurrentTranslationMessageView(LaunchpadView):
 
         self._buildAllSuggestions()
 
+        # If existing translation is shared, and a user is
+        # an official translator, they can diverge a translation.
+        self.allow_diverging = (self.zoomed_in_view and
+                                self.user_is_official_translator and
+                                self.context.potemplate is None)
+        if self.allow_diverging:
+            if self.pofile.potemplate.productseries is not None:
+                self.current_series = self.pofile.potemplate.productseries
+                self.current_series_title = "%s %s" % (
+                    self.current_series.product.displayname,
+                    self.current_series.name)
+            else:
+                self.current_series = self.pofile.potemplate.distroseries
+                self.current_series_title = "%s %s" % (
+                    self.current_series.distribution.displayname,
+                    self.current_series.name)
+
+
         # Initialise the translation dictionaries used from the
         # translation form.
         self.translation_dictionaries = []
         for index in self.pluralform_indices:
             current_translation = self.getCurrentTranslation(index)
             imported_translation = self.getImportedTranslation(index)
+            shared_translation = self.getSharedTranslation(index)
             submitted_translation = self.getSubmittedTranslation(index)
             if (submitted_translation is None and
                 self.user_is_official_translator):
@@ -1094,19 +1148,30 @@ class CurrentTranslationMessageView(LaunchpadView):
                 # Imported one matches the current one.
                 imported_submission = None
             elif self.imported_translationmessage is not None:
-
                 imported_submission = (
                     convert_translationmessage_to_submission(
                         message=self.imported_translationmessage,
                         current_message=self.context,
                         plural_form=index,
-                        pofile=self.pofile,
+                        pofile=self.imported_translationmessage.pofile,
                         legal_warning_needed=False,
                         is_empty=False,
                         packaged=True))
-
             else:
                 imported_submission = None
+
+            if (self.context.potemplate is not None and
+                self.shared_translationmessage is not None):
+                shared_submission = (
+                    convert_translationmessage_to_submission(
+                        message=self.shared_translationmessage,
+                        current_message=self.context,
+                        plural_form=index,
+                        pofile=self.shared_translationmessage.pofile,
+                        legal_warning_needed=False,
+                        is_empty=False))
+            else:
+                shared_submission = None
 
             translation_entry = {
                 'plural_index': index,
@@ -1116,6 +1181,9 @@ class CurrentTranslationMessageView(LaunchpadView):
                 'imported_translation': text_to_html(
                     imported_translation, self.context.potmsgset.flags),
                 'imported_translation_message': imported_submission,
+                'shared_translation': text_to_html(
+                    shared_translation, self.context.potmsgset.flags),
+                'shared_translation_message': shared_submission,
                 'suggestion_block': self.suggestion_blocks[index],
                 'suggestions_count': self.suggestions_count[index],
                 'store_flag': index in self.plural_indices_to_store,
@@ -1333,7 +1401,8 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.seen_translations = iterable_submissions.seen_translations
         return iterable_submissions
 
-    def getOfficialTranslation(self, index, is_imported=False):
+    def getOfficialTranslation(self, index, is_imported=False,
+                               is_shared=False):
         """Return current or imported translation for plural form 'index'."""
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
@@ -1344,6 +1413,11 @@ class CurrentTranslationMessageView(LaunchpadView):
                 return None
 
             translation = self.imported_translationmessage.translations[index]
+        elif is_shared:
+            if self.shared_translationmessage is None:
+                return None
+
+            translation = self.shared_translationmessage.translations[index]
         else:
             translation = self.context.translations[index]
         # We store newlines as '\n', '\r' or '\r\n', depending on the
@@ -1361,6 +1435,10 @@ class CurrentTranslationMessageView(LaunchpadView):
     def getImportedTranslation(self, index):
         """Return the imported translation for the pluralform 'index'."""
         return self.getOfficialTranslation(index, is_imported=True)
+
+    def getSharedTranslation(self, index):
+        """Return the shared translation for the pluralform 'index'."""
+        return self.getOfficialTranslation(index, is_shared=True)
 
     def getSubmittedTranslation(self, index):
         """Return the translation submitted for the pluralform 'index'."""

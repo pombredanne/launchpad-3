@@ -224,11 +224,12 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """Insecure policy allows PPA upload."""
         return False
 
-    def checkSignerIsUbuntero(self, upload):
-        """Reject the upload if the upload signer is not an 'ubuntero'."""
-        if not upload.changes.signer.is_ubuntero:
+    def checkSignerIsUbuntuCodeOfConductSignee(self, upload):
+        """Reject the upload if not signed by an Ubuntu CoC signer."""
+        if not upload.changes.signer.is_ubuntu_coc_signer:
             upload.reject(
-                "PPA uploads must be signed by an 'ubuntero'.")
+                'PPA uploads must be signed by an Ubuntu '
+                'Code of Conduct signer.')
 
     def checkSignerIsBetaTester(self, upload):
         """Reject the upload if the upload signer is not a 'beta-tester'.
@@ -285,16 +286,17 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
-        If the upload is target to any PPA it checks if the signer is
-        'ubuntero' and if it is member of 'launchpad-beta-tests'.
+        If the upload is targeted to any PPA, checks if the signer is an
+        Ubuntu Code of Conduct signer, and if so is a member of
+        'launchpad-beta-tests'.
         """
         if upload.is_ppa:
             # XXX cprov 2007-06-13: checks for PPA uploads are not yet
-            # established. We may decide for only one of the checks.
-            # Either in a specific team or having a ubuntero (or similar
+            # established. We may decide for only one of the checks.  Either
+            # in a specific team or having an Ubuntu CoC signer (or similar
             # flag). This code will be revisited before releasing PPA
             # publicly.
-            self.checkSignerIsUbuntero(upload)
+            self.checkSignerIsUbuntuCodeOfConductSignee(upload)
             #self.checkSignerIsBetaTester(upload)
             self.checkArchiveSizeQuota(upload)
         else:

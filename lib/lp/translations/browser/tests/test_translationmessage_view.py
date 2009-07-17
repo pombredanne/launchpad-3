@@ -39,7 +39,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         self.view = CurrentTranslationMessageView(
             message, LaunchpadTestRequest(),
             {}, dict(enumerate(message.translations)),
-            False, None, None, True)
+            False, False, None, None, True)
         self.view.user_is_official_translator = True
         self.view.initialize()
 

@@ -10,8 +10,8 @@
     <div class="top-portlet" metal:fill-slot="main">
       <h1 class="exception">Invalid Batch Size</h1>
       <p>
-      Your requested batch size exceeded the maximum batch size allowed which
-      is <span tal:replace="view/max_batch_size" />.
+      Your requested batch size exceeded the maximum batch size allowed.<br />
+      <span tal:replace="view/error_message" />
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>

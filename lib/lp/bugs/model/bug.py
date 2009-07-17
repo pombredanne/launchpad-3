@@ -647,7 +647,8 @@ class Bug(SQLBase):
             key=operator.attrgetter('displayname'))
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
-                                     level=None):
+                                     level=None,
+                                     include_master_dupe_subscribers=True):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
         self.getDirectSubscribers(recipients)
@@ -657,7 +658,7 @@ class Bug(SQLBase):
                 "A private bug should never have implicit subscribers!")
         else:
             self.getIndirectSubscribers(recipients, level=level)
-            if self.duplicateof:
+            if include_master_dupe_subscribers and self.duplicateof:
                 # This bug is a public duplicate of another bug, so include
                 # the dupe target's subscribers in the recipient list. Note
                 # that we only do this for duplicate bugs that are public;

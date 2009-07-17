@@ -45,10 +45,10 @@ from lazr.restful.interfaces import IWebServiceConfiguration
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
-from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IPerson, IPersonSet,
-    IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
-    TimestampOrderingError, ClockSkew)
+from canonical.launchpad.interfaces.launchpad import (
+    IFeedsApplication, IPrivateApplication, IWebServiceApplication)
+from canonical.launchpad.interfaces.oauth import (
+    ClockSkew, IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError)
 import canonical.launchpad.layers
 
 from canonical.launchpad.webapp.adapter import (
@@ -1188,18 +1188,6 @@ class WebServicePublication(WebServicePublicationMixin,
             token.person.account.id, access_level=token.permission,
             scope=token.context)
 
-        # Make sure the principal is a member of the beta test team.
-        # XXX leonardr 2008-05-22 spec=api-bugs-remote:
-        # Once we launch the web service this code will be removed.
-        people = getUtility(IPersonSet)
-        webservice_beta_team_name = config.vhost.api.beta_test_team
-        if webservice_beta_team_name is not None:
-            webservice_beta_team = people.getByName(
-                webservice_beta_team_name)
-            person = IPerson(principal)
-            if not person.inTeam(webservice_beta_team):
-                raise Unauthorized(
-                    person.name + " is not a member of the beta test team.")
         return principal
 
 
