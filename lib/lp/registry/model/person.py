@@ -2270,7 +2270,7 @@ class Person(
         return permissions.count() > 0
 
     @cachedproperty
-    def is_ubuntero(self):
+    def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
