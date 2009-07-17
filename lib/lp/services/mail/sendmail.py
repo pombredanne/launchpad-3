@@ -22,6 +22,7 @@ __all__ = [
     'simple_sendmail_from_person',
     'raw_sendmail']
 
+from binascii import b2a_qp
 import sha
 import sets
 from email.Encoders import encode_base64
@@ -64,11 +65,21 @@ def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     # XXX StuartBishop 2005-03-19:
     # These checks need to be migrated upstream if this bug
     # still exists in modern Z3.
-    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
-            and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     assert zisinstance(from_addr, basestring), 'Invalid From: %r' % from_addr
     assert zisinstance(subject, basestring), 'Invalid Subject: %r' % subject
     assert zisinstance(body, basestring), 'Invalid body: %r' % body
+
+
+def do_paranoid_envelope_to_validation(to_addrs):
+    """Ensure the envelope_to addresses are valid.
+
+    This is extracted from do_paranoid_email_content_validation, so that
+    it can be applied to the actual envelope_to addresses, not the
+    to header.  The to header and envelope_to addresses may vary
+    independently, and the to header cannot break Z3.
+    """
+    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
+            and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
@@ -125,23 +136,27 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
 
     Returns the `Message-Id`.
     """
-    ctrl = MailController(from_addr, to_addrs, subject, body, headers)
-    return ctrl.send(bulk=bulk)
+    ctrl = MailController(from_addr, to_addrs, subject, body, headers,
+                          bulk=bulk)
+    return ctrl.send()
 
 
 class MailController(object):
     """Message generation interface closer to peoples' mental model."""
 
-    def __init__(self, from_addr, to_addrs, subject, body, headers=None):
+    def __init__(self, from_addr, to_addrs, subject, body, headers=None,
+                 envelope_to=None, bulk=True):
         self.from_addr = from_addr
         if zisinstance(to_addrs, basestring):
             to_addrs = [to_addrs]
         self.to_addrs = to_addrs
+        self.envelope_to = envelope_to
         self.subject = subject
         self.body = body
         if headers is None:
             headers = {}
         self.headers = headers
+        self.bulk = bulk
         self.attachments = []
 
     def addAttachment(self, content, content_type='application/octet-stream',
@@ -158,14 +173,51 @@ class MailController(object):
             disposition_kwargs['filename'] = filename
         attachment.add_header(
             'Content-Disposition', disposition, **disposition_kwargs)
-        encode_base64(attachment)
+        self.encodeOptimally(attachment)
         self.attachments.append(attachment)
+
+    @staticmethod
+    def encodeOptimally(part, exact=True):
+        """Encode a message part as needed.
+
+        If the part is more than 10% high-bit characters, it will be encoded
+        using base64 encoding.  If the contents are 7-bit and exact is False,
+        the part will not be encoded.  Otherwise, the message will be encoded
+        as quoted-printable.
+
+        If quoted-printable encoding is used, exact will cause all line-ending
+        characters to be quoted.
+
+        :param part: The message part to encode.
+        :param exact: If True, the encoding will ensure newlines are not
+            mangled.  If False, 7-bit attachments will not be encoded.
+        """
+        orig_payload = part.get_payload()
+        if not exact and is_ascii_only(orig_payload):
+            return
+        # Payloads which are completely ascii need no encoding.
+        quopri_bytes = b2a_qp(orig_payload, istext=not exact)
+        # If 10% of characters need to be encoded, len is 1.2 times
+        # the original len.  If more than 10% need encoding, the result
+        # is unlikely to be readable.
+        if len(quopri_bytes) < len(orig_payload) * 1.2:
+            part.set_payload(quopri_bytes)
+            part['Content-Transfer-Encoding'] = 'quoted-printable'
+        else:
+            encode_base64(part)
 
     def makeMessage(self):
         # It's the caller's responsibility to either encode the address fields
         # to ASCII strings or pass in Unicode strings.
-        from_addr = Header(self.from_addr).encode()
-        to_addrs = [Header(address).encode()
+
+        # Using the maxlinelen for the Headers as we have paranoid checks to
+        # make sure that we have no carriage returns in the to or from email
+        # addresses.  We use nice email addresses like 'Launchpad Community
+        # Help Rotation team <long.email.address+devnull@example.com>' that
+        # get broken over two lines in the header.  RFC 5322 specified that
+        # the lines MUST be no more than 998, so we use that as our maximum.
+        from_addr = Header(self.from_addr, maxlinelen=998).encode()
+        to_addrs = [Header(address, maxlinelen=998).encode()
             for address in list(self.to_addrs)]
 
         for address in [from_addr] + to_addrs:
@@ -200,7 +252,7 @@ class MailController(object):
         return msg
 
     def send(self, bulk=True):
-        return sendmail(self.makeMessage(), bulk=bulk)
+        return sendmail(self.makeMessage(), self.envelope_to, bulk=self.bulk)
 
 
 def simple_sendmail_from_person(
@@ -273,6 +325,8 @@ def sendmail(message, to_addrs=None, bulk=True):
         to_addrs = get_addresses_from_header(message['to'])
         if message['cc']:
             to_addrs = to_addrs + get_addresses_from_header(message['cc'])
+
+    do_paranoid_envelope_to_validation(to_addrs)
 
     # Add a Message-Id: header if it isn't already there
     if 'message-id' not in message:

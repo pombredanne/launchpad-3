@@ -44,15 +44,13 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
-from lp.soyuz.adapters.archivedependencies import (
-    get_components_for_building)
+from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.builder import Builder
 from lp.soyuz.model.buildqueue import BuildQueue
@@ -168,6 +166,11 @@ class Build(SQLBase):
     def package_upload(self):
         """See `IBuild`."""
         store = Store.of(self)
+        # The join on 'changesfile' is not only used only for
+        # pre-fetching the corresponding library file, so callsites
+        # don't have to issue an extra query. It is also important
+        # for excluding delayed-copies, because they might match
+        # the publication context but will not contain as changesfile.
         origin = [
             PackageUploadBuild,
             Join(PackageUpload,
@@ -180,7 +183,6 @@ class Build(SQLBase):
         results = store.using(*origin).find(
             (PackageUpload, LibraryFileAlias, LibraryFileContent),
             PackageUploadBuild.build == self,
-            PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.archive == self.archive,
             PackageUpload.distroseries == self.distroseries)
 
@@ -817,9 +819,13 @@ class BuildSet:
                 IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
-    def _handleOptionalParams(
-        self, queries, tables, status=None, name=None, pocket=None):
+    def handleOptionalParamsForBuildQueries(
+        self, queries, tables, status=None, name=None, pocket=None,
+        arch_tag=None):
         """Construct query clauses needed/shared by all getBuild..() methods.
+
+        This method is not exposed via the public interface as it is only
+        used to DRY-up trusted code.
 
         :param queries: container to which to add any resulting query clauses.
         :param tables: container to which to add joined tables.
@@ -829,15 +835,26 @@ class BuildSet:
             query clause if present.
         :param pocket: optional pocket for which to add a query clause if
             present.
+        :param arch_tag: optional architecture tag for which to add a
+            query clause if present.
         """
+
         # Add query clause that filters on build state if the latter is
         # provided.
         if status is not None:
-            queries.append('buildstate=%s' % sqlvalues(status))
+            queries.append('Build.buildstate=%s' % sqlvalues(status))
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
-            queries.append('pocket=%s' % sqlvalues(pocket))
+            queries.append('Build.pocket=%s' % sqlvalues(pocket))
+
+        # Add query clause that filters on architecture tag if provided.
+        if arch_tag is not None:
+            queries.append('''
+                Build.distroarchseries = DistroArchSeries.id AND
+                DistroArchSeries.architecturetag = %s
+            ''' % sqlvalues(arch_tag))
+            tables.extend(['DistroArchSeries'])
 
         # Add query clause that filters on source package release name if the
         # latter is provided.
@@ -849,14 +866,15 @@ class BuildSet:
             ''' % quote_like(name))
             tables.extend(['SourcePackageRelease', 'SourcePackageName'])
 
-
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
-                            user=None):
+                            arch_tag=None, user=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
 
-        self._handleOptionalParams(queries, clauseTables, status, name)
+        self.handleOptionalParamsForBuildQueries(
+            queries, clauseTables, status, name, pocket=None,
+            arch_tag=arch_tag)
 
         # This code MUST match the logic in the Build security adapter,
         # otherwise users are likely to get 403 errors, or worse.
@@ -880,13 +898,13 @@ class BuildSet:
                             orderBy=["-Build.datebuilt", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
-                            pocket=None):
+                            pocket=None, arch_tag=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
 
-        self._handleOptionalParams(
-            queries, clauseTables, status, name, pocket)
+        self.handleOptionalParamsForBuildQueries(
+            queries, clauseTables, status, name, pocket, arch_tag)
 
         # Ordering according status
         # * SUPERSEDED & All by -datecreated
@@ -954,7 +972,7 @@ class BuildSet:
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        self._handleOptionalParams(
+        self.handleOptionalParamsForBuildQueries(
             condition_clauses, clauseTables, status, name, pocket)
 
         # Only pick builds from the distribution's main archive to

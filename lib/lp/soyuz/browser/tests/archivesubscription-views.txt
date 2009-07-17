@@ -79,7 +79,9 @@ After adding a subscriber, the view includes a relevant notification:
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    You have subscribed Andrew Bennetts to PPA for Celso Providelo.
+    You have granted access for Andrew Bennetts to install software
+    from PPA for Celso Providelo.
+    Andrew Bennetts will be notified of the access via email.
 
 The view includes a subscribers property that returns all the current
 subscribers:
@@ -178,7 +180,7 @@ for editing, together with Update and Cancel actions:
     >>> for action in view.actions:
     ...     print action.label
     Save
-    Cancel subscription
+    Cancel access
 
 The ArchiveSubscriptionEditView has a next_url helper property.
 
@@ -326,9 +328,6 @@ redirect:
     ...     spiv_subscription, name="+index", form={'activate': '1'})
     >>> view.request.response.getStatus()
     302
-    >>> for notification in view.request.notifications:
-    ...     print notification.message
-    You have confirmed your subscription to...
 
 Now the view can then access the token and the source list entries sub-view:
 

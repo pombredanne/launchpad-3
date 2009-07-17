@@ -81,7 +81,8 @@ The blueprint page shows the linked branches in a portlet.
 
     >>> user_browser.open(
     ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support')
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'branch_links'))
+    >>> print extract_text(find_tag_by_id(user_browser.contents,
+    ...     'linked_branches'))
     Related branches
     lp://dev/~sabdfl/firefox/release-0.8
 
@@ -98,19 +99,6 @@ Again, attempting to link to the same branch gives an error.
     >>> browser.getControl('Cancel').click()
 
 
-== Editing a Branch Link ==
-
-The edit link in the branches portlet takes us to a form that can be
-used to edit the summary of the branch link:
-
-    >>> browser.getLink(url='branch/sabdfl/firefox/release-0.8').click()
-    >>> back_link = browser.getLink('Support Native SVG Objects')
-    >>> back_link.url
-    'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
-    >>> browser.getControl('Summary').value = 'New summary'
-    >>> browser.getControl('Update').click()
-
-
 == Deleting a Branch Link ==
 
 Users can delete the branch link from the branch link page:
@@ -125,7 +113,7 @@ The branch is now no longer listed in the portlet:
 
     >>> user_browser.open(
     ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support')
-    >>> find_tag_by_id(user_browser.contents, 'branch_links')
+    >>> find_tag_by_id(user_browser.contents, 'linked_branches')
 
 
 == Inline editing from the branch page ==

@@ -43,6 +43,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.browser.branch import DecoratedBug
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from lp.code.enums import (
@@ -54,6 +55,8 @@ from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.comments.interfaces.conversation import (
+    IComment, IConversation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
@@ -137,7 +140,8 @@ class BranchMergeProposalContextMenu(ContextMenu):
     def add_comment(self):
         # Can't add a comment to Merged, Superseded or Rejected.
         enabled = self.context.isMergable()
-        return Link('+comment', 'Add a comment', icon='add', enabled=enabled)
+        return Link('+comment', 'Add a review or comment', icon='add',
+                    enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -313,6 +317,30 @@ class BranchMergeProposalNavigation(Navigation):
         except WrongBranchMergeProposal:
             return None
 
+
+class CodeReviewDisplayComment:
+    """A code review comment or activity or both."""
+
+    implements(IComment)
+
+    delegates(ICodeReviewComment, 'comment')
+
+    def __init__(self, comment):
+        self.comment = comment
+        self.has_body = bool(self.comment.message_body)
+        self.has_footer = self.comment.vote is not None
+        self.date = self.comment.message.datecreated
+
+
+class CodeReviewConversation:
+    """A code review conversation."""
+
+    implements(IConversation)
+
+    def __init__(self, comments):
+        self.comments = comments
+
+
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
@@ -324,6 +352,16 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     def comment_location(self):
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
+
+    @cachedproperty
+    def conversation(self):
+        """Return a conversation that is to be rendered."""
+        # Sort the comments by date order.
+        comments = [
+            CodeReviewDisplayComment(comment)
+            for comment in self.context.all_comments]
+        comments = sorted(comments, key=operator.attrgetter('date'))
+        return CodeReviewConversation(comments)
 
     @property
     def comments(self):
@@ -363,7 +401,13 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         """Return whether or not the merge proposal has a linked bug or spec.
         """
         branch = self.context.source_branch
-        return branch.bug_branches or branch.spec_links
+        return branch.linked_bugs or branch.spec_links
+
+    @cachedproperty
+    def linked_bugs(self):
+        """Return DecoratedBugs linked to the source branch."""
+        branch = self.context.source_branch
+        return [DecoratedBug(bug, branch) for bug in branch.linked_bugs]
 
 
 class DecoratedCodeReviewVoteReference:
@@ -385,6 +429,10 @@ class DecoratedCodeReviewVoteReference:
         is_mergable = self.context.branch_merge_proposal.isMergable()
         self.can_change_review = (user == context.reviewer) and is_mergable
         branch = context.branch_merge_proposal.source_branch
+        review_team = context.branch_merge_proposal.target_branch.reviewer
+        reviewer = context.reviewer
+        self.trusted = (reviewer is not None and reviewer.inTeam(
+                        review_team))
         if user is None:
             self.user_can_review = False
         else:
@@ -977,31 +1025,11 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         if new_status == curr_status:
             return
 
-        # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
-        # would be better as a dict mapping.
-        # See bug #281060.
-        if new_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
-            self.context.setAsWorkInProgress()
-        elif new_status == BranchMergeProposalStatus.NEEDS_REVIEW:
-            self.context.requestReview()
-        elif new_status == BranchMergeProposalStatus.CODE_APPROVED:
-            # Other half of the edge case.  If the status is currently queued,
-            # we need to dequeue, otherwise we just approve the branch.
-            if curr_status == BranchMergeProposalStatus.QUEUED:
-                self.context.dequeue()
-            else:
-                self.context.approveBranch(self.user, rev_id)
-        elif new_status == BranchMergeProposalStatus.REJECTED:
-            self.context.rejectBranch(self.user, rev_id)
-        elif new_status == BranchMergeProposalStatus.QUEUED:
-            self.context.enqueue(self.user, rev_id)
-        elif new_status == BranchMergeProposalStatus.MERGED:
-            self.context.markAsMerged(merge_reporter=self.user)
-        elif new_status == BranchMergeProposalStatus.SUPERSEDED:
+        if new_status == BranchMergeProposalStatus.SUPERSEDED:
             # Redirect the user to the resubmit view.
             self.next_url = canonical_url(self.context, view_name="+resubmit")
         else:
-            raise AssertionError('Unexpected queue status: ' % new_status)
+            self.context.setStatus(new_status, self.user, rev_id)
 
 
 class IAddVote(Interface):

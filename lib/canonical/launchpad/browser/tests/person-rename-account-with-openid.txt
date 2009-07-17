@@ -41,11 +41,13 @@ wishes:
 
 Same thing if they logged in using OpenID only to known trust roots.
 
+    >>> from lp.services.openid.interfaces.openidrpconfig import (
+    ...     IOpenIDRPConfigSet)
     >>> from canonical.signon.interfaces.openidserver import (
-    ...     IOpenIDRPConfigSet, IOpenIDRPSummarySet)
+    ...     IOpenIDRPSummarySet)
     >>> trust_root = getUtility(IOpenIDRPConfigSet).new(
     ...     'https://shop.canonical.com/', 'The Shop', 'For our fans')
-    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.signon.dbpolicy import SSODatabasePolicy
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> store_selector = getUtility(IStoreSelector)
     >>> store_selector.push(SSODatabasePolicy())

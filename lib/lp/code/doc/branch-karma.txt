@@ -49,12 +49,12 @@ However, no karma is added for junk branches.
 You get karma for linking a bug to a branch.
 
     >>> bug = factory.makeBug(product=fooix)
-    >>> branch_link = bug.addBranch(branch, eric)
+    >>> branch_link = bug.linkBranch(branch, eric)
     Karma added: action=bugbranchcreated, product=fooix, person=eric
 
 As long as it is not a junk branch.
 
-    >>> branch_link = bug.addBranch(junk_branch, eric)
+    >>> branch_link = bug.linkBranch(junk_branch, eric)
 
 
 == Linking blueprints and branches ==

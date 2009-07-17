@@ -109,6 +109,7 @@ class CanonicalConfig:
             process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
         self._instance_name = instance_name
         self._process_name = process_name
+        self.root = TREE_ROOT
 
     @property
     def instance_name(self):
@@ -191,8 +192,6 @@ class CanonicalConfig:
 
     def _setZConfig(self):
         """Modify the config, adding automatically generated settings"""
-        self.root = TREE_ROOT
-
         schemafile = os.path.join(
             self.root, 'lib/zope/app/server/schema.xml')
         schema = ZConfig.loadSchema(schemafile)
@@ -208,6 +207,22 @@ class CanonicalConfig:
 
         # The number of configured threads.
         self.threads = root_options.threads
+
+    def generate_overrides(self):
+        """Ensure correct config .zcml overrides will be called.
+
+        Call this method before letting any ZCML processing occur.
+        """
+        loader_file = os.path.join(self.root, '+config-overrides.zcml')
+        loader = open(loader_file, 'w')
+
+        print >> loader, """<configure xmlns="http://namespaces.zope.org/zope">
+                <!-- This file automatically generated using
+                     canonical.config.CanonicalConfig.generate_overrides.
+                     DO NOT EDIT. -->
+                <include files="%s/*.zcml" />
+                </configure>""" % self.config_dir
+        loader.close()
 
     def __getattr__(self, name):
         self._getConfig()
@@ -392,7 +407,7 @@ class DatabaseConfig:
         'main_master', 'main_slave', 'auth_master', 'auth_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'randomise_select_results',
-        'soft_request_timeout'])
+        'soft_request_timeout', 'storm_cache', 'storm_cache_size'])
     _db_config_required_attrs = frozenset([
         'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave'])
 

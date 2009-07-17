@@ -97,7 +97,44 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
              'Message-Id': '<foobar-example-com>'},
             ctrl.headers)
         self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)
+        self.assertEqual([bmp.address], ctrl.to_addrs)
         mailer.sendAll()
+
+    def test_to_addrs_includes_reviewers(self):
+        """The addresses for the to header include requested reviewers"""
+        request, requester = self.makeReviewRequest()
+        bmp = request.merge_proposal
+        bmp.source_branch.subscribe(
+            bmp.registrant, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail(bmp.registrant,
+                                    bmp.registrant.preferredemail.email)
+        reviewer = request.recipient
+        reviewer_id = mailer._format_user_address(reviewer)
+        self.assertEqual(set([reviewer_id, bmp.address]),
+                         set(ctrl.to_addrs))
+
+    def test_to_addrs_excludes_team_reviewers(self):
+        """Addresses for the to header exclude requested team reviewers."""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        team = self.factory.makeTeam(email='group@team.com')
+        request = CodeReviewVoteReference(
+            branch_merge_proposal=bmp, reviewer=team, registrant=subscriber)
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail(subscriber,
+                                    subscriber.preferredemail.email)
+        self.assertEqual([bmp.address], ctrl.to_addrs)
+
+    def test_to_addrs_excludes_people_with_hidden_addresses(self):
+        """The to header excludes those with hidden addresses."""
+        request, requester = self.makeReviewRequest()
+        request.recipient.hide_email_addresses = True
+        bmp = request.merge_proposal
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail(request.recipient,
+                                    request.recipient.preferredemail.email)
+        self.assertEqual([bmp.address], ctrl.to_addrs)
 
     def test_RecordMessageId(self):
         """Ensure that the contents of the mail are as expected"""
@@ -259,6 +296,15 @@ new commit message
             request.merge_proposal.review_diff,
             mailer.review_diff)
         self.assertRecipientsMatches([request.recipient], mailer)
+
+    def test_to_addrs_for_review_request(self):
+        request, requester = self.makeReviewRequest()
+        mailer = BMPMailer.forReviewRequest(
+            request, request.merge_proposal, requester)
+        ctrl = mailer.generateEmail(request.recipient.preferredemail.email,
+                                    request.recipient)
+        recipient_addr = mailer._format_user_address(request.recipient)
+        self.assertEqual([recipient_addr], ctrl.to_addrs)
 
     def test_forReviewRequestMessageId(self):
         """Test creating a mailer for a review request."""

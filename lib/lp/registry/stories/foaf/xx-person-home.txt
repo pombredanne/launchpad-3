@@ -129,9 +129,8 @@ No Privileges Person can see the languages that sabdfl speaks.
 
     >>> user_browser.open('http://launchpad.dev/~carlos')
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'languages'))
-    Languages: 
+    Languages:
     Catalan, English, Spanish
-    Set preferred languages
 
 When viewing his own page, No Privileges Person sees his languages and can
 edit them.
@@ -139,7 +138,7 @@ edit them.
     >>> user_browser.open('http://launchpad.dev/~no-priv')
     >>> languages_row = find_tag_by_id(user_browser.contents, 'languages')
     >>> print languages_row.td
-    <td>... English... <a class="sprite edit" href="http://launchpad.dev/~no-priv/+editlanguages"...
+    <td> English <a href=".../~no-priv/+editlanguages"...
 
 
 == Summary Pagelets ==
@@ -211,12 +210,12 @@ and also the areas in which (s)he worked on each project.
     ...         img = td.find('img')
     ...         if img is not None:
     ...             print "\t", img['title']
-    The Evolution Groupware ...
+    Evolution
        Bug Management
        Translations in Rosetta
-    Ubuntu Linux
+    Ubuntu
        Bug Management
-    Gnome Baker
+    gnomebaker
        Bug Management
     Mozilla Thunderbird
        Bug Management

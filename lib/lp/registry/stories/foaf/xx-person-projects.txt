@@ -54,11 +54,9 @@ Registry Admins case which owns lots of projects and the page would
 become a performance nightmare. In 99% of the cases, people won't reach
 the config.launchpad.default_batch_size threshold.
 
-    >>> limits = find_tags_by_class(
-    ...     anon_browser.contents, 'limit-encountered')
-    >>> for tag in limits:
-    ...     print tag.renderContents()
-    10 projects are related to Mark Shuttleworth. Displaying only the first 5:
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'limit-encountered'))
+    Displaying first 5 projects out of 10 total
 
     >>> related_projects = find_tag_by_id(
     ...     anon_browser.contents, 'related-projects')
@@ -69,4 +67,3 @@ the config.launchpad.default_batch_size threshold.
     Debian GNU/Linux                3       0           0
     The Gentoo Linux                0       0           0
     Kubuntu - Free KDE-based Linux  0       4           0
-

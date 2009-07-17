@@ -3,7 +3,6 @@
 """Security policies for using content objects."""
 
 __metaclass__ = type
-# Need AuthorizationBase here because canonical.shipit.security imports it.
 __all__ = ['AuthorizationBase']
 
 from zope.app.error.interfaces import IErrorReportingUtility
@@ -44,16 +43,18 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.distroserieslanguage import (
+from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.entitlement import IEntitlement
-from canonical.launchpad.interfaces.hwdb import IHWSubmission
+from canonical.launchpad.interfaces.hwdb import (
+    IHWDBApplication, IHWDevice, IHWDriver, IHWDriverName,
+    IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
-from canonical.launchpad.interfaces.languagepack import ILanguagePack
+from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IBazaarApplication, IHasBug, IHasDrivers, IHasOwner,
-    ILaunchpadCelebrities)
+    IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
@@ -61,8 +62,8 @@ from lp.registry.interfaces.milestone import (
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from canonical.launchpad.interfaces.pofile import IPOFile
-from canonical.launchpad.interfaces.potemplate import (
+from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
@@ -92,13 +93,13 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import (
     ISprintSpecification)
 from lp.registry.interfaces.teammembership import ITeamMembership
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, ITranslationImportQueueEntry)
-from canonical.launchpad.interfaces.translationsperson import (
+from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
-from canonical.launchpad.interfaces.translator import (
+from lp.translations.interfaces.translator import (
     ITranslator, IEditTranslator)
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -179,7 +180,16 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.commercial_admin)
-                or user.inTeam(celebrities.launchpad_developers)
+                or user.inTeam(celebrities.admin))
+
+
+class AdminByProjectReviewersOrAdmins(AuthorizationBase):
+    permission = 'launchpad.ProjectReview'
+    usedfor = Interface
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebrities.registry_experts)
                 or user.inTeam(celebrities.admin))
 
 
@@ -198,6 +208,7 @@ class ViewPillar(AuthorizationBase):
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
                     or user.inTeam(celebrities.launchpad_developers)
+                    or user.inTeam(celebrities.registry_experts)
                     or user.inTeam(celebrities.admin))
 
 
@@ -1092,7 +1103,7 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
-        """Allow LP/Translations admins, and for distros, owners and 
+        """Allow LP/Translations admins, and for distros, owners and
         translation group owners.
         """
         if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
@@ -1124,7 +1135,7 @@ class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
             return True
 
         return (
-            AdminPOTemplateDetails.checkAuthenticated(self, user) or 
+            AdminPOTemplateDetails.checkAuthenticated(self, user) or
             EditByOwnersOrAdmins.checkAuthenticated(self, user))
 
 
@@ -1793,6 +1804,49 @@ class EditHWSubmission(AdminByAdminsTeam):
     usedfor = IHWSubmission
 
 
+class ViewHWDBBase(AuthorizationBase):
+    """Base class to restrict access to HWDB data to members of the HWDB team.
+    """
+    permission = 'launchpad.View'
+
+    def checkAuthenticated(self, user):
+        """We give for now access only to Canonical employees."""
+        hwdb_team = getUtility(ILaunchpadCelebrities).hwdb_team
+        return user.inTeam(hwdb_team)
+
+    def checkUnauthenticated(self):
+        """No access for anonymous users."""
+        return False
+
+
+class ViewHWDriver(ViewHWDBBase):
+    usedfor = IHWDriver
+
+
+class ViewHWDriverName(ViewHWDBBase):
+    usedfor = IHWDriverName
+
+
+class ViewHWDriverPackageName(ViewHWDBBase):
+    usedfor = IHWDriverPackageName
+
+
+class ViewHWVendorID(ViewHWDBBase):
+    usedfor = IHWVendorID
+
+
+class ViewHWDevice(ViewHWDBBase):
+    usedfor = IHWDevice
+
+
+class ViewHWSubmissionDevice(ViewHWDBBase):
+    usedfor = IHWSubmissionDevice
+
+
+class ViewHWDBApplication(ViewHWDBBase):
+    usedfor = IHWDBApplication
+
+
 class ViewArchive(AuthorizationBase):
     """Restrict viewing of private archives.
 
@@ -1807,19 +1861,20 @@ class ViewArchive(AuthorizationBase):
 
         Anyone can see a public archive.
 
-        Only a team member or a Launchpad admin can view a
-        private archive.
+        Only Launchpad admins and uploaders can view private archives.
         """
         # No further checks are required if the archive is not private.
         if not self.obj.private:
             return True
 
-        # Admins and this archive's owner or team members are allowed.
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(admins):
+        # Administrator are allowed to view private archives.
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (user.inTeam(celebrities.admin)
+            or user.inTeam(celebrities.commercial_admin)):
             return True
 
-        if self.obj.owner and user.inTeam(self.obj.owner):
+        # Uploaders can view private PPAs.
+        if self.obj.is_ppa and self.obj.canUpload(user):
             return True
 
         return False
@@ -1828,28 +1883,22 @@ class ViewArchive(AuthorizationBase):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
 
+
 class AppendArchive(AuthorizationBase):
     """Restrict appending (upload and copy) operations on archives.
 
-    Restrict the group that can already view the PPAs to users with valid
-    membership on it.
+    PPA upload rights are managed via `IArchive.canUpload`;
+
+    Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
     """
     permission = 'launchpad.Append'
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
-        """Verify that the user can append (upload) the archive.
+        if user.inTeam(self.obj.owner):
+            return True
 
-        Anyone with valid membership in the public PPA (owner) can append.
-        Only team members can append to private PPAs.
-        """
-        # XXX 2009-01-08 Julian
-        # This should be sharing code with the encapsulated method
-        # IArchive.canUpload().  That would mean it would also work for
-        # main archives in addition to not repeating the same code here.
-        auth_view = ViewArchive(self.obj)
-        can_view = auth_view.checkAuthenticated(user)
-        if can_view and user.inTeam(self.obj.owner):
+        if self.obj.is_ppa and self.obj.canUpload(user):
             return True
 
         return False
@@ -1857,7 +1906,7 @@ class AppendArchive(AuthorizationBase):
 
 class ViewArchiveAuthToken(AuthorizationBase):
     """Restrict viewing of archive tokens.
-    
+
     The user just needs to be mentioned in the token, have append privilege
     to the archive or be an admin.
     """
@@ -2065,6 +2114,7 @@ class ViewEmailAddress(AuthorizationBase):
         return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.launchpad_developers)
+                or user.inTeam(celebrities.registry_experts)
                 or user.inTeam(celebrities.admin))
 
 

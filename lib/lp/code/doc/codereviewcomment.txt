@@ -70,7 +70,9 @@ a notification is produced when the comment is created.
     ...     sender, 'Please merge', 'This patch is very nice.',
     ...     vote=CodeReviewVote.APPROVE, review_type='DB')
     >>> notifications = pop_notifications()
-    >>> print_emails(include_reply_to=True, notifications=notifications[:1])
+    >>> notifications = [email for email in notifications if
+    ...                  email['X-Launchpad-Message-Rationale'] == 'Owner']
+    >>> print_emails(include_reply_to=True, notifications=notifications)
     From: Sender Person <sender@example.com>
     To: ...
     Reply-To: mp+1@code.launchpad.dev
@@ -82,8 +84,6 @@ a notification is produced when the comment is created.
     ----------------------------------------
     >>> print notifications[0]['X-Launchpad-Branch']
     ~person-name.../product-name.../branch...
-    >>> print notifications[0]['X-Launchpad-Message-Rationale']
-    Owner
     >>> notifications[0]['Message-Id'] == comment.message.rfc822msgid
     True
     >>> (notifications[0]['In-Reply-To'] == merge_proposal.root_message_id)

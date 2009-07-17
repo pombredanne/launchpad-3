@@ -107,6 +107,13 @@
 
         <h2 style="margin-top: 2em;">Download files for this release</h2>
 
+        <p id="how-to-verify" tal:condition="view/download_files">
+          After you've downloaded a file, you can verify its authenticity
+          using its MD5 sum or signature.
+          (<a href="/+help/verify-downloads.html" target="help">How do I
+          verify a download?</a>)
+        </p>
+
         <table id="downloads" class="listing">
           <thead>
             <tr>
@@ -212,10 +219,10 @@
             <span tal:content="structure spec/image:icon" />
           </td>
           <td>
-            <a tal:content="spec/title/fmt:shorten/60"
+            <a tal:content="spec/title/fmt:shorten/100"
                tal:attributes="
                    href spec/fmt:url;
-                   title spec/name">Foo Bar Baz</a>
+                   title spec/summary/fmt:shorten/400">Foo Bar Baz</a>
             <img src="/@@/info" alt="Informational"
                  tal:condition="spec/informational" />
           </td>
@@ -275,7 +282,7 @@
                Bug Title Here
             </a>
           </td>
-          <td style="width: 33px; padding-right: 5px;">
+          <td style="width: 33px; padding-right: 5px; text-align:right">
             <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
           </td>
           <td tal:condition="view/is_project_milestone">

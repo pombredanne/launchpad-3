@@ -1190,8 +1190,6 @@ class IPersonViewRestricted(Interface):
                 "Your name as you would like it displayed throughout "
                 "Launchpad. Most people use their full name here.")),
         exported_as='display_name')
-    browsername = Attribute(
-        'Return a textual name suitable for display in a browser.')
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     active_member_count = Attribute(
@@ -1897,7 +1895,7 @@ class IPersonSet(Interface):
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
-    dupeaccount = Choice(
+    dupe_person = Choice(
         title=_('Duplicated Account'), required=True,
         vocabulary='PersonAccountToMerge',
         description=_(
@@ -1910,12 +1908,12 @@ class IAdminPeopleMergeSchema(Interface):
 
     dupe_person = Choice(
         title=_('Duplicated Person'), required=True,
-        vocabulary='PersonAccountToMerge',
+        vocabulary='AdminMergeablePerson',
         description=_("The duplicated person found in Launchpad."))
 
     target_person = Choice(
         title=_('Target Person'), required=True,
-        vocabulary='PersonAccountToMerge',
+        vocabulary='AdminMergeablePerson',
         description=_("The person to be merged on."))
 
 

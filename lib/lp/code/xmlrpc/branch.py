@@ -57,7 +57,7 @@ class IBranchSetAPI(Interface):
                         owner_name=''):
         """Register a new branch in Launchpad."""
 
-    def link_branch_to_bug(branch_url, bug_id, whiteboard):
+    def link_branch_to_bug(branch_url, bug_id):
         """Link the branch to the bug."""
 
 
@@ -137,7 +137,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
         return canonical_url(branch)
 
-    def link_branch_to_bug(self, branch_url, bug_id, whiteboard):
+    def link_branch_to_bug(self, branch_url, bug_id):
         """See IBranchSetAPI."""
         branch = getUtility(IBranchLookup).getByUrl(url=branch_url)
         if branch is None:
@@ -146,13 +146,10 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             bug = getUtility(IBugSet).get(bug_id)
         except NotFoundError:
             return faults.NoSuchBug(bug_id)
-        if not whiteboard:
-            whiteboard = None
-
         # Since this API is controlled using launchpad.AnyPerson there must be
         # an authenticated person, so use this person as the registrant.
         registrant = getUtility(ILaunchBag).user
-        bug.addBranch(branch, registrant=registrant, whiteboard=whiteboard)
+        bug.linkBranch(branch, registrant=registrant)
         return canonical_url(bug)
 
 
@@ -191,7 +188,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """Return the hostname for the codehosting server."""
         return URI(config.codehosting.supermirror_root).host
 
-    def _getResultDict(self, branch, suffix=None):
+    def _getResultDict(self, branch, suffix=None, supported_schemes=None):
         """Return a result dict with a list of URLs for the given branch.
 
         :param branch: A Branch object.
@@ -204,15 +201,19 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 return faults.NoUrlForBranch(branch.unique_name)
             return dict(urls=[branch.url])
         else:
-            return self._getUniqueNameResultDict(branch.unique_name, suffix)
+            return self._getUniqueNameResultDict(
+                branch.unique_name, suffix, supported_schemes)
 
-    def _getUniqueNameResultDict(self, unique_name, suffix=None):
+    def _getUniqueNameResultDict(self, unique_name, suffix=None,
+                                 supported_schemes=None):
+        if supported_schemes is None:
+            supported_schemes = self.supported_schemes
         result = dict(urls=[])
         host = self._getBazaarHost()
         path = '/' + unique_name
         if suffix is not None:
             path = os.path.join(path, suffix)
-        for scheme in self.supported_schemes:
+        for scheme in supported_schemes:
             result['urls'].append(
                 str(URI(host=host, scheme=scheme, path=path)))
         return result
@@ -227,6 +228,11 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         strip_path = path.strip('/')
         if strip_path == '':
             raise faults.InvalidBranchIdentifier(path)
+        supported_schemes = self.supported_schemes
+        hot_products = [product.strip() for product
+                        in config.codehosting.hot_products.split(',')]
+        if strip_path in hot_products:
+            supported_schemes = ['http']
         branch_set = getUtility(IBranchLookup)
         try:
             branch, suffix = branch_set.getByLPPath(strip_path)
@@ -258,7 +264,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             raise faults.CannotHaveLinkedBranch(e.component)
         except InvalidNamespace, e:
             raise faults.InvalidBranchUniqueName(e.name)
-        return self._getResultDict(branch, suffix)
+        return self._getResultDict(branch, suffix, supported_schemes)
 
     def resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""

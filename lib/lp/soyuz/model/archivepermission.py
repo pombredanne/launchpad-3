@@ -29,7 +29,6 @@ from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from lp.soyuz.interfaces.packageset import IPackageset
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -318,7 +317,8 @@ class ArchivePermissionSet:
         """Helper to convert a possible string name to IPackageset."""
         if isinstance(packageset, basestring):
             name = packageset
-            packageset = Store.of(self).find(Packageset, name=name).one()
+            store = IStore(Packageset)
+            packageset = store.find(Packageset, name=name).one()
             if packageset is not None:
                 return packageset
             else:
@@ -329,7 +329,7 @@ class ArchivePermissionSet:
             raise ValueError(
                 'Not a package set: %s' % _extract_type_name(packageset))
 
-    def packagesetsForUploader(self, person):
+    def packagesetsForUploader(self, archive, person):
         """See `IArchivePermissionSet`."""
         store = IStore(ArchivePermission)
         query = '''
@@ -337,12 +337,14 @@ class ArchivePermissionSet:
             FROM archivepermission ap, teamparticipation tp
             WHERE
                 (ap.person = ? OR (ap.person = tp.team AND tp.person = ?))
+                AND ap.archive = ?
                 AND ap.packageset IS NOT NULL
         '''
-        query = SQL(query, (person.id, person.id))
+        query = SQL(query, (person.id, person.id, archive.id))
         return store.find(ArchivePermission, In(ArchivePermission.id, query))
 
-    def uploadersForPackageset(self, packageset, direct_permissions=True):
+    def uploadersForPackageset(
+        self, archive, packageset, direct_permissions=True):
         """See `IArchivePermissionSet`."""
         packageset = self._nameToPackageset(packageset)
         store = IStore(ArchivePermission)
@@ -356,10 +358,12 @@ class ArchivePermissionSet:
                 FROM archivepermission ap, flatpackagesetinclusion fpsi
                 WHERE fpsi.child = ? AND ap.packageset = fpsi.parent
             '''
-        query = SQL(query, (packageset.id,))
+        query += " AND ap.archive = ?"
+        query = SQL(query, (packageset.id, archive.id))
         return store.find(ArchivePermission, In(ArchivePermission.id, query))
 
-    def newPackagesetUploader(self, person, packageset, explicit=False):
+    def newPackagesetUploader(
+        self, archive, person, packageset, explicit=False):
         """See `IArchivePermissionSet`."""
         packageset = self._nameToPackageset(packageset)
         store = IMasterStore(ArchivePermission)
@@ -371,9 +375,9 @@ class ArchivePermissionSet:
             FROM archivepermission ap, teamparticipation tp
             WHERE
                 (ap.person = ? OR (ap.person = tp.team AND tp.person = ?))
-                AND ap.packageset = ?
+                AND ap.packageset = ? AND ap.archive = ?
         '''
-        query = SQL(query, (person.id, person.id, packageset.id))
+        query = SQL(query, (person.id, person.id, packageset.id, archive.id))
         permissions = list(
             store.find(ArchivePermission, In(ArchivePermission.id, query)))
         if len(permissions) > 0:
@@ -405,28 +409,31 @@ class ArchivePermissionSet:
         # The requested permission does not exist yet. Insert it into the
         # database.
         permission = ArchivePermission(
-            archive=getUtility(IDistributionSet)['ubuntu'].main_archive,
+            archive=archive,
             person=person, packageset=packageset,
             permission=ArchivePermissionType.UPLOAD, explicit=explicit)
         store.add(permission)
 
         return permission
 
-    def deletePackagesetUploader(self, person, packageset, explicit=False):
+    def deletePackagesetUploader(
+        self, archive, person, packageset, explicit=False):
         """See `IArchivePermissionSet`."""
         packageset = self._nameToPackageset(packageset)
         store = IMasterStore(ArchivePermission)
 
         # Do we have the permission the user wants removed in the database?
         permission = store.find(
-            ArchivePermission, person=person, packageset=packageset,
-            permission=ArchivePermissionType.UPLOAD, explicit=explicit).one()
+            ArchivePermission, archive=archive, person=person,
+            packageset=packageset, permission=ArchivePermissionType.UPLOAD,
+            explicit=explicit).one()
 
         if permission is not None:
             # Permission found, remove it!
             store.remove(permission)
 
-    def packagesetsForSourceUploader(self, sourcepackagename, person):
+    def packagesetsForSourceUploader(
+        self, archive, sourcepackagename, person):
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
         store = IStore(ArchivePermission)
@@ -440,20 +447,52 @@ class ArchivePermissionSet:
                 AND ap.packageset = fpsi.parent
                 AND pss.packageset = fpsi.child
                 AND pss.sourcepackagename = ?
+                AND ap.archive = ?
         '''
-        query = SQL(query, (person.id, person.id, sourcepackagename.id))
+        query = SQL(
+            query, (person.id, person.id, sourcepackagename.id, archive.id))
         return store.find(ArchivePermission, In(ArchivePermission.id, query))
 
-    def isSourceUploadAllowed(self, sourcepackagename, person):
+    def packagesetsForSource(
+        self, archive, sourcepackagename, direct_permissions=True):
+        """See `IArchivePermissionSet`."""
+        sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
+        store = IStore(ArchivePermission)
+
+        if direct_permissions:
+            origin = SQL('ArchivePermission, PackagesetSources')
+            rset = store.using(origin).find(ArchivePermission, SQL('''
+                ArchivePermission.packageset = PackagesetSources.packageset
+                AND PackagesetSources.sourcepackagename = ?
+                AND ArchivePermission.archive = ?
+                ''', (sourcepackagename.id, archive.id)))
+        else:
+            origin = SQL(
+                'ArchivePermission, PackagesetSources, '
+                'FlatPackagesetInclusion')
+            rset = store.using(origin).find(ArchivePermission, SQL('''
+                ArchivePermission.packageset = FlatPackagesetInclusion.parent
+                AND PackagesetSources.packageset =
+                    FlatPackagesetInclusion.child
+                AND PackagesetSources.sourcepackagename = ?
+                AND ArchivePermission.archive = ?
+                ''', (sourcepackagename.id, archive.id)))
+        return rset
+
+    def isSourceUploadAllowed(self, archive, sourcepackagename, person):
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
         store = IStore(ArchivePermission)
 
         # Put together the parameters for the query that follows.
-        permission = ArchivePermissionType.UPLOAD
+        archive_params = (ArchivePermissionType.UPLOAD, archive.id)
         query_params = (
-            (sourcepackagename.id,)*2 + (person.id,)*2 + (permission,) + 
-            (sourcepackagename.id,)   + (person.id,)*2 + (permission,))
+            # Query parameters for the first WHERE clause.
+            (archive.id, sourcepackagename.id) +
+            # Query parameters for the second WHERE clause.
+            (sourcepackagename.id,) + (person.id,)*2 + archive_params + 
+            # Query parameters for the third WHERE clause.
+            (sourcepackagename.id,) + (person.id,)*2 + archive_params)
 
         query = '''
         SELECT CASE
@@ -461,8 +500,9 @@ class ArchivePermissionSet:
             SELECT COUNT(ap.id)
             FROM packagesetsources pss, archivepermission ap
             WHERE
-              pss.sourcepackagename = %s AND pss.packageset = ap.packageset
-              AND ap.explicit = TRUE) > 0
+              ap.archive = %s AND ap.explicit = TRUE
+              AND pss.sourcepackagename = %s
+              AND pss.packageset = ap.packageset) > 0
           THEN (
             SELECT COUNT(ap.id)
             FROM
@@ -472,7 +512,7 @@ class ArchivePermissionSet:
               pss.sourcepackagename = %s
               AND (ap.person = %s OR (ap.person = tp.team AND tp.person = %s))
               AND pss.packageset = ap.packageset AND ap.explicit = TRUE
-              AND ap.permission = %s)
+              AND ap.permission = %s AND ap.archive = %s)
           ELSE (
             SELECT COUNT(ap.id)
             FROM
@@ -482,7 +522,7 @@ class ArchivePermissionSet:
               pss.sourcepackagename = %s
               AND (ap.person = %s OR (ap.person = tp.team AND tp.person = %s))
               AND pss.packageset = fpsi.child AND fpsi.parent = ap.packageset
-              AND ap.permission = %s)
+              AND ap.permission = %s AND ap.archive = %s)
         END AS number_of_permitted_package_sets;
 
         ''' % sqlvalues(*query_params)

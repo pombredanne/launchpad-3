@@ -89,13 +89,10 @@ Entering their credential properly completes the OpenID request.
     >>> print info.endpoint.claimed_id
     http://openid.launchpad.dev/+id/name12_oid
 
-# XXX flacoste 2008-11-13 bug=297816
-# Add auth_time information. We need a newer version
-# of python-openid to use this.
 The auth_age parameter contains the time of the last login.
 
-    > > > pape_response = pape.Response.fromSuccessResponse(info)
-    > > > print pape_response.auth_age
+    >>> pape_response = pape.Response.fromSuccessResponse(info)
+    >>> print pape_response.auth_time
     2...
 
 == Cleanup ==

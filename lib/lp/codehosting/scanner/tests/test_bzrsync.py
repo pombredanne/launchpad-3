@@ -20,7 +20,7 @@ from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup

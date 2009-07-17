@@ -29,7 +29,10 @@ from canonical.launchpad.interfaces import (
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
+    IWebServiceApplication)
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationsoverview import (
+    ITranslationsOverview)
 from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
     IHWVendorIDSet, ParameterError)
@@ -45,6 +48,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lazr.restful import ServiceRootResource
+from lazr.restful.interfaces import ITopLevelEntryLink
 
 
 class AuthServerApplication:
@@ -235,7 +239,7 @@ class RosettaApplication:
 
 class HWDBApplication:
     """See `IHWDBApplication`."""
-    implements(IHWDBApplication)
+    implements(IHWDBApplication, ITopLevelEntryLink)
 
     link_name = 'hwdb'
     entry_type = IHWDBApplication
@@ -277,8 +281,9 @@ class HWDBApplication:
                 '`distroarchseries` can be present.')
 
     def numSubmissionsWithDevice(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
         """See `IHWDBApplication`."""
         submissions_with_device, all_submissions = (
             getUtility(IHWSubmissionSet).numSubmissionsWithDevice(
@@ -291,8 +296,9 @@ class HWDBApplication:
             }
 
     def numOwnersOfDevice(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
         """See `IHWDBApplication`."""
         owners, all_submitters = (
             getUtility(IHWSubmissionSet).numOwnersOfDevice(
@@ -305,8 +311,9 @@ class HWDBApplication:
             }
 
     def numDevicesInSubmissions(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distribution=None, distroseries=None, distroarchseries=None):
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
         """See `IHWDBApplication`."""
         return getUtility(IHWSubmissionDeviceSet).numDevicesInSubmissions(
                 bus, vendor_id, product_id, driver_name, package_name,

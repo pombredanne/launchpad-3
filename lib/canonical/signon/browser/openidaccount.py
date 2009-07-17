@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, IPasswordEncryptor)
 from canonical.launchpad.validators.email import valid_email
 from canonical.signon.interfaces.openidserver import IOpenIDApplication
+from canonical.signon.interfaces.ssoaccount import ISSOAccount
 from lp.registry.interfaces.person import (
     IPersonSet, IPersonChangePassword, ITeam)
 from canonical.launchpad.webapp import (
@@ -226,7 +227,7 @@ class AccountEditEmailsView(LaunchpadFormView):
         The guessed emails will be EmailAddress objects, and the
         unvalidated emails will be unicode strings.
         """
-        emailset = set(self.context.getUnvalidatedEmails())
+        emailset = set(ISSOAccount(self.context).getUnvalidatedEmails())
         emailset = emailset.union(
             [guessed for guessed in self.context.guessed_emails
              if not guessed.email in emailset])
@@ -389,7 +390,7 @@ class AccountEditEmailsView(LaunchpadFormView):
                             "The email address '%s' is already registered "
                             'to the Launchpad team <a href="%s">%s</a>.',
                             newemail, canonical_url(owner),
-                            owner.browsername))
+                            owner.displayname))
                 else:
                     self.addError(
                         structured(
@@ -397,7 +398,7 @@ class AccountEditEmailsView(LaunchpadFormView):
                             'to <a href="%s">%s</a>. If you think that is a '
                             'duplicated account, you can <a href="%s">merge '
                             "it </a> into your account.",
-                            newemail, canonical_url(owner), owner.browsername,
+                            newemail, canonical_url(owner), owner.displayname,
                             merge_url))
             else:
                 # There is no way to merge accounts that don't use
