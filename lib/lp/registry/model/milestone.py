@@ -157,7 +157,8 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     @property
     def title(self):
         """See IMilestone."""
-        if self.code_name is None:
+        if not self.code_name:
+            # XXX sinzui 2009-07-16 bug=400477: code_name may be None or ''.
             return self.displayname
         return ('%s "%s"') % (self.displayname, self.code_name)
 
