@@ -308,7 +308,6 @@ class BranchListingItemsMixin:
         self._dev_series_map = {}
         self._now = datetime.now(pytz.UTC)
         self.view_user = user
-        self._dev_series_map = {}
 
     def getBranchCollection(self):
         """Should be a user restricted branch collection for the view."""
