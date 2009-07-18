@@ -316,20 +316,23 @@ class BranchListingItemsMixin:
 
     @cachedproperty
     def branch_sparks(self):
-        return simplejson.dumps([
-                ('b-%s' % (count+1),
-                 canonical_url(branch, view_name='+spark'))
-                for count, branch
-                in enumerate(self._branches_for_current_batch)
-                if self.view.showSparkLineForBranch(branch)
-                ])
+        """Return a simplejson string for [id, url] for branch sparks."""
+        spark_lines = []
+        for count, branch in enumerate(self._branches_for_current_batch):
+            if self.view.showSparkLineForBranch(branch):
+                element_id = 'b-%s' % (count + 1)
+                element_url = canonical_url(branch, view_name='+spark')
+                spark_lines.append((element_id, element_url))
+        return simplejson.dumps(spark_lines)
 
     @cachedproperty
     def _branches_for_current_batch(self):
+        """Get all the branches from the BatchNavigator."""
         branches = list(self.currentBatch())
         # XXX: TimPenhey 2009-04-08 bug=324546
         # Until there is an API to do this nicely, shove the launchpad.view
-        # permission into the request cache directly.
+        # permission into the request cache directly.  This is done because the
+        # security proxy sometimes causes extra requests to be made.
         request = self.view.request
         precache_permission_for_objects(request, 'launchpad.View', branches)
         return branches
@@ -354,12 +357,11 @@ class BranchListingItemsMixin:
         """Return a set of branches that should show merge proposal badges.
 
         Branches have merge proposals badges if they've been proposed for
-        merging into another branch (source branches)
+        merging into another branch (source branches).
         """
-        proposals = (
-            self.view._getCollection()
-            .visibleByUser(self.view.user)
-            .getMergeProposals(for_branches=self._branches_for_current_batch))
+        branches = self.view._getCollection().visibleByUser(self.view.user)
+        proposals = branches.getMergeProposals(
+            for_branch=self._branch_for_current_batch)
         return set(proposal.source_branch.id for proposal in proposals)
 
     @cachedproperty
@@ -373,6 +375,7 @@ class BranchListingItemsMixin:
             # Key the revisions by revision id.
             revision_map = dict((revision.revision_id, revision)
                                 for revision in revisions)
+
         # Return a dict keyed on branch id.
         return dict((branch.id, revision_map.get(branch.last_scanned_id))
                      for branch in self._branches_for_current_batch)
@@ -995,7 +998,7 @@ class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
 
     def showSparkLineForBranch(self, branch):
         """See `BranchListingView`."""
-        # Show the sparklines all branches on person views.
+        # Show the sparklines on all branches on person views.
         return True
 
     @property

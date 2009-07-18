@@ -64,7 +64,7 @@ function renderSpark() {
 
         spark_div = branch_sparks[spark_div][0];
 
-        if(Y.get('#' + spark_div) !== null) {
+        if (Y.get('#' + spark_div) !== null) {
             json_url = branch_sparks[0][1];
             var container = spark_div;
             var uri = json_url;
@@ -369,7 +369,7 @@ Y.on("domready", renderSpark);
 </div>
 
 <tal:script
-    replace="structure string:&lt;script id='branch-sparks' type='text/javascript'&gt;" />
+    replace="structure string:&lt;script id='branch-sparks' type='text/javascript'&gt;" a>
 <tal:omit tal:omit-tag="">
 var branch_sparks = <tal:array replace="context/branch_sparks"/>;
 </tal:omit>
