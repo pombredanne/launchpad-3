@@ -24,6 +24,6 @@ def test_branch_sparks_var():
     client.asserts.assertJS(js=u'''(function() {
         var first_branch_spark = branch_sparks[0];
         return (first_branch_spark[0] == 'b-1' &&
-            first_branch_spark[1] == 'https://code.launchpad.dev/~sabdfl/+junk/testdoc/+spark')
-        }());''')
+            first_branch_spark[1] == '%s/~sabdfl/+junk/testdoc/+spark')
+        }());''' % (windmill.settings['TEST_URL']))
 
