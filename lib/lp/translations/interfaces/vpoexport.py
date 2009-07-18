@@ -108,11 +108,6 @@ class IVPOExport(Interface):
         description=u"See IPOMsgID.pomsgid.",
         required=False, readonly=True)
 
-    is_fuzzy = Bool(
-        title=u"Message needs review",
-        description=u"As in ITranslationMessage.",
-        readonly=True, required=False)
-
     is_current = Bool(
         title=_("Whether this message is currently used in Launchpad"),
         description=u"As in ITranslationMessage.",
