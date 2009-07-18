@@ -101,6 +101,10 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
                 product=self.bambam, owner=self.barney,
                 date_created=time_gen.next())
             for i in range(5)]
+        self.bug = self.factory.makeBug()
+        self.bug.linkBranch(self.branches[0], self.barney)
+        self.spec = self.factory.makeSpecification()
+        self.spec.linkBranch(self.branches[1], self.barney)
 
     def _createView(self):
         '''Create the view and initialize it.'''
@@ -125,7 +129,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
     def test_branch_ids_with_bug_links(self):
         # _branches_for_current_batch should return a list of all branches in
         # the current batch.
-        branch_ids = set([])
+        branch_ids = set([self.branches[0].id])
 
         view = self._createView()
         self.assertEqual(
@@ -135,7 +139,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
     def test_branch_ids_with_spec_links(self):
         # _branches_for_current_batch should return a list of all branches in
         # the current batch.
-        branch_ids = set([])
+        branch_ids = set([self.branches[1].id])
 
         view = self._createView()
         self.assertEqual(
@@ -154,7 +158,10 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
     def test_tip_revisions(self):
         # _branches_for_current_batch should return a list of all branches in
         # the current batch.
-        tip_revisions = {80: None, 81: None, 77: None, 78: None, 79: None}
+        branch_ids = [branch.id for branch in self.branches]
+        tip_revisions = {}
+        for branch_id in branch_ids:
+            tip_revisions[branch_id] = None
 
         view = self._createView()
         self.assertEqual(
