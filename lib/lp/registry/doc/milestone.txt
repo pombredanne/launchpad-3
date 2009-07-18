@@ -402,6 +402,20 @@ of the series_target is a release manager can can make changes.
     >>> check_permission('launchpad.Edit', fizzy_milestone)
     True
 
+# XXX sinzui 2009-07-18 bug=40978: There are milestones in the database
+# that are missing their series_target. The project owner can edit the
+# milestone to fix the issue. It is not possible in this scenario for the
+# milestone to have a driver.
+
+    >>> login_person(upstream_firefox.owner)
+    # Hack the milestone to put it in an invalid state.
+    >>> fizzy_milestone.productseries = None
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    True
+    >>> login_person(driver)
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    False
+
 The distroseries attribute can be edited if the milestone belongs to
 a distribution.
 
