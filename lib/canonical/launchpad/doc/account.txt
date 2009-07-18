@@ -3,13 +3,6 @@
 An Account is used by someone to Authenticate with the Launchpad login
 service.
 
-Many operations on Account and related tables are available only to
-the SSO Server.
-
-    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
-    >>> from canonical.signon.dbpolicy import SSODatabasePolicy
-    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
-
 
 = AccountSet =
 
@@ -308,6 +301,7 @@ possible to create a new person that will be associated with it.
 We need to change database policy here again, as the SSO Server cannot
 modify tables in the lpmain replication set.
 
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
@@ -367,8 +361,3 @@ directly in the database; it not available until the account object is synced.
     >>> syncUpdate(new_account)
     >>> len(new_account.openid_identifier) == 7
     True
-
-
-== Cleanup ==
-
-    >>> db_policy = getUtility(IStoreSelector).pop()

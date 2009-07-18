@@ -41,11 +41,6 @@
     title="Administer something related to commercial offering."
     access_level="write" />
 
-  <permission
-    id="launchpad.ProjectReview"
-    title="Review Launchpad projects"
-    access_level="write" />
-
   <!-- There are some translation-related fields that need to be set
   by Translation admins (aka Rosetta Admins) but we don't want to give
   them launchpad.Admin rights because they should not be able to change other
@@ -84,5 +79,15 @@
     id="launchpad.MailingListManager"
     title="The role of someone who can manage and configure a mailing list."
     access_level="write" />
+
+  <!--
+    XXX: BradCrittenden 2009-05-17 bug=400762: ProjectReview should properly
+    just be Moderate except there is a clash between IProduct and IFAQTarget.
+  -->
+  <permission
+    id="launchpad.ProjectReview"
+    title="Review Launchpad projects"
+    access_level="write" />
+
 
 </configure>

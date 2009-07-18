@@ -34,7 +34,7 @@ store that information, which can then later be shown to the account's owner
 using IAccount.recently_authenticated_rps.  These are sorted descending by
 date.
 
-    >>> from canonical.signon.interfaces.openidserver import (
+    >>> from lp.services.openid.interfaces.openidrpsummary import (
     ...     IOpenIDRPSummarySet)
     >>> from datetime import datetime
     >>> import pytz

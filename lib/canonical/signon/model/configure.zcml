@@ -19,18 +19,6 @@
         factory=".openidstore.ProviderOpenIDStore">
     </utility>
 
-    <class
-        class=".openidserver.OpenIDRPSummary">
-        <allow interface="..interfaces.openidserver.IOpenIDRPSummary" />
-    </class>
-
-    <securedutility
-        class=".openidserver.OpenIDRPSummarySet"
-        provides="..interfaces.openidserver.IOpenIDRPSummarySet">
-        <allow
-            interface="..interfaces.openidserver.IOpenIDRPSummarySet" />
-    </securedutility>
-
     <class class="canonical.signon.model.authtoken.AuthToken">
         <require
             permission="zope.Public"

@@ -9,6 +9,7 @@ __all__ = [
     'BranchUnlinkedFromBug',
     'BugConvertedToQuestion',
     'BugDescriptionChange',
+    'BugDuplicateChange',
     'BugTagsChange',
     'BugTaskAdded',
     'BugTaskAssigneeChange',

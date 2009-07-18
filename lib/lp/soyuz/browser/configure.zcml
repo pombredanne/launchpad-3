@@ -741,13 +741,6 @@
             facet="overview"
             template="../templates/distributionsourcepackage-portlet-pub-details.pt"/>
         <browser:page
-            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-            permission="launchpad.AnyPerson"
-            class="lp.registry.browser.sourcepackage.SourcePackageView"
-            name="+edit-packaging"
-            facet="overview"
-            template="../../soyuz/templates/sourcepackage-edit-packaging.pt"/>
-        <browser:page
             for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
             class="canonical.launchpad.webapp.publisher.LaunchpadView"
             permission="zope.Public"

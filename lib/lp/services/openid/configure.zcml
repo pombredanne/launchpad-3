@@ -25,5 +25,24 @@
           />
     </securedutility>
 
+    <class
+        class=".model.openidrpsummary.OpenIDRPSummary">
+        <allow interface=".interfaces.openidrpsummary.IOpenIDRPSummary" />
+    </class>
+
+    <securedutility
+        class=".model.openidrpsummary.OpenIDRPSummarySet"
+        provides=".interfaces.openidrpsummary.IOpenIDRPSummarySet">
+        <allow
+            interface=".interfaces.openidrpsummary.IOpenIDRPSummarySet" />
+    </securedutility>
+
+    <class class=".adapters.openid.OpenIDPersistentIdentity">
+      <allow interface=".interfaces.openid.IOpenIDPersistentIdentity" />
+    </class>
+
+    <adapter factory=".adapters.openid.OpenIDPersistentIdentity" />
+    <adapter factory=".adapters.openid.person_to_openidpersistentidentity" />
+
     <include package=".browser" />
 </configure>

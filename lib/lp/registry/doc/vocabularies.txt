@@ -1358,7 +1358,7 @@ change bzr's so we will get more interesting results.
     Mega Money Maker
 
 If the user is a member of Registry Experts, and therefore has
-launchpad.ProjectReview permission, then all commercial
+launchpad.ProjectReview permission on IProductSet, then all commercial
 projects are returned.
 
     >>> login('foo.bar@canonical.com')
@@ -1371,7 +1371,7 @@ projects are returned.
     >>> logout()
 
     >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', registry_member)
+    >>> check_permission('launchpad.ProjectReview', product_set)
     True
 
     >>> comm_proj_vocab = vocabulary_registry.get(registry_member, "CommercialProjects")

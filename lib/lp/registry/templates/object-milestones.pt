@@ -17,7 +17,8 @@
   <h1><tal:pillar-name replace="context/displayname" />'s Milestones</h1>
 
   <p>
-    Milestones belong to a series and can be created from the series page.
+    Milestones belong to a series and can be created from the series page
+    be a project owner or series release manager.
   </p>
 
   <tal:milestones define="milestones context/all_milestones">

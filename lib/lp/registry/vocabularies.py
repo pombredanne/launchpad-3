@@ -1246,8 +1246,8 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         user = self.context
         if user is None:
             return self.emptySelectResults()
-        if check_permission('launchpad.ProjectReview', user):
-            product_set = getUtility(IProductSet)
+        product_set = getUtility(IProductSet)
+        if check_permission('launchpad.ProjectReview', product_set):
             projects = product_set.forReview(
                 search_text=query, licenses=[License.OTHER_PROPRIETARY],
                 active=True)

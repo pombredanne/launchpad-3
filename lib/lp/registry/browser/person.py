@@ -129,7 +129,6 @@ from lp.soyuz.browser.archive import traverse_named_ppa
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
-from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
 from lp.soyuz.interfaces.archivesubscriber import (
@@ -181,8 +180,9 @@ from canonical.launchpad.interfaces.message import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
-from canonical.signon.interfaces.openidserver import (
-    IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from lp.soyuz.interfaces.sourcepackagerelease import (
@@ -192,7 +192,7 @@ from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.signon.browser.openiddiscovery import (
+from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
@@ -2950,7 +2950,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
-        "../../../canonical/signon/templates/person-xrds.pt")
+        "../../services/openid/templates/person-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
@@ -3520,11 +3520,17 @@ class PersonChangePasswordView(LaunchpadFormView):
         return canonical_url(self.context)
 
     def validate(self, form_values):
-        currentpassword = form_values.get('currentpassword')
+        current_password = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(currentpassword, self.context.password):
+        if not encryptor.validate(current_password, self.context.password):
             self.setFieldError('currentpassword', _(
                 "The provided password doesn't match your current password."))
+        # This is not part of the widget, since the value may
+        # be optional in some forms.
+        new_password = self.request.form.get('field.password', '')
+        if new_password.strip() == '':
+            self.setFieldError('password', _(
+                "Setting an empty password is not allowed."))
 
     @action(_("Change Password"), name="submit")
     def submit_action(self, action, data):
@@ -3532,6 +3538,11 @@ class PersonChangePasswordView(LaunchpadFormView):
         self.context.password = password
         self.request.response.addInfoNotification(_(
             "Password changed successfully"))
+
+    @property
+    def cancel_url(self):
+        """The URL that the 'Cancel' link should return to."""
+        return canonical_url(self.context)
 
 
 class BasePersonEditView(LaunchpadEditFormView):

@@ -14,8 +14,6 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonView
 from canonical.launchpad.ftests import login_person
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
@@ -57,13 +55,8 @@ class PersonView_openid_identity_url_TestCase(TestCaseWithFactory):
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    suite.addTest(LayeredDocFileSuite(
-        'person-rename-account-with-openid.txt',
-        setUp=setUp, tearDown=tearDown,
-        layer=DatabaseFunctionalLayer))
     return suite
 
 
 if __name__ == '__main__':
     unittest.main()
-

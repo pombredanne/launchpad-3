@@ -10,7 +10,6 @@
 
     <!-- Content class configuration -->
     <include file="account.zcml" />
-    <include file="authtoken.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binaryandsourcepackagename.zcml" />
     <include file="bountysubscription.zcml" />
