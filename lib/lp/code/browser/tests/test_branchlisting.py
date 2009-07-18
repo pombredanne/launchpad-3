@@ -122,13 +122,25 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         view = self._createView()
         self.assertEqual(view.branches().branch_sparks, branch_sparks)
 
-    def test_branches_for_current_batch(self):
+    def test_branch_ids_with_bug_links(self):
         # _branches_for_current_batch should return a list of all branches in
         # the current batch.
         view = self._createView()
-        self.assertEqual(
-            view.branches()._branches_for_current_batch,
-            self.branches)
+
+    def test_branch_ids_with_spec_links(self):
+        # _branches_for_current_batch should return a list of all branches in
+        # the current batch.
+        view = self._createView()
+
+    def test_branch_ids_with_merge_propoasls(self):
+        # _branches_for_current_batch should return a list of all branches in
+        # the current batch.
+        view = self._createView()
+
+    def test_tip_revisions(self):
+        # _branches_for_current_batch should return a list of all branches in
+        # the current batch.
+        view = self._createView()
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):
