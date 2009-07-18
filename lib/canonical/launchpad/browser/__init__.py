@@ -11,7 +11,6 @@ files in this directory.
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
 from lp.soyuz.browser.archive import *
-from canonical.launchpad.browser.authtoken import *
 from lp.code.browser.bazaar import *
 from lp.soyuz.browser.binarypackagerelease import *
 from canonical.launchpad.browser.bounty import *

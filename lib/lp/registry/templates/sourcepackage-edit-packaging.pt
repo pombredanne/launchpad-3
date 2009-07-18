@@ -31,7 +31,7 @@
      Status Message Here
   </p>
   <p class="error message" tal:condition="view/error_message"
-     tal:content="view/error_message">
+     tal:content="structure view/error_message/escapedtext">
      Error Message Here
   </p>
 
@@ -69,6 +69,7 @@
         name="packaging"
         value="Change"
         />
+      or <a tal:attributes="href view/cancel_url">Cancel</a>
     </div>
 
   </form>
