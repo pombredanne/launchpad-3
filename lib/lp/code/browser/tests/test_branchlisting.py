@@ -12,6 +12,7 @@ from storm.expr import Asc, Desc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.systemdocs import create_initialized_view
 from lp.code.browser.branchlisting import (
     BranchListingBatchNavigator, BranchListingSort, BranchListingView,
     GroupedDistributionSourcePackageBranchesView, PersonOwnedBranchesView,
@@ -106,12 +107,6 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         self.spec = self.factory.makeSpecification()
         self.spec.linkBranch(self.branches[1], self.barney)
 
-    def _createView(self):
-        '''Create the view and initialize it.'''
-        view = PersonOwnedBranchesView(self.barney, LaunchpadTestRequest())
-        view.initialize()
-        return view
-
     def test_branch_sparks(self):
         # branch_sparks should return a simplejson list for the branches with
         # the value being [id, url]
@@ -123,7 +118,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         '["b-5", "http://code.launchpad.dev/~barney/bambam/branch13/+spark"]'
         ']')
 
-        view = self._createView()
+        view = create_initialized_view(self.barney, name="+branches")
         self.assertEqual(view.branches().branch_sparks, branch_sparks)
 
     def test_branch_ids_with_bug_links(self):
@@ -131,7 +126,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         # the current batch.
         branch_ids = set([self.branches[0].id])
 
-        view = self._createView()
+        view = create_initialized_view(self.barney, name="+branches")
         self.assertEqual(
             view.branches().branch_ids_with_bug_links,
             branch_ids)
@@ -141,7 +136,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         # the current batch.
         branch_ids = set([self.branches[1].id])
 
-        view = self._createView()
+        view = create_initialized_view(self.barney, name="+branches")
         self.assertEqual(
             view.branches().branch_ids_with_spec_links,
             branch_ids)
@@ -150,7 +145,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         # _branches_for_current_batch should return a list of all branches in
         # the current batch.
         branch_ids = set([])
-        view = self._createView()
+        view = create_initialized_view(self.barney, name="+branches")
         self.assertEqual(
             view.branches().branch_ids_with_merge_proposals,
             branch_ids)
@@ -163,7 +158,7 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         for branch_id in branch_ids:
             tip_revisions[branch_id] = None
 
-        view = self._createView()
+        view = create_initialized_view(self.barney, name="+branches")
         self.assertEqual(
             view.branches().tip_revisions,
             tip_revisions)
