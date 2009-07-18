@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = []
 
 import re
+import threading
 import unittest
 
 from funkload.FunkLoadTestCase import FunkLoadTestCase
@@ -16,6 +17,7 @@ import psycopg2
 class ShipIt(FunkLoadTestCase):
 
     db_connection = None
+    db_connection_lock = threading.Lock()
 
     def setUp(self):
         """Setting up test."""
@@ -30,12 +32,19 @@ class ShipIt(FunkLoadTestCase):
             # We use a class variable for the database connection so the
             # same connection is shared between threads. This is important
             # for when we are running with hundreds of threads.
-            assert psycopg2.threadsafety >= 2, (
-                "psycopg2 cannot share connections between threads")
-            self.logi(
-                'Opening database connection "%s".' % self.database_conninfo)
-            ShipIt.db_connection = psycopg2.connect(self.database_conninfo)
-            ShipIt.db_connection.set_isolation_level(0)
+            ShipIt.db_connection_lock.acquire()
+            try:
+                if ShipIt.db_connection is None:
+                    assert psycopg2.threadsafety >= 2, (
+                        "psycopg2 cannot share connections between threads")
+                    self.logi(
+                        'Opening database connection "%s".'
+                        % self.database_conninfo)
+                    ShipIt.db_connection = psycopg2.connect(
+                        self.database_conninfo)
+                    ShipIt.db_connection.set_isolation_level(0)
+            finally:
+                ShipIt.db_connection_lock.release()
 
     def cursor(self):
         return ShipIt.db_connection.cursor()
