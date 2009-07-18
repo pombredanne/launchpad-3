@@ -23,6 +23,7 @@ setup(
     install_requires=[
         'bzr',
         'feedvalidator',
+        'funkload',
         'launchpadlib',
         'lazr.smtptest',
         'lazr.uri',
