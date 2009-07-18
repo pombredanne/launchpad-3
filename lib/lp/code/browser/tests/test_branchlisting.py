@@ -13,8 +13,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.browser.branchlisting import (
-    BranchListingSort, BranchListingView,
-    GroupedDistributionSourcePackageBranchesView, SourcePackageBranchesView)
+    BranchListingBatchNavigator, BranchListingSort, BranchListingView,
+    GroupedDistributionSourcePackageBranchesView, PersonOwnedBranchesView,
+    SourcePackageBranchesView)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.code.model.branch import Branch
@@ -83,6 +84,39 @@ class TestListingToSortOrder(TestCase):
         self.assertSortsEqual(
             [Asc(Branch.date_created)] + self.DEFAULT_BRANCH_LISTING_SORT,
             registrant_order)
+
+
+class TestPersonOwnedBranchesView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.barney = self.factory.makePerson(name='barney')
+        self.bambam = self.factory.makeProduct(name='bambam')
+
+        time_gen = time_counter(delta=timedelta(days=-1))
+        self.branches = [
+            self.factory.makeProductBranch(
+                product=self.bambam, owner=self.barney,
+                date_created=time_gen.next())
+            for i in range(5)]
+
+    def test_branch_sparks(self):
+        # branch_sparks should return a simplejson list for the branches with
+        # the value being [id, url]
+        branch_sparks = ('['
+        '["b-1", "http://code.launchpad.dev/~barney/bambam/branch9/+spark"], '
+        '["b-2", "http://code.launchpad.dev/~barney/bambam/branch10/+spark"], '
+        '["b-3", "http://code.launchpad.dev/~barney/bambam/branch11/+spark"], '
+        '["b-4", "http://code.launchpad.dev/~barney/bambam/branch12/+spark"], '
+        '["b-5", "http://code.launchpad.dev/~barney/bambam/branch13/+spark"]'
+        ']')
+
+        view = PersonOwnedBranchesView(self.barney, LaunchpadTestRequest())
+        view.setUpFields()
+        view.setUpWidgets()
+        self.assertEqual(view.branches().branch_sparks, branch_sparks)
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):
