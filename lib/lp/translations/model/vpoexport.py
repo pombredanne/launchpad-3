@@ -28,6 +28,8 @@ from lp.translations.interfaces.translations import TranslationConstants
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.translations.interfaces.vpoexport import IVPOExport, IVPOExportSet
+
+
 class VPOExportSet:
     """Retrieve collections of `VPOExport` objects."""
 
@@ -211,9 +213,6 @@ class VPOExport:
     """Present translations in a form suitable for efficient export."""
     implements(IVPOExport)
 
-    productseries = None
-    sourcepackagename = None
-    distroseries = None
     potemplate = None
     languagepack = None
     pofile = None
@@ -251,14 +250,7 @@ class VPOExport:
             objects refer to them.
         """
         template = pofile.potemplate
-        if template.productseries is not None:
-            self.productseries = template.productseries.id
-        else:
-            self.sourcepackagename = template.sourcepackagename.id
-            self.distroseries = template.distroseries.id
-
         self.potemplate = template
-
         self.pofile = pofile
 
         potmsgset = potmsgsets_lookup[self.potmsgset_id]
