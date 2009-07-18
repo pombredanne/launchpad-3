@@ -102,6 +102,12 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
                 date_created=time_gen.next())
             for i in range(5)]
 
+    def _createView(self):
+        '''Create the view and initialize it.'''
+        view = PersonOwnedBranchesView(self.barney, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
     def test_branch_sparks(self):
         # branch_sparks should return a simplejson list for the branches with
         # the value being [id, url]
@@ -113,10 +119,16 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         '["b-5", "http://code.launchpad.dev/~barney/bambam/branch13/+spark"]'
         ']')
 
-        view = PersonOwnedBranchesView(self.barney, LaunchpadTestRequest())
-        view.setUpFields()
-        view.setUpWidgets()
+        view = self._createView()
         self.assertEqual(view.branches().branch_sparks, branch_sparks)
+
+    def test_branches_for_current_batch(self):
+        # _branches_for_current_batch should return a list of all branches in
+        # the current batch.
+        view = self._createView()
+        self.assertEqual(
+            view.branches()._branches_for_current_batch,
+            self.branches)
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):
