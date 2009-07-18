@@ -215,14 +215,8 @@ class VPOExport:
     sourcepackagename = None
     distroseries = None
     potemplate = None
-    template_header = None
     languagepack = None
     pofile = None
-    language = None
-    variant = None
-    translation_file_comment = None
-    translation_header = None
-    is_translation_header_fuzzy = None
 
     potmsgset_id = None
     potmsgset = None
@@ -264,11 +258,8 @@ class VPOExport:
             self.distroseries = template.distroseries.id
 
         self.potemplate = template
-        self.template_header = template.header
 
         self.pofile = pofile
-        self.language = pofile.language
-        self.variant = pofile.variant
 
         potmsgset = potmsgsets_lookup[self.potmsgset_id]
         self.potmsgset = potmsgset
