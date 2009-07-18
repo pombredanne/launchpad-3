@@ -628,8 +628,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             pub_foocomm.sourcepackagerelease.component.name, 'partner')
         self.assertEqual(pub_foocomm.component.name, 'main')
 
-    def testUploadSignedByNonUbuntero(self):
-        """Check if a non-ubuntero can upload to his PPA."""
+    def testUploadSignedByCodeOfConductNonSigner(self):
+        """Check if a CoC non-signer can upload to his PPA."""
         self.name16.activesignatures[0].active = False
         self.layer.commit()
 
@@ -638,7 +638,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA uploads must be signed by an 'ubuntero'.")
+            "PPA uploads must be signed by an Ubuntu Code of Conduct signer.")
         self.assertTrue(self.name16.archive is not None)
 
     def testUploadSignedByBetaTesterMember(self):

@@ -1305,6 +1305,13 @@
             template="../templates/milestone-portlet-details.pt"/>
     </browser:pages>
     <browser:page
+        name="+pillar-table-row"
+        for="lp.registry.interfaces.milestone.IMilestone"
+        class="lp.registry.browser.milestone.MilestonesView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/productseries-milestone-table-row.pt"/>
+    <browser:page
         name="+edit"
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.milestone.MilestoneEditView"

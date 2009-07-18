@@ -1014,6 +1014,39 @@ class BugTaskPortletView:
             if task.id is not self.context.id]
 
 
+def get_prefix(bugtask):
+    """Return a prefix that can be used for this form.
+
+    The prefix is constructed using the name of the bugtask's target so as
+    to ensure that it's unique within the context of a bug. This is needed
+    in order to included multiple edit forms on the bug page, while still
+    keeping the field ids unique.
+    """
+    parts = []
+    if IUpstreamBugTask.providedBy(bugtask):
+        parts.append(bugtask.product.name)
+
+    elif IProductSeriesBugTask.providedBy(bugtask):
+        parts.append(bugtask.productseries.name)
+        parts.append(bugtask.productseries.product.name)
+
+    elif IDistroBugTask.providedBy(bugtask):
+        parts.append(bugtask.distribution.name)
+        if bugtask.sourcepackagename is not None:
+            parts.append(bugtask.sourcepackagename.name)
+
+    elif IDistroSeriesBugTask.providedBy(bugtask):
+        parts.append(bugtask.distroseries.distribution.name)
+        parts.append(bugtask.distroseries.name)
+
+        if bugtask.sourcepackagename is not None:
+            parts.append(bugtask.sourcepackagename.name)
+
+    else:
+        raise AssertionError("Unknown IBugTask: %r" % bugtask)
+    return '_'.join(parts)
+
+
 class BugTaskEditView(LaunchpadEditFormView):
     """The view class used for the task +editstatus page."""
 
@@ -1127,29 +1160,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         in order to included multiple edit forms on the bug page, while still
         keeping the field ids unique.
         """
-        parts = []
-        if IUpstreamBugTask.providedBy(self.context):
-            parts.append(self.context.product.name)
-
-        elif IProductSeriesBugTask.providedBy(self.context):
-            parts.append(self.context.productseries.name)
-            parts.append(self.context.productseries.product.name)
-
-        elif IDistroBugTask.providedBy(self.context):
-            parts.append(self.context.distribution.name)
-            if self.context.sourcepackagename is not None:
-                parts.append(self.context.sourcepackagename.name)
-
-        elif IDistroSeriesBugTask.providedBy(self.context):
-            parts.append(self.context.distroseries.distribution.name)
-            parts.append(self.context.distroseries.name)
-
-            if self.context.sourcepackagename is not None:
-                parts.append(self.context.sourcepackagename.name)
-
-        else:
-            raise AssertionError("Unknown IBugTask: %r" % self.context)
-        return '_'.join(parts)
+        return get_prefix(self.context)
 
     def setUpFields(self):
         """Sets up the fields for the bug task edit form.
@@ -3062,13 +3073,18 @@ class BugTaskTableRowView(LaunchpadView):
         """
         return self.context.userCanEditImportance(self.user)
 
-    @property
-    def user_can_edit_importance_json(self):
-        """Can the user edit the Importance field?
-
-        If yes, return True, otherwise return False.
-        """
-        return dumps(self.user_can_edit_importance)
+    def js_config(self):
+        """Configuration for the JS widgets on the row, JSON-serialized."""
+        return dumps({
+            'row_id': 'tasksummary%s' % self.context.id,
+            'bugtask_path': '/'.join(
+                [''] + canonical_url(self.context).split('/')[3:]),
+            'prefix': get_prefix(self.context),
+            'status_widget_items': self.status_widget_items,
+            'status_value': self.context.status.title,
+            'importance_widget_items': self.importance_widget_items,
+            'importance_value': self.context.importance.title,
+            'user_can_edit_importance': self.user_can_edit_importance})
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
