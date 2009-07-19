@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """HTTP and FTP walker.
 
 This module implements classes to walk HTTP and FTP sites to find files.

@@ -57,8 +57,6 @@ check_loggerhead_on_merge:
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_merge: $(PY)
-	[ `PYTHONPATH= bzr status -S database/schema/ | \
-		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
 check_db_merge: $(PY)
