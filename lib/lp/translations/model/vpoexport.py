@@ -38,11 +38,9 @@ class VPOExportSet:
     # Names of columns that are selected and passed (in this order) to
     # the VPOExport constructor.
     column_names = [
-        'POTMsgSet.id',
+        'TranslationTemplateItem.potmsgset',
         'TranslationTemplateItem.sequence',
         'TranslationMessage.comment',
-        'msgid_singular.msgid',
-        'msgid_plural.msgid',
         'TranslationMessage.is_current',
         'TranslationMessage.is_imported',
         'TranslationMessage.potemplate',
@@ -83,21 +81,13 @@ class VPOExportSet:
 
         main_select = "SELECT %s" % self.columns
         query = main_select + """
-            FROM POTMsgSet
-            JOIN TranslationTemplateItem ON
-                TranslationTemplateItem.potemplate = %s AND
-                TranslationTemplateItem.potmsgset = POTMsgSet.id
-            LEFT JOIN TranslationMessage ON (
+            FROM TranslationTemplateItem
+            LEFT JOIN TranslationMessage ON
                 TranslationMessage.potmsgset =
                     TranslationTemplateItem.potmsgset AND
                 TranslationMessage.is_current IS TRUE AND
                 TranslationMessage.language = %s
-                )
-            LEFT JOIN POMsgID AS msgid_singular ON
-                msgid_singular.id = POTMsgSet.msgid_singular
-            LEFT JOIN POMsgID msgid_plural ON
-                msgid_plural.id = POTMsgSet.msgid_plural
-            """ % sqlvalues(pofile.potemplate, pofile.language)
+            """ % sqlvalues(pofile.language)
 
         for form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
             alias = "potranslation%d" % form
@@ -105,10 +95,11 @@ class VPOExportSet:
             query += "LEFT JOIN POTranslation AS %s ON %s.id = %s\n" % (
                     alias, alias, field)
 
+        template_id = quote(pofile.potemplate)
         conditions = [
+            "TranslationTemplateItem.potemplate = %s" % template_id,
             "(TranslationMessage.potemplate IS NULL OR "
-                 "TranslationMessage.potemplate = %s)" % quote(
-                    pofile.potemplate),
+                 "TranslationMessage.potemplate = %s)" % template_id,
             ]
 
         if pofile.variant:
@@ -219,6 +210,8 @@ class VPOExport:
 
     potmsgset_id = None
     potmsgset = None
+    msgid_singular = None
+    msgid_plural = None
     source_comment = None
     file_references = None
     flags_comment = None
@@ -229,8 +222,6 @@ class VPOExport:
         (self.potmsgset_id,
          self.sequence,
          self.comment,
-         self.msgid_singular,
-         self.msgid_plural,
          self.is_current,
          self.is_imported,
          self.diverged,
@@ -255,6 +246,12 @@ class VPOExport:
 
         potmsgset = potmsgsets_lookup[self.potmsgset_id]
         self.potmsgset = potmsgset
+
+        if potmsgset.msgid_singular is not None:
+            self.msgid_singular = potmsgset.msgid_singular.msgid
+        if potmsgset.msgid_plural is not None:
+            self.msgid_plural = potmsgset.msgid_plural.msgid
+
         self.source_comment = potmsgset.sourcecomment
         self.file_references = potmsgset.filereferences
         self.flags_comment = potmsgset.flagscomment
