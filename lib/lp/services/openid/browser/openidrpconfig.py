@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes used to edit `IOpenIDRPConfig` objects.
 
@@ -13,7 +14,7 @@ __all__ = []
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.signon.interfaces.openidserver import (
+from lp.services.openid.interfaces.openidrpconfig import (
     IOpenIDRPConfig, IOpenIDRPConfigSet)
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, Navigation, action,

@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test Build features."""
 
 from datetime import datetime
@@ -11,6 +13,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -133,6 +136,37 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         num_results = results.count()
         self.assertEquals(1, num_results, "Expected 1 publication but "
                                           "got %s" % num_results)
+
+
+class TestArchiveRepositorySize(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestArchiveRepositorySize, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+        self.ppa = self.factory.makeArchive(
+            name="testing", distribution=self.publisher.ubuntutest)
+
+    def test_binaries_size_does_not_include_ddebs_for_ppas(self):
+        # DDEBs are not computed in the PPA binaries size because
+        # they are not being published. See bug #399444.
+        self.assertEquals(0, self.ppa.binaries_size)
+        self.publisher.getPubBinaries(
+            filecontent='X', format=BinaryPackageFormat.DDEB,
+            archive=self.ppa)
+        self.assertEquals(0, self.ppa.binaries_size)
+
+    def test_binaries_size_includes_ddebs_for_other_archives(self):
+        # DDEBs size are computed for all archive purposes, except PPAs.
+        previous_size = self.publisher.ubuntutest.main_archive.binaries_size
+        self.publisher.getPubBinaries(
+            filecontent='X', format=BinaryPackageFormat.DDEB)
+        self.assertEquals(
+            previous_size + 1,
+            self.publisher.ubuntutest.main_archive.binaries_size)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

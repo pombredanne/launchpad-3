@@ -317,7 +317,6 @@ ul {
 .offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
-.duplicate-details { margin-bottom: 1em; }
 .duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
 
 /* Blank space at the top of the page makes the location bar more noticable.
@@ -1516,9 +1515,14 @@ a.info {
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
+
 .boardCommentDetails {
   background-color: #eee;
-  border-bottom: 1px solid #ddd
+  border-bottom: 1px solid #ddd;
+  padding: 0.5em 12px;
+}
+.boardCommentDetails table {
+  margin: -0.5em -12px;
 }
 .boardCommentDetails td {
     padding: 0.5em 12px;

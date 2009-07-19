@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -45,6 +47,7 @@ from zope.traversing.interfaces import ITraversable
 from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
+from canonical.launchpad.layers import WebServiceLayer
 
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
@@ -74,7 +77,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
+from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -683,6 +686,10 @@ class LaunchpadRootNavigation(Navigation):
         # If this is a HTTP POST, we don't want to issue a redirect.
         # Doing so would go against the HTTP standard.
         if self.request.method == 'POST':
+            return None
+
+        # If this is a web service request, don't redirect.
+        if WebServiceLayer.providedBy(self.request):
             return None
 
         mainsite_host = config.vhost.mainsite.hostname

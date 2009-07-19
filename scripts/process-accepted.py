@@ -1,4 +1,8 @@
 #!/usr/bin/python2.4
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Queue/Accepted processor
 
 Given a distribution to run on, obtains all the queue items for the

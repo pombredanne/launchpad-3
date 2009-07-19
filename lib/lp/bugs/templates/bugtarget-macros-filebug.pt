@@ -407,7 +407,7 @@
                        style="font-weight: normal">
                   #<tal:bug-id replace="bug/id">4</tal:bug-id>
                   <a tal:attributes="href bug/fmt:url; id string:bug-${bug/id}-title"
-                     tal:content="bug/title"
+                     tal:content="bug/title" class="duplicate-bug-link"
                      >Bug title here</a>
                 </label>
               </div>
@@ -436,12 +436,14 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
+
+                  <a class="view-bug-link" tal:attributes="href bug/fmt:url"
+                  >view this bug</a>
                 </span>
               </div>
 
               <div class="duplicate-details"
-                  tal:attributes="id string:details-for-bug-${bug/id}"
-                  style="display: block;">
+                  tal:attributes="id string:details-for-bug-${bug/id}">
 
                 <div class="lesser" style="margin-bottom: 0.5em;"
                     tal:define="description bug/description/fmt:shorten/500/fmt:obfuscate-email/fmt:text-to-html"

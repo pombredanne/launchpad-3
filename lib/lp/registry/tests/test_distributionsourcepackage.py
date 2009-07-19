@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for DistributionSourcePackage."""
 
@@ -127,6 +128,21 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
         # The current series is None by default.
         self.assertIs(None, currentseries)
         self.assertEqual(None, dsp.development_version)
+
+    def test_does_not_include_copied_packages(self):
+        # Packages that have been copied rather than uploaded are not
+        # included when determining related archives.
+
+        # Ensure that the gedit package in gedit-nightly was originally
+        # uploaded to gedit-beta (ie. copied from there).
+        gedit_release = self.gedit_nightly_src_hist.sourcepackagerelease
+        gedit_release.upload_archive = self.archives['gedit-beta']
+
+        related_archives = self.source_package.findRelatedArchives()
+        related_archive_names = [
+            archive.name for archive in related_archives]
+
+        self.assertEqual(related_archive_names, ['gedit-beta'])
 
 
 def test_suite():
