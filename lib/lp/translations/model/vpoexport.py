@@ -14,9 +14,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from storm.expr import And, Or
-from storm.store import Store
 
-from canonical.database.sqlbase import quote, sqlvalues
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from lp.soyuz.model.component import Component
@@ -24,7 +22,6 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
-from lp.translations.interfaces.translations import TranslationConstants
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.translations.interfaces.vpoexport import IVPOExport, IVPOExportSet

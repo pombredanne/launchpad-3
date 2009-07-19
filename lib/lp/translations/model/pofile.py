@@ -60,7 +60,6 @@ from lp.translations.interfaces.translationmessage import (
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.interfaces.translations import TranslationConstants
-from lp.translations.interfaces.vpoexport import IVPOExportSet
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
 from canonical.launchpad.webapp.publisher import canonical_url
