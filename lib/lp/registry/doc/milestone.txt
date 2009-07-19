@@ -408,7 +408,8 @@ of the series_target is a release manager can can make changes.
 # milestone to have a driver.
 
     >>> login_person(upstream_firefox.owner)
-    # Hack the milestone to put it in an invalid state.
+
+Hack the milestone to put it in an invalid state.
     >>> fizzy_milestone.productseries = None
     >>> check_permission('launchpad.Edit', fizzy_milestone)
     True
