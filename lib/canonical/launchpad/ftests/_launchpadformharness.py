@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for testing LaunchpadFormView subclasses."""
 
@@ -15,7 +16,7 @@ class LaunchpadFormHarness:
                  request_class=LaunchpadTestRequest):
         self.context = context
         self.view_class = view_class
-        self.request_class = LaunchpadTestRequest
+        self.request_class = request_class
         self._render(form_values)
 
     def _render(self, form_values=None, method='GET'):

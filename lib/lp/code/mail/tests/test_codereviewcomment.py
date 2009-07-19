@@ -1,5 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
-
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test CodeReviewComment emailing functionality."""
 
@@ -7,6 +7,7 @@
 from unittest import TestLoader
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -267,6 +268,18 @@ class TestCodeReviewComment(TestCaseWithFactory):
         to = mailer._getToAddresses(
             comment.message.owner, 'comment@gmail.com')
         self.assertEqual(['Commenter <comment@gmail.com>'], to)
+
+    def test_getToAddresses_with_hidden_address(self):
+        """Don't show address if Person.hide_email_addresses."""
+        comment = self.makeCommentAndParticipants()
+        removeSecurityProxy(comment.message.owner).hide_email_addresses = True
+        second_commenter = self.factory.makePerson(
+            email='commenter2@email.com', displayname='Commenter2')
+        reply = comment.branch_merge_proposal.createComment(
+            second_commenter, 'hello2', parent=comment)
+        mailer = CodeReviewCommentMailer.forCreation(reply)
+        to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
+        self.assertEqual([mailer.merge_proposal.address], to)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

@@ -63,11 +63,9 @@
            tal:attributes="class string:value status${context/status/name}"
            style="float: left"
            tal:content="context/status/title" />
-        <div style="float: right; margin-right: 0.5em">
-          <a href="+editstatus">
-            <img class="editicon" src="/@@/edit-grey" />
-          </a>
-        </div>
+        <a href="+editstatus" style="margin-left: 3px">
+          <img class="editicon" />
+        </a>
       </div>
     </td>
 
@@ -79,11 +77,9 @@
            tal:attributes="class string:value importance${context/importance/name}"
            style="float: left"
            tal:content="context/importance/title" />
-        <div style="float: right; margin-right: 0.5em">
-          <a href="+editstatus">
-            <img class="editicon" src="/@@/edit-grey" />
-          </a>
-        </div>
+        <a href="+editstatus" style="margin-left: 3px">
+          <img class="editicon" />
+        </a>
       </div>
     </td>
     <td tal:condition="not: view/user_can_edit_importance"
@@ -147,13 +143,7 @@
     YUI().use('event', 'bugs.bugtask_index', function(Y) {
         Y.on('load',
              function(e) {
-                 Y.bugs.setup_bugtask_row('${row_id}',
-                                          '${context/fmt:url}',
-                                          ${view/status_widget_items},
-                                          '${context/status/title}',
-                                          ${view/importance_widget_items},
-                                          '${context/importance/title}',
-                                          ${view/user_can_edit_importance_json});
+                 Y.bugs.setup_bugtask_row(${view/js_config});
              },
              window);
     });

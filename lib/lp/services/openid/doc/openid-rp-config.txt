@@ -21,7 +21,7 @@ This includes:
 Configurations are created using the IOpenIDRPConfigSet utility:
 
     >>> from zope.component import getUtility
-    >>> from canonical.signon.interfaces.openidserver import (
+    >>> from lp.services.openid.interfaces.openidrpconfig import (
     ...     IOpenIDRPConfigSet)
     >>> login(ANONYMOUS)
     >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
@@ -33,7 +33,8 @@ Configurations are created using the IOpenIDRPConfigSet utility:
 The resulting object implements the IOpenIDRPConfig interface:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.signon.interfaces.openidserver import IOpenIDRPConfig
+    >>> from lp.services.openid.interfaces.openidrpconfig import (
+    ...     IOpenIDRPConfig)
 
     >>> verifyObject(IOpenIDRPConfig, rpconfig)
     True
