@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for efficient translation file exports."""
@@ -22,14 +22,6 @@ from lp.translations.interfaces.translations import TranslationConstants
 
 class IVPOExportSet(Interface):
     """A collection of IVPOExport-providing rows."""
-
-    def get_pofile_rows(pofile):
-        """Return exportable rows belonging to the given PO file."""
-
-    def get_pofile_changed_rows(pofile):
-        """Return exportable rows belonging to the given PO file that
-        were changed compared to the imported/packaged rows.
-        """
 
     def get_distroseries_pofiles(series, date=None, component=None,
         languagepack=None):

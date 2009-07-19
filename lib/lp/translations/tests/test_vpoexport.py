@@ -47,11 +47,10 @@ class VPOExportSetTestCase(unittest.TestCase):
 
         transaction.commit()
 
-    def test_get_pofile_rows_sequence(self):
+    def test_getTranslationRows_sequence(self):
         # Test for correct sorting of obsolete messages (where sequence=0).
-        vpoexportset = getUtility(IVPOExportSet)
         for rownum, row in enumerate(
-            vpoexportset.get_pofile_rows(self.pofile)):
+            self.pofile.getTranslationRows()):
             self.failUnlessEqual(
                 row.sequence, EXPECTED_SEQUENCE[rownum],
                 "VPOExportSet does not sort obsolete messages (sequence=0) "

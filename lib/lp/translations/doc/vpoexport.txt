@@ -56,7 +56,7 @@ current POFiles in a given distro series.
     >>> print vpoexportset.get_distroseries_pofiles_count(hoary)
     27
 
-The get_pofile_rows method lists all translations found in the
+The getTranslationRows method lists all translations found in the
 pofile.
 
     >>> potemplate = factory.makePOTemplate()
@@ -70,19 +70,19 @@ pofile.
 
     >>> rows = sorted([
     ...     describe_poexport_row(row)
-    ...     for row in vpoexportset.get_pofile_rows(pofile)])
+    ...     for row in pofile.getTranslationRows()])
     >>> for row in rows:
     ...     print row
     1 english1 esperanto1
     2 english2 esperanto2
 
-The get_pofile_changed_rows method lists all translations found in the
+The getChangedRows method lists all translations found in the
 pofile it is given if they were changed after they were imported. These are
 all current messages that have not been imported.
 
     >>> rows = sorted([
     ...     describe_poexport_row(row)
-    ...     for row in vpoexportset.get_pofile_changed_rows(pofile)])
+    ...     for row in pofile.getChangedRows()])
     >>> for row in rows:
     ...     print row
     2 english2 esperanto2
@@ -127,12 +127,12 @@ diverged for stable.
 
 When we export trunk, only the trunk message shows up.
 
-    >>> for row in vpoexportset.get_pofile_rows(trunk_pofile):
+    >>> for row in trunk_pofile.getTranslationRows():
     ...     print describe_poexport_row(row)
     1   1   een
 
 In an export for stable, only the stable message shows up.
 
-    >>> for row in vpoexportset.get_pofile_rows(stable_pofile):
+    >>> for row in stable_pofile.getTranslationRows():
     ...     print describe_poexport_row(row)
     2   2   twee
