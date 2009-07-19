@@ -16,7 +16,7 @@
         tal:attributes="href milestone/series_target/fmt:url"
         tal:content="milestone/series_target/displayname">trunk</a>
         <tal:can-edit condition="context/required:launchpad.Edit">
-          <tal:comment condtion="nothing">
+          <tal:comment condition="nothing">
           # XXX sinzui 2009-07-18 bug=40978: This should not happen, but
           # owners can fix the milestone by setting the series.
           </tal:comment>
