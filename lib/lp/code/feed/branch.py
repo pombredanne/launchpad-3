@@ -247,16 +247,36 @@ class RevisionListingFeed(FeedBase):
         Called by getItems which may cache the results.
         """
         cache = self._getRevisionCache()
-        revisions = cache.public().getRevisions().config(limit=self.quantity)
+        revisions = cache.public().getRevisions()
         # Convert the items into their feed entry representation.
-        items = [self.itemToFeedEntry(item) for item in revisions]
+        items = []
+        for revision in revisions:
+            view = content_view = self._createView(revision)
+            entry = self.createFeedEntry(content_view)
+            if entry is not None:
+                items.append(entry)
+            # If we've hit our limit, stop iterating the revisions.
+            if len(items) >= self.quantity:
+                break
         return items
 
-    def itemToFeedEntry(self, revision):
-        """See `IFeed`."""
+    def _createView(self, revision):
+        """Make a view for this revision.
+
+        :return: A view class, or None.
+        """
+        content_view = RevisionFeedContentView(revision, self.request, self)
+        # If there is no longer an associated branch for this, return None as
+        # we don't want to show this revision.
+        if content_view.branch is None:
+            return None
+        return content_view
+
+    def createFeedEntry(self, content_view):
+        """Create the FeedEntry for the specified view."""
+        revision = content_view.context
         id = "tag:launchpad.net,%s:/revision/%s" % (
             revision.revision_date.date().isoformat(), revision.revision_id)
-        content_view = RevisionFeedContentView(revision, self.request, self)
         content = content_view.render()
         content_data = FeedTypedData(content=content,
                                      content_type="html",
