@@ -301,7 +301,7 @@ page:
     Sample Person. If you think that is a duplicated account, you can
     merge it into your account.
     >>> print browser.getLink('merge it').url
-    http://launchpad.dev/people/+requestmerge?field.dupeaccount=name12
+    http://launchpad.dev/people/+requestmerge?field.dupe_person=name12
 
 
 === Attempting to Add an Address Owned By A Launchpad Team ===
