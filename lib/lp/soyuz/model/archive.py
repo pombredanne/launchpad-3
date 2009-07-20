@@ -1081,10 +1081,12 @@ class Archive(SQLBase):
             # Webservice-friendly exception.
             raise SourceNotFound(e)
 
+        sources = []
         source = from_archive.getPublishedSources(
-            name=source_name, version=version, exact_match=True)
+            name=source_name, version=version, exact_match=True)[0]
+        sources.append(source)
 
-        self._copySources(source, to_pocket, to_series, include_binaries)
+        self._copySources(sources, to_pocket, to_series, include_binaries)
 
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False):

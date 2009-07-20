@@ -2227,7 +2227,6 @@ all result in a NotFound exception:
     ...
     DistroSeriesNotFound: badseries
 
-
 We can also specify a single source to be copied with the `syncSource`
 call.  This allows a version to be specified so older versions can be
 pulled.
@@ -2311,6 +2310,38 @@ or a CannotCopy exception is thrown.
     Traceback (most recent call last):
     ...
     CannotCopy: Destination pocket must be 'release' for a PPA.
+
+syncSource() will always use only the latest publication of the
+specific source, ignoring the previous ones. Multiple publications can
+be resulted from copies and/or overrides of the copy candidates in the
+source archive.
+
+    # Create a copy candidate (override_1.0) in ubuntu primary archive
+    # and override its section. Resulting in 2 publications in the
+    # source archive.
+    >>> from lp.soyuz.interfaces.section import ISectionSet
+    >>> source_old = test_publisher.getPubSource(
+    ...     sourcename="overridden", version="1.0")
+    >>> python_section = getUtility(ISectionSet).ensure('python')
+    >>> copy_candidate = source_old.changeOverride(new_section=python_section)
+
+    >>> source_archive = copy_candidate.archive
+    >>> source_archive.getPublishedSources(name="overridden").count()
+    2
+
+    >>> print copy_candidate.section.name
+    python
+
+When syncing 'overridden_1.0' to Mark's PPA, the latest publication,
+the one published in 'python' section, will be used.
+
+    >>> sabdfl.archive.syncSource(
+    ...     source_name='overridden', version='1.0',
+    ...     from_archive=source_archive, to_pocket='release')
+
+    >>> [copy] = sabdfl.archive.getPublishedSources(name="overridden")
+    >>> print copy.section.name
+    python
 
 
 == Publish flag ==
