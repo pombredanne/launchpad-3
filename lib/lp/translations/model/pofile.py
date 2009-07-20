@@ -1183,38 +1183,6 @@ class POFile(SQLBase, POFileMixIn):
 
         return file_content
 
-    # Names of columns that are selected and passed (in this order) to
-    # the VPOExport constructor.
-    column_names = [
-        'TranslationTemplateItem.potmsgset',
-        'TranslationTemplateItem.sequence',
-        'TranslationMessage.comment',
-        'TranslationMessage.is_current',
-        'TranslationMessage.is_imported',
-        'TranslationMessage.potemplate',
-        'potranslation0.translation',
-        'potranslation1.translation',
-        'potranslation2.translation',
-        'potranslation3.translation',
-        'potranslation4.translation',
-        'potranslation5.translation',
-    ]
-    columns = ', '.join(column_names)
-
-    # Obsolete translations are marked with a sequence number of 0, so they
-    # would get sorted to the front of the file during export. To avoid that,
-    # sequence numbers of 0 are translated to NULL and ordered to the end
-    # with NULLS LAST so that they appear at the end of the file.
-    sort_column_names = [
-        'TranslationMessage.potemplate NULLS LAST',
-        'CASE '
-            'WHEN TranslationTemplateItem.sequence = 0 THEN NULL '
-            'ELSE TranslationTemplateItem.sequence '
-        'END NULLS LAST',
-        'TranslationMessage.id',
-    ]
-    sort_columns = ', '.join(sort_column_names)
-
     def _selectRows(self, where=None, ignore_obsolete=True):
         """Select translation message data.
 
@@ -1229,7 +1197,40 @@ class POFile(SQLBase, POFileMixIn):
         for potmsgset in self.potemplate.getPOTMsgSets(ignore_obsolete):
             potmsgsets[potmsgset.id] = potmsgset
 
-        main_select = "SELECT %s" % self.columns
+        # Names of columns that are selected and passed (in this order) to
+        # the VPOExport constructor.
+        column_names = [
+            'TranslationTemplateItem.potmsgset',
+            'TranslationTemplateItem.sequence',
+            'TranslationMessage.comment',
+            'TranslationMessage.is_current',
+            'TranslationMessage.is_imported',
+            'TranslationMessage.potemplate',
+            'potranslation0.translation',
+            'potranslation1.translation',
+            'potranslation2.translation',
+            'potranslation3.translation',
+            'potranslation4.translation',
+            'potranslation5.translation',
+        ]
+        columns = ', '.join(column_names)
+
+        # Obsolete translations are marked with a sequence number of 0,
+        # so they would get sorted to the front of the file during
+        # export. To avoid that, sequence numbers of 0 are translated to
+        # NULL and ordered to the end with NULLS LAST so that they
+        # appear at the end of the file.
+        sort_column_names = [
+            'TranslationMessage.potemplate NULLS LAST',
+            'CASE '
+                'WHEN TranslationTemplateItem.sequence = 0 THEN NULL '
+                'ELSE TranslationTemplateItem.sequence '
+            'END NULLS LAST',
+            'TranslationMessage.id',
+        ]
+        sort_columns = ', '.join(sort_column_names)
+
+        main_select = "SELECT %s" % columns
         query = main_select + """
             FROM TranslationTemplateItem
             LEFT JOIN TranslationMessage ON
@@ -1265,7 +1266,7 @@ class POFile(SQLBase, POFileMixIn):
             conditions.append("(%s)" % where)
 
         query += "WHERE %s" % ' AND '.join(conditions)
-        query += ' ORDER BY %s' % self.sort_columns
+        query += ' ORDER BY %s' % sort_columns
 
         for row in Store.of(self).execute(query):
             export_data = VPOExport(*row)
