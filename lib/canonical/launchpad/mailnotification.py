@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # XXX: Gavin Panella 2008-11-21 bug=300725: This module need
 # refactoring and/or splitting into a package or packages.

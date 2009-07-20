@@ -1,5 +1,8 @@
 #! /bin/bash
-
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
 # This script will setup a brand new Ubuntu machine as a LP developer
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup

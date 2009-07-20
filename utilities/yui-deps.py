@@ -1,6 +1,8 @@
 #!/usr/bin/python
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2008 Canonical Ltd.  All rights reserved.
 """Print the YUI modules we are using.
 
 It looks into the base-layout-macros.pt file for the yui modules included.

@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
 
@@ -521,8 +522,11 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
         celebrities = getUtility(ILaunchpadCelebrities)
         if user.inTeam(celebrities.admin):
             return True
-        if user.inTeam(self.obj.series_target.driver):
+        if (self.obj.series_target is not None
+            and user.inTeam(self.obj.series_target.driver)):
             # The user is a release manager.
+            # XXX sinzui 2009-07-18 bug=40978: The series_target should never
+            # be None, but Milestones in the production DB are like this.
             return True
         return user.inTeam(self.obj.target.owner)
 
