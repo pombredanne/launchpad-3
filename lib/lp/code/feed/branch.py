@@ -251,9 +251,9 @@ class RevisionListingFeed(FeedBase):
         # Convert the items into their feed entry representation.
         items = []
         for revision in revisions:
-            view = content_view = self._createView(revision)
-            entry = self.createFeedEntry(content_view)
-            if entry is not None:
+            content_view = self._createView(revision)
+            if content_view is not None:
+                entry = self.createFeedEntry(content_view)
                 items.append(entry)
             # If we've hit our limit, stop iterating the revisions.
             if len(items) >= self.quantity:
