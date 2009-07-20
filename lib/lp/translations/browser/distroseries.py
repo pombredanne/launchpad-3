@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Translations view classes related to `IDistroSeries`."""
 
@@ -229,11 +230,6 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
                 distroserieslangs.append(distroserieslang)
 
         return sorted(distroserieslangs, key=lambda a: a.language.englishname)
-
-    @cachedproperty
-    def unlinked_translatables(self):
-        """Return the sourcepackages that lack a link to a productseries."""
-        return self.context.getUnlinkedTranslatableSourcePackages()
 
     @property
     def potemplates(self):

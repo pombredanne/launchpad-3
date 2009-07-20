@@ -1,12 +1,13 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""OpenID adapters and helper objects."""
+"""OpenID adapters and helpers."""
 
 __metaclass__ = type
 
 __all__ = [
-    'OpenIDPersistentIdentity',
     'CurrentOpenIDEndPoint',
+    'OpenIDPersistentIdentity',
     ]
 
 from zope.component import adapter, adapts
@@ -15,8 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.signon.interfaces.openidserver import (
-    IOpenIDPersistentIdentity)
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.registry.interfaces.person import IPerson
 
 

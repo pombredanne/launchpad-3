@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
 
@@ -284,6 +285,11 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
+
+    @cachedproperty
+    def unlinked_translatables(self):
+        """Return the sourcepackages that lack a link to a productseries."""
+        return self.context.getUnlinkedTranslatableSourcePackages()
 
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.

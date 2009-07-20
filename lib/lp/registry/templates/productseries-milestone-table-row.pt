@@ -10,6 +10,24 @@
       <a tal:content="milestone/title"
          tal:attributes="href milestone/fmt:url">version</a>
     </td>
+    <td tal:condition="view/show_series_context">
+      <a
+        tal:condition="milestone/series_target"
+        tal:attributes="href milestone/series_target/fmt:url"
+        tal:content="milestone/series_target/displayname">trunk</a>
+        <tal:can-edit condition="context/required:launchpad.Edit">
+          <tal:comment condition="nothing">
+          # XXX sinzui 2009-07-18 bug=40978: This should not happen, but
+          # owners can fix the milestone by setting the series.
+          </tal:comment>
+          <tal:missing-series tal:condition="not: milestone/series_target">
+            <a title="Set the series"
+              tal:attributes="href milestone_menu/edit/fmt:url">Set</a>
+            <a
+              tal:replace="structure milestone_menu/edit/fmt:icon" />
+          </tal:missing-series>
+        </tal:can-edit>
+    </td>
     <td>
       <span
         tal:attributes="title milestone/dateexpected/fmt:datetime"

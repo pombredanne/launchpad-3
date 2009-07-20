@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -1305,6 +1309,13 @@
             template="../templates/milestone-portlet-details.pt"/>
     </browser:pages>
     <browser:page
+        name="+pillar-table-row"
+        for="lp.registry.interfaces.milestone.IMilestone"
+        class="lp.registry.browser.milestone.MilestonesView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/productseries-milestone-table-row.pt"/>
+    <browser:page
         name="+edit"
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.milestone.MilestoneEditView"
@@ -2223,5 +2234,13 @@
         name="+timeline-macros"
         template="../templates/timeline-macros.pt"
         permission="zope.Public"
+        />
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="launchpad.AnyPerson"
+        class="lp.registry.browser.sourcepackage.SourcePackageView"
+        name="+edit-packaging"
+        facet="overview"
+        template="../templates/sourcepackage-edit-packaging.pt"
         />
 </configure>
