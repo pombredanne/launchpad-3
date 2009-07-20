@@ -3,7 +3,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
-# This script will setup a brand new Ubuntu machine as a LP developer
+# This script will set up a brand new Ubuntu machine as a LP developer
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
 
@@ -171,6 +171,7 @@ if [ $? -ne 0 ]; then
 GSSAPIAuthentication no
 ------------------------------------------------------------
 
+  (Hit Return when done...)
 "
 fi
 if [ "$whoami" != "$lpusername" ]; then
@@ -186,6 +187,8 @@ if [ "$whoami" != "$lpusername" ]; then
 Host bazaar.launchpad.net
     User $lpusername
 ------------------------------------------------------------
+
+  (Hit Return when done...)
 "
 fi
 
@@ -204,6 +207,8 @@ Host bazaar.launchpad.dev
     Port 5022
     IdentityFile ~/.ssh/launchpad_id_dsa
 ------------------------------------------------------------
+
+  (Hit Return when done...)
 "
   read
 fi
@@ -217,6 +222,8 @@ if [ $? -ne 0 ]; then
 Host bazaar.launchpad.net
     User ${lpusername}
 ------------------------------------------------------------
+
+  (Hit Return when done...)
 "
   read
 fi
@@ -325,7 +332,7 @@ if [ ! -d $LP_SHARED_REPO ]; then
   # 2a format (a.k.a. "brisbane-core") needed for stacking on Launchpad.
   bzr init-repo --2a $LP_SHARED_REPO
   if [ $? -ne 0 ]; then
-    echo "ERROR: Unable to setup local LP repository"
+    echo "ERROR: Unable to set up local LP repository"
     exit 1
   fi
 fi
@@ -353,7 +360,7 @@ fi
 
 cd $LP_TRUNK_NAME
 if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
-  "//bazaar.launchpad.net/%7Elaunchpad-pqm/launchpad/devel/" ]; then
+  "//bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/" ]; then
   echo "ERROR: Your trunk branch in $LP_TRUNK_PATH has an
        incorrect pull location, correcting now..."
   bzr pull --remember bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/
@@ -370,7 +377,7 @@ if [ $? -ne 0 ]; then
 fi
 
 
-# Setup Bazaar locations configuration
+# Set up Bazaar locations configuration
 if [ ! -d ~/.bazaar ]; then
   mkdir ~/.bazaar
   if [ $? -ne 0 ]; then
@@ -408,14 +415,14 @@ echo "Bazaar branch configuration updated."
 
 fi
 
-# Setup access to the local supermirror
+# Set up access to the local supermirror
 if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
   cp $LP_TRUNK_PATH/lib/lp/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
   chmod 600 ~/.ssh/launchpad_id_dsa
-  echo "Setup ssh key for local supermirror ssh access."
+  echo "Set up ssh key for local supermirror ssh access."
 fi
 
-# Setup scripts in /usr/local/bin
+# Set up scripts in /usr/local/bin
 cd /usr/local/bin
 if [ ! -e rocketfuel-get ]; then
   sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-get
@@ -472,7 +479,7 @@ fi
 
 echo "
 Thank you for using this script.  You can improve it for everyone by
-committing changes to LP in utilities/rocketfuel-setup.
+committing changes to Launchpad in utilities/rocketfuel-setup.
 
 Please see http://dev.launchpad.net/ for more information on
 developing and testing Launchpad, and on submitting changes.
@@ -492,7 +499,7 @@ development environment:
 
  rocketfuel-status
     Check each of the branches in $LP_PROJECT_PATH
-    and show which of them have uncommitted changes, also check which ones
+    and show which of them have uncommitted changes; also check which ones
     have revisions that have not yet landed on trunk.
 
  rocketfuel-push

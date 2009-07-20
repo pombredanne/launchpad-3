@@ -56,6 +56,12 @@ then
 fi
 
 echo "Updating sourcecode dependencies in rocketfuel:"
+echo ""
+echo "  NOTE: Each sourcedep may take a while; please be patient."
+echo "  Also, ignore any 'You have not informed bzr of your Launchpad ID...'"
+echo "  warnings.  They don't matter right now; they would only matter later"
+echo "  if and when you need write access to some of the branches."
+echo ""
 echo "    Sourcedeps: $LP_SOURCEDEPS_PATH"
 while IFS="=" read package branch
 do
