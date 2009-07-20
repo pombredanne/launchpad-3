@@ -143,13 +143,7 @@
     YUI().use('event', 'bugs.bugtask_index', function(Y) {
         Y.on('load',
              function(e) {
-                 Y.bugs.setup_bugtask_row('${row_id}',
-                                          '${context/fmt:url}',
-                                          ${view/status_widget_items},
-                                          '${context/status/title}',
-                                          ${view/importance_widget_items},
-                                          '${context/importance/title}',
-                                          ${view/user_can_edit_importance_json});
+                 Y.bugs.setup_bugtask_row(${view/js_config});
              },
              window);
     });

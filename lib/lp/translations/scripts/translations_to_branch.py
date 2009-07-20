@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export translation snapshots to bzr branches where requested."""
 
@@ -11,6 +12,7 @@ from zope.component import getUtility
 
 from storm.expr import Join, SQL
 
+from lp.codehosting.vfs import get_multi_server
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -82,29 +84,11 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         finally:
             committer.unlock()
 
-    def main(self):
-        """See `LaunchpadScript`."""
-        # Avoid circular imports.
-        from lp.registry.model.product import Product
-        from lp.registry.model.productseries import ProductSeries
-
-        self.logger.info("Exporting to translations branches.")
-
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-
-        product_join = Join(
-            ProductSeries, Product, ProductSeries.product == Product.id)
-        productseries = self.store.using(product_join).find(
-            ProductSeries, SQL(
-                "official_rosetta AND translations_branch IS NOT NULL"))
-
-        # Anything deterministic will do, and even that is only for
-        # testing.
-        productseries = productseries.order_by(ProductSeries.id)
-
+    def _exportToBranches(self, productseries_iter):
+        """Loop over `productseries_iter` and export their translations."""
         items_done = 0
         items_failed = 0
-        for source in productseries:
+        for source in productseries_iter:
             try:
                 self._exportToBranch(source)
 
@@ -127,3 +111,30 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         self.logger.info("Processed %d item(s); %d failure(s)." % (
             items_done, items_failed))
+
+    def main(self):
+        """See `LaunchpadScript`."""
+        # Avoid circular imports.
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+
+        self.logger.info("Exporting to translations branches.")
+
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+
+        product_join = Join(
+            ProductSeries, Product, ProductSeries.product == Product.id)
+        productseries = self.store.using(product_join).find(
+            ProductSeries, SQL(
+                "official_rosetta AND translations_branch IS NOT NULL"))
+
+        # Anything deterministic will do, and even that is only for
+        # testing.
+        productseries = productseries.order_by(ProductSeries.id)
+
+        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver.setUp()
+        try:
+            self._exportToBranches(productseries)
+        finally:
+            bzrserver.tearDown()

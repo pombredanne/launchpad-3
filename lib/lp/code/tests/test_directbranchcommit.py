@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `DirectBranchCommit`."""
 
@@ -6,24 +7,23 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
-from bzrlib.branch import Branch as BzrBranch
-
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError, DirectBranchCommit)
-from lp.testing import TestCaseWithFactory
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing import map_branch_contents, TestCaseWithFactory
+from canonical.testing.layers import ZopelessDatabaseLayer
 
 
 class TestDirectBranchCommit(TestCaseWithFactory):
     """Test `DirectBranchCommit`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     db_branch = None
     committer = None
 
     def setUp(self):
         super(TestDirectBranchCommit, self).setUp()
+
         self.useBzrBranches()
 
         self.series = self.factory.makeProductSeries()
@@ -48,22 +48,7 @@ class TestDirectBranchCommit(TestCaseWithFactory):
 
     def _getContents(self):
         """Return branch contents as dict mapping filenames to contents."""
-        contents = {}
-        branch = BzrBranch.open(self.committer.db_branch.getPullURL())
-        tree = branch.basis_tree()
-        tree.lock_read()
-        try:
-            for dir, entries in tree.walkdirs():
-                dirname, id = dir
-                for entry in entries:
-                    file_path, file_name, file_type = entry[:3]
-                    if file_type == 'file':
-                        stored_file = tree.get_file_by_path(file_path)
-                        contents[file_path] = stored_file.read()
-        finally:
-            tree.unlock()
-
-        return contents
+        return map_branch_contents(self.committer.db_branch.getPullURL())
 
     def test_DirectBranchCommit_commits_no_changes(self):
         # Committing to an empty branch leaves the branch empty.

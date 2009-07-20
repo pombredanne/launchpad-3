@@ -92,7 +92,8 @@
                 </td>
               </tr>
             </thead>
-            <tbody id="messages_to_translate">
+            <tbody id="messages_to_translate"
+                   tal:define="zoomed_in_view python:True;">
               <div tal:replace="structure view/translationmessage_view" />
             </tbody>
             <tfoot>

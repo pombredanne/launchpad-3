@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Person-related view classes."""
@@ -1473,7 +1475,7 @@ class PersonClaimView(LaunchpadFormView):
                          "Launchpad profile, which you seem to have used at "
                          "some point. If that's the case, you can "
                          '<a href="/people/+requestmerge'
-                         '?field.dupeaccount=%s">combine '
+                         '?field.dupe_person=%s">combine '
                          "this profile with the other one</a> (you'll "
                          "have to log in with the other profile first, "
                          "though). If that's not the case, please try with a "
@@ -3518,11 +3520,17 @@ class PersonChangePasswordView(LaunchpadFormView):
         return canonical_url(self.context)
 
     def validate(self, form_values):
-        currentpassword = form_values.get('currentpassword')
+        current_password = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(currentpassword, self.context.password):
+        if not encryptor.validate(current_password, self.context.password):
             self.setFieldError('currentpassword', _(
                 "The provided password doesn't match your current password."))
+        # This is not part of the widget, since the value may
+        # be optional in some forms.
+        new_password = self.request.form.get('field.password', '')
+        if new_password.strip() == '':
+            self.setFieldError('password', _(
+                "Setting an empty password is not allowed."))
 
     @action(_("Change Password"), name="submit")
     def submit_action(self, action, data):
@@ -3530,6 +3538,11 @@ class PersonChangePasswordView(LaunchpadFormView):
         self.context.password = password
         self.request.response.addInfoNotification(_(
             "Password changed successfully"))
+
+    @property
+    def cancel_url(self):
+        """The URL that the 'Cancel' link should return to."""
+        return canonical_url(self.context)
 
 
 class BasePersonEditView(LaunchpadEditFormView):
@@ -4232,7 +4245,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
-                    '%s/+requestmerge?field.dupeaccount=%s'
+                    '%s/+requestmerge?field.dupe_person=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
                 self.addError(
                     structured(

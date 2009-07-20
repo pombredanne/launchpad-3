@@ -322,6 +322,13 @@ the 'main' component, or an error is returned:
     InvalidComponent: Component for PPAs should be 'main'
     <BLANKLINE>
 
+    >>> response = webservice.named_post(
+    ...     cprov_archive['self_link'], 'newComponentUploader', {},
+    ...     person=name12['self_link'], component_name='main')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
 deleteComponentUploader() removes that permission:
 
     >>> print webservice.named_post(
