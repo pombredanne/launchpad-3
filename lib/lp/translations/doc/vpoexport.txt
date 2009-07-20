@@ -93,8 +93,6 @@ all current messages that have not been imported.
 A particular product has two series, trunk and stable, each with the
 same template.  The templates thus share messages.
 
-    >>> from lp.translations.model.translationtemplateitem import (
-    ...     TranslationTemplateItem)
     >>> product = factory.makeProduct()
     >>> trunk = product.getSeries('trunk')
     >>> stable = factory.makeProductSeries()
