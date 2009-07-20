@@ -46,6 +46,8 @@ class DirectBranchCommit:
     """
     is_open = False
     is_locked = False
+    committing = False
+    commit_builder = None
 
     def __init__(self, db_branch, committer=None):
         """Create context for direct commit to branch.
@@ -73,6 +75,8 @@ class DirectBranchCommit:
             committer = db_branch.owner
         self.committer = committer
 
+        self.path_ids = {}
+
         mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
         self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
         self.bzrbranch.lock_write()
@@ -81,30 +85,39 @@ class DirectBranchCommit:
         try:
             self.revision_tree = self.bzrbranch.basis_tree()
             self.transform_preview = TransformPreview(self.revision_tree)
+            assert self.transform_preview.find_conflicts() == []
 
             self.is_open = True
         except:
             self.unlock()
-            self.is_locked = False
             raise
 
         self.files = set()
 
     def _getDir(self, path):
         """Get trans_id for directory "path."  Create if necessary."""
-        dir = self.revision_tree.path2id(path)
-        if dir:
+        path_id = self.path_ids.get(path)
+        if path_id:
+            # This is a path we've just created in the branch.
+            return path_id
+
+        if self.revision_tree.path2id(path):
+            # This is a path that was already in the branch.
             return self.transform_preview.trans_id_tree_path(path)
 
+        # Look up (or create) parent directory.
         parent_dir, dirname = os.path.split(path)
         if dirname:
             parent_id = self._getDir(parent_dir)
         else:
             parent_id = None
 
+        # Create new directory.
         dirfile_id = gen_file_id(path)
-        return self.transform_preview.new_directory(
+        path_id = self.transform_preview.new_directory(
             dirname, parent_id, dirfile_id)
+        self.path_ids[path] = path_id
+        return path_id
 
     def writeFile(self, path, contents):
         """Write file to branch; may be an update or a new file.
@@ -162,14 +175,16 @@ class DirectBranchCommit:
             else:
                 parents = [rev_id]
 
-            builder = self.bzrbranch.get_commit_builder(parents)
+            self.commit_builder = self.bzrbranch.get_commit_builder(parents)
 
-            list(builder.record_iter_changes(
+            list(self.commit_builder.record_iter_changes(
                 preview_tree, rev_id, self.transform_preview.iter_changes()))
 
-            builder.finish_inventory()
+            self.commit_builder.finish_inventory()
 
-            new_rev_id = builder.commit(commit_message)
+            new_rev_id = self.commit_builder.commit(commit_message)
+            self.committing = True
+            self.commit_builder = None
 
             revno, old_rev_id = self.bzrbranch.last_revision_info()
             self.bzrbranch.set_last_revision_info(revno + 1, new_rev_id)
@@ -183,5 +198,9 @@ class DirectBranchCommit:
     def unlock(self):
         """Release commit lock, if held."""
         if self.is_locked:
+            if self.commit_builder:
+                self.commit_builder.abort()
+                self.commit_builder = None
+            self.transform_preview.finalize()
             self.bzrbranch.unlock()
             self.is_locked = False

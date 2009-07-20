@@ -13,17 +13,13 @@ from lp.testing import map_branch_contents, TestCaseWithFactory
 from canonical.testing.layers import ZopelessDatabaseLayer
 
 
-class TestDirectBranchCommit(TestCaseWithFactory):
-    """Test `DirectBranchCommit`."""
-
-    layer = ZopelessDatabaseLayer
-
+class DirectBranchCommitTestCase(TestCaseWithFactory):
+    """Base class for `DirectBranchCommit` tests."""
     db_branch = None
     committer = None
 
     def setUp(self):
-        super(TestDirectBranchCommit, self).setUp()
-
+        super(DirectBranchCommitTestCase, self).setUp()
         self.useBzrBranches()
 
         self.series = self.factory.makeProductSeries()
@@ -35,6 +31,7 @@ class TestDirectBranchCommit(TestCaseWithFactory):
         self._setUpCommitter()
 
     def _setUpCommitter(self, update_last_scanned_id=True):
+        """Clean up any existing `DirectBranchCommit`, set up a new one."""
         if self.committer:
             self.committer.unlock()
 
@@ -45,13 +42,20 @@ class TestDirectBranchCommit(TestCaseWithFactory):
 
     def tearDown(self):
         self.committer.unlock()
+        super(DirectBranchCommitTestCase, self).tearDown()
 
     def _getContents(self):
         """Return branch contents as dict mapping filenames to contents."""
         return map_branch_contents(self.committer.db_branch.getPullURL())
 
+
+class TestDirectBranchCommit(DirectBranchCommitTestCase):
+    """Test `DirectBranchCommit`."""
+
+    layer = ZopelessDatabaseLayer
+
     def test_DirectBranchCommit_commits_no_changes(self):
-        # Committing to an empty branch leaves the branch empty.
+        # Committing to an empty branch leaves an empty branch empty.
         self.committer.commit('')
         self.assertEqual({}, self._getContents())
 
@@ -94,6 +98,19 @@ class TestDirectBranchCommit(TestCaseWithFactory):
         }
         self.assertEqual(expected, self._getContents())
 
+    def test_DirectBranchCommit_reuses_new_directories(self):
+        # If a directory doesn't exist in the committed branch, creating
+        # it twice would be an error.  DirectBranchCommit doesn't do
+        # that.
+        self.committer.writeFile('foo/x.txt', 'x')
+        self.committer.writeFile('foo/y.txt', 'y')
+        self.committer.commit('')
+        expected = {
+            'foo/x.txt': 'x',
+            'foo/y.txt': 'y',
+        }
+        self.assertEqual(expected, self._getContents())
+
     def test_DirectBranchCommit_writes_new_file_twice(self):
         # If you write the same new file multiple times before
         # committing, the original wins.
@@ -121,6 +138,66 @@ class TestDirectBranchCommit(TestCaseWithFactory):
         self._setUpCommitter(False)
         self.committer.writeFile('hi.py', 'print "hi world"')
         self.assertRaises(ConcurrentUpdateError, self.committer.commit, '')
+
+
+class TestDirectBranchCommit_getDir(DirectBranchCommitTestCase):
+    """Test `DirectBranchCommit._getDir`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_getDir_creates_root(self):
+        # An id is created even for the branch root directory.
+        self.assertFalse('' in self.committer.path_ids)
+        root_id = self.committer._getDir('')
+        self.assertNotEqual(None, root_id)
+        self.assertTrue('' in self.committer.path_ids)
+        self.assertEqual(self.committer.path_ids[''], root_id)
+        self.committer.commit('')
+
+    def test_getDir_creates_dir(self):
+        # _getDir will create a new directory, under the root.
+        self.assertFalse('dir' in self.committer.path_ids)
+        dir_id = self.committer._getDir('dir')
+        self.assertTrue('' in self.committer.path_ids)
+        self.assertTrue('dir' in self.committer.path_ids)
+        self.assertEqual(self.committer.path_ids['dir'], dir_id)
+        self.assertNotEqual(self.committer.path_ids[''], dir_id)
+        self.committer.commit('')
+
+    def test_getDir_creates_subdir(self):
+        # _getDir will create nested directories.
+        subdir_id = self.committer._getDir('dir/subdir')
+        self.assertTrue('' in self.committer.path_ids)
+        self.assertTrue('dir' in self.committer.path_ids)
+        self.assertTrue('dir/subdir' in self.committer.path_ids)
+        self.assertEqual(self.committer.path_ids['dir/subdir'], subdir_id)
+        self.committer.commit('')
+
+    def test_getDir_finds_existing_dir(self):
+        # _getDir finds directories that already existed in a previously
+        # committed version of the branch.
+        existing_id = self.committer._getDir('po')
+        self._setUpCommitter()
+        dir_id = self.committer._getDir('po')
+        self.assertEqual(existing_id, dir_id)
+        self.committer.commit('')
+
+    def test_getDir_creates_dir_in_existing_dir(self):
+        # _getDir creates directories inside ones that already existed
+        # in a previously committed version of the branch.
+        existing_id = self.committer._getDir('po')
+        self._setUpCommitter()
+        new_dir_id = self.committer._getDir('po/main/files')
+        self.assertTrue('po/main' in self.committer.path_ids)
+        self.assertTrue('po/main/files' in self.committer.path_ids)
+        self.assertEqual(self.committer.path_ids['po/main/files'], new_dir_id)
+        self.committer.commit('')
+
+    def test_getDir_reuses_new_id(self):
+        # If a directory was newly created, _getDir will reuse its id.
+        dir_id = self.committer._getDir('foo/bar')
+        self.assertEqual(dir_id, self.committer._getDir('foo/bar'))
+        self.committer.commit('')
 
 
 def test_suite():
