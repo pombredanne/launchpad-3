@@ -381,7 +381,7 @@ class AccountEditEmailsView(LaunchpadFormView):
                 owner = getUtility(IPersonSet).get(email.personID)
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
-                    '%s/+requestmerge?field.dupeaccount=%s'
+                    '%s/+requestmerge?field.dupe_person=%s'
                     % (canonical_url(getUtility(IPersonSet),
                                      rootsite='mainsite'), owner_name))
                 if ITeam.providedBy(owner):
