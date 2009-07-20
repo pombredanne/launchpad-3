@@ -68,7 +68,6 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
-from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
