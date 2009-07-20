@@ -46,7 +46,6 @@
              alt=""
              style="margin: 0 9em 1em 0"/>
         <br />
-
         <input id="text" type="text" name="field.text" size="50" />
         <input type="submit" value="Search Launchpad" />
       </form>
@@ -59,11 +58,11 @@
         <strong tal:content="view/blueprint_count/fmt:intcomma">123</strong>&nbsp;blueprints,
         and&nbsp;counting...
       </div>
-      <div id="home-description">Launchpad is a unique collaboration and
-      <a href="http://bazaar-vcs.org/">Bazaar</a>
-      code hosting platform for software projects. <a
-      href="/+tour"
-      >Read more...</a></div>
+      <div id="home-description">
+        Launchpad is an open source collaboration and code hosting platform.<br />
+        <span class="smaller">You can <a href="https://dev.launchpad.net/">join the community</a> of people
+        who help improve it.</span>
+      </div>
       <div id="home-page" style="width:90%; max-width:80em; margin:auto;">
         <div class="three column left" id="featured-projects">
           <h2>Featured projects</h2>
