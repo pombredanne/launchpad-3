@@ -341,8 +341,15 @@ if [ ! -d $LP_SHARED_REPO/.bzr -a -d $LP_SHARED_REPO/.bzr/repository ]; then
   exit 1
 fi
 
-echo "Logging bzr into Launchpad ..."
+echo "Logging bzr into Launchpad (it's okay if this errors)..."
 bzr launchpad-login $lpusername
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "You can ignore any error above about not registering an SSH key"
+  echo "with Launchpad.  Registering an SSH key is only important if you"
+  echo "are writing data to Launchpad, or trying to access private data."
+  echo ""
+fi
 
 cd $LP_SHARED_REPO
 if [ ! -d $LP_TRUNK_NAME ]; then
