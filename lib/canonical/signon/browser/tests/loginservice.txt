@@ -51,6 +51,10 @@ A valid email address is required for any operation available on this form.
     ...     getUtility(IOpenIDApplication), TestingLoginServiceLoginView,
     ...     request_class=OpenIDServerTestRequest)
 
+    # Make sure the right kind of request is used throughout the test.
+    >>> harness.request
+    <...OpenIDServerTestRequest...
+
     >>> harness.submit('continue', {'field.email': 'foo@'})
     >>> for message in harness.getFormErrors():
     ...     print message

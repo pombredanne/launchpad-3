@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -736,13 +740,6 @@
             name="+portlet-publishing-details"
             facet="overview"
             template="../templates/distributionsourcepackage-portlet-pub-details.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-            permission="launchpad.AnyPerson"
-            class="lp.registry.browser.sourcepackage.SourcePackageView"
-            name="+edit-packaging"
-            facet="overview"
-            template="../../soyuz/templates/sourcepackage-edit-packaging.pt"/>
         <browser:page
             for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
             class="canonical.launchpad.webapp.publisher.LaunchpadView"

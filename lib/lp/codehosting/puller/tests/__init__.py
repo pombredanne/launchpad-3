@@ -1,4 +1,5 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common code for the puller tests."""
 
@@ -13,8 +14,9 @@ from bzrlib import urlutils
 
 from lp.codehosting.vfs import branch_id_to_path
 from lp.codehosting.puller.worker import (
-    BadUrl, BranchMirrorer, BranchPolicy, PullerWorker, PullerWorkerProtocol)
+    BranchMirrorer, PullerWorker, PullerWorkerProtocol)
 from lp.codehosting.tests.helpers import LoomTestMixin
+from lp.codehosting.vfs.branchfs import BadUrl, BranchPolicy
 from canonical.config import config
 from lp.testing import TestCaseWithFactory
 

@@ -19,35 +19,6 @@
         factory=".openidstore.ProviderOpenIDStore">
     </utility>
 
-    <class
-        class=".openidserver.OpenIDRPConfig">
-      <allow interface="..interfaces.openidserver.IOpenIDRPConfig" />
-      <require
-          permission="launchpad.Admin"
-          attributes="destroySelf"
-          set_schema="..interfaces.openidserver.IOpenIDRPConfig" />
-    </class>
-
-    <securedutility
-        class=".openidserver.OpenIDRPConfigSet"
-        provides="..interfaces.openidserver.IOpenIDRPConfigSet">
-      <allow
-          interface="..interfaces.openidserver.IOpenIDRPConfigSet"
-          />
-    </securedutility>
-
-    <class
-        class=".openidserver.OpenIDRPSummary">
-        <allow interface="..interfaces.openidserver.IOpenIDRPSummary" />
-    </class>
-
-    <securedutility
-        class=".openidserver.OpenIDRPSummarySet"
-        provides="..interfaces.openidserver.IOpenIDRPSummarySet">
-        <allow
-            interface="..interfaces.openidserver.IOpenIDRPSummarySet" />
-    </securedutility>
-
     <class class="canonical.signon.model.authtoken.AuthToken">
         <require
             permission="zope.Public"

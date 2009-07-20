@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Archive interfaces."""
@@ -591,6 +593,166 @@ class IArchivePublic(IHasOwner):
         :param date_created: Optional, defaults to now
 
         :return: A new IArchiveAuthToken
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        packageset=TextLine(
+            title=_("Package set"), required=True),
+        explicit=Bool(
+            title=_("Explicit"), required=False))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @export_factory_operation(Interface, [])
+    def newPackagesetUploader(person, packageset, explicit=False):
+        """Add a package set based permission for a person.
+
+        :param person: An `IPerson` for whom you want to add permission.
+        :param packageset: An `IPackageset` or a string package set name.
+        :param explicit: True if the package set in question requires
+            specialist skills for proper handling.
+
+        :return: The new `ArchivePermission`, or the existing one if it
+            already exists.
+        """
+
+    @operation_parameters(
+        packageset=TextLine(
+            title=_("Package set"), required=True),
+        direct_permissions=Bool(
+            title=_("Ignore package set hierarchy"), required=False))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getUploadersForPackageset(packageset, direct_permissions=True):
+        """The `ArchivePermission` records for uploaders to the package set.
+
+        :param packageset: An `IPackageset` or a string package set name.
+        :param direct_permissions: If True, only consider permissions granted
+            directly for the package set at hand. Otherwise, include any
+            uploaders for package sets that include this one.
+
+        :return: `ArchivePermission` records for all the uploaders who are
+            authorized to upload to the named source package set.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        packageset=TextLine(
+            title=_("Package set"), required=True),
+        explicit=Bool(
+            title=_("Explicit"), required=False))
+    @export_write_operation()
+    def deletePackagesetUploader(person, packageset, explicit=False):
+        """Revoke upload permissions for a person.
+
+        :param person: An `IPerson` for whom you want to revoke permission.
+        :param packageset: An `IPackageset` or a string package set name.
+        :param explicit: The value of the 'explicit' flag for the permission
+            to be revoked.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPackagesetsForUploader(person):
+        """The `ArchivePermission` records for the person's package sets.
+
+        :param person: An `IPerson` for whom you want to find out which
+            package sets he has access to.
+
+        :return: `ArchivePermission` records for all the package sets that
+            'person' is allowed to upload to.
+        """
+
+    @operation_parameters(
+        sourcepackagename=TextLine(
+            title=_("Source package name"), required=True),
+        person=Reference(schema=IPerson))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPackagesetsForSourceUploader(sourcepackagename, person):
+        """The package set based permissions for a given source and uploader.
+
+        Return the `IArchivePermission` records that
+            * apply to this archive
+            * relate to
+                - package sets that include the given source package name
+                - the given `person`
+
+        :param sourcepackagename: the source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param person: An `IPerson` for whom you want to find out which
+            package sets he has access to.
+
+        :raises SourceNotFound: if a source package with the given
+            name could not be found.
+        :return: `ArchivePermission` records for the package sets that
+            include the given source package name and to which the given
+            person may upload.
+        """
+
+    @operation_parameters(
+        sourcepackagename=TextLine(
+            title=_("Source package name"), required=True),
+        direct_permissions=Bool(
+            title=_("Ignore package set hierarchy"), required=False))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPackagesetsForSource(
+        sourcepackagename, direct_permissions=True):
+        """All package set based permissions for the given source.
+
+        This method is meant to aid the process of "debugging" package set
+        based archive permission since It allows the listing of permissions
+        for the given source package in this archive (irrespective of the
+        principal).
+
+        :param sourcepackagename: the source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param direct_permissions: If set only package sets that directly
+            include the given source will be considered.
+
+        :raises SourceNotFound: if a source package with the given
+            name could not be found.
+        :return: `ArchivePermission` records for the package sets that
+            include the given source package name and apply to the
+            archive in question.
+        """
+
+    @operation_parameters(
+        sourcepackagename=TextLine(
+            title=_("Source package name"), required=True),
+        person=Reference(schema=IPerson))
+    @export_read_operation()
+    def isSourceUploadAllowed(sourcepackagename, person):
+        """True if the person is allowed to upload the given source package.
+
+        Return True if there exists a permission that combines
+            * this archive
+            * a package set that includes the given source package name
+            * the given person or a team he is a member of
+
+        If the source package name is included by *any* package set with
+        an explicit permission then only such explicit permissions will
+        be considered.
+
+        :param sourcepackagename: the source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param person: An `IPerson` for whom you want to find out which
+            package sets he has access to.
+
+        :raises SourceNotFound: if a source package with the given
+            name could not be found.
+        :return: True if the person is allowed to upload the source package.
         """
 
 

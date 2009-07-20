@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Database class for table Archive."""
@@ -64,6 +66,7 @@ from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -591,14 +594,23 @@ class Archive(SQLBase):
     def binaries_size(self):
         """See `IArchive`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(
-            (LibraryFileContent),
+
+        clauses = [
             BinaryPackagePublishingHistory.archive == self.id,
             BinaryPackagePublishingHistory.dateremoved == None,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageFile.binarypackagereleaseID,
             BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
-            LibraryFileAlias.contentID == LibraryFileContent.id)
+            LibraryFileAlias.contentID == LibraryFileContent.id
+            ]
+
+        # Exclude DDEBs from the repository size, they are not published
+        # on disk for PPAs. See bug #399444 for more information.
+        if self.is_ppa:
+            clauses.append(
+                BinaryPackageFile.filetype != BinaryPackageFileType.DDEB)
+
+        result = store.find(LibraryFileContent, *clauses)
 
         # See `IArchive.sources_size`.
         result = result.config(distinct=True)
@@ -878,12 +890,18 @@ class Archive(SQLBase):
         return permission_set.newPackageUploader(
             self, person, source_package_name)
 
+    def newPackagesetUploader(self, person, packageset, explicit=False):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newPackagesetUploader(
+            self, person, packageset, explicit)
+
     def newComponentUploader(self, person, component_name):
         """See `IArchive`."""
         if self.is_ppa:
             if IComponent.providedBy(component_name):
                 name = component_name.name
-            elif isinstance(component_name, str):
+            elif isinstance(component_name, basestring):
                 name = component_name
             else:
                 name = None
@@ -916,6 +934,42 @@ class Archive(SQLBase):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.deleteQueueAdmin(self, person, component_name)
+
+    def getUploadersForPackageset(self, packageset, direct_permissions=True):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.uploadersForPackageset(
+            self, packageset, direct_permissions)
+
+    def deletePackagesetUploader(self, person, packageset, explicit=False):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deletePackagesetUploader(
+            self, person, packageset, explicit)
+
+    def getPackagesetsForUploader(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.packagesetsForUploader(self, person)
+
+    def getPackagesetsForSourceUploader(self, sourcepackagename, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.packagesetsForSourceUploader(
+            self, sourcepackagename, person)
+
+    def getPackagesetsForSource(
+        self, sourcepackagename, direct_permissions=True):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.packagesetsForSource(
+            self, sourcepackagename, direct_permissions)
+
+    def isSourceUploadAllowed(self, sourcepackagename, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.isSourceUploadAllowed(
+            self, sourcepackagename, person)
 
     def getFileByName(self, filename):
         """See `IArchive`."""
