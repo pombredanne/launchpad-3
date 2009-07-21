@@ -9,9 +9,11 @@ from unittest import TestLoader
 import transaction
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.testing.mail_helpers import pop_notifications
 from lp.services.job.runner import JobRunner
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.mail.sendmail import MailController
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 
@@ -21,12 +23,38 @@ class NullJob(object):
 
     JOB_COMPLETIONS = []
 
-    def __init__(self, completion_message):
+    def __init__(self, completion_message, oops_recipients=None):
         self.message = completion_message
+        self.oops_recipients = oops_recipients
+        if self.oops_recipients is None:
+            self.oops_recipients = []
         self.job = Job()
 
     def run(self):
         NullJob.JOB_COMPLETIONS.append(self.message)
+
+    def getOopsRecipients(self):
+        return self.oops_recipients
+
+    def getOopsMailController(self, oops):
+        recipients = self.getOopsRecipients()
+        if len(recipients) == 0:
+            return None
+        body = (
+            'Launchpad encountered an internal error during the following'
+            ' operation: %s.  It was logged with id %s.  Sorry for the'
+            ' inconvenience.' % (self.getOperationDescription(), oops.id))
+        return MailController('noreply@launchpad.net', recipients,
+                              'NullJob failed.', body)
+
+    def notifyOops(self, oops):
+        ctrl = self.getOopsMailController(oops)
+        if ctrl is None:
+            return
+        ctrl.send()
+
+    def getOperationDescription(self):
+        return 'appending a string to a list'
 
 
 class TestJobRunner(TestCaseWithFactory):
@@ -83,12 +111,34 @@ class TestJobRunner(TestCaseWithFactory):
         job_1.run = raiseError
         runner = JobRunner([job_1, job_2])
         runner.runAll()
+        self.assertEqual([], pop_notifications())
         self.assertEqual([job_2], runner.completed_jobs)
         self.assertEqual([job_1], runner.incomplete_jobs)
         self.assertEqual(JobStatus.FAILED, job_1.job.status)
         self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
         reporter = errorlog.globalErrorUtility
         oops = reporter.getLastOopsReport()
+        self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
+
+    def test_runAll_mails_oopses(self):
+        """When an error is encountered, report an oops and continue."""
+        job_1, job_2 = self.makeTwoJobs()
+        def raiseError():
+            # Ensure that jobs which call transaction.abort work, too.
+            transaction.abort()
+            raise Exception('Fake exception.  Foobar, I say!')
+        job_1.run = raiseError
+        job_1.oops_recipients = ['jrandom@example.org']
+        runner = JobRunner([job_1, job_2])
+        runner.runAll()
+        (notification,) = pop_notifications()
+        reporter = errorlog.globalErrorUtility
+        oops = reporter.getLastOopsReport()
+        self.assertIn(
+            'Launchpad encountered an internal error during the following'
+            ' operation: appending a string to a list.  It was logged with id'
+            ' %s.  Sorry for the inconvenience.' % oops.id,
+            notification.get_payload(decode=True))
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
 
 

@@ -61,3 +61,5 @@ class JobRunner(object):
             except Exception:
                 info = sys.exc_info()
                 errorlog.globalErrorUtility.raising(info)
+                oops = errorlog.globalErrorUtility.getLastOopsReport()
+                job.notifyOops(oops)
