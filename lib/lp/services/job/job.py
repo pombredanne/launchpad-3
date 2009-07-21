@@ -11,25 +11,22 @@ from lp.services.mail.sendmail import MailController
 
 class Job:
 
-    def __init__(self):
-        self.job = job.Job()
-
     def getOopsRecipients(self):
-        return self.oops_recipients
+        return []
 
-    def getOopsMailController(self, oops):
+    def getOopsMailController(self, oops_id):
         recipients = self.getOopsRecipients()
         if len(recipients) == 0:
             return None
         body = (
             'Launchpad encountered an internal error during the following'
             ' operation: %s.  It was logged with id %s.  Sorry for the'
-            ' inconvenience.' % (self.getOperationDescription(), oops.id))
+            ' inconvenience.' % (self.getOperationDescription(), oops_id))
         return MailController('noreply@launchpad.net', recipients,
                               'NullJob failed.', body)
 
     def notifyOops(self, oops):
-        ctrl = self.getOopsMailController(oops)
+        ctrl = self.getOopsMailController(oops.id)
         if ctrl is None:
             return
         ctrl.send()

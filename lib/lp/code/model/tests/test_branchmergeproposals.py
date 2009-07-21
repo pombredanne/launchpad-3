@@ -1233,6 +1233,17 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         job = MergeProposalCreatedJob.create(bmp)
         self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
 
+    def test_getOopsMailController(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        bmp.source_branch.requestMirror()
+        job = MergeProposalCreatedJob.create(bmp)
+        ctrl = job.getOopsMailController('1234')
+        self.assertEqual([bmp.registrant.preferredemail.email], ctrl.to_addrs)
+        message = (
+            'notifying people about the proposal to merge %s into %s' %
+            (bmp.source_branch.bzr_identity, bmp.target_branch.bzr_identity))
+        self.assertIn(message, ctrl.body)
+
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""
@@ -1464,6 +1475,20 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
         proposal, comment = job.run()
         self.assertEqual(proposal.source_branch, source)
         self.assertEqual(proposal.target_branch, target)
+
+    def test_getOopsMailController(self):
+        key = import_secret_test_key()
+        signing_context = GPGSigningContext(key.fingerprint, password='test')
+        message, file_alias, source, target = (
+            self.factory.makeMergeDirectiveEmail(
+                signing_context=signing_context))
+        job = CreateMergeProposalJob.create(file_alias)
+        transaction.commit()
+        ctrl = job.getOopsMailController('1234')
+        self.assertEqual([message['From']], ctrl.to_addrs)
+        desc = ('creating a merge proposal from message with subject %s' %
+                message['Subject'])
+        self.assertIn(desc, ctrl.body)
 
     def test_iterReady_includes_ready_jobs(self):
         """Ready jobs should be listed."""

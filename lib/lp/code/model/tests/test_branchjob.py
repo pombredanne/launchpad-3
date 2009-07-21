@@ -47,9 +47,9 @@ from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
     IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, BranchUpgradeJob,
-    ReclaimBranchSpaceJob, RevisionMailJob, RevisionsAddedJob,
-    RosettaUploadJob)
+    BranchDiffJob, BranchJob, BranchJobDerived, BranchJobType,
+    BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
+    RevisionsAddedJob, RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
@@ -73,6 +73,17 @@ class TestBranchJob(TestCaseWithFactory):
         job_id = branch_job.job.id
         branch_job.destroySelf()
         self.assertRaises(SQLObjectNotFound, BranchJob.get, job_id)
+
+
+class TestBranchJobDerived(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_getOopsMailController(self):
+        branch = self.factory.makeAnyBranch()
+        job = BranchJob(branch, BranchJobType.STATIC_DIFF, {})
+        derived = BranchJobDerived(job)
+        self.assertIs(None, derived.getOopsMailController('x'))
 
 
 class TestBranchDiffJob(TestCaseWithFactory):

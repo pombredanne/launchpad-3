@@ -10,21 +10,22 @@ import transaction
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.testing.mail_helpers import pop_notifications
-from lp.services.job.job import Job
+from lp.services.job import job
 from lp.services.job.runner import JobRunner
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 
 
-class NullJob(Job):
+class NullJob(job.Job):
     """A job that does nothing but append a string to a list."""
 
     JOB_COMPLETIONS = []
 
     def __init__(self, completion_message, oops_recipients=None):
-        super(NullJob, self).__init__()
         self.message = completion_message
+        self.job = Job()
         self.oops_recipients = oops_recipients
         if self.oops_recipients is None:
             self.oops_recipients = []

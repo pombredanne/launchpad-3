@@ -44,6 +44,7 @@ from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.job import job
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.registry.model.productseries import ProductSeries
@@ -154,7 +155,7 @@ class BranchJob(SQLBase):
         self.job.destroySelf()
 
 
-class BranchJobDerived(object):
+class BranchJobDerived(job.Job):
 
     delegates(IBranchJob)
 
