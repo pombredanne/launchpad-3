@@ -10,48 +10,30 @@ import transaction
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.testing.mail_helpers import pop_notifications
+from lp.services.job.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
-from lp.services.mail.sendmail import MailController
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 
 
-class NullJob(object):
+class NullJob(Job):
     """A job that does nothing but append a string to a list."""
 
     JOB_COMPLETIONS = []
 
     def __init__(self, completion_message, oops_recipients=None):
+        super(NullJob, self).__init__()
         self.message = completion_message
         self.oops_recipients = oops_recipients
         if self.oops_recipients is None:
             self.oops_recipients = []
-        self.job = Job()
 
     def run(self):
         NullJob.JOB_COMPLETIONS.append(self.message)
 
     def getOopsRecipients(self):
         return self.oops_recipients
-
-    def getOopsMailController(self, oops):
-        recipients = self.getOopsRecipients()
-        if len(recipients) == 0:
-            return None
-        body = (
-            'Launchpad encountered an internal error during the following'
-            ' operation: %s.  It was logged with id %s.  Sorry for the'
-            ' inconvenience.' % (self.getOperationDescription(), oops.id))
-        return MailController('noreply@launchpad.net', recipients,
-                              'NullJob failed.', body)
-
-    def notifyOops(self, oops):
-        ctrl = self.getOopsMailController(oops)
-        if ctrl is None:
-            return
-        ctrl.send()
 
     def getOperationDescription(self):
         return 'appending a string to a list'
