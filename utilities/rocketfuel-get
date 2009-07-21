@@ -68,7 +68,7 @@ while IFS="=" read package branch optional
 do
     package_path="$LP_SOURCEDEPS_PATH/$package"
     echo "    Checking $package_path"
-    if [ optional ]
+    if [ "$optional" ]
     then
         # The 'set +e' below is so that we don't exit when the 'bzr log' call
         # returns an error.
