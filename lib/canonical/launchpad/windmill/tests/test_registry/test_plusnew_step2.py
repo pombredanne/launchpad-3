@@ -52,13 +52,17 @@ def test_projects_plusnew_step_two():
         validator='className|unseen')
     # Clicking on the href expands the search results.
     client.click(id='search-results-expander')
-    client.waits.sleep(milliseconds=u'1000')
+    client.waits.forElement(
+        xpath='//*[@id="search-results" and contains(@class, "lazr-opened")]',
+        milliseconds=u'1000')
     client.asserts.assertProperty(
         id=u'search-results',
         validator='className|lazr-opened')
     # Clicking it again hides the results.
     client.click(id='search-results-expander')
-    client.waits.sleep(milliseconds=u'500')
+    client.waits.forElement(
+        xpath='//*[@id="search-results" and contains(@class, "lazr-closed")]',
+        milliseconds=u'1000')
     client.asserts.assertProperty(
         id=u'search-results',
         validator='className|lazr-closed')
