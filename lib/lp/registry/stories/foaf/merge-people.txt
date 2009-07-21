@@ -1,7 +1,7 @@
 Merging people
 ==============
 
-Since we may create Launchpad profiles automatically some times, we allow
+Since we may create Launchpad profiles automatically sometimes, we allow
 people to merge two profiles into a single one, if they find there's more
 than one profile representing themselves.
 
@@ -180,4 +180,3 @@ Revisiting the mergerequest-sent page now safely redirects the user:
     #>>> browser.open('http://launchpad.dev/people/+mergerequest-sent?dupe=55')
     #>>> browser.url
     #'http://launchpad.dev/~no-priv'
-
