@@ -47,14 +47,13 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.codeimport import (
     ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser import StatusCount
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView,
@@ -69,6 +68,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -416,6 +416,17 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         branch = self.context.branch
         return (branch is not None and
                 check_permission('launchpad.View', branch))
+
+    @property
+    def is_obsolete(self):
+        """Return True if the series is OBSOLETE"
+
+        Obsolete series do not need to display as much information of other
+        series. Accessing private bugs is an expensive operation and showing
+        them for obsolete series can be a problem if many series are being
+        displayed.
+        """
+        return self.context.status == DistroSeriesStatus.OBSOLETE
 
     @cachedproperty
     def bugtask_status_counts(self):
