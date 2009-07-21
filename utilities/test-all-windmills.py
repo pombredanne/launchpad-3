@@ -1,5 +1,8 @@
 #!/usr/bin/python
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 A script for running all of the windmill JavaScript integration test suites
 in Launchpad.  Aggregates the result of running each suite into a global

@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Database class for table Archive."""
@@ -1080,9 +1082,9 @@ class Archive(SQLBase):
             raise SourceNotFound(e)
 
         source = from_archive.getPublishedSources(
-            name=source_name, version=version, exact_match=True)
+            name=source_name, version=version, exact_match=True)[0]
 
-        self._copySources(source, to_pocket, to_series, include_binaries)
+        self._copySources([source], to_pocket, to_series, include_binaries)
 
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False):

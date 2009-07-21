@@ -1,6 +1,9 @@
 #! /bin/bash
-
-# This script will setup a brand new Ubuntu machine as a LP developer
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
+# This script will set up a brand new Ubuntu machine as a LP developer
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
 
@@ -45,7 +48,7 @@ if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
 #
 # The ones you can set are:
 #
-# LP_PROJECT_ROOT - The root directory of all your Canonical stuff.  Your
+# LP_PROJECT_ROOT - The root directory of all your Launchpad stuff.  Your
 #                   Launchpad shared repository will live in a child directory
 #                   of this directory.
 # LP_SHARED_REPO  - Your Launchpad shared repository directory.  All of your
@@ -58,10 +61,10 @@ if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
 #                   path appended to it, since this is automatically added by
 #                   the scripts.
 
-LP_PROJECT_ROOT=\${LP_PROJECT_ROOT:=~/canonical}
+LP_PROJECT_ROOT=\${LP_PROJECT_ROOT:=~/launchpad}
 LP_SHARED_REPO=\${LP_SHARED_REPO:=lp-branches}
 LP_PROJECT_PATH=\$LP_PROJECT_ROOT/\$LP_SHARED_REPO
-LP_TRUNK_NAME=\${LP_TRUNK_NAME:=trunk}
+LP_TRUNK_NAME=\${LP_TRUNK_NAME:=devel}
 LP_TRUNK_PATH=\$LP_PROJECT_PATH/\$LP_TRUNK_NAME
 
 LP_SOURCEDEPS_DIR=\${LP_SOURCEDEPS_DIR:=lp-sourcedeps}
@@ -168,6 +171,7 @@ if [ $? -ne 0 ]; then
 GSSAPIAuthentication no
 ------------------------------------------------------------
 
+  (Hit Return when done...)
 "
 fi
 if [ "$whoami" != "$lpusername" ]; then
@@ -183,6 +187,8 @@ if [ "$whoami" != "$lpusername" ]; then
 Host bazaar.launchpad.net
     User $lpusername
 ------------------------------------------------------------
+
+  (Hit Return when done...)
 "
 fi
 
@@ -201,6 +207,8 @@ Host bazaar.launchpad.dev
     Port 5022
     IdentityFile ~/.ssh/launchpad_id_dsa
 ------------------------------------------------------------
+
+  (Hit Return when done...)
 "
   read
 fi
@@ -214,6 +222,8 @@ if [ $? -ne 0 ]; then
 Host bazaar.launchpad.net
     User ${lpusername}
 ------------------------------------------------------------
+
+  (Hit Return when done...)
 "
   read
 fi
@@ -322,7 +332,7 @@ if [ ! -d $LP_SHARED_REPO ]; then
   # 2a format (a.k.a. "brisbane-core") needed for stacking on Launchpad.
   bzr init-repo --2a $LP_SHARED_REPO
   if [ $? -ne 0 ]; then
-    echo "ERROR: Unable to setup local LP repository"
+    echo "ERROR: Unable to set up local LP repository"
     exit 1
   fi
 fi
@@ -331,15 +341,24 @@ if [ ! -d $LP_SHARED_REPO/.bzr -a -d $LP_SHARED_REPO/.bzr/repository ]; then
   exit 1
 fi
 
-echo "Logging bzr into Launchpad ..."
+echo "Logging bzr into Launchpad (it's okay if this errors)..."
 bzr launchpad-login $lpusername
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "You can ignore any error above about not registering an SSH key"
+  echo "with Launchpad.  Registering an SSH key is only important if you"
+  echo "are writing data to Launchpad, or trying to access private data."
+  echo ""
+fi
 
 cd $LP_SHARED_REPO
 if [ ! -d $LP_TRUNK_NAME ]; then
   echo "Making local branch of Launchpad trunk, this may take a while..."
-  # bzr up to 1.6b2 has a bug that causes this to oom, but since 1.10 is
-  # released now I hope nobody is using it.
-  bzr branch bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/ $LP_TRUNK_NAME
+  # We use "http://" instead of "bzr+ssh://" for the initial pull
+  # because it's the long pulls that are hardest on the server.  Once
+  # the bulk of the data is across, subsequent accesses can use
+  # bzr+ssh://, which will perform better.
+  bzr branch http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/ $LP_TRUNK_NAME
   if [ $? -ne 0 ]; then
     echo "ERROR: Unable to create local copy of Rocketfuel trunk"
     exit 1
@@ -348,7 +367,7 @@ fi
 
 cd $LP_TRUNK_NAME
 if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
-  "//bazaar.launchpad.net/%7Elaunchpad-pqm/launchpad/devel/" ]; then
+  "//bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/" ]; then
   echo "ERROR: Your trunk branch in $LP_TRUNK_PATH has an
        incorrect pull location, correcting now..."
   bzr pull --remember bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/
@@ -365,7 +384,7 @@ if [ $? -ne 0 ]; then
 fi
 
 
-# Setup Bazaar locations configuration
+# Set up Bazaar locations configuration
 if [ ! -d ~/.bazaar ]; then
   mkdir ~/.bazaar
   if [ $? -ne 0 ]; then
@@ -382,13 +401,11 @@ grep -q "\[${LP_PROJECT_PATH}\]" ~/.bazaar/locations.conf
 if [ $? -ne 0 ]; then
   cat >> ~/.bazaar/locations.conf << EOF
 [$LP_PROJECT_PATH]
-pqm_email = Launchpad PQM <launchpad@pqm.canonical.com>
 submit_branch = ${LP_TRUNK_PATH}
 public_branch = bzr+ssh://bazaar.launchpad.net/~${lpusername}/launchpad
 public_branch:policy = appendpath
 push_location = lp:~${lpusername}/launchpad
 push_location:policy = appendpath
-review_list = Launchpad Reviews <launchpad-reviews@lists.canonical.com>
 merge_target = ${LP_TRUNK_PATH}
 submit_to = merge@code.launchpad.net
 EOF
@@ -401,30 +418,18 @@ public_branch = bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel\
 " | tee -a ~/.bazaar/locations.conf > /dev/null
 fi
 
-if [ ! -e ~/.bazaar/bazaar.conf ]; then
-  touch ~/.bazaar/bazaar.conf
-fi
-grep -q "smtp_username" ~/.bazaar/bazaar.conf
-if [ $? -ne 0 ]; then
-  cat >> ~/.bazaar/bazaar.conf << EOF
-smtp_server = smtp.canonical.com:587
-smtp_username = canonical
-smtp_password = <find me at https://wiki.canonical.com/EmailSetup>
-EOF
-fi
-
-  echo "Bazaar branch configuration updated. You may need to set smtp_server in ~/.bazaar/locations.conf to something else if email to PQM does not work."
+echo "Bazaar branch configuration updated."
 
 fi
 
-# Setup access to the local supermirror
+# Set up access to the local supermirror
 if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
   cp $LP_TRUNK_PATH/lib/lp/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
   chmod 600 ~/.ssh/launchpad_id_dsa
-  echo "Setup ssh key for local supermirror ssh access."
+  echo "Set up ssh key for local supermirror ssh access."
 fi
 
-# Setup scripts in /usr/local/bin
+# Set up scripts in /usr/local/bin
 cd /usr/local/bin
 if [ ! -e rocketfuel-get ]; then
   sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-get
@@ -480,21 +485,19 @@ fi
 /usr/local/bin/rocketfuel-get
 
 echo "
-Thank you for using this script. You can improve it for everyone by
-committing changes to LP in utilities/rocketfuel-setup.
+Thank you for using this script.  You can improve it for everyone by
+committing changes to Launchpad in utilities/rocketfuel-setup.
 
-Before you can submit branches to PQM, you need to visit:
-https://wiki.canonical.com/EmailSetup and find the current SMTP server
-password and enter it in the appropriate place in
-HOME/.bazaar/bazaar.conf.  Alternatively, configure it to use your own
-SMTP server locally.
+Please see http://dev.launchpad.net/ for more information on
+developing and testing Launchpad, and on submitting changes.
 
-You should use the following commands to manage your Rocketfuel:
+You can use the following commands to manage your Launchpad
+development environment:
 
  rocketfuel-get
-    Update your copy of trunk and the necessary source dependencies, and
-    make sure all source dependencies are properly linked in to all the
-    branches you are working on.
+    Update your copy of $LP_TRUNK_NAME and the necessary source
+    dependencies, and make sure all source dependencies are properly
+    linked in to all the branches you are working on.
 
  rocketfuel-branch foo
     Create a new branch of LP called \"foo\" in
@@ -503,7 +506,7 @@ You should use the following commands to manage your Rocketfuel:
 
  rocketfuel-status
     Check each of the branches in $LP_PROJECT_PATH
-    and show which of them have uncommitted changes, also check which ones
+    and show which of them have uncommitted changes; also check which ones
     have revisions that have not yet landed on trunk.
 
  rocketfuel-push
