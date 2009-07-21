@@ -659,17 +659,6 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         else:
             name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
 
-            # Query by name.
-            name_result = self.store.using(*tables).find(
-                Person,
-                And(base_query,
-                    self.extra_clause,
-                    name_match_query))
-            name_result.order_by()
-            name_result.config(distinct=True)
-            name_result.config(limit=self.LIMIT)
-
-            # Query by email address.
             email_storm_query = self.store.find(
                 EmailAddress.personID,
                 StartsWith(Lower(EmailAddress.email), text))
@@ -679,15 +668,12 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
                 LeftJoin(email_subquery, EmailAddress.person == Person.id),
                 ]
 
-            email_result = self.store.using(*tables).find(
+            result = self.store.using(*tables).find(
                 Person,
                 And(base_query,
-                    self.extra_clause))
-            email_result.order_by()
-            email_result.config(distinct=True)
-            email_result.config(limit=self.LIMIT)
-
-            result = name_result.union(email_result)
+                    self.extra_clause,
+                    Or(name_match_query,
+                       EmailAddress.person != None)))
 
         # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
         # setting the 'distinct' and 'limit' options in a single call to
