@@ -780,6 +780,15 @@ class IBranch(IHasOwner, IHasBranchTarget):
         series as a branch.
         """
 
+    def getProductSeriesPushingTranslations():
+        """Return sequence of product series pushing translations here.
+
+        These are any `ProductSeries` that have this branch as their
+        translations_branch.  It should normally be at most one, but
+        there's nothing stopping people from combining translations
+        branches.
+        """
+
     def associatedSuiteSourcePackages():
         """Return the suite source packages that this branch is linked to."""
 
