@@ -1,0 +1,21 @@
+#!/bin/bash
+
+cd ..
+
+# Show missing
+echo "Untested revisions in devel"
+echo "---------------------------"
+cd stable
+bzr missing --theirs-only --short ../devel/
+echo
+
+echo "Unmerged revisions from stable"
+echo "------------------------------"
+cd ../db-devel
+bzr missing --theirs-only --short ../stable
+echo
+
+echo "Untested revisions in db-devel"
+echo "------------------------------"
+cd ../db-stable
+bzr missing --theirs-only --short ../db-devel
