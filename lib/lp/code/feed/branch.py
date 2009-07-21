@@ -39,6 +39,12 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
 
 
+def revision_feed_id(revision):
+    """Return a consistent id for a revision to use as an id."""
+    return "tag:launchpad.net,%s:/revision/%s" % (
+        revision.revision_date.date().isoformat(), revision.revision_id)
+
+
 class BranchFeedEntry(FeedEntry):
     """See `IFeedEntry`."""
     def construct_id(self):
@@ -275,8 +281,7 @@ class RevisionListingFeed(FeedBase):
     def createFeedEntry(self, content_view):
         """Create the FeedEntry for the specified view."""
         revision = content_view.context
-        id = "tag:launchpad.net,%s:/revision/%s" % (
-            revision.revision_date.date().isoformat(), revision.revision_id)
+        id = revision_feed_id(revision)
         content = content_view.render()
         content_data = FeedTypedData(content=content,
                                      content_type="html",
