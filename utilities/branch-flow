@@ -1,4 +1,8 @@
 #!/bin/bash
+# Shows the unmerged revisions in trunk branches.
+#
+# Assumes the names devel, stable, db-devel, db-stable and assumes that the
+# script is being run from the top-level of a sibling directory.
 
 cd ..
 
