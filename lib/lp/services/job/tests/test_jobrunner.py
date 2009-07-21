@@ -104,7 +104,7 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
 
     def test_runAll_mails_oopses(self):
-        """When an error is encountered, report an oops and continue."""
+        """Email interested parties about OOPses."""
         job_1, job_2 = self.makeTwoJobs()
         def raiseError():
             # Ensure that jobs which call transaction.abort work, too.
@@ -122,7 +122,8 @@ class TestJobRunner(TestCaseWithFactory):
             ' operation: appending a string to a list.  It was logged with id'
             ' %s.  Sorry for the inconvenience.' % oops.id,
             notification.get_payload(decode=True))
-        self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
+        self.assertNotIn('Fake exception.  Foobar, I say!',
+                         notification.get_payload(decode=True))
 
 
 def test_suite():
