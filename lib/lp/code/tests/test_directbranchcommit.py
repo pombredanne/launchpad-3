@@ -66,6 +66,17 @@ class TestDirectBranchCommit(TestCaseWithFactory):
         self.committer.commit('')
         self.assertEqual({'file.txt': 'contents'}, self._getContents())
 
+    def test_DirectBranchCommit_aborts_cleanly(self):
+        # If a DirectBranchCommit is not committed, its changes do not
+        # go into the branch.
+        self.committer.writeFile('oldfile.txt', 'already here')
+        self.committer.commit('')
+        self._setUpCommitter()
+        self.committer.writeFile('newfile.txt', 'adding this')
+        self._setUpCommitter()
+        self.assertEqual({'oldfile.txt': 'already here'}, self._getContents())
+        self.committer.unlock()
+
     def test_DirectBranchCommit_updates_file(self):
         # DirectBranchCommit can replace a file in the branch.
         self.committer.writeFile('file.txt', 'contents')
