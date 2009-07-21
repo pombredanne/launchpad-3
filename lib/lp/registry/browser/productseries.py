@@ -421,7 +421,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     def is_obsolete(self):
         """Return True if the series is OBSOLETE"
 
-        Obsolete series do not need to display as much information of other
+        Obsolete series do not need to display as much information as other
         series. Accessing private bugs is an expensive operation and showing
         them for obsolete series can be a problem if many series are being
         displayed.
