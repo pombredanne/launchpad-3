@@ -14,6 +14,7 @@ lp.codehosting.rewrite.BranchRewriter for the logic of the rewritemap.
 
 import _pythonpath
 
+import os
 import sys
 import xmlrpclib
 
@@ -40,6 +41,9 @@ class BranchRewriteScript(LaunchpadScript):
         value from the config.
         """
         log_file_location = config.codehosting.rewrite_script_log_file
+        log_file_directory = os.path.dirname(log_file_location)
+        if not os.path.isdir(log_file_directory):
+            os.makedirs(log_file_directory)
         self.parser.defaults['log_file'] = log_file_location
 
     def run(self, use_web_security=False, implicit_begin=True,

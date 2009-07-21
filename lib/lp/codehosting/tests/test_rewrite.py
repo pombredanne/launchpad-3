@@ -34,36 +34,49 @@ class TestBranchRewriter(TestCase):
         # Requests for /$branch_name/.bzr/... are redirected to where the
         # branches are served from by ID.
         rewriter = self.makeRewriter()
-        branch = self.factory.makeAnyBranch()
-        line = rewriter.rewriteLine("/%s/.bzr/README" % branch.unique_name)
-        self.assertEqual(
+        branches = [
+            self.factory.makeProductBranch(),
+            self.factory.makePersonalBranch(),
+            self.factory.makePackageBranch()]
+        output = [
+            rewriter.rewriteLine("/%s/.bzr/README" % branch.unique_name)
+            for branch in branches]
+        expected = [
             'file:///var/tmp/bzrsync/%s/.bzr/README'
-            % branch_id_to_path(branch.id),
-            line)
+            % branch_id_to_path(branch.id)
+            for branch in branches]
+        self.assertEqual(expected, output)
+
 
     def test_translateLine_found_not_dot_bzr(self):
         # Requests for /$branch_name/... that are not to .bzr directories are
         # redirected to codebrowse.
         rewriter = self.makeRewriter()
-        branch = self.factory.makeAnyBranch()
-        output = rewriter.rewriteLine("/%s/changes" % branch.unique_name)
-        self.assertEqual(
-            'http://localhost:8080/%s/changes' % branch.unique_name,
-            output)
+        branches = [
+            self.factory.makeProductBranch(),
+            self.factory.makePersonalBranch(),
+            self.factory.makePackageBranch()]
+        output = [
+            rewriter.rewriteLine("/%s/changes" % branch.unique_name)
+            for branch in branches]
+        expected = [
+            'http://localhost:8080/%s/changes' % branch.unique_name
+            for branch in branches]
+        self.assertEqual(expected, output)
 
     def test_translateLine_private(self):
         # All requests for /$branch_name/... for private branches are
         # rewritten to codebrowse, which will then redirect them to https and
         # handle them there.
         rewriter = self.makeRewriter()
-        branch = self.factory.makeBranch(private=True)
-        output = rewriter.rewriteLine("/%s/changes" % branch.unique_name)
+        branch = self.factory.makeAnyBranch(private=True)
+        output = [
+            rewriter.rewriteLine("/%s/changes" % branch.unique_name),
+            rewriter.rewriteLine("/%s/.bzr" % branch.unique_name)
+            ]
         self.assertEqual(
-            'http://localhost:8080/%s/changes' % branch.unique_name,
-            output)
-        output = rewriter.rewriteLine("/%s/.bzr" % branch.unique_name)
-        self.assertEqual(
-            'http://localhost:8080/%s/.bzr' % branch.unique_name,
+            ['http://localhost:8080/%s/changes' % branch.unique_name,
+             'http://localhost:8080/%s/.bzr' % branch.unique_name],
             output)
 
     def test_translateLine_static(self):
@@ -90,24 +103,36 @@ class TestBranchRewriterScript(TestCaseWithFactory):
     layer = ZopelessAppServerLayer
 
     def test_script(self):
-        branch = self.factory.makeAnyBranch()
-        input = "/%s/.bzr/README\n" % branch.unique_name
-        expected = (
-            "file:///var/tmp/bzrsync/%s/.bzr/README\n"
-            % branch_id_to_path(branch.id))
+        branches = [
+            self.factory.makeProductBranch(),
+            self.factory.makePersonalBranch(),
+            self.factory.makePackageBranch()]
+        input = [
+            "/%s/.bzr/README" % branch.unique_name
+            for branch in branches] + [
+            "/%s/changes" % branch.unique_name
+            for branch in branches]
+        expected = [
+            'file:///var/tmp/bzrsync/%s/.bzr/README'
+            % branch_id_to_path(branch.id)
+            for branch in branches] + [
+            'http://localhost:8080/%s/changes' % branch.unique_name
+            for branch in branches]
         self.layer.txn.commit()
         script_file = os.path.join(
             config.root, 'scripts', 'branch-rewrite.py')
         proc = subprocess.Popen(
             [script_file], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, bufsize=0)
-        proc.stdin.write(input)
-        output = proc.stdout.readline()
+        proc.stdin.write('\n'.join(input) + '\n')
+        output = []
+        for i in range(len(input)):
+            output.append(proc.stdout.readline())
         os.kill(proc.pid, signal.SIGINT)
         err = proc.stderr.read()
         # The script produces logging output, but not to stderr.
         self.assertEqual('', err)
-        self.assertEqual(expected, output)
+        self.assertEqual('\n'.join(expected) + '\n', ''.join(output))
 
 
 def test_suite():
