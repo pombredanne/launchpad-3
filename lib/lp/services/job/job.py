@@ -10,11 +10,21 @@ from lp.services.mail.sendmail import MailController
 
 
 class Job:
+    """Base class for jobs to be run via JobRunner.
+
+    Subclasses may provide getOopsRecipients, to send mail about oopses.
+    If so, they should also provide getOperationDescription.
+    """
 
     def getOopsRecipients(self):
+        """Return a list of email-ids to notify about oopses."""
         return []
 
     def getOopsMailController(self, oops_id):
+        """Return a MailController for notifying people about oopses.
+
+        Return None if there is no-one to notify.
+        """
         recipients = self.getOopsRecipients()
         if len(recipients) == 0:
             return None
@@ -26,6 +36,7 @@ class Job:
                               'NullJob failed.', body)
 
     def notifyOops(self, oops):
+        """Report this oops."""
         ctrl = self.getOopsMailController(oops.id)
         if ctrl is None:
             return

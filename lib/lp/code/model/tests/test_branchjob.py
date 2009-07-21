@@ -80,6 +80,7 @@ class TestBranchJobDerived(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_getOopsMailController(self):
+        """By default, no mail is sent about failed BranchJobs."""
         branch = self.factory.makeAnyBranch()
         job = BranchJob(branch, BranchJobType.STATIC_DIFF, {})
         derived = BranchJobDerived(job)

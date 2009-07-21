@@ -1234,6 +1234,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
 
     def test_getOopsMailController(self):
+        """The registrant is notified about merge proposal creation issues."""
         bmp = self.factory.makeBranchMergeProposal()
         bmp.source_branch.requestMirror()
         job = MergeProposalCreatedJob.create(bmp)
@@ -1477,6 +1478,7 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
         self.assertEqual(proposal.target_branch, target)
 
     def test_getOopsMailController(self):
+        """The sender is notified when creating a bmp from email fails."""
         key = import_secret_test_key()
         signing_context = GPGSigningContext(key.fingerprint, password='test')
         message, file_alias, source, target = (
