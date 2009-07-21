@@ -29,6 +29,7 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
         self.series.translations_branch = self.db_branch
 
         self._setUpCommitter()
+        self.addCleanup(self._tearDownCommitter)
 
     def _setUpCommitter(self, update_last_scanned_id=True):
         """Clean up any existing `DirectBranchCommit`, set up a new one."""
@@ -40,9 +41,9 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
             self.db_branch.last_scanned_id = (
                 self.committer.bzrbranch.last_revision())
 
-    def tearDown(self):
-        self.committer.unlock()
-        super(DirectBranchCommitTestCase, self).tearDown()
+    def _tearDownCommitter(self):
+        if self.committer:
+            self.committer.unlock()
 
     def _getContents(self):
         """Return branch contents as dict mapping filenames to contents."""
