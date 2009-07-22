@@ -83,7 +83,7 @@ class IBranchCollection(Interface):
         """
 
     def getTeamsWithBranches(person):
-        """Return the Teams that person is a member of that have branches."""
+        """Return the teams that person is a member of that have branches."""
 
     def inProduct(product):
         """Restrict the collection to branches in 'product'."""

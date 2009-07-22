@@ -834,8 +834,8 @@ class TestGetTeamsWithBranches(TestCaseWithFactory):
         person = self.factory.makePerson()
         team1 = self.factory.makeTeam(owner=person)
         branch = self.factory.makeProductBranch(owner=team1)
-        # Make another team that person that has a branch in a different
-        # namespace to the one that team1 has.
+        # Make another team that person is in that owns a branch in a
+        # different namespace to the namespace of the branch owned by team1.
         team2 = self.factory.makeTeam(owner=person)
         self.factory.makeAnyBranch(owner=team2)
         collection = self.all_branches.inProduct(branch.product)
