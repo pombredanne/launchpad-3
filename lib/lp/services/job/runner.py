@@ -12,9 +12,10 @@ __all__ = ['JobRunner']
 
 import sys
 
+from lazr.delegates import delegates
 import transaction
 
-from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob
+from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
 from canonical.launchpad.webapp import errorlog
 
@@ -28,26 +29,7 @@ class BaseRunnableJob:
     Subclasses may provide getOopsRecipients, to send mail about oopses.
     If so, they should also provide getOperationDescription.
     """
-
-    def acquireLease(self, duration=300):
-        """See `IRunnableJob`."""
-        self.job.acquireLease(duration)
-
-    def start(self):
-        """See `IRunnableJob`."""
-        self.job.start()
-
-    def fail(self):
-        """See `IRunnableJob`."""
-        self.job.fail()
-
-    def complete(self):
-        """See `IRunnableJob`."""
-        self.job.complete()
-
-    def queue(self):
-        """See `IRunnableJob`."""
-        self.job.queue()
+    delegates(IJob, 'job')
 
     def getOopsRecipients(self):
         """Return a list of email-ids to notify about oopses."""
@@ -116,6 +98,7 @@ class JobRunner(object):
     def runAll(self):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
+            job = IRunnableJob(job)
             try:
                 self.runJob(job)
             except LeaseHeld:

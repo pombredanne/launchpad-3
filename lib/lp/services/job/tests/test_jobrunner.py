@@ -127,6 +127,19 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertNotIn('Fake exception.  Foobar, I say!',
                          notification.get_payload(decode=True))
 
+    def test_runAll_requires_IRunnable(self):
+        """Supplied classes must implement IRunnableJob.
+
+        If they don't, we get a TypeError.  If they do, then we get an
+        AttributeError, because we don't actually implement the interface.
+        """
+        runner = JobRunner([object()])
+        self.assertRaises(TypeError, runner.runAll)
+        class Runnable:
+            implements(IRunnableJob)
+        runner = JobRunner([object()])
+        self.assertRaises(TypeError, runner.runAll)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
