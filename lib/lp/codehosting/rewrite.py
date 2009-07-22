@@ -36,6 +36,23 @@ class BranchRewriter:
             config.codehosting.internal_codebrowse_root,
             path)
 
+    def _getBranchIdAndTrailingPath(self, location):
+        """XXX Write me!"""
+        parts = location[1:].split('/')
+        options = []
+        for i in range(1, len(parts) + 1):
+            options.append('/'.join(parts[:i]))
+        result = self.store.find(
+            Branch,
+            Branch.unique_name.is_in(options), Branch.private == False)
+        try:
+            branch_id, unique_name = result.values(
+                Branch.id, Branch.unique_name).next()
+        except StopIteration:
+            return None, None, "MISS"
+        trailing = location[len(unique_name) + 1:]
+        return branch_id, trailing, "MISS"
+
     def rewriteLine(self, resource_location):
         """Rewrite 'resource_location' to a more concrete location.
 
@@ -72,21 +89,11 @@ class BranchRewriter:
             r = self._codebrowse_url(resource_location)
             cached = 'N/A'
         else:
-            parts = resource_location[1:].split('/')
-            options = []
-            for i in range(1, len(parts) + 1):
-                options.append('/'.join(parts[:i]))
-            cached = "MISS"
-            result = self.store.find(
-                Branch,
-                Branch.unique_name.is_in(options), Branch.private == False)
-            try:
-                branch_id, unique_name = result.values(
-                    Branch.id, Branch.unique_name).next()
-            except StopIteration:
+            branch_id, trailing, cached = self._getBranchIdAndTrailingPath(
+                resource_location)
+            if branch_id is None:
                 r = self._codebrowse_url(resource_location)
             else:
-                trailing = resource_location[len(unique_name) + 1:]
                 if trailing.startswith('/.bzr'):
                     r = urlutils.join(
                         config.codehosting.internal_branch_by_id_root,
