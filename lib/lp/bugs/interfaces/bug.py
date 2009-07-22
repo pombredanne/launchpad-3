@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213,E0602
 
 """Interfaces related to bugs."""
@@ -391,7 +393,8 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
     def getSubscribersFromDuplicates():
         """Return IPersons subscribed from dupes of this bug."""
 
-    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
+    def getBugNotificationRecipients(duplicateof=None, old_bug=None,
+                                     include_master_dupe_subscribers=True):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -400,6 +403,8 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
         rationales. See
         canonical.launchpad.interfaces.BugNotificationRecipients for
         details of this implementation.
+        If this bug is a dupe, set include_master_dupe_subscribers to
+        False to not include the master bug's subscribers.
         """
 
     def addChangeNotification(text, person, recipients=None, when=None):

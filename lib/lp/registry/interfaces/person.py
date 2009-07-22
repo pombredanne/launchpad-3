@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
@@ -620,7 +622,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
+    is_ubuntu_coc_signer = Bool(
+        title=_("Signed Ubuntu Code of Conduct"),
+        readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
