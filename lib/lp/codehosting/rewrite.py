@@ -59,16 +59,15 @@ class BranchRewriter:
                     return branch_id, trailing, "HIT"
             prefixes.append(prefix)
         result = self.store.find(
-            Branch,
-            Branch.unique_name.is_in(prefixes), Branch.private == False)
-        try:
-            branch_id, unique_name = result.values(
-                Branch.id, Branch.unique_name).next()
-        except StopIteration:
+            (Branch.id, Branch.unique_name),
+            Branch.unique_name.is_in(prefixes), Branch.private == False).one()
+        if result is None:
             return None, None, "MISS"
-        self._cache[unique_name] = (branch_id, self._now())
-        trailing = location[len(unique_name) + 1:]
-        return branch_id, trailing, "MISS"
+        else:
+            branch_id, unique_name = result
+            self._cache[unique_name] = (branch_id, self._now())
+            trailing = location[len(unique_name) + 1:]
+            return branch_id, trailing, "MISS"
 
     def rewriteLine(self, resource_location):
         """Rewrite 'resource_location' to a more concrete location.
