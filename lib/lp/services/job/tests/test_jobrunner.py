@@ -4,6 +4,7 @@
 """Tests for job-running facilities."""
 
 
+from time import sleep
 from unittest import TestLoader
 
 import transaction
@@ -90,6 +91,29 @@ class TestJobRunner(TestCaseWithFactory):
         reporter = errorlog.globalErrorUtility
         oops = reporter.getLastOopsReport()
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
+
+    def test_runAll_aborts_transaction_on_error(self):
+        """runAll should abort the transaction on oops."""
+
+        class DBAlterJob(NullJob):
+
+            def __init__(self):
+                super(DBAlterJob, self).__init__('')
+
+            def run(self):
+                self.job.log = 'hello'
+                sleep(1)
+                raise ValueError
+
+        job = DBAlterJob()
+        runner = JobRunner([job])
+        runner.runAll()
+        # If the transaction was committed, job.log == 'hello'.  If it was
+        # aborted, it is None.
+        self.assertIs(None, job.job.log)
+        # Ensure DB time is updated.
+        self.assertTrue(
+            (job.job.date_finished - job.job.date_started).seconds >= 0)
 
 
 def test_suite():
