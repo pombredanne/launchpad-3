@@ -25,4 +25,11 @@
         handler="canonical.launchpad.webapp.errorlog.end_request"
         />
 
+    <!-- Create a namespace to request an oops -->
+    <view
+        name="oops" type="*"
+        provides="zope.traversing.interfaces.ITraversable" for="*"
+        factory="canonical.launchpad.webapp.errorlog.OopsNamespace"
+        />
+
 </configure>

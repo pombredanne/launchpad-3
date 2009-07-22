@@ -21,6 +21,7 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.traversing.namespace import view
 
 from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
@@ -34,6 +35,8 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 
 UTC = pytz.utc
+
+LAZR_OOPS_USER_REQUESTED_KEY = 'lazr.oops.user_requested'
 
 # the section of the OOPS ID before the instance identifier is the
 # days since the epoch, which is defined as the start of 2006.
@@ -517,7 +520,6 @@ class ErrorReportRequest:
     implements(IErrorReportRequest)
 
     oopsid = None
-    request_oops = False
 
 
 class ScriptRequest(ErrorReportRequest):
@@ -574,7 +576,7 @@ class UserRequestOops(Exception):
     """A user requested OOPS to log statements."""
 
 
-def user_requested_oops():
+def maybe_record_user_requested_oops():
     """If an OOPS has been requested, report one.
 
     :return: The oopsid of the requested oops.  Returns None if an oops was
@@ -582,9 +584,23 @@ def user_requested_oops():
     """
     request = get_current_browser_request()
     # If there is no request, or there is an oops already, then return.
-    if request is None or request.oopsid is not None:
+    if (request is None or
+        not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
         return None
-    if request.request_oops:
-        globalErrorUtility.raising(
-            (UserRequestOops, UserRequestOops(request), None), request)
+    globalErrorUtility.raising(
+        (UserRequestOops, UserRequestOops(request), None), request)
     return request.oopsid
+
+
+class OopsNamespace(view):
+    """A namespace handle traversals with ++oops++."""
+
+    def traverse(self, name, ignored):
+        """Form traversal adapter.
+
+        This adapter allows any LaunchpadFormView to simply render the
+        form body.
+        """
+        # Store the oops request in the request annotations.
+        self.request.annotations[LAZR_OOPS_USER_REQUESTED_KEY] = True
+        return self.context

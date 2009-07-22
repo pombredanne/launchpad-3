@@ -110,8 +110,9 @@ def summarize_requests():
     """Produce human-readable summary of requests issued so far."""
     secs = get_request_duration()
     statements = getattr(_local, 'request_statements', [])
-    from canonical.launchpad.webapp.errorlog import user_requested_oops
-    oopsid = user_requested_oops()
+    from canonical.launchpad.webapp.errorlog import (
+        maybe_record_user_requested_oops)
+    oopsid = maybe_record_user_requested_oops()
     if oopsid is None:
         oops_str = ""
     else:
