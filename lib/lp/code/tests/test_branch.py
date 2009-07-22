@@ -18,7 +18,7 @@ from lp.code.enums import (
 from lp.testing import TestCaseWithFactory
 
 
-class TestAccessBranch(TestCaseWithFactory):
+class PermissionTest(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -44,6 +44,9 @@ class TestAccessBranch(TestCaseWithFactory):
         self.assertEqual(
             can_access, check_permission('launchpad.View', branch))
         logout()
+
+
+class TestAccessBranch(PermissionTest):
 
     def test_publicBranchUnauthenticated(self):
         # Public branches can be accessed without authentication.
