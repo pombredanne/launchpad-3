@@ -148,7 +148,7 @@ class TestBranchRewriter(TestCaseWithFactory):
             None,
             re.match("INFO: .* -> .* (.*s, cache: MISS)",
                      logging_output_lines[-1]),
-            "No hit found in %r" % logging_output_lines[-1])
+            "No miss found in %r" % logging_output_lines[-1])
 
 
 class TestBranchRewriterScript(TestCaseWithFactory):

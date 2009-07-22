@@ -31,10 +31,11 @@ class BranchRewriter:
         if _now is None:
             self._now = time.time
         else:
-            self._now = time
+            self._now = _now
         self.logger = logger
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         self._cache = {}
+        self._expiry_time = 10.0
 
     def _codebrowse_url(self, path):
         return urlutils.join(
@@ -48,9 +49,10 @@ class BranchRewriter:
         for i in range(1, len(parts) + 1):
             prefix = '/'.join(parts[:i])
             if prefix in self._cache:
-                branch_id = self._cache[prefix]
-                trailing = location[len(prefix) + 1:]
-                return branch_id, trailing, 'HIT'
+                branch_id, inserted_time = self._cache[prefix]
+                if self._now() < inserted_time + self._expiry_time:
+                    trailing = location[len(prefix) + 1:]
+                    return branch_id, trailing, "HIT"
             prefixes.append(prefix)
         result = self.store.find(
             Branch,
@@ -60,7 +62,7 @@ class BranchRewriter:
                 Branch.id, Branch.unique_name).next()
         except StopIteration:
             return None, None, "MISS"
-        self._cache[unique_name] = branch_id
+        self._cache[unique_name] = (branch_id, self._now())
         trailing = location[len(unique_name) + 1:]
         return branch_id, trailing, "MISS"
 
