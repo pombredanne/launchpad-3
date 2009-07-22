@@ -42,7 +42,11 @@ class BranchRewriter:
             path)
 
     def _getBranchIdAndTrailingPath(self, location):
-        """XXX Write me!"""
+        """Return the branch id and trailing path for 'location'.
+
+        In addition this method returns whether the answer can from the cache
+        or from the database.
+        """
         parts = location[1:].split('/')
         prefixes = []
         for i in range(1, len(parts) + 1):
