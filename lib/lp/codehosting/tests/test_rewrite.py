@@ -112,7 +112,23 @@ class TestBranchRewriter(TestCaseWithFactory):
         logging_output = self.getLoggerOutput(rewriter)
         self.assertIsNot(
             None,
-            re.match("INFO: .* -> .* (.*s, cache: MISS)", logging_output))
+            re.match("INFO: .* -> .* (.*s, cache: MISS)", logging_output),
+            "No miss found in %r" % logging_output[-1])
+
+
+    def test_rewriteLine_logs_cache_hit(self):
+        # The first request for a branch misses the cache and logs this fact.
+        rewriter = self.makeRewriter()
+        branch = self.factory.makeAnyBranch()
+        rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
+        rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
+        logging_output_lines = self.getLoggerOutput(rewriter).strip().split('\n')
+        self.assertEqual(2, len(logging_output_lines))
+        self.assertIsNot(
+            None,
+            re.match("INFO: .* -> .* (.*s, cache: HIT)",
+                     logging_output_lines[-1]),
+            "No hit found in %r" % logging_output_lines[-1])
 
 
 
