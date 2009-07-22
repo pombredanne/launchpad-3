@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone views."""
 
@@ -12,6 +13,8 @@ __all__ = [
     'MilestoneNavigation',
     'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
+    'MilestonesView',
+    'MilestoneView',
     ]
 
 
@@ -96,6 +99,8 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     """A View for listing milestones and releases."""
     # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
     # to a mixin so that MilestoneView and others can use it.
+
+    show_series_context = False
 
     def __init__(self, context, request):
         """See `LaunchpadView`.
@@ -233,6 +238,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     def has_bugs_or_specs(self):
         """Does the milestone have any bugtasks and specifications?"""
         return len(self.bugtasks) > 0  or len(self.specifications) > 0
+
+
+class MilestonesView(MilestoneView):
+    """Show a milestone in a list of milestones."""
+    show_series_context = True
 
 
 class MilestoneAddView(LaunchpadFormView):

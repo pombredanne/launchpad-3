@@ -25,9 +25,11 @@
          tal:define="search_url string:+bugs;
                      advanced_search_url string:+bugs?advanced=1">
       <h1>Bugs in <tal:context replace="context/title">Ubuntu</tal:context></h1>
-      <metal:search
-        use-macro="context/@@+bugtarget-macros-search/simple-search-form"
-      />
+      <div style="text-align: center; clear: both;">
+        <metal:search
+          use-macro="context/@@+bugtarget-macros-search/simple-search-form"
+        />
+      </div>
       <script type="text/javascript"><!--
            $('field.searchtext').focus();
       --></script>

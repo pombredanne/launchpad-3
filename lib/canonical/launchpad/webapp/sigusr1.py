@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """A SIGUSR1 handler for the Launchpad Web App.
 
 To aid debugging, we install a handler for the SIGUSR1 signal.  When

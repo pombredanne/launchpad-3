@@ -22,20 +22,20 @@
     <meta tal:condition="not: context/is_valid_person_or_team"
           name="robots" content="noindex,nofollow" />
     <tal:openid_delegation condition="view/is_delegated_identity">
-      <link rel="openid.server" 
-            href="https://login.launchpad.net/" 
+      <link rel="openid.server"
+            href="https://login.launchpad.net/"
             tal:attributes="href view/openid_server_url" />
-      <link rel="openid.delegate" 
+      <link rel="openid.delegate"
             href="https://login.launchpad.net/+id/xxxxxxxx"
             tal:attributes="href view/openid_identity_url" />
-      <link rel="openid2.provider" 
-            href="https://login.launchpad.net/" 
+      <link rel="openid2.provider"
+            href="https://login.launchpad.net/"
             tal:attributes="href view/openid_server_url" />
-      <link rel="openid2.local_id" 
+      <link rel="openid2.local_id"
             href="https://login.launchpad.net/+id/xxxxxxxx"
             tal:attributes="href view/openid_identity_url" />
 
-      <meta http-equiv="X-XRDS-Location" 
+      <meta http-equiv="X-XRDS-Location"
         content="https://login.launchpad.net/+id/xxxxxxx/+xrds"
         tal:attributes="content string:${view/openid_identity_url}/+xrds" />
 
@@ -132,7 +132,7 @@
             </p>
           </tal:editable>
           <a tal:attributes="
-            href string:/people/+requestmerge?field.dupeaccount=${context/name}"
+            href string:/people/+requestmerge?field.dupe_person=${context/name}"
           >Are you <span tal:replace="context/displayname" />?</a>
         </tal:person>
         <tal:team condition="view/context_is_probably_a_team">

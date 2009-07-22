@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Implementation of the dynamic RewriteMap used to serve branches over HTTP.
 """
 
@@ -27,7 +30,7 @@ class BranchRewriter:
         :param proxy: A blocking proxy for a branchfilesystem endpoint.
         """
         self.logger = logger
-        self.client = BranchFileSystemClient(proxy, LAUNCHPAD_ANONYMOUS, 1.0)
+        self.client = BranchFileSystemClient(proxy, LAUNCHPAD_ANONYMOUS, 10.0)
 
     def _codebrowse_url(self, path):
         return urlutils.join(

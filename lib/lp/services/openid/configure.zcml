@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -20,6 +24,25 @@
           interface=".interfaces.openidrpconfig.IOpenIDRPConfigSet"
           />
     </securedutility>
+
+    <class
+        class=".model.openidrpsummary.OpenIDRPSummary">
+        <allow interface=".interfaces.openidrpsummary.IOpenIDRPSummary" />
+    </class>
+
+    <securedutility
+        class=".model.openidrpsummary.OpenIDRPSummarySet"
+        provides=".interfaces.openidrpsummary.IOpenIDRPSummarySet">
+        <allow
+            interface=".interfaces.openidrpsummary.IOpenIDRPSummarySet" />
+    </securedutility>
+
+    <class class=".adapters.openid.OpenIDPersistentIdentity">
+      <allow interface=".interfaces.openid.IOpenIDPersistentIdentity" />
+    </class>
+
+    <adapter factory=".adapters.openid.OpenIDPersistentIdentity" />
+    <adapter factory=".adapters.openid.person_to_openidpersistentidentity" />
 
     <include package=".browser" />
 </configure>
