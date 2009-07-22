@@ -340,10 +340,10 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
             BranchMergeProposalStatus.MERGED)
 
     def test_set_status_invalid_status(self):
-        # IBranchMergeProposal.setStatus doesn't work in the case of superseded
-        # branches since a superseded branch requires more than just changing a
-        # few settings.  Because it's unknown, it should raisse an
-        # AssertionError.
+        # IBranchMergeProposal.setStatus doesn't work in the case of
+        # superseded branches since a superseded branch requires more than
+        # just changing a few settings.  Because it's unknown, it should
+        # raise an AssertionError.
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
@@ -946,21 +946,22 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         bmp1.nominateReviewer(beaver, wally)
         bmp2 = self._make_merge_proposal('beaver', 'gokart', 'brakes', True)
 
-        wally_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+        getter = BranchMergeProposalGetter
+        wally_proposals = getter.getProposalsForParticipant(
             wally, [BranchMergeProposalStatus.NEEDS_REVIEW], wally)
         self.assertEqual(wally_proposals.count(), 1)
 
-        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+        beave_proposals = getter.getProposalsForParticipant(
             beaver, [BranchMergeProposalStatus.NEEDS_REVIEW], beaver)
         self.assertEqual(beave_proposals.count(), 2)
 
         bmp1.rejectBranch(wally, '1')
 
-        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+        beave_proposals = getter.getProposalsForParticipant(
             beaver, [BranchMergeProposalStatus.NEEDS_REVIEW], beaver)
         self.assertEqual(beave_proposals.count(), 1)
 
-        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+        beave_proposals = getter.getProposalsForParticipant(
             beaver, [BranchMergeProposalStatus.REJECTED], beaver)
         self.assertEqual(beave_proposals.count(), 1)
 
