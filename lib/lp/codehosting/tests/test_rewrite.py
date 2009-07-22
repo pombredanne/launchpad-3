@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import re
 import os
 import signal
 import subprocess
@@ -18,7 +19,7 @@ from lp.codehosting.vfs import branch_id_to_path
 from lp.codehosting.rewrite import BranchRewriter
 from canonical.config import config
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.scripts import BufferLogger
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, ZopelessAppServerLayer)
 
@@ -28,7 +29,10 @@ class TestBranchRewriter(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeRewriter(self):
-        return BranchRewriter(QuietFakeLogger())
+        return BranchRewriter(BufferLogger())
+
+    def getLoggerOutput(self, rewriter):
+        return rewriter.logger.buffer.getvalue()
 
     def test_translateLine_found_dot_bzr(self):
         # Requests for /$branch_name/.bzr/... are redirected to where the
@@ -47,7 +51,6 @@ class TestBranchRewriter(TestCaseWithFactory):
             % branch_id_to_path(branch.id)
             for branch in branches]
         self.assertEqual(expected, output)
-
 
     def test_translateLine_found_not_dot_bzr(self):
         # Requests for /$branch_name/... that are not to .bzr directories are
@@ -100,6 +103,17 @@ class TestBranchRewriter(TestCaseWithFactory):
         self.assertEqual(
             'http://localhost:8080%s' % not_found_path,
             output)
+
+    def test_translateLine_logs_cache_miss(self):
+        # The first request for a branch misses the cache and logs this fact.
+        rewriter = self.makeRewriter()
+        branch = self.factory.makeAnyBranch()
+        rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
+        logging_output = self.getLoggerOutput(rewriter)
+        self.assertIsNot(
+            None,
+            re.match("INFO: .* -> .* (.*s, cache: MISS)", logging_output))
+
 
 
 class TestBranchRewriterScript(TestCaseWithFactory):

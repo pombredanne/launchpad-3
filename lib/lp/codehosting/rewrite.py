@@ -67,13 +67,16 @@ class BranchRewriter:
         # Codebrowse generates references to its images and stylesheets
         # starting with "/static", so pass them on unthinkingly.
         T = time.time()
+        cached = None
         if resource_location.startswith('/static/'):
             r = self._codebrowse_url(resource_location)
+            cached = 'N/A'
         else:
             parts = resource_location[1:].split('/')
             options = []
             for i in range(1, len(parts) + 1):
                 options.append('/'.join(parts[:i]))
+            cached = "MISS"
             result = self.store.find(
                 Branch,
                 Branch.unique_name.is_in(options), Branch.private == False)
@@ -91,5 +94,6 @@ class BranchRewriter:
                 else:
                     r = self._codebrowse_url(resource_location)
         self.logger.info(
-            "%r -> %r (%fs)", resource_location, r, time.time() - T)
+            "%r -> %r (%fs, cache: %s)",
+            resource_location, r, time.time() - T, cached)
         return r
