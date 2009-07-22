@@ -585,6 +585,7 @@ def maybe_record_user_requested_oops():
     request = get_current_browser_request()
     # If there is no request, or there is an oops already, then return.
     if (request is None or
+        request.oopsid is not None or
         not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
         return None
     globalErrorUtility.raising(
