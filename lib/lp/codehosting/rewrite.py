@@ -29,7 +29,7 @@ class BranchRewriter:
         :param proxy: A blocking proxy for a branchfilesystem endpoint.
         """
         self.logger = logger
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
 
     def _codebrowse_url(self, path):
         return urlutils.join(

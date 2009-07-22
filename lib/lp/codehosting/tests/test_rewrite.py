@@ -10,6 +10,8 @@ import signal
 import subprocess
 import unittest
 
+import transaction
+
 from zope.security.proxy import removeSecurityProxy
 
 from lp.codehosting.vfs import branch_id_to_path
@@ -36,6 +38,7 @@ class TestBranchRewriter(TestCaseWithFactory):
             self.factory.makeProductBranch(),
             self.factory.makePersonalBranch(),
             self.factory.makePackageBranch()]
+        transaction.commit()
         output = [
             rewriter.rewriteLine("/%s/.bzr/README" % branch.unique_name)
             for branch in branches]
@@ -54,6 +57,7 @@ class TestBranchRewriter(TestCaseWithFactory):
             self.factory.makeProductBranch(),
             self.factory.makePersonalBranch(),
             self.factory.makePackageBranch()]
+        transaction.commit()
         output = [
             rewriter.rewriteLine("/%s/changes" % branch.unique_name)
             for branch in branches]
@@ -69,6 +73,7 @@ class TestBranchRewriter(TestCaseWithFactory):
         rewriter = self.makeRewriter()
         branch = self.factory.makeAnyBranch(private=True)
         unique_name = removeSecurityProxy(branch).unique_name
+        transaction.commit()
         output = [
             rewriter.rewriteLine("/%s/changes" % unique_name),
             rewriter.rewriteLine("/%s/.bzr" % unique_name)
