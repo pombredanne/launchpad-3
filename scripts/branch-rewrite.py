@@ -17,8 +17,9 @@ import _pythonpath
 import os
 import sys
 
+# XXX, MichaelHudson, 2009-07-22, bug=402845: This pointless import avoids a
+# circular import killing us.
 from canonical.launchpad.database import account
-#from lp.registry.model import person
 
 from lp.codehosting.rewrite import BranchRewriter
 from canonical.config import config
@@ -41,16 +42,6 @@ class BranchRewriteScript(LaunchpadScript):
         if not os.path.isdir(log_file_directory):
             os.makedirs(log_file_directory)
         self.parser.defaults['log_file'] = log_file_location
-
-    ## def run(self, use_web_security=False, implicit_begin=True,
-    ##         isolation=None):
-    ##     """See `LaunchpadScript.run`.
-
-    ##     As this script does not need the component architecture or a
-    ##     connection to the database, we override this method to avoid setting
-    ##     them up.
-    ##     """
-    ##     self.main()
 
     def main(self):
         rewriter = BranchRewriter(self.logger)
