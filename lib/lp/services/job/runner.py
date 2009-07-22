@@ -12,6 +12,7 @@ __all__ = ['JobRunner']
 
 import sys
 
+from canonical.config import config
 from lazr.delegates import delegates
 import transaction
 
@@ -47,8 +48,8 @@ class BaseRunnableJob:
             'Launchpad encountered an internal error during the following'
             ' operation: %s.  It was logged with id %s.  Sorry for the'
             ' inconvenience.' % (self.getOperationDescription(), oops_id))
-        return MailController('noreply@launchpad.net', recipients,
-                              'NullJob failed.', body)
+        from_addr = config.canonical.noreply_from_address
+        return MailController(from_addr, recipients, 'NullJob failed.', body)
 
     def notifyOops(self, oops):
         """Report this oops."""
