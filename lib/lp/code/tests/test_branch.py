@@ -55,6 +55,30 @@ class PermissionTest(TestCaseWithFactory):
         """
         self.assertAuthenticatedView(branch, None, can_access)
 
+    def assertCanEdit(self, person, secured_object):
+        """Assert 'person' can edit 'secured_object'.
+
+        That is, assert 'person' has 'launchpad.Edit' permissions on
+        'secured_object'.
+
+        :param person: An `IPerson`. None means anonymous.
+        :param secured_object: An object, secured through the Zope security
+            layer.
+        """
+        self.assertPermission(True, person, secured_object, 'launchpad.Edit')
+
+    def assertCannotEdit(self, person, secured_object):
+        """Assert 'person' cannot edit 'secured_object'.
+
+        That is, assert 'person' does not have 'launchpad.Edit' permissions on
+        'secured_object'.
+
+        :param person: An `IPerson`. None means anonymous.
+        :param secured_object: An object, secured through the Zope security
+            layer.
+        """
+        self.assertPermission(False, person, secured_object, 'launchpad.Edit')
+
 
 class TestAccessBranch(PermissionTest):
 
@@ -180,6 +204,29 @@ class TestAccessBranch(PermissionTest):
         stacked_branch = self.factory.makeAnyBranch()
         removeSecurityProxy(stacked_branch).stacked_on = stacked_branch
         self.assertUnauthenticatedView(stacked_branch, True)
+
+
+class TestWriteToBranch(PermissionTest):
+    """Test who can write to branches."""
+
+    def test_owner_can_write(self):
+        # The owner of a branch can write to the branch.
+        branch = self.factory.makeAnyBranch()
+        self.assertCanEdit(branch.owner, branch)
+
+    def test_random_person_cannot_write(self):
+        # Arbitrary logged in people cannot write to branches.
+        branch = self.factory.makeAnyBranch()
+        person = self.factory.makePerson()
+        self.assertCannotEdit(person, branch)
+
+    def test_member_of_owning_team_can_write(self):
+        # Members of the team that owns a branch can write to the branch.
+        team = self.factory.makeTeam()
+        person = self.factory.makePerson()
+        removeSecurityProxy(team).addMember(person, team.teamowner)
+        branch = self.factory.makeAnyBranch(owner=team)
+        self.assertCanEdit(person, branch)
 
 
 def test_suite():
