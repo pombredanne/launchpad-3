@@ -8,13 +8,14 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.ftests import login_person, logout
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.testing import DatabaseFunctionalLayer
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.security import AccessBranch
 from lp.testing import TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestAccessBranch(TestCaseWithFactory):
@@ -22,14 +23,27 @@ class TestAccessBranch(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def assertAuthenticatedAccess(self, branch, person, can_access):
-        branch = removeSecurityProxy(branch)
+        """Can 'branch' be accessed by 'person'?
+
+        :param branch: The `IBranch` we're curious about.
+        :param person: The `IPerson` trying to access it.
+        :param can_access: Whether we expect 'person' be able to access it.
+        """
+        login_person(person)
         self.assertEqual(
-            can_access, AccessBranch(branch).checkAuthenticated(person))
+            can_access, check_permission('launchpad.View', branch))
+        logout()
 
     def assertUnauthenticatedAccess(self, branch, can_access):
-        branch = removeSecurityProxy(branch)
+        """Can 'branch' be accessed anonymously?
+
+        :param branch: The `IBranch` we're curious about.
+        :param can_access: Whether we expect to access it anonymously.
+        """
+        login_person(None)
         self.assertEqual(
-            can_access, AccessBranch(branch).checkUnauthenticated())
+            can_access, check_permission('launchpad.View', branch))
+        logout()
 
     def test_publicBranchUnauthenticated(self):
         # Public branches can be accessed without authentication.
@@ -66,13 +80,14 @@ class TestAccessBranch(TestCaseWithFactory):
         # The Bazaar experts can access any branch.
         celebs = getUtility(ILaunchpadCelebrities)
         branch = self.factory.makeAnyBranch(private=True)
-        self.assertAuthenticatedAccess(branch, celebs.bazaar_experts, True)
+        self.assertAuthenticatedAccess(
+            branch, celebs.bazaar_experts.teamowner, True)
 
     def test_privateBranchAdmins(self):
         # Launchpad admins can access any branch.
         celebs = getUtility(ILaunchpadCelebrities)
         branch = self.factory.makeAnyBranch(private=True)
-        self.assertAuthenticatedAccess(branch, celebs.admin, True)
+        self.assertAuthenticatedAccess(branch, celebs.admin.teamowner, True)
 
     def test_privateBranchSubscriber(self):
         # If you are subscribed to a branch, you can access it.
