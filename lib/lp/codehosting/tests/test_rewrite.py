@@ -10,25 +10,23 @@ import signal
 import subprocess
 import unittest
 
+from zope.security.proxy import removeSecurityProxy
+
 from lp.codehosting.vfs import branch_id_to_path
-from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.codehosting.rewrite import BranchRewriter
 from canonical.config import config
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.scripts import QuietFakeLogger
-from canonical.testing.layers import ZopelessAppServerLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, ZopelessAppServerLayer)
 
 
-class TestBranchRewriter(TestCase):
+class TestBranchRewriter(TestCaseWithFactory):
 
-    def setUp(self):
-        frontend = InMemoryFrontend()
-        self._branchfs = frontend.getFilesystemEndpoint()
-        self.factory = frontend.getLaunchpadObjectFactory()
+    layer = DatabaseFunctionalLayer
 
     def makeRewriter(self):
-        return BranchRewriter(
-            QuietFakeLogger(), XMLRPCWrapper(self._branchfs))
+        return BranchRewriter(QuietFakeLogger())
 
     def test_translateLine_found_dot_bzr(self):
         # Requests for /$branch_name/.bzr/... are redirected to where the
@@ -70,13 +68,14 @@ class TestBranchRewriter(TestCase):
         # handle them there.
         rewriter = self.makeRewriter()
         branch = self.factory.makeAnyBranch(private=True)
+        unique_name = removeSecurityProxy(branch).unique_name
         output = [
-            rewriter.rewriteLine("/%s/changes" % branch.unique_name),
-            rewriter.rewriteLine("/%s/.bzr" % branch.unique_name)
+            rewriter.rewriteLine("/%s/changes" % unique_name),
+            rewriter.rewriteLine("/%s/.bzr" % unique_name)
             ]
         self.assertEqual(
-            ['http://localhost:8080/%s/changes' % branch.unique_name,
-             'http://localhost:8080/%s/.bzr' % branch.unique_name],
+            ['http://localhost:8080/%s/changes' % unique_name,
+             'http://localhost:8080/%s/.bzr' % unique_name],
             output)
 
     def test_translateLine_static(self):
