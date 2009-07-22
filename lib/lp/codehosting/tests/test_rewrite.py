@@ -18,7 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.codehosting.vfs import branch_id_to_path
 from lp.codehosting.rewrite import BranchRewriter
 from canonical.config import config
-from lp.testing import TestCaseWithFactory
+from lp.testing import FakeTime, TestCaseWithFactory
 from canonical.launchpad.scripts import BufferLogger
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -27,8 +27,12 @@ class TestBranchRewriter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.fake_time = FakeTime(0)
+
     def makeRewriter(self):
-        return BranchRewriter(BufferLogger())
+        return BranchRewriter(BufferLogger(), self.fake_time.now)
 
     def getLoggerOutput(self, rewriter):
         return rewriter.logger.buffer.getvalue()
@@ -107,6 +111,7 @@ class TestBranchRewriter(TestCaseWithFactory):
         # The first request for a branch misses the cache and logs this fact.
         rewriter = self.makeRewriter()
         branch = self.factory.makeAnyBranch()
+        transaction.commit()
         rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
         logging_output = self.getLoggerOutput(rewriter)
         self.assertIsNot(
@@ -118,6 +123,7 @@ class TestBranchRewriter(TestCaseWithFactory):
         # The second request for a branch misses the cache and logs this fact.
         rewriter = self.makeRewriter()
         branch = self.factory.makeAnyBranch()
+        transaction.commit()
         rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
         rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
         logging_output_lines = self.getLoggerOutput(rewriter).strip().split('\n')
@@ -132,7 +138,9 @@ class TestBranchRewriter(TestCaseWithFactory):
         # The second request for a branch misses the cache and logs this fact.
         rewriter = self.makeRewriter()
         branch = self.factory.makeAnyBranch()
+        transaction.commit()
         rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
+        self.fake_time.advance(1000)
         rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
         logging_output_lines = self.getLoggerOutput(rewriter).strip().split('\n')
         self.assertEqual(2, len(logging_output_lines))

@@ -21,15 +21,20 @@ __all__ = ['BranchRewriter']
 
 class BranchRewriter:
 
-    def __init__(self, logger):
+    def __init__(self, logger, _now=None):
         """
 
         :param logger: Logger than messages about what the rewriter is doing
             will be sent to.
         :param proxy: A blocking proxy for a branchfilesystem endpoint.
         """
+        if _now is None:
+            self._now = time.time
+        else:
+            self._now = time
         self.logger = logger
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        self._cache = {}
 
     def _codebrowse_url(self, path):
         return urlutils.join(
@@ -39,17 +44,23 @@ class BranchRewriter:
     def _getBranchIdAndTrailingPath(self, location):
         """XXX Write me!"""
         parts = location[1:].split('/')
-        options = []
+        prefixes = []
         for i in range(1, len(parts) + 1):
-            options.append('/'.join(parts[:i]))
+            prefix = '/'.join(parts[:i])
+            if prefix in self._cache:
+                branch_id = self._cache[prefix]
+                trailing = location[len(prefix) + 1:]
+                return branch_id, trailing, 'HIT'
+            prefixes.append(prefix)
         result = self.store.find(
             Branch,
-            Branch.unique_name.is_in(options), Branch.private == False)
+            Branch.unique_name.is_in(prefixes), Branch.private == False)
         try:
             branch_id, unique_name = result.values(
                 Branch.id, Branch.unique_name).next()
         except StopIteration:
             return None, None, "MISS"
+        self._cache[unique_name] = branch_id
         trailing = location[len(unique_name) + 1:]
         return branch_id, trailing, "MISS"
 
