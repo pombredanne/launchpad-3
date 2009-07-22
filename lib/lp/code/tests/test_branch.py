@@ -8,14 +8,15 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing import DatabaseFunctionalLayer
+
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
-from lp.testing import TestCaseWithFactory
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.testing import run_with_login, TestCaseWithFactory
 
 
 class PermissionTest(TestCaseWithFactory):
@@ -31,12 +32,10 @@ class PermissionTest(TestCaseWithFactory):
         :param permission: The Launchpad permission that 'person' is trying to
             access 'secure_object' with.
         """
-        login_person(person)
-        try:
-            self.assertEqual(
-                can_access, check_permission(permission, secure_object))
-        finally:
-            logout()
+        self.assertEqual(
+            can_access,
+            run_with_login(
+                person, check_permission, permission, secure_object))
 
     def assertAuthenticatedView(self, branch, person, can_access):
         """Can 'branch' be accessed by 'person'?
@@ -226,6 +225,35 @@ class TestWriteToBranch(PermissionTest):
         person = self.factory.makePerson()
         removeSecurityProxy(team).addMember(person, team.teamowner)
         branch = self.factory.makeAnyBranch(owner=team)
+        self.assertCanEdit(person, branch)
+
+    def makeOfficialPackageBranch(self):
+        """Make a branch linked to the pocket of a source package."""
+        branch = self.factory.makePackageBranch()
+        pocket = self.factory.getAnyPocket()
+        sourcepackage = branch.sourcepackage
+        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
+        registrant = self.factory.makePerson()
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            ICanHasLinkedBranch(suite_sourcepackage).setBranch,
+            branch, registrant)
+        return branch
+
+    def test_owner_can_write_to_official_package_branch(self):
+        # The owner of an official package branch can write to it, just like a
+        # regular person.
+        branch = self.makeOfficialPackageBranch()
+        self.assertCanEdit(branch.owner, branch)
+
+    def test_package_upload_permissions_grant_branch_edit(self):
+        # If you can upload to the package, then you are also allowed to write
+        # to the branch.
+        branch = self.makeOfficialPackageBranch()
+        package = branch.sourcepackage
+        person = self.factory.makePerson()
+        # XXX: somehow give 'person' permission to upload to 'package'.
         self.assertCanEdit(person, branch)
 
 
