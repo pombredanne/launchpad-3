@@ -14,7 +14,7 @@ near 'This bug affects me too'.
 
    >>> user_browser.open(test_bug_url)
    >>> print extract_text(find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetooform'))
+   ...     user_browser.contents, 'affectsmetoo'))
    This bug doesn't affect me...
 
    >>> user_browser.getLink('change').click()
@@ -38,7 +38,7 @@ Next to it, we also see the 'hot bug' icon, to indicate that the user
 has marked the bug as affecting them.
 
    >>> print find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetooform').img['src']
+   ...     user_browser.contents, 'affectsmetoo').img['src']
    /@@/flame-icon
 
    >>> user_browser.getLink('change').click()
@@ -51,18 +51,5 @@ The user is changing his selection to 'No' and submits the form.
 Back at the bug page, the text changes once again.
 
    >>> print extract_text(find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetooform'))
+   ...     user_browser.contents, 'affectsmetoo'))
    This bug doesn't affect me...
-
-== One-click interaction ==
-
-If the user's browser provides javascript, they don't need to go to
-another page to change their selection. Instead, an in-page form is
-submitted when they click the action link.
-
-   >>> me_too_form = user_browser.getForm(id='affectsmetooform')
-   >>> user_browser.getControl(name='field.affects').value
-   'YES'
-   >>> me_too_form.submit()
-   >>> user_browser.getControl(name='field.affects').value
-   'NO'

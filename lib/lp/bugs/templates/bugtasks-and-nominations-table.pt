@@ -56,24 +56,9 @@
         define="link context_menu/nominate"
         condition="link/enabled"
         replace="structure link/render" />
-      <form
-        id="affectsmetooform"
-        name="affectsmetooform"
-        method="post"
-        enctype="multipart/form-data"
-        accept-charset="UTF-8"
-        tal:define="link context_menu/affectsmetoo"
-        tal:condition="link/enabled"
-        tal:attributes="action link/url"
-        style="display: inline">
-        <input
-          name="field.affects"
-          type="hidden"
-          tal:attributes="value view/affects_form_value" />
-        <input
-          type="hidden"
-          name="field.actions.change"
-          value="" />
+      <span id="affectsmetoo"
+           tal:define="link context_menu/affectsmetoo"
+           tal:condition="link/enabled">
         <tal:affected condition="view/current_user_affected_status">
           <img width="14" height="14" src="/@@/flame-icon" alt="" />
           This bug affects me too
@@ -81,30 +66,13 @@
         <tal:affected condition="not: view/current_user_affected_status">
           This bug doesn't affect me
         </tal:affected>
-        (<tal:affectsmetoo
-        define="link context_menu/affectsmetoo"
-        condition="link/enabled"
-        replace="structure link/render" />)
-        <tal:nothing condition="nothing">
-          The following is a trick to allow users to mark
-          themselves as affected by a bug with only one click.
-          If Javascript is available, we submit the form and
-          immediately go back to the same page, saving them the
-          need to go to a new page.
-        </tal:nothing>
+        (<span tal:replace="structure link/render" />)
         <script type="text/javascript">
-            function sendMeTooForm(e) {
-                $('affectsmetooform').submit();
-                e.preventDefault();
-            }
-            function connectMeTooLink() {
-                var me_too_link = getFirstElementByTagAndClassName(
-                'a', 'menu-link-affectsmetoo');
-                connect(me_too_link, 'onclick', sendMeTooForm);
-            }
-            registerLaunchpadFunction(connectMeTooLink);
+          YUI().use('event', 'bugs.bugtask_index', function(Y) {
+              Y.on('load', function(e) { Y.bugs.setup_me_too(); }, window);
+          });
         </script>
-      </form>
+      </span>
     </tal:also-affects-links>
 
 </div>
