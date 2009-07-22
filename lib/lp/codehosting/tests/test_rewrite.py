@@ -161,12 +161,10 @@ class TestBranchRewriterScript(TestCaseWithFactory):
             self.factory.makeProductBranch(),
             self.factory.makePersonalBranch(),
             self.factory.makePackageBranch()]
-        input = [
-            "/%s/.bzr/README" % branch.unique_name
-            for branch in branches] + [
-            "/%s/changes" % branch.unique_name
-            for branch in branches]
-        expected = [
+        input_lines = [
+            "/%s/.bzr/README" % branch.unique_name for branch in branches] + [
+            "/%s/changes" % branch.unique_name for branch in branches]
+        expected_lines = [
             'file:///var/tmp/bzrsync/%s/.bzr/README'
             % branch_id_to_path(branch.id)
             for branch in branches] + [
@@ -178,15 +176,17 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         proc = subprocess.Popen(
             [script_file], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, bufsize=0)
-        proc.stdin.write('\n'.join(input) + '\n')
-        output = []
-        for i in range(len(input)):
-            output.append(proc.stdout.readline())
+        output_lines = []
+        # For each complete line of input, the script should, without
+        # buffering, write a complete line of output.
+        for input_line in input_lines:
+            proc.stdin.write(input_line + '\n')
+            output_lines.append(proc.stdout.readline().rstrip('\n'))
         os.kill(proc.pid, signal.SIGINT)
         err = proc.stderr.read()
         # The script produces logging output, but not to stderr.
         self.assertEqual('', err)
-        self.assertEqual('\n'.join(expected) + '\n', ''.join(output))
+        self.assertEqual(expected_lines, output_lines)
 
 
 def test_suite():
