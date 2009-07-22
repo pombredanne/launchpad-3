@@ -137,8 +137,8 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertRaises(TypeError, runner.runAll)
         class Runnable:
             implements(IRunnableJob)
-        runner = JobRunner([object()])
-        self.assertRaises(TypeError, runner.runAll)
+        runner = JobRunner([Runnable()])
+        self.assertRaises(AttributeError, runner.runAll)
 
 
 def test_suite():
