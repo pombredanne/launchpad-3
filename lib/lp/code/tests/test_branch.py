@@ -22,7 +22,7 @@ class PermissionTest(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def assertAuthenticatedAccess(self, branch, person, can_access):
+    def assertAuthenticatedView(self, branch, person, can_access):
         """Can 'branch' be accessed by 'person'?
 
         :param branch: The `IBranch` we're curious about.
@@ -34,16 +34,13 @@ class PermissionTest(TestCaseWithFactory):
             can_access, check_permission('launchpad.View', branch))
         logout()
 
-    def assertUnauthenticatedAccess(self, branch, can_access):
+    def assertUnauthenticatedView(self, branch, can_access):
         """Can 'branch' be accessed anonymously?
 
         :param branch: The `IBranch` we're curious about.
         :param can_access: Whether we expect to access it anonymously.
         """
-        login_person(None)
-        self.assertEqual(
-            can_access, check_permission('launchpad.View', branch))
-        logout()
+        self.assertAuthenticatedView(branch, None, can_access)
 
 
 class TestAccessBranch(PermissionTest):
@@ -51,24 +48,24 @@ class TestAccessBranch(PermissionTest):
     def test_publicBranchUnauthenticated(self):
         # Public branches can be accessed without authentication.
         branch = self.factory.makeAnyBranch()
-        self.assertUnauthenticatedAccess(branch, True)
+        self.assertUnauthenticatedView(branch, True)
 
     def test_publicBranchArbitraryUser(self):
         # Public branches can be accessed by anyone.
         branch = self.factory.makeAnyBranch()
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(branch, person, True)
+        self.assertAuthenticatedView(branch, person, True)
 
     def test_privateBranchUnauthenticated(self):
         # Private branches cannot be accessed without authentication.
         branch = self.factory.makeAnyBranch(private=True)
-        self.assertUnauthenticatedAccess(branch, False)
+        self.assertUnauthenticatedView(branch, False)
 
     def test_privateBranchOwner(self):
         # The owner of a branch can always access it.
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(private=True, owner=owner)
-        self.assertAuthenticatedAccess(branch, owner, True)
+        self.assertAuthenticatedView(branch, owner, True)
 
     def test_privateBranchOwnerMember(self):
         # Any member of the team that owns the branch can access it.
@@ -77,20 +74,20 @@ class TestAccessBranch(PermissionTest):
         person = self.factory.makePerson()
         removeSecurityProxy(team).addMember(person, team_owner)
         branch = self.factory.makeAnyBranch(private=True, owner=team)
-        self.assertAuthenticatedAccess(branch, person, True)
+        self.assertAuthenticatedView(branch, person, True)
 
     def test_privateBranchBazaarExperts(self):
         # The Bazaar experts can access any branch.
         celebs = getUtility(ILaunchpadCelebrities)
         branch = self.factory.makeAnyBranch(private=True)
-        self.assertAuthenticatedAccess(
+        self.assertAuthenticatedView(
             branch, celebs.bazaar_experts.teamowner, True)
 
     def test_privateBranchAdmins(self):
         # Launchpad admins can access any branch.
         celebs = getUtility(ILaunchpadCelebrities)
         branch = self.factory.makeAnyBranch(private=True)
-        self.assertAuthenticatedAccess(branch, celebs.admin.teamowner, True)
+        self.assertAuthenticatedView(branch, celebs.admin.teamowner, True)
 
     def test_privateBranchSubscriber(self):
         # If you are subscribed to a branch, you can access it.
@@ -100,13 +97,13 @@ class TestAccessBranch(PermissionTest):
             person, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.NOEMAIL)
-        self.assertAuthenticatedAccess(branch, person, True)
+        self.assertAuthenticatedView(branch, person, True)
 
     def test_privateBranchAnyoneElse(self):
         # In general, you can't access a private branch.
         branch = self.factory.makeAnyBranch(private=True)
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(branch, person, False)
+        self.assertAuthenticatedView(branch, person, False)
 
     def test_stackedOnPrivateBranchUnauthenticated(self):
         # If a branch is stacked on a private branch, then you cannot access
@@ -114,7 +111,7 @@ class TestAccessBranch(PermissionTest):
         stacked_on_branch = self.factory.makeAnyBranch(private=True)
         stacked_branch = self.factory.makeAnyBranch(
             stacked_on=stacked_on_branch)
-        self.assertUnauthenticatedAccess(stacked_branch, False)
+        self.assertUnauthenticatedView(stacked_branch, False)
 
     def test_stackedOnPrivateBranchAuthenticated(self):
         # If a branch is stacked on a private branch, you can only access it
@@ -123,7 +120,7 @@ class TestAccessBranch(PermissionTest):
         stacked_branch = self.factory.makeAnyBranch(
             stacked_on=stacked_on_branch)
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(stacked_branch, person, False)
+        self.assertAuthenticatedView(stacked_branch, person, False)
 
     def test_manyLevelsOfStackingUnauthenticated(self):
         # If a branch is stacked on a branch stacked on a private branch, you
@@ -131,7 +128,7 @@ class TestAccessBranch(PermissionTest):
         stacked_on_branch = self.factory.makeAnyBranch(private=True)
         branch_a = self.factory.makeAnyBranch(stacked_on=stacked_on_branch)
         branch_b = self.factory.makeAnyBranch(stacked_on=branch_a)
-        self.assertUnauthenticatedAccess(branch_b, False)
+        self.assertUnauthenticatedView(branch_b, False)
 
     def test_manyLevelsOfStackingAuthenticated(self):
         # If a branch is stacked on a branch stacked on a private branch, you
@@ -140,7 +137,7 @@ class TestAccessBranch(PermissionTest):
         branch_a = self.factory.makeAnyBranch(stacked_on=stacked_on_branch)
         branch_b = self.factory.makeAnyBranch(stacked_on=branch_a)
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(branch_b, person, False)
+        self.assertAuthenticatedView(branch_b, person, False)
 
     def test_loopedPublicStackedOn(self):
         # It's possible, although nonsensical, for branch stackings to form a
@@ -150,7 +147,7 @@ class TestAccessBranch(PermissionTest):
         stacked_branch = self.factory.makeAnyBranch()
         removeSecurityProxy(stacked_branch).stacked_on = stacked_branch
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(stacked_branch, person, True)
+        self.assertAuthenticatedView(stacked_branch, person, True)
 
     def test_loopedPrivateStackedOn(self):
         # It's possible, although nonsensical, for branch stackings to form a
@@ -160,7 +157,7 @@ class TestAccessBranch(PermissionTest):
         stacked_branch = self.factory.makeAnyBranch(private=True)
         removeSecurityProxy(stacked_branch).stacked_on = stacked_branch
         person = self.factory.makePerson()
-        self.assertAuthenticatedAccess(stacked_branch, person, False)
+        self.assertAuthenticatedView(stacked_branch, person, False)
 
     def test_loopedPublicStackedOnUnauthenticated(self):
         # It's possible, although nonsensical, for branch stackings to form a
@@ -169,8 +166,7 @@ class TestAccessBranch(PermissionTest):
         # being logged in.
         stacked_branch = self.factory.makeAnyBranch()
         removeSecurityProxy(stacked_branch).stacked_on = stacked_branch
-        self.assertUnauthenticatedAccess(stacked_branch, True)
-
+        self.assertUnauthenticatedView(stacked_branch, True)
 
 
 def test_suite():
