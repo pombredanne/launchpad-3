@@ -27,7 +27,7 @@ from zope.schema import Bytes, Int, Object, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
-from lp.services.job.interfaces.job import IJob
+from lp.services.job.interfaces.job import IJob, IRunnableJob
 
 
 
@@ -87,7 +87,7 @@ class IBranchUpgradeJobSource(Interface):
         """
 
 
-class IRevisionMailJob(Interface):
+class IRevisionMailJob(IRunnableJob):
     """A Job to send email a revision change in a branch."""
 
     revno = Int(title=u'The revno to send mail about.')
@@ -100,9 +100,6 @@ class IRevisionMailJob(Interface):
 
     subject = Text(title=u'The subject of the email to send.')
 
-    def run():
-        """Send the mail as specified by this job."""
-
 
 class IRevisionMailJobSource(Interface):
     """A utility to create and retrieve RevisionMailJobs."""
@@ -114,11 +111,8 @@ class IRevisionMailJobSource(Interface):
         """Iterate through ready IRevisionMailJobs."""
 
 
-class IRevisionsAddedJob(Interface):
+class IRevisionsAddedJob(IRunnableJob):
     """A Job to send emails about revisions added to a branch."""
-
-    def run():
-        """Send the mails as specified by this job."""
 
 
 class IRevisionsAddedJobSource(Interface):

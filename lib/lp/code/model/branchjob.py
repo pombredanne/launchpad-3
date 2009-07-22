@@ -55,8 +55,8 @@ from lp.code.enums import (
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
     IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
-    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRevisionMailJobSource,
-    IRosettaUploadJob, IRosettaUploadJobSource)
+    IReclaimBranchSpaceJobSource, IRevisionsAddedJob, IRevisionMailJob,
+    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.translations.interfaces.translationimportqueue import (
@@ -337,6 +337,7 @@ class RevisionMailJob(BranchDiffJob):
 
 class RevisionsAddedJob(BranchJobDerived):
     """A job for sending emails about added revisions."""
+    implements(IRevisionsAddedJob)
 
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 

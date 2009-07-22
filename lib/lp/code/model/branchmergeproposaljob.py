@@ -296,7 +296,10 @@ class CreateMergeProposalJob(BaseRunnableJob):
 
     def getOopsRecipients(self):
         message = self.getMessage()
-        return [message['From']]
+        from_ = message['From']
+        if from_ is None:
+            return []
+        return [from_]
 
     def getOperationDescription(self):
         message = self.getMessage()
