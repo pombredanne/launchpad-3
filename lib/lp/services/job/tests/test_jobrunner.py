@@ -113,7 +113,7 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertIs(None, job.job.log)
         # Ensure DB time is updated.
         self.assertTrue(
-            (job.job.date_finished - job.job.date_started).seconds >= 0)
+            (job.job.date_finished - job.job.date_started).seconds > 0)
 
 
 def test_suite():
