@@ -998,11 +998,8 @@ class PersonTeamBranchesView(LaunchpadView):
 
     @cachedproperty
     def teams_with_branches(self):
-        def team_has_branches(team):
-            return self._getCollection().ownedBy(team).count() > 0
-        return [self._createItem(team)
-                for team in self.person.teams_participated_in
-                if team_has_branches(team) and team != self.person]
+        teams = self._getCollection().getTeamsWithBranches(self.context)
+        return [self._createItem(team) for team in teams]
 
 
 class PersonProductTeamBranchesView(PersonTeamBranchesView):
