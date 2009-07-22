@@ -34,7 +34,7 @@ class TestBranchRewriter(TestCaseWithFactory):
     def getLoggerOutput(self, rewriter):
         return rewriter.logger.buffer.getvalue()
 
-    def test_translateLine_found_dot_bzr(self):
+    def test_rewriteLine_found_dot_bzr(self):
         # Requests for /$branch_name/.bzr/... are redirected to where the
         # branches are served from by ID.
         rewriter = self.makeRewriter()
@@ -52,7 +52,7 @@ class TestBranchRewriter(TestCaseWithFactory):
             for branch in branches]
         self.assertEqual(expected, output)
 
-    def test_translateLine_found_not_dot_bzr(self):
+    def test_rewriteLine_found_not_dot_bzr(self):
         # Requests for /$branch_name/... that are not to .bzr directories are
         # redirected to codebrowse.
         rewriter = self.makeRewriter()
@@ -69,7 +69,7 @@ class TestBranchRewriter(TestCaseWithFactory):
             for branch in branches]
         self.assertEqual(expected, output)
 
-    def test_translateLine_private(self):
+    def test_rewriteLine_private(self):
         # All requests for /$branch_name/... for private branches are
         # rewritten to codebrowse, which will then redirect them to https and
         # handle them there.
@@ -86,7 +86,7 @@ class TestBranchRewriter(TestCaseWithFactory):
              'http://localhost:8080/%s/.bzr' % unique_name],
             output)
 
-    def test_translateLine_static(self):
+    def test_rewriteLine_static(self):
         # Requests to /static are rewritten to codebrowse urls.
         rewriter = self.makeRewriter()
         output = rewriter.rewriteLine("/static/foo")
@@ -94,7 +94,7 @@ class TestBranchRewriter(TestCaseWithFactory):
             'http://localhost:8080/static/foo',
             output)
 
-    def test_translateLine_not_found(self):
+    def test_rewriteLine_not_found(self):
         # If the request does not map to a branch, we redirect it to
         # codebrowse as it can generate a 404.
         rewriter = self.makeRewriter()
@@ -104,7 +104,7 @@ class TestBranchRewriter(TestCaseWithFactory):
             'http://localhost:8080%s' % not_found_path,
             output)
 
-    def test_translateLine_logs_cache_miss(self):
+    def test_rewriteLine_logs_cache_miss(self):
         # The first request for a branch misses the cache and logs this fact.
         rewriter = self.makeRewriter()
         branch = self.factory.makeAnyBranch()

@@ -9,7 +9,7 @@ import time
 from bzrlib import urlutils
 
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, SLAVE_FLAVOR, MASTER_FLAVOR)
+        IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from zope.component import getUtility
 from lp.code.model.branch import Branch
 from lp.codehosting.vfs import branch_id_to_path
