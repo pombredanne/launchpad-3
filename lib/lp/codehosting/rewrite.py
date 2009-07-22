@@ -35,7 +35,6 @@ class BranchRewriter:
         self.logger = logger
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         self._cache = {}
-        self._expiry_time = 10.0
 
     def _codebrowse_url(self, path):
         return urlutils.join(
@@ -50,7 +49,8 @@ class BranchRewriter:
             prefix = '/'.join(parts[:i])
             if prefix in self._cache:
                 branch_id, inserted_time = self._cache[prefix]
-                if self._now() < inserted_time + self._expiry_time:
+                if (self._now() < inserted_time +
+                    config.codehosting.branch_rewrite_cache_lifetime):
                     trailing = location[len(prefix) + 1:]
                     return branch_id, trailing, "HIT"
             prefixes.append(prefix)

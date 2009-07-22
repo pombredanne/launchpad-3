@@ -140,7 +140,8 @@ class TestBranchRewriter(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         transaction.commit()
         rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
-        self.fake_time.advance(1000)
+        self.fake_time.advance(
+            config.codehosting.branch_rewrite_cache_lifetime + 1)
         rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
         logging_output_lines = self.getLoggerOutput(rewriter).strip().split('\n')
         self.assertEqual(2, len(logging_output_lines))
