@@ -22,6 +22,22 @@ class PermissionTest(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def assertPermission(self, can_access, person, secure_object, permission):
+        """Assert that 'person' can or cannot access 'secure_object'.
+
+        :param can_access: Whether or not the person can access the object.
+        :param person: The `IPerson` who is trying to access the object.
+        :param secure_object: The secured object.
+        :param permission: The Launchpad permission that 'person' is trying to
+            access 'secure_object' with.
+        """
+        login_person(person)
+        try:
+            self.assertEqual(
+                can_access, check_permission(permission, secure_object))
+        finally:
+            logout()
+
     def assertAuthenticatedView(self, branch, person, can_access):
         """Can 'branch' be accessed by 'person'?
 
@@ -29,10 +45,7 @@ class PermissionTest(TestCaseWithFactory):
         :param person: The `IPerson` trying to access it.
         :param can_access: Whether we expect 'person' be able to access it.
         """
-        login_person(person)
-        self.assertEqual(
-            can_access, check_permission('launchpad.View', branch))
-        logout()
+        self.assertPermission(can_access, person, branch, 'launchpad.View')
 
     def assertUnauthenticatedView(self, branch, can_access):
         """Can 'branch' be accessed anonymously?
