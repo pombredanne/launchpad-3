@@ -96,3 +96,34 @@ class IJob(Interface):
 
     def queue():
         """Mark the job as queued for processing."""
+
+
+class IRunnableJob(Interface):
+    """Interface for jobs that can be run via the JobRunner."""
+
+    def acquireLease(duration=300):
+        """Acquire the lease for this Job, or raise LeaseHeld."""
+
+    def complete():
+        """Mark the job as completed."""
+
+    def fail():
+        """Indicate that the job has failed permanently.
+
+        Only running jobs can fail.
+        """
+
+    def notifyOops(oops):
+        """Notify interested parties that this job produced an OOPS.
+
+        :param oops: The oops produced by this Job.
+        """
+
+    def queue():
+        """Mark the job as queued for processing."""
+
+    def run():
+        """Run this job."""
+
+    def start():
+        """Mark the job as started."""

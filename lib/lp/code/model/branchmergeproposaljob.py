@@ -43,8 +43,8 @@ from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.codehosting.vfs import get_multi_server
-from lp.services.job import job
 from lp.services.job.model.job import Job
+from lp.services.job.runner import BaseRunnableJob
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -133,7 +133,7 @@ class BranchMergeProposalJob(Storm):
         return instance
 
 
-class BranchMergeProposalJobDerived(job.Job):
+class BranchMergeProposalJobDerived(BaseRunnableJob):
 
     """Intermediate class for deriving from BranchMergeProposalJob."""
     delegates(IBranchMergeProposalJob)
@@ -232,7 +232,7 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
              self.branch_merge_proposal.target_branch.bzr_identity))
 
 
-class CreateMergeProposalJob(job.Job):
+class CreateMergeProposalJob(BaseRunnableJob):
     """See `ICreateMergeProposalJob` and `ICreateMergeProposalJobSource`."""
 
     classProvides(ICreateMergeProposalJobSource)

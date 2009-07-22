@@ -8,18 +8,20 @@ from unittest import TestLoader
 
 import transaction
 from canonical.testing import LaunchpadZopelessLayer
+from zope.interface import implements
 
 from lp.testing.mail_helpers import pop_notifications
-from lp.services.job import job
-from lp.services.job.runner import JobRunner
-from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.runner import JobRunner, BaseRunnableJob
+from lp.services.job.interfaces.job import JobStatus, IRunnableJob
 from lp.services.job.model.job import Job
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 
 
-class NullJob(job.Job):
+class NullJob(BaseRunnableJob):
     """A job that does nothing but append a string to a list."""
+
+    implements(IRunnableJob)
 
     JOB_COMPLETIONS = []
 
