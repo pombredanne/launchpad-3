@@ -412,7 +412,7 @@ Similarly an extension of the BACKPORTS environment can be set.
 == Partner archive builds ==
 
 Similarly to what happens with PPA builds, PARTNER builds may depend
-on any ubuntu component in the PRIMARY archive. This behavior allow
+on any Ubuntu component in the PRIMARY archive. This behavior allows
 scenarios where partner packages may use other restricted/non-free
 applications from 'multiverse', for instance 'sun-java', and also
 other partner applications by default.
