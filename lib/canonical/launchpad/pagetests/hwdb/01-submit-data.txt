@@ -182,3 +182,80 @@ The field "Email address:" musr contain a valid email address.
     ...
     X-Launchpad-Hwdb-Submission: Error in field 'emailaddress' - Invalid email address
     ...
+
+The examples above about missing form data all used the form as
+represented in the test browser. "Required data missing" simply meant
+that a form field stayed empty, but the test broswer sent data _for_
+this field anyway. However, checkbox, the HTTP client which is normally
+used to submit the data, does _not_ first read the HTML page containing
+the form data and then POSTs (possibly empty) values for all fields of
+the form. Instead, it simply assumes that it knows which fields are
+present in the form and submits this data. Unfortunately, it sometimes
+simply omits some fields. In such a case, we return an extra header
+"Required fields not contained in POST data".
+
+    >>> from urllib import urlencode
+    >>> form_data = {
+    ...     'field.date_created': '2009-01-01',
+    ...     'field.format': 'VERSION_1',
+    ...     'field.private.used': '',
+    ...     'field.contactable.used': '',
+    ...     'field.submission_key': '123',
+    ...     'field.emailaddress': 'test@canonical.com',
+    ...     'field.distribution': 'ubuntu',
+    ...     'field.distroseries': '5.04',
+    ...     'field.architecture': 'i386',
+    ...     'field.system': 'whatever',
+    ...     'field.actions.upload': 'Upload',
+    ... }
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit',
+    ...     data=urlencode(form_data))
+    >>> print browser.headers
+    Status: 200 Ok
+    ...
+    X-Launchpad-Hwdb-Submission: Required fields not contained in POST data:
+    submission_data
+    ...
+
+Also, an OOPS is reported.
+
+    >>> from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+    >>> error_utility = ErrorReportingUtility()
+    >>> error_report = error_utility.getLastOopsReport()
+    >>> fp = StringIO()
+    >>> error_report.write(fp)
+    >>> print fp.getvalue()
+    Oops-Id:...
+    Exception-Type: HWSubmissionMissingFields
+    Exception-Value: Missing form fields: submission_data
+    Date:...
+    Page-Id: HWDBApplication:+submit
+    ...
+    Traceback (most recent call last):
+    HWSubmissionMissingFields: Missing form fields: submission_data
+    <BLANKLINE>
+
+    >>> del form_data['field.distribution']
+    >>> browser.open('http://launchpad.dev/+hwdb/+submit',
+    ...     data=urlencode(form_data))
+    >>> print browser.headers
+    Status: 200 Ok
+    ...
+    X-Launchpad-Hwdb-Submission: Required fields not contained in POST data:
+    distribution, submission_data
+    ...
+
+    >>> error_report = error_utility.getLastOopsReport()
+    >>> fp = StringIO()
+    >>> error_report.write(fp)
+    >>> print fp.getvalue()
+    Oops-Id:...
+    Exception-Type: HWSubmissionMissingFields
+    Exception-Value: Missing form fields: distribution, submission_data
+    Date:...
+    Page-Id: HWDBApplication:+submit
+    ...
+    Traceback (most recent call last):
+    HWSubmissionMissingFields: Missing form fields: distribution,
+    submission_data
+    <BLANKLINE>
