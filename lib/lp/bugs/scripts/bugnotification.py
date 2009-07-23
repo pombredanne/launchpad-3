@@ -87,7 +87,7 @@ def construct_email_notifications(bug_notifications):
 
     # At this point we've got the data we need to construct the
     # messages. Now go ahead and actually do that.
-    messages = {}
+    messages = []
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
     from_address = get_bugmail_from_address(person, bug)
@@ -113,7 +113,8 @@ def construct_email_notifications(bug_notifications):
                 for emailperson, recipient in recipients.items()
                 if recipient.person.inTeam(comment_syncing_team))
     bug_notification_builder = BugNotificationBuilder(bug)
-    for emailperson, recipient in recipients.items():
+    for emailperson, recipient in sorted(recipients.items(),
+                                    key=lambda t: t[0].preferredemail.email):
         address = str(emailperson.preferredemail.email)
         reason = recipient.reason_body
         rationale = recipient.reason_header
@@ -145,10 +146,9 @@ def construct_email_notifications(bug_notifications):
         msg = bug_notification_builder.build(
             from_address, address, body, subject, email_date,
             rationale, references, msgid)
-        messages[address] = msg
+        messages.append(msg)
 
-    return bug_notifications, [message
-        for address, message in sorted(messages.items())]
+    return bug_notifications, messages
 
 def _log_exception_and_restart_transaction():
     """Log an exception and restart the current transaction.
