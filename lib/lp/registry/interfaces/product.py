@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IProduct."""
@@ -660,6 +662,9 @@ class IProductPublic(
     @export_read_operation()
     def getRelease(version):
         """Return the release for this product that has the version given."""
+
+    def getMilestonesAndReleases():
+        """Return all the milestones and releases for this product."""
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""

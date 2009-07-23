@@ -68,6 +68,7 @@ overview page or the +assignedbugs page because it has a private membership.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'Other Team']
 
     >>> user_browser.open('http://launchpad.dev/~owner/+assignedbugs')
@@ -76,6 +77,7 @@ overview page or the +assignedbugs page because it has a private membership.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'Other Team']
 
     >>> user_browser.open('http://launchpad.dev/~owner/+teamhierarchy')
@@ -83,6 +85,7 @@ overview page or the +assignedbugs page because it has a private membership.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print extract_text(a_tag)
+    HWDB Team
     Other Team
 
 A member of a team with private membership (MyTeam) can see that team
@@ -93,6 +96,7 @@ on other members' overview or +assignedbugs pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'Other Team']
     [u'My Team']
 
@@ -102,6 +106,7 @@ on other members' overview or +assignedbugs pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'My Team']
     [u'Other Team']
 
@@ -110,6 +115,7 @@ on other members' overview or +assignedbugs pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print extract_text(a_tag)
+    HWDB Team
     My Team
     Other Team
 
@@ -233,6 +239,7 @@ MyTeam as an option in the +mentor form.
     >>> team_select = find_tag_by_id(owner_browser.contents, 'field.team')
     >>> for option in team_select.findAll('option'):
     ...     print option['value']
+    hwdb-team
     otherteam
 
 

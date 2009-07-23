@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Commit files straight to bzr branch."""
 
@@ -11,10 +12,12 @@ __all__ = [
 
 import os.path
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview
+
+from canonical.launchpad.interfaces import IMasterObject
+from lp.codehosting.vfs import make_branch_mirrorer
 
 
 class ConcurrentUpdateError(Exception):
@@ -47,7 +50,22 @@ class DirectBranchCommit:
     def __init__(self, db_branch, committer=None):
         """Create context for direct commit to branch.
 
-        :param db_branch: a Launchpad Branch object.
+        Before constructing a `DirectBranchCommit`, set up a server that
+        allows write access to lp-hosted:/// URLs:
+
+        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver.setUp()
+        try:
+            branchcommit = DirectBranchCommit(branch)
+            # ...
+        finally:
+            bzrserver.tearDown()
+
+        Or in tests, just call `useBzrBranches` before creating a
+        `DirectBranchCommit`.
+
+        :param db_branch: a Launchpad `Branch` object.
+        :param committer: the `Person` writing to the branch.
         """
         self.db_branch = db_branch
 
@@ -55,7 +73,8 @@ class DirectBranchCommit:
             committer = db_branch.owner
         self.committer = committer
 
-        self.bzrbranch = BzrBranch.open(self.db_branch.getPullURL())
+        mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
+        self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
         self.bzrbranch.lock_write()
         self.is_locked = True
 
@@ -154,6 +173,8 @@ class DirectBranchCommit:
 
             revno, old_rev_id = self.bzrbranch.last_revision_info()
             self.bzrbranch.set_last_revision_info(revno + 1, new_rev_id)
+
+            IMasterObject(self.db_branch).requestMirror()
 
         finally:
             self.unlock()

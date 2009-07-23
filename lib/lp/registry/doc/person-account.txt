@@ -77,7 +77,7 @@ will cause this spec to be reassigned.
     >>> spec.assignee = foobar
 
     >>> [membership.team.name for membership in foobar.myactivememberships]
-    [u'canonical-partner-dev', u'guadamen', u'admins',
+    [u'canonical-partner-dev', u'guadamen', u'hwdb-team', u'admins',
      u'launchpad-buildd-admins', u'launchpad', u'testing-spanish-team',
      u'name18', u'ubuntu-team', u'vcs-imports']
 

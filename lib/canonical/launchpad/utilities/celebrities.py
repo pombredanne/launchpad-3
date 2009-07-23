@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Classes that implement ICelebrity interfaces."""
 
 __metaclass__ = type
@@ -114,6 +116,7 @@ class LaunchpadCelebrities:
     debian = CelebrityDescriptor(IDistributionSet, 'debian')
     english = LanguageCelebrityDescriptor(ILanguageSet, 'en')
     gnome_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'gnome-bugs')
+    hwdb_team = CelebrityDescriptor(IPersonSet, 'hwdb-team')
     janitor = CelebrityDescriptor(IPersonSet, 'janitor')
     katie = CelebrityDescriptor(IPersonSet, 'katie')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')

@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
 
@@ -124,6 +125,10 @@ class SourcePackageView(BuildRecordsView):
         self.error_message = None
         self.processForm()
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
     def processForm(self):
         # look for an update to any of the things we track
         form = self.request.form
@@ -133,7 +138,9 @@ class SourcePackageView(BuildRecordsView):
                 # we need to create or update the packaging
                 self.context.setPackaging(new_ps, self.user)
                 self.productseries_widget.setRenderedValue(new_ps)
-                self.status_message = 'Upstream link updated, thank you!'
+                self.request.response.addInfoNotification(
+                    'Upstream link updated, thank you!')
+                self.request.response.redirect(canonical_url(self.context))
             else:
                 self.error_message = structured('Invalid series given.')
 

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -74,6 +76,12 @@ class FilePublishingBase:
 
     def publish(self, diskpool, log):
         """See IFilePublishing."""
+        # DDEB publication for PPAs is temporarily disabled, see bug #399444.
+        if (self.archive.is_ppa and
+            self.libraryfilealiasfilename.endswith('.ddeb')):
+            log.debug('Skipping DDEB disk publication.')
+            return
+
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
         # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')
@@ -1173,7 +1181,8 @@ class PublishingSet:
 
         return self.getBuildsForSourceIds(source_publication_ids)
 
-    def _getSourceBinaryJoinForSources(self, source_publication_ids):
+    def _getSourceBinaryJoinForSources(self, source_publication_ids,
+        active_binaries_only=True):
         """Return the join linking sources with binaries."""
         # Import Build, BinaryPackageRelease and DistroArchSeries locally
         # to avoid circular imports, since Build uses
@@ -1185,7 +1194,7 @@ class PublishingSet:
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
-        return (
+        join = [
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 Build.sourcepackagereleaseID,
             BinaryPackageRelease.build == Build.id,
@@ -1201,9 +1210,18 @@ class PublishingSet:
                SourcePackagePublishingHistory.pocket,
             BinaryPackagePublishingHistory.archiveID ==
                SourcePackagePublishingHistory.archiveID,
-            In(BinaryPackagePublishingHistory.status,
-               [enum.value for enum in active_publishing_status]),
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            In(SourcePackagePublishingHistory.id, source_publication_ids)
+            ]
+
+        # If the call-site requested to join only on binaries published
+        # with an active publishing status then we need to further restrict
+        # the join.
+        if active_binaries_only:
+            join.append(
+                In(BinaryPackagePublishingHistory.status,
+                    [enum.value for enum in active_publishing_status]))
+
+        return join
 
     def getUnpublishedBuildsForSources(self,
                                        one_or_more_source_publications,
@@ -1227,7 +1245,8 @@ class PublishingSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         published_builds = store.find(
             (SourcePackagePublishingHistory, Build, DistroArchSeries),
-            self._getSourceBinaryJoinForSources(source_publication_ids),
+            self._getSourceBinaryJoinForSources(
+                source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
             Build.buildstate.is_in(build_states))
 

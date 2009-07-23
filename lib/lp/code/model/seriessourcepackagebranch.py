@@ -1,4 +1,6 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0231
 
 """The content classes for links from source packages to branches.."""
@@ -65,6 +67,10 @@ class SeriesSourcePackageBranch(Storm):
     @property
     def sourcepackage(self):
         return self.distroseries.getSourcePackage(self.sourcepackagename)
+
+    @property
+    def suite_sourcepackage(self):
+        return self.sourcepackage.getSuiteSourcePackage(self.pocket)
 
 
 class SeriesSourcePackageBranchSet:

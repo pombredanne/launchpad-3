@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
@@ -33,10 +35,6 @@ class IDistroSeriesLanguage(IRosettaStats):
         "language. This includes only the real pofiles where translations "
         "exist.")
 
-    po_files_or_dummies = Attribute(
-        "Return a full complement of po files and dummy pofiles, one for "
-        "each PO Template in the series.")
-
     translator_count = Attribute("The number of registered translators "
         "for this language in the distribution.")
 
@@ -45,6 +43,13 @@ class IDistroSeriesLanguage(IRosettaStats):
 
     def updateStatistics(ztm):
         """Update all the Rosetta stats for this distro series language."""
+
+    def getPOFilesFor(potemplates):
+        """Return `POFile`s for each of `potemplates`, in the same order.
+
+        For any `POTemplate` that does not have a translation to the
+        required language, a `DummyPOFile` is provided.
+        """
 
 
 class IDistroSeriesLanguageSet(Interface):

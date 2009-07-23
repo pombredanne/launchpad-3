@@ -17,7 +17,8 @@
 
     <p metal:fill-slot="extra_info">
       Your changes to the <span tal:replace="context/displayname">
-      project</span> details below will take effect immediately.  
+      project</span> details below will be visible to other users after you
+      submit them.
     </p>
 
   </div>
