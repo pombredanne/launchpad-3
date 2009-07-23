@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePackageBreadcrumbBuilder',
+    'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
     'SourcePackageNavigation',
     'SourcePackageView',
@@ -28,9 +29,11 @@ from canonical.launchpad.interfaces.packaging import IPackaging
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
-    NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
+    action, ApplicationMenu, enabled_with_permission, GetitemNavigation,
+    LaunchpadEditFormView, Link, NavigationMenu, redirection,
+    StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -108,6 +111,19 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
     def gethelp(self):
         return Link('+gethelp', 'Help and support options', icon='info')
 
+class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
+    schema = ISourcePackage
+    field_names = ['productseries']
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Change"), name="change")
+    def change(self, action, data):
+        self.context.setPackaging(data['productseries'], self.user)
+        self.status_message = 'Upstream link updated, thank you!'
+        self.next_url = canonical_url(self.context)
 
 class SourcePackageView(BuildRecordsView):
 
