@@ -1833,17 +1833,8 @@ is rejected.
     Subject: Submit Request Failure
     To: test@canonical.com
     <BLANKLINE>
-    An error occurred while processing a mail you sent to Launchpad's email
-    interface.
-    <BLANKLINE>
-    <BLANKLINE>
-    Error message:
-    <BLANKLINE>
-    You tried to edit bug ... via email, but it couldn't be determined in
-    which context you wanted the changes to occur. The bug is reported in 0
-    different contexts, and you have to specify which one by using the
-    affects command.
-    <BLANKLINE>
+    ...
+    You didn't specify the project, distribution, or package that the bug is
     ...
 
 Let's take a closer look at send_process_error_notification(), which is

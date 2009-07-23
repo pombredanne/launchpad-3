@@ -155,6 +155,11 @@ class MaloneHandler:
                         bug, bug_event = command.execute(bug, bug_event)
                     elif IBugTaskEditEmailCommand.providedBy(command):
                         if bugtask is None:
+                            if len(bug.bugtasks) == 0:
+                                rollback()
+                                raise IncomingEmailError(
+                                    get_error_message(
+                                        'no-affects-target-on-submit.txt'))
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
