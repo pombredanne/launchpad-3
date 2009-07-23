@@ -597,11 +597,7 @@ class OopsNamespace(view):
     """A namespace handle traversals with ++oops++."""
 
     def traverse(self, name, ignored):
-        """Form traversal adapter.
-
-        This adapter allows any LaunchpadFormView to simply render the
-        form body.
-        """
+        """Record that an oops has been requested and return the context."""
         # Store the oops request in the request annotations.
         self.request.annotations[LAZR_OOPS_USER_REQUESTED_KEY] = True
         return self.context
