@@ -40,8 +40,8 @@ def construct_email_notifications(bug_notifications):
     recipients = {}
     for notification in bug_notifications:
         for recipient in notification.recipients:
-            for emailperson in emailPeople(recipient.person):
-                recipients[emailperson] = recipient
+            for email_person in emailPeople(recipient.person):
+                recipients[email_person] = recipient
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
@@ -104,18 +104,17 @@ def construct_email_notifications(bug_notifications):
             config.malone.comment_syncing_team)
         # Only members of the comment syncing team should get comment
         # notifications related to bug watches or initial comment imports.
-        # XXX wgrant 2009-07-23: Do we want to take the emailperson's or
-        # recipient's membership?
         if (is_initial_import_notification or
             (bug_message is not None and bug_message.bugwatch is not None)):
             recipients = dict(
-                (emailperson, recipient)
-                for emailperson, recipient in recipients.items()
+                (email_person, recipient)
+                for email_person, recipient in recipients.items()
                 if recipient.person.inTeam(comment_syncing_team))
     bug_notification_builder = BugNotificationBuilder(bug)
-    for emailperson, recipient in sorted(recipients.items(),
-                                    key=lambda t: t[0].preferredemail.email):
-        address = str(emailperson.preferredemail.email)
+    sorted_recipients = sorted(
+        recipients.items(), key=lambda t: t[0].preferredemail.email)
+    for email_person, recipient in sorted_recipients:
+        address = str(email_person.preferredemail.email)
         reason = recipient.reason_body
         rationale = recipient.reason_header
 
@@ -128,7 +127,7 @@ def construct_email_notifications(bug_notifications):
         # If the person we're sending to receives verbose notifications
         # we include the description and status of the bug in the email
         # footer.
-        if emailperson.verbose_bugnotifications:
+        if email_person.verbose_bugnotifications:
             email_template = 'bug-notification-verbose.txt'
             body_data['bug_description'] = bug.description
 
