@@ -8,9 +8,7 @@ import time
 
 from bzrlib import urlutils
 
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
-from zope.component import getUtility
+from canonical.launchpad.interfaces import ISlaveStore
 from lp.code.model.branch import Branch
 from lp.codehosting.vfs import branch_id_to_path
 
@@ -24,7 +22,7 @@ class BranchRewriter:
     def __init__(self, logger, _now=None):
         """
 
-        :param logger: Logger than messages about what the rewriter is doing
+        :param logger: Logger that messages about what the rewriter is doing
             will be sent to.
         :param proxy: A blocking proxy for a branchfilesystem endpoint.
         """
@@ -33,7 +31,7 @@ class BranchRewriter:
         else:
             self._now = _now
         self.logger = logger
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        self.store = ISlaveStore(Branch)
         self._cache = {}
 
     def _codebrowse_url(self, path):
