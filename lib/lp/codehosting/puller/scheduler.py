@@ -462,7 +462,7 @@ class JobScheduler:
             config.supermirror.maximum_workers)
         self.consumer = consumer
         source = PollingTaskSource(
-            config.supermirror.poll_interval, self._poll)
+            config.supermirror.polling_interval, self._poll)
         deferred = consumer.consume(source)
         deferred.addCallback(self._finishedRunning)
         return deferred
