@@ -19,7 +19,7 @@ To create a new Specification, use ISpecificationSet.new:
     ...     SpecificationImplementationStatus, SpecificationPriority)
     >>> productset = getUtility(IProductSet)
     >>> upstream_firefox = productset.get(4)
-    >>> from canonical.launchpad.database import Person
+    >>> from lp.registry.model.person import Person
     >>> sabdfl = Person.byName('sabdfl')
     >>> newspec = specset.new('mng', 'Support MNG Format',
     ...     'http://www.silly.me/SpecName', 'we really need this',

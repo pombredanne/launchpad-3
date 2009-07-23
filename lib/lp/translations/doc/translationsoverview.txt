@@ -13,8 +13,8 @@ test too much.
     >>> import transaction
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import (
-    ...     KarmaCategory, SourcePackageName)
+    >>> from lp.registry.model.karma import KarmaCategory
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IKarmaCacheManager, IPersonSet,
     ...     IProductSet)

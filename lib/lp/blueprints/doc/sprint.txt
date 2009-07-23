@@ -75,7 +75,7 @@ We're directly using the database classes here, bypassing the security
 proxies because this is just set-up for the next step, it's not the exact
 functionality we're testing.
 
-    >>> from canonical.launchpad.database import SprintSet
+    >>> from lp.blueprints.model.sprint import SprintSet
     >>> futurista = SprintSet()["futurista"]
     >>> for sprintspec in futurista.specificationLinks():
     ...     sprintspec.status = SprintSpecificationStatus.PROPOSED

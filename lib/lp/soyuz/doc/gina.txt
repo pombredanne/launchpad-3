@@ -11,12 +11,11 @@ Get the current counts of stuff in the database:
     ...     SourcePackageRelease,
     ...     SecureSourcePackagePublishingHistory,
     ...     SecureBinaryPackagePublishingHistory,
-    ...     Person,
-    ...     TeamParticipation,
-    ...     WikiName,
     ...     EmailAddress,
     ...     BinaryPackageRelease,
     ...     Build)
+    >>> from lp.registry.model.person import Person, WikiName
+    >>> from lp.registry.model.teamparticipation import TeamParticipation
     >>> from canonical.launchpad.interfaces import (
     ...     PackagePublishingPocket)
     >>> SSPPH = SecureSourcePackagePublishingHistory
@@ -192,7 +191,7 @@ We should have more source packages in the database:
 
 Check that x11proto-damage has its Build-Depends-Indep value correctly set:
 
-    >>> from canonical.launchpad.database import SourcePackageName
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> n = SourcePackageName.selectOneBy(name="x11proto-damage")
     >>> x11p = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                         version="6.8.99.7-2")

@@ -84,7 +84,8 @@ After approving the nominated bugs, the listing is empty.
 
     # Use the DB classes directly to avoid having to setup a zope interaction
     # (i.e. login()) and bypass the security proxy.
-    >>> from canonical.launchpad.database import Bug, Distribution
+    >>> from canonical.launchpad.database import Bug
+    >>> from lp.registry.model.distribution import Distribution
     >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
     >>> bug_one = Bug.get(1)
@@ -118,7 +119,7 @@ A product series has the same nomination listing as a distro series.
 
     # Use the DB classes directly to avoid having to setup a zope interaction
     # (i.e. login()) and bypass the security proxy.
-    >>> from canonical.launchpad.database import Product
+    >>> from lp.registry.model.product import Product
     >>> firefox = Product.byName('firefox')
     >>> firefox_1_0 = firefox.getSeries('1.0')
     >>> bug_one = Bug.get(1)
