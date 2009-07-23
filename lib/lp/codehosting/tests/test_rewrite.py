@@ -184,15 +184,27 @@ class TestBranchRewriterScript(TestCaseWithFactory):
             proc.stdin.write(input_line + '\n')
             output_lines.append(proc.stdout.readline().rstrip('\n'))
         # If we create a new branch after the branch-rewrite.py script has
-        # connected to the database, it is rewritten successfully.
-        new_branch = self.factory.makeProductBranch()
+        # connected to the database, or edit a branch name that has already
+        # been rewritten, both are rewritten successfully.
+        new_branch = self.factory.makeAnyBranch()
+        edited_branch = removeSecurityProxy(branches[0])
+        edited_branch.name = self.factory.getUniqueString()
         transaction.commit()
+
         new_branch_input = '/%s/.bzr/README' % new_branch.unique_name
         expected_lines.append(
             'file:///var/tmp/bzrsync/%s/.bzr/README'
             % branch_id_to_path(new_branch.id))
         proc.stdin.write(new_branch_input + '\n')
         output_lines.append(proc.stdout.readline().rstrip('\n'))
+
+        edited_branch_input = '/%s/.bzr/README' % edited_branch.unique_name
+        expected_lines.append(
+            'file:///var/tmp/bzrsync/%s/.bzr/README'
+            % branch_id_to_path(edited_branch.id))
+        proc.stdin.write(edited_branch_input + '\n')
+        output_lines.append(proc.stdout.readline().rstrip('\n'))
+
         os.kill(proc.pid, signal.SIGINT)
         err = proc.stderr.read()
         # The script produces logging output, but not to stderr.
