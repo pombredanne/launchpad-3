@@ -4,7 +4,6 @@
 """Tests for job-running facilities."""
 
 
-from time import sleep
 from unittest import TestLoader
 
 import transaction
@@ -102,7 +101,6 @@ class TestJobRunner(TestCaseWithFactory):
 
             def run(self):
                 self.job.log = 'hello'
-                sleep(1)
                 raise ValueError
 
         job = DBAlterJob()
@@ -111,9 +109,6 @@ class TestJobRunner(TestCaseWithFactory):
         # If the transaction was committed, job.log == 'hello'.  If it was
         # aborted, it is None.
         self.assertIs(None, job.job.log)
-        # Ensure DB time is updated.
-        self.assertTrue(
-            (job.job.date_finished - job.job.date_started).seconds > 0)
 
 
 def test_suite():
