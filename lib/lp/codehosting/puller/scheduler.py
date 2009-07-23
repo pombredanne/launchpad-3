@@ -434,6 +434,13 @@ class JobScheduler:
             [str(i) for i in range(config.supermirror.maximum_workers)])
 
     def _turnJobTupleIntoTask(self, job_tuple):
+        """Turn the return value of `acquireBranchToPull` into a job.
+
+        `IBranchPuller.acquireBranchToPull` returns either an empty tuple
+        (indicating there are no branches to pull currently) or a tuple of 6
+        arguments, which are more or less those needed to construct a
+        `PullerMaster` object.
+        """
         if len(job_tuple) == 0:
             return None
         (branch_id, pull_url, unique_name,
@@ -454,7 +461,8 @@ class JobScheduler:
         consumer = ParallelLimitedTaskConsumer(
             config.supermirror.maximum_workers)
         self.consumer = consumer
-        source = PollingTaskSource(10, self._poll)
+        source = PollingTaskSource(
+            config.supermirror.poll_interval, self._poll)
         deferred = consumer.consume(source)
         deferred.addCallback(self._finishedRunning)
         return deferred
