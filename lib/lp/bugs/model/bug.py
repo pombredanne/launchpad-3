@@ -533,17 +533,6 @@ class Bug(SQLBase):
                 Bug.duplicateof = %d""" % self.id,
                 prejoins=["person"], clauseTables=["Bug"]))
 
-        # Direct and "also notified" subscribers take precedence
-        # over subscribers from duplicates.
-        duplicate_subscriptions -= set(self.getDirectSubscriptions())
-        also_notified_subscriptions = set()
-        for also_notified_subscriber in self.getAlsoNotifiedSubscribers():
-            for duplicate_subscription in duplicate_subscriptions:
-                if also_notified_subscriber == duplicate_subscription.person:
-                    also_notified_subscriptions.add(duplicate_subscription)
-                    break
-        duplicate_subscriptions -= also_notified_subscriptions
-
         # Only add a subscriber once to the list.
         duplicate_subscribers = set(
             sub.person for sub in duplicate_subscriptions)
