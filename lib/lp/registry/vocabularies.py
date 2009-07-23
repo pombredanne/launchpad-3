@@ -553,7 +553,7 @@ class ValidPersonOrTeamVocabulary(
 
             # Next search for the private teams.
             private_query, private_tables = self._privateTeamQueryAndTables()
-            private_tables.insert(0, Person)
+            private_tables = [Person] + private_tables
 
             # Searching for private teams that match can be easier since we
             # are only interested in teams.  Teams can have email addresses
@@ -650,7 +650,6 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             )
 
         tables = [Person] + private_tables
-
 
         if not text:
             query = And(base_query,
