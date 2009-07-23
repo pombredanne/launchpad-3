@@ -11,8 +11,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import rollback, begin
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
+from canonical.launchpad.helpers import emailPeople, get_email_template
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
@@ -41,8 +40,8 @@ def construct_email_notifications(bug_notifications):
     recipients = {}
     for notification in bug_notifications:
         for recipient in notification.recipients:
-            for address in get_contact_email_addresses(recipient.person):
-                recipients[address] = recipient
+            for emailperson in emailPeople(recipient.person):
+                recipients[emailperson] = recipient
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
@@ -105,14 +104,17 @@ def construct_email_notifications(bug_notifications):
             config.malone.comment_syncing_team)
         # Only members of the comment syncing team should get comment
         # notifications related to bug watches or initial comment imports.
+        # XXX wgrant 2009-07-23: Do we want to take the emailperson's or
+        # recipient's membership?
         if (is_initial_import_notification or
             (bug_message is not None and bug_message.bugwatch is not None)):
             recipients = dict(
-                (address, recipient)
-                for address, recipient in recipients.items()
+                (emailperson, recipient)
+                for emailperson, recipient in recipients.items()
                 if recipient.person.inTeam(comment_syncing_team))
     bug_notification_builder = BugNotificationBuilder(bug)
-    for address, recipient in recipients.items():
+    for emailperson, recipient in recipients.items():
+        address = str(emailperson.preferredemail.email)
         reason = recipient.reason_body
         rationale = recipient.reason_header
 
