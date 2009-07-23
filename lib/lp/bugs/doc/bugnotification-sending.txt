@@ -1272,8 +1272,21 @@ who receives verbose bug notifications, to bug 15.
     >>> bug_15.subscribe(ddaa, sample_person)
     <...>
 
-If we then add a comment to the bug, ddaa will receieve a notification
-containing that comment.
+Notifications sent through a team membership respect the member's
+verbose_bugnotifications, not the team's. salgado gets notifications
+through his membership in landscape-developers. salgado decides that
+he wants verbose notifications.
+    
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> salgado.verbose_bugnotifications
+    True
+
+    >>> ls = getUtility(IPersonSet).getByName('landscape-developers')
+    >>> ls.verbose_bugnotifications
+    False
+
+If we then add a comment to the bug, ddaa and salgado will receieve
+notifications containing that comment.
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a really simple comment.', sample_person,
@@ -1286,10 +1299,11 @@ containing that comment.
     1
 
 If we pass this notifcation to get_email_notifications we can see that
-ddaa will receieve a notification which contains the bug description and
-its status in all of its targets. All other subscribers will receive
-standard notifications that don't include the bug description. To help
-with demonstrating this, we'll define a helper function.
+ddaa and salgado will receieve a notification which contains the bug
+description and its status in all of its targets. All other subscribers
+will receive standard notifications that don't include the bug
+description. To help with demonstrating this, we'll define a helper
+function.
 
     >>> def collate_messages_by_recipient(messages):
     ...     messages_by_recipient = {}
@@ -1341,6 +1355,31 @@ Whereas ddaa does:
     http://bugs.launchpad.dev/bugs/15
     You received this bug notification because you are a direct subscriber
     of the bug.
+    <BLANKLINE>
+    Status in Redfish: New
+    Status in Mozilla Thunderbird: New
+    <BLANKLINE>
+    Bug description:
+    Like this one, natch.
+    <BLANKLINE>
+    ----------------------------------------------------------------------
+
+And salgado does too: 
+
+    >>> print_notification(
+    ...     collated_messages['guilherme.salgado@canonical.com'][0])
+    To: guilherme.salgado@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 15] subject
+    X-Launchpad-Message-Rationale: Subscriber (Redfish) @landscape-developers
+    <BLANKLINE>
+    a really simple comment.
+    <BLANKLINE>
+    --
+    Nonsensical bugs are useless
+    http://bugs.launchpad.dev/bugs/15
+    You received this bug notification because you are a member of Landscape
+    Developers, which is subscribed to Redfish.
     <BLANKLINE>
     Status in Redfish: New
     Status in Mozilla Thunderbird: New
