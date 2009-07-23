@@ -637,7 +637,7 @@ class BranchMergeProposal(SQLBase):
             review_type = review_type.lower()
         code_review_message = CodeReviewComment(
             branch_merge_proposal=self, message=message, vote=vote,
-            vote_tag=review_type, original_email=original_email)
+            vote_tag=review_type)
         # Get the appropriate CodeReviewVoteReference for the reviewer.
         # If there isn't one, then create one, otherwise set the comment
         # reference.
