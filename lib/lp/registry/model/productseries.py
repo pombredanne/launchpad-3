@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 """Models for `IProductSeries`."""
 
@@ -67,6 +69,7 @@ from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+
 
 def landmark_key(landmark):
     """Sorts landmarks by date and name."""
@@ -197,7 +200,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def sourcepackages(self):
         """See IProductSeries"""
         from lp.registry.model.sourcepackage import SourcePackage
-        ret = Packaging.selectBy(productseries=self)
+        ret = self.packagings
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distroseries=r.distroseries)
                     for r in ret]

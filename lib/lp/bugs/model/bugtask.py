@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Classes that implement IBugTask and its related interfaces."""
@@ -2003,6 +2005,29 @@ class BugTaskSet:
         bugtask.updateTargetNameCache()
 
         return bugtask
+
+    def getStatusCountsForProductSeries(self, user, product_series):
+        """See `IBugTaskSet`."""
+        bug_privacy_filter = get_bug_privacy_filter(user)
+        if bug_privacy_filter != "":
+            bug_privacy_filter = ' AND ' + bug_privacy_filter
+        cur = cursor()
+        condition = """
+            (BugTask.productseries = %s
+                 OR Milestone.productseries = %s)
+            """ % sqlvalues(product_series, product_series)
+        query = """
+            SELECT BugTask.status, count(*)
+            FROM BugTask
+                JOIN Bug ON BugTask.bug = Bug.id
+                LEFT JOIN Milestone ON BugTask.milestone = Milestone.id
+            WHERE
+                %s
+                %s
+            GROUP BY BugTask.status
+            """ % (condition, bug_privacy_filter)
+        cur.execute(query)
+        return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
                               bug=None, target=None):

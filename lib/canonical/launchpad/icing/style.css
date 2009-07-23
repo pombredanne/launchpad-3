@@ -48,16 +48,16 @@ h1 .edit {
 }
 .offscreen {
     position: absolute;
-    left: -999em; 
+    left: -999em;
 }
-span.invisible-link {display:none;} 
-span.invisible {left:-9999em;display:block;} 
+span.invisible-link {display:none;}
+span.invisible {left:-9999em;display:block;}
 .sprite {padding:2px 0 0 18px;}
-.sprite-left {padding:2px 18px 0 0; background-position:left;}
+.sprite-after {padding: 2px 18px 0 0;}
 
 .add {background:url(icon-sprites) 0 0 no-repeat;}
-.edit {background:url(icon-sprites) 0 -32px no-repeat;}
-.remove {background:url(icon-sprites) 0 -64px no-repeat;}
+.edit {background:url(icon-sprites) 100% -32px no-repeat;}
+.remove {background:url(icon-sprites) 100% -64px no-repeat;}
 .info {background:url(icon-sprites) 0 -96px no-repeat;}
 .question {background:url(icon-sprites) 0 -128px no-repeat;}
 .download-icon {background:url(icon-sprites) 0 -160px no-repeat;}
@@ -124,7 +124,7 @@ span.invisible {left:-9999em;display:block;}
 .translate-icon {background:url(icon-sprites-2) 0 -800px no-repeat;}
 .translation-file {background:url(icon-sprites-2) 0 -832px no-repeat;}
 .translation-template {background:url(icon-sprites-2) 0 -864px no-repeat;}
-.trash-icon {background:url(icon-sprites-2) 0 -896px no-repeat;}
+.trash-icon {background:url(icon-sprites-2) 100% -896px no-repeat;}
 .stop {background:url(icon-sprites-2) 0 -928px no-repeat;}
 .bounty {background:url(icon-sprites-2) 0 -960px no-repeat;}
 .list {background:url(icon-sprites-2) 0 -992px no-repeat;}
@@ -317,7 +317,6 @@ ul {
 .offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
-.duplicate-details { margin-bottom: 1em; }
 .duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
 
 /* Blank space at the top of the page makes the location bar more noticable.
@@ -936,12 +935,16 @@ hierarchy, and the application tabs. */
 /* === Help pane === */
 /*
 Inline help is contained in a <div> and dynamically positioned by JavaScript.
+
+This should appear above all other content.  Needs to be
+above the Google Maps element on the profile pages, which
+has a z-index of 9999.  See bug #380349.
 */
 #help-pane {
   position: absolute;
   border: 1px solid black;
   padding: 1px 1px 5px 10px;
-  z-index: 3000;  /* This should appear above all other content. */
+  z-index: 11000; /* Needs to be at least 9999.  See bug #380349. */
   background-color: #fff;
   width: 600px; /* based on the help wiki, should change later */
 }
@@ -1512,9 +1515,14 @@ a.info {
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
+
 .boardCommentDetails {
   background-color: #eee;
-  border-bottom: 1px solid #ddd
+  border-bottom: 1px solid #ddd;
+  padding: 0.5em 12px;
+}
+.boardCommentDetails table {
+  margin: -0.5em -12px;
 }
 .boardCommentDetails td {
     padding: 0.5em 12px;
@@ -1610,9 +1618,15 @@ beside the mugshot. */
   font-size: 1.5em;
   font-family: "URW Gothic L","MgOpen Moderna","Lucida Sans",sans-serif;
   text-align: center;
-  margin: 1em 0 1em 0;
-  padding: 0.2em;
+  margin: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding: 0.5em;
   background-color: #ededed;
+  width: 90%;
+}
+#home-description .smaller {
+  font-size: 80%;
 }
 #home-stats {
   margin: auto;

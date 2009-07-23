@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -19,7 +21,7 @@ import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
     StringCol)
-from storm.locals import And, Join, SQL, Store, Unicode
+from storm.locals import And, Desc, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -910,6 +912,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ProductRelease,
             And(Milestone.product == self,
                 Milestone.name == version)).one()
+
+    def getMilestonesAndReleases(self):
+        """See `IProduct`."""
+        store = Store.of(self)
+        result = store.find(
+            (Milestone, ProductRelease),
+            And(ProductRelease.milestone == Milestone.id,
+                Milestone.productseries == ProductSeries.id,
+                ProductSeries.product == self))
+        return result.order_by(Desc(ProductRelease.datereleased))
 
     def packagedInDistros(self):
         return IStore(Distribution).find(

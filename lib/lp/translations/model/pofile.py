@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
@@ -22,6 +24,7 @@ from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
@@ -38,6 +41,8 @@ from lp.translations.model.translationmessage import (
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.translations.interfaces.pofile import IPOFile, IPOFileSet
 from lp.translations.interfaces.potmsgset import BrokenTextError
 from lp.translations.interfaces.translationcommonformat import (
@@ -138,6 +143,10 @@ def _can_edit_translations(pofile, person):
     translation team for the given `IPOFile`.translationpermission and the
     language associated with this `IPOFile`.
     """
+    # Nothing can be edited in read-only mode.
+    if config.launchpad.read_only:
+        return False
+
     # If the person is None, then they cannot edit
     if person is None:
         return False
@@ -179,6 +188,10 @@ def _can_add_suggestions(pofile, person):
     any logged-in user for translations in RESTRICTED mode that have a
     translation team assigned.
     """
+    # No suggestions can be added in read-only mode.
+    if config.launchpad.read_only:
+        return False
+
     if person is None:
         return False
 
@@ -343,6 +356,17 @@ class POFileMixIn(RosettaStats):
                    quote_like(text))
         return english_match
 
+    def _getOrderedPOTMsgSets(self, origin_tables, query):
+        """Find all POTMsgSets matching `query` from `origin_tables`.
+
+        Orders the result by TranslationTemplateItem.sequence which must
+        be among `origin_tables`.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        results = store.using(origin_tables).find(
+            POTMsgSet, SQL(query))
+        return results.order_by(TranslationTemplateItem.sequence)
+
     def findPOTMsgSetsContaining(self, text):
         """See `IPOFile`."""
         clauses = [
@@ -373,10 +397,11 @@ class POFileMixIn(RosettaStats):
                         self, plural_form, text)
                     search_clauses.append(translation_match)
 
-            all_potmsgsets_query = "(" + " UNION ".join(search_clauses) + ")"
+            clauses.append(
+                "POTMsgSet.id IN (" + " UNION ".join(search_clauses) + ")")
 
-        return POTMsgSet.select("POTMsgSet.id IN " + all_potmsgsets_query,
-                                orderBy='sequence')
+        return self._getOrderedPOTMsgSets(
+            [POTMsgSet, TranslationTemplateItem], ' AND '.join(clauses))
 
     def getFullLanguageCode(self):
         """See `IPOFile`."""
@@ -654,17 +679,6 @@ class POFile(SQLBase, POFileMixIn):
                             + shared_translation_query + ') )')
         clauses.append(translated_query)
         return (clauses, clause_tables)
-
-    def _getOrderedPOTMsgSets(self, origin_tables, query):
-        """Find all POTMsgSets matching `query` from `origin_tables`.
-
-        Orders the result by TranslationTemplateItem.sequence which must
-        be among `origin_tables`.
-        """
-        store = Store.of(self)
-        results = store.using(origin_tables).find(
-            POTMsgSet, SQL(query))
-        return results.order_by(TranslationTemplateItem.sequence)
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""

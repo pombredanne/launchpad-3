@@ -1,4 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213,W0611
 # XXX Aaron Bentley 2008-01-24: See comment from kiko re:import shims
 
@@ -106,6 +108,7 @@ class ILaunchpadCelebrities(Interface):
     debian = Attribute("The Debian Distribution.")
     english = Attribute("The English language.")
     gnome_bugzilla = Attribute("The Gnome Bugzilla.")
+    hwdb_team = Attribute("The HWDB team.")
     janitor = Attribute("The Launchpad Janitor.")
     katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
@@ -125,8 +128,8 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_branches = Attribute("The Ubuntu branches team")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
+    ubuntu_security = Attribute("The 'ubuntu-security' team.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
-
 
 
 class ICrowd(Interface):

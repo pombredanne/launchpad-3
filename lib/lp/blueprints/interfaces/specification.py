@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Specification interfaces."""
@@ -890,6 +892,16 @@ class ISpecificationSet(IHasSpecifications):
 
     specification_count = Attribute(
         "The total number of blueprints in Launchpad")
+
+    def getStatusCountsForProductSeries(product_series):
+        """Return the status counts for blueprints in a series.
+
+        Both the nominated and scheduled blueprints are included
+        in the count.
+
+        :param product_series: ProductSeries object.
+        :return: A list of tuples containing (status_id, count).
+        """
 
     def __iter__():
         """Iterate over all specifications."""

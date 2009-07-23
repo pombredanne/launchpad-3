@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
 
@@ -518,6 +519,15 @@ class BranchView(LaunchpadView, FeedsMixin):
         if not self.context.target.supports_merge_proposals:
             return False
         return self.context.target.collection.getBranches().count() > 1
+
+    def translations_sources(self):
+        """Anything that automatically exports its translations here.
+
+        Produces a list, so that the template can easily check whether
+        there are any translations sources.
+        """
+        # Actually only ProductSeries currently do that.
+        return list(self.context.getProductSeriesPushingTranslations())
 
 
 class DecoratedMergeProposal:

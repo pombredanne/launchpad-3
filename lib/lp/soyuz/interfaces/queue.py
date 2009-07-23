@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Queue interfaces."""
@@ -272,19 +274,25 @@ class IPackageUpload(Interface):
          * Publish and close bugs for 'single-source' uploads.
          * Skip bug-closing for PPA uploads.
          * Grant karma to people involved with the upload.
+
+        :raises: AssertionError if the context is a delayed-copy.
         """
 
     def acceptFromCopy():
         """Perform upload acceptance for a delayed-copy record.
 
          * Move the upload to accepted queue in all cases.
-         * Close bugs for uploaded sources (skip imported ones).
+
+        :raises: AssertionError if the context is not a delayed-copy or
+            has no sources associated to it.
         """
 
     def acceptFromQueue(announce_list, logger=None, dry_run=False):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
          * Grant karma to people involved with the upload.
+
+        :raises: AssertionError if the context is a delayed-copy.
         """
 
     def rejectFromQueue(logger=None, dry_run=False):

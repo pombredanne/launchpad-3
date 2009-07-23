@@ -1,5 +1,7 @@
 #!/usr/bin/env python2.4
-# Copyright (C) 2005-2008  Canonical Software Ltd.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Origins dictionary containing all mirrors used for sync-source.py."""
 

@@ -481,16 +481,27 @@ languages...
 
     >>> len(suggestions.submissions)
     1
-    >>> sorted(suggestions.submissions[0].items())
-    [('date_created', ...),
-     ('id', 703),
-     ('language', ...), ('person', ...),
-     ('plural_index', 0),
-     ('pofile', ...), ('potmsgset', ...),
-     ('suggestion_html_id', u'msgset_15_ja_suggestion_703_0'),
-     ('suggestion_text', u'Foo <code>%d</code>'),
-     ('translation_html_id', u'msgset_15_es_translation_0'),
-     ('translationmessage', ...)]
+    >>> submission = suggestions.submissions[0]
+    >>> for attr in sorted(dir(submission)):
+    ...     if not attr.startswith('_'):
+    ...         print "%s: %s" % (attr, getattr(submission, attr))
+    date_created: ...
+    id: 703
+    is_empty: False
+    is_local_to_pofile: False
+    language: ...
+    legal_warning: False
+    origin_html_id: msgset_15_ja_suggestion_703_0_origin
+    person: ...
+    plural_index: 0
+    pofile: ...
+    potmsgset: ...
+    row_html_id:
+    suggestion_dismissable_class: msgset_15_dismissable_button
+    suggestion_html_id: msgset_15_ja_suggestion_703_0
+    suggestion_text: Foo <code>%d</code>
+    translation_html_id: msgset_15_es_translation_0
+    translationmessage: ...
 
 Another reason why a suggestion might not have translations for all
 plural forms is that it was submitted as a translation for an English
@@ -624,3 +635,69 @@ number ordering.
     ...     server_url=server_url)
     >>> pofile_view.initialize()
 
+== Sharing and diverging messages ==
+
+When there is an existing shared translation, one gets an option
+to diverge it when on a zoomed-in view (when looking that particular
+message).
+
+    >>> pofile = factory.makePOFile('sr')
+    >>> potemplate = pofile.potemplate
+    >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
+    >>> translationmessage = factory.makeTranslationMessage(
+    ...     potmsgset=potmsgset, translations = [u"shared translation"])
+    >>> translationmessage.setPOFile(pofile)
+    >>> server_url = '/'.join(
+    ...     [canonical_url(translationmessage), '+translate'])
+    >>> translationmessage_page_view = create_view(
+    ...     translationmessage, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> translationmessage_page_view.initialize()
+    >>> subview = translationmessage_page_view.translationmessage_view
+    >>> subview.initialize()
+    >>> subview.zoomed_in_view
+    True
+    >>> subview.allow_diverging
+    True
+
+A shared translation is not explicitely shown, since the current one is
+the shared translation.
+
+    >>> print subview.shared_translationmessage
+    None
+
+When looking at the entire POFile, diverging is not allowed.
+
+    >>> server_url = '/'.join(
+    ...     [canonical_url(pofile), '+translate'])
+    >>> pofile_view = create_view(
+    ...     pofile, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pofile_view.initialize()
+    >>> subview = pofile_view.translationmessage_views[0]
+    >>> subview.initialize()
+    >>> subview.zoomed_in_view
+    False
+    >>> subview.allow_diverging
+    False
+
+With a diverged translation, the shared translation is explicitely offered
+among one of the suggestions, and we are not offered to diverge the
+translation further, since it's already diverged.
+
+    >>> diverged_message = factory.makeTranslationMessage(
+    ...     potmsgset=potmsgset, translations = [u"diverged translation"],
+    ...     force_diverged=True)
+    >>> diverged_message.setPOFile(pofile)
+    >>> translationmessage_page_view = create_view(
+    ...     diverged_message, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> translationmessage_page_view.initialize()
+    >>> subview = translationmessage_page_view.translationmessage_view
+    >>> subview.initialize()
+    >>> subview.zoomed_in_view
+    True
+    >>> subview.allow_diverging
+    False
+    >>> subview.shared_translationmessage == translationmessage
+    True

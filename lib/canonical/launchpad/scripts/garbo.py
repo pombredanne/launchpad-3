@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
 
@@ -48,8 +49,9 @@ class TunableLoop:
     maximum_chunk_size = None # Override
     cooldown_time = 0
 
-    def __init__(self, log):
+    def __init__(self, log, abort_time=None):
         self.log = log
+        self.abort_time = abort_time
 
     def run(self):
         assert self.maximum_chunk_size is not None, (
@@ -58,7 +60,8 @@ class TunableLoop:
             self, self.goal_seconds,
             minimum_chunk_size = self.minimum_chunk_size,
             maximum_chunk_size = self.maximum_chunk_size,
-            cooldown_time = self.cooldown_time).run()
+            cooldown_time = self.cooldown_time,
+            abort_time = self.abort_time).run()
 
 
 class OAuthNoncePruner(TunableLoop):
@@ -68,8 +71,8 @@ class OAuthNoncePruner(TunableLoop):
     """
     maximum_chunk_size = 6*60*60 # 6 hours in seconds.
 
-    def __init__(self, log):
-        super(OAuthNoncePruner, self).__init__(log)
+    def __init__(self, log, abort_time=None):
+        super(OAuthNoncePruner, self).__init__(log, abort_time)
         self.store = IMasterStore(OAuthNonce)
         self.oldest_age = self.store.execute("""
             SELECT COALESCE(EXTRACT(EPOCH FROM
@@ -104,8 +107,8 @@ class OpenIDConsumerNoncePruner(TunableLoop):
     """
     maximum_chunk_size = 6*60*60 # 6 hours in seconds.
 
-    def __init__(self, log):
-        super(OpenIDConsumerNoncePruner, self).__init__(log)
+    def __init__(self, log, abort_time=None):
+        super(OpenIDConsumerNoncePruner, self).__init__(log, abort_time)
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self.earliest_timestamp = self.store.find(
             Min(OpenIDConsumerNonce.timestamp)).one()
@@ -141,8 +144,8 @@ class OpenIDAssociationPruner(TunableLoop):
 
     _num_removed = None
 
-    def __init__(self, log):
-        super(OpenIDAssociationPruner, self).__init__(log)
+    def __init__(self, log, abort_time=None):
+        super(OpenIDAssociationPruner, self).__init__(log, abort_time)
         self.store = getUtility(IStoreSelector).get(
             self.store_name, MASTER_FLAVOR)
 
@@ -195,8 +198,8 @@ class CodeImportResultPruner(TunableLoop):
     CodeImport.
     """
     maximum_chunk_size = 1000
-    def __init__(self, log):
-        super(CodeImportResultPruner, self).__init__(log)
+    def __init__(self, log, abort_time=None):
+        super(CodeImportResultPruner, self).__init__(log, abort_time)
         self.store = IMasterStore(CodeImportResult)
 
         self.min_code_import = self.store.find(
@@ -253,8 +256,8 @@ class RevisionAuthorEmailLinker(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self, log):
-        super(RevisionAuthorEmailLinker, self).__init__(log)
+    def __init__(self, log, abort_time=None):
+        super(RevisionAuthorEmailLinker, self).__init__(log, abort_time)
         self.author_store = IMasterStore(RevisionAuthor)
         self.email_store = IMasterStore(EmailAddress)
 
@@ -311,8 +314,8 @@ class HWSubmissionEmailLinker(TunableLoop):
     linked to the same.
     """
     maximum_chunk_size = 50000
-    def __init__(self, log):
-        super(HWSubmissionEmailLinker, self).__init__(log)
+    def __init__(self, log, abort_time=None):
+        super(HWSubmissionEmailLinker, self).__init__(log, abort_time)
         self.submission_store = IMasterStore(HWSubmission)
         self.submission_store.execute(
             "DROP TABLE IF EXISTS NewlyMatchedSubmission")
@@ -372,8 +375,8 @@ class MailingListSubscriptionPruner(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self, log):
-        super(MailingListSubscriptionPruner, self).__init__(log)
+    def __init__(self, log, abort_time=None):
+        super(MailingListSubscriptionPruner, self).__init__(log, abort_time)
         self.subscription_store = IMasterStore(MailingListSubscription)
         self.email_store = IMasterStore(EmailAddress)
 
@@ -415,8 +418,8 @@ class PersonPruner(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self, log):
-        super(PersonPruner, self).__init__(log)
+    def __init__(self, log, abort_time=None):
+        super(PersonPruner, self).__init__(log, abort_time)
         self.offset = 0
         self.store = IMasterStore(Person)
         self.log.debug("Creating LinkedPeople temporary table.")
@@ -479,7 +482,11 @@ class PersonPruner(TunableLoop):
         self.log.debug("Counting UnlinkedPeople.")
         self.max_offset = self.store.execute(
             "SELECT MAX(id) FROM UnlinkedPeople").get_one()[0]
-        self.log.info("%d Person records to remove.")
+        if self.max_offset is None:
+            self.max_offset = -1 # Trigger isDone() now.
+            self.log.debug("No Person records to remove.")
+        else:
+            self.log.info("%d Person records to remove." % self.max_offset)
         # Don't keep any locks open - we might block.
         transaction.commit()
 
@@ -549,19 +556,44 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         self.parser.add_option("-x", "--experimental", dest="experimental",
             default=False, action="store_true",
             help="Run experimental jobs. Normally this is just for staging.")
+        self.parser.add_option("--abort-script",
+            dest="abort_script", default=None, action="store", type="int",
+            metavar="SECS", help="Abort script after SECS seconds.")
+        self.parser.add_option("--abort-task",
+            dest="abort_task", default=None, action="store", type="int",
+            metavar="SECS", help="Abort a task if it runs over SECS seconds.")
 
     def main(self):
+        start_time = time.time()
         failure_count = 0
+
         if self.options.experimental:
             tunable_loops = (
                 self.tunable_loops + self.experimental_tunable_loops)
         else:
             tunable_loops = self.tunable_loops
+
+        a_very_long_time = 31536000 # 1 year
+        abort_task = self.options.abort_task or a_very_long_time
+        abort_script = self.options.abort_script or a_very_long_time
+
         for tunable_loop in tunable_loops:
             self.logger.info("Running %s" % tunable_loop.__name__)
-            tunable_loop = tunable_loop(log=self.logger)
+
+            if abort_script <= 0:
+                self.logger.warn(
+                    "Script aborted after %d seconds." % abort_script)
+                break
+
+            abort_time = min(
+                abort_task, abort_script + start_time - time.time())
+
+            tunable_loop = tunable_loop(
+                abort_time=abort_time, log=self.logger)
+
             if self._maximum_chunk_size is not None:
                 tunable_loop.maximum_chunk_size = self._maximum_chunk_size
+
             try:
                 tunable_loop.run()
             except (KeyboardInterrupt, SystemExit):
@@ -588,6 +620,11 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ]
     experimental_tunable_loops = []
 
+    def add_my_options(self):
+        super(HourlyDatabaseGarbageCollector, self).add_my_options()
+        # By default, abort any tunable loop taking more than 15 minutes.
+        self.parser.set_defaults(abort_task=900)
+
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-daily'
@@ -600,3 +637,9 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     experimental_tunable_loops = [
         PersonPruner,
         ]
+
+    def add_my_options(self):
+        super(DailyDatabaseGarbageCollector, self).add_my_options()
+        # Abort script after 24 hours by default.
+        self.parser.set_defaults(abort_script=86400)
+

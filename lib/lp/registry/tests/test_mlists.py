@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test mailing list stuff."""
 
@@ -21,6 +22,8 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.mlistimport import Importer
+from lp.registry.interfaces.person import (
+    PersonVisibility, TeamSubscriptionPolicy)
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import (
     AppServerLayer, DatabaseFunctionalLayer, LayerProcessController)
@@ -50,8 +53,7 @@ class BaseMailingListImportTest(unittest.TestCase):
         self.dave = factory.makePersonByName('Dave')
         self.elly = factory.makePersonByName('Elly')
         self.teamowner = factory.makePersonByName('Teamowner')
-        self.team, self.mailing_list = factory.makeTeamAndMailingList(
-            'aardvarks', 'teamowner')
+        self._makeList('aardvarks', 'teamowner')
         # A temporary filename for some of the tests.
         fd, self.filename = tempfile.mkstemp()
         os.close(fd)
@@ -64,6 +66,10 @@ class BaseMailingListImportTest(unittest.TestCase):
         except OSError, error:
             if error.errno != errno.ENOENT:
                 raise
+
+    def _makeList(self, name, owner):
+        self.team, self.mailing_list = factory.makeTeamAndMailingList(
+            name, owner)
 
     def writeFile(self, *addresses):
         # Write the addresses to import to our open temporary file.
@@ -460,6 +466,35 @@ class TestMailingListImportScript(BaseMailingListImportTest):
             'dave joined aardvarks',
             'elly joined aardvarks',
             ])
+
+
+class TestImportToRestrictedList(BaseMailingListImportTest):
+    """Test import to a restricted team's mailing list."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _makeList(self, name, owner):
+        self.team, self.mailing_list = factory.makeTeamAndMailingList(
+            name, owner,
+            visibility=PersonVisibility.PRIVATE_MEMBERSHIP,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+
+    def test_simple_import_membership(self):
+        # Test the import of a list/team membership to a restricted, private
+        # membership team.
+        importer = Importer('aardvarks')
+        importer.importAddresses((
+            'anne.person@example.com',
+            'bperson@example.org',
+            'cris.person@example.com',
+            'dperson@example.org',
+            'elly.person@example.com',
+            ))
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'anne.person@example.com', u'bperson@example.org',
+            u'cris.person@example.com', u'dperson@example.org',
+            u'elly.person@example.com')
 
 
 def test_suite():

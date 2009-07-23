@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -208,10 +210,13 @@ class POTMsgSet(SQLBase):
                 'There is already a translation message in our database.')
         return DummyTranslationMessage(pofile, self)
 
-    def _getUsedTranslationMessage(
-        self, potemplate, language, variant, current=True):
+    def _getUsedTranslationMessage(self, potemplate, language, variant,
+                                   current=True):
         """Get a translation message which is either used in
-        Launchpad (current=True) or in an import (current=False)."""
+        Launchpad (current=True) or in an import (current=False).
+        
+        Prefers a diverged message if present.
+        """
         # Change 'is_current IS TRUE' and 'is_imported IS TRUE' conditions
         # carefully: they need to match condition specified in indexes,
         # or Postgres may not pick them up (in complicated queries,
@@ -237,17 +242,12 @@ class POTMsgSet(SQLBase):
             clauses.append(
                 'TranslationMessage.variant=%s' % sqlvalues(variant))
 
-        # This returns at most two messages:
-        # 1. a current translation for this particular potemplate.
-        # 2. a shared current translation for this.
-        messages = list(TranslationMessage.select(
-            ' AND '.join(clauses),
-            orderBy=['-COALESCE(potemplate, -1)']))
-        if len(messages) > 0:
-            return messages[0]
-        else:
-            return None
+        order_by = '-COALESCE(potemplate, -1)'
 
+        # This should find at most two messages: zero or one shared
+        # message, and zero or one diverged one.
+        return TranslationMessage.selectFirst(
+            ' AND '.join(clauses), orderBy=[order_by])
 
     def getCurrentTranslationMessage(self, potemplate,
                                      language, variant=None):
@@ -479,12 +479,8 @@ class POTMsgSet(SQLBase):
                 translations[pluralform] is not None):
                 translation = translations[pluralform]
                 # Find or create a POTranslation for the specified text
-                try:
-                    potranslations[pluralform] = (
-                        POTranslation.byTranslation(translation))
-                except SQLObjectNotFound:
-                    potranslations[pluralform] = (
-                        POTranslation(translation=translation))
+                potranslations[pluralform] = (
+                    POTranslation.getOrCreateTranslation(translation))
             else:
                 potranslations[pluralform] = None
         return potranslations
@@ -586,33 +582,6 @@ class POTMsgSet(SQLBase):
                     pofile.lasttranslator = submitter
                     pofile.date_changed = UTC_NOW
 
-                if imported_message is not None:
-                    # Unmark previous imported translation as 'imported'.
-                    was_diverged_to = imported_message.potemplate
-                    if (was_diverged_to is not None or
-                        (was_diverged_to is None and
-                         new_message == current_message and
-                         new_message.potemplate is not None)):
-                        # If imported message was diverged,
-                        # or if it was shared, but there was
-                        # a diverged current message that is
-                        # now being imported, previous imported
-                        # message is neither imported nor current
-                        # anymore.
-                        imported_message.is_imported = False
-                        imported_message.is_current = False
-                        imported_message.potemplate = None
-                    if not (force_diverged or force_shared):
-                        # If there was an imported message, keep the same
-                        # divergence/shared state unless something was forced.
-                        if (new_message.is_imported and
-                            new_message.potemplate is None):
-                            # If we are reverting imported message to
-                            # a shared imported message, do not
-                            # set it as diverged anymore.
-                            was_diverged_to = None
-                        new_message.potemplate = was_diverged_to
-
         else:
             # Non-imported translations.
             make_current = True
@@ -644,6 +613,36 @@ class POTMsgSet(SQLBase):
                 pofile.date_changed = UTC_NOW
                 pofile.lasttranslator = submitter
 
+        unmark_imported = (make_current and
+                           imported_message is not None and
+                           (is_imported or imported_message == new_message))
+        if unmark_imported:
+            # Unmark previous imported translation as 'imported'.
+            was_diverged_to = imported_message.potemplate
+            if (was_diverged_to is not None or
+                (was_diverged_to is None and
+                 new_message == current_message and
+                 new_message.potemplate is not None)):
+                # If imported message was diverged,
+                # or if it was shared, but there was
+                # a diverged current message that is
+                # now being imported, previous imported
+                # message is neither imported nor current
+                # anymore.
+                imported_message.is_imported = False
+                imported_message.is_current = False
+                imported_message.potemplate = None
+            if not (force_diverged or force_shared):
+                # If there was an imported message, keep the same
+                # divergence/shared state unless something was forced.
+                if (new_message.is_imported and
+                    new_message.potemplate is None):
+                    # If we are reverting imported message to
+                    # a shared imported message, do not
+                    # set it as diverged anymore.
+                    was_diverged_to = None
+                new_message.potemplate = was_diverged_to
+
         # Change actual is_current flag only if it validates ok.
         if new_message.validation_status == TranslationValidationStatus.OK:
             if make_current:
@@ -667,7 +666,7 @@ class POTMsgSet(SQLBase):
                 new_message.is_current = True
             else:
                 new_message.potemplate = None
-        if is_imported:
+        if is_imported or new_message == imported_message:
             new_message.is_imported = True
 
 
@@ -753,7 +752,8 @@ class POTMsgSet(SQLBase):
         matching_message = self._findTranslationMessage(
             pofile, potranslations, pofile.plural_forms)
 
-        if is_imported:
+        if is_imported or (matching_message is not None and
+                           matching_message.is_imported):
             imported_message = self.getImportedTranslationMessage(
                 pofile.potemplate, pofile.language, pofile.variant)
         else:

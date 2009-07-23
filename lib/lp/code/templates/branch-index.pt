@@ -23,6 +23,10 @@
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/branchsubscription.js">
   </script>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/branchlinks.js">
+  </script>
 </metal:block>
 
 <body>
@@ -393,18 +397,24 @@
 
   <div id="related-bugs-and-blueprints">
     <h2>Linked bug reports and blueprints</h2>
-    <div class="actions">
+    <div id="buglinks" class="actions">
       <tal:bugs tal:define="branch context;
                             show_edit python:True;">
         <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
       </tal:bugs>
+
       <div
         tal:define="link context_menu/link_bug"
         tal:condition="link/enabled"
-        tal:content="structure link/render">
-        Link to a bug
+        >
+        <a id="linkbug"
+           class="sprite add"
+           tal:attributes="href link/url"
+           tal:content="link/text" />
       </div>
+
     </div>
+
     <div class="actions">
       <tal:blueprints tal:define="branch context;
                                   show_edit python:True;">
@@ -418,8 +428,38 @@
         Link to a blueprint
       </div>
     </div>
+    <tal:script
+      replace="structure
+      string:&lt;script id='branchlink-script' type='text/javascript'&gt;" />
+      <!--
+
+      YUI().use('io-base', 'code.branchlinks', function(Y) {
+
+      if(Y.UA.ie) {
+          return;
+      }
+
+      Y.on('domready', function() {
+          Y.code.branchlinks.connect_branchlinks();
+      });
+
+      });
+      -->
+    <tal:script replace="structure string:&lt;/script&gt;" />
+
   </div>
 
+  <div
+    id="translations-sources"
+    tal:define="translations_sources view/translations_sources"
+    tal:condition="translations_sources">
+    <h2>Automatic translations commits</h2>
+    <ul>
+      <tal:sources-list repeat="source translations_sources">
+        <li tal:content="structure source/fmt:link">~foo/example/branch</li>
+      </tal:sources-list>
+    </ul>
+  </div>
 
   <div id="recent-revisions">
   <h2 style="clear: both">Recent revisions</h2>

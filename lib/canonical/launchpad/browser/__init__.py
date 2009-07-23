@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0401
 
 """Launchpad Browser-Interface View classes.
@@ -11,7 +13,6 @@ files in this directory.
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
 from lp.soyuz.browser.archive import *
-from canonical.launchpad.browser.authtoken import *
 from lp.code.browser.bazaar import *
 from lp.soyuz.browser.binarypackagerelease import *
 from canonical.launchpad.browser.bounty import *

@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # XXX: Gavin Panella 2008-11-21 bug=300725: This module need
 # refactoring and/or splitting into a package or packages.
@@ -26,7 +27,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.adapters.bugchange import get_bug_changes
+from lp.bugs.adapters.bugchange import BugDuplicateChange, get_bug_changes
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 from canonical.launchpad.interfaces import (
@@ -721,7 +722,16 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
         #     This if..else should be removed once the new BugChange API
         #     is complete and ubiquitous.
         if IBugChange.providedBy(change):
-            bug_delta.bug.addChange(change, recipients=recipients)
+            if isinstance(change, BugDuplicateChange):
+                no_dupe_master_recipients = (
+                    bug_delta.bug.getBugNotificationRecipients(
+                        old_bug=bug_delta.bug_before_modification,
+                        level=BugNotificationLevel.METADATA,
+                        include_master_dupe_subscribers=False))
+                bug_delta.bug.addChange(
+                    change, recipients=no_dupe_master_recipients)
+            else:
+                bug_delta.bug.addChange(change, recipients=recipients)
         else:
             bug_delta.bug.addChangeNotification(
                 change, person=bug_delta.user, recipients=recipients)

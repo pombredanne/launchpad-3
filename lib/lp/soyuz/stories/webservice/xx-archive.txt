@@ -118,8 +118,8 @@ where `item` is a component or a source package name.
 
 This is a permission that allows a team to upload to a component:
 
-    >>> ubuntu_main_permission = webservice.get(
-    ...     "/ubuntu/+archive/primary/+upload/ubuntu-team.main").jsonBody()
+    >>> url = '/ubuntu/+archive/primary/+upload/ubuntu-team?type=component&item=main'
+    >>> ubuntu_main_permission = webservice.get(url).jsonBody()
     >>> pprint_entry(ubuntu_main_permission)
     archive_link: u'http://.../ubuntu/+archive/primary'
     component_name: u'main'
@@ -127,14 +127,13 @@ This is a permission that allows a team to upload to a component:
     permission: u'Archive Upload Rights'
     person_link: u'http://.../~ubuntu-team'
     resource_type_link: ...
-    self_link: u'http://.../ubuntu/+archive/primary/+upload/ubuntu-team.main'
+    self_link: u'http://.../ubuntu/+archive/primary/+upload/ubuntu-team?type=component&item=main'
     source_package_name: None
 
 This is a permission that allows an individual to upload a source package.
 
-    >>> carlos_mozilla_permission = webservice.get(
-    ...     "/ubuntu/+archive/primary/"
-    ...     "+upload/carlos.mozilla-firefox").jsonBody()
+    >>> url = '/ubuntu/+archive/primary/+upload/carlos?type=packagename&item=mozilla-firefox'
+    >>> carlos_mozilla_permission = webservice.get(url).jsonBody()
     >>> pprint_entry(carlos_mozilla_permission)
     archive_link: u'http://.../ubuntu/+archive/primary'
     component_name: None
@@ -143,13 +142,13 @@ This is a permission that allows an individual to upload a source package.
     person_link: u'http://.../~carlos'
     resource_type_link: ...
     self_link:
-        u'http://.../ubuntu/+archive/primary/+upload/carlos.mozilla-firefox'
+        u'http://.../ubuntu/+archive/primary/+upload/carlos?type=packagename&item=mozilla-firefox'
     source_package_name: u'mozilla-firefox'
 
 This is a queue admin right for ubuntu-team:
 
-    >>> ubuntu_main_permission = webservice.get(
-    ...     "/ubuntu/+archive/primary/+queue-admin/ubuntu-team.main").jsonBody()
+    >>> url = '/ubuntu/+archive/primary/+queue-admin/ubuntu-team?type=component&item=main'
+    >>> ubuntu_main_permission = webservice.get(url).jsonBody()
     >>> pprint_entry(ubuntu_main_permission)
     archive_link: u'http://.../ubuntu/+archive/primary'
     component_name: u'main'
@@ -158,13 +157,13 @@ This is a queue admin right for ubuntu-team:
     person_link: u'http://.../~ubuntu-team'
     resource_type_link: ...
     self_link:
-        u'http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team.main'
+        u'http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team?type=component&item=main'
     source_package_name: None
 
 And one for an individual:
 
-    >>> name16_admin_permission = webservice.get(
-    ...     "/ubuntu/+archive/primary/+queue-admin/name12.universe").jsonBody()
+    >>> url = '/ubuntu/+archive/primary/+queue-admin/name12?type=component&item=universe'
+    >>> name16_admin_permission = webservice.get(url).jsonBody()
     >>> pprint_entry(name16_admin_permission)
     archive_link: u'http://.../ubuntu/+archive/primary'
     component_name: u'universe'
@@ -173,7 +172,7 @@ And one for an individual:
     person_link: u'http://.../~name12'
     resource_type_link: ...
     self_link:
-        u'http://.../ubuntu/+archive/primary/+queue-admin/name12.universe'
+        u'http://.../ubuntu/+archive/primary/+queue-admin/name12?type=component&item=universe'
     source_package_name: None
 
 
@@ -242,7 +241,7 @@ a person to upload a package.
     >>> new_permission = webservice.get(
     ...     response.getHeader('Location')).jsonBody()
     >>> print new_permission['self_link']
-    http://.../ubuntu/+archive/primary/+upload/name12.mozilla-firefox
+    http://.../ubuntu/+archive/primary/+upload/name12?type=packagename&item=mozilla-firefox
 
     >>> show_mozilla_permissions()
     Archive Upload Rights ...~carlos None mozilla-firefox
@@ -303,7 +302,7 @@ component.
     >>> new_permission = webservice.get(
     ...     response.getHeader('Location')).jsonBody()
     >>> print new_permission['self_link']
-    http://.../ubuntu/+archive/primary/+upload/name12.restricted
+    http://.../ubuntu/+archive/primary/+upload/name12?type=component&item=restricted
 
     >>> show_component_permissions()
     Archive Upload Rights ...~name12 restricted None
@@ -322,6 +321,13 @@ the 'main' component, or an error is returned:
     ...
     InvalidComponent: Component for PPAs should be 'main'
     <BLANKLINE>
+
+    >>> response = webservice.named_post(
+    ...     cprov_archive['self_link'], 'newComponentUploader', {},
+    ...     person=name12['self_link'], component_name='main')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
 
 deleteComponentUploader() removes that permission:
 
@@ -381,7 +387,7 @@ queues in a particular component.
     >>> new_permission = webservice.get(
     ...     response.getHeader('Location')).jsonBody()
     >>> print new_permission['self_link']
-    http://.../ubuntu/+archive/primary/+queue-admin/name12.partner
+    http://.../ubuntu/+archive/primary/+queue-admin/name12?type=component&item=partner
 
     >>> show_components_for_admin(name12)
     Queue Administration Rights ...~name12 main None
@@ -406,6 +412,47 @@ And we can see that it's gone:
     Queue Administration Rights ...~name12 multiverse None
     Queue Administration Rights ...~name12 restricted None
     Queue Administration Rights ...~name12 universe None
+
+
+== Malformed archive permission URLs ==
+
+Malformed URLs are handled reasonably well.
+
+The type of item for which we seek the archive permission is missing. The
+latter can thus not be found.
+
+    >>> missing_type_url = '/ubuntu/+archive/primary/+upload/name12?item=firefox'
+    >>> this_will_fail = webservice.get(missing_type_url)
+    >>> print this_will_fail.getOutput()
+    HTTP/1.1 404 Not Found
+    ...
+
+The ultimate item type ('Integer') is wrong. The archive permission is hence
+not found.
+
+    >>> wrong_type_url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=firefox&type=Integer'
+    >>> this_will_fail = webservice.get(missing_type_url)
+    >>> print this_will_fail.getOutput()
+    HTTP/1.1 404 Not Found
+    ...
+
+The item name is missing. The archive permission is hence not found.
+
+    >>> missing_item_url = '/ubuntu/+archive/primary/+upload/name12?type=packageset'
+    >>> this_will_fail = webservice.get(missing_type_url)
+    >>> print this_will_fail.getOutput()
+    HTTP/1.1 404 Not Found
+    ...
+
+The ultimate item name ('vapourware') is wrong. The archive permission is hence
+not found.
+
+    >>> wrong_type_url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=firefox&item=vapourware'
+    >>> this_will_fail = webservice.get(missing_type_url)
+    >>> print this_will_fail.getOutput()
+    HTTP/1.1 404 Not Found
+    ...
+
 
 = Getting Build counts for an IArchive =
 
@@ -787,33 +834,47 @@ admins and commercial admins.
     <BLANKLINE>
 
 
-=== Copy privacy mismatch ===
+=== Copying private file to public archives ===
 
-A CannotCopy error, giving the reason "Cannot copy private source into
-public archives." is raised if such operation is requested.
+Copying private sources to public archives works fine with
+`syncSource` or `syncSources` operations.
 
-When we try to copy the private source to the primary archive, which
-is public, the 'privacy mismatch' error is raised. The behaviour is
-the same for `syncSource` or `syncSources` operations.
+We use `syncSource` to copy 'private - 1.0' source from Celso's
+private PPA to the ubuntu primary archive.
 
     >>> print cprov_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSource', {},
-    ...     source_name='private', version="1.0", to_pocket='release',
+    ...     source_name='private', version='1.0', to_pocket='release',
     ...     from_archive=cprov_archive['self_link'],
     ...     to_series="hoary")
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 200 Ok
     ...
-    CannotCopy: private 1.0 in hoary
-    (cannot copy private files into public archives)
-    <BLANKLINE>
+
+In the same way we can use 'syncSources' for syncing an subsequent
+version.
+
+    >>> login('foo.bar@canonical.com')
+    >>> unused = test_publisher.getPubSource(
+    ...     sourcename="private", version="1.1", archive=cprov.archive)
+    >>> logout()
 
     >>> print cprov_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSources', {},
     ...     source_names=['private'], to_pocket='release',
     ...     from_archive=cprov_archive['self_link'],
     ...     to_series="hoary")
+    HTTP/1.1 200 Ok
+    ...
+
+Although if we try to copy an old version, by repeating the copy an
+error is returned.
+
+    >>> print cprov_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSource', {},
+    ...     source_name='private', version='1.1', to_pocket='release',
+    ...     from_archive=cprov_archive['self_link'],
+    ...     to_series="hoary")
     HTTP/1.1 400 Bad Request
     ...
-    CannotCopy: private 1.0 in hoary
-    (cannot copy private files into public archives)
-    <BLANKLINE>
+    CannotCopy: private 1.1 in hoary
+    (same version already uploaded and waiting in ACCEPTED queue)

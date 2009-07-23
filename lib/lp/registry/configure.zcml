@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -1297,10 +1301,13 @@
             interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="product name owner driver summary branch                                                                                                                 status releasefileglob                                                                                                                        translations_autoimport_mode"/>
+            set_attributes="product name owner driver summary branch
+                            translations_branch status releasefileglob
+                            translations_autoimport_mode"/>
         <require
             permission="launchpad.AnyPerson"
-            set_attributes="importstatus rcstype cvsroot cvsmodule                                                                 cvstarfileurl cvsbranch svnrepository"/>
+            set_attributes="importstatus rcstype cvsroot cvsmodule
+                            cvstarfileurl cvsbranch svnrepository"/>
 
         <!-- IStructuralSubscriptionTarget -->
 

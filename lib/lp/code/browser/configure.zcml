@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -504,14 +508,14 @@
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.AddBranchVisibilityTeamPolicyView"
-        permission="launchpad.Admin"
+        permission="launchpad.Commercial"
         template="../templates/branch-visibility-edit.pt"/>
     <browser:page
         name="+removebranchvisibilitypolicy"
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
-        permission="launchpad.Admin"
+        permission="launchpad.Commercial"
         template="../templates/branch-visibility-edit.pt"/>
     <browser:page
         name="+spark"

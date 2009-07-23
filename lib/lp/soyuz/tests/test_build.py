@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test Build features."""
 
 import unittest
@@ -103,18 +105,22 @@ class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
         # Create three builds for the publisher's default
         # distroseries.
         self.builds = []
+        self.sources = []
         gedit_src_hist = self.publisher.getPubSource(
             sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
         self.builds += gedit_src_hist.createMissingBuilds()
+        self.sources.append(gedit_src_hist)
 
         firefox_src_hist = self.publisher.getPubSource(
             sourcename="firefox", status=PackagePublishingStatus.PUBLISHED)
         self.builds += firefox_src_hist.createMissingBuilds()
+        self.sources.append(firefox_src_hist)
 
         gtg_src_hist = self.publisher.getPubSource(
             sourcename="getting-things-gnome",
             status=PackagePublishingStatus.PUBLISHED)
         self.builds += gtg_src_hist.createMissingBuilds()
+        self.sources.append(gtg_src_hist)
 
 
 class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):

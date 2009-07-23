@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -192,6 +196,7 @@
         set_attributes="whiteboard merged_revno commit_message                                                                                                 root_message_id review_diff"
         attributes="
                     deleteProposal
+                    setStatus
                     setAsWorkInProgress
                     requestReview
                     approveBranch
@@ -383,6 +388,8 @@
                     canBeDeleted
                     deletionRequirements
                     associatedProductSeries
+                    getProductSeriesPushingTranslations
+                    associatedSuiteSourcePackages
                     subscribe
                     getSubscription
                     hasSubscription

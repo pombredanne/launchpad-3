@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd. All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Migrate KDE POTemplates to native support for plural forms and context ."""
 
@@ -49,7 +50,8 @@ def find_existing_translation(potmsgset, pofile, potranslations):
     unprotected_potmsgset = removeSecurityProxy(potmsgset)
     existing_message = (
         unprotected_potmsgset._findTranslationMessage(
-            pofile, potranslations, TranslationConstants.MAX_PLURAL_FORMS))
+            pofile=pofile, potranslations=potranslations,
+            pluralforms=TranslationConstants.MAX_PLURAL_FORMS))
     return existing_message
 
 

@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
 
@@ -32,7 +33,6 @@ __all__ = [
     'ProductSetReviewLicensesView',
     'ProductSetView',
     'ProductSpecificationsMenu',
-    'ProductTranslationsMenu',
     'ProductView',
     'SortSeriesMixin',
     'ProjectAddStepOne',
@@ -88,7 +88,6 @@ from lp.registry.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -108,7 +107,6 @@ from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import (
     LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
-from lp.registry.model.productseries import ProductSeries
 
 
 OR = '|'
@@ -506,45 +504,6 @@ class ProductBountiesMenu(ApplicationMenu):
         return Link('+linkbounty', text, icon='edit')
 
 
-class ProductTranslationsMenu(NavigationMenu):
-
-    usedfor = IProduct
-    facet = 'translations'
-    links = (
-        'overview',
-        'translators',
-        'translationdownload',
-        'imports',
-        )
-
-    def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
-
-    @enabled_with_permission('launchpad.Edit')
-    def translators(self):
-        text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
-
-    @enabled_with_permission('launchpad.AnyPerson')
-    def translationdownload(self):
-        text = 'Download'
-        preferred_series = self.context.primary_translatable
-        enabled = (self.context.official_rosetta and
-            preferred_series is not None)
-        link = ''
-        if enabled:
-            link = '%s/+export' % preferred_series.name
-            text = 'Download "%s"' % preferred_series.name
-
-        return Link(link, text, icon='download', enabled=enabled)
-
-    def overview(self):
-        text = 'Overview'
-        link = canonical_url(self.context, rootsite='translations')
-        return Link(link, text, icon='translation')
-
-
 def _sort_distros(a, b):
     """Put Ubuntu first, otherwise in alpha order."""
     if a['name'] == 'ubuntu':
@@ -773,20 +732,20 @@ class ProductDownloadFileMixin:
         # Get all of the releases for all of the serieses in a single
         # query.  The query sorts the releases properly so we know the
         # resulting list is sorted correctly.
-        release_set = getUtility(IProductReleaseSet)
         release_by_id = {}
-        releases = release_set.getReleasesForSerieses(
-            product_with_series.serieses)
-        for release in releases:
+        milestones_and_releases = list(
+            original_product.getMilestonesAndReleases())
+        for milestone, release in milestones_and_releases:
             series = product_with_series.getSeriesById(
-                release.productseries.id)
+                milestone.productseries.id)
             decorated_release = ReleaseWithFiles(release)
             series.addRelease(decorated_release)
             release_by_id[release.id] = decorated_release
 
         # Get all of the files for all of the releases.  The query
         # returns all releases sorted properly.
-        files = release_set.getFilesForReleases(releases)
+        releases = [release for milestone, release in milestones_and_releases]
+        files = getUtility(IProductReleaseSet).getFilesForReleases(releases)
         for file in files:
             release = release_by_id[file.productrelease.id]
             release.addFile(file)
@@ -919,36 +878,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return (self.context.homepageurl and
                 self.context.homepageurl not in
                     [self.freshmeat_url, self.sourceforge_url])
-
-    @cachedproperty
-    def uses_translations(self):
-        """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and self.primary_translatable)
-
-    @cachedproperty
-    def primary_translatable(self):
-        """Return a dictionary with the info for a primary translatable.
-
-        If there is no primary translatable object, returns an empty
-        dictionary.
-
-        The dictionary has the keys:
-         * 'title': The title of the translatable object.
-         * 'potemplates': a set of PO Templates for this object.
-         * 'base_url': The base URL to reach the base URL for this object.
-        """
-        translatable = self.context.primary_translatable
-        naked_translatable = removeSecurityProxy(translatable)
-
-        if (translatable is None or
-            not isinstance(naked_translatable, ProductSeries)):
-            return {}
-
-        return {
-            'title': translatable.title,
-            'potemplates': translatable.getCurrentTranslationTemplates(),
-            'base_url': canonical_url(translatable)
-            }
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -1195,11 +1124,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return self.next_url
-
-
-class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
-    label = "Select a new translation group"
-    field_names = ["translationgroup", "translationpermission"]
 
 
 class ProductAdminView(ProductEditView):
