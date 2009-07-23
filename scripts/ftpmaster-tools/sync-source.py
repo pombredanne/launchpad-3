@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
-# Copyright (C) 2005, 2008  Canonical Software Ltd.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # <james.troup@canonical.com>
 # pylint: disable-msg=W0403
 

@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0102
 
 __metaclass__ = type
@@ -1076,6 +1078,31 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         self.assertEquals(potmsgsets,
                           [self.potmsgset1, self.potmsgset2])
 
+    def test_findPOTMsgSetsContaining_ordering(self):
+        # As per bug 388473 findPOTMsgSetsContaining still used the old
+        # potmsgset.sequence for ordering. Check that this is fixed.
+        # This test will go away when potmsgset.sequence goes away.
+
+        # Give the method something to search for.
+        translation1 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset1,
+            translations=["Shared translation"])
+        translation2 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset2,
+            translations=["Another shared translation"])
+
+        # Mess with potmsgset.sequence.
+        removeSecurityProxy(self.potmsgset1).sequence = 2
+        removeSecurityProxy(self.potmsgset2).sequence = 1
+
+        potmsgsets = list(
+            self.devel_sr_pofile.findPOTMsgSetsContaining("translation"))
+
+        # Order ignores potmsgset.sequence.
+        self.assertEquals([self.potmsgset1, self.potmsgset2],
+                          potmsgsets)
 
 
 class TestPOFileStatistics(TestCaseWithFactory):

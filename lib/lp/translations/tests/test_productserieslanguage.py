@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -87,20 +88,14 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
         self.assertEquals(sr_psl.language, serbian)
         self.assertEquals(sr_psl.pofile, None)
 
-        # Only this POFile is returned by `pofiles` property, but
-        # a DummyPOFile is included for the other template in
-        # `pofiles_or_dummies` (ordered by descending priority).
+        # Only this POFile is returned by the `pofiles` property.
         self.assertEquals(list(sr_psl.pofiles), [pofile1])
-        self.assertEquals(len(sr_psl.pofiles_or_dummies), 2)
-        self.assertEquals(sr_psl.pofiles_or_dummies[1], pofile1)
 
         # If we provide a POFile for the other template, `pofiles`
-        # and `pofiles_or_dummies` return them both (ordered by
-        # decreasing priority).
+        # returns both (ordered by decreasing priority).
         pofile2 = self.factory.makePOFile(serbian.code, potemplate2)
         sr_psl = self.productseries.productserieslanguages[0]
         self.assertEquals(list(sr_psl.pofiles), [pofile2, pofile1])
-        self.assertEquals(list(sr_psl.pofiles_or_dummies), [pofile2, pofile1])
 
 
 class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):

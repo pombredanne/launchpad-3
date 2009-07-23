@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchivePermission."""
 
@@ -317,7 +318,8 @@ class ArchivePermissionSet:
         """Helper to convert a possible string name to IPackageset."""
         if isinstance(packageset, basestring):
             name = packageset
-            packageset = Store.of(self).find(Packageset, name=name).one()
+            store = IStore(Packageset)
+            packageset = store.find(Packageset, name=name).one()
             if packageset is not None:
                 return packageset
             else:
@@ -451,6 +453,32 @@ class ArchivePermissionSet:
         query = SQL(
             query, (person.id, person.id, sourcepackagename.id, archive.id))
         return store.find(ArchivePermission, In(ArchivePermission.id, query))
+
+    def packagesetsForSource(
+        self, archive, sourcepackagename, direct_permissions=True):
+        """See `IArchivePermissionSet`."""
+        sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
+        store = IStore(ArchivePermission)
+
+        if direct_permissions:
+            origin = SQL('ArchivePermission, PackagesetSources')
+            rset = store.using(origin).find(ArchivePermission, SQL('''
+                ArchivePermission.packageset = PackagesetSources.packageset
+                AND PackagesetSources.sourcepackagename = ?
+                AND ArchivePermission.archive = ?
+                ''', (sourcepackagename.id, archive.id)))
+        else:
+            origin = SQL(
+                'ArchivePermission, PackagesetSources, '
+                'FlatPackagesetInclusion')
+            rset = store.using(origin).find(ArchivePermission, SQL('''
+                ArchivePermission.packageset = FlatPackagesetInclusion.parent
+                AND PackagesetSources.packageset =
+                    FlatPackagesetInclusion.child
+                AND PackagesetSources.sourcepackagename = ?
+                AND ArchivePermission.archive = ?
+                ''', (sourcepackagename.id, archive.id)))
+        return rset
 
     def isSourceUploadAllowed(self, archive, sourcepackagename, person):
         """See `IArchivePermissionSet`."""

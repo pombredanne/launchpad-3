@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Distro Series Languages."""
 
@@ -11,11 +12,16 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class DistroSeriesLanguageView(LaunchpadView):
-    """View class to render translation status for an IDistroSeries."""
+    """View class to render translation status for an `IDistroSeries`."""
+
+    pofiles = None
 
     def initialize(self):
         self.form = self.request.form
 
-        # Setup batching for this page.
         self.batchnav = BatchNavigator(
-            self.context.po_files_or_dummies, self.request)
+            self.context.distroseries.getCurrentTranslationTemplates(),
+            self.request)
+
+        self.pofiles = self.context.getPOFilesFor(
+            self.batchnav.currentBatch())

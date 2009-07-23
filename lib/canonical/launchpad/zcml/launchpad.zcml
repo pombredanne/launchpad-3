@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 
 <configure
   xmlns="http://namespaces.zope.org/zope"
@@ -359,14 +363,6 @@
       name="+inline-icon"
       class="canonical.launchpad.browser.launchpad.LinkView"
       template="../templates/launchpad-inline-icon-link.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILink"
-      name="+inline-suffix"
-      class="canonical.launchpad.browser.launchpad.LinkView"
-      template="../templates/launchpad-inline-suffix-link.pt"
       permission="zope.Public"
       />
 

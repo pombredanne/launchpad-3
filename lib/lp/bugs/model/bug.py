@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Launchpad bug-related database table classes."""
@@ -645,7 +647,8 @@ class Bug(SQLBase):
             key=operator.attrgetter('displayname'))
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
-                                     level=None):
+                                     level=None,
+                                     include_master_dupe_subscribers=True):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
         self.getDirectSubscribers(recipients)
@@ -655,7 +658,7 @@ class Bug(SQLBase):
                 "A private bug should never have implicit subscribers!")
         else:
             self.getIndirectSubscribers(recipients, level=level)
-            if self.duplicateof:
+            if include_master_dupe_subscribers and self.duplicateof:
                 # This bug is a public duplicate of another bug, so include
                 # the dupe target's subscribers in the recipient list. Note
                 # that we only do this for duplicate bugs that are public;

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213,E0602
 
 """Bug task interfaces."""
@@ -1201,6 +1203,16 @@ class IBugTaskSet(Interface):
 
         :param search_results: A result set yielding BugTask objects,
             typically the result of calling `BugTaskSet.search()`.
+        """
+
+    def getStatusCountsForProductSeries(user, product_series):
+        """Returns status counts for a product series' bugs.
+
+        Both the nominated and scheduled blueprints are included
+        in the count.
+
+        :param product_series: ProductSeries object.
+        :return: A list of tuples containing (status_id, count).
         """
 
     def createTask(bug, product=None, productseries=None, distribution=None,
