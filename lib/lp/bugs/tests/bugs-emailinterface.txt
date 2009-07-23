@@ -1781,7 +1781,10 @@ An empty unsigned mail to new@malone:
     You didn't specify the project, distribution, or package that the bug is
     ...
 
-If we submit a bug with no valid affects command, it is rejected.
+If we submit an email with no valid affects command, it is
+rejected. The "~ affects ..." line in the following example is not
+valid because it does not begin with a space, and is therefore
+entirely ignored by the email processor.
 
     >>> from canonical.launchpad.database import Bug
     >>> before_count = Bug.select().count()
@@ -1810,8 +1813,8 @@ If we submit a bug with no valid affects command, it is rejected.
     You didn't specify the project, distribution, or package that the bug is
     ...
 
-If we try to edit the new bug without specifying what it affects, it
-is rejected.
+If we forget to include the affects command, but have other commands
+that are seen by the processor, the message is also rejected.
 
     >>> from canonical.launchpad.database import Bug
     >>> before_count = Bug.select().count()
