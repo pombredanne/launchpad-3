@@ -409,6 +409,36 @@ Similarly an extension of the BACKPORTS environment can be set.
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
 
+== Partner archive builds ==
+
+Similarly to what happens with PPA builds, PARTNER builds may depend
+on any ubuntu component in the PRIMARY archive. This behavior allow
+scenarios where partner packages may use other restricted/non-free
+applications from 'multiverse', for instance 'sun-java', and also
+other partner applications by default.
+
+    # Populate the ubuntutest PARTNER archive with one built and one
+    # pending build source.
+    >>> primary, partner, debug = ubuntu.all_distro_archives
+    >>> unused_source = test_publisher.getPubSource(
+    ...     archive=partner, component='partner')
+    >>> unused = test_publisher.getPubBinaries(
+    ...     pub_source=unused_source,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> pub_source = test_publisher.getPubSource(
+    ...     version='1.2', archive=partner, component='partner')
+    >>> [partner_build] = pub_source.createMissingBuilds()
+
+    >>> print_building_sources_list(partner_build)
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu-partner hoary partner
+
+
 == External build dependencies ==
 
 Via a static configuration change, any PPA hosted in launchpad can be
