@@ -44,7 +44,8 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer, WrongBranchMergeProposal)
+    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer,
+    WrongBranchMergeProposal)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPerson
