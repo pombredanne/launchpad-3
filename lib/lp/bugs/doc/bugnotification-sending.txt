@@ -689,8 +689,8 @@ a trailing space.
      '-- ',
      'Firefox does not support SVG',
      'http://bugs.launchpad.dev/bugs/1',
-     'You received this bug notification because you are subscribed to',
-     'mozilla-firefox in ubuntu.']
+     'You received this bug notification because you are a direct subscriber',
+     'of the bug.']
 
     >>> flush_notifications()
 
