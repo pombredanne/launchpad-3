@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Convert numbers to an arbitrary base numbering scheme
 
 This file is based on work from the Python Cookbook and is under the Python

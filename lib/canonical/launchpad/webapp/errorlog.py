@@ -1,28 +1,30 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0702
 
 """Error logging facilities."""
 
 __metaclass__ = type
 
-import threading
-import os
-import errno
-import re
 import datetime
-import pytz
-import rfc822
+import errno
 import logging
+import os
+import re
+import rfc822
+import threading
 import types
 import urllib
 
-from lazr.restful.utils import get_current_browser_request
+import pytz
 from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
+from lazr.restful.utils import get_current_browser_request
 from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
 from canonical.launchpad import versioninfo
@@ -146,7 +148,7 @@ class ErrorReport:
         self.revno  = versioninfo.revno
 
     def __repr__(self):
-        return '<ErrorReport %s>' % self.id
+        return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
     def write(self, fp):
         fp.write('Oops-Id: %s\n' % _normalise_whitespace(self.id))
@@ -373,10 +375,10 @@ class ErrorReportingUtility:
             now = now.astimezone(UTC)
         else:
             now = datetime.datetime.now(UTC)
-        # we look up the error directory before allocating a new ID,
+        # We look up the error directory before allocating a new ID,
         # because if the day has changed, errordir() will reset the ID
-        # counter to zero
-        errordir = self.errordir(now)
+        # counter to zero.
+        self.errordir(now)
         self.lastid_lock.acquire()
         try:
             self.lastid += 1
@@ -556,6 +558,30 @@ class ScriptRequest(ErrorReportRequest):
     @property
     def form(self):
         return dict(self.items())
+
+
+class OopsLoggingHandler(logging.Handler):
+    """Python logging handler that records OOPSes on exception."""
+
+    def __init__(self, error_utility=None, request=None):
+        """Construct an `OopsLoggingHandler`.
+
+        :param error_utility: The error utility to use to log oopses. If not
+            provided, defaults to `globalErrorUtility`.
+        :param request: The `IErrorReportRequest` these errors are associated
+            with.
+        """
+        logging.Handler.__init__(self, logging.ERROR)
+        if error_utility is None:
+            error_utility = globalErrorUtility
+        self._error_utility = error_utility
+        self._request = request
+
+    def emit(self, record):
+        """See `logging.Handler.emit`."""
+        info = record.exc_info
+        if info is not None:
+            self._error_utility.raising(info, self._request)
 
 
 class SoftRequestTimeout(Exception):

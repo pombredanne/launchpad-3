@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
 
@@ -73,6 +74,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
 from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
+from canonical.widgets.bugtask import NewLineToSpacesWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp.menu import structured
@@ -1224,6 +1226,10 @@ class BugCountDataItem:
 
 class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     """View for the Bugs front page."""
+
+    # We have a custom searchtext widget here so that we can set the
+    # width of the search box properly.
+    custom_widget('searchtext', NewLineToSpacesWidget, displayWidth=36)
 
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (

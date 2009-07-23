@@ -1,4 +1,5 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the error presentation in worker.py."""
 
@@ -15,9 +16,10 @@ from bzrlib.errors import (
     NotBranchError)
 
 from lp.codehosting.puller.worker import (
-    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchMirrorer,
-    BranchReferenceForbidden, BranchLoopError, PullerWorker,
+    BranchMirrorer, BranchReferenceForbidden, BranchLoopError, PullerWorker,
     PullerWorkerProtocol, StackedOnBranchNotFound)
+from lp.codehosting.vfs.branchfs import (
+    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh)
 from lp.code.enums import BranchType
 from lazr.uri import InvalidURIError
 

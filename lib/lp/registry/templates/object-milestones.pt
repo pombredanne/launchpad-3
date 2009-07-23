@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -14,66 +14,33 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Milestones</h1>
+  <h1><tal:pillar-name replace="context/displayname" />'s Milestones</h1>
+
+  <p>
+    Milestones belong to a series and can be created from the series page
+    be a project owner or series release manager.
+  </p>
 
   <tal:milestones define="milestones context/all_milestones">
-    <table tal:condition="milestones" id="milestones" class="listing">
+    <table id="milestones" class="listing"
+      tal:define="has_series context/serieses|nothing"
+      tal:condition="milestones">
       <thead>
-        <th colspan="2">Milestone</th>
-        <th>Codename</th>
-        <th>Date Targeted</th>
-        <th>Series Target</th>
-        <th>Summary</th>
+        <tr>
+          <th>Version "Codename"</th>
+          <th tal:condition="has_series">Series</th>
+          <th>Expected</th>
+          <th>Released</th>
+          <th>Summary</th>
+        </tr>
       </thead>
       <tbody>
-        <tr tal:attributes="id string:milestone-${milestone/name}"
-            tal:repeat="milestone context/all_milestones">
-          <td><img src="/@@/milestone" alt="" /></td>
-          <td class="milestone">
-            <strong tal:condition="milestone/active">
-              <a tal:content="milestone/name"
-                 tal:attributes="href milestone/fmt:url"
-                 title="Active">
-                milestone name
-              </a>
-            </strong>
-            <a tal:condition="not: milestone/active"
-              tal:content="milestone/name"
-              tal:attributes="href milestone/fmt:url"
-              title="Inactive">
-                milestone name
-            </a>
-          </td>
-          <td tal:content="milestone/code_name">
-            code name
-          </td>
-          <td>
-            <tal:date condition="milestone/dateexpected"
-                      replace="milestone/dateexpected/fmt:date" />
-            <tal:empty-date condition="not: milestone/dateexpected">
-              <a tal:condition="milestone/required:launchpad.Edit"
-                 tal:attributes="href milestone/fmt:url/+edit">
-                 <img src="/@@/edit"/>
-                 Set date
-              </a>
-              <tal:cannot-edit
-                condition="not: milestone/required:launchpad.Edit">
-                None
-              </tal:cannot-edit>
-            </tal:empty-date>
-          </td>
-          <td>
-            <a tal:condition="milestone/series_target"
-              tal:attributes="href milestone/series_target/fmt:url"
-              tal:replace="milestone/series_target/displayname">Feisty</a>
-          </td>
-          <td>
-            <span
-              tal:replace="structure milestone/summary/fmt:shorten/80"/>
-            <a tal:condition="python: milestone.summary and len(milestone.summary) > 80"
-               tal:attributes="href milestone/fmt:url">(See more)</a>
-          </td>
-        </tr>
+        <tal:row condition="has_series" repeat="milestone milestones">
+          <tal:milestone replace="structure milestone/@@+pillar-table-row" />
+        </tal:row>
+        <tal:row condition="not: has_series" repeat="milestone milestones">
+          <tal:milestone replace="structure milestone/@@+productseries-table-row" />
+        </tal:row>
       </tbody>
     </table>
 
