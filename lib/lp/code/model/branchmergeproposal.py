@@ -51,6 +51,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.code.mail.branch import RecipientReason
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.mail.sendmail import validate_message
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
@@ -558,7 +559,8 @@ class BranchMergeProposal(SQLBase):
             subject=subject, datecreated=_date_created)
         chunk = MessageChunk(message=message, content=content, sequence=1)
         return self.createCommentFromMessage(
-            message, vote, review_type, _notify_listeners=_notify_listeners)
+            message, vote, review_type, original_email=None,
+            _notify_listeners=_notify_listeners, _validate=False)
 
     def getUsersVoteReference(self, user, review_type=None):
         """Get the existing vote reference for the given user."""
@@ -624,14 +626,17 @@ class BranchMergeProposal(SQLBase):
             review_type=review_type)
 
     def createCommentFromMessage(self, message, vote, review_type,
-                                 original_email=None, _notify_listeners=True):
+                                 original_email, _notify_listeners=True,
+                                 _validate=True):
         """See `IBranchMergeProposal`."""
+        if _validate:
+            validate_message(original_email)
         # Lower case the review type.
         if review_type is not None:
             review_type = review_type.lower()
         code_review_message = CodeReviewComment(
             branch_merge_proposal=self, message=message, vote=vote,
-            vote_tag=review_type)
+            vote_tag=review_type, original_email=original_email)
         # Get the appropriate CodeReviewVoteReference for the reviewer.
         # If there isn't one, then create one, otherwise set the comment
         # reference.
