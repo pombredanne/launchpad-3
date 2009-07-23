@@ -581,6 +581,14 @@ class TestBranchDeletion(TestCaseWithFactory):
                          " is not deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
+    def test_productSeriesTranslationsBranchDisablesDeletion(self):
+        self.product.development_focus.translations_branch = self.branch
+        syncUpdate(self.product.development_focus)
+        self.assertEqual(self.branch.canBeDeleted(), False,
+                         "A branch that is a translations branch for a "
+                         "product series is not deletable.")
+        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
+
     def test_revisionsDeletable(self):
         """A branch that has some revisions can be deleted."""
         revision = self.factory.makeRevision()

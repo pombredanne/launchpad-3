@@ -30,7 +30,7 @@ class BranchRewriter:
         :param proxy: A blocking proxy for a branchfilesystem endpoint.
         """
         self.logger = logger
-        self.client = BranchFileSystemClient(proxy, LAUNCHPAD_ANONYMOUS, 1.0)
+        self.client = BranchFileSystemClient(proxy, LAUNCHPAD_ANONYMOUS, 10.0)
 
     def _codebrowse_url(self, path):
         return urlutils.join(
