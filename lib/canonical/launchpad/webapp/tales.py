@@ -2469,8 +2469,6 @@ class FormattersAPI:
         fall back for IE by using the IE specific word-wrap property.
 
         TODO: Test IE compatibility. StuartBishop 20041118
-        TODO: This should probably just live in the stylesheet if this
-            CSS implementation is good enough. StuartBishop 20041118
         """
         if not self._stringtoformat:
             return self._stringtoformat
@@ -2478,13 +2476,7 @@ class FormattersAPI:
             linkified_text = re_substitute(self._re_linkify,
                 self._linkify_substitution, break_long_words,
                 cgi.escape(self._stringtoformat))
-            return ('<pre style="'
-                    'white-space: -moz-pre-wrap;'
-                    'white-space: -o-pre-wrap;'
-                    'word-wrap: break-word;'
-                    '">%s</pre>'
-                    % linkified_text
-                    )
+            return '<pre class="wrap">%s</pre>' % linkified_text
 
     # Match lines that start with one or more quote symbols followed
     # by a space. Quote symbols are commonly '|', or '>'; they are
