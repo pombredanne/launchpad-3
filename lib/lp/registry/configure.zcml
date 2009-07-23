@@ -174,11 +174,6 @@
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumbBuilder"
         permission="zope.Public"/>
 
-    <!-- NB DO NOT CHANGE WITHOUT THINKING
-                         Do not allow people to change the details of the distro series that
-                         will affect the way Soyuz publishes the distroseries. Check with
-                         SABDFL before modifying this page. -->
-
     <facet
         facet="overview">
 
@@ -1662,4 +1657,15 @@
             permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.distributionmirror.IMirrorProbeRecord" />
     </class>
+    <class
+        class="lp.registry.model.mentoringoffer.MentoringOffer">
+        <allow
+            interface="lp.registry.interfaces.mentoringoffer.IMentoringOffer"/>
+    </class>
+    <securedutility
+        class="lp.registry.model.mentoringoffer.MentoringOfferSet"
+        provides="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet">
+        <allow
+            interface="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet"/>
+    </securedutility>
 </configure>

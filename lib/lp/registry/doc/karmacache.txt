@@ -10,7 +10,7 @@ which runs daily. The script does that by using the IKarmaCacheManager API.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.database import KarmaCategory
+    >>> from lp.registry.model.karma import KarmaCategory
     >>> from canonical.launchpad.interfaces import (
     ...     IKarmaCache, IKarmaCacheManager, IPersonSet)
     >>> from canonical.testing import LaunchpadZopelessLayer

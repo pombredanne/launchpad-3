@@ -11,7 +11,7 @@ arrangement or through a grant that applies to everyone.
     >>> from canonical.launchpad.interfaces import (
     ...     EntitlementQuota, EntitlementState, EntitlementType,
     ...     IEntitlement, IEntitlementSet, IPersonSet)
-    >>> from canonical.launchpad.database import Entitlement
+    >>> from lp.registry.model.entitlement import Entitlement
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
 

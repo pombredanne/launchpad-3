@@ -42,7 +42,7 @@ from canonical.launchpad.database.distributionbounty import DistributionBounty
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
-from lp.registry.model.distributionsourcepackagecache import (
+from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)

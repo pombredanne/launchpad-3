@@ -32,7 +32,6 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.person import Person
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationimportqueue import (
     collect_import_info)
@@ -498,6 +497,7 @@ class POFile(SQLBase, POFileMixIn):
     @property
     def contributors(self):
         """See `IPOFile`."""
+        from lp.registry.model.person import Person
         contributors = Person.select("""
             POFileTranslator.person = Person.id AND
             POFileTranslator.pofile = %s""" % quote(self),

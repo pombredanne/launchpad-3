@@ -84,7 +84,8 @@ If in the meantime someone registers the email address that we're using
 to create a new account.
 
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
-    >>> from canonical.launchpad.database import EmailAddressSet, PersonSet
+    >>> from canonical.launchpad.database import EmailAddressSet
+    >>> from lp.registry.model.person import PersonSet
     >>> salgado = PersonSet().getByName('salgado')
     >>> email = EmailAddressSet().new(
     ...   'foobarino@baz.com.br', salgado, EmailAddressStatus.VALIDATED,

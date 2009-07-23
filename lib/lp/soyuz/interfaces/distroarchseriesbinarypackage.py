@@ -14,7 +14,8 @@ __all__ = [
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from lp.registry.interfaces.product import IDistributionSourcePackage
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lazr.restful.fields import Reference
 
 class IDistroArchSeriesBinaryPackage(Interface):

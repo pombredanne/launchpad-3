@@ -87,7 +87,8 @@ To search the set of IDistroSeriess, use IDistroSeriesSet.search:
 
 DistroSeries.getPublishedReleases:
 
-    >>> from canonical.launchpad.database import SourcePackageName, DistroSeries
+    >>> from lp.registry.model.distroseries import DistroSeries
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> warty2 = DistroSeries.get(1)
 
 Passing a ISourcePackageName as argument:

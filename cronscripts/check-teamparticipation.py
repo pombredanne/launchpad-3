@@ -24,7 +24,6 @@ import sys
 import _pythonpath
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database import Person
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.lp import initZopeless
@@ -81,6 +80,7 @@ if __name__ == '__main__':
                 participants.update(get_participants(member))
         return participants
 
+    from lp.registry.model.person import Person
     batch = team_ids[:50]
     team_ids = team_ids[50:]
     while batch:
