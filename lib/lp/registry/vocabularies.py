@@ -651,6 +651,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
 
         tables = [Person] + private_tables
 
+
         if not text:
             query = And(base_query,
                         self.extra_clause)
@@ -658,31 +659,21 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         else:
             name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
 
-            email_match_query = And(
-                EmailAddress.person == Person.id,
-                StartsWith(Lower(EmailAddress.email), text),
-                )
+            email_storm_query = self.store.find(
+                EmailAddress.personID,
+                StartsWith(Lower(EmailAddress.email), text))
+            email_subquery = Alias(email_storm_query._get_select(),
+                                   'EmailAddress')
+            tables += [
+                LeftJoin(email_subquery, EmailAddress.person == Person.id),
+                ]
 
-            name_result = self.store.using(*tables).find(
+            result = self.store.using(*tables).find(
                 Person,
                 And(base_query,
                     self.extra_clause,
-                    name_match_query))
-            name_result.order_by()
-            name_result.config(distinct=True)
-            name_result.config(limit=self.LIMIT)
-
-            tables.append(EmailAddress)
-            email_result = self.store.using(*tables).find(
-                Person,
-                And(base_query,
-                    self.extra_clause,
-                    email_match_query))
-            email_result.order_by()
-            email_result.config(distinct=True)
-            email_result.config(limit=self.LIMIT)
-
-            result = name_result.union(email_result)
+                    Or(name_match_query,
+                       EmailAddress.person != None)))
 
         # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
         # setting the 'distinct' and 'limit' options in a single call to
