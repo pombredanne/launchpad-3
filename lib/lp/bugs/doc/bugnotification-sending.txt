@@ -1247,9 +1247,40 @@ receive include the bug description and status. This helps in those
 cases where the user doesn't save bug notifications, which can make
 subsequent notifications seem somewhat obscure.
 
+To demonstrate verbose notifications, we'll create a bug, and subscribe
+some very picky users to it. Verbose Person wants verbose emails, while
+Concise Person does not. We'll also create a team with a member that
+wants verbose notifications.
+
+    >>> switch_db_to_launchpad()
+    >>> bug = factory.makeBug(product=factory.makeProduct(title='Foo'),
+    ...                       title='Foo is broken', description='desc')
+
+    >>> vperson = factory.makePerson(displayname='Verbose Person',
+    ...                              email='verbose@example.com')
+    >>> vperson.verbose_bugnotifications = True
+    >>> bug.subscribe(vperson, vperson)
+    <BugSubscription...>
+
+    >>> cperson = factory.makePerson(displayname='Concise Person',
+    ...                              email='concise@example.com')
+    >>> cperson.verbose_bugnotifications = False
+    >>> bug.subscribe(cperson, cperson)
+    <BugSubscription...>
+
+    >>> team = factory.makeTeam(name='bugteam', displayname='Bug Team')
+    >>> team.verbose_bugnotifications = False
+    >>> tperson = factory.makePerson(displayname='Team Person',
+    ...                              email='team@example.com')
+    >>> tperson.verbose_bugnotifications = True
+    >>> team.addMember(tperson, tperson)
+    >>> bug.subscribe(team, tperson)
+    <BugSubscription...>
+
 We'll expire all existing notifications since we're not interested in
 them:
 
+    >>> switch_db_to_bugnotification()
     >>> notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
@@ -1261,37 +1292,13 @@ them:
     ...     syncUpdate(notification)
 
 
-To demonstrate verbose notifications, we'll subscribe David Allouche,
-who receives verbose bug notifications, to bug 15.
-
-    >>> bug_15 = getUtility(IBugSet).get(15)
-    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
-    >>> ddaa.verbose_bugnotifications
-    True
-
-    >>> bug_15.subscribe(ddaa, sample_person)
-    <...>
-
-Notifications sent through a team membership respect the member's
-verbose_bugnotifications, not the team's. salgado gets notifications
-through his membership in landscape-developers. salgado decides that
-he wants verbose notifications.
-    
-    >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> salgado.verbose_bugnotifications
-    True
-
-    >>> ls = getUtility(IPersonSet).getByName('landscape-developers')
-    >>> ls.verbose_bugnotifications
-    False
-
-If we then add a comment to the bug, ddaa and salgado will receieve
+If we then add a comment to the bug, the subscribers will receive
 notifications containing that comment.
 
     >>> comment = getUtility(IMessageSet).fromText(
-    ...     'subject', 'a really simple comment.', sample_person,
+    ...     'subject', 'a really simple comment.', vperson,
     ...     datecreated=ten_minutes_ago)
-    >>> bug_15.addCommentNotification(comment)
+    >>> bug.addCommentNotification(comment)
 
     >>> notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
@@ -1299,10 +1306,10 @@ notifications containing that comment.
     1
 
 If we pass this notifcation to get_email_notifications we can see that
-ddaa and salgado will receieve a notification which contains the bug
-description and its status in all of its targets. All other subscribers
-will receive standard notifications that don't include the bug
-description. To help with demonstrating this, we'll define a helper
+Verbose Person and Team Person will receive notifications which contain
+the bug description and the status in all of its targets. All other
+subscribers will receive standard notifications that don't include the
+bug description. To help with demonstrating this, we'll define a helper
 function.
 
     >>> def collate_messages_by_recipient(messages):
@@ -1320,72 +1327,67 @@ function.
     ...     chain(*(messages for bug_notifications, messages in
     ...             get_email_notifications(notifications))))
 
-We can see that foo.bar@canonical.com doesn't receive verbose
-notifications:
+We can see that Concise Person doesn't receive verbose notifications:
 
-    >>> print_notification(collated_messages['foo.bar@canonical.com'][0])
-    To: foo.bar@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 15] subject
+    >>> print_notification(collated_messages['concise@example.com'][0])
+    To: concise@example.com
+    From: Verbose Person <verbose@example.com>
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
     --
-    Nonsensical bugs are useless
-    http://bugs.launchpad.dev/bugs/15
+    Foo is broken
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
 
-Whereas ddaa does:
+Whereas Verbose Person does:
 
-    >>> print_notification(
-    ...     collated_messages['david.allouche@canonical.com'][0])
-    To: david.allouche@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 15] subject
+    >>> print_notification(collated_messages['verbose@example.com'][0])
+    To: verbose@example.com
+    From: Verbose Person <verbose@example.com>
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
     --
-    Nonsensical bugs are useless
-    http://bugs.launchpad.dev/bugs/15
+    Foo is broken
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
-    Status in Redfish: New
-    Status in Mozilla Thunderbird: New
+    Status in Foo: New
     <BLANKLINE>
     Bug description:
-    Like this one, natch.
+    desc
     <BLANKLINE>
     ----------------------------------------------------------------------
 
-And salgado does too: 
+And Team Person does too, even though his team doesn't want them: 
 
-    >>> print_notification(
-    ...     collated_messages['guilherme.salgado@canonical.com'][0])
-    To: guilherme.salgado@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 15] subject
-    X-Launchpad-Message-Rationale: Subscriber (Redfish) @landscape-developers
+    >>> print_notification(collated_messages['team@example.com'][0])
+    To: team@example.com
+    From: Verbose Person <verbose@example.com>
+    Subject: [Bug ...] subject
+    X-Launchpad-Message-Rationale: Subscriber @bugteam
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
     --
-    Nonsensical bugs are useless
-    http://bugs.launchpad.dev/bugs/15
-    You received this bug notification because you are a member of Landscape
-    Developers, which is subscribed to Redfish.
+    Foo is broken
+    http://bugs.launchpad.dev/bugs/...
+    You received this bug notification because you are a member of Bug Team,
+    which is a direct subscriber.
     <BLANKLINE>
-    Status in Redfish: New
-    Status in Mozilla Thunderbird: New
+    Status in Foo: New
     <BLANKLINE>
     Bug description:
-    Like this one, natch.
+    desc
     <BLANKLINE>
     ----------------------------------------------------------------------
 
