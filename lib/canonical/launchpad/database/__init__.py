@@ -51,6 +51,7 @@ from lp.bugs.model.cvereference import *
 from lp.bugs.model.bugtracker import *
 
 from lp.services.worlddata.model.language import *
+from lp.services.worlddata.model.spokenin import *
 from lp.coop.answersbugs.model import *
 
 from canonical.launchpad.database.account import *
