@@ -1475,7 +1475,7 @@ class PersonClaimView(LaunchpadFormView):
                          "Launchpad profile, which you seem to have used at "
                          "some point. If that's the case, you can "
                          '<a href="/people/+requestmerge'
-                         '?field.dupeaccount=%s">combine '
+                         '?field.dupe_person=%s">combine '
                          "this profile with the other one</a> (you'll "
                          "have to log in with the other profile first, "
                          "though). If that's not the case, please try with a "
@@ -4245,7 +4245,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
-                    '%s/+requestmerge?field.dupeaccount=%s'
+                    '%s/+requestmerge?field.dupe_person=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
                 self.addError(
                     structured(

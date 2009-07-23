@@ -594,7 +594,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
                 # hack, but if it fails nothing will happen.
                 # -- Guilherme Salgado 2005-07-09
                 url = allvhosts.configs['mainsite'].rooturl
-                url += '/people/+requestmerge?field.dupeaccount=%s' % dname
+                url += '/people/+requestmerge?field.dupe_person=%s' % dname
                 self.addError(
                         structured(_(
                     'This email address is already registered for another '

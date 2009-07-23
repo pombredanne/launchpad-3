@@ -343,7 +343,7 @@ class CodeImportNewView(CodeImportBaseView):
         # Make sure that the user is able to create branches for the specified
         # namespace.
         celebs = getUtility(ILaunchpadCelebrities)
-        product = data['product']
+        product = data.get('product')
         if product is not None:
             namespace = get_branch_namespace(celebs.vcs_imports, product)
             policy = IBranchNamespacePolicy(namespace)
