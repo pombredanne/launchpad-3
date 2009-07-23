@@ -1253,37 +1253,49 @@ Concise Person does not. We'll also create teams and give them members
 with different verbose_bugnotifications settings.
 
     >>> switch_db_to_launchpad()
-    >>> bug = factory.makeBug(product=factory.makeProduct(title='Foo'),
-    ...                       title='Foo is broken', description='desc')
+    >>> bug = factory.makeBug(
+    ...     product=factory.makeProduct(title='Foo'), title='Foo is broken',
+    ...     description='desc')
 
-    >>> vperson = factory.makePerson(displayname='Verbose Person',
-    ...                              email='verbose@example.com')
-    >>> vperson.verbose_bugnotifications = True
-    >>> bug.subscribe(vperson, vperson)
+    >>> verbose_person = factory.makePerson(
+    ...     displayname='Verbose Person', email='verbose@example.com')
+    >>> verbose_person.verbose_bugnotifications = True
+    >>> bug.subscribe(verbose_person, verbose_person)
     <BugSubscription...>
 
-    >>> cperson = factory.makePerson(displayname='Concise Person',
-    ...                              email='concise@example.com')
-    >>> cperson.verbose_bugnotifications = False
-    >>> bug.subscribe(cperson, cperson)
+    >>> concise_person = factory.makePerson(
+    ...     displayname='Concise Person', email='concise@example.com')
+    >>> concise_person.verbose_bugnotifications = False
+    >>> bug.subscribe(concise_person, concise_person)
     <BugSubscription...>
 
-    >>> cteam = factory.makeTeam(name='conciseteam', displayname='Concise Team')
-    >>> cteam.verbose_bugnotifications = False
-    >>> ctperson = factory.makePerson(displayname='Concise Team Person',
-    ...                              email='conciseteam@example.com')
-    >>> ctperson.verbose_bugnotifications = True
-    >>> cteam.addMember(ctperson, ctperson)
-    >>> bug.subscribe(cteam, ctperson)
+
+Concise Team doesn't want verbose notifications, while Concise Team
+Person, a member, does.
+
+    >>> concise_team = factory.makeTeam(
+    ...     name='conciseteam', displayname='Concise Team')
+    >>> concise_team.verbose_bugnotifications = False
+    >>> concise_team_person = factory.makePerson(
+    ...     displayname='Concise Team Person',
+    ...     email='conciseteam@example.com')
+    >>> concise_team_person.verbose_bugnotifications = True
+    >>> concise_team.addMember(concise_team_person, concise_team_person)
+    >>> bug.subscribe(concise_team, concise_team_person)
     <BugSubscription...>
 
-    >>> vteam = factory.makeTeam(name='verboseteam', displayname='Verbose Team')
-    >>> vteam.verbose_bugnotifications = True
-    >>> vtperson = factory.makePerson(displayname='Verbose Team Person',
-    ...                              email='verboseteam@example.com')
-    >>> vtperson.verbose_bugnotifications = False
-    >>> vteam.addMember(vtperson, vtperson)
-    >>> bug.subscribe(vteam, vtperson)
+Verbose Team wants verbose notifications, while Verbose Team Person, a
+member, does not.
+
+    >>> verbose_team = factory.makeTeam(
+    ...     name='verboseteam', displayname='Verbose Team')
+    >>> verbose_team.verbose_bugnotifications = True
+    >>> verbose_team_person = factory.makePerson(
+    ...     displayname='Verbose Team Person',
+    ...     email='verboseteam@example.com')
+    >>> verbose_team_person.verbose_bugnotifications = False
+    >>> verbose_team.addMember(verbose_team_person, verbose_team_person)
+    >>> bug.subscribe(verbose_team, verbose_team_person)
     <BugSubscription...>
 
 We'll expire all existing notifications since we're not interested in
@@ -1305,7 +1317,7 @@ If we then add a comment to the bug, the subscribers will receive
 notifications containing that comment.
 
     >>> comment = getUtility(IMessageSet).fromText(
-    ...     'subject', 'a really simple comment.', vperson,
+    ...     'subject', 'a really simple comment.', verbose_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug.addCommentNotification(comment)
 
@@ -1354,7 +1366,7 @@ We can see that Concise Person doesn't receive verbose notifications:
     <BLANKLINE>
     ----------------------------------------------------------------------
 
-Neither does Concise Team Person - while the team wants verbose emails,
+Neither does Verbose Team Person - while the team wants verbose emails,
 he wants concise ones.
 
     >>> print_notification(collated_messages['verboseteam@example.com'][0])
@@ -1373,7 +1385,7 @@ he wants concise ones.
     <BLANKLINE>
     ----------------------------------------------------------------------
 
-Whereas Verbose Person does:
+Whereas Verbose Person does get the description and task status:
 
     >>> print_notification(collated_messages['verbose@example.com'][0])
     To: verbose@example.com
@@ -1396,7 +1408,7 @@ Whereas Verbose Person does:
     <BLANKLINE>
     ----------------------------------------------------------------------
 
-And Verbose Team Person does too, even though his team doesn't want them: 
+And Concise Team Person does too, even though his team doesn't want them: 
 
     >>> print_notification(collated_messages['conciseteam@example.com'][0])
     To: conciseteam@example.com
