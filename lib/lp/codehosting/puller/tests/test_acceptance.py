@@ -10,7 +10,6 @@ __all__ = []
 import os
 import shutil
 from subprocess import PIPE, Popen
-import sys
 import unittest
 from urlparse import urlparse
 
@@ -453,4 +452,3 @@ class TestBranchPuller(PullerBranchTestCase):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-    return unittest.TestSuite()

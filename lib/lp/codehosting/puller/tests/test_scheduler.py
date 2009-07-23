@@ -517,7 +517,6 @@ class TestPullerMasterSpawning(TrialTestCase):
     def setUp(self):
         from twisted.internet import reactor
         self.factory = ObjectFactory()
-        status_client = FakePullerEndpointProxy()
         self.available_oops_prefixes = set(['foo'])
         self.eventHandler = self.makePullerMaster(
             BranchType.HOSTED, oops_prefixes=self.available_oops_prefixes)
@@ -801,8 +800,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         # We need to create a branch at the destination_url, so that the
         # subprocess can actually create a lock.
-        destination_branch = BzrDir.create_branch_convenience(
-            puller_master.destination_url)
+        BzrDir.create_branch_convenience(puller_master.destination_url)
 
         deferred = puller_master.mirror().addErrback(self._dumpError)
 
@@ -911,8 +909,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         # We need to create a branch at the destination_url, so that the
         # subprocess can actually create a lock.
-        destination_branch = BzrDir.create_branch_convenience(
-            locking_puller_master.destination_url)
+        BzrDir.create_branch_convenience(locking_puller_master.destination_url)
 
         # Because when the deferred returned by 'func' is done we kill the
         # locking subprocess, we know that when the subprocess is done, the

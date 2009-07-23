@@ -451,7 +451,8 @@ class JobScheduler:
         return deferred
 
     def run(self):
-        consumer = ParallelLimitedTaskConsumer(config.supermirror.maximum_workers)
+        consumer = ParallelLimitedTaskConsumer(
+            config.supermirror.maximum_workers)
         self.consumer = consumer
         source = PollingTaskSource(10, self._poll)
         deferred = consumer.consume(source)
