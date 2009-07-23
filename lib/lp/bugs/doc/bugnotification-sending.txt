@@ -1249,8 +1249,8 @@ subsequent notifications seem somewhat obscure.
 
 To demonstrate verbose notifications, we'll create a bug, and subscribe
 some very picky users to it. Verbose Person wants verbose emails, while
-Concise Person does not. We'll also create a team with a member that
-wants verbose notifications.
+Concise Person does not. We'll also create teams and give them members
+with different verbose_bugnotifications settings.
 
     >>> switch_db_to_launchpad()
     >>> bug = factory.makeBug(product=factory.makeProduct(title='Foo'),
@@ -1268,13 +1268,22 @@ wants verbose notifications.
     >>> bug.subscribe(cperson, cperson)
     <BugSubscription...>
 
-    >>> team = factory.makeTeam(name='bugteam', displayname='Bug Team')
-    >>> team.verbose_bugnotifications = False
-    >>> tperson = factory.makePerson(displayname='Team Person',
-    ...                              email='team@example.com')
-    >>> tperson.verbose_bugnotifications = True
-    >>> team.addMember(tperson, tperson)
-    >>> bug.subscribe(team, tperson)
+    >>> cteam = factory.makeTeam(name='conciseteam', displayname='Concise Team')
+    >>> cteam.verbose_bugnotifications = False
+    >>> vtperson = factory.makePerson(displayname='Verbose Team Person',
+    ...                              email='vteam@example.com')
+    >>> vtperson.verbose_bugnotifications = True
+    >>> cteam.addMember(vtperson, vtperson)
+    >>> bug.subscribe(cteam, vtperson)
+    <BugSubscription...>
+
+    >>> vteam = factory.makeTeam(name='verboseteam', displayname='Verbose Team')
+    >>> vteam.verbose_bugnotifications = True
+    >>> ctperson = factory.makePerson(displayname='Concise Team Person',
+    ...                              email='cteam@example.com')
+    >>> ctperson.verbose_bugnotifications = False
+    >>> vteam.addMember(ctperson, ctperson)
+    >>> bug.subscribe(vteam, ctperson)
     <BugSubscription...>
 
 We'll expire all existing notifications since we're not interested in
@@ -1345,6 +1354,25 @@ We can see that Concise Person doesn't receive verbose notifications:
     <BLANKLINE>
     ----------------------------------------------------------------------
 
+Neither does Concise Team Person - while the team wants verbose emails,
+he wants concise ones.
+
+    >>> print_notification(collated_messages['cteam@example.com'][0])
+    To: cteam@example.com
+    From: Verbose Person <verbose@example.com>
+    Subject: [Bug ...] subject
+    X-Launchpad-Message-Rationale: Subscriber @verboseteam
+    <BLANKLINE>
+    a really simple comment.
+    <BLANKLINE>
+    --
+    Foo is broken
+    http://bugs.launchpad.dev/bugs/...
+    You received this bug notification because you are a member of Verbose
+    Team, which is a direct subscriber.
+    <BLANKLINE>
+    ----------------------------------------------------------------------
+
 Whereas Verbose Person does:
 
     >>> print_notification(collated_messages['verbose@example.com'][0])
@@ -1368,21 +1396,21 @@ Whereas Verbose Person does:
     <BLANKLINE>
     ----------------------------------------------------------------------
 
-And Team Person does too, even though his team doesn't want them: 
+And Verbose Team Person does too, even though his team doesn't want them: 
 
-    >>> print_notification(collated_messages['team@example.com'][0])
-    To: team@example.com
+    >>> print_notification(collated_messages['vteam@example.com'][0])
+    To: vteam@example.com
     From: Verbose Person <verbose@example.com>
     Subject: [Bug ...] subject
-    X-Launchpad-Message-Rationale: Subscriber @bugteam
+    X-Launchpad-Message-Rationale: Subscriber @conciseteam
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
     --
     Foo is broken
     http://bugs.launchpad.dev/bugs/...
-    You received this bug notification because you are a member of Bug Team,
-    which is a direct subscriber.
+    You received this bug notification because you are a member of Concise
+    Team, which is a direct subscriber.
     <BLANKLINE>
     Status in Foo: New
     <BLANKLINE>
