@@ -982,6 +982,14 @@ class Person(
         """See `IPerson`."""
         voucher_proxy = getUtility(ISalesforceVoucherProxy)
         commercial_vouchers = voucher_proxy.getAllVouchers(self)
+        from lp.registry.utilities.salesforce import Voucher
+        commercial_vouchers = [
+            Voucher(dict(
+                voucher_id='hello',
+                status='Unredeemed',
+                term_months=9,
+                project_id=23))
+            ]
         unredeemed_commercial_vouchers = []
         redeemed_commercial_vouchers = []
         for voucher in commercial_vouchers:

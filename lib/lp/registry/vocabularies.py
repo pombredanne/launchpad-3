@@ -1266,7 +1266,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             sub_status = "(expires %s)" % date_formatter.displaydate()
         return SimpleTerm(project,
                           project.name,
-                          sub_status)
+                          '%s %s' % (project.title, sub_status))
 
     def getTermByToken(self, token):
         """Return the term for the given token."""
