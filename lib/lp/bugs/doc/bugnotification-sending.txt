@@ -1270,20 +1270,20 @@ with different verbose_bugnotifications settings.
 
     >>> cteam = factory.makeTeam(name='conciseteam', displayname='Concise Team')
     >>> cteam.verbose_bugnotifications = False
-    >>> vtperson = factory.makePerson(displayname='Verbose Team Person',
-    ...                              email='vteam@example.com')
-    >>> vtperson.verbose_bugnotifications = True
-    >>> cteam.addMember(vtperson, vtperson)
-    >>> bug.subscribe(cteam, vtperson)
+    >>> ctperson = factory.makePerson(displayname='Concise Team Person',
+    ...                              email='conciseteam@example.com')
+    >>> ctperson.verbose_bugnotifications = True
+    >>> cteam.addMember(ctperson, ctperson)
+    >>> bug.subscribe(cteam, ctperson)
     <BugSubscription...>
 
     >>> vteam = factory.makeTeam(name='verboseteam', displayname='Verbose Team')
     >>> vteam.verbose_bugnotifications = True
-    >>> ctperson = factory.makePerson(displayname='Concise Team Person',
-    ...                              email='cteam@example.com')
-    >>> ctperson.verbose_bugnotifications = False
-    >>> vteam.addMember(ctperson, ctperson)
-    >>> bug.subscribe(vteam, ctperson)
+    >>> vtperson = factory.makePerson(displayname='Verbose Team Person',
+    ...                              email='verboseteam@example.com')
+    >>> vtperson.verbose_bugnotifications = False
+    >>> vteam.addMember(vtperson, vtperson)
+    >>> bug.subscribe(vteam, vtperson)
     <BugSubscription...>
 
 We'll expire all existing notifications since we're not interested in
@@ -1357,8 +1357,8 @@ We can see that Concise Person doesn't receive verbose notifications:
 Neither does Concise Team Person - while the team wants verbose emails,
 he wants concise ones.
 
-    >>> print_notification(collated_messages['cteam@example.com'][0])
-    To: cteam@example.com
+    >>> print_notification(collated_messages['verboseteam@example.com'][0])
+    To: verboseteam@example.com
     From: Verbose Person <verbose@example.com>
     Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber @verboseteam
@@ -1398,8 +1398,8 @@ Whereas Verbose Person does:
 
 And Verbose Team Person does too, even though his team doesn't want them: 
 
-    >>> print_notification(collated_messages['vteam@example.com'][0])
-    To: vteam@example.com
+    >>> print_notification(collated_messages['conciseteam@example.com'][0])
+    To: conciseteam@example.com
     From: Verbose Person <verbose@example.com>
     Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber @conciseteam
