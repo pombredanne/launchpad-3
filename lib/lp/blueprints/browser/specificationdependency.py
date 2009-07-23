@@ -12,7 +12,6 @@ __all__ = [
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView)
-from canonical.widgets.popup import SinglePopupWidget
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency, ISpecificationDependencyRemoval)
 

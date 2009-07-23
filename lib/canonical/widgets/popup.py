@@ -312,7 +312,6 @@ class VocabularyPickerWidget(SinglePopupWidget):
 
 
 class PersonPickerWidget(VocabularyPickerWidget):
-    header = 'Select a person or team'
     include_create_team_link = False
 
     def chooseLink(self):
