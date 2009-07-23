@@ -127,8 +127,7 @@ def construct_email_notifications(bug_notifications):
         # If the person we're sending to receives verbose notifications
         # we include the description and status of the bug in the email
         # footer.
-        person = recipient.person
-        if person.verbose_bugnotifications:
+        if emailperson.verbose_bugnotifications:
             email_template = 'bug-notification-verbose.txt'
             body_data['bug_description'] = bug.description
 
