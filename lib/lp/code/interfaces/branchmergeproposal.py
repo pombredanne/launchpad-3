@@ -464,13 +464,13 @@ class IBranchMergeProposal(Interface):
         """
 
     def createCommentFromMessage(message, vote, review_type,
-                                 original_email=None):
+                                 original_email):
         """Create an `ICodeReviewComment` from an IMessage.
 
         :param message: The IMessage to use.
         :param vote: A CodeReviewVote (or None).
         :param review_type: A string (or None).
-        :param original_email: Optional original email message.
+        :param original_email: Original email message.
         """
 
     def deleteProposal():
