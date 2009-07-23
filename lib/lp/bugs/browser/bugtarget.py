@@ -824,6 +824,12 @@ class FileBugAdvancedView(FileBugViewBase):
     def showFileBugForm(self):
         return self.template()
 
+    def initialize(self):
+        self.request.response.redirect(
+            urlappend(
+                canonical_url(self.context, rootsite='bugs'), '+filebug'),
+            status=301)
+
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
     """A view for showing possible dupes for a bug.
