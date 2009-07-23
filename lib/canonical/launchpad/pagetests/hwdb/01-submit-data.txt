@@ -213,8 +213,8 @@ simply omits some fields. In such a case, we return an extra header
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Launchpad-Hwdb-Submission: Required fields not contained in POST data:
-    submission_data
+    X-Launchpad-Hwdb-Submission: Error: Required fields not contained in
+    POST data: submission_data
     ...
 
 Also, an OOPS is reported.
@@ -241,8 +241,8 @@ Also, an OOPS is reported.
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Launchpad-Hwdb-Submission: Required fields not contained in POST data:
-    distribution, submission_data
+    X-Launchpad-Hwdb-Submission: Error: Required fields not contained in
+    POST data: distribution, submission_data
     ...
 
     >>> error_report = error_utility.getLastOopsReport()

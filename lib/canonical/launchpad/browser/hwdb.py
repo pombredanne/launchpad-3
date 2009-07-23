@@ -13,8 +13,8 @@ __all__ = [
 
 from textwrap import dedent
 
-from zope.error.interfaces import IErrorReportingUtility
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
@@ -48,7 +48,7 @@ class HWDBUploadView(LaunchpadFormView):
         # if these fields are present in the form data. Absent fields
         # are not detected, so let's do that here.
         expected_fields = set(self.schema.names())
-        submitted_fields = set(data.keys())
+        submitted_fields = set(data)
         missing_fields = expected_fields.difference(submitted_fields)
         if len(missing_fields) > 0:
             missing_fields = ', '.join(sorted(missing_fields))
@@ -57,7 +57,7 @@ class HWDBUploadView(LaunchpadFormView):
             errorUtility = getUtility(IErrorReportingUtility)
             errorUtility.raising(info, self.request)
             self.addCustomHeader(
-                'Required fields not contained in POST data: '
+                'Error: Required fields not contained in POST data: '
                 + missing_fields)
             return
 
