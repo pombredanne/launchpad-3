@@ -8,11 +8,10 @@ __all__ = [
 
 
 import os
+import canonical
 
-
-LP_TREE = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), os.pardir, os.pardir,
-                 os.pardir, os.pardir, os.pardir))
+LP_TREE = os.path.dirname(
+    os.path.dirname(os.path.dirname(canonical.__file__)))
 
 
 SCRIPT_LOCATIONS = [
