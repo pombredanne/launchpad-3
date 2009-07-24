@@ -107,7 +107,7 @@ The page "All milestones" lists all milestones, including the inactive ones:
     GNOME 1.3    2012-04-01  This is an inactive milestone
     GNOME 1.2    2011-04-01  not yet released
     GNOME 1.1.   2010-04-02  not yet released
-    GNOME 1.1    2010-04-01  not yet released  ...
+    GNOME 1.1    2010-04-01  not yet released
 
 
 == Individual milestones ==

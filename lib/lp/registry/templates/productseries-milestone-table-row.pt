@@ -74,6 +74,7 @@
     <td>
       <tal:summary
         content="structure milestone/summary/fmt:shorten/80" />
+      <tal:bug-blueprint-details condition="not: view/is_project_milestone">
       <tal:bugtasks condition="view/bugtasks">
         <br tal:omit-tag="not: view/milestone/summary" />
         Bugs targeted:
@@ -96,6 +97,7 @@
           </span>
         </tal:statuses>
       </tal:blueprints>
+      </tal:bug-blueprint-details>
     </td>
   </tr>
 </tal:root>
