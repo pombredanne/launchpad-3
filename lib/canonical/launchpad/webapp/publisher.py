@@ -469,7 +469,7 @@ def canonical_url(
                 from canonical.launchpad.webapp.servers import (
                     LaunchpadBrowserRequest)
                 current_request = LaunchpadBrowserRequest(
-                    current_request.bodyStream.getCacheStream().read(),
+                    current_request.bodyStream.getCacheStream(),
                     dict(current_request.environment))
                 current_request.setPublication(
                     LaunchpadBrowserPublication(None))
