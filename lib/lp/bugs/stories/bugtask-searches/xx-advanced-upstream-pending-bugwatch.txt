@@ -36,6 +36,7 @@ product. He does not provide bug watch information.
     >>> browser.getLink('Report a bug').click()
     >>> browser.getLink('Advanced reporting options').click()
     >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Continue').click()
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
     >>> print extract_text(find_main_content(browser.contents))
