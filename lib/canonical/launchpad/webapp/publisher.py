@@ -468,12 +468,9 @@ def canonical_url(
                     LaunchpadBrowserPublication)
                 from canonical.launchpad.webapp.servers import (
                     LaunchpadBrowserRequest)
-                environment = dict(current_request.environment)
-                environment['SERVER_URL'] = (
-                    current_request.getApplicationURL())
                 current_request = LaunchpadBrowserRequest(
                     current_request.bodyStream.getCacheStream().read(),
-                    environment)
+                    dict(current_request.environment))
                 current_request.setPublication(
                     LaunchpadBrowserPublication(None))
                 current_request.setVirtualHostRoot(names=[])
