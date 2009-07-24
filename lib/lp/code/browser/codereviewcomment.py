@@ -9,6 +9,7 @@ __all__ = [
     'CodeReviewCommentPrimaryContext',
     'CodeReviewCommentSummary',
     'CodeReviewCommentView',
+    'CodeReviewDisplayComment',
     ]
 from textwrap import TextWrapper
 
@@ -17,16 +18,17 @@ from zope.interface import Interface, implements
 from zope.schema import Text
 
 from canonical.cachedproperty import cachedproperty
+from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
-from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.codereviewvote import (
-    ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
     LaunchpadView, Link)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.services.comments.interfaces.conversation import IComment
 
 
 def quote_text_as_email(text, width=80):
@@ -59,6 +61,20 @@ def quote_text_as_email(text, width=80):
         else:
             result.extend(wrapper.wrap(line))
     return '\n'.join(result)
+
+
+class CodeReviewDisplayComment:
+    """A code review comment or activity or both."""
+
+    implements(IComment)
+
+    delegates(ICodeReviewComment, 'comment')
+
+    def __init__(self, comment):
+        self.comment = comment
+        self.has_body = bool(self.comment.message_body)
+        self.has_footer = self.comment.vote is not None
+        self.date = self.comment.message.datecreated
 
 
 class CodeReviewCommentPrimaryContext:
@@ -209,11 +225,11 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         else:
             return self.context
 
-    @property
+    @cachedproperty
     def reply_to(self):
         """The comment being replied to, or None."""
         if self.is_reply:
-            return self.context
+            return CodeReviewDisplayComment(self.context)
         else:
             return None
 
