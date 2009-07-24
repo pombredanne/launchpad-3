@@ -156,7 +156,7 @@ def test_inline_subscriber():
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
-    client.asserts.assertNotNode(PERSON_LINK % u'Foo Bar')
+    client.asserts.assertNotNode(xpath=PERSON_LINK % u'Foo Bar')
     # Then back to bug 6 to confirm the duplicate is also unsubscribed.
     client.open(url=BUG_URL % 6)
     client.waits.forPageLoad(timeout=PAGE_LOAD)
@@ -164,7 +164,7 @@ def test_inline_subscriber():
         id=u'subscribers-links', timeout=FOR_ELEMENT)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
-    client.asserts.assertNotNode(PERSON_LINK % u'Foo Bar')
+    client.asserts.assertNotNode(xpath=PERSON_LINK % u'Foo Bar')
 
     # A bit of a corner case here, but make sure that when
     # a user is subscribed to both the main bug and the dupe
