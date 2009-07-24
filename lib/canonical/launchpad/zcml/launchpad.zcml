@@ -146,6 +146,10 @@
     factory="canonical.launchpad.browser.vocabulary.person_to_pickerentry"
     />
 
+  <adapter
+    factory="canonical.launchpad.browser.vocabulary.branch_to_pickerentry"
+    />
+
 <facet facet="overview">
 
   <utility

@@ -120,7 +120,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     _table = Branch
     _orderBy = ['name', 'id']
-    displayname = 'Select a Branch'
+    displayname = 'Select a branch'
 
     def toTerm(self, branch):
         """The display should include the URL if there is one."""
@@ -691,13 +691,13 @@ class DistributionUsingMaloneVocabulary:
 
 class ProcessorVocabulary(NamedSQLObjectVocabulary):
 
-    displayname = 'Select a Processor'
+    displayname = 'Select a processor'
     _table = Processor
     _orderBy = 'name'
 
 
 class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
-    displayname = 'Select a Processor Family'
+    displayname = 'Select a processor family'
     _table = ProcessorFamily
     _orderBy = 'name'
 

@@ -55,6 +55,9 @@ span.invisible {left:-9999em;display:block;}
 .sprite {padding:2px 0 0 18px;}
 .sprite-after {padding: 2px 18px 0 0;}
 
+/* Override the .yui-picker-results style. */
+.yui-picker-results li.sprite {padding:2px 0 0 18px;}
+
 .add {background:url(icon-sprites) 0 0 no-repeat;}
 .edit {background:url(icon-sprites) 100% -32px no-repeat;}
 .remove {background:url(icon-sprites) 100% -64px no-repeat;}

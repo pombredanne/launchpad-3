@@ -36,7 +36,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import BranchFormatterAPI
 from lazr.uri import InvalidURIError, URI
-from canonical.widgets import SinglePopupWidget, StrippedTextWidget
+from canonical.widgets import StrippedTextWidget
+from canonical.widgets.popup import VocabularyPickerWidget
 
 
 class AlreadyRegisteredError(Exception):
@@ -82,7 +83,7 @@ class WhiteboardWidget(TextAreaWidget):
     height = 5
 
 
-class BranchPopupWidget(SinglePopupWidget):
+class BranchPopupWidget(VocabularyPickerWidget):
     """Custom popup widget for choosing branches."""
 
     displayWidth = '35'
