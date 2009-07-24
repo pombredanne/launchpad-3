@@ -32,7 +32,6 @@ working comparisons::
 A dbschema Item can also be given to sqlobject's select() method, or any
 of its variants.
 
-    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
     >>> proxied_policy = sabdfl_proxied.subscriptionpolicy
     >>> type(proxied_policy)
     <type 'zope.security._proxy._Proxy'>

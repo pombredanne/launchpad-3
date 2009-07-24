@@ -1,7 +1,6 @@
 In addition to what Storm provides, we also have some Launchpad
 specific Storm tools to cope with our master and slave store arrangement.
 
-    >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.interfaces import (
     ...     EmailAddressStatus, IAccountSet, IEmailAddressSet,
     ...     IMasterObject, IMasterStore, ISlaveStore, IStore)

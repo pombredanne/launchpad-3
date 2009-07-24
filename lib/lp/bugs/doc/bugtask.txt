@@ -1266,7 +1266,6 @@ If a mentoring offer gets made...
 It's possible to get a list of bugs similar to the current bug by
 accessing the similar_bugs property of its bug tasks.
 
-    >>> from operator import attrgetter
     >>> new_ff_bug = factory.makeBug(product=firefox, title="Firefox")
     >>> ff_bugtask = new_ff_bug.bugtasks[0]
 

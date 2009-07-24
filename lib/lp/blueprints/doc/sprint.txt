@@ -3,8 +3,7 @@
 Sprints or meetings can be coordinated using Launchpad.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISprint, ISprintSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces import ISprintSet, IPersonSet
     >>> sprintset = getUtility(ISprintSet)
 
 To find a sprint by name, use:
