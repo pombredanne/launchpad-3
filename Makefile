@@ -11,7 +11,7 @@ VERBOSITY=-vv
 TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
-SHHH=${PY} utilities/shhh.py
+SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
 LPCONFIG=development
@@ -127,11 +127,11 @@ download-cache:
 # warning before the eggs directory is made.  The target for the eggs directory
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
-	$(PYTHON) bootstrap.py --ez_setup-source=ez_setup.py \
+	$(SHHH) $(PYTHON) bootstrap.py --ez_setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
 $(PY): bin/buildout versions.cfg buildout.cfg setup.py
-	./bin/buildout configuration:instance_name=${LPCONFIG}
+	$(SHHH) ./bin/buildout configuration:instance_name=${LPCONFIG}
 
 compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
@@ -175,6 +175,12 @@ start_codebrowse: build
 
 stop_codebrowse:
 	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
+
+start_librarian: build
+	bin/start_librarian
+
+stop_librarian:
+	bin/killservice librarian
 
 pull_branches: support_files
 	# Mirror the hosted branches in the development upload area to the

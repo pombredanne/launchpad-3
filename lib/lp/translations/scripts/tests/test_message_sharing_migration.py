@@ -1,8 +1,10 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import timedelta
+from logging import ERROR
 from unittest import TestLoader
 
 from zope.component import getUtility
@@ -13,7 +15,7 @@ from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslatorSet)
 from lp.translations.scripts.message_sharing_migration import (
-    merge_potmsgsets, merge_translationmessages)
+    MessageSharingMerge)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -39,6 +41,9 @@ class TranslatableProductMixin:
         self.stable_template.iscurrent = False
         self.templates = [self.trunk_template, self.stable_template]
 
+        self.script = MessageSharingMerge('tms-merging-test')
+        self.script.logger.setLevel(ERROR)
+
 
 class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
     """Test merging of POTMsgSets."""
@@ -61,7 +66,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         stable_potmsgset = self.factory.makePOTMsgSet(
             self.stable_template, singular='foo', sequence=1)
 
-        merge_potmsgsets(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
 
         trunk_messages = list(self.trunk_template.getPOTMsgSets(False))
         stable_messages = list(self.stable_template.getPOTMsgSets(False))
@@ -69,7 +74,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         self.assertEqual(trunk_messages, [trunk_potmsgset])
         self.assertEqual(trunk_messages, stable_messages)
 
-    def test_merge_potmsgsets_is_idempotent(self):
+    def test_mergePOTMsgSets_is_idempotent(self):
         # merge_potmsgsets can be run again on a situation it's
         # produced.  It will produce the same situation.
         trunk_potmsgset = self.factory.makePOTMsgSet(
@@ -77,8 +82,8 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         stable_potmsgset = self.factory.makePOTMsgSet(
             self.stable_template, singular='foo', sequence=1)
 
-        merge_potmsgsets(self.templates)
-        merge_potmsgsets(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
 
         trunk_messages = list(self.trunk_template.getPOTMsgSets(False))
         stable_messages = list(self.stable_template.getPOTMsgSets(False))
@@ -93,7 +98,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         stable_potmsgset = self.factory.makePOTMsgSet(
             self.stable_template, singular='foo', context='bar', sequence=1)
 
-        merge_potmsgsets(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
 
         trunk_messages = list(self.trunk_template.getPOTMsgSets(False))
         stable_messages = list(self.stable_template.getPOTMsgSets(False))
@@ -110,7 +115,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         self.factory.makePOTMsgSet(
             self.stable_template, singular='foo', sequence=9)
 
-        merge_potmsgsets(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
 
         trunk_potmsgset = self.trunk_template.getPOTMsgSetByMsgIDText('foo')
         stable_potmsgset = self.stable_template.getPOTMsgSetByMsgIDText('foo')
@@ -234,7 +239,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
          * Two templates for the "trunk" and "stable" release series.
          * Matching POTMsgSets for the string "foo" in each.
 
-        The matching POTMsgSets will be merged by the merge_potmsgsets
+        The matching POTMsgSets will be merged by the _mergePOTMsgSets
         call.
         """
         self.layer.switchDbUser('postgres')
@@ -250,7 +255,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         trunk_message.is_current = True
         stable_message.is_current = True
 
-        merge_potmsgsets(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
 
         self.assertEqual(self._getTranslations(), ('bar', 'splat'))
         self.assertEqual(self._getMessages(), (trunk_message, stable_message))
@@ -264,7 +269,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         trunk_message.is_current = True
         stable_message.is_current = True
 
-        merge_potmsgsets(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
 
         self.assertEqual(self._getTranslations(), ('bar', 'bar'))
 
@@ -273,20 +278,24 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         # Instead, the most representative shared message survives as
         # shared.  The translation that "loses out" becomes diverged.
         trunk_message, stable_message = self._makeTranslationMessages(
-            'bar', 'splat', trunk_diverged=False, stable_diverged=False)
+            'bar2', 'splat2', trunk_diverged=False, stable_diverged=False)
         trunk_message.is_current = True
         stable_message.is_current = True
 
-        merge_potmsgsets(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
 
         # The POTMsgSets are now merged.
         potmsgset = self.trunk_template.getPOTMsgSetByMsgIDText('foo')
 
-        self.assertEqual(self._getTranslations(), ('bar', 'splat'))
+        # The "losing" message stays current within its template.
+        self.assertEqual(self._getTranslations(), ('bar2', 'splat2'))
 
-        # They share the same TranslationMessage.
         trunk_message, stable_message = self._getMessages()
+
+        # The TranslationMessage for trunk remains the shared one.
         self.assertEqual(trunk_message.potemplate, None)
+        # The "losing" message became diverged; it is now specific to
+        # its original template.
         self.assertEqual(stable_message.potemplate, self.stable_template)
 
     def test_mergingIdenticalSuggestions(self):
@@ -296,7 +305,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         trunk_message.is_current = False
         stable_message.is_current = False
 
-        merge_potmsgsets(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
 
         # Having these suggestions does not mean that there are current
         # translations.
@@ -310,7 +319,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         trunk_message.is_current = True
         stable_message.is_current = True
 
-        merge_potmsgsets(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
 
         trunk_message, stable_message = self._getMessages()
         self.assertEqual(trunk_message.potemplate, None)
@@ -319,6 +328,68 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         # representative) one is diverged.
         self.assertNotEqual(trunk_message, stable_message)
         self.assertEqual(stable_message.potemplate, self.stable_template)
+
+    def test_currentMessageDoesNotMergeIntoSuggestion(self):
+        # A less-representative, current TranslationMessage is not merged
+        # into an identical suggestion if the target already has another
+        # translation for the same message.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'smurf', 'smurf', trunk_diverged=False, stable_diverged=False)
+        trunk_message.is_current = False
+        stable_message.is_current = True
+
+        current_message = self._makeTranslationMessage(
+            self.trunk_pofile, trunk_message.potmsgset, 'bzo', False)
+        current_message.is_current = True
+
+        self.assertEqual(self._getTranslations(), ('bzo', 'smurf'))
+
+        self.script._mergePOTMsgSets(self.templates)
+
+        # The current translations stay as they are.
+        self.assertEqual(self._getTranslations(), ('bzo', 'smurf'))
+
+        # All three of the messages still exist, despite two of the
+        # translations being near-identical.
+        current_message, stable_message = self._getMessages()
+        expected_tms = set([current_message, trunk_message, stable_message])
+        tms = set(trunk_message.potmsgset.getAllTranslationMessages())
+        self.assertEqual(tms, expected_tms)
+        self.assertEqual(len(tms), 3)
+
+    def test_duplicatesAreCleanedUp(self):
+        # The POTMsgSet merging function cleans up any duplicate
+        # TranslationMessages that might get in the way.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'snaggle', 'snaggle')
+        trunk_message.is_current = False
+        trunk_message.sync()
+
+        potmsgset = trunk_message.potmsgset
+
+        stable_message.is_imported = True
+        stable_message.potemplate = trunk_message.potemplate
+        stable_message.potmsgset = potmsgset
+        stable_message.sync()
+
+        # We've set up a situation where trunk has two identical
+        # messages (one of which is current, the other imported) and
+        # stable has none.
+        self.assertEqual(self._getTranslations(), ('snaggle', None))
+        tms = set(potmsgset.getAllTranslationMessages())
+        self.assertEqual(tms, set([trunk_message, stable_message]))
+
+        self.script._mergePOTMsgSets(self.templates)
+
+        # The duplicates have been cleaned up.
+        self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)
+        
+        # The is_current and is_imported flags from the duplicate
+        # messages have been merged into a single, current, imported
+        # message.
+        message = self._getMessage(potmsgset, self.trunk_template)
+        self.assertTrue(message.is_current)
+        self.assertTrue(message.is_imported)
 
 
 class TestTranslationMessageNonMerging(TestCaseWithFactory,
@@ -338,7 +409,7 @@ class TestTranslationMessageNonMerging(TestCaseWithFactory,
         # be.
         self._makeTranslationMessages('x', 'x')
 
-        merge_translationmessages(self.templates)
+        self.script._mergeTranslationMessages(self.templates)
 
         trunk_message, stable_message = self._getMessages()
         self.assertNotEqual(trunk_message, stable_message)
@@ -366,8 +437,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         self._makeTranslationMessages(
             'a', 'b', trunk_diverged=True, stable_diverged=True)
 
-        merge_potmsgsets(self.templates)
-        merge_translationmessages(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
+        self.script._mergeTranslationMessages(self.templates)
 
         # Translations for the existing templates stay as they are.
         self.assertEqual(self._getTranslations(), ('a', 'b'))
@@ -382,8 +453,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         self._makeTranslationMessages(
             'x', 'x', trunk_diverged=True, stable_diverged=True)
 
-        merge_potmsgsets(self.templates)
-        merge_translationmessages(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
+        self.script._mergeTranslationMessages(self.templates)
 
         trunk_message, stable_message = self._getMessages()
         self.assertEqual(trunk_message, stable_message)
@@ -405,8 +476,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         trunk_message.is_current = False
         stable_message.is_current = False
 
-        merge_potmsgsets(self.templates)
-        merge_translationmessages(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
+        self.script._mergeTranslationMessages(self.templates)
 
         # Translations for the existing templates stay as they are.
         self.assertEqual(self._getTranslations(), (None, None))
@@ -422,8 +493,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         self._makeTranslationMessages(
             'ips', 'unq', trunk_diverged=True, stable_diverged=False)
 
-        merge_potmsgsets(self.templates)
-        merge_translationmessages(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
+        self.script._mergeTranslationMessages(self.templates)
 
         # Translations for the existing templates stay as they are.
         self.assertEqual(self._getTranslations(), ('ips', 'unq'))
@@ -443,8 +514,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
 
         self.assertEqual(self._getTranslations(), ('n', None))
 
-        merge_potmsgsets(self.templates)
-        merge_translationmessages(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
+        self.script._mergeTranslationMessages(self.templates)
 
         # The less-representative POTMsgSet gains a translation, because
         # it now uses the shared translation.
@@ -503,11 +574,296 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         # Now the migration script runs.  This also carries the
         # POFileTranslator record for stable_message into trunk_pofile.
         # The one for contented_message disappears in the process.
-        merge_potmsgsets(self.templates)
-        merge_translationmessages(self.templates)
+        self.script._mergePOTMsgSets(self.templates)
+        self.script._mergeTranslationMessages(self.templates)
 
         poft = poftset.getForPersonPOFile(translator, self.trunk_pofile)
         self.assertEqual(poft.latest_message, stable_message)
+
+
+class TestMapMessages(TestCaseWithFactory, TranslatedProductMixin):
+    """Test _mapExistingMessages and friends."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.layer.switchDbUser('postgres')
+        super(TestMapMessages, self).setUp(user='mark@hbd.com')
+        super(TestMapMessages, self).setUpProduct()
+
+    def test_NoMessagesToMap(self):
+        # Mapping an untranslated POTMsgSet produces an empty dict.
+        empty = self.script._mapExistingMessages(self.trunk_potmsgset)
+        self.assertEqual(empty, {})
+
+    def test_MapSharedMessage(self):
+        # Map existing, shared translation for a POTMsgSet.
+        message = self._makeTranslationMessage(
+            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
+            text='winslow', diverged=False)
+
+        map = self.script._mapExistingMessages(message.potmsgset)
+        key = self.script._getPOTMsgSetTranslationMessageKey(message)
+        expected = {key: { self.trunk_template: [message]}}
+
+    def test_MapDivergedMessage(self):
+        # Map existing, diverged translation for a POTMsgSet.
+        message = self._makeTranslationMessage(
+            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
+            text='winslow', diverged=True)
+
+        map = self.script._mapExistingMessages(message.potmsgset)
+        key = self.script._getPOTMsgSetTranslationMessageKey(message)
+        expected = {key: {self.trunk_template: [message]}}
+
+        self.assertEqual(map, expected)
+
+    def test_FindNoUsedMessage(self):
+        # Test _findUsedMessage against a case where there are no used
+        # messages.
+        message = self._makeTranslationMessage(
+            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
+            text='godot', diverged=False)
+        message.is_current = False
+        key = self.script._getPOTMsgSetTranslationMessageKey(message)
+        map = {key: {self.trunk_template: [message]}}
+
+        self.assertEqual(self.script._findUsedMessages(map), ({}, {}))
+
+    def test_FindUsedMessages(self):
+        # _findUsedMessages maps diverged messages based on template,
+        # language, and variant.  The difference for shared messages is
+        # that their template is None.
+        imported_message = self._makeTranslationMessage(
+            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
+            text='pog', diverged=True)
+        imported_message.is_current = False
+        imported_message.is_imported = True
+        current_message = self._makeTranslationMessage(
+            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
+            text='klexdigal', diverged=False)
+
+        current_key = self.script._getPOTMsgSetTranslationMessageKey(
+            current_message)
+        imported_key = self.script._getPOTMsgSetTranslationMessageKey(
+            imported_message)
+
+        map = {
+            current_key: {self.trunk_template: [current_message]},
+            imported_key: { self.trunk_template: [imported_message]},
+        }
+
+        expected = (
+            {(None, self.dutch, None): current_message},
+            {(self.trunk_template, self.dutch, None): imported_message})
+        
+        self.assertEqual(self.script._findUsedMessages(map), expected)
+
+    def test_ScrubPOTMsgSetTranslationsWithoutDuplication(self):
+        # _scrubPOTMsgSetTranslations eliminates duplicated
+        # TranslationMessages.  If it doesn't find any, nothing happens.
+        message = self._makeTranslationMessage(
+            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
+            text='gbzidh', diverged=False)
+        map = self.script._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
+        key = self.script._getPOTMsgSetTranslationMessageKey(message)
+        self.assertEqual(map, {key: {None: [message]}})
+
+    def test_ScrubPOTMsgSetTranslationsWithDuplication(self):
+        # If there are duplicate TranslationMessages, one inherits all
+        # their is_current/is_imported flags and the others disappear.
+        # XXX JeroenVermeulen 2009-06-15
+        # spec=message-sharing-prevent-duplicates: We're going to have a
+        # unique index for this.  When it becomes impossible to perform
+        # this test, both it and _scrubPOTMsgSetTranslations can be
+        # retired.
+        message1, message2 = self._makeTranslationMessages(
+            'tigidou', 'tigidou', trunk_diverged=True, stable_diverged=True)
+        message2.is_current = False
+        message2.is_imported = True
+        message2.potmsgset = self.trunk_potmsgset
+        message2.potemplate = self.trunk_template
+
+        map = self.script._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
+
+        message, no_message = self._getMessages()
+
+        # The resulting map has only one of the identical messages.
+        key = self.script._getPOTMsgSetTranslationMessageKey(message)
+        self.assertEqual(map, {key: {self.trunk_template: [message]}})
+
+        # The remaining message combines the flags from both its
+        # predecessors.
+        self.assertEqual(
+            (message.is_current, message.is_imported),
+            (True, True))
+
+    def test_FindCurrentClash(self):
+        # _findClashes finds messages that would be "in the way" (as far
+        # as the is_current/is_imported flags are concerned) if we try
+        # to move a message to another template and potmsgset.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'ex', 'why', trunk_diverged=False, stable_diverged=False)
+        current_clash, imported_clash, twin = self.script._findClashes(
+            stable_message, self.trunk_potmsgset, None)
+
+        # Moving stable_message fully into trunk would clash with
+        # trunk_message.
+        self.assertEqual(current_clash, trunk_message)
+
+        # There's no conflict for the is_imported flag.
+        self.assertEqual(imported_clash, None)
+
+        # Nor does stable_message have a twin in trunk.
+        self.assertEqual(twin, None)
+
+    def test_FindImportedClash(self):
+        # Finding is_imported clashes works just like finding is_current
+        # clashes.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'ex', 'why', trunk_diverged=False, stable_diverged=False)
+
+        for message in (trunk_message, stable_message):
+            message.is_current = False
+            message.is_imported = True
+
+        current_clash, imported_clash, twin = self.script._findClashes(
+            stable_message, self.trunk_potmsgset, None)
+
+        self.assertEqual(current_clash, None)
+        self.assertEqual(imported_clash, trunk_message)
+        self.assertEqual(twin, None)
+
+    def test_FindTwin(self):
+        # _findClashes also finds "twin" messages: ones with the same
+        # translations, for the same language.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'klob', 'klob', trunk_diverged=False, stable_diverged=False)
+        trunk_message.is_current = False
+
+        current_clash, imported_clash, twin = self.script._findClashes(
+            stable_message, self.trunk_potmsgset, None)
+
+        self.assertEqual(current_clash, None)
+        self.assertEqual(imported_clash, None)
+        self.assertEqual(twin, trunk_message)
+
+    def test_FindClashesWithTwin(self):
+        # Clashes with a twin are ignored; they can be resolved by
+        # merging messages.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'sniw', 'sniw', trunk_diverged=False, stable_diverged=False)
+
+        current_clash, imported_clash, twin = self.script._findClashes(
+            stable_message, self.trunk_potmsgset, None)
+
+        self.assertEqual(current_clash, None)
+        self.assertEqual(imported_clash, None)
+        self.assertEqual(twin, trunk_message)
+
+    def test_FindClashesWithNonTwin(self):
+        # _findClashes can find both a twin and a "flag conflict" in the
+        # same place.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'sniw', 'sniw', trunk_diverged=False, stable_diverged=False)
+        trunk_message.is_current = False
+        current_message = self._makeTranslationMessage(
+            self.trunk_pofile, self.trunk_potmsgset, 'gah', False)
+
+        current_clash, imported_clash, twin = self.script._findClashes(
+            stable_message, self.trunk_potmsgset, None)
+
+        self.assertEqual(current_clash, current_message)
+        self.assertEqual(imported_clash, None)
+        self.assertEqual(twin, trunk_message)
+
+    def test_FindCurrentClashFromDicts(self):
+        # Like test_FindCurrentClash, but using cached dicts.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'ex', 'why', trunk_diverged=False, stable_diverged=False)
+
+        trunk_key = self.script._getPOTMsgSetTranslationMessageKey(
+            trunk_message)
+        stable_key = self.script._getPOTMsgSetTranslationMessageKey(
+            stable_message)
+
+        existing = self.script._mapExistingMessages(self.trunk_potmsgset)
+        current, imported = self.script._findUsedMessages(existing)
+        current_clash, imported_clash, twin = (
+            self.script._findClashesFromDicts(
+                existing, current, imported, stable_message))
+
+        self.assertEqual(current_clash, trunk_message)
+        self.assertEqual(imported_clash, None)
+        self.assertEqual(twin, None)
+
+
+    def test_FindImportedClashFromDicts(self):
+        # Like test_FindImportedClash, but using cached dicts.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'ex', 'why', trunk_diverged=False, stable_diverged=False)
+
+        for message in (trunk_message, stable_message):
+            message.is_current = False
+            message.is_imported = True
+
+        existing = self.script._mapExistingMessages(self.trunk_potmsgset)
+        current, imported = self.script._findUsedMessages(existing)
+        current_clash, imported_clash, twin = (
+            self.script._findClashesFromDicts(
+                existing, current, imported, stable_message))
+
+        self.assertEqual(current_clash, None)
+        self.assertEqual(imported_clash, trunk_message)
+        self.assertEqual(twin, None)
+
+    def test_FindTwinFromDicts(self):
+        # Like test_FindTwin, but using cached dicts.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'klob', 'klob', trunk_diverged=False, stable_diverged=False)
+        trunk_message.is_current = False
+
+        existing = self.script._mapExistingMessages(self.trunk_potmsgset)
+        current, imported = self.script._findUsedMessages(existing)
+        current_clash, imported_clash, twin = (
+            self.script._findClashesFromDicts(
+                existing, current, imported, stable_message))
+
+        self.assertEqual(current_clash, None)
+        self.assertEqual(imported_clash, None)
+        self.assertEqual(twin, trunk_message)
+
+    def test_FindClashesWithTwinFromDicts(self):
+        # Like test_FindClashesWithTwin, but using cached dicts.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'sniw', 'sniw', trunk_diverged=False, stable_diverged=False)
+
+        existing = self.script._mapExistingMessages(self.trunk_potmsgset)
+        current, imported = self.script._findUsedMessages(existing)
+        current_clash, imported_clash, twin = (
+            self.script._findClashesFromDicts(
+                existing, current, imported, stable_message))
+
+        self.assertEqual(current_clash, None)
+        self.assertEqual(imported_clash, None)
+        self.assertEqual(twin, trunk_message)
+
+    def test_FindClashesWithNonTwinFromDicts(self):
+        # Like test_FindClashesWithNonTwin, but using cached dicts.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'sniw', 'sniw', trunk_diverged=False, stable_diverged=False)
+        trunk_message.is_current = False
+        current_message = self._makeTranslationMessage(
+            self.trunk_pofile, self.trunk_potmsgset, 'gah', False)
+
+        existing = self.script._mapExistingMessages(self.trunk_potmsgset)
+        current, imported = self.script._findUsedMessages(existing)
+        current_clash, imported_clash, twin = (
+            self.script._findClashesFromDicts(
+                existing, current, imported, stable_message))
+
+        self.assertEqual(current_clash, current_message)
+        self.assertEqual(imported_clash, None)
+        self.assertEqual(twin, trunk_message)
 
 
 def test_suite():

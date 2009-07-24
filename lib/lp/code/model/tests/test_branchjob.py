@@ -1,4 +1,5 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchJobs."""
 
@@ -621,6 +622,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal(target_branch=job.branch,
                                                    registrant=hacker)
         bmp.source_branch.last_scanned_id = 'rev3-id'
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
