@@ -614,7 +614,6 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'message:\n'
         '  rev2d\n', message)
 
-
     def makeJobAndBMP(self):
         job = self.makeRevisionsAddedWithMergeCommit()
         hacker = self.factory.makePerson(displayname='J. Random Hacker',
@@ -646,7 +645,11 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         '  rev2d\n' % canonical_url(bmp), message)
 
     def test_getRevisionMessage_with_BMP_with_requested_review(self):
-        """Information about related proposals is displayed."""
+        """Information about incomplete reviews is omitted.
+
+        If there is a related branch merge proposal, and it has
+        requested reviews which have not been completed, they are ignored.
+        """
         job, bmp = self.makeJobAndBMP()
         reviewer = self.factory.makePerson()
         bmp.nominateReviewer(reviewer, bmp.registrant)
@@ -667,7 +670,6 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
         '  rev2d\n' % canonical_url(bmp), message)
-
 
     def test_getRevisionMessage_with_related_rejected_BMP(self):
         """The reviewer is shown for non-approved proposals."""
