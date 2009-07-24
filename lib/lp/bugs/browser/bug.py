@@ -409,7 +409,7 @@ class BugViewMixin:
         # The current user has to be in subscribers_id so
         # in case the id is needed for a new subscription.
         user = getUtility(ILaunchBag).user
-        if user not in subscribers:
+        if user is not None and user not in subscribers:
             subscribers.append(user)
 
         ids = {}
