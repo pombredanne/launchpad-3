@@ -6,6 +6,7 @@ PYTHON=python${PYTHON_VERSION}
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
+BUILDOUT_CFG=buildout.cfg
 VERBOSITY=-vv
 
 TESTFLAGS=-p $(VERBOSITY)
@@ -130,8 +131,8 @@ bin/buildout: download-cache eggs
 	$(SHHH) $(PYTHON) bootstrap.py --ez_setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
-$(PY): bin/buildout versions.cfg buildout.cfg setup.py
-	$(SHHH) ./bin/buildout configuration:instance_name=${LPCONFIG}
+$(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
+	$(SHHH) ./bin/buildout configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
 compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
