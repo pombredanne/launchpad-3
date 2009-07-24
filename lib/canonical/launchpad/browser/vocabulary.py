@@ -27,6 +27,7 @@ from lazr.restful.interfaces import IWebServiceClientRequest
 from lp.registry.interfaces.person import IPerson
 
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
@@ -98,13 +99,13 @@ class HugeVocabularyJSONView:
             factory = zapi.getUtility(IVocabularyFactory, name)
         except ComponentLookupError:
             raise UnexpectedFormData(
-                'Unknown vocabulary %s' % vocabulary_name)
+                'Unknown vocabulary %r' % name)
 
         vocabulary = factory(self.context)
 
         if not IHugeVocabulary.providedBy(vocabulary):
             raise UnexpectedFormData(
-                'Non-huge vocabulary %s' % vocabulary_name)
+                'Non-huge vocabulary %r' % name)
 
         matches = vocabulary.searchForTerms(search_text)
         batch_navigator = BatchNavigator(matches, self.request)

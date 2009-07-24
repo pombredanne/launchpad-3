@@ -40,7 +40,7 @@ The name must be a valid vocabulary.
     >>> print_json(view())
     Traceback (most recent call last):
     ...
-    ComponentLookupError: (<...IVocabularyFactory>, 'invalid-vocabulary')
+    UnexpectedFormData: Unknown vocabulary 'invalid-vocabulary'
 
 A successful search.
 
