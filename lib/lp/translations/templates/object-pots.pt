@@ -71,8 +71,9 @@
 
         <h2><span tal:replace="potemplate/title">Template Title</span></h2>
 
-        <p tal:content="potemplate/description">
-          Template description
+        <p tal:condition="potemplate/description"
+           content="structure context/description/fmt:text-to-html">
+            Description of this template.
         </p>
 
         <div tal:replace="structure potemplate/@@+preferred-chart" />
