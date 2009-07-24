@@ -21,8 +21,9 @@ import sys
 # circular import killing us.
 from canonical.launchpad.database import account
 
-from lp.codehosting.rewrite import BranchRewriter
+from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
+from lp.codehosting.rewrite import BranchRewriter
 from lp.services.scripts.base import LaunchpadScript
 
 
@@ -63,4 +64,5 @@ class BranchRewriteScript(LaunchpadScript):
 
 
 if __name__ == '__main__':
-    BranchRewriteScript("branch-rewrite", dbuser='branch-rewrite').run()
+    BranchRewriteScript("branch-rewrite", dbuser='branch-rewrite').run(
+        isolation=ISOLATION_LEVEL_AUTOCOMMIT)
