@@ -998,7 +998,7 @@ class PersonTeamBranchesView(LaunchpadView):
 
     @cachedproperty
     def teams_with_branches(self):
-        teams = self._getCollection().getTeamsWithBranches(self.context)
+        teams = self._getCollection().getTeamsWithBranches(self.person)
         return [self._createItem(team) for team in teams]
 
 
