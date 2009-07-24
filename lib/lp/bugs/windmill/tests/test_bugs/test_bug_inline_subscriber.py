@@ -201,7 +201,6 @@ def test_inline_subscriber():
     # The first click unsubscribes the direct subscription, leaving the dupe.
     client.click(xpath=SUBSCRIPTION_LINK)
     client.waits.sleep(milliseconds=SLEEP)
-    client.asserts.assertNode(xpath=PERSON_LINK % u'Foo Bar')
     client.asserts.assertNode(
         xpath=(u'//div[@id="subscribers-from-duplicates"]'
                '/div/a[@name="Foo Bar"]'))
