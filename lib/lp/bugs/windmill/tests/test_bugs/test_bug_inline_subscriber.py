@@ -45,7 +45,7 @@ def test_inline_subscriber():
     client.asserts.assertNode(classname=SAMPLE_PERSON_CLASS)
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator=u'style.backgroundImage|url(/@@/remove)')
+        validator=u'className|remove')
 
     # Make sure the unsubscribe link also works, that
     # the person's named is removed from the subscriber's list,
@@ -56,7 +56,7 @@ def test_inline_subscriber():
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator=u'style.backgroundImage|url(/@@/add)')
+        validator=u'className|add')
     client.asserts.assertNotNode(classname=SAMPLE_PERSON_CLASS)
 
     # Subscribe again in order to check that the minus icon
@@ -71,7 +71,7 @@ def test_inline_subscriber():
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator=u'style.backgroundImage|url(/@@/add)')
+        validator=u'className|add')
     client.asserts.assertNotNode(classname=SAMPLE_PERSON_CLASS)
 
     # Test inline subscribing of others by subscribing Ubuntu Team.
