@@ -30,6 +30,7 @@ from email.MIMEText import MIMEText
 import re
 
 import pytz
+from simplejson import dumps
 
 from zope.app.form.browser import TextWidget
 from zope.component import adapter, getUtility
@@ -53,7 +54,7 @@ from canonical.launchpad.interfaces._schema_circular_imports import IBug
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, BugTaskStatus, IFrontPageBugTaskSearch)
+    BugTaskSearchParams, BugTaskStatus, IBugTask, IFrontPageBugTaskSearch)
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
@@ -381,12 +382,37 @@ class BugViewMixin:
     @cachedproperty
     def direct_subscribers(self):
         """Caches the list of direct subscribers."""
-        return frozenset(self.context.getDirectSubscribers())
+        if IBug.providedBy(self.context):
+            return frozenset(self.context.getDirectSubscribers())
+        elif IBugTask.providedBy(self.context):
+            return frozenset(self.context.bug.getDirectSubscribers())
+        else:
+            raise NotImplementedError(
+                'direct_subscribers is not provided by %s' % self)
 
     @cachedproperty
     def duplicate_subscribers(self):
         """Caches the list of subscribers from duplicates."""
-        return frozenset(self.context.getSubscribersFromDuplicates())
+        if IBug.providedBy(self.context):
+            return frozenset(self.context.getSubscribersFromDuplicates())
+        elif IBugTask.providedBy(self.context):
+            return frozenset(self.context.bug.getSubscribersFromDuplicates())
+        else:
+            raise NotImplementedError(
+                'duplicate_subscribers is not implemented for %s' % self)
+
+    @cachedproperty
+    def subscriber_ids(self):
+        subscribers = list(
+            self.direct_subscribers.union(self.duplicate_subscribers))
+        ids = {}
+        for sub in subscribers:
+            ids[sub.name] = 'subscriber-%s' % sub.id
+        return ids
+
+    @property
+    def subscriber_ids_js(self):
+        return dumps(self.subscriber_ids)
 
     def subscription_class(self, subscribed_person):
         """Returns a set of CSS class names based on subscription status.

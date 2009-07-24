@@ -13,6 +13,8 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
+      <script type="text/javascript"
+        tal:content="string:var subscriber_ids = ${view/subscriber_ids_js};" />
       <tal:devmode condition="devmode">
        <script type="text/javascript"
                 tal:define="lp_js string:${icingroot}/build"

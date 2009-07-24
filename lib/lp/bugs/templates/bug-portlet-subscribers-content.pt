@@ -15,7 +15,7 @@
       <div
         tal:condition="direct_subscriptions"
         tal:repeat="subscription direct_subscriptions"
-        tal:attributes="class string:subscriber-${subscription/person/name/fmt:css-id}"
+        tal:attributes="class subscription/css_name"
       >
         <metal:subscriber  metal:define-macro="subscriber-row">
 
@@ -44,12 +44,12 @@
                href="+subscribe"
                tal:attributes="
                  title string:Unsubscribe ${subscription/person/fmt:displayname};
-                 id string:unsubscribe-${subscription/person/name/fmt:css-id};
+                 id string: unsubscribe-${subscription/css_name};
                  class python: view.subscription_class(subscription.person)
                "
             >
               <img class="unsub-icon" src="/@@/remove"
-                tal:attributes="id string:unsubscribe-icon-${subscription/person/name/fmt:css-id}" />
+                tal:attributes="id string: unsubscribe-icon-${subscription/css_name}" />
             </a>
 
         </metal:subscriber>
@@ -67,8 +67,8 @@
     <div
       tal:repeat="subscription from_dupes_subscriptions"
       tal:attributes="
-        class string:subscriber-${subscription/person/name/fmt:css-id};
-        id string:dupe-subscriber-${subscription/person/name/fmt:css-id};
+        class subscription/css_name;
+        id string: dupe-${subscription/css_name};
       "
     >
       <metal:subscriber metal:use-macro="template/macros/subscriber-row" />
