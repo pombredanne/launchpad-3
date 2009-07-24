@@ -626,6 +626,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
     def test_getRevisionMessage_with_related_BMP(self):
         """Information about related proposals is displayed."""
         job, bmp = self.makeJobAndBMP()
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
@@ -653,6 +655,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         job, bmp = self.makeJobAndBMP()
         reviewer = self.factory.makePerson()
         bmp.nominateReviewer(reviewer, bmp.registrant)
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
