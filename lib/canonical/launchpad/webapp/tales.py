@@ -56,6 +56,7 @@ from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.soyuz.interfaces.build import BuildStatus
+from canonical.lazr.utils import safe_hasattr
 
 
 def escape(text, quote=True):
@@ -414,7 +415,7 @@ class ObjectFormatterAPI:
     # The names which can be traversed further (e.g context/fmt:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
     # Names which are allowed but can't be traversed further.
-    final_traversable_names = {}
+    final_traversable_names = {'public-private-css': 'public_private_css',}
 
     def __init__(self, context):
         self._context = context
@@ -472,6 +473,13 @@ class ObjectFormatterAPI:
         raise NotImplementedError(
             "No link implementation for %r, IPathAdapter implementation "
             "for %r." % (self, self._context))
+
+    def public_private_css(self):
+        """Return the CSS class that represents the object's privacy."""
+        if safe_hasattr(self._context, 'private') and self._context.private:
+            return 'private'
+        else:
+            return 'public'
 
 
 class ObjectImageDisplayAPI:
@@ -911,6 +919,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
                          }
 
     final_traversable_names = {'local-time': 'local_time'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
@@ -1492,6 +1501,7 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         'aliases': 'aliases',
         'external-link': 'external_link',
         'external-title-link': 'external_title_link'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def link(self, view_name):
         """Return an HTML link to the bugtracker page.
@@ -1556,6 +1566,7 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
     final_traversable_names = {
         'external-link': 'external_link',
         'external-link-short': 'external_link_short'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def _make_external_link(self, summary=None):
         """Return an external HTML link to the target of the bug watch.
@@ -1965,6 +1976,7 @@ class LinkFormatterAPI(ObjectFormatterAPI):
         'icon-link': 'link',
         'link-icon': 'link',
         }
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def icon(self):
         """Return the icon representation of the link."""

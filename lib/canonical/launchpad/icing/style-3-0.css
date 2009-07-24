@@ -234,9 +234,13 @@ html, body {
     font-family: bitstream vera sans, arial, helvetica, clean, sans-serif;
     font-size: 97%; /* 2.0 backward compatability */
     }
+body.private {
+    /* It must be obvious to the user that the context is private */
+    background: url("/@@/private-y-bg") top left repeat-y;
+    }
 h1 {
     clear: none;
-    padding-top: 6px; /* An offset fromt he logo. */
+    padding-top: 6px; /* An offset from the logo. */
     font-size: 197%;
     margin-bottom: .5em; /* 2.0 backward compatability */
     }

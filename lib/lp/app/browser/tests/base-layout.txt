@@ -41,7 +41,7 @@ content are positioned using the "yui-t4", "yui-main", "yui-b", and
         <title>Test base-layout: main_side</title> ...
         <!-- Extra head content -->
       </head>
-      <body id="document" class="tab-overview main_side yui-skin-sam">
+      <body id="document" class="tab-overview main_side public yui-skin-sam">
         <div class="yui-d0">
           <div id="locationbar"> ...
              <form id="globalsearch" ...
@@ -95,7 +95,7 @@ content to take up all the horizontal space.
         <title>Test base-layout: main_only</title> ...
         <!-- Extra head content -->
       </head>
-      <body id="document" class="tab-overview main_only yui-skin-sam">
+      <body id="document" class="tab-overview main_only public yui-skin-sam">
         <div class="yui-d0">
           <div id="locationbar"> ...
              <form id="globalsearch" ...
@@ -143,7 +143,7 @@ slots are rendered, as are the application tabs.
         <title>Test base-layout: searchless</title> ...
         <!-- Extra head content -->
       </head>
-      <body id="document" class="tab-overview searchless yui-skin-sam">
+      <body id="document" class="tab-overview searchless public yui-skin-sam">
         <div class="yui-d0">
           <div id="locationbar">
             <div id="logincontrol"><a href="...">Log in / Register</a></div>
@@ -194,7 +194,7 @@ or breadcrumbs; the template must provide its own h1 element.
         <title>Test base-layout: locationless</title> ...
         <!-- Extra head content -->
       </head>
-      <body id="document" class="tab-overview locationless yui-skin-sam">
+      <body id="document" class="tab-overview locationless public yui-skin-sam">
         <div class="yui-d0">
           <div id="locationbar">
             <div id="logincontrol"><a href="...">Log in / Register</a></div>
@@ -223,3 +223,32 @@ or breadcrumbs; the template must provide its own h1 element.
         <script>LP.client.cache['context'] ...
       </body>
     </html> ...
+
+
+Public and private presentation
+-------------------------------
+
+The base-layout master templates uses the fmt:public-private-css formatter to
+add the 'public' or 'private' CSS class to the body tag. When the context is
+private, the 'private' class is added to the body's class attribute.
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> login('admin@canonical.com')
+    >>> team = factory.makeTeam(
+    ...     owner=user, name='a-private-team',
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> view = LocationlessView(team, request)
+    >>> body = find_tag_by_id(view.render(), 'document')
+    >>> print body['class']
+    tab-overview locationless private yui-skin-sam
+
+When the context is public, the 'public' class is in the class attribute.
+
+    >>> login(ANONYMOUS)
+    >>> team = factory.makeTeam(owner=user, name='a-public-team')
+    >>> view = LocationlessView(team, request)
+    >>> body = find_tag_by_id(view.render(), 'document')
+    >>> print body['class']
+    tab-overview locationless public yui-skin-sam

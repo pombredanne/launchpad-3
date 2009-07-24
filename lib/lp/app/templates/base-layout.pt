@@ -74,7 +74,10 @@
   </head>
 
   <body id="document"
-    tal:attributes="class string:tab-${view/menu:selectedfacetname} ${view/macro:pagetype} yui-skin-sam">
+    tal:attributes="class string:tab-${view/menu:selectedfacetname}
+      ${view/macro:pagetype}
+      ${view/context/fmt:public-private-css}
+      yui-skin-sam">
     <div class="yui-d0">
       <div id="locationbar">
         <tal:login replace="structure context/@@login_status" />
