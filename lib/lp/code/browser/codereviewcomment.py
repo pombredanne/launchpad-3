@@ -64,7 +64,12 @@ def quote_text_as_email(text, width=80):
 
 
 class CodeReviewDisplayComment:
-    """A code review comment or activity or both."""
+    """A code review comment or activity or both.
+
+    The CodeReviewComment itself does not implement the IComment interface as
+    this is purely a display interface, and doesn't make sense to have display
+    only code in the model itself.
+    """
 
     implements(IComment)
 
@@ -74,6 +79,7 @@ class CodeReviewDisplayComment:
         self.comment = comment
         self.has_body = bool(self.comment.message_body)
         self.has_footer = self.comment.vote is not None
+        # The date attribute is used to sort the comments in the conversation.
         self.date = self.comment.message.datecreated
 
 
@@ -102,6 +108,10 @@ class CodeReviewCommentView(LaunchpadView):
     """Standard view of a CodeReviewComment"""
     __used_for__ = ICodeReviewComment
 
+    @cachedproperty
+    def comment(self):
+        """The decorated code review comment."""
+        return CodeReviewDisplayComment(self.context)
 
     @cachedproperty
     def comment_author(self):

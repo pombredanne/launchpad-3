@@ -19,7 +19,7 @@
     <tal:proposal-heading tal:replace="structure context/branch_merge_proposal/@@+heading"/>
 
     <h1>Code review comment</h1>
-    <tal:content replace="structure context/@@+fragment"/>
+    <tal:content replace="structure view/comment/@@+render"/>
     <p>&laquo;&nbsp;<a href="#" tal:attributes="href context/branch_merge_proposal/fmt:url">Back to merge
     proposal</a></p>
   </div>

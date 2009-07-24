@@ -551,9 +551,6 @@
             name="+index"
             template="../templates/codereviewcomment-index.pt"/>
         <browser:page
-            name="+fragment"
-            template="../templates/codereviewcomment-fragment.pt"/>
-        <browser:page
             name="+comment-header"
             template="../templates/codereviewcomment-header.pt"/>
         <browser:page
