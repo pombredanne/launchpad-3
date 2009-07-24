@@ -1493,6 +1493,7 @@ Invalid assignee:
 
     >>> stub.test_emails = []
 
+
 == Multiple Commands ==
 
 An email can contain multiple commands, even for different bugs.
@@ -1878,11 +1879,9 @@ arises from the implementation of MaloneHandler.
 
     >>> stub.test_emails = []
 
-This example shows that the affects command is needed even before
-specifying bug properties.
-
-XXX: Gavin Panella 2009-07-24 bug=404010: The need for this test
-arises from the implementation of MaloneHandler.
+Even though bug-specific commands (i.e. those that don't require a
+bugtask context) can run successfully, at least one bugtask context
+must be set for a new bug, or the message will ultimately be rejected.
 
     >>> from canonical.launchpad.database import Bug
     >>> before_count = Bug.select().count()
@@ -1893,6 +1892,8 @@ arises from the implementation of MaloneHandler.
     ... Subject: A bug with no affects
     ...
     ...  private yes
+    ...  duplicate 1
+    ...  cve 1999-8979
     ... """
 
     >>> process_email(submit_mail)
