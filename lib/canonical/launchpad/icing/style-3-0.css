@@ -256,7 +256,7 @@ p {
 p, li, dt, dd, blockquote {
     max-width: 45em; /* Wrap the text before the eye gets lost. */
     }
-pre, code, samp, tt, .preformatted {
+pre, code, samp, tt, .console {
   font-size: 116%;
     }
 ol {
