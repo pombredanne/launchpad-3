@@ -11,14 +11,11 @@
 >
 <body>
 
-  <metal:heading fill-slot="before_nav_menu"
-                 tal:content="structure context/branch_merge_proposal/source_branch/@@+heading"/>
-
   <div metal:fill-slot="main">
 
-    <tal:proposal-heading tal:replace="structure context/branch_merge_proposal/@@+heading"/>
-
-    <h1>Code review comment</h1>
+    <h1 tal:define="branch context/branch_merge_proposal/source_branch">
+      Code review comment for <tal:source content="branch/bzr_identity"/>
+    </h1>
     <tal:content replace="structure view/comment/@@+render"/>
     <p>&laquo;&nbsp;<a href="#" tal:attributes="href context/branch_merge_proposal/fmt:url">Back to merge
     proposal</a></p>
