@@ -381,7 +381,7 @@ class BugViewMixin:
 
     @cachedproperty
     def direct_subscribers(self):
-        """Caches the list of direct subscribers."""
+        """Return the list of direct subscribers."""
         if IBug.providedBy(self.context):
             return frozenset(self.context.getDirectSubscribers())
         elif IBugTask.providedBy(self.context):
@@ -392,7 +392,7 @@ class BugViewMixin:
 
     @cachedproperty
     def duplicate_subscribers(self):
-        """Caches the list of subscribers from duplicates."""
+        """Return the list of subscribers from duplicates."""
         if IBug.providedBy(self.context):
             return frozenset(self.context.getSubscribersFromDuplicates())
         elif IBugTask.providedBy(self.context):
@@ -403,6 +403,7 @@ class BugViewMixin:
 
     @cachedproperty
     def subscriber_ids(self):
+        """Return a dictionary mapping a css_name to user name."""
         subscribers = list(
             self.direct_subscribers.union(self.duplicate_subscribers))
 
@@ -419,10 +420,11 @@ class BugViewMixin:
 
     @property
     def subscriber_ids_js(self):
+        """Return subscriber_ids in a form suitable for JavaScript use."""
         return dumps(self.subscriber_ids)
 
     def subscription_class(self, subscribed_person):
-        """Returns a set of CSS class names based on subscription status.
+        """Return a set of CSS class names based on subscription status.
 
         For example, "subscribed-false dup-subscribed-true".
         """
