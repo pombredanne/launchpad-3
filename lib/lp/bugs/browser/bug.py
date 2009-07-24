@@ -405,6 +405,13 @@ class BugViewMixin:
     def subscriber_ids(self):
         subscribers = list(
             self.direct_subscribers.union(self.duplicate_subscribers))
+
+        # The current user has to be in subscribers_id so
+        # in case the id is needed for a new subscription.
+        user = getUtility(ILaunchBag).user
+        if user not in subscribers:
+            subscribers.append(user)
+
         ids = {}
         for sub in subscribers:
             ids[sub.name] = 'subscriber-%s' % sub.id
