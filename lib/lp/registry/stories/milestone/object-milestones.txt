@@ -98,7 +98,9 @@ The main project page has a portlet "Active milestones":
     2010-04-02  1.1.
     2010-04-01  1.1
 
-The page "All milestones" lists all milestones, including the inactive ones:
+The page "All milestones" lists all milestones, including the inactive ones.
+They do not include the bug and blueprint counts (because they are costly
+to retrieve).
 
     >>> anon_browser.getLink('See all milestones').click()
     >>> print all_milestones(anon_browser)
