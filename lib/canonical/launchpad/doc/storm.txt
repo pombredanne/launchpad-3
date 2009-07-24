@@ -7,7 +7,7 @@ specific Storm tools to cope with our master and slave store arrangement.
     ...     IMasterObject, IMasterStore, ISlaveStore, IStore)
     >>> from canonical.launchpad.database import (
     ...     Account, AccountPassword, EmailAddress)
-    >>> from lp.registry.model.Person import Person
+    >>> from lp.registry.model.person import Person
     >>> from zope.security.proxy import ProxyFactory
 
 
