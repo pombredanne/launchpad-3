@@ -133,6 +133,12 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
+            <tal:location condition="view/macro:pagehas/applicationtabs">
+              <h1><metal:main define-slot="heading" /></h1>
+              <tal:breadcrumbs>
+                <!-- future breadcrumb rule -->
+              </tal:breadcrumbs>
+            </tal:location>
             <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->
