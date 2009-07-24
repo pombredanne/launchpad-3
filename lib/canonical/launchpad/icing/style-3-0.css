@@ -189,7 +189,7 @@ div.columns div.right div.portlet {
     width: auto;
     margin-right: 24%;
     }
-#footer {
+.footer {
     margin-top: 2em;
     border-top: 1px solid #cdd3dd;
     padding-top: .5em;
@@ -252,10 +252,7 @@ p {
 p, li, dt, dd, blockquote {
     max-width: 45em; /* Wrap the text before the eye gets lost. */
     }
-pre, code, samp, tt,
-#bug-description,
-.bug-comment,
-.bug-activity {
+pre, code, samp, tt, .preformatted {
   font-size: 116%;
     }
 ol {
@@ -356,7 +353,7 @@ span.see-all {
 
 
 /* Exceptions they may be common. */
-#contributors dt strong {
+.contributors dt strong {
     padding-left: 1em;
     }
 
@@ -383,17 +380,17 @@ span.see-all {
     background: #fbfbfb;
     }
 
-#project-downloads {
+.downloads {
     font-weight: bold;
     }
-#project-downloads a {
+.downloads a {
     color: #4f843c;
     }
-#project-downloads li {
+.downloads li {
     margin: 0;
     padding: 2px 0 0;
     }
-#project-downloads li a {
+.downloads li a {
     display: block;
     margin: 0;
     border: 1px solid #4f843c;
@@ -406,7 +403,7 @@ span.see-all {
     font-size: 108%;
     text-decoration: underline;
     }
-#project-downloads .released {
+.downloads .released {
     margin: 0 0 .5em 0;
     background: #f3f3f3 url(../images/bg-project-released.gif) right bottom no-repeat;
     padding: .4em .2em;
@@ -415,36 +412,36 @@ span.see-all {
     text-align: right;
     }
 
-#get-involved ul {
+.involvement ul {
     border-top: 1px solid #d0d0d0;
     }
-#get-involved li {
+.involvement li {
     border-bottom: 1px solid #d0d0d0;
     padding: 0;
     font-size: 108%;
     font-weight: bold;
     }
-#get-involved a {
+.involvement a {
     display: block;
     padding: .3em;
     }
-#get-involved a.bugs {
+.involvement a.bugs {
     color: #b9413e;
     background: url(../images/red-arrow.gif) right center no-repeat;
     }
-#get-involved a.question {
+.involvement a.question {
     color: #5265b2;
     background: url(../images/blue-arrow.gif) right center no-repeat;
     }
-#get-involved a.translate {
+.involvement a.translate {
     color: #c5458e;
     background: url(../images/pink-arrow.gif) right center no-repeat;
     }
-#get-involved a.code {
+.involvement a.code {
     color: #d39f57;
     background: url(../images/yellow-arrow.gif) right center no-repeat;
     }
-#get-involved a.blueprint {
+.involvement a.blueprint {
     color: #5ba4c6;
     background: url(../images/lightblue-arrow.gif) right center no-repeat;
     }

@@ -149,7 +149,7 @@
         </div><!-- yui-b side -->
       </div><!-- yui-t4 -->
 
-      <div id="footer">
+      <div id="footer" class="footer">
         <div id="lp-arcana">
           &copy;&nbsp;2004-2009&nbsp;<a
             href="http://canonical.com/">Canonical&nbsp;Ltd.</a> |
