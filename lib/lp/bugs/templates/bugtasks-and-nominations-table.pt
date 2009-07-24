@@ -67,10 +67,13 @@
           This bug doesn't affect me
         </tal:affected>
         (<span tal:replace="structure link/render" />)
-        <script type="text/javascript">
+        <script type="text/javascript" tal:content="string:
           YUI().use('event', 'bugs.bugtask_index', function(Y) {
-              Y.on('load', function(e) { Y.bugs.setup_me_too(); }, window);
+              Y.on('load', function(e) {
+                  Y.bugs.setup_me_too(${view/current_user_affected_js_status});
+              }, window);
           });
+          ">
         </script>
       </span>
     </tal:also-affects-links>
