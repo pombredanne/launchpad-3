@@ -38,7 +38,7 @@ from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
@@ -463,6 +463,24 @@ def canonical_url(
         # Look for a request from the interaction.
         current_request = get_current_browser_request()
         if current_request is not None:
+            if WebServiceLayer.providedBy(current_request):
+                from canonical.launchpad.webapp.publication import (
+                    LaunchpadBrowserPublication)
+                from canonical.launchpad.webapp.servers import (
+                    LaunchpadBrowserRequest)
+                environment = dict(current_request.environment)
+                environment['SERVER_URL'] = (
+                    current_request.getApplicationURL())
+                current_request = LaunchpadBrowserRequest(
+                    current_request.bodyStream.getCacheStream().read(),
+                    environment)
+                current_request.setPublication(
+                    LaunchpadBrowserPublication(None))
+                current_request.setVirtualHostRoot(names=[])
+                main_root_url = current_request.getRootURL(
+                    'mainsite')
+                current_request._app_server = main_root_url.rstrip('/')
+
             request = current_request
 
     if view_name is not None:

@@ -492,6 +492,25 @@ canonical url chain that provides at least one of the interfaces given.
     NoCanonicalUrl: No url for <...ObjectThatHasUrl...> because <...object...> broke the chain.
 
 
+== canonical_url in the web service ==
+
+    >>> from zope.app.security.principalregistry import (
+    ...     UnauthenticatedPrincipal)
+    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
+    >>> from canonical.launchpad.webapp.interaction import setupInteraction
+    >>> from lazr.restful.utils import get_current_browser_request
+    >>> anonymous = UnauthenticatedPrincipal(None, None, None)
+    >>> api_request = WebServiceTestRequest()
+    >>> setupInteraction(anonymous, participation=api_request)
+    >>> get_current_browser_request() is api_request
+    True
+
+    >>> canonical_url(countryset_instance, request=api_request)
+    u'http://api.launchpad.dev/countries'
+    >>> canonical_url(countryset_instance)
+    u'http://launchpad.dev/countries'
+
+
 == The end ==
 
 We've finished with our interfaces and utility component, so remove them from
