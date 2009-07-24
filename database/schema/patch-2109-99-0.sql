@@ -3,7 +3,8 @@ SET client_min_messages=ERROR;
 CREATE TABLE specificationmessage (
     id integer NOT NULL,
     specification integer NOT NULL,
-    message integer NOT NULL
+    message integer NOT NULL,
+    visible boolean DEFAULT true NOT NULL
 );
 
 CREATE SEQUENCE specificationmessage_id_seq
