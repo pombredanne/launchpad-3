@@ -22,7 +22,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import sqlvalues, SQLBase
 
-from lp.soyuz.interfaces.archive import ComponentNotFound, SourceNotFound
+from lp.soyuz.interfaces.archive import ComponentNotFound
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
     IArchiveUploader, IArchiveQueueAdmin)
@@ -165,13 +165,10 @@ class ArchivePermissionSet:
 
     def _nameToSourcePackageName(self, sourcepackagename):
         """Helper to convert a possible string name to ISourcePackageName."""
-        try:
-            if isinstance(sourcepackagename, basestring):
-                sourcepackagename = getUtility(
-                    ISourcePackageNameSet)[sourcepackagename]
-            return sourcepackagename
-        except NotFoundError, e:
-            raise SourceNotFound(e)
+        if isinstance(sourcepackagename, basestring):
+            sourcepackagename = getUtility(
+                ISourcePackageNameSet)[sourcepackagename]
+        return sourcepackagename
 
     def permissionsForPerson(self, archive, person):
         """See `IArchivePermissionSet`."""
