@@ -83,6 +83,17 @@ easy access to the equivalent search on sources:
     >>> print distro_pkg_search_view.source_search_url
     http://launchpad.dev/ubuntu/+search?search_type=source&text=a
 
+Form variables are properly encoded as UTF-8 (as expected by the
+server) before building the 'source_search_url'.
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search", form={
+    ...         'text': u'\xe7',
+    ...     })
+
+    >>> print distro_pkg_search_view.source_search_url
+    http://launchpad.dev/ubuntu/+search?search_type=source&text=%C3%A7
+
 But users can specify that the search should be on source-package-names
 instead:
 

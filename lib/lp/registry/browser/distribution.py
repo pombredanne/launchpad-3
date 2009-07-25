@@ -578,7 +578,11 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         By default, we search by binary names, but also provide a link
         to the equivalent source package search in some circumstances.
         """
-        new_query_form = self.request.form.copy()
+        # Encode the form variables as expected by the server, UTF-8, so it
+        # doesn't confuse urllib encoding mechanism with unicodes.
+        new_query_form = {}
+        for key, value in self.request.form.iteritems():
+            new_query_form[key] = value.encode('UTF-8')
         new_query_form['search_type'] = 'source'
         return "%s/+search?%s" % (
             canonical_url(self.context),
