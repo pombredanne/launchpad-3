@@ -992,10 +992,14 @@ def notify_specification_modified(spec, event):
         if info_lines:
             info_lines.append('')
         whiteboard_delta = spec_delta.whiteboard
-        whiteboard_diff = get_unified_diff(
-            whiteboard_delta['old'], whiteboard_delta['new'], 72)
-        info_lines.append('Whiteboard changed:')
-        info_lines.append(whiteboard_diff)
+        if whiteboard_delta['old'] is None:
+            info_lines.append('Whiteboard set to:')
+            info_lines.append(mail_wrapper.format(whiteboard_delta['new']))
+        else:
+            whiteboard_diff = get_unified_diff(
+                whiteboard_delta['old'], whiteboard_delta['new'], 72)
+            info_lines.append('Whiteboard changed:')
+            info_lines.append(whiteboard_diff)
 
     if not info_lines:
         # The specification was modified, but we don't yet support
