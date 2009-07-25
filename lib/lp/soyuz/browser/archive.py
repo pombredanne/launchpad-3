@@ -524,7 +524,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
 
         self.specified_name_filter = None
         if requested_name_filter is not None:
-            self.specified_name_filter = requested_name_filter[0]
+            self.specified_name_filter = self.request._decode(
+                requested_name_filter[0])
 
     def setupStatusFilterWidget(self):
         """Build a customized publishing status select widget.
