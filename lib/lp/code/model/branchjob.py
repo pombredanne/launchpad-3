@@ -550,6 +550,10 @@ class RevisionsAddedJob(BranchJobDerived):
                 outf.write('  proposed by: %s\n' %
                            proposer.unique_displayname)
                 for review in bmp.votes:
+                    # If comment is None, this is a request for a review, not
+                    # a completed review.
+                    if review.comment is None:
+                        continue
                     outf.write('  review: %s - %s\n' %
                         (review.comment.vote.title,
                          review.reviewer.unique_displayname))
