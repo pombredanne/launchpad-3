@@ -298,7 +298,7 @@ class TestBuilddManager(TrialTestCase):
         self.assertEqual(
             None, result, 'Successful resume checks should return None')
 
-        failed_response = ['', '', os.EX_USAGE]
+        failed_response = Failure(ProcessTerminated())
         result = self.manager.checkResume(failed_response, slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(
