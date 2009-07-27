@@ -2214,7 +2214,7 @@ all result in a NotFound exception:
     >>> sabdfl.archive.syncSources(["bogus"], cprov.archive, "release")
     Traceback (most recent call last):
     ...
-    SourceNotFound: No such source package: 'bogus'.
+    NoSuchSourcePackageName: No such source package: 'bogus'.
 
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "badpocket")
     Traceback (most recent call last):
