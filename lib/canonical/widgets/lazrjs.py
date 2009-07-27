@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Wrappers for lazr-js widgets."""
 
@@ -64,7 +65,7 @@ class TextLineEditorWidget:
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
                 accept_empty: %(accept_empty)s,
-                initial_value_override: '%(initial_value_override)s'
+                initial_value_override: %(initial_value_override)s
             });
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
@@ -143,7 +144,8 @@ class TextLineEditorWidget:
             'tag': self.tag,
             'public_attribute': self.public_attribute,
             'accept_empty': self.accept_empty,
-            'initial_value_override': self.initial_value_override,
+            'initial_value_override': simplejson.dumps(
+                self.initial_value_override),
             }
         # Only display the trigger link and the activation script if
         # the user can write the attribute.
@@ -244,7 +246,7 @@ class InlineEditPickerWidget:
 
 
 def vocabulary_to_choice_edit_items(
-    vocab, css_class_prefix=None, disabled_items=[]):
+    vocab, css_class_prefix=None, disabled_items=[], as_json=False):
     """Convert an enumerable to JSON for a ChoiceEdit.
     
     :vocab: The enumeration to iterate over.
@@ -265,5 +267,8 @@ def vocabulary_to_choice_edit_items(
             new_item['css_class'] = css_class_prefix + item.value.name
         items.append(new_item)
 
-    return simplejson.dumps(items)
+    if as_json:
+        return simplejson.dumps(items)
+    else:
+        return items
 

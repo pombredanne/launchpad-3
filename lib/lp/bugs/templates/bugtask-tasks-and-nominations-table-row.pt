@@ -17,7 +17,7 @@
             href tasklink;
             onclick string:return toggleFormVisibility('${form_row_id}')"
             class="sprite bug-status-expand">
-          <span class="invisible-link"></span>
+          &nbsp;
           <tal:link_text tal:replace="expander_link_text" />
         </a>
         <tal:no_expander tal:condition="not: expandable"
@@ -63,11 +63,9 @@
            tal:attributes="class string:value status${context/status/name}"
            style="float: left"
            tal:content="context/status/title" />
-        <div style="float: right; margin-right: 0.5em">
-          <a href="+editstatus">
-            <img class="editicon" src="/@@/edit-grey" />
-          </a>
-        </div>
+        <a href="+editstatus" style="margin-left: 3px">
+          <img class="editicon" />
+        </a>
       </div>
     </td>
 
@@ -79,11 +77,9 @@
            tal:attributes="class string:value importance${context/importance/name}"
            style="float: left"
            tal:content="context/importance/title" />
-        <div style="float: right; margin-right: 0.5em">
-          <a href="+editstatus">
-            <img class="editicon" src="/@@/edit-grey" />
-          </a>
-        </div>
+        <a href="+editstatus" style="margin-left: 3px">
+          <img class="editicon" />
+        </a>
       </div>
     </td>
     <td tal:condition="not: view/user_can_edit_importance"
@@ -98,9 +94,12 @@
     </td>
 
 
-    <td colspan="2"
-        style="margin: 0; padding: 0; 20%; vertical-align: middle"
-        tal:condition="context/bugwatch">
+    <td class="icon left right">
+      <metal:expander metal:use-macro="template/macros/expander" />
+    </td>
+
+    <td style="margin: 0; padding: 0; vertical-align: middle">
+      <tal:has_watch condition="context/bugwatch">
         <div style="text-decoration: none; padding: 0.25em">
           <tal:bugtracker-active
               condition="context/bugwatch/bugtracker/active">
@@ -113,34 +112,21 @@
                 class="sprite warning-icon"></span>
           <a tal:replace="structure context/bugwatch/fmt:external-link" />
         </div>
-    </td>
-    <td colspan="2"
-        style="width: 20%; vertical-align: middle"
-        tal:condition="not: context/bugwatch">
-      <div class="assignee-content"
-           style="width: 100%; float: left">
-        <span class="yui-activator-data-box">
-          <a tal:condition="context/assignee"
-             class="bg-image"
-             href="+editstatus"
-             tal:attributes="
-               style string: float: left;;
-               background-image: url( ${context/assignee/icon/fmt:url} )">
-            <tal:person-name replace="context/assignee/fmt:displayname" />
+      </tal:has_watch>
+      <tal:has_no_watch condition="not: context/bugwatch">
+
+        <tal:has_assignee condition="context/assignee">
+          <a
+            style="display: block; padding: 0.25em; text-decoration: none;"
+            tal:attributes="href context/assignee/fmt:url/+assignedbugs"
+          >
+            <tal:block replace="structure context/assignee/fmt:icon" />
+            <tal:name replace="context/assignee/fmt:displayname">
+              assignee.displayname
+            </tal:name>
           </a>
-          <tal:nobody tal:condition="not: context/assignee">
-            <span style="float: left; margin: 5px">
-              Nobody
-            </span>
-          </tal:nobody>
-        </span>
-        <div style="float: right; margin-right: 0.5em; margin-top: 5px">
-          <a href="+editstatus" class="yui-activator-act">
-            <img class="editicon" src="/@@/edit-grey" />
-          </a>
-        </div>
-        <div class="yui-activator-message-box yui-activator-hidden"/>
-      </div>
+        </tal:has_assignee>
+      </tal:has_no_watch>
     </td>
 
       <!--
@@ -169,9 +155,9 @@
           <tal:not-milestoned condition="not: context/milestone">
             <span style="float: left">None</span>
             <div style="float: right; margin-right: 0.5em">
-              <a href="+editstatus">
-                <img class="editicon" src="/@@/edit-grey" />
-              </a>
+            <a href="+editstatus" style="margin-left: 3px">
+              <img class="editicon" />
+            </a>
             </div>
           </tal:not-milestoned>
         </div>
@@ -185,15 +171,7 @@
     YUI().use('event', 'bugs.bugtask_index', function(Y) {
         Y.on('load',
              function(e) {
-                 Y.bugs.setup_bugtask_row('${row_id}',
-                                          '${context/fmt:url}',
-                                          ${view/status_widget_items},
-                                          '${context/status/title}',
-                                          ${view/importance_widget_items},
-                                          '${context/importance/title}',
-                                          ${view/user_can_edit_importance_json},
-                                          ${view/milestone_widget_items},
-                                          '${milestone_value}');
+                 Y.bugs.setup_bugtask_row(${view/js_config});
              },
              window);
     });

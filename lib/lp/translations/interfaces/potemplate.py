@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Attribute, Interface
@@ -77,6 +79,10 @@ class IHasTranslationTemplates(Interface):
 
     Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
     """
+
+    has_current_translation_templates = Bool(
+        title=_("Does this object have current translation templates?"),
+        readonly=True)
 
     def getCurrentTranslationTemplates(just_ids=False):
         """Return an iterator over all active translation templates.

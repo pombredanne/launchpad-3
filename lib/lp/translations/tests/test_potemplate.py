@@ -1,4 +1,5 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -8,7 +9,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.model.potemplate import POTemplateSet
+from lp.translations.model.pofile import DummyPOFile
+from lp.translations.model.potemplate import get_pofiles_for, POTemplateSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -390,6 +392,41 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         # Age also acts as a tie-breaker between disabled templates.
         self._enableTemplates(False)
         self.test_ageBreaksTie()
+
+
+class TestGetPOFilesFor(TestCaseWithFactory):
+    """Test `get_pofiles_for`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetPOFilesFor, self).setUp()
+        self.potemplate = self.factory.makePOTemplate()
+        self.greek = getUtility(ILanguageSet).getLanguageByCode('el')
+
+    def _makePOFile(self):
+        """Produce Greek `POFile` for `self.potemplate`."""
+        return self.factory.makePOFile('el', potemplate=self.potemplate)
+
+    def test_get_pofiles_for_empty_template_list(self):
+        # get_pofiles_for sensibly returns the empty list for an empty
+        # template list.
+        pofiles = get_pofiles_for([], self.greek)
+        self.assertEqual([], pofiles)
+
+    def test_get_pofiles_for_translated_template(self):
+        # get_pofiles_for finds a POFile for a given template in a given
+        # language.
+        greek_pofile = self._makePOFile()
+        pofiles = get_pofiles_for([self.potemplate], self.greek)
+        self.assertEqual([greek_pofile], pofiles)
+
+    def test_get_pofiles_for_untranslated_template(self):
+        # If there is no POFile for a template in a language,
+        # get_pofiles_for makes up a DummyPOFile.
+        pofiles = get_pofiles_for([self.potemplate], self.greek)
+        pofile = pofiles[0]
+        self.assertTrue(isinstance(pofile, DummyPOFile))
 
 
 def test_suite():

@@ -1,40 +1,36 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for testing LaunchpadFormView subclasses."""
 
 __metaclass__ = type
 
+from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from zope.security.management import (
-    newInteraction, queryInteraction, endInteraction)
+    endInteraction, newInteraction, queryInteraction, restoreInteraction)
 
 class LaunchpadFormHarness:
 
-    def __init__(self, context, view_class, form_values=None):
+    def __init__(self, context, view_class, form_values=None,
+                 request_class=LaunchpadTestRequest):
         self.context = context
         self.view_class = view_class
+        self.request_class = request_class
         self._render(form_values)
 
     def _render(self, form_values=None, method='GET'):
-        self.request = LaunchpadTestRequest(method=method, form=form_values,
-                                            PATH_INFO='/')
-        has_interaction = queryInteraction() is not None
-        if not has_interaction:
-            newInteraction(self.request)
-        else:
-            # Copy over the principal from the set-up interaction, to the
-            # fake request.
-            principals = [
-                participation.principal
-                for participation in list(queryInteraction().participations)
-                if participation.principal is not None
-                ]
-            assert len(principals) <= 1, 'More than one principal found.'
-            self.request.setPrincipal(principals[0])
+        self.request = self.request_class(
+            method=method, form=form_values, PATH_INFO='/')
+        if queryInteraction() is not None:
+            self.request.setPrincipal(get_current_principal())
+        # Setup a new interaction using self.request, create the view,
+        # initialize() it and then restore the original interaction.
+        endInteraction()
+        newInteraction(self.request)
         self.view = self.view_class(self.context, self.request)
         self.view.initialize()
-        if not has_interaction:
-            endInteraction()
+        restoreInteraction()
 
     def submit(self, action_name, form_values, method='POST'):
         action_name = '%s.actions.%s' % (self.view.prefix, action_name)

@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 """Models for `IProductSeries`."""
 
@@ -67,6 +69,7 @@ from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+
 
 def landmark_key(landmark):
     """Sorts landmarks by date and name."""
@@ -197,7 +200,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def sourcepackages(self):
         """See IProductSeries"""
         from lp.registry.model.sourcepackage import SourcePackage
-        ret = Packaging.selectBy(productseries=self)
+        ret = self.packagings
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distroseries=r.distroseries)
                     for r in ret]
@@ -437,22 +440,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        # Avoid circular imports.
-        from lp.registry.model.product import Product
-
         store = Store.of(self)
         if just_ids:
             looking_for = POTemplate.id
         else:
             looking_for = POTemplate
 
-        result = store.find(
-            looking_for,
+        # Select all current templates for this series, if the Product
+        # actually uses Launchpad Translations.  Otherwise, return an
+        # empty result.
+        result = store.find(looking_for, And(
+            self.product.official_rosetta == True,
             POTemplate.iscurrent == True,
-            POTemplate.productseries == self,
-            ProductSeries.id == self.id,
-            ProductSeries.product == Product.id,
-            Product.official_rosetta == True)
+            POTemplate.productseries == self))
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     @property

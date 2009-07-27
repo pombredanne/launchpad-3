@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposal mailings"""
 
@@ -124,6 +125,16 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(subscriber,
                                     subscriber.preferredemail.email)
+        self.assertEqual([bmp.address], ctrl.to_addrs)
+
+    def test_to_addrs_excludes_people_with_hidden_addresses(self):
+        """The to header excludes those with hidden addresses."""
+        request, requester = self.makeReviewRequest()
+        request.recipient.hide_email_addresses = True
+        bmp = request.merge_proposal
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail(request.recipient,
+                                    request.recipient.preferredemail.email)
         self.assertEqual([bmp.address], ctrl.to_addrs)
 
     def test_RecordMessageId(self):

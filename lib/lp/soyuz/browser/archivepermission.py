@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archivepermission."""
 
@@ -38,11 +39,16 @@ class ArchivePermissionURL:
 
         username = self.context.person.name
 
-        item = self.context.component_name
-        if item is None:
-            item = self.context.source_package_name
-        if item is None:
+        if self.context.component_name is not None:
+            item = "type=component&item=%s" % self.context.component_name
+        elif self.context.source_package_name is not None:
+            item = (
+                "type=packagename&item=%s" % self.context.source_package_name)
+        elif self.context.package_set_name is not None:
+            item = "type=packageset&item=%s" % self.context.package_set_name
+        else:
             raise AssertionError, (
-                "One of component or sourcepackagename should be set")
+                "One of component, sourcepackagename or package set should "
+                "be set")
 
-        return u"%s/%s.%s" % (perm_type, username, item)
+        return u"%s/%s?%s" % (perm_type, username, item)

@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes to handle signed Codes of Conduct."""
 
@@ -51,7 +52,10 @@ class CodeOfConductContextMenu(ContextMenu):
 
     def sign(self):
         text = 'Sign this version'
-        if self.context.current and self.user and not self.user.is_ubuntero:
+        if (self.context.current and
+            self.user and
+            not self.user.is_ubuntu_coc_signer):
+            # Then...
             enabled = True
         else:
             enabled = False

@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0613,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -1960,8 +1962,8 @@ class LinkFormatterAPI(ObjectFormatterAPI):
     """Adapter from Link objects to a formatted anchor."""
     final_traversable_names = {
         'icon': 'icon',
-        'icon-link': 'icon_link',
-        'link-icon': 'link_icon',
+        'icon-link': 'link',
+        'link-icon': 'link',
         }
 
     def icon(self):
@@ -1970,17 +1972,7 @@ class LinkFormatterAPI(ObjectFormatterAPI):
         return getMultiAdapter(
             (self._context, request), name="+inline-icon")()
 
-    def link_icon(self):
-        """Return the text and icon representation of the link."""
-        request = get_current_browser_request()
-        return getMultiAdapter(
-            (self._context, request), name="+inline-suffix")()
-
-    def icon_link(self):
-        """Return the icon and text representation of the link."""
-        return self.link(None)
-
-    def link(self, view_name, rootsite=None):
+    def link(self, view_name=None, rootsite=None):
         """Return the default representation of the link."""
         return self._context.render()
 

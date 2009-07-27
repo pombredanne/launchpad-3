@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=F0401
 
 """Browser views for sources list entries."""
@@ -39,16 +41,33 @@ class SourcesListEntriesView(LaunchpadView):
 
     def initialize(self):
         self.terms = []
-        if self._initially_without_selection:
-            self.terms.append(SimpleTerm(
-                None, 'YOUR_DISTRO_SERIES_HERE',
-                'Choose a Distribution series'))
         for series in self.context.valid_series:
-            self.terms.append(SimpleTerm(series, series.name, series.title))
+            distro_version = "%(series_name)s (%(series_version)s)" % {
+                'series_name': series.displayname,
+                'series_version': series.version
+                }
+            self.terms.append(SimpleTerm(series, series.name, distro_version))
+
+        # If the call-site requested that the widget be displayed initially
+        # without a selection, or we were not able to find a sensible
+        # default series, then add an option to force the user to select
+        # a distroseries.
+        if self._initially_without_selection or self.default_series is None:
+            initial_selection = "Choose your %s version" % (
+                    self.context.distribution.displayname)
+            self.terms.insert(0, SimpleTerm(
+                None, self.initial_value_without_selection,
+                initial_selection))
+
         field = Choice(__name__='series', title=_("Distro Series"),
                        vocabulary=SimpleVocabulary(self.terms), required=True)
         setUpWidget(self, 'series',  field, IInputWidget)
         self.series_widget.extra = "onChange='updateSeries(this);'"
+
+    @property
+    def initial_value_without_selection(self):
+        return "YOUR_%s_VERSION_HERE" % (
+            self.context.distribution.displayname.upper())
 
     @property
     def plain_series_widget(self):
@@ -67,6 +86,10 @@ class SourcesListEntriesView(LaunchpadView):
         # we return the currentseries of the distribution.
         if len(self.terms) == 0:
             return self.context.distribution.currentseries
+
+        # If we only have one series then we have no choice...just return it.
+        elif len(self.terms) == 1:
+            return self.terms[0].value
 
         # If the caller has indicated that there should not be a default
         # distroseries selected then we return None.
@@ -93,13 +116,17 @@ class SourcesListEntriesView(LaunchpadView):
             # Finally, check if this version is one of the available
             # distroseries for this archive:
             for term in self.terms:
-                if term.value.version == version_number:
+                if (term.value is not None and
+                    term.value.version == version_number):
                     return term.value
 
-        # Otherwise, simply return the first distroseries. The callsite
-        # is repsonsible for ensuring this is the most recent release
-        # with published sources if desired.
-        return self.terms[0].value
+        # If we were not able to get the users distribution series, then
+        # either they are running a different OS, or they are running a
+        # very old version of Ubuntu, or they have explicitly tampered
+        # with user-agent headers in their browser. In any case,
+        # we won't try to guess a value, but instead force them to
+        # select one.
+        return None
 
     @property
     def default_series_name(self):
@@ -110,5 +137,5 @@ class SourcesListEntriesView(LaunchpadView):
         else:
             # Return the select value for the generic text noting to the
             # user that they should select a distroseries.
-            return 'YOUR_DISTRO_SERIES_HERE'
+            return self.initial_value_without_selection
 

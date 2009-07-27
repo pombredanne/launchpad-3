@@ -1,4 +1,5 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
 
@@ -1484,13 +1485,21 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
-    def makeTeamAndMailingList(self, team_name, owner_name, visibility=None):
+    def makeTeamAndMailingList(
+        self, team_name, owner_name,
+        visibility=None,
+        subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
         :type team_name: string
         :param owner_name: The name of the team's owner.
         :type owner: string
+        :param visibility: The team's visibility. If it's None, the default
+            (public) will be used.
+        :type visibility: `PersonVisibility`
+        :param subscription_policy: The subscription policy of the team.
+        :type subscription_policy: `TeamSubscriptionPolicy`
         :return: The new team and mailing list.
         :rtype: (`ITeam`, `IMailingList`)
         """
@@ -1501,7 +1510,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if team is None:
             team = self.makeTeam(
                 owner, displayname=display_name, name=team_name,
-                visibility=visibility)
+                visibility=visibility,
+                subscription_policy=subscription_policy)
         # Any member of the mailing-list-experts team can review a list
         # registration.  It doesn't matter which one.
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts

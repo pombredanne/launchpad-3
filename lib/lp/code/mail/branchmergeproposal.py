@@ -1,5 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
-
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to branch merge proposals."""
 
@@ -160,6 +160,8 @@ class BMPMailer(BranchMailer):
             if vote.reviewer == vote.registrant:
                 continue
             if vote.reviewer.is_team:
+                continue
+            if vote.reviewer.hide_email_addresses:
                 continue
             to_addrs.append(self._format_user_address(vote.reviewer))
         return to_addrs
