@@ -58,7 +58,7 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
 # 
 REV=2207
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=f2fd480f413c61c22f9e31e9f0380722  launchpad-2207-00-0.sql
+MD5SUM=6a28c01a33ee2dc133ab4f8931d94282  launchpad-2207-00-0.sql
 
 default: all
 
