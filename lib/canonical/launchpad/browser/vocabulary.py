@@ -40,7 +40,6 @@ class IPickerEntry(Interface):
     """Additional fields that the vocabulary doesn't provide.
 
     These fields are needed by the Picker Ajax widget."""
-    title = Attribute('Title')
     description = Attribute('Description')
     image = Attribute('Image URL')
     css = Attribute('CSS Class')
@@ -50,12 +49,10 @@ class PickerEntry:
     """See `IPickerEntry`."""
     implements(IPickerEntry)
 
-    def __init__(self, description=None, image=None, css=None, api_uri=None,
-                 title=None):
+    def __init__(self, description=None, image=None, css=None, api_uri=None):
         self.description = description
         self.image = image
         self.css = css
-        self.title = title
 
 @implementer(IPickerEntry)
 @adapter(Interface)
@@ -82,7 +79,6 @@ def person_to_pickerentry(person):
 def branch_to_pickerentry(branch):
     """Adapts IBranch to IPickerEntry."""
     extra = default_pickerentry_adapter(branch)
-    extra.title = branch.unique_name
     extra.description = branch.bzr_identity
     return extra
 
@@ -126,17 +122,13 @@ class HugeVocabularyJSONView:
 
         result = []
         for term in batch_navigator.currentBatch():
-            entry = dict(value=term.token)
+            entry = dict(value=term.token, title=term.title)
             # The canonical_url without just the path (no hostname) can
             # be passed directly into the REST PATCH call.
             api_request = IWebServiceClientRequest(self.request)
             entry['api_uri'] = canonical_url(
                 term.value, request=api_request, path_only_if_possible=True)
             picker_entry = IPickerEntry(term.value)
-            if picker_entry.title is None:
-                entry['title'] = term.title
-            else:
-                entry['title'] = picker_entry.title
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:
                     entry['description'] = (

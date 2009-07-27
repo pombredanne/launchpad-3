@@ -124,7 +124,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     def toTerm(self, branch):
         """The display should include the URL if there is one."""
-        return SimpleTerm(branch, branch.unique_name, branch.displayname)
+        return SimpleTerm(branch, branch.unique_name, branch.unique_name)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
