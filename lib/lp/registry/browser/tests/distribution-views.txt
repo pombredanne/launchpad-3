@@ -68,9 +68,9 @@ not up-to-date in the test data. Hence only seeing mozilla-firefox returned
 here.
 
     >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={
-    ...         'text': 'a',
-    ...     })
+    ...     ubuntu, name="+search",
+    ...     form={'text': 'a'},
+    ...     query_string='text=a')
     >>> distro_pkg_search_view.search_by_binary_name
     True
     >>> for package in distro_pkg_search_view.search_results:
@@ -83,13 +83,13 @@ easy access to the equivalent search on sources:
     >>> print distro_pkg_search_view.source_search_url
     http://launchpad.dev/ubuntu/+search?search_type=source&text=a
 
-Form variables are properly encoded as UTF-8 (as expected by the
-server) before building the 'source_search_url'.
+Unicode form variables remain encoded as UTF-8 (as expected by the
+server) when building the 'source_search_url'.
 
     >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={
-    ...         'text': u'\xe7',
-    ...     })
+    ...     ubuntu, name="+search",
+    ...     form={'text': u'\xe7'},
+    ...     query_string='text=%C3%A7')
 
     >>> print distro_pkg_search_view.source_search_url
     http://launchpad.dev/ubuntu/+search?search_type=source&text=%C3%A7
