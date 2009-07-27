@@ -169,10 +169,10 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
 
 
 class TestSeriesWithSources(TestCaseWithFactory):
+    """Create some sources in different series."""
 
     layer = LaunchpadZopelessLayer
 
-    """Create some sources in different series."""
     def setUp(self):
         super(TestSeriesWithSources, self).setUp()
         self.publisher = SoyuzTestPublisher()
@@ -224,6 +224,24 @@ class TestSeriesWithSources(TestCaseWithFactory):
 
         self.assertContentEqual([u'Foo-series'], serieses_names)
 
+    def test_series_with_sources_ordered_by_version(self):
+        # The returned series are ordered by the distroseries version.
+        serieses = self.archive.series_with_sources
+        versions = [series.version for series in serieses]
+
+        # Latest version should be first
+        self.assertEqual(
+            [u'6.6.6', u'1.0'], versions,
+            "The latest version was not first.")
+
+        # Update the version of breezyautotest and ensure that the
+        # latest version is still first.
+        self.serieses[0].version = u'0.5'
+        serieses = self.archive.series_with_sources
+        versions = [series.version for series in serieses]
+        self.assertEqual(
+            [u'1.0', u'0.5'], versions,
+            "The latest version was not first.")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

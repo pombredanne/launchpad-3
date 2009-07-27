@@ -23,6 +23,7 @@ from zope.event import notify
 from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
+from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -80,7 +81,8 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
+    active_publishing_status, PackagePublishingPocket,
+    PackagePublishingStatus, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.soyuz.scripts.packagecopier import (
@@ -211,14 +213,25 @@ class Archive(SQLBase):
     @property
     def series_with_sources(self):
         """See `IArchive`."""
-        cur = cursor()
-        query = """SELECT DISTINCT distroseries FROM
-                      SourcePackagePublishingHistory WHERE
-                      SourcePackagePublishingHistory.archive = %s"""
-        cur.execute(query % self.id)
-        published_series_ids = [int(row[0]) for row in cur.fetchall()]
-        return [s for s in self.distribution.serieses if s.id in
-                published_series_ids]
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        # Import DistroSeries here to avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+
+        distro_serieses = store.find(
+            DistroSeries,
+            DistroSeries.distribution == self.distribution,
+            SourcePackagePublishingHistory.distroseries == DistroSeries.id,
+            SourcePackagePublishingHistory.archive == self,
+            SourcePackagePublishingHistory.status.is_in(
+                active_publishing_status))
+
+        distro_serieses.config(distinct=True)
+
+        # Ensure the ordering is the same as presented by
+        # Distribution.serieses
+        return sorted(
+            distro_serieses, key=lambda a: Version(a.version), reverse=True)
 
     @property
     def dependencies(self):
