@@ -33,6 +33,10 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
+# XXX: EdwinGrubbs 2009-07-27 bug=405476
+# This limits the output to one line of text, since the sprite class
+# cannot clip the background image effectively for vocabulary items
+# with more than single line description below the title.
 MAX_DESCRIPTION_LENGTH = 55
 
 
