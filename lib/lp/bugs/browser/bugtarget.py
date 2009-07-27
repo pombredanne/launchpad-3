@@ -73,11 +73,12 @@ from canonical.launchpad.webapp import (
     canonical_url, custom_widget, safe_action, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
+from canonical.launchpad.validators.name import valid_name_pattern
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
 from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.bugtask import NewLineToSpacesWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
-from canonical.launchpad.validators.name import valid_name_pattern
-from canonical.launchpad.webapp.menu import structured
 
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
@@ -796,10 +797,10 @@ class FileBugAdvancedView(FileBugViewBase):
     This view exists only to redirect from +filebug-advanced to +filebug.
     """
     def initialize(self):
-        self.request.response.redirect(
-            urlappend(
-                canonical_url(self.context, rootsite='bugs'), '+filebug'),
-            status=301)
+        filebug_url = canonical_url(
+            self.context, rootsite='bugs', view_name='+filebug')
+        self.request.response.redirect(filebug_url,
+        status=HTTP_MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
