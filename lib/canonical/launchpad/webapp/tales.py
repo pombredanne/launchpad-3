@@ -38,6 +38,7 @@ from canonical.launchpad.interfaces import (
     IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProject, IDistributionSourcePackage, ISprint, LicenseStatus,
     NotFoundError)
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
@@ -512,6 +513,8 @@ class ObjectImageDisplayAPI:
             return 'sprite bug'
         elif IBranch.providedBy(context):
             return 'sprite branch'
+        elif ISpecification.providedBy(context):
+            return 'sprite blueprint'
         return None
 
     def default_logo_resource(self, context):

@@ -31,9 +31,8 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, enabled_with_permission, GetitemNavigation,
-    LaunchpadEditFormView, Link, NavigationMenu, redirection,
-    StandardLaunchpadFacets, stepto)
+    action, ApplicationMenu, GetitemNavigation, LaunchpadEditFormView, Link,
+    redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder

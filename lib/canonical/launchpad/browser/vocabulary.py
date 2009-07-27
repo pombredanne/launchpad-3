@@ -33,7 +33,7 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
-MAX_DESCRIPTION_LENGTH = 80
+MAX_DESCRIPTION_LENGTH = 55
 
 
 class IPickerEntry(Interface):

@@ -55,8 +55,14 @@ span.invisible {left:-9999em;display:block;}
 .sprite {padding:2px 0 0 18px;}
 .sprite-after {padding: 2px 18px 0 0;}
 
-/* Override the .yui-picker-results style. */
-.yui-picker-results li.sprite {padding:2px 0 0 18px;}
+/* Override the .yui-picker-results style, so that the next icon
+ * in the sprite file won't appear for tall list items.
+ */
+.yui-picker-results li.sprite {
+    padding:2px 0 0 18px;
+    white-space: nowrap;
+    overflow: hidden;
+}
 
 .add {background:url(icon-sprites) 0 0 no-repeat;}
 .edit {background:url(icon-sprites) 100% -32px no-repeat;}

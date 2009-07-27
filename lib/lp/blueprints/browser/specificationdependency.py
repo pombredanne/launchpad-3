@@ -12,7 +12,7 @@ __all__ = [
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView)
+    action, canonical_url, LaunchpadFormView)
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency, ISpecificationDependencyRemoval)
 
