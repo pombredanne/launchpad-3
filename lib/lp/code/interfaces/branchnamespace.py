@@ -70,6 +70,24 @@ class IBranchNamespace(Interface):
     def isNameUsed(name):
         """Is 'name' already used in this namespace?"""
 
+    def moveBranch(branch, mover, new_name=None, rename_if_necessary=False):
+        """Move the branch into this namespace.
+
+        :param branch: The `IBranch` to move.
+        :param mover: The `IPerson` doing the moving.
+        :param new_name: A new name for the branch.
+        :param rename_if_necessary: Rename the branch if the branch name
+            exists already in this namespace.
+        :raises BranchCreatorNotMemberOfOwnerTeam: if the namespace owner is
+            a team, and 'mover' is not in that team.
+        :raises BranchCreatorNotOwner: if the namespace owner is an individual
+            and 'mover' is not the owner.
+        :raises BranchCreationForbidden: if 'mover' is not allowed to create
+            a branch in this namespace due to privacy rules.
+        :raises BranchExists: if a branch with the 'name' exists already in
+            the namespace, and 'rename_if_necessary' is False.
+        """
+
 
 class IBranchNamespacePolicy(Interface):
     """Methods relating to branch creation and validation."""

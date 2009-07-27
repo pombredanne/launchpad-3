@@ -160,6 +160,30 @@ class _BaseNamespace:
         self.validateBranchName(name)
         self.validateRegistrant(mover)
 
+    def moveBranch(self, branch, mover, new_name=None,
+                   rename_if_necessary=False):
+        """See `IBranchNamespace`."""
+        # Check to see if the branch is already in this namespace.
+        old_namespace = branch.namespace
+        if self.name == old_namespace.name:
+            return
+        if new_name is None:
+            new_name = branch.name
+        if rename_if_necessary:
+            new_name = self.findUnusedName(new_name)
+        self.validateMove(branch, mover, new_name)
+        old_namespace._leaveNamespace(branch)
+        self._joinNamespace(branch)
+        branch.name = new_name
+
+    def _leaveNamespace(self, branch):
+        """Clear the properties of branch for this namespace."""
+        raise NotImplementedError(self._leaveNamespace)
+
+    def _joinNamespace(self, branch):
+        """Set the properties of branch for this namespace."""
+        raise NotImplementedError(self._joinNamespace)
+
     def createBranchWithPrefix(self, branch_type, prefix, registrant,
                                url=None):
         """See `IBranchNamespace`."""
@@ -277,6 +301,14 @@ class PersonalNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return IBranchTarget(self.owner)
 
+    def _leaveNamespace(self, branch):
+        """See `_BaseNamespace`."""
+        # No-op for personal namespace.
+
+    def _joinNamespace(self, branch):
+        """See `_BaseNamespace`."""
+        # No-op for personal namespace.
+
 
 class ProductNamespace(_BaseNamespace):
     """A namespace for product branches.
@@ -368,6 +400,14 @@ class ProductNamespace(_BaseNamespace):
         base_rule = self.product.getBaseBranchVisibilityRule()
         return base_rule == BranchVisibilityRule.PUBLIC
 
+    def _leaveNamespace(self, branch):
+        """See `_BaseNamespace`."""
+        branch.product = None
+
+    def _joinNamespace(self, branch):
+        """See `_BaseNamespace`."""
+        branch.product = self.product
+
 
 class PackageNamespace(_BaseNamespace):
     """A namespace for source package branches.
@@ -413,6 +453,16 @@ class PackageNamespace(_BaseNamespace):
     def checkCreationPolicy(self, user):
         """See `_BaseNamespace`."""
         return True
+
+    def _leaveNamespace(self, branch):
+        """See `_BaseNamespace`."""
+        branch.distroseries = None
+        branch.sourcepackagename = None
+
+    def _joinNamespace(self, branch):
+        """See `_BaseNamespace`."""
+        branch.distroseries = self.sourcepackage.distroseries
+        branch.sourcepackagename = self.sourcepackage.sourcepackagename
 
 
 class BranchNamespaceSet:
