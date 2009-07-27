@@ -225,6 +225,36 @@ or breadcrumbs; the template must provide its own h1 element.
     </html> ...
 
 
+Page Headings
+-------------
+
+The example layouts all used the heading slot to define a heading for their
+test. The template controlled the heading.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print content.h1
+    <h1>Heading</h1>
+
+The page heading slot's default behaviour is to use the context.title.
+
+    >>> class DefaultHeadingView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile(
+    ...         'testfiles/default-heading-slot.pt')
+    ...     page_title = 'Test base-layout: default heading'
+
+    >>> print user.title
+    Waffles
+
+    >>> view = DefaultHeadingView(user, request)
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print content.h1
+    <h1>Waffles</h1>
+
+
 Public and private presentation
 -------------------------------
 
@@ -233,7 +263,6 @@ add the 'public' or 'private' CSS class to the body tag. When the context is
 private, the 'private' class is added to the body's class attribute.
 
     >>> from lp.registry.interfaces.person import PersonVisibility
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
     >>> login('admin@canonical.com')
     >>> team = factory.makeTeam(
