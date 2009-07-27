@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0613,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -38,7 +40,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
@@ -412,7 +414,7 @@ class ObjectFormatterAPI:
     # The names which can be traversed further (e.g context/fmt:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
     # Names which are allowed but can't be traversed further.
-    final_traversable_names = {}
+    final_traversable_names = {'public-private-css': 'public_private_css',}
 
     def __init__(self, context):
         self._context = context
@@ -470,6 +472,13 @@ class ObjectFormatterAPI:
         raise NotImplementedError(
             "No link implementation for %r, IPathAdapter implementation "
             "for %r." % (self, self._context))
+
+    def public_private_css(self):
+        """Return the CSS class that represents the object's privacy."""
+        if IPrivacy.providedBy(self._context) and self._context.private:
+            return 'private'
+        else:
+            return 'public'
 
 
 class ObjectImageDisplayAPI:
@@ -909,6 +918,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
                          }
 
     final_traversable_names = {'local-time': 'local_time'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
@@ -1107,28 +1117,30 @@ class PillarFormatterAPI(CustomizableFormatter):
     def link(self, view_name):
         """The html to show a link to a Product, Project or distribution.
 
-        In the case of Products, we display the custom icon if one exists.
-        """
+        In the case of Products or Project groups we display the custom
+        icon, if one exists."""
+
         html = super(PillarFormatterAPI, self).link(view_name)
-        if IProduct.providedBy(self._context):
-            product = self._context
+        context = self._context
+        if IProduct.providedBy(context) or IProject.providedBy(context):
             custom_icon = ObjectImageDisplayAPI(
-                product)._get_custom_icon_url()
-            url = canonical_url(product, view_name=view_name)
+                context)._get_custom_icon_url()
+            url = canonical_url(context, view_name=view_name)
             summary = self._make_link_summary()
             if custom_icon is None:
-                css_class = ObjectImageDisplayAPI(product).sprite_css()
+                css_class = ObjectImageDisplayAPI(context).sprite_css()
                 html = (u'<a href="%s" class="%s">%s</a>') % (
                     url, css_class, summary)
             else:
                 html = (u'<a href="%s" class="bg-image" '
                          'style="background-image: url(%s)">%s</a>') % (
                     url, custom_icon, summary)
-            license_status = self._context.license_status
-            if license_status != LicenseStatus.OPEN_SOURCE:
-                html = '<span title="%s">%s (%s)</span>' % (
-                    license_status.description, html,
-                    license_status.title)
+            if IProduct.providedBy(context):
+                license_status = context.license_status
+                if license_status != LicenseStatus.OPEN_SOURCE:
+                    html = '<span title="%s">%s (%s)</span>' % (
+                            license_status.description, html,
+                            license_status.title)
         return html
 
 
@@ -1488,6 +1500,7 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         'aliases': 'aliases',
         'external-link': 'external_link',
         'external-title-link': 'external_title_link'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def link(self, view_name):
         """Return an HTML link to the bugtracker page.
@@ -1552,6 +1565,7 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
     final_traversable_names = {
         'external-link': 'external_link',
         'external-link-short': 'external_link_short'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def _make_external_link(self, summary=None):
         """Return an external HTML link to the target of the bug watch.
@@ -1958,9 +1972,10 @@ class LinkFormatterAPI(ObjectFormatterAPI):
     """Adapter from Link objects to a formatted anchor."""
     final_traversable_names = {
         'icon': 'icon',
-        'icon-link': 'icon_link',
-        'link-icon': 'link_icon',
+        'icon-link': 'link',
+        'link-icon': 'link',
         }
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def icon(self):
         """Return the icon representation of the link."""
@@ -1968,17 +1983,7 @@ class LinkFormatterAPI(ObjectFormatterAPI):
         return getMultiAdapter(
             (self._context, request), name="+inline-icon")()
 
-    def link_icon(self):
-        """Return the text and icon representation of the link."""
-        request = get_current_browser_request()
-        return getMultiAdapter(
-            (self._context, request), name="+inline-suffix")()
-
-    def icon_link(self):
-        """Return the icon and text representation of the link."""
-        return self.link(None)
-
-    def link(self, view_name, rootsite=None):
+    def link(self, view_name=None, rootsite=None):
         """Return the default representation of the link."""
         return self._context.render()
 

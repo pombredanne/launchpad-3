@@ -712,7 +712,8 @@ version of pmount (0.1-2) into the binary pmount upload we already
 have in the sampledata.
 
   >>> [binary_queue] = queue_items
-  >>> non_matching_pmount = ubuntu.getSourcePackage('pmount')['0.1-2']
+  >>> pmount = ubuntu.getSourcePackage('pmount')
+  >>> non_matching_pmount = pmount.getVersion('0.1-2')
   >>> unused = binary_queue.addSource(
   ...    non_matching_pmount.sourcepackagerelease)
 
@@ -732,7 +733,7 @@ breezy-autotest context. It also becomes part of the lookup results.
   ...     PackagePublishingPocket.RELEASE,
   ...     'pmount_0.1-1_source.changes', 'some content',
   ...     breezy_autotest.main_archive)
-  >>> matching_pmount = ubuntu.getSourcePackage('pmount')['0.1-1']
+  >>> matching_pmount = pmount.getVersion('0.1-1')
   >>> unused = candidate_queue.addSource(
   ...     matching_pmount.sourcepackagerelease)
 
@@ -1087,20 +1088,20 @@ Delayed copies are further manipulated exactly as normal uploads
 are. Contents can be attached to it.
 
    # Retrieve a SourcePackageRelease from the sampledata.
-   >>> a_source_package = ubuntu.getSourcePackage('pmount')['0.1-2']
+   >>> a_source_package = pmount.getVersion('0.1-2')
    >>> a_source_release = a_source_package.sourcepackagerelease
 
    >>> unused = delayed_copy.addSource(a_source_release)
 
-IPackageUpload.acceptFromCopy() checks and accepts a delayed-copy
-record. It also closes related bug reports and grant karma to people
-related with the upload, although it doesn't send any emails.
+IPackageUpload.acceptFromCopy() simply checks and accepts a
+delayed-copy record. Bugs mentioned in the changelog are closed by
+`process-accepted` (transition to ACCEPTED to DONE) see
+closing-bugs-from-changelogs.txt for more information.
+
+   >>> print delayed_copy.status.name
+   NEW
 
    >>> delayed_copy.acceptFromCopy()
-
-   >>> transaction.commit()
-   >>> pop_notifications()
-   []
 
    >>> print delayed_copy.status.name
    ACCEPTED

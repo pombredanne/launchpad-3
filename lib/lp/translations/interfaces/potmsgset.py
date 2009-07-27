@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
@@ -91,10 +93,16 @@ class IPOTMsgSet(Interface):
         """
 
     def getCurrentTranslationMessage(potemplate, language, variant=None):
-        """Returns a TranslationMessage marked as being currently used."""
+        """Returns a TranslationMessage marked as being currently used.
+
+        Diverged messages are preferred.
+        """
 
     def getImportedTranslationMessage(potemplate, language, variant=None):
-        """Returns a TranslationMessage as imported from the package."""
+        """Returns a TranslationMessage as imported from the package.
+
+        Diverged messages are preferred.
+        """
 
     def getSharedTranslationMessage(language, variant=None):
         """Returns a shared TranslationMessage."""

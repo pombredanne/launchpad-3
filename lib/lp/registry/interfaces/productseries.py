@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Product series interfaces."""
@@ -247,6 +249,15 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         required=False,
         description=_(
             "A Bazaar branch to commit translation snapshots to. "
+            "Leave blank to disable."))
+
+    translations_branch = ReferenceChoice(
+        title=_("Translations export branch"),
+        vocabulary='HostedBranchRestrictedOnOwner',
+        schema=IBranch,
+        required=False,
+        description=_(
+            "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
 
     def getRelease(version):

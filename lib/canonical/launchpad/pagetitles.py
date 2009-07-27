@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -137,7 +138,7 @@ archive_index = ContextDisplayName('%s')
 
 archive_subscriber_edit = ContextDisplayName('Edit %s')
 
-archive_subscribers = ContextDisplayName('Manage subscriptions for %s')
+archive_subscribers = ContextDisplayName('Manage access to %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -912,7 +913,7 @@ active_reviews = ContextDisplayName('Pending proposals for %s')
 
 person_archive_subscription = ContextDisplayName('%s')
 
-person_archive_subscriptions = 'Private PPA subscriptions'
+person_archive_subscriptions = 'Private PPA access'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
@@ -1134,6 +1135,9 @@ productserieslanguage_index = ContextTitle('%s')
 productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_linkbranch = ContextTitle('Link an existing branch to %s')
+
+productseries_link_translations_branch = ContextTitle(
+    "Set translations export branch for %s")
 
 productseries_index = ContextTitle('%s')
 

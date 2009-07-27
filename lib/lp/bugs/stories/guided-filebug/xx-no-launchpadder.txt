@@ -11,9 +11,9 @@ Alsa-utils, for instance, doesn't use Launchpad Bugs:
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/alsa-utils/+filebug')
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
-    alsa-utils does not use Launchpad as its bug tracker.
+    alsa-utils (Unspecified) does not use Launchpad as its bug tracker.
 
 But it's packaged in Ubuntu and Debian, and we suggest those packages
 for filing bugs:
@@ -33,9 +33,9 @@ information for it:
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/gnomebaker/+filebug')
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
-    gnomebaker does not use Launchpad as its bug tracker.
+    gnomebaker (Unspecified) does not use Launchpad as its bug tracker.
     >>> user_browser.getLink("linking them for us.") is not None
     True
 
@@ -77,9 +77,9 @@ The same happens with the advanced filebug form:
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/products/alsa-utils/+filebug-advanced")
-    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
-    alsa-utils does not use Launchpad as its bug tracker.
+    alsa-utils (Unspecified) does not use Launchpad as its bug tracker.
 
 
 == Distros ==
@@ -88,7 +88,7 @@ Distributions have less options available if they don't use Launchpad:
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/debian/+filebug')
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     Debian does not use Launchpad as its bug tracker.
 
@@ -96,7 +96,7 @@ They get the same messages in the advanced filebug page:
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/distros/debian/+filebug-advanced")
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     Debian does not use Launchpad as its bug tracker.
 
@@ -109,7 +109,7 @@ source package.
     >>> user_browser.open(
     ...     "http://launchpad.dev/debian/+source/mozilla-firefox/"
     ...     "+filebug")
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     Debian does not use Launchpad as its bug tracker.
 
@@ -118,6 +118,6 @@ Not even using the advanced filebug page:
     >>> user_browser.open(
     ...     "http://launchpad.dev/distros/debian/+source/mozilla-firefox/"
     ...     "+filebug-advanced")
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     Debian does not use Launchpad as its bug tracker.

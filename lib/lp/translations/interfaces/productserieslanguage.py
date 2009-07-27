@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 from lazr.restful.fields import Reference
@@ -42,9 +44,12 @@ class IProductSeriesLanguage(IRosettaStats):
         "language. This includes only the real pofiles where translations "
         "exist.")
 
-    pofiles_or_dummies = Attribute(
-        "Return a full complement of po files and dummy pofiles, one for "
-        "each PO Template in the series.")
+    def getPOFilesFor(potemplates):
+        """Return `POFiles` for each of `potemplates`, in the same order.
+
+        For any `POTemplate` that does not have a translation to the
+        required language, a `DummyPOFile` is provided.
+        """
 
 
 class IProductSeriesLanguageSet(Interface):

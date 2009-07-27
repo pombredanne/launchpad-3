@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchivePermission."""
 
@@ -120,10 +121,8 @@ class ArchivePermissionSet:
         clauses = ["""
             ArchivePermission.archive = %s AND
             ArchivePermission.permission = %s AND
-            EXISTS (SELECT TeamParticipation.person
-                    FROM TeamParticipation
-                    WHERE TeamParticipation.person = %s AND
-                          TeamParticipation.team = ArchivePermission.person)
+            ArchivePermission.person = TeamParticipation.team AND
+            TeamParticipation.person = %s
             """ % sqlvalues(archive, permission, person)
             ]
 
@@ -148,7 +147,7 @@ class ArchivePermissionSet:
 
         query = " AND ".join(clauses)
         auth = ArchivePermission.select(
-            query, clauseTables=["TeamParticipation"], distinct=True,
+            query, clauseTables=["TeamParticipation"],
             prejoins=prejoins)
 
         return auth
@@ -317,7 +316,8 @@ class ArchivePermissionSet:
         """Helper to convert a possible string name to IPackageset."""
         if isinstance(packageset, basestring):
             name = packageset
-            packageset = Store.of(self).find(Packageset, name=name).one()
+            store = IStore(Packageset)
+            packageset = store.find(Packageset, name=name).one()
             if packageset is not None:
                 return packageset
             else:
@@ -335,11 +335,11 @@ class ArchivePermissionSet:
             SELECT ap.id
             FROM archivepermission ap, teamparticipation tp
             WHERE
-                (ap.person = ? OR (ap.person = tp.team AND tp.person = ?))
+                ap.person = tp.team AND tp.person = ?
                 AND ap.archive = ?
                 AND ap.packageset IS NOT NULL
         '''
-        query = SQL(query, (person.id, person.id, archive.id))
+        query = SQL(query, (person.id, archive.id))
         return store.find(ArchivePermission, In(ArchivePermission.id, query))
 
     def uploadersForPackageset(
@@ -373,10 +373,10 @@ class ArchivePermissionSet:
             SELECT ap.id
             FROM archivepermission ap, teamparticipation tp
             WHERE
-                (ap.person = ? OR (ap.person = tp.team AND tp.person = ?))
+                ap.person = tp.team AND tp.person = ?
                 AND ap.packageset = ? AND ap.archive = ?
         '''
-        query = SQL(query, (person.id, person.id, packageset.id, archive.id))
+        query = SQL(query, (person.id, packageset.id, archive.id))
         permissions = list(
             store.find(ArchivePermission, In(ArchivePermission.id, query)))
         if len(permissions) > 0:
@@ -442,15 +442,41 @@ class ArchivePermissionSet:
                 archivepermission ap, teamparticipation tp,
                 packagesetsources pss, flatpackagesetinclusion fpsi
             WHERE
-                (ap.person = ? OR (ap.person = tp.team AND tp.person = ?))
+                ap.person = tp.team AND tp.person = ?
                 AND ap.packageset = fpsi.parent
                 AND pss.packageset = fpsi.child
                 AND pss.sourcepackagename = ?
                 AND ap.archive = ?
         '''
         query = SQL(
-            query, (person.id, person.id, sourcepackagename.id, archive.id))
+            query, (person.id, sourcepackagename.id, archive.id))
         return store.find(ArchivePermission, In(ArchivePermission.id, query))
+
+    def packagesetsForSource(
+        self, archive, sourcepackagename, direct_permissions=True):
+        """See `IArchivePermissionSet`."""
+        sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
+        store = IStore(ArchivePermission)
+
+        if direct_permissions:
+            origin = SQL('ArchivePermission, PackagesetSources')
+            rset = store.using(origin).find(ArchivePermission, SQL('''
+                ArchivePermission.packageset = PackagesetSources.packageset
+                AND PackagesetSources.sourcepackagename = ?
+                AND ArchivePermission.archive = ?
+                ''', (sourcepackagename.id, archive.id)))
+        else:
+            origin = SQL(
+                'ArchivePermission, PackagesetSources, '
+                'FlatPackagesetInclusion')
+            rset = store.using(origin).find(ArchivePermission, SQL('''
+                ArchivePermission.packageset = FlatPackagesetInclusion.parent
+                AND PackagesetSources.packageset =
+                    FlatPackagesetInclusion.child
+                AND PackagesetSources.sourcepackagename = ?
+                AND ArchivePermission.archive = ?
+                ''', (sourcepackagename.id, archive.id)))
+        return rset
 
     def isSourceUploadAllowed(self, archive, sourcepackagename, person):
         """See `IArchivePermissionSet`."""
@@ -463,9 +489,9 @@ class ArchivePermissionSet:
             # Query parameters for the first WHERE clause.
             (archive.id, sourcepackagename.id) +
             # Query parameters for the second WHERE clause.
-            (sourcepackagename.id,) + (person.id,)*2 + archive_params + 
+            (sourcepackagename.id,) + (person.id,) + archive_params + 
             # Query parameters for the third WHERE clause.
-            (sourcepackagename.id,) + (person.id,)*2 + archive_params)
+            (sourcepackagename.id,) + (person.id,) + archive_params)
 
         query = '''
         SELECT CASE
@@ -483,7 +509,7 @@ class ArchivePermissionSet:
               teamparticipation tp
             WHERE
               pss.sourcepackagename = %s
-              AND (ap.person = %s OR (ap.person = tp.team AND tp.person = %s))
+              AND ap.person = tp.team AND tp.person = %s
               AND pss.packageset = ap.packageset AND ap.explicit = TRUE
               AND ap.permission = %s AND ap.archive = %s)
           ELSE (
@@ -493,7 +519,7 @@ class ArchivePermissionSet:
               teamparticipation tp, flatpackagesetinclusion fpsi
             WHERE
               pss.sourcepackagename = %s
-              AND (ap.person = %s OR (ap.person = tp.team AND tp.person = %s))
+              AND ap.person = tp.team AND tp.person = %s
               AND pss.packageset = fpsi.child AND fpsi.parent = ap.packageset
               AND ap.permission = %s AND ap.archive = %s)
         END AS number_of_permitted_package_sets;

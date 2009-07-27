@@ -74,7 +74,10 @@
   </head>
 
   <body id="document"
-    tal:attributes="class string:tab-${view/menu:selectedfacetname} ${view/macro:pagetype} yui-skin-sam">
+    tal:attributes="class string:tab-${view/menu:selectedfacetname}
+      ${view/macro:pagetype}
+      ${view/context/fmt:public-private-css}
+      yui-skin-sam">
     <div class="yui-d0">
       <div id="locationbar">
         <tal:login replace="structure context/@@login_status" />
@@ -133,6 +136,12 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
+            <tal:location condition="view/macro:pagehas/applicationtabs">
+              <h1><metal:main define-slot="heading" /></h1>
+              <tal:breadcrumbs>
+                <!-- future breadcrumb rule -->
+              </tal:breadcrumbs>
+            </tal:location>
             <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->
@@ -143,7 +152,7 @@
         </div><!-- yui-b side -->
       </div><!-- yui-t4 -->
 
-      <div id="footer">
+      <div id="footer" class="footer">
         <div id="lp-arcana">
           &copy;&nbsp;2004-2009&nbsp;<a
             href="http://canonical.com/">Canonical&nbsp;Ltd.</a> |

@@ -11,7 +11,7 @@ VERBOSITY=-vv
 TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
-SHHH=${PY} utilities/shhh.py
+SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
 LPCONFIG=development
@@ -127,16 +127,17 @@ download-cache:
 # warning before the eggs directory is made.  The target for the eggs directory
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
-	$(PYTHON) bootstrap.py
+	$(SHHH) $(PYTHON) bootstrap.py --ez_setup-source=ez_setup.py \
+		--download-base=download-cache/dist --eggs=eggs
 
-$(PY): bin/buildout versions.cfg
-	./bin/buildout configuration:instance_name=${LPCONFIG}
+$(PY): bin/buildout versions.cfg buildout.cfg setup.py
+	$(SHHH) ./bin/buildout configuration:instance_name=${LPCONFIG}
 
 compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
-	${SHHH} sourcecode/lazr-js/tools/build.py \
+	${SHHH} $(PY) sourcecode/lazr-js/tools/build.py \
 		-n launchpad -s lib/canonical/launchpad/javascript \
 		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
 
@@ -298,6 +299,8 @@ copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
+	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
+	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad

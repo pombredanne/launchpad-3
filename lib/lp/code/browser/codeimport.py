@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for CodeImports."""
 
@@ -342,7 +343,7 @@ class CodeImportNewView(CodeImportBaseView):
         # Make sure that the user is able to create branches for the specified
         # namespace.
         celebs = getUtility(ILaunchpadCelebrities)
-        product = data['product']
+        product = data.get('product')
         if product is not None:
             namespace = get_branch_namespace(celebs.vcs_imports, product)
             policy = IBranchNamespacePolicy(namespace)

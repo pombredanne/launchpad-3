@@ -1,10 +1,13 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """View classes for `IProductSeries`."""
 
 __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
+    'LinkTranslationsBranchView',
     'ProductSeriesBreadcrumbBuilder',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
@@ -24,6 +27,7 @@ __all__ = [
     ]
 
 import cgi
+from operator import attrgetter
 
 from bzrlib.revision import NULL_REVISION
 
@@ -35,19 +39,22 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
+from lp.blueprints.interfaces.specification import (
+    ISpecificationSet, SpecificationImplementationStatus)
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.helpers import browserLanguages
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.codeimport import (
     ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.browser import StatusCount
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView,
@@ -61,11 +68,11 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
-    get_status_counts, MilestoneOverlayMixin, RegistryDeleteViewMixin)
+    MilestoneOverlayMixin, RegistryDeleteViewMixin)
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-
 
 def quote(text):
     """Escape and quite text."""
@@ -411,36 +418,41 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         return (branch is not None and
                 check_permission('launchpad.View', branch))
 
+    @property
+    def is_obsolete(self):
+        """Return True if the series is OBSOLETE"
+
+        Obsolete series do not need to display as much information as other
+        series. Accessing private bugs is an expensive operation and showing
+        them for obsolete series can be a problem if many series are being
+        displayed.
+        """
+        return self.context.status == DistroSeriesStatus.OBSOLETE
+
     @cachedproperty
     def bugtask_status_counts(self):
         """A list StatusCounts summarising the targeted bugtasks."""
         bugtaskset = getUtility(IBugTaskSet)
-        # Nominated to be fixes in this series.
-        params = BugTaskSearchParams(self.user)
-        params.setProductSeries(self.context)
-        all_bugtasks = set(
-            list(bugtaskset.search(params)))
-        # Targeted to be fixed in this series.
-        milestones = [
-            milestone.id for milestone in self.context.all_milestones]
-        if len(milestones) > 0:
-            params = BugTaskSearchParams(
-                self.user, milestone=any(*milestones))
-            all_bugtasks = all_bugtasks.union(
-                list(bugtaskset.search(params)))
-        return get_status_counts(all_bugtasks, 'status')
+        status_id_counts = bugtaskset.getStatusCountsForProductSeries(
+            self.user, self.context)
+        status_counts = dict([(BugTaskStatus.items[status_id], count)
+                              for status_id, count in status_id_counts])
+        return [StatusCount(status, status_counts[status])
+                for status in sorted(status_counts,
+                                     key=attrgetter('sortkey'))]
 
     @cachedproperty
     def specification_status_counts(self):
         """A list StatusCounts summarising the targeted specification."""
-        # Series goals.
-        all_specifications = set(
-            list(self.context.all_specifications))
-        # Targeted to be fixed in this series.
-        for milestone in self.context.all_milestones:
-            all_specifications = all_specifications.union(
-                list(milestone.specifications))
-        return get_status_counts(all_specifications, 'implementation_status')
+        specification_set = getUtility(ISpecificationSet)
+        status_id_counts = specification_set.getStatusCountsForProductSeries(
+            self.context)
+        SpecStatus = SpecificationImplementationStatus
+        status_counts = dict([(SpecStatus.items[status_id], count)
+                              for status_id, count in status_id_counts])
+        return [StatusCount(status, status_counts[status])
+                for status in sorted(status_counts,
+                                     key=attrgetter('sortkey'))]
 
     @property
     def milestone_table_class(self):
@@ -583,6 +595,27 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the product series page."""
+
+
+class LinkTranslationsBranchView(LaunchpadEditFormView):
+    """View to set the series' translations export branch."""
+
+    schema = IProductSeries
+    field_names = ['translations_branch']
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Translations export branch updated.')
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the settings page."""
 
 
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):

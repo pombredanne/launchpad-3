@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Common registry browser helpers and mixins."""
 
 __metaclass__ = type
@@ -14,8 +16,7 @@ __all__ = [
 from operator import attrgetter
 
 from zope.component import getUtility
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 

@@ -3,13 +3,6 @@
 An Account is used by someone to Authenticate with the Launchpad login
 service.
 
-Many operations on Account and related tables are available only to
-the SSO Server.
-
-    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
-    >>> from canonical.signon.dbpolicy import SSODatabasePolicy
-    >>> #getUtility(IStoreSelector).push(SSODatabasePolicy())
-
 
 = AccountSet =
 
@@ -133,18 +126,6 @@ list:
     ...     status=EmailAddressStatus.VALIDATED)
     >>> [email.email for email in account.validated_emails]
     [u'validated-email@example.com']
-
-We can also get a list of email addresses that are waiting for the
-user to validate:
-
-    > >> from canonical.launchpad.interfaces import (
-    . ..     IAuthTokenSet, LoginTokenType)
-    > >> token = getUtility(IAuthTokenSet).new(
-    . ..     account, u"test@canonical.com", u"unvalidated-email@example.com",
-    . ..     LoginTokenType.VALIDATEEMAIL, None)
-    > >> account.getUnvalidatedEmails()
-    [u'unvalidated-email@example.com']
-
 
 It also has an encrypted password.
 
@@ -320,6 +301,7 @@ possible to create a new person that will be associated with it.
 We need to change database policy here again, as the SSO Server cannot
 modify tables in the lpmain replication set.
 
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
@@ -379,34 +361,3 @@ directly in the database; it not available until the account object is synced.
     >>> syncUpdate(new_account)
     >>> len(new_account.openid_identifier) == 7
     True
-
-
-== OpenID authentications ==
-
-Whenever a user authenticates to a relying party using our OpenID server, we
-store that information, which can then later be shown to the account's owner
-using IAccount.recently_authenticated_rps.  These are sorted descending by
-date.
-
-    >>> from canonical.signon.interfaces.openidserver import (
-    ...     IOpenIDRPSummarySet)
-    >>> from datetime import datetime
-    >>> import pytz
-    >>> two_thousand_and_seven = datetime(2007, 1, 1, tzinfo=pytz.UTC)
-    >>> two_thousand_and_eight = datetime(2008, 1, 1, tzinfo=pytz.UTC)
-    >>> summary = getUtility(IOpenIDRPSummarySet).record(
-    ...     fresh_account, 'http://example.com/',
-    ...     date_used=two_thousand_and_eight)
-    >>> summary = getUtility(IOpenIDRPSummarySet).record(
-    ...     fresh_account, 'http://blog.example.com/',
-    ...     date_used=two_thousand_and_seven)
-    >>> transaction.commit()
-
-    >>> [summary.date_last_used.strftime('%Y-%m-%d')
-    ...  for summary in fresh_account.recently_authenticated_rps]
-    ['2008-01-01', '2007-01-01']
-
-
-== Cleanup ==
-
-    >>> #db_policy = getUtility(IStoreSelector).pop()

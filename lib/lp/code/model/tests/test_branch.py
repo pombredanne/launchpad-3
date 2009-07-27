@@ -1,4 +1,5 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branches."""
 
@@ -555,6 +556,14 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that is a user branch for a product series"
                          " is not deletable.")
+        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
+
+    def test_productSeriesTranslationsBranchDisablesDeletion(self):
+        self.product.development_focus.translations_branch = self.branch
+        syncUpdate(self.product.development_focus)
+        self.assertEqual(self.branch.canBeDeleted(), False,
+                         "A branch that is a translations branch for a "
+                         "product series is not deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_revisionsDeletable(self):

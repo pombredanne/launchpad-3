@@ -1,4 +1,5 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View class for requesting translation exports."""
 
@@ -26,7 +27,7 @@ class BaseExportView(LaunchpadView):
 
     @cachedproperty
     def uses_translations(self):
-        return bool(self.context.getCurrentTranslationTemplates().any())
+        return self.context.has_current_translation_templates
 
     def getDefaultFormat(self):
         """Overridable: return default file format to use for the export."""

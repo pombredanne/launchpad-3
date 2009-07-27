@@ -1,4 +1,6 @@
-# Copyright 2005, 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213,F0401,W0611
 
 """Branch interfaces."""
@@ -64,7 +66,8 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IPrivacy)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
@@ -299,7 +302,7 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner, IHasBranchTarget):
+class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.
@@ -376,6 +379,8 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is guarded by setPrivate().
     private = exported(
         Bool(
             title=_("Keep branch confidential"), required=False,
@@ -778,6 +783,18 @@ class IBranch(IHasOwner, IHasBranchTarget):
         series as a branch.
         """
 
+    def getProductSeriesPushingTranslations():
+        """Return sequence of product series pushing translations here.
+
+        These are any `ProductSeries` that have this branch as their
+        translations_branch.  It should normally be at most one, but
+        there's nothing stopping people from combining translations
+        branches.
+        """
+
+    def associatedSuiteSourcePackages():
+        """Return the suite source packages that this branch is linked to."""
+
     # subscription-related methods
     @operation_parameters(
         person=Reference(
@@ -1096,7 +1113,7 @@ class IBranchCloud(Interface):
         """
 
 
-def bazaar_identity(branch, associated_series, is_dev_focus):
+def bazaar_identity(branch, is_dev_focus):
     """Return the shortest lp: style branch identity."""
     lp_prefix = config.codehosting.bzr_lp_prefix
 
@@ -1116,23 +1133,23 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
             return lp_prefix + branch.product.name
 
         # If there are no associated series, then use the unique name.
-        associated_series = list(associated_series)
-        if [] == associated_series:
+        associated_series = sorted(
+            branch.associatedProductSeries(), key=attrgetter('datecreated'))
+        if len(associated_series) == 0:
             return lp_prefix + branch.unique_name
-
-        use_series = sorted(
-            associated_series, key=attrgetter('datecreated'))[-1]
+        # Use the most recently created series.
+        use_series = associated_series[-1]
         return "%(prefix)s%(product)s/%(series)s" % {
             'prefix': lp_prefix,
             'product': use_series.product.name,
             'series': use_series.name}
 
     if branch.sourcepackage is not None:
-        sourcepackage = branch.sourcepackage
-        linked_branches = sourcepackage.linked_branches
-        for pocket, linked_branch in linked_branches:
-            if linked_branch == branch:
-                return lp_prefix + sourcepackage.getPocketPath(pocket)
+        suite_sourcepackages = branch.associatedSuiteSourcePackages()
+        # Take the first link if there is one.
+        if len(suite_sourcepackages) > 0:
+            suite_source_package = suite_sourcepackages[0]
+            return lp_prefix + suite_source_package.path
 
     return lp_prefix + branch.unique_name
 
