@@ -14,8 +14,8 @@ __all__ = [
 
 import simplejson
 
-from zope.app import zapi
 from zope.app.schema.vocabulary import IVocabularyFactory
+from zope.component import getUtility
 from zope.interface import implementer
 from zope.component import adapter
 from zope.component.interfaces import ComponentLookupError
@@ -53,6 +53,7 @@ class PickerEntry:
         self.description = description
         self.image = image
         self.css = css
+
 
 @implementer(IPickerEntry)
 @adapter(Interface)
@@ -105,7 +106,7 @@ class HugeVocabularyJSONView:
             raise MissingInputError('search_text', '')
 
         try:
-            factory = zapi.getUtility(IVocabularyFactory, name)
+            factory = getUtility(IVocabularyFactory, name)
         except ComponentLookupError:
             raise UnexpectedFormData(
                 'Unknown vocabulary %r' % name)

@@ -110,6 +110,7 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
     def gethelp(self):
         return Link('+gethelp', 'Help and support options', icon='info')
 
+
 class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
     schema = ISourcePackage
     field_names = ['productseries']

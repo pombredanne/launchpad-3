@@ -12,7 +12,7 @@ import cgi
 import simplejson
 
 from zope.interface import Attribute, implements, Interface
-from zope.app import zapi
+from zope.component import getUtility
 from zope.schema import TextLine
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.interfaces import ISimpleInputWidget
@@ -200,7 +200,7 @@ class SinglePopupView(object):
         if not vocabulary_name:
             raise UnexpectedFormData('No vocabulary specified')
         try:
-            factory = zapi.getUtility(IVocabularyFactory, vocabulary_name)
+            factory = getUtility(IVocabularyFactory, vocabulary_name)
         except ComponentLookupError:
             # Couldn't find the vocabulary? Adios!
             raise UnexpectedFormData(
