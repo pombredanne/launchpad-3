@@ -133,11 +133,13 @@ class IBranchNamespacePolicy(Interface):
             validation constraints on IBranch.name.
         """
 
-    def validateMove(branch, mover):
+    def validateMove(branch, mover, name=None):
         """Check that 'mover' can move 'branch' into this namespace.
 
         :param branch: An `IBranch` that might be moved.
         :param mover: The `IPerson` who would move it.
+        :param name: A new name for the branch.  If None, the branch name is
+            used.
         :raises BranchCreatorNotMemberOfOwnerTeam: if the namespace owner is
             a team, and 'mover' is not in that team.
         :raises BranchCreatorNotOwner: if the namespace owner is an individual
