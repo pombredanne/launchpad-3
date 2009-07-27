@@ -32,6 +32,58 @@
             Y.bugs.setup_bugtask_index();
         });
       </script>
+      <style type="text/css"
+        tal:define ="editor_skin string:${icingroot}/lazr/build/inlineedit/assets/skins/sam"
+        tal:content="string:
+
+        .edit-controls {
+            float:right;
+            position: relative;
+            top: 1px;
+            background-position: right bottom;
+            background-image: url('${editor_skin}/label-top.png');
+            background-repeat: no-repeat;
+            height: 29px;
+            width: 81px;
+            line-height: 29px;
+            text-align:right;
+            padding-right: 8px;
+        }
+
+        #nonportlets .report {
+            margin-bottom: 29px;
+        }
+
+        #bug-description {
+            margin-bottom: 9px;
+            max-width: 60em;
+        }
+
+        #bug-description h2 {
+            font-family: sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            color: #717171;
+            margin-left: 1.5em;
+            margin-bottom: 0;
+            padding-top: 8px;
+        }
+
+        #bug-description .yui-editable_text-text {
+            padding: 1.5em;
+            -moz-border-radius-topleft:     5px;
+            -moz-border-radius-bottomleft:  5px;
+            -moz-border-radius-bottomright: 5px;
+            background-color: #fafafa;
+            border: 1px solid #d6d6d6;
+            margin: 0;
+        }
+
+        #bug-tags {
+            margin-left: 1.5em;
+        }
+
+        "/>
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
@@ -169,7 +221,50 @@
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
-        <div id="bug-description" tal:content="structure description" />
+        <div id="bug-description"
+          tal:content="structure view/bug_description"
+          />
+
+<script
+  type="text/javascript"
+  tal:content="string:
+
+YUI().use('lazr.editor', 'lp.client.plugins', 'node', function (Y) {
+
+    var widget = new Y.EditableText({
+        contentBox: '#bug-description',
+        multiline: true
+    });
+
+    widget.editor.plug({
+        fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
+          patch: 'description',
+          resource: '/bugs/5'
+    }});
+
+    widget.after('render', function() {
+        // Move the multiline editor controls into the trigger box.
+        var controls = Y.get('#bug-description .edit-controls');
+        widget.editor_controls = controls.appendChild(
+            widget.editor.top_buttons);
+        //widget.editor_controls.setStyle('display', 'none');
+        widget.trigger = widget.get('trigger');
+    });
+
+    Y.after(function() {
+        widget.editor_controls.setStyle('display', 'block');
+    }, 'show_editor', widget);
+
+    Y.after(function() {
+        widget.editor_controls.setStyle('display', 'none');
+    }, 'hide_editor', widget);
+
+    widget.render();
+});
+
+  ">
+</script>
+
           <div id="bug-tags"
                tal:attributes="class python: ('tags-container ' +
                                               (context.bug.tags and

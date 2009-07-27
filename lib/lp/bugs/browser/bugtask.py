@@ -132,7 +132,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from canonical.launchpad.webapp.tales import PersonFormatterAPI, FormattersAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr.interfaces import IObjectPrivacy
@@ -145,8 +145,8 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget, vocabulary_to_choice_edit_items,
-    TextLineEditorWidget)
+    BugDescriptionEditorWidget, InlineEditPickerWidget,
+    TextLineEditorWidget, vocabulary_to_choice_edit_items)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -999,6 +999,18 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     def user_is_admin(self):
         """Is the user a Launchpad admin?"""
         return check_permission('launchpad.Admin', self.context)
+
+    @property
+    def bug_description(self):
+        """The bug's description as HTML."""
+        description = '<p>' + self.context.bug.description + '</p>'
+        return BugDescriptionEditorWidget(
+            self.context.bug,
+            'description',
+            canonical_url(self.context, view_name='+edit'),
+            id="bug-description",
+            title="Bug Description",
+            value=description)
 
 
 class BugTaskPortletView:
