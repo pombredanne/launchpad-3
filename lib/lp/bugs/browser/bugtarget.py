@@ -659,18 +659,6 @@ class FileBugViewBase(LaunchpadFormView):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
 
-    @property
-    def advanced_filebug_url(self):
-        """The URL to the advanced bug filing form.
-
-        If a token was passed to this view, it will be be passed through
-        to the advanced bug filing form via the returned URL.
-        """
-        url = urlappend(canonical_url(self.context), '+filebug-advanced')
-        if self.extra_data_token is not None:
-            url = urlappend(url, self.extra_data_token)
-        return url
-
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
         if self.extra_data_token is not None:
@@ -805,25 +793,8 @@ class FileBugViewBase(LaunchpadFormView):
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
 
-    This view skips searching for duplicates.
+    This view exists only to redirect from +filebug-advanced to +filebug.
     """
-    schema = IBugAddForm
-    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
-    # hack to make the action decorator Just Work across
-    # inheritance. Technically, this isn't needed for this class,
-    # because it defines no further actions, but I've added it just to
-    # preclude mysterious bugs if/when another action is defined in this
-    # class!
-    actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=40)
-    custom_widget('tags', BugTagsWidget)
-    template = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-advanced.pt")
-    advanced_form = True
-
-    def showFileBugForm(self):
-        return self.template()
-
     def initialize(self):
         self.request.response.redirect(
             urlappend(
@@ -1020,15 +991,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         return self._getSelectedProduct()
 
 
-class ProjectFileBugAdvancedView(FileBugAdvancedView):
-    """Advanced filebug page for IProject."""
-
-    # Make inheriting the base class' actions work.
-    actions = FileBugAdvancedView.actions
-    schema = IProjectBugAddForm
-    can_decide_security_contact = False
-
-
 class FrontPageFileBugMixin:
     """Provides common methods for front-page bug-filing forms."""
 
@@ -1148,39 +1110,6 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
                 IDistribution.providedBy(bugtarget)), (
                 "Unknown bug target: %r" % bugtarget)
             return bugtarget
-
-
-class FrontPageFileBugAdvancedView(FrontPageFileBugMixin,
-                                   FileBugAdvancedView):
-    """Browser view class for the top-level +filebug-advanced page."""
-    schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', LaunchpadTargetWidget)
-
-    # Make inheriting the base class' actions work.
-    actions = FileBugAdvancedView.actions
-    can_decide_security_contact = False
-
-    @property
-    def initial_values(self):
-        return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
-
-    def validate(self, data):
-        """Ensures that the target uses Malone for its bug tracking.
-
-        If the target does use Malone, further validation is carried out by
-        FileBugViewBase.validate()
-        """
-        product_or_distro = self.getProductOrDistroFromContext()
-
-        # If we have a context that we can test for Malone use, we do so.
-        if (product_or_distro is not None and
-            not product_or_distro.official_malone):
-            self.setFieldError(
-                'bugtarget',
-                "%s does not use Launchpad as its bug tracker" %
-                product_or_distro.displayname)
-        else:
-            return super(FrontPageFileBugAdvancedView, self).validate(data)
 
 
 class BugTargetBugListingView:
