@@ -87,7 +87,7 @@ class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
 
     def __init__(self, existing_branch):
-        # XXX: JonathanLange 2008-12-04 spec=package-branches: This error
+        # XXX: TimPenhey 2009-07-12 bug=405214: This error
         # message logic is incorrect, but the exact text is being tested
         # in branch-xmlrpc.txt.
         params = {'name': existing_branch.name}
