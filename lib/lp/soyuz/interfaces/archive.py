@@ -44,6 +44,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ParticipatingPersonChoice, PublicPersonChoice, StrippedTextLine)
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.gpg import IGPGKey
@@ -118,7 +119,7 @@ class NoSuchPPA(NameLookupFailed):
     _message_prefix = "No such ppa"
 
 
-class IArchivePublic(IHasOwner):
+class IArchivePublic(IHasOwner, IPrivacy):
     """An Archive interface for publicly available operations."""
     id = Attribute("The archive ID.")
 
@@ -146,6 +147,8 @@ class IArchivePublic(IHasOwner):
         title=_("Publish"), required=False,
         description=_("Whether the archive is to be published or not."))
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is guarded by a validator.
     private = exported(
         Bool(
             title=_("Private"), required=False,

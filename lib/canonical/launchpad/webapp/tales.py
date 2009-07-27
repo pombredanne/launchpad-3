@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
@@ -56,7 +56,6 @@ from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.soyuz.interfaces.build import BuildStatus
-from canonical.lazr.utils import safe_hasattr
 
 
 def escape(text, quote=True):
@@ -476,7 +475,7 @@ class ObjectFormatterAPI:
 
     def public_private_css(self):
         """Return the CSS class that represents the object's privacy."""
-        if safe_hasattr(self._context, 'private') and self._context.private:
+        if IPrivacy.providedBy(self._context) and self._context.private:
             return 'private'
         else:
             return 'public'

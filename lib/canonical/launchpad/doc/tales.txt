@@ -1230,8 +1230,8 @@ If the link is disabled, no markup is rendered.
 Users need to recognise private information as they are viewing it. This is
 accomplished with a CSS class.
 
-Any object can be converted to the 'public' CSS class. Th object does not need
-to have a private bool attributes.
+Any object can be converted to the 'public' CSS class. The object does not
+need to implement IPrivacy.
 
     >>> thing = object()
     >>> print test_tales('context/fmt:public-private-css', context=thing)
