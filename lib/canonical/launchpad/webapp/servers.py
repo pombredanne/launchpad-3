@@ -786,6 +786,7 @@ class LaunchpadTestRequest(TestRequest, LaunchpadBrowserRequestMixin):
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar',
     ...     QUERY_STRING='a=1&b=2&c=3')
+    >>> request.charsets = ['utf-8']
     >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
 
