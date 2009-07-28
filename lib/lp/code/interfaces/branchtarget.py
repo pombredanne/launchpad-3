@@ -113,3 +113,12 @@ class IBranchTarget(IPrimaryContext):
 
     def getBugTask(bug):
         """Get the BugTask for a given bug related to the branch target."""
+
+    def retargetBranch(branch):
+        """Set the branch target to refer to this target.
+
+        This only updates the target related attributes of the branch.
+
+        No name clashes are checked, nor privacy policies.  Those are handled
+        by the IBranchNamespace.moveBranch method.
+        """
