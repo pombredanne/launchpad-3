@@ -407,7 +407,7 @@ form input[type="submit"], form input[type="text"], form select, form textarea {
   margin-right: 0.5em;
 }
 button{padding:0;}
-input.urlTextType {width: 100%;}
+input.urlTextType {width: 40em;}
 .fieldRequired, .fieldOptional {color: #999;}
 .formHelp {margin-top: 0.2em; margin-bottom: 0.5em; color: #777;}
 /* Hack to add breathing room to bug status forms: */
