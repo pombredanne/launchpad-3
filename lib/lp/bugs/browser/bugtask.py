@@ -3046,9 +3046,10 @@ class BugTaskTableRowView(LaunchpadView):
     def milestone_widget_items(self):
         """The available milestone items as JSON."""
         def value_fn(item):
-            parts = list(urlparse(canonical_url(item)))
-            parts[2] = '/api/beta' + parts[2]
-            return urlunparse(parts)
+            """Return the canonical_url of the milestone in a format
+               suitable for using with the AJAX web service client."""
+            return canonical_url(
+                item, request=IWebServiceClientRequest(self.request))
 
         if self.user is not None:
             items = vocabulary_to_choice_edit_items(
