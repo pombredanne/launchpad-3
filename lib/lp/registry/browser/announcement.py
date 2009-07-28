@@ -44,7 +44,7 @@ from canonical.widgets import AnnouncementDateWidget
 class AnnouncementContextMenu(ContextMenu):
 
     usedfor = IAnnouncement
-    links = ['edit', 'retarget', 'retract']
+    links = ['edit', 'retarget', 'retract', 'delete']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -59,7 +59,12 @@ class AnnouncementContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def retract(self):
         text = 'Retract announcement'
-        return Link('+retract', text, icon='edit')
+        return Link('+retract', text, icon='remove')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete announcement'
+        return Link('+delete', text, icon='trash-icon')
 
 
 class AnnouncementFormMixin:

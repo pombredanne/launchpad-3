@@ -328,6 +328,13 @@ span.see-all {
     }
 
 /* Common list presentations. */
+.bulleted {
+    margin-bottom: 0.5em;
+    }
+.bulleted li {
+    margin: auto auto 0.2em 2em;
+    list-style-type: disc;
+    }
 .horizontal li {
     display: inline;
     padding: 0 1.5em 0 0;

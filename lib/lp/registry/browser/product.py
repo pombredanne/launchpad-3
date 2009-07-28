@@ -355,6 +355,7 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit',
+        'branding',
         'reassign',
         'top_contributors',
         'mentorship',
@@ -375,8 +376,13 @@ class ProductOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change maintainer'
+        text = 'Change people'
         return Link('+edit-people', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
 
     def top_contributors(self):
         text = u'\u00BB More contributors'
@@ -560,7 +566,7 @@ class ProductSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.ProjectReview')
     def review_licenses(self):
-        return Link('+review-licenses', 'Review projects')
+        return Link('+review-licenses', 'Review projects', icon="info")
 
 
 class SortSeriesMixin:
@@ -1030,9 +1036,14 @@ class ProductBrandingView(BrandingChangeView):
 
     implements(IProductEditMenu)
 
-    label = None
+    label = "Change branding"
     schema = IProduct
     field_names = ['icon', 'logo', 'mugshot']
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
@@ -1040,6 +1051,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     implements(IProductEditMenu)
 
+    label = "Edit details"
     schema = IProduct
     field_names = [
         "displayname",
@@ -1198,6 +1210,11 @@ class ProductReviewLicenseView(ProductEditView):
         "private_bugs",
         "reviewer_whiteboard",
         ]
+
+    @property
+    def productset(self):
+        """The `IProductSet`"""
+        return getUtility(IProductSet)
 
     def validate(self, data):
         """See `LaunchpadFormView`.
@@ -1632,6 +1649,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
     implements(IProductEditMenu)
 
+    label = "Change people"
     schema = IProduct
     field_names = [
         'owner',

@@ -3,20 +3,15 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-</metal:portlets>
-
 <div metal:fill-slot="main">
 
+  <div class="top-portlet">
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info" class="documentDescription">
@@ -28,7 +23,23 @@
     </p>
 
   </div>
+  </div>
 
+  <div id="related-actions" class="portlet">
+    <h2>Related actions</h2>
+
+    <ul tal:define="menu context/menu:context">
+      <li>
+        <a tal:replace="structure menu/edit/fmt:link-icon" />
+      </li>
+      <li>
+        <a tal:replace="structure menu/retarget/fmt:link-icon" />
+      </li>
+      <li>
+        <a tal:replace="structure menu/delete/fmt:link-icon" />
+      </li>
+    </ul>
+  </div>
 </div>
 
 </body>
