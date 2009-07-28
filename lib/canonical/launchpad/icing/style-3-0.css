@@ -5,9 +5,12 @@ Remove this section when the old templates and these declarations are gone.
 
 */
 #maincontent {
-    float: none;
-    width: auto;
-    margin-right: 0;
+    float: left;
+    width: 100%;
+    margin-right: -25em;
+    }
+#maincontent ol, #maincontent ul {
+    padding-left: auto;
     }
 .portlet, .aside {
     clear: none;
@@ -190,6 +193,7 @@ div.columns div.right div.portlet {
     margin-right: 24%;
     }
 .footer {
+    clear: both;
     margin-top: 2em;
     border-top: 1px solid #cdd3dd;
     padding-top: 0.5em;
