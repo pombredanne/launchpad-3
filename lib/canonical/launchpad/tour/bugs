@@ -66,7 +66,7 @@ You can even share a comment history across project boundaries and tools, and us
                         In Launchpad, you can share a bug report and its comment history with other communities interested in finding a fix.
                         Each project &mdash; or even different releases within a project &mdash; can track its own status, importance and assignee for that same bug report.
                         <br /><br />
-                        Even if the bug is tracked elsewhere &mdash; such as in Trac, Sourceforge or Bugzilla &mdash; Launchpad can pull in it status. Using our <a href="<a href="https://help.launchpad.net/Bugs/PluginAPISpec">bug tracker plugins</a> for Bugzilla and Trac you can share a comment history for the same bug tracked both in Launchpad and an external tracker.<br /><br />
+                        Even if the bug is tracked elsewhere &mdash; such as in Trac, Sourceforge or Bugzilla &mdash; Launchpad can pull in it status. Using our <a href="https://help.launchpad.net/Bugs/PluginAPISpec">bug tracker plugins</a> for Bugzilla and Trac you can share a comment history for the same bug tracked both in Launchpad and an external tracker.<br /><br />
 And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&rdquo; report that shows which of your bugs are marked fixed in other communities.
 
                         </p>

@@ -614,14 +614,49 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'message:\n'
         '  rev2d\n', message)
 
-    def test_getRevisionMessage_with_related_BMP(self):
-        """Information about related proposals is displayed."""
+    def makeJobAndBMP(self):
         job = self.makeRevisionsAddedWithMergeCommit()
         hacker = self.factory.makePerson(displayname='J. Random Hacker',
                                          name='jrandom')
         bmp = self.factory.makeBranchMergeProposal(target_branch=job.branch,
                                                    registrant=hacker)
         bmp.source_branch.last_scanned_id = 'rev3-id'
+        return job, bmp
+
+    def test_getRevisionMessage_with_related_BMP(self):
+        """Information about related proposals is displayed."""
+        job, bmp = self.makeJobAndBMP()
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
+        message = job.getRevisionMessage('rev2d-id', 1)
+        self.assertEqual(
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
+        'Related merge proposals:\n'
+        '  %s\n'
+        '  proposed by: J. Random Hacker (jrandom)\n'
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2d\n' % canonical_url(bmp), message)
+
+    def test_getRevisionMessage_with_BMP_with_requested_review(self):
+        """Information about incomplete reviews is omitted.
+
+        If there is a related branch merge proposal, and it has
+        requested reviews which have not been completed, they are ignored.
+        """
+        job, bmp = self.makeJobAndBMP()
+        reviewer = self.factory.makePerson()
+        bmp.nominateReviewer(reviewer, bmp.registrant)
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
         message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
