@@ -45,6 +45,7 @@ import pytz
 import re
 from simplejson import dumps
 import urllib
+from urlparse import urlparse, urlunparse
 from operator import attrgetter, itemgetter
 
 from zope import component
@@ -3044,9 +3045,14 @@ class BugTaskTableRowView(LaunchpadView):
     @property
     def milestone_widget_items(self):
         """The available milestone items as JSON."""
+        def value_fn(item):
+            parts = list(urlparse(canonical_url(item)))
+            parts[2] = '/api/beta' + parts[2]
+            return urlunparse(parts)
+
         if self.user is not None:
             items = vocabulary_to_choice_edit_items(
-                MilestoneVocabulary(self.context))
+                MilestoneVocabulary(self.context), value_fn=value_fn)
         else:
             items = '[]'
 
