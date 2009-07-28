@@ -379,7 +379,7 @@
         </tal:comment-list-truncated>
       </tal:comments>
 
-      <div id="mentoring">
+      <div id="mentoring" style="margin-top: 4em">
         <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
                      condition="mentoring_offers">
           <p>
