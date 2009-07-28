@@ -488,7 +488,7 @@ All processors type available in Launchpad.
 
     >>> vocab = vocabulary_registry.get(None, "Processor")
     >>> vocab.displayname
-    'Select a Processor'
+    'Select a processor'
 
     >>> [term.token for term in vocab.searchForTerms('386')]
     ['386']

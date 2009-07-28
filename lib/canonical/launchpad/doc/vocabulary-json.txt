@@ -114,8 +114,7 @@ Long descriptions will be truncated.
             {
                 "api_uri": "/apache",
                 "css": "sprite project",
-                "description": "The Apache projects are characterized by a
-                                collaborative, consensus based dev...",
+                "description": "The Apache projects are characterized by...
                 "title": "Apache",
                 "value": "apache"
             }
