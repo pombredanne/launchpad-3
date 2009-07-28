@@ -1236,7 +1236,6 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_MergeProposalCreateJob_with_sourcepackage_branch(self):
         """Jobs for merge proposals with sourcepackage branches work."""
-        # Suppress events to avoid creating a MergeProposalCreatedJob early.
         review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
         bmp = self.factory.makeBranchMergeProposal(
             target_branch=self.factory.makePackageBranch(),
