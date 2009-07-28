@@ -152,6 +152,9 @@ span.invisible {left:-9999em;display:block;}
 .greenbar {background:url(icon-sprites-3) 0 -446px repeat-x;}
 .purplebar {background:url(icon-sprites-3) 0 -476px repeat-x;}
 .favorite-yes {background:url(icon-sprites-3) 0 -530px no-repeat;}
+.ppa-icon {background:url(icon-sprites-3) 0 -548px no-repeat;}
+.ppa-icon-inactive {background:url(icon-sprites-3) 0 -568px no-repeat;}
+
 
 /*large*/
 .large-branch {background:url(icon-sprites-large) 0 0 no-repeat;}
@@ -1825,6 +1828,10 @@ form.archive-subscription-activation button {
 }
 form.archive-subscription-activation button:hover {
     text-decoration: underline;
+}
+
+span.ppa-icon-inactive {
+    text-decoration: line-through;
 }
 
 /* --- Code --- */
