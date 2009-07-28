@@ -342,13 +342,29 @@ class CodeReviewConversation:
     def __init__(self, comments):
         self.comments = comments
 
+class ClaimButton(Interface):
+    """A simple interface to populate the form to enqueue a proposal."""
 
-class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
+    review_id = Int(
+        required=True,
+        )
+
+
+class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
 
     label = "Proposal to merge branches"
     __used_for__ = IBranchMergeProposal
+    schema = ClaimButton
+
+    @action('Claim', name='claim')
+    def claim_action(self, action, data):
+        """Resubmit this proposal."""
+        request = self.context.getVoteReference(data['review_id'])
+        assert request.reviewer != self.user
+        removeSecurityProxy(request).reviewer = self.user
+        self.next_url = canonical_url(self.context)
 
     @property
     def comment_location(self):

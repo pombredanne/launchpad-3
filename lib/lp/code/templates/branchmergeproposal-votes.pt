@@ -56,6 +56,12 @@
         <tal:vote-link condition="review/user_can_review">
           <a tal:attributes="href string:+review?claim=${review/reviewer/name}&amp;review_type=${review/review_type_str}">[Review]</a>
         </tal:vote-link>
+          <form method="POST">
+            <input type="submit" name="field.actions.claim"
+                id="field.actions.claim" value="Claim review" />
+            <input type="hidden" name="field.review_id" id="field.claim"
+                tal:attributes="value string:${review/id}" />
+          </form>
       </td>
     </tr>
     <tr>
