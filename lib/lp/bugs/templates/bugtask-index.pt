@@ -260,10 +260,12 @@
       </tal:branches>
 
       <p>
-        <tal:addbranch
-            define="link context_menu/addbranch"
-            condition="link/enabled"
-            replace="structure link/render" />
+        <span id="add-branch-container">
+          <tal:addbranch
+              define="link context_menu/addbranch"
+              condition="link/enabled"
+              replace="structure link/render" />
+        </span>
       </p>
 
       <div tal:condition="context/bug/cves">
