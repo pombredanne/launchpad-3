@@ -73,7 +73,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         last_oops = error_reporting_utility.getLastOopsReport()
 
         # Ensure that OOPS reports are generated for database
-        # disconnections, as per Bug #404315.
+        # disconnections, as per Bug #373837.
         for exception in (DisconnectionError, TransactionRollbackError):
             request = LaunchpadTestRequest()
             publication = WebServicePublication(None)

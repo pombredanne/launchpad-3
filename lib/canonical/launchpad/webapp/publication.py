@@ -475,9 +475,9 @@ class LaunchpadBrowserPublication(
             # the publication, so there's nothing we need to do here.
             pass
 
-        # Log a soft OOPS for DisconnectionErrors, as per Bug #373837.
-        # We need to do this before we reraise DisconnectionErrors as
-        # a Retry.
+        # Log a soft OOPS for DisconnectionErrors and
+        # TransactionRollbackErrors, as per Bug #373837. We need to do
+        # this before we re-raise the excaptionsas a Retry.
         if isinstance(
             exc_info[1],
             (DisconnectionError, TransactionRollbackError)):
@@ -517,7 +517,7 @@ class LaunchpadBrowserPublication(
 
             return False
 
-        # Reraise Retry exceptions ourselves rather than invoke
+        # Re-raise Retry exceptions ourselves rather than invoke
         # our superclass handleException method, as it will log OOPS
         # reports etc. This would be incorrect, as transaction retry
         # is a normal part of operation.
