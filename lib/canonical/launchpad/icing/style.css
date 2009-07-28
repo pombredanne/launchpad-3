@@ -409,7 +409,7 @@ form input[type="submit"], form input[type="text"], form select, form textarea {
 button{padding:0;}
 input.urlTextType {width: 40em;}
 .fieldRequired, .fieldOptional {color: #999;}
-.formHelp {margin-top: 0.2em; margin-bottom: 0.5em; color: #777;}
+.formHelp {margin: 0.2em 0 0.5em 0.2em; color: #777;}
 /* Hack to add breathing room to bug status forms: */
 table.listing div.field>table {margin-top: 0.5em;}
 table.listing div.field>label, table.listing div.field>div>label,
