@@ -8,7 +8,8 @@ import transaction
 import unittest
 
 from twisted.internet import defer
-from twisted.internet.error import ConnectionClosed
+from twisted.internet.error import (
+    ConnectionClosed, ProcessTerminated, TimeoutError)
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -43,14 +44,14 @@ class TestRecordingSlaves(TrialTestCase):
         self.slave = RecordingSlave(
             'foo', 'http://foo:8221/rpc', 'foo.host')
 
-    def testInstantiation(self):
+    def test_representation(self):
         """`RecordingSlave` has a custom representation.
 
         It encloses builder name and xmlrpc url for debug purposes.
         """
         self.assertEqual('<foo:http://foo:8221/rpc>', repr(self.slave))
 
-    def testEnsurePresent(self):
+    def test_ensurepresent(self):
         """`RecordingSlave.ensurepresent` always succeeds.
 
         It returns the expected succeed code and records the interaction
@@ -63,7 +64,7 @@ class TestRecordingSlaves(TrialTestCase):
             [('ensurepresent', ('boing', 'bar', 'baz'))],
             self.slave.calls)
 
-    def testBuild(self):
+    def test_build(self):
         """`RecordingSlave.build` always succeeds.
 
         It returns the expected succeed code and records the interaction
@@ -76,8 +77,8 @@ class TestRecordingSlaves(TrialTestCase):
             [('build', ('boing', 'bar', 'baz'))],
             self.slave.calls)
 
-    def testResume(self):
-        """`RecordingSlave.resumeHost` returns a deferred resume request."""
+    def test_resume(self):
+        """`RecordingSlave.resume` always returns successs."""
         # Resume isn't requested in a just-instantiated RecordingSlave.
         self.assertFalse(self.slave.resume_requested)
 
@@ -86,38 +87,63 @@ class TestRecordingSlaves(TrialTestCase):
         self.assertEqual(['', '', os.EX_OK], self.slave.resume())
         self.assertTrue(self.slave.resume_requested)
 
+    def test_resumeHost_success(self):
+        # On a successful resume resumeHost() fires the returned deferred
+        # callback with 'None'.
+
         # The configuration testing command-line.
         self.assertEqual(
             'echo %(vm_host)s', config.builddmaster.vm_resume_command)
 
-        # When executed it returns the expected output.
+        # On success the response is None.
         def check_resume_success(response):
-            out, err, code = response
-            self.assertEqual(os.EX_OK, code)
-            self.assertEqual('', err)
-            self.assertEqual('foo.host', out.strip())
+            self.assertEquals(None, response)
+        d = self.slave.resumeSlave()
+        d.addCallback(check_resume_success)
+        return d
 
-        d1 = self.slave.resumeSlave()
-        d1.addCallback(check_resume_success)
+    def test_resumeHost_failure(self):
+        # On a failed resume, 'resumeHost' fires the returned deferred
+        # errorback with the `ProcessTerminated` failure.
 
         # Override the configuration command-line with one that will fail.
         failed_config = """
         [builddmaster]
         vm_resume_command: test "%(vm_host)s = 'no-sir'"
         """
-        config.push('vm_resume_command', failed_config)
+        config.push('failed_resume_command', failed_config)
 
-        def check_resume_failure(response):
-            out, err, code = response
-            self.assertNotEqual(os.EX_OK, code)
-            self.assertEqual('', err)
-            self.assertEqual('', out)
-            config.pop('vm_resume_command')
+        # On failures, the response is a twisted `Failure` object containing
+        # a `ProcessTerminated` error.
+        def check_resume_failure(failure):
+            self.assertIsInstance(failure, Failure)
+            self.assertIsInstance(failure.value, ProcessTerminated)
+            config.pop('failed_resume_command')
+        d = self.slave.resumeSlave()
+        d.addErrback(check_resume_failure)
+        return d
 
-        d2 = self.slave.resumeSlave()
-        d2.addCallback(check_resume_failure)
+    def test_resumeHost_timeout(self):
+        # On a resume timeouts, 'resumeHost' fires the returned deferred
+        # errorback with the `TimeoutError` failure.
 
-        return defer.DeferredList([d1, d2])
+        # Override the configuration command-line with one that will timeout.
+        timeout_config = """
+        [builddmaster]
+        vm_resume_command: sleep 5
+        socket_timeout: 1
+        """
+        config.push('timeout_resume_command', timeout_config)
+
+        # On timeouts, the response is a twisted `Failure` object containing
+        # a `TimeoutError` error.
+        def check_resume_timeout(failure):
+            self.assertIsInstance(failure, Failure)
+            self.assertIsInstance(failure.value, TimeoutError)
+            config.pop('timeout_resume_command')
+        d = self.slave.resumeSlave()
+        d.addErrback(check_resume_timeout)
+        return d
 
 
 class TestingXMLRPCProxy:
@@ -272,7 +298,7 @@ class TestBuilddManager(TrialTestCase):
         self.assertEqual(
             None, result, 'Successful resume checks should return None')
 
-        failed_response = ['', '', os.EX_USAGE]
+        failed_response = Failure(ProcessTerminated())
         result = self.manager.checkResume(failed_response, slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(

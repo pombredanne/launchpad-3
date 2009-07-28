@@ -15,11 +15,10 @@ __all__ = [
     ]
 
 import logging
-import os
 import transaction
 
 from twisted.application import service
-from twisted.internet import reactor, utils, defer
+from twisted.internet import reactor, defer
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
 from twisted.python.failure import Failure
@@ -31,6 +30,7 @@ from canonical.buildd.utils import notes
 from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
+from canonical.twistedsupport.processmonitor import run_process_with_timeout
 
 
 buildd_success_result_map = {
@@ -109,13 +109,17 @@ class RecordingSlave:
         Used the configuration command-line in the same way
         `BuilddSlave.resume` does.
 
+        Also use the builddmaster configuration 'socket_timeout' as
+        the process timeout.
+
         :return: a Deferred
         """
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self.vm_host}
         # Twisted API require string and the configuration provides unicode.
         resume_argv = [str(term) for term in resume_command.split()]
-        d = utils.getProcessOutputAndValue(resume_argv[0], resume_argv[1:])
+        d = run_process_with_timeout(
+            tuple(resume_argv), timeout=config.builddmaster.socket_timeout)
         return d
 
 
@@ -358,12 +362,11 @@ class BuilddManager(service.Service):
         If it failed, it returns a corresponding `ResetDispatchResult`
         dispatch result.
         """
-        out, err, code = response
-        if code == os.EX_OK:
+        if not isinstance(response, Failure):
             return None
 
         self.logger.error(
-            '%s resume failure:\nOUT: %s\nErr: %s' % (slave, out, err))
+            '%s resume failure: %s' % (slave, response.getErrorMessage()))
         self.slaveDone(slave)
         return self.reset_result(slave)
 
