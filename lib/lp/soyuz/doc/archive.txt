@@ -2061,9 +2061,56 @@ preserved.
     >>> check_permission('launchpad.Append', cprov_archive)
     True
 
+On the other hand, if Celso's PPA is disabled, only the view
+permissions are kept. No one has permission to upload or copy sources
+to it.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.enabled = False
+
+    >>> login("carlos@canonical.com")
+
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+    >>> check_permission('launchpad.Append', cprov_archive)
+    False
+
+    >>> login("celso.providelo@canonical.com")
+
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+    >>> check_permission('launchpad.Append', cprov_archive)
+    False
+
+Similarly to private PPAs, disabled public PPAs can only be viewed by
+owners or uploaders.
+
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.buildd_secret = ''
     >>> cprov_archive.private = False
+
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.View', cprov_archive)
+    False
+
+    >>> login('david.allouche@canonical.com')
+    >>> check_permission('launchpad.View', cprov_archive)
+    False
+
+    >>> login("carlos@canonical.com")
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+    >>> login("celso.providelo@canonical.com")
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+Re-enable Celso's PPA.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.enabled = True
 
 
 == Rebuild archives ==

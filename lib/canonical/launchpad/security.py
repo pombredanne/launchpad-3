@@ -1876,12 +1876,14 @@ class ViewArchive(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the archive.
 
-        Anyone can see a public archive.
+        Anyone can see a public and enabled archive.
 
-        Only Launchpad admins and uploaders can view private archives.
+        Only Launchpad admins and uploaders can view private or disabled
+        archives.
         """
-        # No further checks are required if the archive is not private.
-        if not self.obj.private:
+        # No further checks are required if the archive is public and
+        # enabled.
+        if not self.obj.private and self.obj.enabled:
             return True
 
         # Administrator are allowed to view private archives.
@@ -1898,11 +1900,13 @@ class ViewArchive(AuthorizationBase):
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
-        return not self.obj.private
+        return not self.obj.private and self.obj.enabled
 
 
 class AppendArchive(AuthorizationBase):
     """Restrict appending (upload and copy) operations on archives.
+
+    No one can upload to disabled archives.
 
     PPA upload rights are managed via `IArchive.canUpload`;
 
@@ -1912,6 +1916,9 @@ class AppendArchive(AuthorizationBase):
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
+        if not self.obj.enabled:
+            return False
+
         if user.inTeam(self.obj.owner):
             return True
 
