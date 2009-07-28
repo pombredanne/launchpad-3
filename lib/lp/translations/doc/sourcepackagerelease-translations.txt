@@ -2,65 +2,84 @@
 
 It's time to check the translation upload function.
 
+We need a test tarball uploaded into librarian to run this test. We
+will upload the same sampledata tarball twice, one public and one
+restricted `LibraryFileAlias` objects.
+
    >>> import os.path
-   >>> import transaction
-   >>> from canonical.launchpad.database import SourcePackageRelease
-   >>> from lp.translations.interfaces.translationimportqueue import (
-   ...     ITranslationImportQueue)
-   >>> from canonical.librarian.interfaces import ILibrarianClient
-   >>> translation_import_queue = getUtility(ITranslationImportQueue)
-   >>> client = getUtility(ILibrarianClient)
-
-We need a test tarball uploaded into librarian to run this test.
-
    >>> import lp.translations
-   >>> test_file_name = os.path.join(
+   >>> tarball_path = os.path.join(
    ...     os.path.dirname(lp.translations.__file__),
    ...     'doc/sourcepackagerelease-translations.tar.gz')
-   >>> file = open(test_file_name)
-   >>> size = len(file.read())
-   >>> file.seek(0)
-   >>> alias = client.addFile(
+   >>> tarball = open(tarball_path)
+   >>> tarball_size = len(tarball.read())
+   >>> tarball.seek(0)
+
+   >>> from canonical.launchpad.interfaces.librarian import (
+   ...     ILibraryFileAliasSet)
+   >>> public_translation = getUtility(ILibraryFileAliasSet).create(
    ...     name='test.tar.gz',
-   ...     size=size,
-   ...     file=file,
+   ...     size=tarball_size,
+   ...     file=tarball,
    ...     contentType='application/x-gtar')
 
-We need the commit to see the upload.
+   >>> tarball.seek(0)
+   >>> restricted_translation = getUtility(ILibraryFileAliasSet).create(
+   ...     name='test.tar.gz',
+   ...     size=tarball_size,
+   ...     file=tarball,
+   ...     contentType='application/x-gtar',
+   ...     restricted=True)
+
+Commit, so uploaded contents are available in the current test.
 
    >>> transaction.commit()
 
-Now we do the upload. It's necessary to retrive an ILibraryFileAlias
-correspondent to the alias (long) we already have.
+We will use an arbitrary source package release from the sampledata.
 
-   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-   >>> file_alias = getUtility(ILibraryFileAliasSet)[alias]
-
+   >>> from canonical.launchpad.database import SourcePackageRelease
    >>> spr_test = SourcePackageRelease.get(20)
-   >>> spr_test.name
-   u'pmount'
+   >>> print spr_test.title
+   pmount - 0.1-1
 
-Before the final upload, the queue should be empty.
+And the 'katie' celebrity as the user responsible for the transalation.
 
+   >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+   >>> katie = getUtility(ILaunchpadCelebrities).katie
+
+Before the final upload, we can see that the translation queue for the
+testing source package is empty.
+
+   >>> from lp.translations.interfaces.translationimportqueue import (
+   ...     ITranslationImportQueue)
+   >>> translation_import_queue = getUtility(ITranslationImportQueue)
    >>> translation_import_queue.getAllEntries(
    ...     target=spr_test.sourcepackage).count()
    0
 
-   >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-   >>> katie = getUtility(ILaunchpadCelebrities).katie
-   >>> spr_test.attachTranslationFiles(file_alias, True, katie)
+Now we bind both uploaded translations, the public and the restricted
+ones, to the testing source package.
 
-The commit is needed to see the new entries
+   >>> spr_test.attachTranslationFiles(public_translation, True, katie)
 
-   >>> transaction.commit()
+   >>> spr_test.attachTranslationFiles(restricted_translation, True, katie)
 
-And the queue should have a new entry.
+And the queue should have 2 entries, which exactly the same contents.
 
-   >>> for entry in translation_import_queue.getAllEntries(
-   ...     target=spr_test.sourcepackage):
+   >>> queue_entries = translation_import_queue.getAllEntries(
+   ...     target=spr_test.sourcepackage)
+
+   >>> queue_entries.count()
+   2
+
+   >>> for entry in queue_entries:
    ...     print entry.path, entry.importer.name
    something/en-US.xpi  katie
    po/es.po             katie
+
+Commit, so the uploaded traslations become available to the scripts.
+
+   >>> transaction.commit()
 
 Now, we need to do the final import. It's done as a two steps procedure.
 

@@ -508,14 +508,14 @@
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.AddBranchVisibilityTeamPolicyView"
-        permission="launchpad.Admin"
+        permission="launchpad.Commercial"
         template="../templates/branch-visibility-edit.pt"/>
     <browser:page
         name="+removebranchvisibilitypolicy"
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
-        permission="launchpad.Admin"
+        permission="launchpad.Commercial"
         template="../templates/branch-visibility-edit.pt"/>
     <browser:page
         name="+spark"

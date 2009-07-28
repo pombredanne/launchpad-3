@@ -35,7 +35,6 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
-from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
@@ -574,12 +573,9 @@ class SourcePackageRelease(SQLBase):
         return change
 
     def attachTranslationFiles(self, tarball_alias, is_published,
-        importer=None):
+                               importer=None):
         """See ISourcePackageRelease."""
-        client = getUtility(ILibrarianClient)
-
-        tarball_file = client.getFileByAlias(tarball_alias.id)
-        tarball = tarball_file.read()
+        tarball = tarball_alias.read()
 
         if importer is None:
             importer = getUtility(ILaunchpadCelebrities).rosetta_experts

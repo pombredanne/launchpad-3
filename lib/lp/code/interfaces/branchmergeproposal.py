@@ -34,7 +34,7 @@ from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
-from lp.services.job.interfaces.job import IJob
+from lp.services.job.interfaces.job import IJob, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
@@ -580,14 +580,11 @@ for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
 
 
-class ICreateMergeProposalJob(Interface):
+class ICreateMergeProposalJob(IRunnableJob):
     """A Job that creates a branch merge proposal.
 
     It uses a Message, which must contain a merge directive.
     """
-
-    def run():
-        """Run this job and create the merge proposals."""
 
 
 class ICreateMergeProposalJobSource(Interface):
@@ -600,11 +597,8 @@ class ICreateMergeProposalJobSource(Interface):
         """Iterate through jobs that are ready to run."""
 
 
-class IMergeProposalCreatedJob(Interface):
+class IMergeProposalCreatedJob(IRunnableJob):
     """Interface for review diffs."""
-
-    def run():
-        """Perform the diff and email specified by this job."""
 
 
 class IMergeProposalCreatedJobSource(Interface):
