@@ -132,22 +132,16 @@
     <td style="width: 20%; vertical-align: middle">
       <div class="milestone-content"
            style="width: 100%; float: left">
-        <tal:milestoned condition="context/milestone">             
-          <a href="+editstatus"
-             style="float: left"
-             tal:content="context/milestone/name" />
-          <div style="margin-right: 0.5em">
-            <a href="+editstatus">
-              <img class="editicon" />
-            </a>
-          </div>
-        </tal:milestoned>
-        <tal:not-milestoned condition="not: context/milestone">
-          <span style="float: left">None</span>
-          <a href="+editstatus" style="margin-left: 3px">
-            <img class="editicon" />
-          </a>
-        </tal:not-milestoned>
+        <a href="+editstatus"
+           class="value"
+           style="float: left"
+           tal:content="python:
+                        context.milestone and
+                        context.milestone.title or
+                        'None'" />
+        <a href="+editstatus">
+          <img class="editicon" />
+        </a>
       </div>
     </td>
 
