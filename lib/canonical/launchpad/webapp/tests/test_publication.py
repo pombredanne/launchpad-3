@@ -14,6 +14,7 @@ from psycopg2.extensions import TransactionRollbackError
 from storm.exceptions import DisconnectionError
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.publisher.interfaces import Retry
 from zope.security.management import endInteraction
 
 from canonical.testing import DatabaseFunctionalLayer
@@ -80,11 +81,19 @@ class TestWebServicePublication(TestCaseWithFactory):
             try:
                 raise exception('Fake')
             except exception:
-                publication.handleException(
-                    None, request, sys.exc_info(), retry_allowed=False)
+                self.assertRaises(
+                    Retry,
+                    publication.handleException,
+                    None, request, sys.exc_info(), True)
             da.clear_request_started()
             next_oops = error_reporting_utility.getLastOopsReport()
+
+            # Ensure the OOPS mentions the correct exception
+            self.assertNotEqual(repr(next_oops).find(exception.__name__), -1)
+
+            # Ensure that it is different to the last logged OOPS.
             self.assertNotEqual(repr(last_oops), repr(next_oops))
+
             last_oops = next_oops
 
 
