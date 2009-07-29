@@ -1,3 +1,5 @@
+<tal:root xmlns:tal="http://xml.zope.org/namespaces/tal"
+          omit-tag="">
 <input
   type="text"
   tal:attributes="
@@ -12,3 +14,4 @@
     "
   />
 <tal:chooseLink replace="structure view/chooseLink" />
+</tal:root>

@@ -8,26 +8,15 @@
 __metaclass__ = type
 
 import os
-import cgi
 import simplejson
 
-from zope.interface import Attribute, implements, Interface
-from zope.component import getUtility
-from zope.schema import TextLine
 from zope.schema.interfaces import IChoice
-from zope.app.form.browser.interfaces import ISimpleInputWidget
 from zope.app.form.browser.itemswidgets import (
     ItemsWidgetBase, SingleDataHelper)
-from zope.app.schema.vocabulary import IVocabularyFactory
-from zope.publisher.interfaces import NotFound
-from zope.component.interfaces import ComponentLookupError
 
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
-from canonical.launchpad.interfaces import UnexpectedFormData
 from canonical.cachedproperty import cachedproperty
 
 
