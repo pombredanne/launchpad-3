@@ -681,8 +681,8 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         hosted_url = str('lp-hosted:///' + self.db_branch.unique_name)
         puller_master = cls(
             self.db_branch.id, hosted_url,
-            self.db_branch.unique_name[1:], self.db_branch.branch_type, '',
-            logging.getLogger(), self.client,
+            self.db_branch.unique_name[1:], self.db_branch.branch_type.name,
+            '', logging.getLogger(), self.client,
             set([config.error_reports.oops_prefix]))
         puller_master.destination_url = os.path.abspath('dest-branch')
         if script_text is not None:
