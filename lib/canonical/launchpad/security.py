@@ -38,6 +38,8 @@ from lp.code.interfaces.codeimportmachine import (
     ICodeImportMachine)
 from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
+from lp.code.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
@@ -1668,6 +1670,21 @@ class BranchMergeProposalView(AuthorizationBase):
         return (AccessBranch(self.obj.source_branch).checkUnauthenticated()
                 and
                 AccessBranch(self.obj.target_branch).checkUnauthenticated())
+
+
+class CodeReviewVoteReferenceEdit(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ICodeReviewVoteReference
+
+    def checkAuthenticated(self, user):
+        """Only the affected teams may change the review request.
+
+        The registrant may reassign the request to another entity.
+        A member of the review team may assign it to themselves.
+        A person to whom it is assigned may delegate it to someone else.
+        """
+        return (user.inTeam(self.obj.reviewer) or
+                user.inTeam(self.obj.registrant))
 
 
 class CodeReviewCommentView(AuthorizationBase):

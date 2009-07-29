@@ -330,9 +330,7 @@ class CodeReviewConversation:
 class ClaimButton(Interface):
     """A simple interface to populate the form to enqueue a proposal."""
 
-    review_id = Int(
-        required=True,
-        )
+    review_id = Int(required=True)
 
 
 class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
@@ -345,10 +343,11 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
-        """Resubmit this proposal."""
+        """Claim this proposal."""
         request = self.context.getVoteReference(data['review_id'])
-        assert request.reviewer != self.user
-        removeSecurityProxy(request).reviewer = self.user
+        if request.reviewer == self.user:
+            return
+        request.reviewer = self.user
         self.next_url = canonical_url(self.context)
 
     @property

@@ -12,6 +12,7 @@ import unittest
 
 import transaction
 from zope.component import getMultiAdapter
+from zope.security.interfaces import Unauthorized
 
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
@@ -370,6 +371,29 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             self.bmp, LaunchpadTestRequest())
         view.initialize()
         return view
+
+    def test_claim_action_team_member(self):
+        """Claiming a review works for members of the requested team."""
+        owner = self.bmp.source_branch.owner
+        review_team = self.factory.makeTeam()
+        review = self.bmp.nominateReviewer(review_team, owner)
+        albert = self.factory.makePerson()
+        albert.join(review_team)
+        login_person(albert)
+        view = self._createView()
+        view.claim_action.success({'review_id': review.id})
+        self.assertEqual(albert, review.reviewer)
+
+    def test_claim_action_non_member(self):
+        """Claiming a review does not work for non-members."""
+        owner = self.bmp.source_branch.owner
+        review_team = self.factory.makeTeam()
+        review = self.bmp.nominateReviewer(review_team, owner)
+        albert = self.factory.makePerson()
+        login_person(albert)
+        view = self._createView()
+        self.assertRaises(Unauthorized, view.claim_action.success,
+                          {'review_id': review.id})
 
     def test_review_diff_with_no_diff(self):
         """review_diff should be None when there is no context.review_diff."""
