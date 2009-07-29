@@ -231,10 +231,16 @@ class BugDescriptionEditorWidget(TextAreaEditorWidget):
                 edit_controls.on('mouseover', function(e) {
                     edit_controls.addClass('edit-controls-hover');
                     edit_text.addClass('yui-editable_text-text-hover');
+                    // Because of YUI-supplied styles, the color has
+                    // to be set explicitly.
+                    edit_text.setStyle('backgroundColor', '#FAFAFA');
                 });
                 edit_controls.on('mouseout', function(e) {
                     edit_controls.removeClass('edit-controls-hover');
                     edit_text.removeClass('yui-editable_text-text-hover');
+                    // Because of YUI-supplied styles, the color has
+                    // to be set explicitly.
+                    edit_text.setStyle('backgroundColor', '#FFF');
                 });
             }
 
