@@ -71,6 +71,17 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
         return 'show-widget-%s' % self.suffix
 
     @property
+    def extra_no_results_message(self):
+        """Extra message when there are no results.
+
+        Override this in subclasses.
+
+        :return: A string that will be passed to Y.Node.create()
+                 so it needs to be contained in a single HTML element.
+        """
+        return None
+
+    @property
     def vocabulary_name(self):
         """The name of the field's vocabulary."""
         choice = IChoice(self.context)
@@ -95,12 +106,14 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
         else:
             header = self.header
 
-        js = js_template % dict(
+        args = dict(
             vocabulary=self.vocabulary_name,
             header=header,
             step_title=self.step_title,
             show_widget_id=self.show_widget_id,
-            input_id=self.name)
+            input_id=self.name,
+            extra_no_results_message=self.extra_no_results_message)
+        js = js_template % simplejson.dumps(args)
         # If the YUI widget or javascript is not supported in the browser,
         # it will degrade to being this "Find..." link instead of the
         # "Choose..." link.
@@ -118,3 +131,18 @@ class PersonPickerWidget(VocabularyPickerWidget):
             link += ('or (<a href="/people/+newteam">'
                      'Create a new team&hellip;</a>)')
         return link
+
+
+class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
+    """A SinglePopupWidget with a custom error message.
+
+    This widget is used only when searching for an upstream that is also
+    affected by a given bug as the page it links to includes a link which
+    allows the user to register the upstream if it doesn't exist.
+    """
+
+    @property
+    def extra_no_results_message(self):
+        return ("<strong>Didn't find the project you were looking for? "
+                '<a href="%s/+affects-new-product">Register it</a>.</strong>'
+                % canonical_url(self.context.context))
