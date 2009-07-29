@@ -66,7 +66,8 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IPrivacy)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
@@ -301,7 +302,7 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner, IHasBranchTarget):
+class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.
@@ -378,6 +379,8 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is guarded by setPrivate().
     private = exported(
         Bool(
             title=_("Keep branch confidential"), required=False,

@@ -751,7 +751,8 @@ def adaptRequestToResponse(request):
     return request.response
 
 
-class LaunchpadTestRequest(TestRequest, LaunchpadBrowserRequestMixin):
+class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
+                           LaunchpadBrowserRequestMixin):
     """Mock request for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
