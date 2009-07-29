@@ -135,8 +135,8 @@ with launchpad.View on them.
     >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
     <span class="sprite ppa-icon-inactive">PPA for Mark Shuttleworth</span>
 
-Private PPAs links are not rendered for users who do not have
-launchpad.View on them.
+Private PPAs links are not rendered for users without launchpad.View
+on them.
 
     >>> login('foo.bar@canonical.com')
     >>> sabdfl.archive.enabled = True

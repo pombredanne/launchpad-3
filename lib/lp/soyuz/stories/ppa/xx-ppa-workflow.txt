@@ -625,10 +625,8 @@ Back to his profile page Celso and anyone can his multiple PPAs.
     PPA for Celso Providelo
     Create a new PPA
 
-PPAs can be disabled by any Launchpad administrator, due to ToS
-violations or simply because an user requested so.
-
-Once a administrator disable Celso's 'edge' PPA.
+PPAs can be disabled due to ToS violations or simply because an user
+requested so. An administrator can disable Celso's 'edge' PPA.
 
     >>> ppa_url = cprov_browser.getLink('Edge PPA').url
     >>> admin_browser.open(ppa_url)
@@ -637,7 +635,7 @@ Once a administrator disable Celso's 'edge' PPA.
     >>> admin_browser.getControl("Save").click()
 
 Anonymous access or users with no permission to view Celso's 'edge'
-ppa can see it listed.
+ppa can see it listed in Celso's profile page.
 
     >>> anon_browser.open("http://launchpad.dev/~cprov")
     >>> browser.open("http://launchpad.dev/~cprov")
@@ -652,7 +650,7 @@ ppa can see it listed.
     Edge PPA
     PPA for Celso Providelo
 
-However the listed reference is not linked.
+However the reference to Celso's 'Edge PPA' is not linked.
 
     >>> print anon_browser.getLink('Edge PPA')
     Traceback (most recent call last):
