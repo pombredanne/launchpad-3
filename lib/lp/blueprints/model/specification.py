@@ -446,11 +446,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def getDelta(self, old_spec, user):
         """See ISpecification."""
         delta = ObjectDelta(old_spec, self)
-        delta.recordNewValues(("title", "summary", "whiteboard",
+        delta.recordNewValues(("title", "summary",
                                "specurl", "productseries",
                                "distroseries", "milestone"))
         delta.recordNewAndOld(("name", "priority", "definition_status",
-                               "target", "approver", "assignee", "drafter"))
+                               "target", "approver", "assignee", "drafter",
+                               "whiteboard"))
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
