@@ -1533,9 +1533,10 @@ counters for other distributions are always 'zero'.
     >>> archive_set.getNumberOfPPABinariesForDistribution(debian)
     0
 
-'getPPAsForUser' returns all the PPAs a given user participates in. It
-uses `TeamParticipation` relationships to calculate all the PPAs the
-user is allowed to upload or copy packages to.
+'getPPAsForUser' returns all enabled PPAs a given user has upload
+rights. It uses `TeamParticipation` relationships and
+`ArchivePermission` to calculate all the PPAs the user is allowed to
+upload or copy packages to.
 
 In the sampledata, 'cprov' only participates in his own PPA.
 
@@ -1583,6 +1584,14 @@ it gets listed by `getPPAsForUser`.
     PPA for Celso Providelo
     PPA for No Privileges Person
 
+The Celso's PPA gets excluded if it is disabled.
+
+    >>> cprov.archive.enabled = False
+
+    >>> for ppa in archive_set.getPPAsForUser(no_priv):
+    ...     print ppa.displayname
+    PPA for No Privileges Person
+
 When there is no active PPA for the team a user participates the
 method returns an empty SelectResults.
 
@@ -1592,6 +1601,10 @@ method returns an empty SelectResults.
 
     >>> jblack_ppas.count()
     0
+
+Re-enable Celso's PPA for the subsequent tests.
+
+    >>> cprov.archive.enabled = True
 
 The method getPrivatePPAs() will return a result set of all PPAs that are
 private.

@@ -1378,12 +1378,14 @@ class ArchiveSet:
         store = Store.of(user)
         direct_membership = store.find(
             Archive,
+            Archive.enabled == True,
             Archive.purpose == ArchivePurpose.PPA,
             TeamParticipation.team == Archive.ownerID,
             TeamParticipation.person == user,
             )
         third_part_upload_acl = store.find(
             Archive,
+            Archive.enabled == True,
             Archive.purpose == ArchivePurpose.PPA,
             ArchivePermission.archiveID == Archive.id,
             ArchivePermission.person == user,
