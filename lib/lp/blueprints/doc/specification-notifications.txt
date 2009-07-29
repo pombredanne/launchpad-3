@@ -163,8 +163,7 @@ Whiteboard change:
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
     Blueprint changed by Foo Bar:
     <BLANKLINE>
-    Whiteboard changed to:
-    <BLANKLINE>
+    Whiteboard set to:
     This is a long line, which will be wrapped in the email, since it's
     longer than 72 characters.
     <BLANKLINE>
@@ -206,9 +205,12 @@ Definition status and whiteboard change:
     <BLANKLINE>
         Definition Status: Pending Approval => Approved
     <BLANKLINE>
-    Whiteboard changed to:
-    <BLANKLINE>
-    Excellent work.
+    Whiteboard changed:
+    - This is a long line, which will be wrapped in the email, since it's
+    - longer than 72 characters.
+    - 
+    - Another paragraph
+    + Excellent work.
     <BLANKLINE>
     -- 
       Support Native SVG Objects
