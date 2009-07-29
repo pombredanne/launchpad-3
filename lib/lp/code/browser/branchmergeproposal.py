@@ -37,7 +37,6 @@ from zope.formlib import form
 from zope.interface import Interface, implements
 from zope.schema import Choice, Int, Text
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-from zope.security.proxy import removeSecurityProxy
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 
@@ -1134,7 +1133,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
                 # Claim this vote reference, i.e. say that the individual
                 # self. user is doing this review ond behalf of the 'reviewer'
                 # team.
-                removeSecurityProxy(vote_ref).reviewer = self.user
+                vote_ref.reviewer = self.user
 
         comment = self.context.createComment(
             self.user, subject=None, content=data['comment'],
