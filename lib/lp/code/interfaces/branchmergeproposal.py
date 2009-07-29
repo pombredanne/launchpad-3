@@ -406,6 +406,7 @@ class IBranchMergeProposal(Interface):
             title=_("A reviewer."), schema=IPerson),
         review_type=Text())
     @call_with(registrant=REQUEST_USER)
+    @operation_returns_entry(Interface) # Really ICodeReviewVoteReference
     @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
