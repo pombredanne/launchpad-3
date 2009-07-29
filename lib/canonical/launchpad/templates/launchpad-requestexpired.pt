@@ -3,14 +3,11 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/freeform" 
+  metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main">
+    <div class="top-portlet" metal:fill-slot="main">
       <h1 class="exception">Timeout error</h1>
       <div
         id="redirect_notice" style="display:none" class="informational message">
@@ -26,8 +23,8 @@
         var edge_cookie = document.cookie.match('edge');
         var edge_host = document.location.hostname.match('edge');
 
-	// Logic has been inverted in the next line to avoid breaking
-	// XHTML compliance of the template due to ampersand usage.
+	      // Logic has been inverted in the next line to avoid breaking
+	      // XHTML compliance of the template due to ampersand usage.
         if (!(edge_cookie || edge_host)) {
           redirect_notice_div = document.getElementById('redirect_notice');
           redirect_notice_div.style.display = "block";
