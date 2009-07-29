@@ -240,7 +240,8 @@ class BugDescriptionEditorWidget(TextAreaEditorWidget):
 
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
-                multiline: true
+                multiline: true,
+                buttons: 'top'
             });
 
             widget.editor.plug({
