@@ -58,7 +58,7 @@
         </tal:vote-link>
       </td>
     </tr>
-    <tr>
+    <tr id="email-review">
       <td colspan="4" style="padding-top: 1em; patting-bottom: 0.5em">
         Review <a href="https://help.launchpad.net/Code/Review"
                   class="help">via email</a>:
