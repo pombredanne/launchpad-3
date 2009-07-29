@@ -61,6 +61,13 @@
         path_expression="string:+review/${id}"
         attribute_to_parent="branch_merge_proposal"
         rootsite="code"/>
+    <browser:page
+        for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"
+        name="+reassign"
+        class="lp.code.browser.branchmergeproposal.CodeReviewVoteReassign"
+        facet="branches"
+        permission="launchpad.AnyPerson"
+        template="../templates/reviewrequest-reassign.pt"/>
     <facet
         facet="branches">
         <browser:url

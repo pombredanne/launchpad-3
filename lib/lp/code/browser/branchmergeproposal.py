@@ -43,6 +43,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
@@ -55,7 +56,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet, IPerson
 from lp.services.comments.interfaces.conversation import IConversation
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
@@ -289,6 +290,18 @@ class BranchMergeProposalNavigation(Navigation):
 
     usedfor = IBranchMergeProposal
 
+    @stepthrough('reviews')
+    def traverse_review(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        try:
+            return self.context.getVoteReference(id)
+        except WrongBranchMergeProposal:
+            return None
+
+
     @stepthrough('comments')
     def traverse_comment(self, id):
         try:
@@ -448,6 +461,10 @@ class DecoratedCodeReviewVoteReference:
             self.user_can_claim = False
         else:
             self.user_can_claim = self.user_can_review
+        if user in (context.reviewer, context.registrant):
+            self.user_can_reassign = True
+        else:
+            self.user_can_reassign = False
 
     @property
     def show_date_requested(self):
@@ -475,6 +492,22 @@ class DecoratedCodeReviewVoteReference:
     def status_text(self):
         """The text shown in the table of the users vote."""
         return self.status_text_map[self.context.comment.vote]
+
+class ReassignSchema(Interface):
+
+    reviewer = PublicPersonChoice( title=_('Reviewer'), required=True,
+            description=_('A person who you want to review this.'),
+            vocabulary='ValidPersonOrTeam')
+
+
+class CodeReviewVoteReassign(LaunchpadFormView):
+
+    schema = ReassignSchema
+
+    @action('Reassign', name='reassign')
+    def reassign_action(self, action, data):
+        self.context.reviewer = data['reviewer']
+        self.next_url = canonical_url(self.context.branch_merge_proposal)
 
 
 class BranchMergeProposalVoteView(LaunchpadView):

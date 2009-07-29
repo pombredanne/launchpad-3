@@ -180,6 +180,31 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
         self.assertFalse(view.requested_reviews[0].user_can_claim)
 
+    def makeReviewRequest(self, viewer=None, registrant=None):
+        albert = self.factory.makePerson()
+        if registrant is None:
+            registrant = self.bmp.source_branch.owner
+        self._nominateReviewer(albert, registrant)
+        if viewer is None:
+            viewer = albert
+        login_person(viewer)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        return view.requested_reviews[0]
+
+    def test_user_can_reassign_assignee(self):
+        review_request = self.makeReviewRequest()
+        self.assertTrue(review_request.user_can_reassign)
+
+    def test_user_can_reassign_registrant(self):
+        registrant = self.factory.makePerson()
+        review_request = self.makeReviewRequest(registrant, registrant)
+        self.assertTrue(review_request.user_can_reassign)
+
+    def test_user_can_reassign_random_person(self):
+        viewer = self.factory.makePerson()
+        review_request = self.makeReviewRequest(viewer)
+        self.assertFalse(review_request.user_can_reassign)
+
     def testCurrentReviewOrdering(self):
         # Most recent first.
         # Request three reviews.

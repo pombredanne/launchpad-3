@@ -53,6 +53,10 @@
       </td>
       <td>
         <span class="votePENDING">Pending</span>
+        <tal:reassign-link condition="review/user_can_reassign">
+          <a tal:attributes="href
+          string:reviews/${review/id}/+reassign">[Reassign]</a>
+        </tal:reassign-link>
         <tal:vote-link condition="review/user_can_review">
           <a tal:attributes="href string:+review?claim=${review/reviewer/name}&amp;review_type=${review/review_type_str}">[Review]</a>
         </tal:vote-link>
