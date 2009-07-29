@@ -361,6 +361,7 @@
         <allow
             attributes="
                 distribution
+                development_version
                 sourcepackagename
                 name
                 displayname
