@@ -127,6 +127,9 @@ class ISourcePackage(IBugTarget):
     development_version = Attribute(
         "This package on the distro's current series.")
 
+    distribution_sourcepackage = Attribute(
+        "The IDistributionSourcePackage for this source package.")
+
     def __getitem__(version):
         """Return the source package release with the given version in this
         distro series, or None."""
