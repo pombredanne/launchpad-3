@@ -1333,9 +1333,17 @@ class EditPackageUpload(AdminByAdminsTeam):
     usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
-        """Return True if user has an ArchivePermission or is an admin."""
+        """Return True if user has an ArchivePermission or is an admin.
+
+        If it's a delayed-copy, check if the user can upload to its targeted
+        archive.
+        """
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
+
+        if self.obj.is_delayed_copy:
+            archive_append = AppendArchive(self.obj.archive)
+            return archive_append.checkAuthenticated(user)
 
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
@@ -1911,6 +1919,9 @@ class AppendArchive(AuthorizationBase):
     PPA upload rights are managed via `IArchive.canUpload`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
+
+    Appending to ubuntu main archives can also be done by the
+    'ubuntu-security' celebrity.
     """
     permission = 'launchpad.Append'
     usedfor = IArchive
@@ -1923,6 +1934,12 @@ class AppendArchive(AuthorizationBase):
             return True
 
         if self.obj.is_ppa and self.obj.canUpload(user):
+            return True
+
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (self.obj.is_main and
+            self.obj.distribution == celebrities.ubuntu and
+            user.inTeam(celebrities.ubuntu_security)):
             return True
 
         return False

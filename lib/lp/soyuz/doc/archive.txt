@@ -2082,18 +2082,10 @@ to it.
     >>> cprov_archive.enabled = False
 
     >>> login("carlos@canonical.com")
-
-    >>> check_permission('launchpad.View', cprov_archive)
-    True
-
     >>> check_permission('launchpad.Append', cprov_archive)
     False
 
     >>> login("celso.providelo@canonical.com")
-
-    >>> check_permission('launchpad.View', cprov_archive)
-    True
-
     >>> check_permission('launchpad.Append', cprov_archive)
     False
 
@@ -2125,6 +2117,42 @@ Re-enable Celso's PPA.
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.enabled = True
 
+Another important aspect of the upload permission for ubuntu main
+archives (PRIMARY, PARTNER and DEBUG) is that in addition to owners
+and users which were specifically granted permissions, members of the
+ubuntu-security' team also have 'launchpad.Append' on them.
+
+In the sampledata, Carlos does not have permission to append contents
+to the Ubuntu main archives.
+
+    >>> primary, partner, debug = ubuntu.all_distro_archives
+
+    >>> login('carlos@canonical.com')
+    >>> check_permission('launchpad.Append', primary)
+    False
+    >>> check_permission('launchpad.Append', partner)
+    False
+    >>> check_permission('launchpad.Append', debug)
+    False
+
+When Carlos becomes a member of the 'ubuntu-security' team he is
+allowed to append to ubuntu main archives. In practice it means that
+Carlos can now *copy* packages directly to ubuntu.
+
+    # Make Carlos a member of the ubuntu-security team.
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu_security = getUtility(IPersonSet).getByName(
+    ...     'ubuntu-security')
+    >>> ubuntu_security.addMember(carlos, cprov)
+
+    >>> login('carlos@canonical.com')
+    >>> check_permission('launchpad.Append', primary)
+    True
+    >>> check_permission('launchpad.Append', partner)
+    True
+    >>> check_permission('launchpad.Append', debug)
+    True
+
 
 == Rebuild archives ==
 
@@ -2140,6 +2168,7 @@ them.
 Creating new COPY archive without passing a name results in an
 AssertionError.
 
+    >>> login('foo.bar@canonical.com')
     >>> rebuild_archive = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntutest)
@@ -2274,7 +2303,7 @@ all result in a NotFound exception:
     >>> sabdfl.archive.syncSources(["bogus"], cprov.archive, "release")
     Traceback (most recent call last):
     ...
-    SourceNotFound: No such source package: 'bogus'.
+    NoSuchSourcePackageName: No such source package: 'bogus'.
 
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "badpocket")
     Traceback (most recent call last):
@@ -2286,7 +2315,6 @@ all result in a NotFound exception:
     Traceback (most recent call last):
     ...
     DistroSeriesNotFound: badseries
-
 
 We can also specify a single source to be copied with the `syncSource`
 call.  This allows a version to be specified so older versions can be
@@ -2371,6 +2399,38 @@ or a CannotCopy exception is thrown.
     Traceback (most recent call last):
     ...
     CannotCopy: Destination pocket must be 'release' for a PPA.
+
+syncSource() will always use only the latest publication of the
+specific source, ignoring the previous ones. Multiple publications can
+be resulted from copies and/or overrides of the copy candidates in the
+source archive.
+
+    # Create a copy candidate (override_1.0) in ubuntu primary archive
+    # and override its section. Resulting in 2 publications in the
+    # source archive.
+    >>> from lp.soyuz.interfaces.section import ISectionSet
+    >>> source_old = test_publisher.getPubSource(
+    ...     sourcename="overridden", version="1.0")
+    >>> python_section = getUtility(ISectionSet).ensure('python')
+    >>> copy_candidate = source_old.changeOverride(new_section=python_section)
+
+    >>> source_archive = copy_candidate.archive
+    >>> source_archive.getPublishedSources(name="overridden").count()
+    2
+
+    >>> print copy_candidate.section.name
+    python
+
+When syncing 'overridden_1.0' to Mark's PPA, the latest publication,
+the one published in 'python' section, will be used.
+
+    >>> sabdfl.archive.syncSource(
+    ...     source_name='overridden', version='1.0',
+    ...     from_archive=source_archive, to_pocket='release')
+
+    >>> [copy] = sabdfl.archive.getPublishedSources(name="overridden")
+    >>> print copy.section.name
+    python
 
 
 == Publish flag ==

@@ -834,33 +834,47 @@ admins and commercial admins.
     <BLANKLINE>
 
 
-=== Copy privacy mismatch ===
+=== Copying private file to public archives ===
 
-A CannotCopy error, giving the reason "Cannot copy private source into
-public archives." is raised if such operation is requested.
+Copying private sources to public archives works fine with
+`syncSource` or `syncSources` operations.
 
-When we try to copy the private source to the primary archive, which
-is public, the 'privacy mismatch' error is raised. The behaviour is
-the same for `syncSource` or `syncSources` operations.
+We use `syncSource` to copy 'private - 1.0' source from Celso's
+private PPA to the ubuntu primary archive.
 
     >>> print cprov_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSource', {},
-    ...     source_name='private', version="1.0", to_pocket='release',
+    ...     source_name='private', version='1.0', to_pocket='release',
     ...     from_archive=cprov_archive['self_link'],
     ...     to_series="hoary")
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 200 Ok
     ...
-    CannotCopy: private 1.0 in hoary
-    (cannot copy private files into public archives)
-    <BLANKLINE>
+
+In the same way we can use 'syncSources' for syncing an subsequent
+version.
+
+    >>> login('foo.bar@canonical.com')
+    >>> unused = test_publisher.getPubSource(
+    ...     sourcename="private", version="1.1", archive=cprov.archive)
+    >>> logout()
 
     >>> print cprov_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSources', {},
     ...     source_names=['private'], to_pocket='release',
     ...     from_archive=cprov_archive['self_link'],
     ...     to_series="hoary")
+    HTTP/1.1 200 Ok
+    ...
+
+Although if we try to copy an old version, by repeating the copy an
+error is returned.
+
+    >>> print cprov_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSource', {},
+    ...     source_name='private', version='1.1', to_pocket='release',
+    ...     from_archive=cprov_archive['self_link'],
+    ...     to_series="hoary")
     HTTP/1.1 400 Bad Request
     ...
-    CannotCopy: private 1.0 in hoary
-    (cannot copy private files into public archives)
-    <BLANKLINE>
+    CannotCopy: private 1.1 in hoary
+    (same version already uploaded and waiting in ACCEPTED queue)

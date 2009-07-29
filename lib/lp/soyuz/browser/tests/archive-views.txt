@@ -235,6 +235,17 @@ filtered results.
     ...     print pub.displayname
     pmount 0.1-1 in warty
 
+The 'name_filter' is decoded as UTF-8 before futher processing. If it
+did not, the storm query compiler would raise an error, because it can
+only deal with unicode variables.
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+delete-packages",
+    ...     query_string="field.name_filter=%C3%A7")
+
+    >>> len(list(view.batched_sources))
+    0
+
 Similarly, the sources can be filtered by series:
 
     >>> view = create_initialized_view(
@@ -907,11 +918,11 @@ value is submitted.
     WidgetInputError: ('destination_archive', u'Destination PPA', )
 
 
-=== Copy privacy mismatch ===
+=== Copy private files to public archives ===
 
-Users are only allowed to copy private sources into private PPAs,
-otherwise builders won't be able to retrieve the files for
-building. See `testCopyFromPrivateToPublicPPAs` for more information.
+Users are allowed to copy private sources into private PPAs, however
+it happens via 'delayed-copies' not the usual direct copying method.
+See more information in scripts/packagecopier.py
 
 First we will make Celso's PPA private.
 
@@ -954,14 +965,24 @@ the public Ubuntu-team PPA, which is empty.
     ...         'field.actions.copy': 'Copy',
     ...         })
 
-The action cannot be performed due to the 'private mismatch'
-error. Nothing was copied to Ubuntu-team PPA.
+    >>> len(view.errors)
+    0
+
+The action is performed as a delayed-copy, and the user is informed of
+it via a page notification.
 
     >>> from canonical.launchpad.testing.pages import extract_text
-    >>> for error in view.errors:
-    ...     print extract_text(error)
-    The following source cannot be copied:
-    private 1.0 in hoary (cannot copy private files into public archives)
+    >>> for notification in view.request.response.notifications:
+    ...     print extract_text(notification.message)
+    Packages copied to PPA for Ubuntu Team:
+    Delayed copy of private - 1.0 (source)
 
-    >>> ubuntu_team_ppa.getPublishedSources().count()
-    0
+The delayed-copy request is waiting to be processed in the ACCEPTED
+upload queue.
+
+    >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
+    >>> copy = getUtility(IPackageUploadSet).findSourceUpload(
+    ...     'private', '1.0', ubuntu_team_ppa, ubuntu)
+
+    >>> print copy.status.name
+    ACCEPTED

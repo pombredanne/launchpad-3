@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
@@ -414,7 +414,7 @@ class ObjectFormatterAPI:
     # The names which can be traversed further (e.g context/fmt:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
     # Names which are allowed but can't be traversed further.
-    final_traversable_names = {}
+    final_traversable_names = {'public-private-css': 'public_private_css',}
 
     def __init__(self, context):
         self._context = context
@@ -472,6 +472,13 @@ class ObjectFormatterAPI:
         raise NotImplementedError(
             "No link implementation for %r, IPathAdapter implementation "
             "for %r." % (self, self._context))
+
+    def public_private_css(self):
+        """Return the CSS class that represents the object's privacy."""
+        if IPrivacy.providedBy(self._context) and self._context.private:
+            return 'private'
+        else:
+            return 'public'
 
 
 class ObjectImageDisplayAPI:
@@ -916,6 +923,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
                          }
 
     final_traversable_names = {'local-time': 'local_time'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
@@ -1532,6 +1540,7 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         'aliases': 'aliases',
         'external-link': 'external_link',
         'external-title-link': 'external_title_link'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def link(self, view_name):
         """Return an HTML link to the bugtracker page.
@@ -1596,6 +1605,7 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
     final_traversable_names = {
         'external-link': 'external_link',
         'external-link-short': 'external_link_short'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def _make_external_link(self, summary=None):
         """Return an external HTML link to the target of the bug watch.
@@ -2005,6 +2015,7 @@ class LinkFormatterAPI(ObjectFormatterAPI):
         'icon-link': 'link',
         'link-icon': 'link',
         }
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def icon(self):
         """Return the icon representation of the link."""
@@ -2509,8 +2520,6 @@ class FormattersAPI:
         fall back for IE by using the IE specific word-wrap property.
 
         TODO: Test IE compatibility. StuartBishop 20041118
-        TODO: This should probably just live in the stylesheet if this
-            CSS implementation is good enough. StuartBishop 20041118
         """
         if not self._stringtoformat:
             return self._stringtoformat
@@ -2518,13 +2527,7 @@ class FormattersAPI:
             linkified_text = re_substitute(self._re_linkify,
                 self._linkify_substitution, break_long_words,
                 cgi.escape(self._stringtoformat))
-            return ('<pre style="'
-                    'white-space: -moz-pre-wrap;'
-                    'white-space: -o-pre-wrap;'
-                    'word-wrap: break-word;'
-                    '">%s</pre>'
-                    % linkified_text
-                    )
+            return '<pre class="wrap">%s</pre>' % linkified_text
 
     # Match lines that start with one or more quote symbols followed
     # by a space. Quote symbols are commonly '|', or '>'; they are

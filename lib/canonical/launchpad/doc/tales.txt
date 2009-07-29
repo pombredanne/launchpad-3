@@ -215,8 +215,7 @@ To "<pre>" format a string, use fmt:nice_pre:
     >>> pprint.pprint(textwrap.wrap(
     ...     test_tales('foo/fmt:nice_pre', foo='hello & goodbye')
     ... ))
-    ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
-     'wrap: break-word;">hello &amp; goodbye</pre>']
+    ['<pre class="wrap">hello &amp; goodbye</pre>']
 
 Add manual word breaks to long words in a string:
 
@@ -1215,23 +1214,23 @@ the left.
     <a href="http://launchpad.dev/+place"
        class="menu-link-test_link sprite icon" title="summary">text</a>
 
-The 'edit', 'remove' and 'trash-icon' links are rendered as text followed
-by an icon.
+The 'edit', 'remove' and 'trash-icon' links are rendered icons followed by
+text. They have both the sprite and modify CSS classes.
 
     >>> menu_link.icon = 'edit'
     >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
     <a href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite-after edit" title="summary">text</a>
+       class="menu-link-test_link sprite modify edit" title="summary">text</a>
 
     >>> menu_link.icon = 'remove'
     >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
     <a href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite-after remove" title="summary">text</a>
+       class="menu-link-test_link sprite modify remove" title="summary">text</a>
 
     >>> menu_link.icon = 'trash-icon'
     >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
     <a href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite-after trash-icon" title="summary">text</a>
+       class="menu-link-test_link sprite modify trash-icon" title="summary">text</a>
 
 fmt:icon-link and fmt:link-icon are deprecated. They are an alias for
 fmt:link. They do not control formatting as they once did; fmt:link controls
@@ -1262,6 +1261,38 @@ If the link is disabled, no markup is rendered.
     u''
     >>> test_tales('menu_link/fmt:url', menu_link=menu_link)
     u''
+
+
+== CSS classes for public and private objects ==
+
+Users need to recognise private information as they are viewing it. This is
+accomplished with a CSS class.
+
+Any object can be converted to the 'public' CSS class. The object does not
+need to implement IPrivacy.
+
+    >>> thing = object()
+    >>> print test_tales('context/fmt:public-private-css', context=thing)
+    public
+
+The CSS class honors the state of the object's privacy if the object supports
+the private attribute. If the object is not private, the class is 'public'.
+
+    >>> bug = factory.makeBug(title='public-and-private')
+    >>> print bug.private
+    False
+    >>> print test_tales('context/fmt:public-private-css', context=bug)
+    public
+
+If the private attribute is True, the class is 'private'.
+
+    >>> owner = bug.bugtasks[0].target.owner
+    >>> login_person(owner)
+    >>> bug.setPrivate(True, owner)
+    True
+    >>> print test_tales('context/fmt:public-private-css', context=bug)
+    private
+    >>> login(ANONYMOUS)
 
 
 == Formatting of private attributes on Teams ==
