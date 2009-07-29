@@ -177,6 +177,12 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
 
+start_librarian: build
+	bin/start_librarian
+
+stop_librarian:
+	bin/killservice librarian
+
 pull_branches: support_files
 	# Mirror the hosted branches in the development upload area to the
 	# mirrored area.
