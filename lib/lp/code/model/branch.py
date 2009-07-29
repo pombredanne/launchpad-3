@@ -113,6 +113,12 @@ class Branch(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_person_not_private_membership, notNull=True)
+
+    def setOwner(self, new_owner, user):
+        """See `IBranch`."""
+        new_namespace = self.target.getNamespace(new_owner)
+        new_namespace.moveBranch(self, user, rename_if_necessary=True)
+
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
