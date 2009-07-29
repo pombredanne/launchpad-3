@@ -176,8 +176,7 @@ To "<pre>" format a string, use fmt:nice_pre:
     >>> pprint.pprint(textwrap.wrap(
     ...     test_tales('foo/fmt:nice_pre', foo='hello & goodbye')
     ... ))
-    ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
-     'wrap: break-word;">hello &amp; goodbye</pre>']
+    ['<pre class="wrap">hello &amp; goodbye</pre>']
 
 Add manual word breaks to long words in a string:
 
