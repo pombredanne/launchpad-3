@@ -90,13 +90,18 @@
 
         #bug-description .yui-ieditor-input {
             background: transparent;
-            padding:12px 117px 0 23px;
+            padding:12px 117px 0 18px;
             border:0;
+            border-left: 2px groove #D6D6D6;
+            border-top: 2px groove #D6D6D6;
+            width: 77%;
+            position: relative;
+            left: 5px;
         }
 
         #bug-description .yui-ieditor-multiline {
             background-color: #fafafa;
-            border: 1px solid #d6d6d6;
+            border-top: 1px solid #d6d6d6;
             position: relative;
             top: -16px;
         }
@@ -121,6 +126,10 @@
             left: 16px;
             margin-right: 8px;
         }
+        #bug-description .update-in-progress-message {
+            margin-right: 5px;
+        }
+
         "/>
     </metal:block>
 
