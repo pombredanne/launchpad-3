@@ -397,13 +397,23 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_("The user that registered the branch."),
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
+
     owner = exported(
         ParticipatingPersonChoice(
             title=_('Owner'),
-            required=True,
+            required=True, readonly=True,
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("Either yourself or a team you are a member of. "
                           "This controls who can modify the branch.")))
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        new_owner=Reference(
+            title=_("The new owner of the branch."),
+            schema=IPerson))
+    @export_write_operation()
+    def setOwner(new_owner, user):
+        """Set the owner of the branch to be `new_owner`."""
 
     reviewer = exported(
         PublicPersonChoice(
