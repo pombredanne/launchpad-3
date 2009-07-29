@@ -45,7 +45,6 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
-from lp.code.browser.branch import DecoratedBug
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -410,6 +409,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @cachedproperty
     def linked_bugs(self):
         """Return DecoratedBugs linked to the source branch."""
+        # Avoid import loop
+        from lp.code.browser.branch import DecoratedBug
         branch = self.context.source_branch
         return [DecoratedBug(bug, branch) for bug in branch.linked_bugs]
 
