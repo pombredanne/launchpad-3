@@ -59,7 +59,7 @@ from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, SourceNotFound, default_name_by_purpose)
+    PocketNotFound, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivepermission import (
@@ -1055,13 +1055,8 @@ class Archive(SQLBase):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
         sources = []
-        name_utility = getUtility(ISourcePackageNameSet)
         for name in source_names:
-            try:
-                source_package_name = name_utility[name]
-            except NotFoundError, e:
-                # Webservice-friendly exception.
-                raise SourceNotFound(e)
+            source_package_name = getUtility(ISourcePackageNameSet)[name]
             # Grabbing the item at index 0 ensures it's the most recent
             # publication.
             sources.append(
@@ -1074,13 +1069,7 @@ class Archive(SQLBase):
                    to_series=None, include_binaries=False):
         """See `IArchive`."""
         # Find and validate the source package version required.
-        try:
-            source_package_name = getUtility(
-                ISourcePackageNameSet)[source_name]
-        except NotFoundError, e:
-            # Webservice-friendly exception.
-            raise SourceNotFound(e)
-
+        source_package_name = getUtility(ISourcePackageNameSet)[source_name]
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True)[0]
 

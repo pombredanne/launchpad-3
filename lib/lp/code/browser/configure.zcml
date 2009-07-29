@@ -347,6 +347,9 @@
         <browser:page
             name="+merges"
             template="../templates/branch-merges.pt"/>
+        <browser:page
+            name="++bug-links"
+            template="../templates/branch-bug-links.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branch.IBranch"
@@ -551,9 +554,6 @@
             name="+index"
             template="../templates/codereviewcomment-index.pt"/>
         <browser:page
-            name="+fragment"
-            template="../templates/codereviewcomment-fragment.pt"/>
-        <browser:page
             name="+comment-header"
             template="../templates/codereviewcomment-header.pt"/>
         <browser:page
@@ -563,17 +563,6 @@
             name="+comment-footer"
             template="../templates/codereviewcomment-footer.pt"/>
     </browser:pages>
-    <browser:page
-        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-        class="lp.code.browser.codereviewcomment.CodeReviewCommentSummary"
-        name="+fragment-summary"
-        permission="zope.Public"
-        template="../templates/codereviewcomment-fragment.pt"/>
-    <browser:page
-        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-        name="+macros"
-        permission="zope.Public"
-        template="../templates/codereviewcomment-macros.pt"/>
     <browser:page
         name="+reply"
         facet="branches"

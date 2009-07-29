@@ -35,7 +35,6 @@ __all__ = [
     ]
 
 import datetime
-import urllib
 
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
@@ -578,11 +577,9 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         By default, we search by binary names, but also provide a link
         to the equivalent source package search in some circumstances.
         """
-        new_query_form = self.request.form.copy()
-        new_query_form['search_type'] = 'source'
-        return "%s/+search?%s" % (
+        return "%s/+search?search_type=source&%s" % (
             canonical_url(self.context),
-            urllib.urlencode(new_query_form),
+            self.request.get('QUERY_STRING'),
             )
 
     @cachedproperty

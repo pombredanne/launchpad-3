@@ -1014,6 +1014,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
             email_address = person.preferredemail.email
         mail['From'] = email_address
+        mail['To'] = self.makePerson().preferredemail.email
         if subject is None:
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject
