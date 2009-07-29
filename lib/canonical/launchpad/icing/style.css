@@ -206,6 +206,7 @@ caption {caption-side: bottom; text-align: left;}
 dt dfn {font-style: normal; font-weight: bold;}
 dd {margin-bottom: 1em;}
 input {visibility:inherit;}
+input[type=radio] {margin-left: 1em;}
 kbd {
   background-color: #ddd;
   border: 1px solid;
