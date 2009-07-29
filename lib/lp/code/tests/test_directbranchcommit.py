@@ -164,7 +164,6 @@ class TestDirectBranchCommit_getDir(DirectBranchCommitTestCase):
         self.assertNotEqual(None, root_id)
         self.assertTrue('' in self.committer.path_ids)
         self.assertEqual(self.committer.path_ids[''], root_id)
-        self.committer.commit('')
 
     def test_getDir_creates_dir(self):
         # _getDir will create a new directory, under the root.
@@ -174,7 +173,6 @@ class TestDirectBranchCommit_getDir(DirectBranchCommitTestCase):
         self.assertTrue('dir' in self.committer.path_ids)
         self.assertEqual(self.committer.path_ids['dir'], dir_id)
         self.assertNotEqual(self.committer.path_ids[''], dir_id)
-        self.committer.commit('')
 
     def test_getDir_creates_subdir(self):
         # _getDir will create nested directories.
@@ -183,7 +181,6 @@ class TestDirectBranchCommit_getDir(DirectBranchCommitTestCase):
         self.assertTrue('dir' in self.committer.path_ids)
         self.assertTrue('dir/subdir' in self.committer.path_ids)
         self.assertEqual(self.committer.path_ids['dir/subdir'], subdir_id)
-        self.committer.commit('')
 
     def test_getDir_finds_existing_dir(self):
         # _getDir finds directories that already existed in a previously
@@ -192,7 +189,6 @@ class TestDirectBranchCommit_getDir(DirectBranchCommitTestCase):
         self._setUpCommitter()
         dir_id = self.committer._getDir('po')
         self.assertEqual(existing_id, dir_id)
-        self.committer.commit('')
 
     def test_getDir_creates_dir_in_existing_dir(self):
         # _getDir creates directories inside ones that already existed
@@ -203,13 +199,11 @@ class TestDirectBranchCommit_getDir(DirectBranchCommitTestCase):
         self.assertTrue('po/main' in self.committer.path_ids)
         self.assertTrue('po/main/files' in self.committer.path_ids)
         self.assertEqual(self.committer.path_ids['po/main/files'], new_dir_id)
-        self.committer.commit('')
 
     def test_getDir_reuses_new_id(self):
         # If a directory was newly created, _getDir will reuse its id.
         dir_id = self.committer._getDir('foo/bar')
         self.assertEqual(dir_id, self.committer._getDir('foo/bar'))
-        self.committer.commit('')
 
 
 def test_suite():
