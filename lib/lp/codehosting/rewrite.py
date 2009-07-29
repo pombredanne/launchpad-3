@@ -5,37 +5,67 @@
 """
 
 import time
-import xmlrpclib
 
 from bzrlib import urlutils
 
-from lp.codehosting.vfs import (
-    branch_id_to_path, BranchFileSystemClient)
+from canonical.launchpad.interfaces import ISlaveStore
+from lp.code.model.branch import Branch
+from lp.codehosting.vfs import branch_id_to_path
+
 from canonical.config import config
-from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, LAUNCHPAD_ANONYMOUS)
-from canonical.launchpad.xmlrpc import faults
-from canonical.twistedsupport import extract_result
 
 __all__ = ['BranchRewriter']
 
 
 class BranchRewriter:
 
-    def __init__(self, logger, proxy):
+    def __init__(self, logger, _now=None):
         """
 
-        :param logger: Logger than messages about what the rewriter is doing
+        :param logger: Logger that messages about what the rewriter is doing
             will be sent to.
         :param proxy: A blocking proxy for a branchfilesystem endpoint.
         """
+        if _now is None:
+            self._now = time.time
+        else:
+            self._now = _now
         self.logger = logger
-        self.client = BranchFileSystemClient(proxy, LAUNCHPAD_ANONYMOUS, 10.0)
+        self.store = ISlaveStore(Branch)
+        self._cache = {}
 
     def _codebrowse_url(self, path):
         return urlutils.join(
             config.codehosting.internal_codebrowse_root,
             path)
+
+    def _getBranchIdAndTrailingPath(self, location):
+        """Return the branch id and trailing path for 'location'.
+
+        In addition this method returns whether the answer can from the cache
+        or from the database.
+        """
+        parts = location[1:].split('/')
+        prefixes = []
+        for i in range(1, len(parts) + 1):
+            prefix = '/'.join(parts[:i])
+            if prefix in self._cache:
+                branch_id, inserted_time = self._cache[prefix]
+                if (self._now() < inserted_time +
+                    config.codehosting.branch_rewrite_cache_lifetime):
+                    trailing = location[len(prefix) + 1:]
+                    return branch_id, trailing, "HIT"
+            prefixes.append(prefix)
+        result = self.store.find(
+            (Branch.id, Branch.unique_name),
+            Branch.unique_name.is_in(prefixes), Branch.private == False).one()
+        if result is None:
+            return None, None, "MISS"
+        else:
+            branch_id, unique_name = result
+            self._cache[unique_name] = (branch_id, self._now())
+            trailing = location[len(unique_name) + 1:]
+            return branch_id, trailing, "MISS"
 
     def rewriteLine(self, resource_location):
         """Rewrite 'resource_location' to a more concrete location.
@@ -65,35 +95,26 @@ class BranchRewriter:
         Other errors are allowed to propagate, on the assumption that the
         caller will catch and log them.
         """
-        T = time.time()
         # Codebrowse generates references to its images and stylesheets
         # starting with "/static", so pass them on unthinkingly.
+        T = time.time()
+        cached = None
         if resource_location.startswith('/static/'):
-            return self._codebrowse_url(resource_location)
-        trailingSlash = resource_location.endswith('/')
-        deferred = self.client.translatePath(resource_location)
-        try:
-            transport_type, info, trailing = extract_result(deferred)
-        except xmlrpclib.Fault, f:
-            if (faults.check_fault(f, faults.PathTranslationError)
-                or faults.check_fault(f, faults.PermissionDenied)):
-                # In this situation, we'd *like* to generate a 404
-                # (PathTranslationError) or 301 (PermissionDenied) error.  But
-                # we can't, so we just forward on to codebrowse which can.
-                return self._codebrowse_url(resource_location)
-            else:
-                raise
-        if transport_type == BRANCH_TRANSPORT:
-            if trailing.startswith('.bzr'):
-                r = urlutils.join(
-                    config.codehosting.internal_branch_by_id_root,
-                    branch_id_to_path(info['id']), trailing)
-                if trailingSlash:
-                    r += '/'
-            else:
-                r = self._codebrowse_url(resource_location)
-            self.logger.info(
-                "%r -> %r (%fs)", resource_location, r, time.time() - T)
-            return r
+            r = self._codebrowse_url(resource_location)
+            cached = 'N/A'
         else:
-            return "NULL"
+            branch_id, trailing, cached = self._getBranchIdAndTrailingPath(
+                resource_location)
+            if branch_id is None:
+                r = self._codebrowse_url(resource_location)
+            else:
+                if trailing.startswith('/.bzr'):
+                    r = urlutils.join(
+                        config.codehosting.internal_branch_by_id_root,
+                        branch_id_to_path(branch_id), trailing[1:])
+                else:
+                    r = self._codebrowse_url(resource_location)
+        self.logger.info(
+            "%r -> %r (%fs, cache: %s)",
+            resource_location, r, time.time() - T, cached)
+        return r

@@ -11,6 +11,7 @@ __metaclass__ = type
 
 __all__ = [
     'BountyVocabulary',
+    'HostedBranchRestrictedOnOwnerVocabulary',
     'BranchRestrictedOnProductVocabulary',
     'BranchVocabulary',
     'BugNominatableSeriesesVocabulary',
@@ -76,11 +77,13 @@ from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 
+from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
@@ -184,6 +187,25 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.product)
+
+
+class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
+    """A vocabulary for hosted branches owned by the current user.
+
+    These are branches that the user is guaranteed to be able to push
+    to.
+    """
+    def __init__(self, context=None):
+        """Pass a Person as context, or anything else for the current user."""
+        super(HostedBranchRestrictedOnOwnerVocabulary, self).__init__(context)
+        if IPerson.providedBy(self.context):
+            self.user = context
+        else:
+            self.user = getUtility(ILaunchBag).user
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).ownedBy(self.user).withBranchType(
+            BranchType.HOSTED)
 
 
 class BugVocabulary(SQLObjectVocabularyBase):

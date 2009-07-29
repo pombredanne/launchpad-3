@@ -40,6 +40,12 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
 
 
+def revision_feed_id(revision):
+    """Return a consistent id for a revision to use as an id."""
+    return "tag:launchpad.net,%s:/revision/%s" % (
+        revision.revision_date.date().isoformat(), revision.revision_id)
+
+
 class BranchFeedEntry(FeedEntry):
     """See `IFeedEntry`."""
     def construct_id(self):
@@ -248,16 +254,35 @@ class RevisionListingFeed(FeedBase):
         Called by getItems which may cache the results.
         """
         cache = self._getRevisionCache()
-        revisions = cache.public().getRevisions().config(limit=self.quantity)
+        revisions = cache.public().getRevisions()
         # Convert the items into their feed entry representation.
-        items = [self.itemToFeedEntry(item) for item in revisions]
+        items = []
+        for revision in revisions:
+            content_view = self._createView(revision)
+            if content_view is not None:
+                entry = self.createFeedEntry(content_view)
+                items.append(entry)
+            # If we've hit our limit, stop iterating the revisions.
+            if len(items) >= self.quantity:
+                break
         return items
 
-    def itemToFeedEntry(self, revision):
-        """See `IFeed`."""
-        id = "tag:launchpad.net,%s:/revision/%s" % (
-            revision.revision_date.date().isoformat(), revision.revision_id)
+    def _createView(self, revision):
+        """Make a view for this revision.
+
+        :return: A view class, or None.
+        """
         content_view = RevisionFeedContentView(revision, self.request, self)
+        # If there is no longer an associated branch for this, return None as
+        # we don't want to show this revision.
+        if content_view.branch is None:
+            return None
+        return content_view
+
+    def createFeedEntry(self, content_view):
+        """Create the FeedEntry for the specified view."""
+        revision = content_view.context
+        id = revision_feed_id(revision)
         content = content_view.render()
         content_data = FeedTypedData(content=content,
                                      content_type="html",
