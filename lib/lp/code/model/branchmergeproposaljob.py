@@ -44,6 +44,7 @@ from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.codehosting.vfs import get_multi_server
 from lp.services.job.model.job import Job
+from lp.services.job.runner import BaseRunnableJob
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -132,7 +133,7 @@ class BranchMergeProposalJob(Storm):
         return instance
 
 
-class BranchMergeProposalJobDerived(object):
+class BranchMergeProposalJobDerived(BaseRunnableJob):
 
     """Intermediate class for deriving from BranchMergeProposalJob."""
     delegates(IBranchMergeProposalJob)
@@ -222,8 +223,16 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
         lca = graph.find_unique_lca(source_revision, target_revision)
         return lca, source_revision
 
+    def getOopsRecipients(self):
+        return [self.branch_merge_proposal.registrant.preferredemail.email]
 
-class CreateMergeProposalJob:
+    def getOperationDescription(self):
+        return ('notifying people about the proposal to merge %s into %s' %
+            (self.branch_merge_proposal.source_branch.bzr_identity,
+             self.branch_merge_proposal.target_branch.bzr_identity))
+
+
+class CreateMergeProposalJob(BaseRunnableJob):
     """See `ICreateMergeProposalJob` and `ICreateMergeProposalJobSource`."""
 
     classProvides(ICreateMergeProposalJobSource)
@@ -284,3 +293,15 @@ class CreateMergeProposalJob:
             return CodeHandler().processMergeProposal(message)
         finally:
             server.tearDown()
+
+    def getOopsRecipients(self):
+        message = self.getMessage()
+        from_ = message['From']
+        if from_ is None:
+            return []
+        return [from_]
+
+    def getOperationDescription(self):
+        message = self.getMessage()
+        return ('creating a merge proposal from message with subject %s' %
+                message['Subject'])
