@@ -50,7 +50,8 @@ def find_existing_translation(potmsgset, pofile, potranslations):
     unprotected_potmsgset = removeSecurityProxy(potmsgset)
     existing_message = (
         unprotected_potmsgset._findTranslationMessage(
-            pofile, potranslations, TranslationConstants.MAX_PLURAL_FORMS))
+            pofile=pofile, potranslations=potranslations,
+            pluralforms=TranslationConstants.MAX_PLURAL_FORMS))
     return existing_message
 
 

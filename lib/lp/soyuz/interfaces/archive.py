@@ -30,7 +30,6 @@ __all__ = [
     'MAIN_ARCHIVE_PURPOSES',
     'NoSuchPPA',
     'PocketNotFound',
-    'SourceNotFound',
     'AlreadySubscribed',
     'ArchiveNotPrivate',
     'default_name_by_purpose',
@@ -85,11 +84,6 @@ class PocketNotFound(Exception):
 
 class DistroSeriesNotFound(Exception):
     """Invalid distroseries."""
-    webservice_error(400) #Bad request.
-
-
-class SourceNotFound(Exception):
-    """Invalid source name."""
     webservice_error(400) #Bad request.
 
 
@@ -691,8 +685,8 @@ class IArchivePublic(IHasOwner):
         :param person: An `IPerson` for whom you want to find out which
             package sets he has access to.
 
-        :raises SourceNotFound: if a source package with the given
-            name could not be found.
+        :raises NoSuchSourcePackageName: if a source package with the
+            given name could not be found.
         :return: `ArchivePermission` records for the package sets that
             include the given source package name and to which the given
             person may upload.
@@ -721,8 +715,8 @@ class IArchivePublic(IHasOwner):
         :param direct_permissions: If set only package sets that directly
             include the given source will be considered.
 
-        :raises SourceNotFound: if a source package with the given
-            name could not be found.
+        :raises NoSuchSourcePackageName: if a source package with the
+            given name could not be found.
         :return: `ArchivePermission` records for the package sets that
             include the given source package name and apply to the
             archive in question.
@@ -750,8 +744,8 @@ class IArchivePublic(IHasOwner):
         :param person: An `IPerson` for whom you want to find out which
             package sets he has access to.
 
-        :raises SourceNotFound: if a source package with the given
-            name could not be found.
+        :raises NoSuchSourcePackageName: if a source package with the
+            given name could not be found.
         :return: True if the person is allowed to upload the source package.
         """
 
@@ -962,7 +956,7 @@ class IArchiveAppend(Interface):
             the published binaries for each given source should also be
             copied along with the source.
 
-        :raises SourceNotFound: if the source name is invalid
+        :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
         :raises DistroSeriesNotFound: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
@@ -1001,7 +995,7 @@ class IArchiveAppend(Interface):
             the published binaries for each given source should also be
             copied along with the source.
 
-        :raises SourceNotFound: if the source name is invalid
+        :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
         :raises DistroSeriesNotFound: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
