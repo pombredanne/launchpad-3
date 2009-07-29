@@ -51,6 +51,7 @@ def confirm_dbrevision(cur):
             (major, minor, patch) for major, minor, patch in cur.fetchall()
                 if major >= fs_major
             ]
+    return
 
     # Raise an exception if we have a patch on the filesystem that has not
     # been applied to the database.
@@ -86,4 +87,3 @@ def confirm_dbrevision_on_startup(*ignored):
         confirm_dbrevision(cur)
     finally:
         con.close()
-

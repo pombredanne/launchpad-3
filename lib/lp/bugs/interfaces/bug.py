@@ -44,8 +44,8 @@ from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.bugattachment import (
-    bug_attachment_size_constraint)
+from canonical.launchpad.validators.attachment import (
+    attachment_size_constraint)
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
@@ -456,7 +456,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     @call_with(owner=REQUEST_USER)
     @operation_parameters(
-        data=Bytes(constraint=bug_attachment_size_constraint),
+        data=Bytes(constraint=attachment_size_constraint),
         comment=Text(), filename=TextLine(), is_patch=Bool(),
         content_type=TextLine(), description=Text())
     @export_factory_operation(IBugAttachment, [])
@@ -607,7 +607,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             :status: The status the bugtask should be set to.
             :user: The `IPerson` doing the change.
 
-        If a bug task was edited, emit a 
+        If a bug task was edited, emit a
         `lazr.lifecycle.interfaces.IObjectModifiedEvent` and
         return the edited bugtask.
 
@@ -796,7 +796,7 @@ class IBugAddForm(IBug):
         vocabulary="Bug")
     filecontent = Bytes(
         title=u"Attachment", required=False,
-        constraint=bug_attachment_size_constraint)
+        constraint=attachment_size_constraint)
     patch = Bool(title=u"This attachment is a patch", required=False,
         default=False)
     attachment_description = Title(title=u'Description', required=False)
