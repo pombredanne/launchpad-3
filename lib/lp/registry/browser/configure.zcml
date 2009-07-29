@@ -2245,7 +2245,7 @@
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="launchpad.AnyPerson"
-        class="lp.registry.browser.sourcepackage.SourcePackageView"
+        class="lp.registry.browser.sourcepackage.SourcePackageChangeUpstreamView"
         name="+edit-packaging"
         facet="overview"
         template="../templates/sourcepackage-edit-packaging.pt"
