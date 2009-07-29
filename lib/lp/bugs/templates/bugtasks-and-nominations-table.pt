@@ -38,11 +38,9 @@
 
 </table>
 
-<div
-  class="actions"
-  tal:define="current_bugtask view/current_bugtask"
-
-        tal:condition="view/displayAlsoAffectsLinks">
+<div class="actions"
+     tal:define="current_bugtask view/current_bugtask"
+     tal:condition="view/displayAlsoAffectsLinks">
     <tal:also-affects-links define="context_menu context/menu:context">
       <tal:addupstream
         define="link context_menu/addupstream"
@@ -83,6 +81,6 @@
         </script>
       </span>
     </tal:also-affects-links>
-
 </div>
+
 </tal:root>
