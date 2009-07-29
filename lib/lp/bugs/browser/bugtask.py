@@ -1003,7 +1003,9 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     @property
     def bug_description(self):
         """The bug's description as HTML."""
-        description = '<p>' + self.context.bug.description + '</p>'
+        formatter = FormattersAPI
+        hide_email = formatter(self.context.bug.description).obfuscate_email()
+        description = formatter(hide_email).text_to_html()
         return BugDescriptionEditorWidget(
             self.context.bug,
             'description',

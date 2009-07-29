@@ -39,10 +39,7 @@
         .edit-controls {
             float:right;
             position: relative;
-            top: 1px;
-            background-position: right bottom;
-            background-image: url('${editor_skin}/label-top.png');
-            background-repeat: no-repeat;
+            top: 10px;
             height: 29px;
             width: 81px;
             line-height: 29px;
@@ -50,13 +47,22 @@
             padding-right: 8px;
         }
 
+        .edit-controls-hover {
+            background-position: right top;
+            background-image: url('${editor_skin}/label-top.png');
+            background-repeat: no-repeat;
+        }
+
         #nonportlets .report {
             margin-bottom: 29px;
         }
 
         #bug-description {
-            margin-bottom: 9px;
-            max-width: 60em;
+            font-family: inherit;
+            font-size: 12px;
+            margin-bottom: 25px;
+            margin-top: -20px;
+            width: 600px;
         }
 
         #bug-description h2 {
@@ -70,19 +76,41 @@
         }
 
         #bug-description .yui-editable_text-text {
-            padding: 1.5em;
-            -moz-border-radius-topleft:     5px;
-            -moz-border-radius-bottomleft:  5px;
-            -moz-border-radius-bottomright: 5px;
+            position: relative;
+            top: 9px;
+            padding:1px 20px 1px 20px;
+            z-index: -1;
+        }
+
+        #bug-description .yui-editable_text-text-hover {
+            padding:0 19px 0 19px;
             background-color: #fafafa;
             border: 1px solid #d6d6d6;
-            margin: 0;
         }
 
-        #bug-tags {
-            margin-left: 1.5em;
+        #bug-description .yui-ieditor-input {
+            background: transparent;
+            padding:12px 117px 0 23px;
+            border:0;
         }
 
+        #bug-description .yui-ieditor-multiline {
+            background-color: #fafafa;
+            border: 1px solid #d6d6d6;
+            position: relative;
+            top: -16px;
+        }
+
+        .yui-skin-sam .yui-ieditor-content {
+            top: -29px;
+            left: -5px;
+            width:600px;
+        }
+
+        .yui-ieditor-multiline .yui-ieditor-content {
+            top: -29px;
+            left: -5px;
+        }
         "/>
     </metal:block>
 
@@ -225,46 +253,6 @@
           tal:content="structure view/bug_description"
           />
 
-<script
-  type="text/javascript"
-  tal:content="string:
-
-YUI().use('lazr.editor', 'lp.client.plugins', 'node', function (Y) {
-
-    var widget = new Y.EditableText({
-        contentBox: '#bug-description',
-        multiline: true
-    });
-
-    widget.editor.plug({
-        fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
-          patch: 'description',
-          resource: '/bugs/5'
-    }});
-
-    widget.after('render', function() {
-        // Move the multiline editor controls into the trigger box.
-        var controls = Y.get('#bug-description .edit-controls');
-        widget.editor_controls = controls.appendChild(
-            widget.editor.top_buttons);
-        //widget.editor_controls.setStyle('display', 'none');
-        widget.trigger = widget.get('trigger');
-    });
-
-    Y.after(function() {
-        widget.editor_controls.setStyle('display', 'block');
-    }, 'show_editor', widget);
-
-    Y.after(function() {
-        widget.editor_controls.setStyle('display', 'none');
-    }, 'hide_editor', widget);
-
-    widget.render();
-});
-
-  ">
-</script>
-
           <div id="bug-tags"
                tal:attributes="class python: ('tags-container ' +
                                               (context.bug.tags and
@@ -321,11 +309,6 @@ YUI().use('lazr.editor', 'lp.client.plugins', 'node', function (Y) {
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
-          </div>
-          <div style="width: 45%: text-align: right; float: right;" class="clearfix">
-            <a tal:replace="structure context_menu/editdescription/fmt:icon-link" />
-            <span tal:condition="view/wasDescriptionModified" class="discreet"
-            >(see <a href="comments/0">original description</a>)</span>
           </div>
 
         <div class="clearfix"></div>

@@ -224,6 +224,20 @@ class BugDescriptionEditorWidget(TextAreaEditorWidget):
     ACTIVATION_TEMPLATE = dedent(u"""\
         <script>
         YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
+            function set_controls() {
+                var edit_controls = Y.get('.edit-controls');
+                var edit_text = Y.get(
+                    '#bug-description .yui-editable_text-text');
+                edit_controls.on('mouseover', function(e) {
+                    edit_controls.addClass('edit-controls-hover');
+                    edit_text.addClass('yui-editable_text-text-hover');
+                });
+                edit_controls.on('mouseout', function(e) {
+                    edit_controls.removeClass('edit-controls-hover');
+                    edit_text.removeClass('yui-editable_text-text-hover');
+                });
+            }
+
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
                 multiline: true
@@ -232,10 +246,37 @@ class BugDescriptionEditorWidget(TextAreaEditorWidget):
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
                   patch: '%(attribute)s',
-                  resource: '%(context_url)s'
+                  resource: '%(context_url)s',
+                  accept: 'application/xhtml+xml',
+                  formatter: function(result, attribute) {
+                      var dl = Y.DOM.create(result)[1]
+                      var dl_nodes = dl.childNodes;
+                      var i;
+                      // We have to add the response node's children to
+                      // a span, since the XHR response is a <dd> element.
+                      // The <dd> breaks description formatting.
+                      for (i=0; i<dl_nodes.length; i++) {
+                          var child = dl_nodes[i];
+                          // Ignore text nodes when looking for the attribute.
+                          if (child.nodeType != 3 &&
+                              child.firstChild.textContent == attribute) {
+                              var ptags = dl_nodes[i+2].childNodes;
+                              var span = Y.Node.create('<span></span>');
+                              var n;
+                              for (n=0; n<ptags.length; n++) {
+                                  span.appendChild(ptags[n]);
+                              }
+                              return span;
+                          }
+                      }
+                  }
             }});
 
+            widget.on('rendered', function() {
+                set_controls();
+            });
             widget.render();
+            set_controls();
         });
         </script>
         """)
