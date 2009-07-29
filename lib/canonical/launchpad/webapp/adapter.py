@@ -134,7 +134,7 @@ def store_sql_statements_and_request_duration(event):
 def get_request_statements():
     """Get the list of executed statements in the request.
 
-    The list is composed of (starttime, endtime, statement) tuples.
+    The list is composed of (starttime, endtime, store_id, statement) tuples.
     Times are given in milliseconds since the start of the request.
     """
     return getattr(_local, 'request_statements', [])
@@ -165,7 +165,11 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
     # convert times to integer millisecond values
     starttime = int((starttime - request_starttime) * 1000)
     endtime = int((endtime - request_starttime) * 1000)
-    _local.request_statements.append((starttime, endtime, statement))
+    # A string containing no whitespace that lets us identify which Store
+    # is being used.
+    store_identifier = connection_wrapper._database._uri.database
+    _local.request_statements.append(
+        (starttime, endtime, store_identifier, statement))
 
     # store the last executed statement as an attribute on the current
     # thread

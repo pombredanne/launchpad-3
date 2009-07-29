@@ -57,8 +57,8 @@ class TestErrorReport(unittest.TestCase):
                             'pageid', 'traceback-text', 'username', 'url', 42,
                             [('name1', 'value1'), ('name2', 'value2'),
                              ('name1', 'value3')],
-                            [(1, 5, 'SELECT 1'),
-                             (5, 10, 'SELECT 2')])
+                            [(1, 5, 'store_a', 'SELECT 1'),
+                             (5, 10, 'store_b', 'SELECT 2')])
         self.assertEqual(entry.id, 'id')
         self.assertEqual(entry.type, 'exc-type')
         self.assertEqual(entry.value, 'exc-value')
@@ -74,8 +74,12 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
         self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
         self.assertEqual(len(entry.db_statements), 2)
-        self.assertEqual(entry.db_statements[0], (1, 5, 'SELECT 1'))
-        self.assertEqual(entry.db_statements[1], (5, 10, 'SELECT 2'))
+        self.assertEqual(
+            entry.db_statements[0],
+            (1, 5, 'store_a', 'SELECT 1'))
+        self.assertEqual(
+            entry.db_statements[1],
+            (5, 10, 'store_b', 'SELECT 2'))
 
     def test_write(self):
         """Test ErrorReport.write()"""
@@ -88,8 +92,8 @@ class TestErrorReport(unittest.TestCase):
                             [('HTTP_USER_AGENT', 'Mozilla/5.0'),
                              ('HTTP_REFERER', 'http://localhost:9000/'),
                              ('name=foo', 'hello\nworld')],
-                            [(1, 5, 'SELECT 1'),
-                             (5, 10, 'SELECT\n2')])
+                            [(1, 5, 'store_a', 'SELECT 1'),
+                             (5, 10,'store_b', 'SELECT\n2')])
         fp = StringIO.StringIO()
         entry.write(fp)
         self.assertEqual(fp.getvalue(), dedent("""\
@@ -108,13 +112,60 @@ class TestErrorReport(unittest.TestCase):
             HTTP_REFERER=http://localhost:9000/
             name%%3Dfoo=hello%%0Aworld
 
-            00001-00005 SELECT 1
-            00005-00010 SELECT 2
+            00001-00005@store_a SELECT 1
+            00005-00010@store_b SELECT 2
 
             traceback-text""" % (versioninfo.branch_nick, versioninfo.revno)))
 
     def test_read(self):
-        """Test ErrorReport.read()"""
+        """Test ErrorReport.read()."""
+        fp = StringIO.StringIO(dedent("""\
+            Oops-Id: OOPS-A0001
+            Exception-Type: NotFound
+            Exception-Value: error message
+            Date: 2005-04-01T00:00:00+00:00
+            Page-Id: IFoo:+foo-template
+            User: Sample User
+            URL: http://localhost:9000/foo
+            Duration: 42
+
+            HTTP_USER_AGENT=Mozilla/5.0
+            HTTP_REFERER=http://localhost:9000/
+            name%3Dfoo=hello%0Aworld
+
+            00001-00005@store_a SELECT 1
+            00005-00010@store_b SELECT 2
+
+            traceback-text"""))
+        entry = ErrorReport.read(fp)
+        self.assertEqual(entry.id, 'OOPS-A0001')
+        self.assertEqual(entry.type, 'NotFound')
+        self.assertEqual(entry.value, 'error message')
+        # XXX jamesh 2005-11-30:
+        # this should probably convert back to a datetime
+        self.assertEqual(entry.time, datetime.datetime(2005, 4, 1))
+        self.assertEqual(entry.pageid, 'IFoo:+foo-template')
+        self.assertEqual(entry.tb_text, 'traceback-text')
+        self.assertEqual(entry.username, 'Sample User')
+        self.assertEqual(entry.url, 'http://localhost:9000/foo')
+        self.assertEqual(entry.duration, 42)
+        self.assertEqual(len(entry.req_vars), 3)
+        self.assertEqual(entry.req_vars[0], ('HTTP_USER_AGENT',
+                                             'Mozilla/5.0'))
+        self.assertEqual(entry.req_vars[1], ('HTTP_REFERER',
+                                             'http://localhost:9000/'))
+        self.assertEqual(entry.req_vars[2], ('name=foo', 'hello\nworld'))
+        self.assertEqual(len(entry.db_statements), 2)
+        self.assertEqual(
+            entry.db_statements[0],
+            (1, 5, 'store_a', 'SELECT 1'))
+        self.assertEqual(
+            entry.db_statements[1],
+            (5, 10, 'store_b', 'SELECT 2'))
+
+
+    def test_read_no_store_id(self):
+        """Test ErrorReport.read() for old logs with no store_id."""
         fp = StringIO.StringIO(dedent("""\
             Oops-Id: OOPS-A0001
             Exception-Type: NotFound
@@ -152,8 +203,8 @@ class TestErrorReport(unittest.TestCase):
                                              'http://localhost:9000/'))
         self.assertEqual(entry.req_vars[2], ('name=foo', 'hello\nworld'))
         self.assertEqual(len(entry.db_statements), 2)
-        self.assertEqual(entry.db_statements[0], (1, 5, 'SELECT 1'))
-        self.assertEqual(entry.db_statements[1], (5, 10, 'SELECT 2'))
+        self.assertEqual(entry.db_statements[0], (1, 5, None, 'SELECT 1'))
+        self.assertEqual(entry.db_statements[1], (5, 10, None, 'SELECT 2'))
 
 
 class TestErrorReportingUtility(unittest.TestCase):
@@ -422,7 +473,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         # Test ErrorReportingUtility.raising() with an XML-RPC request.
         request = TestRequest()
         directlyProvides(request, IXMLRPCRequest)
-        request.getPositionalArguments = lambda : (1,2)
+        request.getPositionalArguments = lambda: (1, 2)
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         try:
@@ -468,7 +519,6 @@ class TestErrorReportingUtility(unittest.TestCase):
         except BadDataError:
             utility.raising(sys.exc_info(), request, now=now)
             self.assertEqual(request.oopsid, None)
-
 
     def test_raising_for_script(self):
         """Test ErrorReportingUtility.raising with a ScriptRequest."""
@@ -753,7 +803,7 @@ class TestOopsLoggingHandler(TestCase):
         # logged will have OOPS reports generated for them.
         error_message = self.factory.getUniqueString()
         try:
-            1/0
+            ignored = 1/0
         except ZeroDivisionError:
             self.logger.exception(error_message)
         oops_report = self.error_utility.getLastOopsReport()

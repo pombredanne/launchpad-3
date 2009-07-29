@@ -167,9 +167,9 @@ class ErrorReport:
             fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
         fp.write('\n')
-        for (start, end, statement) in self.db_statements:
-            fp.write('%05d-%05d %s\n' % (start, end,
-                                         _normalise_whitespace(statement)))
+        for (start, end, store_id, statement) in self.db_statements:
+            fp.write('%05d-%05d@%s %s\n' % (
+                start, end, store_id, _normalise_whitespace(statement)))
         fp.write('\n')
         fp.write(self.tb_text)
 
@@ -206,9 +206,15 @@ class ErrorReport:
             line = line.strip()
             if line == '':
                 break
-            startend, statement = line.split(' ', 1)
-            start, end = startend.split('-')
-            statements.append((int(start), int(end), statement))
+            preamble, statement = line.split(' ', 1)
+            start, suffix = preamble.split('-', 1)
+            try:
+                end, store_id = suffix.split('@', 1)
+                store_id = intern(store_id) # This string is repeated lots.
+            except ValueError:
+                end, store_id = suffix, None
+            statements.append(
+                (int(start), int(end), store_id, statement))
 
         # The rest is traceback.
         tb_text = ''.join(lines)
@@ -471,9 +477,10 @@ class ErrorReportingUtility:
 
             duration = get_request_duration()
 
-            statements = sorted((start, end, _safestr(statement))
-                                for (start, end, statement)
-                                    in get_request_statements())
+            statements = sorted(
+                (start, end, _safestr(store_id), _safestr(statement))
+                for (start, end, store_id, statement)
+                    in get_request_statements())
 
             oopsid, filename = self.newOopsId(now)
 
