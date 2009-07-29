@@ -170,6 +170,8 @@ branch_add = 'Register a branch'
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
 
+branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
+
 branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
 
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))

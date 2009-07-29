@@ -347,6 +347,9 @@
         <browser:page
             name="+merges"
             template="../templates/branch-merges.pt"/>
+        <browser:page
+            name="++bug-links"
+            template="../templates/branch-bug-links.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branch.IBranch"
