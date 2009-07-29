@@ -111,6 +111,16 @@
             top: -29px;
             left: -5px;
         }
+
+        #bug-description .yui-ieditor-submit_button {
+            position: relative;
+            left: -4px;
+        }
+        #bug-description .yui-ieditor-cancel_button {
+            position: relative;
+            left: 16px;
+            margin-right: 8px;
+        }
         "/>
     </metal:block>
 
