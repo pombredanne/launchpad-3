@@ -189,7 +189,7 @@ class TestBranchMailerDiff(TestCaseWithFactory):
         diff = ctrl.attachments[0]
         self.assertEqual('hello', diff.get_payload(decode=True))
         self.assertEqual('text/x-diff', diff['Content-type'])
-        self.assertEqual('inline; filename="revision.diff"',
+        self.assertEqual('inline; filename="revision-diff.txt"',
                          diff['Content-disposition'])
         self.assertNotIn('hello', ctrl.body)
         self.assertNotIn('larger than your specified limit', ctrl.body)

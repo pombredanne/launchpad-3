@@ -25,6 +25,18 @@ class ICanHasLinkedBranch(Interface):
     """Something that has a linked branch."""
 
     branch = Attribute("The linked branch.")
+    bzr_path = Attribute(
+        'The Bazaar branch path for the linked branch. '
+        'Note that this will be set even if there is no linked branch.')
+
+    def setBranch(branch, registrant=None):
+        """Set the linked branch.
+
+        :param branch: An `IBranch`. After calling this,
+            `ICanHasLinkedBranch.branch` will be 'branch'.
+        :param registrant: The `IPerson` linking the branch. Not used by all
+            implementations.
+        """
 
 
 class CannotHaveLinkedBranch(Exception):

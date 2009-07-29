@@ -66,7 +66,9 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IPrivacy)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
@@ -82,6 +84,7 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
 
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
+
 
 class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
@@ -301,7 +304,7 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner, IHasBranchTarget):
+class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.
@@ -378,6 +381,8 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is guarded by setPrivate().
     private = exported(
         Bool(
             title=_("Keep branch confidential"), required=False,
@@ -740,8 +745,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
                 'development focus, then the result should be lp:product.  '
                 'If the branch is related to a series, then '
                 'lp:product/series.  Otherwise the result is '
-                'lp:~user/product/branch-name.'
-                )))
+                'lp:~user/product/branch-name.')))
 
     def addToLaunchBag(launchbag):
         """Add information about this branch to `launchbag'.
@@ -1094,8 +1098,6 @@ class IBranchDelta(Interface):
     last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
-
-
 class IBranchCloud(Interface):
     """A utility to generate data for branch clouds.
 
@@ -1142,6 +1144,10 @@ def bazaar_identity(branch, is_dev_focus):
             'series': use_series.name}
 
     if branch.sourcepackage is not None:
+        distro_package = branch.sourcepackage.distribution_sourcepackage
+        linked_branch = ICanHasLinkedBranch(distro_package)
+        if linked_branch.branch == branch:
+            return lp_prefix + linked_branch.bzr_path
         suite_sourcepackages = branch.associatedSuiteSourcePackages()
         # Take the first link if there is one.
         if len(suite_sourcepackages) > 0:

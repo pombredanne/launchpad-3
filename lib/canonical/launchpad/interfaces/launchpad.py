@@ -59,6 +59,7 @@ __all__ = [
     'IPasswordResets',
     'IPrivateApplication',
     'IPrivateMaloneApplication',
+    'IPrivacy',
     'IReadZODBAnnotation',
     'IRosettaApplication',
     'IStructuralHeaderPresentation',
@@ -386,6 +387,16 @@ class IAging(Interface):
 
         Values returned are things like '2 minutes', '3 hours', '1 month', etc.
         """
+
+
+class IPrivacy(Interface):
+    """Something that can be private."""
+
+    private = Bool(
+        title=_("This is private"),
+        required=False,
+        description=_(
+            "Private objects are visible to members or subscribers."))
 
 
 class IHasDateCreated(Interface):
