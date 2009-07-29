@@ -56,15 +56,17 @@
         define="link context_menu/nominate"
         condition="link/enabled"
         replace="structure link/render" />
-      <span id="affectsmetoo"
-           tal:define="link context_menu/affectsmetoo"
-           tal:condition="link/enabled">
+      <span id="affectsmetoo" style="display: inline"
+            tal:define="link context_menu/affectsmetoo"
+            tal:condition="link/enabled">
         <tal:affected condition="view/current_user_affected_status">
-          <img width="14" height="14" src="/@@/flame-icon" alt="" />
-          This bug affects me too
+          <span class="value">
+            <img width="14" height="14" src="/@@/flame-icon" alt="" />
+            This bug affects me too
+          </span>
         </tal:affected>
         <tal:affected condition="not: view/current_user_affected_status">
-          This bug doesn't affect me
+          <span class="value">This bug doesn't affect me</span>
         </tal:affected>
         <a href="+affectsmetoo" style="margin-left: 3px">
           <img class="editicon" src="/@@/edit" />
