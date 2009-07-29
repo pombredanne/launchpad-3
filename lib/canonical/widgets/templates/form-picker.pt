@@ -1,0 +1,14 @@
+<input
+  type="text"
+  tal:attributes="
+    id view/name;
+    name view/name;
+    value view/form_token;
+    size view/displayWidth;
+    maxlength view/displayMaxWidth;
+    onKeyPress view/onKeyPress;
+    style view/style;
+    class view/cssClass
+    "
+  />
+<tal:chooseLink replace="structure view/chooseLink" />

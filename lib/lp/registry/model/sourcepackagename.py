@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageName',
     'SourcePackageNameSet',
-    'SourcePackageNameVocabulary',
     'getSourcePackageDescriptions'
 ]
 
@@ -19,13 +18,9 @@ from sqlobject import StringCol, SQLMultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote_like, cursor, sqlvalues
 
-from canonical.launchpad.webapp.vocabulary import (
-    NamedSQLObjectHugeVocabulary)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet, NoSuchSourcePackageName)
-from canonical.launchpad.webapp.vocabulary import (
-    BatchedCountableIterator)
 
 
 class SourcePackageName(SQLBase):
@@ -88,32 +83,6 @@ class SourcePackageNameSet:
             return self[name]
         except NotFoundError:
             return self.new(name)
-
-
-class SourcePackageNameIterator(BatchedCountableIterator):
-    """A custom iterator for SourcePackageNameVocabulary.
-
-    Used to iterate over vocabulary items and provide full
-    descriptions.
-
-    Note that the reason we use special iterators is to ensure that we
-    only do the search for descriptions across source package names that
-    we actually are attempting to list, taking advantage of the
-    resultset slicing that BatchNavigator does.
-    """
-    def getTermsWithDescriptions(self, results):
-        descriptions = getSourcePackageDescriptions(results)
-        return [SimpleTerm(obj, obj.name,
-                    descriptions.get(obj.name, "Not yet built"))
-                for obj in results]
-
-
-class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
-    """A vocabulary that lists source package names."""
-    displayname = 'Select a Source Package'
-    _table = SourcePackageName
-    _orderBy = 'name'
-    iterator = SourcePackageNameIterator
 
 
 def getSourcePackageDescriptions(results, use_names=False, max_title_length=50):

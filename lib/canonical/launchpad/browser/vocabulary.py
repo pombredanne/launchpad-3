@@ -6,10 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'branch_to_vocabularyjson',
+    'default_vocabularyjson_adapter',
     'HugeVocabularyJSONView',
     'IPickerEntry',
     'person_to_vocabularyjson',
-    'default_vocabularyjson_adapter',
+    'sourcepackagename_to_vocabularyjson',
     ]
 
 import simplejson
@@ -26,9 +28,12 @@ from lazr.restful.interfaces import IWebServiceClientRequest
 
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+from canonical.launchpad.webapp.interfaces import (
+    NoCanonicalUrl, UnexpectedFormData)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
@@ -68,6 +73,8 @@ def default_pickerentry_adapter(obj):
         extra.description = obj.summary
     display_api = ObjectImageDisplayAPI(obj)
     extra.css = display_api.sprite_css()
+    if extra.css is None:
+        extra.css = 'sprite bullet'
     return extra
 
 @implementer(IPickerEntry)
@@ -85,6 +92,16 @@ def branch_to_pickerentry(branch):
     """Adapts IBranch to IPickerEntry."""
     extra = default_pickerentry_adapter(branch)
     extra.description = branch.bzr_identity
+    return extra
+
+@implementer(IPickerEntry)
+@adapter(ISourcePackageName)
+def sourcepackagename_to_pickerentry(sourcepackagename):
+    """Adapts IBranch to IPickerEntry."""
+    extra = default_pickerentry_adapter(sourcepackagename)
+    descriptions = getSourcePackageDescriptions([sourcepackagename])
+    extra.description = descriptions.get(
+        sourcepackagename.name, "Not yet built")
     return extra
 
 
@@ -131,8 +148,12 @@ class HugeVocabularyJSONView:
             # The canonical_url without just the path (no hostname) can
             # be passed directly into the REST PATCH call.
             api_request = IWebServiceClientRequest(self.request)
-            entry['api_uri'] = canonical_url(
-                term.value, request=api_request, path_only_if_possible=True)
+            try:
+                entry['api_uri'] = canonical_url(
+                    term.value, request=api_request,
+                    path_only_if_possible=True)
+            except NoCanonicalUrl:
+                entry['api_uri'] = 'Could not find canonical url.'
             picker_entry = IPickerEntry(term.value)
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:

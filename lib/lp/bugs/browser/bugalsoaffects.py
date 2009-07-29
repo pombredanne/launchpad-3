@@ -48,7 +48,8 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.bugtask import (
     BugTaskAlsoAffectsSourcePackageNameWidget)
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.popup import VocabularyPickerWidget
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
@@ -74,7 +75,7 @@ class ChooseProductStep(AlsoAffectsStep):
     template = ViewPageTemplateFile(
         '../templates/bugtask-choose-affected-product.pt')
 
-    custom_widget('product', SearchForUpstreamPopupWidget)
+    #custom_widget('product', VocabularyPickerWidget)
     _field_names = ['product']
     label = u"Record as affecting another project"
     step_name = "choose_product"
