@@ -3,28 +3,55 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
 
-  <metal:portlets fill-slot="portlets">
-    <div tal:replace="structure context/@@+portlet-structural-subscribers" />
-    <div tal:replace="structure context/@@+portlet-latestbugs" />
-    <div tal:replace="structure context/@@+portlet-latestquestions" />
-  </metal:portlets>
+<metal:block fill-slot="head_epilogue">
+  <tal:devmode condition="devmode">
+    <tal:archive_js define="lp_js string:${icingroot}/build">
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/soyuz/base.js">
+      </script>
+    </tal:archive_js>
+  </tal:devmode>
+</metal:block>
 
-<div metal:fill-slot="main">
 
-  <h1>
+<tal:heading metal:fill-slot="heading">
     &ldquo;<span tal:replace="context/name" />&rdquo; source package in
     <span tal:replace="context/distribution/displayname" />
-  </h1>
+</tal:heading>
 
+<tal:side metal:fill-slot="side">
+    <div class="yui-u first portlet">
+      <h2>Get Involved</h2>
+      <div class="actions"
+           tal:define="distribution context/distribution">
+  
+        <a tal:define="link context/menu:bugs/filebug"
+           tal:condition="distribution/official_malone"
+           tal:attributes="href link/url">
+          <img tal:attributes="alt link/text"
+               src="/+icing/but-sml-reportabug.gif" />
+        </a>
+
+        <a tal:define="link context/menu:answers/new"
+           tal:condition="distribution/official_answers"
+           tal:attributes="href link/url">
+           <img tal:attributes="alt link/text"
+                src="/+icing/but-sml-askaquestion.gif" />
+        </a>
+      </div>
+    </div>
+</tal:side>
+
+<tal:main metal:fill-slot="main">
+  <h1> &ldquo;<span tal:replace="context/name" />&rdquo; source package in
+    <span tal:replace="context/distribution/displayname" />
+  </h1>
   <p class="error message"
      tal:condition="view/errors"
      tal:content="view/error_count" />
@@ -40,61 +67,60 @@
      Field specific error for the hidden packaging field.
   </p>
 
-  <h2>Published versions and upstream associations</h2>
+  <div class="top-portlet">
+    <tal:project define="project context/upstream_product">
+      <tal:has_project condition="project">
+        <img width="64" height="64" src="/@@/product-logo"
+             style="float:left;"/>
+        <tal:summary content="structure project/summary" />
+      </tal:has_project>
+      <tal:noproject condition="not: project">
+          This package is not linked to an upstream project.
+      </tal:noproject>
+    </tal:project>
+  </div>
 
-  <table id="packaging" class="listing">
-    <thead>
+<style>
+.bugscolour {
+color:#A02C35;
+}
+.answerscolour {
+color:#3941BF;
+}
+</style>
+
+  <div class="yui-u first portlet" style="clear: left;">
+    This source package has <a class="bugscolour" href="blah">300 bugs</a> and <a class="answerscolour" href="blah">20 questions</a>
+  </div>
+
+  <div class="yui-u portlet">
+    <table class="form" id="packages_list">
+      <tr style="font-weight: bold"><td colspan=3>Karmic 9.10 (development focus)</td></tr>
       <tr>
-        <th colspan="5">
-          <span tal:replace="context/distribution/displayname" /> version
-        </th>
-        <th>Upstream version</th>
+        <td>3.5</td>
+        <td>Release (main)</td>
+        <td>13 days ago</td>
       </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="row view/version_listing">
-        <td><span tal:condition="row/series"
-                  tal:content="row/series/name">hoary</span></td>
-        <td><span tal:condition="row/series"
-                  tal:content="row/series/status/name/fmt:lower" /></td>
-        <td><span tal:condition="row/package"
-                  tal:content="row/package/component/name/fmt:lower" /></td>
-        <td tal:content="row/pocket">release</td>
-        <td><a tal:content="row/package/version"
-               tal:attributes="href row/package/fmt:url">2.2.1-1</a>
-        </td>
-        <td>
-          <tal:distroseries_row condition="row/series">
-            <span tal:condition="row/packaging"
-                  tal:replace="row/packaging/productseries/title" />
-            <tal:no_direct condition="not: row/packaging">
-              None defined
-            </tal:no_direct>
-            <a tal:attributes="
-               href string:${row/sourcepackage/fmt:url}/+edit-packaging"
-               title="Edit upstream association">
-              <img src="/@@/edit" />
-            </a>
-            <form tal:condition="row/packaging_field"
-                  style="display: inline"
-                  action=""
-                  method="POST"
-                  tal:attributes="action request/URL;
-                                  id row/delete_packaging_form_id">
-              <tal:hidden replace="structure row/packaging_field" />
-              <tal:action
-                  replace="structure view/renderDeletePackagingAction" />
-            </form>
-          </tal:distroseries_row>
-        </td>
+      <tr style="font-weight: bold"><td colspan=3>Jaunty 9.04 (current release)</td></tr>
+      <tr>
+        <td>3.5</td>
+        <td>Release (main)</td>
+        <td>13 days ago</td>
       </tr>
-    </tbody>
-  </table>
-  <p style="text-align: right">
-    <a href="+publishinghistory">See full publishing history...</a>
-  </p>
+      <tr>
+        <td>3.4</td>
+        <td>Security, Updates (main)</td>
+        <td>18 days ago</td>
+      </tr>
+      <tr tal:define="pub context/latest_overall_publication">
+        <td tal:replace="structure pub/@@+listing-archive-detailed"/>
+        <metal:js use-macro="pub/archive/@@+macros/expandable-table-js"/>
+      </tr>
+    </table>
+  </div>
 
-  <div tal:define="ppa_versions view/related_ppa_versions"
+  <div class="yui-u portlet"
+       tal:define="ppa_versions view/related_ppa_versions"
        tal:condition="ppa_versions" id="related-ppa-versions">
     <div id="slide-trigger">
       <div class="widget-hd">
@@ -171,14 +197,12 @@ YUI({
 </script>
 
   </div>
+    <p style="text-align: left">
+      <a href="+publishinghistory">See full publishing history...</a>
+    </p>
 
-  <h2>Version history</h2>
 
-  <tal:block
-    repeat="dspr view/releases"
-    replace="structure dspr/@@+changes">
-  </tal:block>
+</tal:main>
 
-</div>
 </body>
 </html>
