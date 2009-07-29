@@ -150,6 +150,36 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             [charles, bob, albert],
             [review.reviewer for review in requested_reviews])
 
+    def test_user_can_claim_self(self):
+        """Someone cannot claim a review already assigned to them."""
+        albert = self.factory.makePerson()
+        owner = self.bmp.source_branch.owner
+        self._nominateReviewer(albert, owner)
+        login_person(albert)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertFalse(view.requested_reviews[0].user_can_claim)
+
+    def test_user_can_claim_member(self):
+        """Someone can claim a review already assigned their team."""
+        albert = self.factory.makePerson()
+        review_team = self.factory.makeTeam()
+        albert.join(review_team)
+        owner = self.bmp.source_branch.owner
+        self._nominateReviewer(review_team, owner)
+        login_person(albert)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertTrue(view.requested_reviews[0].user_can_claim)
+
+    def test_user_can_claim_nonmember(self):
+        """A non-member cannot claim a team's review."""
+        albert = self.factory.makePerson()
+        review_team = self.factory.makeTeam()
+        owner = self.bmp.source_branch.owner
+        self._nominateReviewer(review_team, owner)
+        login_person(albert)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertFalse(view.requested_reviews[0].user_can_claim)
+
     def testCurrentReviewOrdering(self):
         # Most recent first.
         # Request three reviews.
@@ -372,13 +402,16 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view.initialize()
         return view
 
-    def test_claim_action_team_member(self):
-        """Claiming a review works for members of the requested team."""
+    def makeTeamReview(self):
         owner = self.bmp.source_branch.owner
         review_team = self.factory.makeTeam()
-        review = self.bmp.nominateReviewer(review_team, owner)
+        return self.bmp.nominateReviewer(review_team, owner)
+
+    def test_claim_action_team_member(self):
+        """Claiming a review works for members of the requested team."""
+        review = self.makeTeamReview()
         albert = self.factory.makePerson()
-        albert.join(review_team)
+        albert.join(review.reviewer)
         login_person(albert)
         view = self._createView()
         view.claim_action.success({'review_id': review.id})
@@ -386,9 +419,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
 
     def test_claim_action_non_member(self):
         """Claiming a review does not work for non-members."""
-        owner = self.bmp.source_branch.owner
-        review_team = self.factory.makeTeam()
-        review = self.bmp.nominateReviewer(review_team, owner)
+        review = self.makeTeamReview()
         albert = self.factory.makePerson()
         login_person(albert)
         view = self._createView()

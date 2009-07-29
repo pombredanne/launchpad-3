@@ -445,6 +445,10 @@ class DecoratedCodeReviewVoteReference:
             self.user_can_review = (
                 is_mergable and (self.can_change_review or
                  (user.inTeam(context.reviewer) and (users_vote is None))))
+        if context.reviewer == user:
+            self.user_can_claim = False
+        else:
+            self.user_can_claim = self.user_can_review
 
     @property
     def show_date_requested(self):
