@@ -519,7 +519,7 @@ class TestPullerMasterSpawning(TrialTestCase):
         self.factory = ObjectFactory()
         self.available_oops_prefixes = set(['foo'])
         self.eventHandler = self.makePullerMaster(
-            BranchType.HOSTED, oops_prefixes=self.available_oops_prefixes)
+            'HOSTED', oops_prefixes=self.available_oops_prefixes)
         self._realSpawnProcess = reactor.spawnProcess
         reactor.spawnProcess = self.spawnProcess
         self.commands_spawned = []
@@ -528,7 +528,7 @@ class TestPullerMasterSpawning(TrialTestCase):
         from twisted.internet import reactor
         reactor.spawnProcess = self._realSpawnProcess
 
-    def makePullerMaster(self, branch_type, default_stacked_on_url=None,
+    def makePullerMaster(self, branch_type_name, default_stacked_on_url=None,
                          oops_prefixes=None):
         if default_stacked_on_url is None:
             default_stacked_on_url = self.factory.getUniqueURL()
@@ -538,7 +538,7 @@ class TestPullerMasterSpawning(TrialTestCase):
             branch_id=self.factory.getUniqueInteger(),
             source_url=self.factory.getUniqueURL(),
             unique_name=self.factory.getUniqueString(),
-            branch_type=branch_type,
+            branch_type_name=branch_type_name,
             default_stacked_on_url=default_stacked_on_url,
             logger=logging.getLogger(),
             client=FakePullerEndpointProxy(),
@@ -559,8 +559,7 @@ class TestPullerMasterSpawning(TrialTestCase):
         # If a default_stacked_on_url is passed into the master then that
         # URL is sent to the command line.
         url = self.factory.getUniqueURL()
-        master = self.makePullerMaster(
-            BranchType.MIRRORED, default_stacked_on_url=url)
+        master = self.makePullerMaster('MIRRORED', default_stacked_on_url=url)
         master.run()
         self.assertEqual(
             [url], [arguments[-1] for arguments in self.commands_spawned])
@@ -568,8 +567,7 @@ class TestPullerMasterSpawning(TrialTestCase):
     def test_default_stacked_on_url_not_set(self):
         # If a default_stacked_on_url is passed into the master as '' then
         # the empty string is passed as an argument to the script.
-        master = self.makePullerMaster(
-            BranchType.MIRRORED, default_stacked_on_url='')
+        master = self.makePullerMaster('MIRRORED', default_stacked_on_url='')
         master.run()
         self.assertEqual(
             [''], [arguments[-1] for arguments in self.commands_spawned])
