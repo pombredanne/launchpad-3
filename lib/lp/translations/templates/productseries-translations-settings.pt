@@ -37,6 +37,7 @@
   </p>
 
   <tal:rosetta condition="context/product/official_rosetta">
+  <h2>Import translations from branch</h2>
   <p>
     You can ask Launchpad to continuously import any translation
     files (templates and translations) that it finds in 
@@ -69,6 +70,49 @@
     <a tal:attributes="href view/link_branch_url">Set it now!</a>
   </p>
   <div metal:use-macro="context/@@launchpad_form/form"></div>
+
+  <h2>Export translations to branch</h2>
+  <p>
+    Launchpad can commit daily snapshots of the translations for this
+    release series to a code branch.
+  </p>
+  <p>
+    Use this to make it easy to download the latest translations using
+    Bazaar, or to make sure the latest Launchpad translations are always
+    included with the files you distribute.
+  </p>
+  <p>
+    <strong>Warning:</strong> This may replace translation files that are
+    already in the branch you choose.  You should consider creating a
+    separate branch where Launchpad can commit translations.
+  </p>
+
+  <p id="translations-branch">
+    <tal:no-translations-branch condition="not: context/translations_branch">
+      Currently not exporting translations to a branch.
+      <a href="+link-translations-branch">
+        Choose a target branch.
+        <img src="/@@/edit" class="inline-icon" alt="edit" />
+      </a>
+    </tal:no-translations-branch>
+    <tal:translations-branch condition="context/translations_branch">
+      Exporting translations to branch:
+      <img src="/@@/branch" class="inline-icon" />
+      <a
+        id="translations-branch-link"
+        tal:attributes="href context/translations_branch/fmt:url;
+                        title string:Change translations export branch"
+        tal:content="context/translations_branch/displayname"
+        >branch name</a>
+      <a
+        id="translations-branch-edit-link"
+        tal:attributes="href string:+link-translations-branch;
+                        title string:Set translations export branch"
+        ><img src="/@@/edit" class="inline-icon" alt="edit" /></a>
+  
+    </tal:translations-branch>
+  </p>
+
   </tal:rosetta>
 </div>
 

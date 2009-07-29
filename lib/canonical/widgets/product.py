@@ -362,7 +362,9 @@ class LicenseWidget(CheckBoxMatrixWidget):
         return self.template()
 
     def _renderTable(self, category, column_count=1):
-        html = ['<table id="%s">' % category]
+        # The tables are wrapped in divs, since IE8 does not respond
+        # to setting the table's height to zero.
+        html = ['<div id="%s"><table>' % category]
         rendered_items = self.items_by_category[category]
         row_count = int(math.ceil(len(rendered_items) / float(column_count)))
         for i in range(0, row_count):
@@ -373,7 +375,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
                     break
                 html.append('<td>%s</td>' % rendered_items[index])
             html.append('</tr>')
-        html.append('</table>')
+        html.append('</table></div>')
         return '\n'.join(html)
 
 
