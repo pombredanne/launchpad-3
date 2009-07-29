@@ -96,3 +96,16 @@ class IJob(Interface):
 
     def queue():
         """Mark the job as queued for processing."""
+
+
+class IRunnableJob(IJob):
+    """Interface for jobs that can be run via the JobRunner."""
+
+    def notifyOops(oops):
+        """Notify interested parties that this job produced an OOPS.
+
+        :param oops: The oops produced by this Job.
+        """
+
+    def run():
+        """Run this job."""
