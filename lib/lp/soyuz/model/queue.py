@@ -57,7 +57,8 @@ from lp.soyuz.interfaces.queue import (
     PackageUploadStatus, PackageUploadCustomFormat)
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+    ISourcePackagePublishingHistory, PackagePublishingPocket,
+    PackagePublishingStatus, pocketsuffix)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
@@ -368,20 +369,7 @@ class PackageUpload(SQLBase):
         assert self.is_delayed_copy, 'Can only process delayed-copies.'
         assert self.sources.count() == 1, (
             'Source is mandatory for delayed copies.')
-
         self.setAccepted()
-
-        # XXX cprov 2009-06-22 bug=390851: self.sourcepackagerelease
-        # is cached, we cannot rely on it.
-        sourcepackagerelease = self.sources[0].sourcepackagerelease
-
-        # Close bugs if possible, skip imported sources.
-        original_changesfile = sourcepackagerelease.upload_changesfile
-        if original_changesfile is not None:
-            changesfile_object = StringIO.StringIO(
-                original_changesfile.read())
-            close_bugs_for_queue_item(
-                self, changesfile_object=changesfile_object)
 
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -538,6 +526,11 @@ class PackageUpload(SQLBase):
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
                           "Re-uploaded %s to librarian" % new_file.filename)
+                if ISourcePackagePublishingHistory.providedBy(pub_record):
+                    pas_verify = BuildDaemonPackagesArchSpecific(
+                        config.builddmaster.root, self.distroseries)
+                    pub_record.createMissingBuilds(
+                        pas_verify=pas_verify, logger=logger)
 
         self.setDone()
 
