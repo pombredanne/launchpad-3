@@ -26,32 +26,28 @@
 </tal:heading>
 
 <tal:side metal:fill-slot="side">
-    <div class="yui-u first portlet">
+    <div class="yui-u first portlet involvement"
+         tal:define="distribution context/distribution">
       <h2>Get Involved</h2>
-      <div class="actions"
-           tal:define="distribution context/distribution">
-  
+      <ul>
+        <li>
         <a tal:define="link context/menu:bugs/filebug"
            tal:condition="distribution/official_malone"
-           tal:attributes="href link/url">
-          <img tal:attributes="alt link/text"
-               src="/+icing/but-sml-reportabug.gif" />
+           tal:attributes="href link/url; class string:bugs">
+           Report a bug
         </a>
-
+        </li>
+        <li>
         <a tal:define="link context/menu:answers/new"
            tal:condition="distribution/official_answers"
-           tal:attributes="href link/url">
-           <img tal:attributes="alt link/text"
-                src="/+icing/but-sml-askaquestion.gif" />
+           tal:attributes="href link/url; class string:question">
+           Ask a question
         </a>
-      </div>
+        </li>
     </div>
 </tal:side>
 
 <tal:main metal:fill-slot="main">
-  <h1> &ldquo;<span tal:replace="context/name" />&rdquo; source package in
-    <span tal:replace="context/distribution/displayname" />
-  </h1>
   <p class="error message"
      tal:condition="view/errors"
      tal:content="view/error_count" />
