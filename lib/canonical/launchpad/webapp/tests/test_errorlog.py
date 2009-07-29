@@ -141,8 +141,6 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.id, 'OOPS-A0001')
         self.assertEqual(entry.type, 'NotFound')
         self.assertEqual(entry.value, 'error message')
-        # XXX jamesh 2005-11-30:
-        # this should probably convert back to a datetime
         self.assertEqual(entry.time, datetime.datetime(2005, 4, 1))
         self.assertEqual(entry.pageid, 'IFoo:+foo-template')
         self.assertEqual(entry.tb_text, 'traceback-text')
@@ -188,8 +186,6 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.id, 'OOPS-A0001')
         self.assertEqual(entry.type, 'NotFound')
         self.assertEqual(entry.value, 'error message')
-        # XXX jamesh 2005-11-30:
-        # this should probably convert back to a datetime
         self.assertEqual(entry.time, datetime.datetime(2005, 4, 1))
         self.assertEqual(entry.pageid, 'IFoo:+foo-template')
         self.assertEqual(entry.tb_text, 'traceback-text')

@@ -206,13 +206,9 @@ class ErrorReport:
             line = line.strip()
             if line == '':
                 break
-            preamble, statement = line.split(' ', 1)
-            start, suffix = preamble.split('-', 1)
-            try:
-                end, db_id = suffix.split('@', 1)
-                db_id = intern(database_id) # This string is repeated lots.
-            except ValueError:
-                end, db_id = suffix, None
+            start, end, db_id, statement = re.match(
+                r'^(\d+)-(\d+)(?:@([\w-]+))?(.*)', line).groups()
+            db_id = intern(database_id) # This string is repeated lots.
             statements.append(
                 (int(start), int(end), db_id, statement))
 
