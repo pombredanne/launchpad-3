@@ -167,15 +167,13 @@ class ChooseProductStep(AlsoAffectsStep):
         # Tell the user to search for it using the popup widget as it'll allow
         # the user to register a new product if the one he is looking for is
         # not yet registered.
-        search_url = self.widgets['product'].popupHref()
         self.setFieldError(
             'product',
             structured(
                 'There is no project in Launchpad named "%s". Please '
-                '<a href="%s">search for it</a> as it may be registered with '
-                'a different name.',
-                entered_product,
-                search_url))
+                '<a href="/projects">search for it</a> as it may be '
+                'registered with a different name.',
+                entered_product))
 
     def main_action(self, data):
         """Perform the 'Continue' action."""

@@ -105,10 +105,24 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
         js = js_template % simplejson.dumps(args)
         # If the YUI widget or javascript is not supported in the browser,
         # it will degrade to being this "Find..." link instead of the
-        # "Choose..." link.
-        return ('(<a id="%s" href="/people/">'
-                'Find&hellip;</a>)'
-                '\n<script>\n%s\n</script>') % (self.show_widget_id, js)
+        # "Choose..." link. This only works if a non-AJAX form is available
+        # for the field's vocabulary.
+        if self.nonajax_uri is None:
+            css = 'unseen'
+        else:
+            css = ''
+        return ('<span class="%s">(<a id="%s" href="/people/">'
+                'Find&hellip;</a>)</span>'
+                '\n<script>\n%s\n</script>'
+               ) % (css, self.show_widget_id, js)
+
+    @property
+    def nonajax_uri(self):
+        """Override in subclass to specify a non-AJAX URI for the Find link.
+
+        If None is returned, the find link will be hidden.
+        """
+        return None
 
 
 class PersonPickerWidget(VocabularyPickerWidget):
@@ -120,6 +134,10 @@ class PersonPickerWidget(VocabularyPickerWidget):
             link += ('or (<a href="/people/+newteam">'
                      'Create a new team&hellip;</a>)')
         return link
+
+    @property
+    def nonajax_uri(self):
+        return '/people/'
 
 
 class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
