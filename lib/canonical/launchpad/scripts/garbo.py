@@ -591,7 +591,7 @@ class PersonPruner(TunableLoop):
         subquery = """
             SELECT person FROM UnlinkedPeople
             WHERE id BETWEEN %d AND %d
-            """ % (self.offset, self.offset + chunk_size)
+            """ % (self.offset, self.offset + chunk_size - 1)
         people_ids = ",".join(
             str(item[0]) for item in self.store.execute(subquery).get_all())
         self.offset += chunk_size
