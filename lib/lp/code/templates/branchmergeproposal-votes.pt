@@ -15,7 +15,8 @@
   </thead>
   <tbody>
     <!-- Current reviews -->
-    <tr tal:repeat="review view/current_reviews">
+    <tr tal:repeat="review view/current_reviews"
+        tal:attributes="id string:review-${review/reviewer/name}">
       <td>
         <tal:reviewer replace="structure review/reviewer/fmt:link:mainsite">
         Eric the Reviewer</tal:reviewer>
@@ -41,7 +42,8 @@
       </td>
     </tr>
     <!-- Pending reviews -->
-    <tr tal:repeat="review view/requested_reviews">
+    <tr tal:repeat="review view/requested_reviews"
+        tal:attributes="id string:review-${review/reviewer/name}">
       <td tal:content="structure review/reviewer/fmt:link:mainsite" />
       <td tal:content="review/review_type" />
       <td>

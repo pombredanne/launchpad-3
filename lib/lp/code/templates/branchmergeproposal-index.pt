@@ -81,7 +81,8 @@
     </div>
   </tal:whiteboard>
 
-  <tal:votes replace="structure context/@@+votes"/>
+  <div id="votes-target"
+    tal:content="structure context/@@+votes" />
 
   <tal:comments condition="view/conversation"
                 replace="structure view/conversation/@@+render"/>
