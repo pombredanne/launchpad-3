@@ -5,9 +5,12 @@ Remove this section when the old templates and these declarations are gone.
 
 */
 #maincontent {
-    float: none;
-    width: auto;
-    margin-right: 0;
+    float: left;
+    width: 100%;
+    margin-right: -25em;
+    }
+#maincontent ol, #maincontent ul {
+    padding-left: auto;
     }
 .portlet, .aside {
     clear: none;
@@ -190,16 +193,17 @@ div.columns div.right div.portlet {
     margin-right: 24%;
     }
 .footer {
+    clear: both;
     margin-top: 2em;
     border-top: 1px solid #cdd3dd;
-    padding-top: .5em;
+    padding-top: 0.5em;
     }
 .portlet, .aside {
     border-top: 1px solid #d6d6d6;
-    padding: .5em 0;
+    padding: 0.5em 0;
     }
 .top-portlet {
-    padding: 0 0 .5em 0;
+    padding: 0 0 0.5em 0;
     margin: 0 0 1em;
     }
 
@@ -242,16 +246,16 @@ h1 {
     clear: none;
     padding-top: 6px; /* An offset from the logo. */
     font-size: 197%;
-    margin-bottom: .5em; /* 2.0 backward compatability */
+    margin-bottom: 0.5em; /* 2.0 backward compatability */
     }
 h2 {
-    margin-bottom: .3em;
+    margin-bottom: 0.3em;
     font-size: 123.1%;
     color: #5a5a5a;
     }
 p {
     width: auto;
-    margin-bottom: .8em;
+    margin-bottom: 0.8em;
     }
 p, li, dt, dd, blockquote {
     max-width: 45em; /* Wrap the text before the eye gets lost. */
@@ -317,7 +321,7 @@ span.see-all {
     margin: 0 5px 0 0;
     }
 .registered {
-    margin-top: -.5em; /* 2.0 backward compatability */
+    margin-top: -0.5em; /* 2.0 backward compatability */
     font-size: 85%;
     color: #666;
     font-style: italic;
@@ -347,13 +351,13 @@ span.see-all {
     width: 48%;
     float: left;
     display: inline;
-    margin: 0 0.25em .75em 0;
+    margin: 0 0.25em 0.75em 0;
     }
 .portlet dt {
     font-weight: bold;
     }
 .portlet dd {
-    margin-bottom: .5em;
+    margin-bottom: 0.5em;
     font-size: 85%;
     color: #484848;
     }
@@ -371,7 +375,7 @@ span.see-all {
 
 /* Side content exceptions */
 .side {
-    padding: .5em;
+    padding: 0.5em;
     color: #484848;
     background: #f3f3f3;
     }
@@ -382,7 +386,7 @@ span.see-all {
     -moz-border-radius: 3%;
     -webkit-border-radius: 3%;
     border-radius: 3%;
-    padding: .5em;
+    padding: 0.5em;
     color: #484848;
     background: #fbfbfb;
     }
@@ -415,9 +419,9 @@ span.see-all {
     text-decoration: underline;
     }
 .downloads .released {
-    margin: 0 0 .5em 0;
+    margin: 0 0 0.5em 0;
     background: #f3f3f3 url(../images/bg-project-released.gif) right bottom no-repeat;
-    padding: .4em .2em;
+    padding: 0.4em 0.2em;
     font-size: 85%;
     font-weight: normal;
     text-align: right;
@@ -434,7 +438,7 @@ span.see-all {
     }
 .involvement a {
     display: block;
-    padding: .3em;
+    padding: 0.3em;
     }
 .involvement a.bugs {
     color: #b9413e;
@@ -459,14 +463,14 @@ span.see-all {
 
 .announcements li {
     font-size: 85%;
-    margin-bottom: .5em;
+    margin-bottom: 0.5em;
     }
 .announcements li strong,
 .announcements li a {
     font-weight: bold;
     }
 .latest-announcement {
-    padding: .5em;
+    padding: 0.5em;
     background: #dfe5f6;
     border-top: 1px solid #d0d0d0;
     border-bottom: 1px solid #d0d0d0;
@@ -480,3 +484,10 @@ span.see-all {
     background: #f7f7f7;
     }
 
+/* From nice_pre in tales.py */
+pre.wrap {
+  white-space: -moz-pre-wrap;
+  white-space: -o-pre-wrap;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

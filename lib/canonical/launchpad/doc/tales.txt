@@ -176,8 +176,7 @@ To "<pre>" format a string, use fmt:nice_pre:
     >>> pprint.pprint(textwrap.wrap(
     ...     test_tales('foo/fmt:nice_pre', foo='hello & goodbye')
     ... ))
-    ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
-     'wrap: break-word;">hello &amp; goodbye</pre>']
+    ['<pre class="wrap">hello &amp; goodbye</pre>']
 
 Add manual word breaks to long words in a string:
 
@@ -1176,23 +1175,23 @@ the left.
     <a href="http://launchpad.dev/+place"
        class="menu-link-test_link sprite icon" title="summary">text</a>
 
-The 'edit', 'remove' and 'trash-icon' links are rendered as text followed
-by an icon.
+The 'edit', 'remove' and 'trash-icon' links are rendered icons followed by
+text. They have both the sprite and modify CSS classes.
 
     >>> menu_link.icon = 'edit'
     >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
     <a href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite-after edit" title="summary">text</a>
+       class="menu-link-test_link sprite modify edit" title="summary">text</a>
 
     >>> menu_link.icon = 'remove'
     >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
     <a href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite-after remove" title="summary">text</a>
+       class="menu-link-test_link sprite modify remove" title="summary">text</a>
 
     >>> menu_link.icon = 'trash-icon'
     >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
     <a href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite-after trash-icon" title="summary">text</a>
+       class="menu-link-test_link sprite modify trash-icon" title="summary">text</a>
 
 fmt:icon-link and fmt:link-icon are deprecated. They are an alias for
 fmt:link. They do not control formatting as they once did; fmt:link controls

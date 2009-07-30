@@ -38,6 +38,8 @@ from canonical.launchpad.interfaces import (
     IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProject, IDistributionSourcePackage, ISprint, LicenseStatus,
     NotFoundError)
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.code.interfaces.branch import IBranch
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
@@ -516,6 +518,10 @@ class ObjectImageDisplayAPI:
             return 'sprite meeting'
         elif IBug.providedBy(context):
             return 'sprite bug'
+        elif IBranch.providedBy(context):
+            return 'sprite branch'
+        elif ISpecification.providedBy(context):
+            return 'sprite blueprint'
         return None
 
     def default_logo_resource(self, context):
@@ -2480,8 +2486,6 @@ class FormattersAPI:
         fall back for IE by using the IE specific word-wrap property.
 
         TODO: Test IE compatibility. StuartBishop 20041118
-        TODO: This should probably just live in the stylesheet if this
-            CSS implementation is good enough. StuartBishop 20041118
         """
         if not self._stringtoformat:
             return self._stringtoformat
@@ -2489,13 +2493,7 @@ class FormattersAPI:
             linkified_text = re_substitute(self._re_linkify,
                 self._linkify_substitution, break_long_words,
                 cgi.escape(self._stringtoformat))
-            return ('<pre style="'
-                    'white-space: -moz-pre-wrap;'
-                    'white-space: -o-pre-wrap;'
-                    'word-wrap: break-word;'
-                    '">%s</pre>'
-                    % linkified_text
-                    )
+            return '<pre class="wrap">%s</pre>' % linkified_text
 
     # Match lines that start with one or more quote symbols followed
     # by a space. Quote symbols are commonly '|', or '>'; they are
