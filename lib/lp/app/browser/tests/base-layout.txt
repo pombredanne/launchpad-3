@@ -237,7 +237,8 @@ test. The template controlled the heading.
     >>> print content.h1
     <h1>Heading</h1>
 
-The page heading slot's default behaviour is to use the context.title.
+The page heading slot's default behaviour is to use the context.title and
+place it in a <h1>.
 
     >>> class DefaultHeadingView(LaunchpadView):
     ...     """A simple view to test base-layout."""
