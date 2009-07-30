@@ -103,7 +103,9 @@ class JobRunner(object):
                 self.runJob(job)
             except LeaseHeld:
                 self.incomplete_jobs.append(job)
-            except Exception:
+            except job.user_errors:
+                pass
+            except Exception, e:
                 info = sys.exc_info()
                 errorlog.globalErrorUtility.raising(info)
                 oops = errorlog.globalErrorUtility.getLastOopsReport()

@@ -146,6 +146,27 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertNotIn('Fake exception.  Foobar, I say!',
                          notification.get_payload(decode=True))
 
+    def test_runAll_mails_user_errors(self):
+        job_1, job_2 = self.makeTwoJobs()
+        class ExampleError(Exception):
+            pass
+        def raiseError():
+            # Ensure that jobs which call transaction.abort work, too.
+            transaction.abort()
+            raise ExampleError('Fake exception.  Foobar, I say!')
+        job_1.run = raiseError
+        job_1.user_errors = (ExampleError,)
+        job_1.oops_recipients = ['jrandom@example.org']
+        runner = JobRunner([job_1, job_2])
+        reporter = errorlog.globalErrorUtility
+        old_oops = reporter.getLastOopsReport()
+        runner.runAll()
+        oops = reporter.getLastOopsReport()
+        if old_oops is None:
+            self.assertIs(None, oops)
+        else:
+            self.assertEqual(oops.id, old_oops.id)
+
     def test_runAll_requires_IRunnable(self):
         """Supplied classes must implement IRunnableJob.
 
