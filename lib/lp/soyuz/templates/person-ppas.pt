@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
   <div tal:define="ppas context/ppas" tal:condition="ppas">
-    <table>
+    <table class="summary">
       <tal:ppa_line tal:repeat="ppa ppas">
         <tr>
           <td tal:define="ppa_link ppa/fmt:link"
