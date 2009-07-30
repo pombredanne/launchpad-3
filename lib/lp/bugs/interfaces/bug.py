@@ -38,7 +38,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.launchpad import  IPrivacy, NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlink import IHasLinkedBranches
@@ -148,7 +148,7 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
-class IBug(ICanBeMentored, IHasLinkedBranches):
+class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
 
@@ -181,6 +181,8 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
     readonly_duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is guarded by setPrivate().
     private = exported(
         Bool(title=_("This bug report should be private"), required=False,
              description=_("Private bug reports are visible only to "

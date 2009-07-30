@@ -133,14 +133,7 @@ class IFeed(Interface):
     def getItems():
         """Get the individual items for the feed.
 
-        For instance, get all announcements for a project.  Each item should
-        be converted to a feed entry using itemToFeedEntry.
-        """
-
-    def itemToFeedEntry(item):
-        """Convert a single item to a formatted feed entry.
-
-        An individual entry will be an instance providing `IFeedEntry`.
+        Individual items will provide `IFeedEntry`.
         """
 
     def renderAtom():

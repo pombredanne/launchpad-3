@@ -224,10 +224,11 @@ class TestCase(unittest.TestCase):
         self.assertTrue(expected is observed,
                         "%r is not %r" % (expected, observed))
 
-    def assertIsNot(self, expected, observed):
+    def assertIsNot(self, expected, observed, msg=None):
         """Assert that `expected` is not the same object as `observed`."""
-        self.assertTrue(expected is not observed,
-                        "%r is %r" % (expected, observed))
+        if msg is None:
+            msg = "%r is %r" % (expected, observed)
+        self.assertTrue(expected is not observed, msg)
 
     def assertIn(self, needle, haystack):
         """Assert that 'needle' is in 'haystack'."""
