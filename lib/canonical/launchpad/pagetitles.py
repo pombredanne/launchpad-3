@@ -170,6 +170,8 @@ branch_add = 'Register a branch'
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
 
+branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
+
 branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
 
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
@@ -1135,6 +1137,9 @@ productserieslanguage_index = ContextTitle('%s')
 productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_linkbranch = ContextTitle('Link an existing branch to %s')
+
+productseries_link_translations_branch = ContextTitle(
+    "Set translations export branch for %s")
 
 productseries_index = ContextTitle('%s')
 

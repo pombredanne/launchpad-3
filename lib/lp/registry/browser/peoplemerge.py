@@ -27,8 +27,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import (
     IAdminPeopleMergeSchema, IAdminTeamMergeSchema, IPersonSet,
     IRequestPeopleMerge)
-from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus)
+from lp.registry.interfaces.mailinglist import MailingListStatus
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 
@@ -191,7 +190,6 @@ class AdminTeamMergeView(AdminMergeBaseView):
 
     def validate(self, data):
         """Check there are no mailing lists associated with the dupe team."""
-
         # If errors have already been discovered there is no need to continue,
         # especially since some of our expected data may be missing in the
         # case of user-entered invalid data.
@@ -199,16 +197,20 @@ class AdminTeamMergeView(AdminMergeBaseView):
             return
 
         super(AdminTeamMergeView, self).validate(data)
-        mailing_list = getUtility(IMailingListSet).get(
-            data['dupe_person'].name)
+        dupe_team = data['dupe_person']
+        # Our code doesn't know how to merge a team's superteams, so we
+        # prohibit that here.
+        if dupe_team.super_teams.count() > 0:
+            self.addError(_(
+                "${name} has super teams, so it can't be merged.",
+                mapping=dict(name=dupe_team.name)))
         # We cannot merge the teams if there is a mailing list on the
         # duplicate person, unless that mailing list is purged.
-        if (mailing_list is not None and
-            mailing_list.status != MailingListStatus.PURGED):
+        if (dupe_team.mailing_list is not None and
+            dupe_team.mailing_list.status != MailingListStatus.PURGED):
             self.addError(_(
                 "${name} is associated with a Launchpad mailing list; we "
-                "can't merge it.",
-                mapping=dict(name=data['dupe_person'].name)))
+                "can't merge it.", mapping=dict(name=dupe_team.name)))
 
     @action('Merge', name='merge')
     def merge_action(self, action, data):

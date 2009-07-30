@@ -2,6 +2,7 @@
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=W0403
 
 import sys
 import optparse
@@ -13,7 +14,7 @@ from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IProductSet
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
-from canonical.launchpad.scripts.bugexport import export_bugtasks
+from lp.bugs.scripts.bugexport import export_bugtasks
 
 def main(argv):
     parser = optparse.OptionParser(
@@ -35,7 +36,7 @@ def main(argv):
     output = sys.stdout
     if options.output is not None:
         output = open(options.output, 'wb')
-    
+
     execute_zcml_for_scripts()
     ztm = initZopeless()
 
