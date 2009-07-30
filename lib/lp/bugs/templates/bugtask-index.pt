@@ -37,9 +37,12 @@
         tal:content="string:
 
         .edit-controls {
+            background-position: right top;
+            background-image: url('${editor_skin}/label-top-white.png');
+            background-repeat: no-repeat;
             float:right;
             position: relative;
-            top: 10px;
+            top: 1px;
             height: 29px;
             width: 81px;
             line-height: 29px;
@@ -53,6 +56,10 @@
             background-repeat: no-repeat;
         }
 
+        #bug-description .bg-top-label {
+            margin-right: -5px;
+        }
+
         #nonportlets .report {
             margin-bottom: 29px;
         }
@@ -61,7 +68,7 @@
             font-family: inherit;
             font-size: 12px;
             margin-bottom: 25px;
-            margin-top: -20px;
+            margin-top: -10px;
             width: 600px;
         }
 
@@ -76,8 +83,7 @@
         }
 
         #bug-description .yui-editable_text-text {
-            position: relative;
-            top: 9px;
+            border-top: 1px solid #d6d6d6;
             padding:1px 20px 1px 20px;
             z-index: -1;
         }
@@ -92,6 +98,7 @@
             background: transparent;
             padding:12px 117px 0 18px;
             border:0;
+            border: 1px solid #d6d6d6;
             border-left: 2px groove #D6D6D6;
             border-top: 2px groove #D6D6D6;
             width: 77%;
@@ -103,7 +110,7 @@
             background-color: #fafafa;
             border-top: 1px solid #d6d6d6;
             position: relative;
-            top: -16px;
+            top: -25px;
         }
 
         .yui-skin-sam .yui-ieditor-content {
