@@ -21,6 +21,31 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
+from canonical.launchpad.ftests import (
+    ANONYMOUS, login, login_person, logout, syncUpdate)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
+
+from lp.blueprints.interfaces.specification import (
+    ISpecificationSet, SpecificationDefinitionStatus)
+from lp.blueprints.model.specificationbranch import (
+    SpecificationBranch)
+from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.model.bugbranch import BugBranch
+from lp.code.bzr import BranchFormat, RepositoryFormat
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
+    BranchVisibilityRule, CodeReviewNotificationLevel)
+from lp.code.interfaces.branch import (
+    BranchCannotBePrivate, BranchCannotBePublic,
+    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks)
 from lp.code.model.branch import (
     ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
     DeleteCodeImport, DeletionCallable, DeletionOperation,
@@ -29,41 +54,16 @@ from lp.code.model.branchjob import (
     BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob)
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
-from lp.bugs.model.bugbranch import BugBranch
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
-from lp.registry.model.product import ProductSet
-from lp.blueprints.model.specificationbranch import (
-    SpecificationBranch)
-from lp.registry.model.sourcepackage import SourcePackage
-from canonical.launchpad.ftests import (
-    ANONYMOUS, login, login_person, logout, syncUpdate)
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet, SpecificationDefinitionStatus)
-from lp.code.bzr import BranchFormat, RepositoryFormat
-from lp.code.enums import (
-    BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
-    BranchVisibilityRule, CodeReviewNotificationLevel)
-from lp.code.interfaces.branch import (
-    BranchCannotBePrivate, BranchCannotBePublic,
-    CannotDeleteBranch)
-from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.model.product import ProductSet
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.testing import (
     run_with_login, TestCase, TestCaseWithFactory, time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 
 class TestCodeImport(TestCase):
@@ -95,7 +95,7 @@ class TestBranchGetRevision(TestCaseWithFactory):
     def _makeRevision(self, revno):
         # Make a revision and add it to the branch.
         rev = self.factory.makeRevision()
-        br = self.branch.createBranchRevision(revno, rev)
+        self.branch.createBranchRevision(revno, rev)
         return rev
 
     def testGetBySequenceNumber(self):
@@ -118,7 +118,7 @@ class TestBranchGetRevision(TestCaseWithFactory):
         self.assertEqual(1, branch_revision.sequence)
 
     def testNonExistant(self):
-        rev1 = self._makeRevision(1)
+        self._makeRevision(1)
         self.assertTrue(self.branch.getBranchRevision(sequence=2) is None)
         rev2 = self.factory.makeRevision()
         self.assertTrue(self.branch.getBranchRevision(revision=rev2) is None)
@@ -419,9 +419,10 @@ class TestBzrIdentity(TestCaseWithFactory):
         # If a branch is the development focus branch for a product, then it's
         # bzr identity is lp:product.
         branch = self.factory.makeProductBranch()
-        product = branch.product
-        removeSecurityProxy(product).development_focus.branch = branch
-        self.assertBzrIdentity(branch, product.name)
+        product = removeSecurityProxy(branch.product)
+        linked_branch = ICanHasLinkedBranch(product)
+        linked_branch.setBranch(branch)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
     def test_linked_to_product_series(self):
         # If a branch is the development focus branch for a product series,
@@ -429,8 +430,9 @@ class TestBzrIdentity(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         product = branch.product
         series = self.factory.makeProductSeries(product=product)
-        series.branch = branch
-        self.assertBzrIdentity(branch, '%s/%s' % (product.name, series.name))
+        linked_branch = ICanHasLinkedBranch(series)
+        linked_branch.setBranch(branch)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
     def test_private_linked_to_product(self):
         # If a branch is private, then the bzr identity is the unique name,
@@ -440,8 +442,8 @@ class TestBzrIdentity(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        product = branch.product
-        removeSecurityProxy(product).development_focus.branch = branch
+        product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(product).setBranch(branch)
         self.assertBzrIdentity(branch, branch.unique_name)
 
     def test_linked_to_series_and_dev_focus(self):
@@ -449,33 +451,54 @@ class TestBzrIdentity(TestCaseWithFactory):
         # branch for a series, the bzr identity will be the storter of the two
         # URLs.
         branch = self.factory.makeProductBranch()
-        product = branch.product
-        removeSecurityProxy(product).development_focus.branch = branch
-        series = self.factory.makeProductSeries(product=product)
-        series.branch = branch
-        self.assertBzrIdentity(branch, product.name)
+        series = self.factory.makeProductSeries(product=branch.product)
+        product_link = ICanHasLinkedBranch(
+            removeSecurityProxy(branch.product))
+        series_link = ICanHasLinkedBranch(series)
+        product_link.setBranch(branch)
+        series_link.setBranch(branch)
+        self.assertBzrIdentity(branch, product_link.bzr_path)
 
     def test_junk_branch_always_unique_name(self):
         # For junk branches, the bzr identity is always based on the unique
         # name of the branch, even if it's linked to a product, product series
         # or whatever.
         branch = self.factory.makePersonalBranch()
-        product = self.factory.makeProduct()
-        removeSecurityProxy(product).development_focus.branch = branch
+        product = removeSecurityProxy(self.factory.makeProduct())
+        ICanHasLinkedBranch(product).setBranch(branch)
         self.assertBzrIdentity(branch, branch.unique_name)
 
-    def test_linked_to_package_release(self):
-        # If a branch is linked to the release pocket of a package, then the
+    def test_linked_to_package(self):
+        # If a branch is linked to a pocket of a package, then the
         # bzr identity is the path to that package.
         branch = self.factory.makePackageBranch()
+        # Have to pick something that's not RELEASE in order to guarantee that
+        # it's not the dev focus source package.
+        pocket = PackagePublishingPocket.BACKPORTS
+        linked_branch = ICanHasLinkedBranch(
+            branch.sourcepackage.getSuiteSourcePackage(pocket))
         registrant = getUtility(
             ILaunchpadCelebrities).ubuntu_branches.teamowner
         login_person(registrant)
-        branch.sourcepackage.setBranch(
-            PackagePublishingPocket.RELEASE, branch, registrant)
+        linked_branch.setBranch(branch, registrant)
         logout()
         login(ANONYMOUS)
-        self.assertBzrIdentity(branch, branch.sourcepackage.path)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
+
+    def test_linked_to_dev_package(self):
+        # If a branch is linked to the development focus version of a package
+        # then the bzr identity is distro/package.
+        sourcepackage = self.factory.makeSourcePackage()
+        distro_package = sourcepackage.distribution_sourcepackage
+        branch = self.factory.makePackageBranch(
+            sourcepackage=distro_package.development_version)
+        linked_branch = ICanHasLinkedBranch(distro_package)
+        registrant = getUtility(
+            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        run_with_login(
+            registrant,
+            linked_branch.setBranch, branch, registrant)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
 
 class TestBranchDeletion(TestCaseWithFactory):
@@ -507,7 +530,7 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_stackedBranchDisablesDeletion(self):
         # A branch that is stacked upon cannot be deleted.
-        branch = self.factory.makeAnyBranch(stacked_on=self.branch)
+        self.factory.makeAnyBranch(stacked_on=self.branch)
         self.assertFalse(self.branch.canBeDeleted())
 
     def test_subscriptionDoesntDisableDeletion(self):
@@ -688,8 +711,7 @@ class TestBranchDeletionConsequences(TestCase):
              ' proposal.')),
             merge_proposal2:
             ('delete', _('This branch is the source branch of this merge'
-             ' proposal.'))
-             },
+             ' proposal.'))},
                          self.branch.deletionRequirements())
         self.assertEqual({
             merge_proposal1:
@@ -697,8 +719,7 @@ class TestBranchDeletionConsequences(TestCase):
              ' proposal.')),
             merge_proposal2:
             ('delete', _('This branch is the target branch of this merge'
-             ' proposal.'))
-            },
+             ' proposal.'))},
             merge_proposal1.target_branch.deletionRequirements())
         self.assertEqual({
             merge_proposal1:
@@ -706,8 +727,7 @@ class TestBranchDeletionConsequences(TestCase):
              ' proposal.')),
             merge_proposal2:
             ('alter', _('This branch is the dependent branch of this merge'
-             ' proposal.'))
-            },
+             ' proposal.'))},
             merge_proposal1.dependent_branch.deletionRequirements())
 
     def test_deleteMergeProposalSource(self):
@@ -731,7 +751,6 @@ class TestBranchDeletionConsequences(TestCase):
     def test_deleteMergeProposalDependent(self):
         """break_links enables deleting merge proposal dependant branches."""
         merge_proposal1, merge_proposal2 = self.makeMergeProposals()
-        merge_proposal1_id = merge_proposal1.id
         merge_proposal1.dependent_branch.destroySelf(break_references=True)
         self.assertEqual(None, merge_proposal1.dependent_branch)
 
@@ -764,7 +783,6 @@ class TestBranchDeletionConsequences(TestCase):
     def test_branchWithBugDeletion(self):
         """break_links allows deleting a branch with a bug."""
         bug1 = self.factory.makeBug()
-        bug2 = self.factory.makeBug()
         bug1.linkBranch(self.branch, self.branch.owner)
         bug_branch1 = bug1.linked_branches[0]
         bug_branch1_id = bug_branch1.id
@@ -960,7 +978,7 @@ class StackedBranches(TestCaseWithFactory):
         # some_branch.getStackedBranchesWithIncompleteMirrors does not include
         # stacked branches that haven't been mirrored at all.
         branch = self.factory.makeAnyBranch()
-        stacked_a = self.factory.makeAnyBranch(stacked_on=branch)
+        self.factory.makeAnyBranch(stacked_on=branch)
         self.assertEqual(
             set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
 
@@ -1106,8 +1124,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         branch pair, then another landing target specifying the same pair
         raises.
         """
-        proposal = self.source.addLandingTarget(
-            self.user, self.target, self.dependent)
+        self.source.addLandingTarget(self.user, self.target, self.dependent)
 
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
@@ -1122,8 +1139,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
             self.user, self.target, self.dependent)
         proposal.rejectBranch(self.user, 'some_revision')
         syncUpdate(proposal)
-        new_proposal = self.source.addLandingTarget(
-            self.user, self.target, self.dependent)
+        self.source.addLandingTarget(self.user, self.target, self.dependent)
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
@@ -1623,7 +1639,6 @@ class TestBranchSpecLinks(TestCaseWithFactory):
 
     def test_spec_unlink(self):
         # Branches can be unlinked from the spec as well.
-        user = getUtility(IPersonSet).getByEmail('test@canonical.com')
         branch = self.factory.makeAnyBranch()
         spec = self.factory.makeSpecification()
         branch.linkSpecification(spec, self.user)

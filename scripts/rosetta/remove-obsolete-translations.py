@@ -10,7 +10,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launchpad.scripts.remove_obsolete_translations import (
+from lp.translations.scripts.remove_obsolete_translations import (
     RemoveObsoleteTranslations)
 
 

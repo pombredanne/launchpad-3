@@ -18,13 +18,13 @@ import types
 import urllib
 
 import pytz
-
-from zope.interface import implements
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-
 from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
+from zope.interface import implements
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.traversing.namespace import view
 
+from lazr.restful.utils import get_current_browser_request
 from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
 from canonical.launchpad import versioninfo
@@ -37,6 +37,8 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 
 UTC = pytz.utc
+
+LAZR_OOPS_USER_REQUESTED_KEY = 'lazr.oops.user_requested'
 
 # the section of the OOPS ID before the instance identifier is the
 # days since the epoch, which is defined as the start of 2006.
@@ -594,3 +596,34 @@ def end_request(event):
         globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
+
+
+class UserRequestOops(Exception):
+    """A user requested OOPS to log statements."""
+
+
+def maybe_record_user_requested_oops():
+    """If an OOPS has been requested, report one.
+
+    :return: The oopsid of the requested oops.  Returns None if an oops was
+        not requested, or if there is already an OOPS.
+    """
+    request = get_current_browser_request()
+    # If there is no request, or there is an oops already, then return.
+    if (request is None or
+        request.oopsid is not None or
+        not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
+        return None
+    globalErrorUtility.raising(
+        (UserRequestOops, UserRequestOops(request), None), request)
+    return request.oopsid
+
+
+class OopsNamespace(view):
+    """A namespace handle traversals with ++oops++."""
+
+    def traverse(self, name, ignored):
+        """Record that an oops has been requested and return the context."""
+        # Store the oops request in the request annotations.
+        self.request.annotations[LAZR_OOPS_USER_REQUESTED_KEY] = True
+        return self.context

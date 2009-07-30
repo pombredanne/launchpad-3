@@ -2871,6 +2871,9 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (57,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (58, 8, 0, 'branchmergerejectedown', 'Branch merge rejected', 'User rejected their own proposed branch merge.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (59, 8, 0, 'codereviewcomment', 'Commented on a review', 'User commented on a code review.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (60, 8, 10, 'codereviewreviewercomment', 'Reviewer commented on a review', 'Reviewer commented on a code review.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (61, 9, 10, 'distributionuploadaccepted', 'Distribution package upload accepted', 'A user uploaded a package to a distribution.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (62, 9, 5, 'sponsoruploadaccepted', 'Sponsored package upload accepted', 'A package sponsor uploaded a package to a distribution.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (63, 9, 1, 'ppauploadaccepted', 'PPA package upload accepted', 'A user uploaded a package to a PPA.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
