@@ -60,19 +60,10 @@
                         affected view/current_user_affected_status">
 
         <tal:comment condition="nothing">
-          The following link starts off hidden, but will be made
-          visible when setup_me_too runs.
+          This .static section is shown in browsers with javascript
+          enabled, and before setup_me_too is run.
         </tal:comment>
-        <a href="+affectsmetoo" style="margin-left: 3px" class="unseen">
-          <img class="editicon" src="/@@/edit" />
-        </a>
-
-        <tal:comment condition="nothing">
-          When setup_me_too runs, the widget replaces the contents of
-          the following span tag, so the static flame and edit icons
-          are removed from the DOM.
-        </tal:comment>
-        <span class="value">
+        <span class="static">
           <tal:affected condition="affected">
             <img width="14" height="14" src="/@@/flame-icon" alt="" />
             This bug affects me too
@@ -80,17 +71,22 @@
           <tal:not-affected condition="not:affected">
             This bug doesn't affect me
           </tal:not-affected>
-          <a href="+affectsmetoo" style="margin-left: 3px">
-            <img class="editicon" src="/@@/edit" />
+          <a href="+affectsmetoo">
+            <img class="editicon" src="/@@/edit" alt="[Edit]" />
           </a>
         </span>
 
         <tal:comment condition="nothing">
-          The following image starts off hidden, but will be used by
-          the widget that is created by setup_me_too.
+          This .dynamic section is used by setup_me_too to display
+          controls and information in the correct places.
         </tal:comment>
-        <img width="14" height="14"
-             src="/@@/flame-icon" alt="" class="unseen"/>
+        <span class="dynamic unseen">
+          <a href="+affectsmetoo" class="js-action">
+            <img class="editicon" src="/@@/edit" alt="[Edit]" />
+            <span class="value"></span>
+            <img src="/@@/flame-icon" alt=""/>
+          </a>
+        </span>
 
         <script type="text/javascript" tal:content="string:
           YUI().use('event', 'bugs.bugtask_index', function(Y) {
