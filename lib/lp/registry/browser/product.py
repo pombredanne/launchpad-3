@@ -330,22 +330,33 @@ class ProductEditNavigationMenu(NavigationMenu):
 
     usedfor = IProductEditMenu
     facet = 'overview'
-    title = 'Change project details'
-    links = ('details', 'branding', 'people')
+    title = 'Change project'
+    links = ('details', 'branding', 'people', 'review_license', 'administer')
 
+    @enabled_with_permission('launchpad.Edit')
     def details(self):
-        target = '+edit'
-        text = 'Details'
-        return Link(target, text)
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def branding(self):
-        text = 'Branding'
-        return Link('+branding', text)
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def people(self):
-        text = 'People'
-        summary = 'Someone with permission to set goals for all series'
-        return Link('+edit-people', text, summary)
+        text = 'Change people'
+        return Link('+edit-people', text, icon='edit')
+
+    @enabled_with_permission('launchpad.ProjectReview')
+    def review_license(self):
+        text = 'Review project'
+        return Link('+review-license', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
 
 
 class ProductOverviewMenu(ApplicationMenu):
@@ -354,7 +365,6 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit',
-        'branding',
         'reassign',
         'top_contributors',
         'mentorship',
@@ -375,13 +385,8 @@ class ProductOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change people'
+        text = 'Change maintainer'
         return Link('+edit-people', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def branding(self):
-        text = 'Change branding'
-        return Link('+branding', text, icon='edit')
 
     def top_contributors(self):
         text = u'\u00BB More contributors'
@@ -565,7 +570,7 @@ class ProductSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.ProjectReview')
     def review_licenses(self):
-        return Link('+review-licenses', 'Review projects', icon="info")
+        return Link('+review-licenses', 'Review projects')
 
 
 class SortSeriesMixin:
@@ -1208,11 +1213,6 @@ class ProductReviewLicenseView(ProductEditView):
         "private_bugs",
         "reviewer_whiteboard",
         ]
-
-    @property
-    def productset(self):
-        """The `IProductSet`"""
-        return getUtility(IProductSet)
 
     def validate(self, data):
         """See `LaunchpadFormView`.

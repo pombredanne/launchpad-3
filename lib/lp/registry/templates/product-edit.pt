@@ -22,24 +22,7 @@
   </div>
   </div>
 
-  <div id="related-actions" class="portlet">
-    <h2>Related actions</h2>
-
-    <ul tal:define="menu context/menu:overview">
-      <li>
-        <a tal:replace="structure menu/branding/fmt:link" />
-      </li>
-      <li>
-        <a tal:replace="structure menu/reassign/fmt:link" />
-      </li>
-      <li>
-        <a tal:replace="structure menu/review_license/fmt:link" />
-      </li>
-      <li>
-        <a tal:replace="structure menu/administer/fmt:link" />
-      </li>
-    </ul>
-  </div>
+  <tal:menu replace="structure view/@@+related-pages" />
 </div>
 
 </body>
