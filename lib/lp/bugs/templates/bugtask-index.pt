@@ -88,14 +88,14 @@
         }
 
         #bug-description .yui-editable_text-text-hover {
-            padding:0 19px 0 19px;
+            padding:1px 19px 0 19px;
             background-color: #fafafa;
             border: 1px solid #d6d6d6;
         }
 
         #bug-description .yui-ieditor-input {
             background: transparent;
-            padding:12px 117px 0 18px;
+            padding:11px 117px 0 18px;
             border:0;
             border: 1px solid #d6d6d6;
             border-left: 2px groove #D6D6D6;
