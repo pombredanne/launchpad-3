@@ -186,14 +186,14 @@ You can also pass a string package name instead of an ISourcePackageName:
     >>> uploaders.count()
     0
 
-Passing a non-existent package name will cause a SourceNotFound
-to be thrown.
+Passing a non-existent package name will cause a
+NoSuchSourcePackageName to be thrown.
 
     >>> uploaders = permission_set.uploadersForPackage(
     ...     ubuntu.main_archive, "fakepackage")
     Traceback (most recent call last):
     ...
-    SourceNotFound: No such source package: 'fakepackage'.
+    NoSuchSourcePackageName: No such source package: 'fakepackage'.
 
 Similarly, packagesForUploader() returns the ArchivePermission records where
 the supplied user has permission to upload to packages.

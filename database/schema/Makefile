@@ -51,14 +51,15 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
     $(PYTHON) fti.py --force -d ${1} -q
 
 # The latest schema dump from production. Database patches are relative
-# to this baseline. This dump should be updated every production rollout
+# to this baseline. This dump should be updated occasionally from production
 # to ensure that the development database remains in sync with reality
 # on production. It is generated using newbaseline.py in
 # bzr+ssh://devpad.canonical.com/code/stub/dbascripts
 # 
-REV=2109
+REV=2207
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=8a2e8fb0c3665cf1b07487fe3650816e  launchpad-2109-00-0.sql
+MD5SUM=6a28c01a33ee2dc133ab4f8931d94282  launchpad-2207-00-0.sql
+
 default: all
 
 # Create a launchpad_ftest_template DB and load the test sample data into it.
@@ -101,7 +102,7 @@ dev: test
 # database schema, full text indexes and grants into it.
 # It will also create session DBs for the test and dev environments.
 # No sample data is added at this point.
-create: check
+create: 
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
