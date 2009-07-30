@@ -56,7 +56,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
-from lp.registry.interfaces.person import IPersonSet, IPerson
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.comments.interfaces.conversation import IConversation
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
