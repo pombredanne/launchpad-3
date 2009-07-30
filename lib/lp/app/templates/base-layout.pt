@@ -88,36 +88,32 @@
           <input type="search" id="search-text" name="field.text" />
         </form>
         <tal:hierarchy replace="structure context/@@+hierarchy" />
-        <div id="lp-apps" class="clearfix"
+        <ul class="lp-apps" class="clearfix"
           tal:condition="view/macro:pagehas/applicationtabs"
           tal:define="facetmenu view/menu:facet">
-          <!-- :-) --><tal:facet repeat="link facetmenu">
-            <span
+          <tal:facet repeat="link facetmenu">
+            <li
               tal:condition="python: link.enabled and link.selected"
               tal:attributes="title link/summary; class string:${link/name} active"
-              ><strong
-                tal:condition="not:link/linked"
-                tal:content="structure link/escapedtext"
-                /><a
+              ><a
                   tal:condition="link/linked"
                   tal:attributes="href link/url"
-                  tal:content="structure link/escapedtext" /></span>
-            <span
+                  tal:content="structure link/escapedtext" /></li>
+            <li
               tal:condition="python: link.enabled and not link.selected"
               tal:attributes="title link/summary; class link/name"
               ><a
                 tal:condition="link/enabled"
                 tal:attributes="href link/url"
                 tal:content="structure link/escapedtext"
-                /></span>
-            <span
+                /></li>
+            <li
               tal:condition="not:link/enabled"
               tal:attributes="class string:${link/name} disabled-tab"
               ><strong
-                tal:content="structure link/escapedtext" /></span>
-            <small tal:condition="not:repeat/link/end"> / </small>
+                tal:content="structure link/escapedtext" /></li>
           </tal:facet>
-        </div>
+        </ul>
       </div><!--id="locationbar"-->
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />

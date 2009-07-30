@@ -372,6 +372,31 @@ span.see-all {
     padding-left: 1em;
     }
 
+/* === Location application tabs === */
+/* In most pages, we present a list of six application facets: */
+ul.lp-apps {
+    font-weight: bold;
+    font-size: 90%;
+}
+ul.lp-apps li {
+    display:inline;
+    list-style-type: none;
+}
+ul.lp-apps li a {
+    padding: 0.2em 0.5em;
+}
+ul.lp-apps li a:link, ul.lp-apps li a:visited {
+    color: #000;
+    background-color: #fff;
+    text-decoration: none;
+}
+ul.lp-apps li.active a {
+    color: #fff;
+    background-color: #747474;
+}
+ul.lp-apps li a:hover {
+    background-color: #f3f3f3;
+}
 
 /* Side content exceptions */
 .side {
