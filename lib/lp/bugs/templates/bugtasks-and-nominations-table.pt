@@ -72,7 +72,7 @@
             This bug doesn't affect me
           </tal:not-affected>
           <a href="+affectsmetoo">
-            <img class="editicon" src="/@@/edit" alt="[Edit]" />
+            <img class="editicon" src="/@@/edit" alt="Edit" />
           </a>
         </span>
 
@@ -82,7 +82,7 @@
         </tal:comment>
         <span class="dynamic unseen">
           <a href="+affectsmetoo" class="js-action">
-            <img class="editicon" src="/@@/edit" alt="[Edit]" />
+            <img class="editicon" src="/@@/edit" alt="Edit" />
             <span class="value"></span>
             <img src="/@@/flame-icon" alt=""/>
           </a>
