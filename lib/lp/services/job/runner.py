@@ -83,8 +83,7 @@ class JobRunner(object):
             transaction.commit()
             job.run()
         except Exception:
-            # Commit transaction to update the DB time.
-            transaction.commit()
+            transaction.abort()
             job.fail()
             self.incomplete_jobs.append(job)
             raise
