@@ -64,7 +64,7 @@
            style="float: left"
            tal:content="context/status/title" />
         <a href="+editstatus" style="margin-left: 3px">
-          <img class="editicon" />
+          <img class="editicon" src="/@@/edit-transparent" />
         </a>
       </div>
     </td>
@@ -78,7 +78,7 @@
            style="float: left"
            tal:content="context/importance/title" />
         <a href="+editstatus" style="margin-left: 3px">
-          <img class="editicon" />
+          <img class="editicon" src="/@@/edit-transparent" />
         </a>
       </div>
     </td>

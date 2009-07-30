@@ -1019,7 +1019,7 @@ as follows:
     ...         ubuntu_archive, 'vapour-ware', person2))
     Traceback (most recent call last):
     ...
-    SourceNotFound: No such source package: 'vapour-ware'.
+    NoSuchSourcePackageName: No such source package: 'vapour-ware'.
 
 Now for the verdict: is 'hacker' allowed to upload 'mozilla-firefox'?
 

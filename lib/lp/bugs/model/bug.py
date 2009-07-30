@@ -68,7 +68,6 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
-from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
@@ -279,7 +278,7 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
-        inside = self.bugtasks[0]
+        inside = self.default_bugtask
         return [
             IndexedMessage(message, inside, index)
             for index, message in enumerate(self.messages)]
@@ -532,17 +531,6 @@ class Bug(SQLBase):
                 BugSubscription.bug = Bug.id AND
                 Bug.duplicateof = %d""" % self.id,
                 prejoins=["person"], clauseTables=["Bug"]))
-
-        # Direct and "also notified" subscribers take precedence
-        # over subscribers from duplicates.
-        duplicate_subscriptions -= set(self.getDirectSubscriptions())
-        also_notified_subscriptions = set()
-        for also_notified_subscriber in self.getAlsoNotifiedSubscribers():
-            for duplicate_subscription in duplicate_subscriptions:
-                if also_notified_subscriber == duplicate_subscription.person:
-                    also_notified_subscriptions.add(duplicate_subscription)
-                    break
-        duplicate_subscriptions -= also_notified_subscriptions
 
         # Only add a subscriber once to the list.
         duplicate_subscribers = set(
