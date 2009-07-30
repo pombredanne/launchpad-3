@@ -1168,7 +1168,7 @@ class IArchiveSet(Interface):
         """Iterates over existent archives, including the main_archives."""
 
     def getPPAsForUser(user):
-        """Return all enabled PPAs the given user can upload to.
+        """Return all PPAs the given user can participate.
 
         The result is ordered by PPA displayname.
         """
