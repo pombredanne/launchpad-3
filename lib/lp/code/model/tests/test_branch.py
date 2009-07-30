@@ -39,7 +39,8 @@ from lp.code.enums import (
     BranchVisibilityRule, CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
-    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    BranchCreatorNotMemberOfOwnerTeam,  CannotDeleteBranch,
+    DEFAULT_BRANCH_STATUS_IN_LISTING)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
@@ -1667,7 +1668,7 @@ class TestBranchSetOwner(TestCaseWithFactory):
         # The owner of the branch cannot set the owner to be a team they are
         # not a member of.
         branch = self.factory.makeAnyBranch()
-        team = self.factory.makeTeam(owner=branch.owner)
+        team = self.factory.makeTeam()
         login_person(branch.owner)
         self.assertRaises(
             BranchCreatorNotMemberOfOwnerTeam,
