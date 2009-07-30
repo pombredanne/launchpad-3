@@ -322,6 +322,13 @@
             <div tal:define="comment_form nocall:context/@@+addcomment-form;
                  dummy comment_form/initialize"
                  id="add-comment-form">
+              <div
+                  tal:condition="context/bug/duplicateof"
+                  class="warning message"
+                  id="warning-comment-on-duplicate">
+                  Remember, this bug report is a duplicate.
+                  Comment here only if you think the duplicate status is wrong.
+              </div>
               <h2>Comment</h2>
               <form action="+addcomment"
                     method="post"
