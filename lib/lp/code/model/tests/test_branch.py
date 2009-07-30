@@ -39,8 +39,8 @@ from lp.code.enums import (
     BranchVisibilityRule, CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
-    BranchCreatorNotMemberOfOwnerTeam,  CannotDeleteBranch,
-    DEFAULT_BRANCH_STATUS_IN_LISTING)
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
+    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
@@ -1652,6 +1652,7 @@ class TestBranchSpecLinks(TestCaseWithFactory):
 
 
 class TestBranchSetOwner(TestCaseWithFactory):
+    """Tests for IBranch.setOwner."""
 
     layer = DatabaseFunctionalLayer
 
@@ -1674,6 +1675,45 @@ class TestBranchSetOwner(TestCaseWithFactory):
             BranchCreatorNotMemberOfOwnerTeam,
             branch.setOwner,
             team, branch.owner)
+
+    def test_owner_cannot_set_other_user(self):
+        # The owner of the branch cannot set the new owner to be another
+        # person.
+        branch = self.factory.makeAnyBranch()
+        person = self.factory.makePerson()
+        login_person(branch.owner)
+        self.assertRaises(
+            BranchCreatorNotOwner,
+            branch.setOwner,
+            person, branch.owner)
+
+    def test_admin_can_set_any_team_or_person(self):
+        # A Launchpad admin can set the branch to be owned by any team or
+        # person.
+        branch = self.factory.makeAnyBranch()
+        team = self.factory.makeTeam()
+        # To get a random administrator, choose the admin team owner.
+        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+        login_person(admin)
+        branch.setOwner(team, admin)
+        self.assertEqual(team, branch.owner)
+        person = self.factory.makePerson()
+        branch.setOwner(person, admin)
+        self.assertEqual(person, branch.owner)
+
+    def test_bazaar_experts_can_set_any_team_or_person(self):
+        # A bazaar expert can set the branch to be owned by any team or
+        # person.
+        branch = self.factory.makeAnyBranch()
+        team = self.factory.makeTeam()
+        # To get a random administrator, choose the admin team owner.
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        login_person(experts)
+        branch.setOwner(team, experts)
+        self.assertEqual(team, branch.owner)
+        person = self.factory.makePerson()
+        branch.setOwner(person, experts)
+        self.assertEqual(person, branch.owner)
 
 
 def test_suite():
