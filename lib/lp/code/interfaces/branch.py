@@ -422,7 +422,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
-        new_owner=Reference(
+        new_target=Reference(
             title=_("The new target of the branch."),
             schema=IBranchTarget))
     @export_write_operation()

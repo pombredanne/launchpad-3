@@ -1627,5 +1627,30 @@ class TestBranchSpecLinks(TestCaseWithFactory):
         self.assertEqual(branch.spec_links.count(), 0)
 
 
+class TestBranchSetOwner(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_owner_sets_team(self):
+        # The owner of the branch can set the owner of the branch to be a team
+        # they are a member of.
+        branch = self.factory.makeAnyBranch()
+        team = self.factory.makeTeam(owner=branch.owner)
+        login_person(branch.owner)
+        branch.setOwner(team, branch.owner)
+        self.assertEqual(team, branch.owner)
+
+    def test_owner_cannot_set_nonmember_team(self):
+        # The owner of the branch cannot set the owner to be a team they are
+        # not a member of.
+        branch = self.factory.makeAnyBranch()
+        team = self.factory.makeTeam(owner=branch.owner)
+        login_person(branch.owner)
+        self.assertRaises(
+            BranchCreatorNotMemberOfOwnerTeam,
+            branch.setOwner,
+            team, branch.owner)
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
