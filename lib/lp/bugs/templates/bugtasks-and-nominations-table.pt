@@ -58,19 +58,40 @@
             tal:condition="link/enabled"
             tal:define="link context_menu/affectsmetoo;
                         affected view/current_user_affected_status">
-        <tal:affected condition="affected">
-          <img width="14" height="14"
-               src="/@@/flame-icon" alt="" />
-          <span class="value">This bug affects me too</span>
-        </tal:affected>
-        <tal:affected condition="not:affected">
-          <img width="14" height="14"
-               src="/@@/flame-icon" alt="" class="unseen"/>
-          <span class="value">This bug doesn't affect me</span>
-        </tal:affected>
-        <a href="+affectsmetoo" style="margin-left: 3px">
+
+        <tal:comment condition="nothing">
+          The following link starts off hidden, but will be made
+          visible when setup_me_too runs.
+        </tal:comment>
+        <a href="+affectsmetoo" style="margin-left: 3px" class="unseen">
           <img class="editicon" src="/@@/edit" />
         </a>
+
+        <tal:comment condition="nothing">
+          When setup_me_too runs, the widget replaces the contents of
+          the following span tag, so the static flame and edit icons
+          are removed from the DOM.
+        </tal:comment>
+        <span class="value">
+          <tal:affected condition="affected">
+            <img width="14" height="14" src="/@@/flame-icon" alt="" />
+            This bug affects me too
+          </tal:affected>
+          <tal:not-affected condition="not:affected">
+            This bug doesn't affect me
+          </tal:not-affected>
+          <a href="+affectsmetoo" style="margin-left: 3px">
+            <img class="editicon" src="/@@/edit" />
+          </a>
+        </span>
+
+        <tal:comment condition="nothing">
+          The following image starts off hidden, but will be used by
+          the widget that is created by setup_me_too.
+        </tal:comment>
+        <img width="14" height="14"
+             src="/@@/flame-icon" alt="" class="unseen"/>
+
         <script type="text/javascript" tal:content="string:
           YUI().use('event', 'bugs.bugtask_index', function(Y) {
               Y.on('load', function(e) {
@@ -79,6 +100,7 @@
           });
           ">
         </script>
+
       </span>
     </tal:also-affects-links>
 </div>
