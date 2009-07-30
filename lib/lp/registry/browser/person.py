@@ -2864,16 +2864,15 @@ class PersonView(LaunchpadView, FeedsMixin):
         """Return True if "Personal package archives" is to be shown.
 
         We display it if:
-        person has viewable ppa or current_user has lp.edit
+        person has any public PPA or current_user has lp.edit
         """
         # If the current user has edit permission, show the section.
         if check_permission('launchpad.Edit', self.context):
             return True
 
-        # If the current user is allowed to see any PPAs, show the
-        # section.
+        # If the current user has any public PPA, show the section.
         for ppa in self.context.ppas:
-            if check_permission('launchpad.View', ppa):
+            if not ppa.private:
                 return True
 
         return False
