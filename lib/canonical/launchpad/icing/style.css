@@ -1391,7 +1391,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 #portlets .portlet h2, div.aside h2 {
   border-bottom: 1px solid #ccc;
   color: inherit !important;
-    /* http://launchpad.dev/ubuntu/+source/pmount/+filebug-advanced */
   font-weight: bold;
   margin: 0 0 1em;
   padding: 0 0 1px;
