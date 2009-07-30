@@ -461,7 +461,10 @@ class NotFoundRequestPublicationFactory:
 
 
 def get_query_string_params(request):
-    """Return a dict of the query string params for a request.
+    """Return a dict of the decoded query string params for a request.
+
+    The parameter values will be decoded as unicodes, exactly as
+    `BrowserRequest` would do to build the request form.
 
     Defined here so that it can be used in both BasicLaunchpadRequest and
     the LaunchpadTestRequest (which doesn't inherit from
@@ -475,7 +478,14 @@ def get_query_string_params(request):
     if query_string is None:
         query_string = ''
 
-    return cgi.parse_qs(query_string, keep_blank_values=True)
+    parsed_qs = cgi.parse_qs(query_string, keep_blank_values=True)
+    # Use BrowserRequest._decode() for decoding the received parameters.
+    decoded_qs = {}
+    for key, values in parsed_qs.iteritems():
+        decoded_qs[key] = [
+            request._decode(value) for value in values]
+    return decoded_qs
+
 
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo."""
@@ -741,7 +751,8 @@ def adaptRequestToResponse(request):
     return request.response
 
 
-class LaunchpadTestRequest(TestRequest, LaunchpadBrowserRequestMixin):
+class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
+                           LaunchpadBrowserRequestMixin):
     """Mock request for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
@@ -776,6 +787,7 @@ class LaunchpadTestRequest(TestRequest, LaunchpadBrowserRequestMixin):
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar',
     ...     QUERY_STRING='a=1&b=2&c=3')
+    >>> request.charsets = ['utf-8']
     >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
 

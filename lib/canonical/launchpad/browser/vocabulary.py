@@ -14,22 +14,30 @@ __all__ = [
 
 import simplejson
 
+from zope.app.schema.vocabulary import IVocabularyFactory
+from zope.component import getUtility
 from zope.interface import implementer
 from zope.component import adapter
+from zope.component.interfaces import ComponentLookupError
 from zope.interface import Attribute, implements, Interface
-from zope.schema.vocabulary import getVocabularyRegistry
 from zope.app.form.interfaces import MissingInputError
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
-MAX_DESCRIPTION_LENGTH = 80
+# XXX: EdwinGrubbs 2009-07-27 bug=405476
+# This limits the output to one line of text, since the sprite class
+# cannot clip the background image effectively for vocabulary items
+# with more than single line description below the title.
+MAX_DESCRIPTION_LENGTH = 55
 
 
 class IPickerEntry(Interface):
@@ -50,6 +58,7 @@ class PickerEntry:
         self.image = image
         self.css = css
 
+
 @implementer(IPickerEntry)
 @adapter(Interface)
 def default_pickerentry_adapter(obj):
@@ -68,6 +77,14 @@ def person_to_pickerentry(person):
     extra = default_pickerentry_adapter(person)
     if person.preferredemail is not None:
         extra.description = person.preferredemail.email
+    return extra
+
+@implementer(IPickerEntry)
+@adapter(IBranch)
+def branch_to_pickerentry(branch):
+    """Adapts IBranch to IPickerEntry."""
+    extra = default_pickerentry_adapter(branch)
+    extra.description = branch.bzr_identity
     return extra
 
 
@@ -92,8 +109,17 @@ class HugeVocabularyJSONView:
         if search_text is None:
             raise MissingInputError('search_text', '')
 
-        registry = getVocabularyRegistry()
-        vocabulary = registry.get(IHugeVocabulary, name)
+        try:
+            factory = getUtility(IVocabularyFactory, name)
+        except ComponentLookupError:
+            raise UnexpectedFormData(
+                'Unknown vocabulary %r' % name)
+
+        vocabulary = factory(self.context)
+
+        if not IHugeVocabulary.providedBy(vocabulary):
+            raise UnexpectedFormData(
+                'Non-huge vocabulary %r' % name)
 
         matches = vocabulary.searchForTerms(search_text)
         batch_navigator = BatchNavigator(matches, self.request)

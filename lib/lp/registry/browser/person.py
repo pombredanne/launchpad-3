@@ -118,7 +118,6 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription, LocationWidget, PasswordChangeWidget)
-from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
@@ -616,14 +615,16 @@ class PersonSetNavigation(Navigation):
         if person is None:
             raise NotFoundError(name)
         # Redirect to /~name
-        return self.redirectSubTree(canonical_url(person))
+        return self.redirectSubTree(
+            canonical_url(person, request=self.request))
 
     @stepto('+me')
     def me(self):
         me = getUtility(ILaunchBag).user
         if me is None:
             raise Unauthorized("You need to be logged in to view this URL.")
-        return self.redirectSubTree(canonical_url(me), status=303)
+        return self.redirectSubTree(
+            canonical_url(me, request=self.request), status=303)
 
 
 class PersonSetContextMenu(ContextMenu):
@@ -2280,7 +2281,6 @@ class PersonVouchersView(LaunchpadFormView):
     """Form for displaying and redeeming commercial subscription vouchers."""
 
     custom_widget('voucher', LaunchpadDropdownWidget)
-    custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
         """Set up the fields for this view."""

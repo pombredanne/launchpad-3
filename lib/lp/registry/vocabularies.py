@@ -422,9 +422,13 @@ class ValidPersonOrTeamVocabulary(
         """The storm store."""
         return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
-    @property
-    def _private_team_query(self):
-        """Return query for private teams the logged in user belongs to."""
+    def _privateTeamQueryAndTables(self):
+        """Return query tables for private teams.
+
+        The teams are based on membership by the user.
+        Returns a tuple of (query, tables).
+        """
+        tables = []
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
             celebrities = getUtility(ILaunchpadCelebrities)
@@ -433,22 +437,22 @@ class ValidPersonOrTeamVocabulary(
                 # visible.
                 private_query = AND(
                     Not(Person.teamowner == None),
-                    Person.visibility == PersonVisibility.PRIVATE
-                    )
+                    Person.visibility == PersonVisibility.PRIVATE)
             else:
                 private_query = AND(
                     TeamParticipation.person == logged_in_user.id,
                     Not(Person.teamowner == None),
-                    Person.visibility == PersonVisibility.PRIVATE
-                    )
+                    Person.visibility == PersonVisibility.PRIVATE)
+                tables = [Join(TeamParticipation,
+                               TeamParticipation.teamID == Person.id)]
         else:
             private_query = False
-        return private_query
+        return (private_query, tables)
 
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
 
-        logged_in_user = getUtility(ILaunchBag).user
+        private_query, private_tables = self._privateTeamQueryAndTables()
         exact_match = None
 
         # Short circuit if there is no search text - all valid people and
@@ -458,14 +462,13 @@ class ValidPersonOrTeamVocabulary(
                 Person,
                 Join(self.cache_table_name,
                      SQL("%s.id = Person.id" % self.cache_table_name)),
-                Join(TeamParticipation,
-                     TeamParticipation.teamID == Person.id),
                 ]
+            tables.extend(private_tables)
             result = self.store.using(*tables).find(
                 Person,
                 And(
                     Or(Person.visibility == PersonVisibility.PUBLIC,
-                       self._private_team_query,
+                       private_query,
                        ),
                     self.extra_clause
                     )
@@ -549,11 +552,9 @@ class ValidPersonOrTeamVocabulary(
             public_result.order_by()
 
             # Next search for the private teams.
-            private_tables = [
-                Person,
-                Join(TeamParticipation,
-                     TeamParticipation.teamID == Person.id),
-                ]
+            private_query, private_tables = self._privateTeamQueryAndTables()
+            private_tables = [Person] + private_tables
+
             # Searching for private teams that match can be easier since we
             # are only interested in teams.  Teams can have email addresses
             # but we're electing to ignore them here.
@@ -567,7 +568,7 @@ class ValidPersonOrTeamVocabulary(
                 Person,
                 And(
                     Person.id.is_in(private_inner_select),
-                    self._private_team_query,
+                    private_query,
                     )
                 )
 
@@ -642,16 +643,13 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     def _doSearch(self, text=""):
         """Return the teams whose fti, IRC, or email address match :text:"""
 
+        private_query, private_tables = self._privateTeamQueryAndTables()
         base_query = Or(
             Person.visibility == PersonVisibility.PUBLIC,
-            self._private_team_query,
+            private_query,
             )
 
-        tables = [
-            Person,
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.teamID == Person.id),
-            ]
+        tables = [Person] + private_tables
 
         if not text:
             query = And(base_query,
@@ -660,19 +658,21 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         else:
             name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
 
-            email_match_query = And(
-                EmailAddress.person == Person.id,
-                StartsWith(Lower(EmailAddress.email), text),
-                )
+            email_storm_query = self.store.find(
+                EmailAddress.personID,
+                StartsWith(Lower(EmailAddress.email), text))
+            email_subquery = Alias(email_storm_query._get_select(),
+                                   'EmailAddress')
+            tables += [
+                LeftJoin(email_subquery, EmailAddress.person == Person.id),
+                ]
 
-            tables.append(EmailAddress)
-
-            query = And(base_query,
-                        self.extra_clause,
-                        Or(name_match_query, email_match_query),
-                        )
             result = self.store.using(*tables).find(
-                Person, query)
+                Person,
+                And(base_query,
+                    self.extra_clause,
+                    Or(name_match_query,
+                       EmailAddress.person != None)))
 
         # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
         # setting the 'distinct' and 'limit' options in a single call to
@@ -1266,7 +1266,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             sub_status = "(expires %s)" % date_formatter.displaydate()
         return SimpleTerm(project,
                           project.name,
-                          sub_status)
+                          '%s %s' % (project.title, sub_status))
 
     def getTermByToken(self, token):
         """Return the term for the given token."""
