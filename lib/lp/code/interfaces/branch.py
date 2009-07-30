@@ -31,6 +31,7 @@ __all__ = [
     'IBranchNavigationMenu',
     'IBranchSet',
     'NoSuchBranch',
+    'UnknownBranchTargetError',
     'UnknownBranchTypeError',
     'user_has_special_branch_access',
     ]
@@ -65,7 +66,7 @@ from lp.code.enums import (
     UICreatableBranchType,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.branchtarget import IBranchTarget, IHasBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.person import IPerson
@@ -111,6 +112,10 @@ class CannotDeleteBranch(Exception):
 
 class UnknownBranchTypeError(Exception):
     """Raised when the user specifies an unrecognized branch type."""
+
+
+class UnknownBranchTargetError(Exception):
+    """Raised when an unexpected type is passed through as a branch target."""
 
 
 class BranchCreationForbidden(BranchCreationException):
@@ -414,6 +419,15 @@ class IBranch(IHasOwner, IHasBranchTarget):
     @export_write_operation()
     def setOwner(new_owner, user):
         """Set the owner of the branch to be `new_owner`."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        new_owner=Reference(
+            title=_("The new target of the branch."),
+            schema=IBranchTarget))
+    @export_write_operation()
+    def setTarget(new_target, user):
+        """Set the target of the branch to be `new_target`."""
 
     reviewer = exported(
         PublicPersonChoice(

@@ -59,7 +59,7 @@ from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
     BranchTypeError, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchNavigationMenu, IBranchSet)
+    IBranchNavigationMenu, IBranchSet, UnknownBranchTargetError)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
@@ -71,7 +71,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    IPerson, validate_person_not_private_membership, validate_public_person)
 
 
 class Branch(SQLBase):
@@ -167,6 +167,20 @@ class Branch(SQLBase):
         else:
             target = self.product
         return IBranchTarget(target)
+
+    def setTarget(self, new_target, user):
+        """See `IBranch`."""
+        person = IPerson(new_target)
+        if person is not None:
+            # A +junk target.
+            target = IBranchTarget(person)
+            new_namespace = target.getNamespace(person)
+        else:
+            target = IBranchTarget(new_target)
+            if target is None:
+                raise UnknownBranchTargetError(new_target)
+            new_namespace = target.getNamespace(self.owner)
+        new_namespace.moveBranch(self, user, rename_if_necessary=True)
 
     @property
     def namespace(self):
