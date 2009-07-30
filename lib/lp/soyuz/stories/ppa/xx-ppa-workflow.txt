@@ -625,8 +625,8 @@ Back to his profile page Celso and anyone can his multiple PPAs.
     PPA for Celso Providelo
     Create a new PPA
 
-PPAs can be disabled due to ToS violations or simply because an user
-requested so. An administrator can disable Celso's 'edge' PPA.
+PPAs can be disabled due to ToS violations or simply because the owner
+requested it. An administrator can disable Celso's 'edge' PPA.
 
     >>> ppa_url = cprov_browser.getLink('Edge PPA').url
     >>> admin_browser.open(ppa_url)

@@ -113,7 +113,7 @@ And finally Copy archives.
     >>> print test_tales("archive/image:icon", archive=copy)
     <img ... src="/@@/distribution" />
 
-PPAs have a 'link' formatter, which return the appropriate HTML used
+PPAs have a 'link' formatter, which returns the appropriate HTML used
 for referring to them in other pages.
 
     >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)

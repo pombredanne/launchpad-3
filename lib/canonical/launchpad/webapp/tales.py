@@ -1483,7 +1483,7 @@ class CodeReviewCommentFormatterAPI(CustomizableFormatter):
 class PPAFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for `IPPA` objects."""
 
-    _link_summary_template = _('%(display_name)s')
+    _link_summary_template = '%(display_name)s'
     _link_permission = 'launchpad.View'
 
     def _link_summary_values(self):
