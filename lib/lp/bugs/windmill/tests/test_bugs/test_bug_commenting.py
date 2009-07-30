@@ -14,7 +14,8 @@ from canonical.uuid import generate_uuid
 WAIT_PAGELOAD = u'30000'
 WAIT_ELEMENT_COMPLETE = u'30000'
 WAIT_CHECK_CHANGE = u'1000'
-ADD_COMMENT_LINK = u'//a[@href="+addcomment" and @class="add js-action"]'
+ADD_COMMENT_LINK = (
+    u'//a[@href="+addcomment" and @class="sprite add js-action"]')
 
 
 def test_bug_commenting():
