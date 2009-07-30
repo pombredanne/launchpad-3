@@ -383,9 +383,9 @@ class BugViewMixin:
     def direct_subscribers(self):
         """Return the list of direct subscribers."""
         if IBug.providedBy(self.context):
-            return frozenset(self.context.getDirectSubscribers())
+            return set(self.context.getDirectSubscribers())
         elif IBugTask.providedBy(self.context):
-            return frozenset(self.context.bug.getDirectSubscribers())
+            return set(self.context.bug.getDirectSubscribers())
         else:
             raise NotImplementedError(
                 'direct_subscribers is not provided by %s' % self)
@@ -394,9 +394,9 @@ class BugViewMixin:
     def duplicate_subscribers(self):
         """Return the list of subscribers from duplicates."""
         if IBug.providedBy(self.context):
-            return frozenset(self.context.getSubscribersFromDuplicates())
+            return set(self.context.getSubscribersFromDuplicates())
         elif IBugTask.providedBy(self.context):
-            return frozenset(self.context.bug.getSubscribersFromDuplicates())
+            return set(self.context.bug.getSubscribersFromDuplicates())
         else:
             raise NotImplementedError(
                 'duplicate_subscribers is not implemented for %s' % self)
@@ -404,14 +404,13 @@ class BugViewMixin:
     @cachedproperty
     def subscriber_ids(self):
         """Return a dictionary mapping a css_name to user name."""
-        subscribers = list(
-            self.direct_subscribers.union(self.duplicate_subscribers))
+        subscribers = self.direct_subscribers.union(self.duplicate_subscribers)
 
         # The current user has to be in subscribers_id so
         # in case the id is needed for a new subscription.
         user = getUtility(ILaunchBag).user
-        if user is not None and user not in subscribers:
-            subscribers.append(user)
+        if user is not None:
+            subscribers.add(user)
 
         ids = {}
         for sub in subscribers:
