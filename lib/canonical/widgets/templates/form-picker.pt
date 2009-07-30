@@ -3,12 +3,9 @@
 <tal:input replace="structure view/inputField" />
 
 <tal:search_results tal:condition="not: view/hasValidInput">
-  <select
-      tal:define="matches view/matches"
-      tal:condition="view/matches"
-      >
+  <select tal:condition="view/matches">
     <option
-        tal:repeat="match matches"
+        tal:repeat="match view/matches"
         tal:attributes="value match/token;
             selected python:path('match/token') == path('view/formToken');
             onclick string:this.form['${view/name}'].value = this.value"
