@@ -392,11 +392,19 @@ class BugViewMixin:
 
     @cachedproperty
     def duplicate_subscribers(self):
-        """Return the list of subscribers from duplicates."""
+        """Return the list of subscribers from duplicates.
+
+        Don't use getSubscribersFromDuplicates here because that method
+        omits a user if the user is also a direct or indirect subscriber.
+        getSubscriptionsFromDuplicates doesn't, so find person objects via
+        this method.
+        """
         if IBug.providedBy(self.context):
-            return set(self.context.getSubscribersFromDuplicates())
+            dupe_subs = self.context.getSubscriptionsFromDuplicates()
+            return set([sub.person for sub in dupe_subs])
         elif IBugTask.providedBy(self.context):
-            return set(self.context.bug.getSubscribersFromDuplicates())
+            dupe_subs = self.context.bug.getSubscriptionsFromDuplicates()
+            return set([sub.person for sub in dupe_subs])
         else:
             raise NotImplementedError(
                 'duplicate_subscribers is not implemented for %s' % self)

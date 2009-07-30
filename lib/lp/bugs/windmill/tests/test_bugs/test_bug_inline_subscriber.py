@@ -44,7 +44,7 @@ def test_inline_subscriber():
     client.asserts.assertNode(xpath=PERSON_LINK % u'Sample Person')
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator=u'style.backgroundImage|url(/@@/remove)')
+        validator=u'className|remove')
 
     # Make sure the unsubscribe link also works, that
     # the person's named is removed from the subscriber's list,
@@ -55,7 +55,7 @@ def test_inline_subscriber():
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator=u'style.backgroundImage|url(/@@/add)')
+        validator=u'className|add')
     client.asserts.assertNotNode(xpath=PERSON_LINK % u'Sample Person')
 
     # Subscribe again in order to check that the minus icon
@@ -70,7 +70,7 @@ def test_inline_subscriber():
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator=u'style.backgroundImage|url(/@@/add)')
+        validator=u'className|add')
     client.asserts.assertNotNode(xpath=PERSON_LINK % u'Sample Person')
 
     # Test inline subscribing of others by subscribing Ubuntu Team.
@@ -166,14 +166,47 @@ def test_inline_subscriber():
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
     client.asserts.assertNotNode(xpath=PERSON_LINK % u'Foo Bar')
 
-    # A bit of a corner case here, but make sure that when
-    # a user is subscribed to both the main bug and the dupe
-    # that the user is unsubscribed correctly.
+    # Subscribe/Unsubscribe link handling when dealing
+    # with duplicates...
+    #
+    # First test case, ensure unsubscribing works when
+    # dealing with a duplicate and an indirect subscription.
+    lpuser.SAMPLE_PERSON.ensure_login(client)
+    # Go to bug 6, the dupe, and subscribe.
+    client.open(url=BUG_URL % 6)
+    client.waits.forPageLoad(timeout=PAGE_LOAD)
+    client.waits.forElement(
+        id=u'subscribers-links', timeout=FOR_ELEMENT)
+    client.click(xpath=SUBSCRIPTION_LINK)
+    client.waits.sleep(milliseconds=SLEEP)
+    client.asserts.assertText(
+        xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
+    # Now back to bug 5.
     client.open(url=BUG_URL % 5)
     client.waits.forPageLoad(timeout=PAGE_LOAD)
     client.waits.forElement(
         id=u'subscribers-links', timeout=FOR_ELEMENT)
-    # Subscribe to the main bug, bug 5.
+    # Confirm there are 2 subscriber links: one in duplicate subscribers,
+    # and one in indirect subscribers.
+    client.asserts.assertNode(
+        xpath=(u'//div[@id="subscribers-from-duplicates"]'
+               '/div/a[@name="Sample Person"]'))
+    client.asserts.assertNode(
+        xpath=(u'//div[@id="subscribers-indirect"]'
+               '/div/a[text() = "Sample Person"]'))
+    # Clicking "Unsubscribe" successfully removes the duplicate subscription,
+    # but the indirect subscription remains.
+    client.click(xpath=SUBSCRIPTION_LINK)
+    client.waits.sleep(milliseconds=SLEEP)
+    client.asserts.assertNotNode(
+        xpath=(u'//div[@id="subscribers-from-duplicates"]'
+               '/div/a[@name="Sample Person"]'))
+    client.asserts.assertNode(
+        xpath=(u'//div[@id="subscribers-indirect"]'
+               '/div/a[text() = "Sample Person"]'))
+
+    # Second test case, confirm duplicate handling is correct between direct
+    # and duplicate subscriptions.  Subscribe directly to bug 5.
     client.click(xpath=SUBSCRIPTION_LINK)
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertText(
@@ -184,29 +217,30 @@ def test_inline_subscriber():
     client.waits.forElement(
         id=u'subscribers-links', timeout=FOR_ELEMENT)
     client.click(xpath=SUBSCRIPTION_LINK)
-    # Now back to bug 5.  The first unsubscribe should remove
-    # the current bug direct subscription.
-    client.open(url=BUG_URL % 5)
-    client.waits.forPageLoad(timeout=PAGE_LOAD)
-    client.waits.forElement(
-        id=u'subscribers-links', timeout=FOR_ELEMENT)
+    client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
-    # Confirm there are 2 subscriber links: one in direct subscribers,
-    # and one in duplicate subscribers.
-    client.asserts.assertNode(xpath=PERSON_LINK % u'Foo Bar')
+    # Now back to bug 5. Confirm there are 2 subscriptions.
+    client.open(url=BUG_URL % 5)
+    client.asserts.assertNode(
+        xpath=(u'//div[@id="subscribers-links"]'
+               '/div/a[@name="Sample Person"]'))
     client.asserts.assertNode(
         xpath=(u'//div[@id="subscribers-from-duplicates"]'
-               '/div/a[@name="Foo Bar"]'))
-    # The first click unsubscribes the direct subscription, leaving the dupe.
+               '/div/a[@name="Sample Person"]'))
+    # The first click unsubscribes the direct subscription, leaving
+    # the duplicate subscription.
     client.click(xpath=SUBSCRIPTION_LINK)
     client.waits.sleep(milliseconds=SLEEP)
+    client.asserts.assertNotNode(
+        xpath=(u'//div[@id="subscribers-links"]'
+               '/div/a[@name="Sample Person"]'))
     client.asserts.assertNode(
         xpath=(u'//div[@id="subscribers-from-duplicates"]'
-               '/div/a[@name="Foo Bar"]'))
-    # The second unsubscribe removes the dupe/
+               '/div/a[@name="Sample Person"]'))
+    # The second unsubscribe removes the duplicate, too.
     client.click(xpath=SUBSCRIPTION_LINK)
     client.waits.sleep(milliseconds=SLEEP)
     client.asserts.assertNotNode(
         xpath=(u'//div[@id="subscribers-from-duplicates"]'
-               '/div/a[@name="Foo Bar"]'))
+               '/div/a[@name="Sample Person"]'))

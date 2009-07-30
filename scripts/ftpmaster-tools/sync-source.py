@@ -31,7 +31,7 @@ import urllib
 
 import _pythonpath
 import dak_utils
-from syncorigins import origins
+from _syncorigins import origins
 
 from zope.component import getUtility
 from contrib.glock import GlobalLock

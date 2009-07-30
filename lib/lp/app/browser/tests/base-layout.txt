@@ -41,7 +41,7 @@ content are positioned using the "yui-t4", "yui-main", "yui-b", and
         <title>Test base-layout: main_side</title> ...
         <!-- Extra head content -->
       </head>
-      <body id="document" class="tab-overview main_side yui-skin-sam">
+      <body id="document" class="tab-overview main_side public yui-skin-sam">
         <div class="yui-d0">
           <div id="locationbar"> ...
              <form id="globalsearch" ...
@@ -50,8 +50,9 @@ content are positioned using the "yui-t4", "yui-main", "yui-b", and
           <div class="yui-t4">
             <div id="maincontent" class="yui-main">
               <div class="yui-b" dir="ltr">
+                <h1>Heading</h1>
+                <!-- future breadcrumb rule -->
                 <div class="top-portlet">
-                  <h1>Heading</h1>
                   <p class="registered">
                     Registered on 2005-09-16
                     by <a class="sprite team" href="#">Illuminati team</a>
@@ -68,7 +69,7 @@ content are positioned using the "yui-t4", "yui-main", "yui-b", and
               </div>
             </div><!-- yui-b side -->
           </div><!-- yui-t4 -->
-          <div id="footer"> ...
+          <div id="footer" class="footer"> ...
           </div><!-- footer-->
         </div><!-- yui-d0-->
         <script>LP.client.cache['context'] ...
@@ -94,7 +95,7 @@ content to take up all the horizontal space.
         <title>Test base-layout: main_only</title> ...
         <!-- Extra head content -->
       </head>
-      <body id="document" class="tab-overview main_only yui-skin-sam">
+      <body id="document" class="tab-overview main_only public yui-skin-sam">
         <div class="yui-d0">
           <div id="locationbar"> ...
              <form id="globalsearch" ...
@@ -102,8 +103,9 @@ content to take up all the horizontal space.
              <div id="lp-apps" ...
           <div id="maincontent" class="yui-main">
             <div class="yui-b" dir="ltr">
+              <h1>Heading</h1>
+              <!-- future breadcrumb rule -->
               <div class="top-portlet">
-                <h1>Heading</h1>
                 <p class="registered">
                   Registered on 2005-09-16
                   by <a class="sprite team" href="#">Illuminati team</a>
@@ -116,7 +118,7 @@ content to take up all the horizontal space.
           </div><!-- yui-main -->
             <!-- yui-b side -->
             <!-- yui-t4 -->
-          <div id="footer"> ...
+          <div id="footer" class="footer"> ...
           </div><!-- footer-->
         </div><!-- yui-d0-->
         <script>LP.client.cache['context'] ...
@@ -141,7 +143,7 @@ slots are rendered, as are the application tabs.
         <title>Test base-layout: searchless</title> ...
         <!-- Extra head content -->
       </head>
-      <body id="document" class="tab-overview searchless yui-skin-sam">
+      <body id="document" class="tab-overview searchless public yui-skin-sam">
         <div class="yui-d0">
           <div id="locationbar">
             <div id="logincontrol"><a href="...">Log in / Register</a></div>
@@ -150,8 +152,9 @@ slots are rendered, as are the application tabs.
           </div><!--id="locationbar"-->
           <div id="maincontent" class="yui-main">
             <div class="yui-b" dir="ltr">
+              <h1>Heading</h1>
+              <!-- future breadcrumb rule -->
               <div class="top-portlet">
-                <h1>Heading</h1>
                 <p class="registered">
                   Registered on 2005-09-16
                   by <a class="sprite team" href="#">Illuminati team</a>
@@ -164,7 +167,7 @@ slots are rendered, as are the application tabs.
           </div><!-- yui-main -->
             <!-- yui-b side -->
             <!-- yui-t4 -->
-          <div id="footer"> ...
+          <div id="footer" class="footer"> ...
           </div><!-- footer-->
         </div><!-- yui-d0-->
         <script>LP.client.cache['context'] ...
@@ -174,7 +177,8 @@ slots are rendered, as are the application tabs.
 The locationless template is intended for pages that provide content outside
 of normal application use. It is for exceptions. The epilogue and main
 slots are rendered. Global search and the application tabs are not included
-in the header.
+in the header. The layout does not have a heading slot to provide the h1
+or breadcrumbs; the template must provide its own h1 element.
 
     >>> class LocationlessView(LaunchpadView):
     ...     """A simple view to test base-layout."""
@@ -190,7 +194,7 @@ in the header.
         <title>Test base-layout: locationless</title> ...
         <!-- Extra head content -->
       </head>
-      <body id="document" class="tab-overview locationless yui-skin-sam">
+      <body id="document" class="tab-overview locationless public yui-skin-sam">
         <div class="yui-d0">
           <div id="locationbar">
             <div id="logincontrol"><a href="...">Log in / Register</a></div>
@@ -213,9 +217,67 @@ in the header.
           </div><!-- yui-main -->
             <!-- yui-b side -->
             <!-- yui-t4 -->
-          <div id="footer"> ...
+          <div id="footer" class="footer"> ...
           </div><!-- footer-->
         </div><!-- yui-d0-->
         <script>LP.client.cache['context'] ...
       </body>
     </html> ...
+
+
+Page Headings
+-------------
+
+The example layouts all used the heading slot to define a heading for their
+test. The template controlled the heading.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print content.h1
+    <h1>Heading</h1>
+
+The page heading slot's default behaviour is to use the context.title.
+
+    >>> class DefaultHeadingView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile(
+    ...         'testfiles/default-heading-slot.pt')
+    ...     page_title = 'Test base-layout: default heading'
+
+    >>> print user.title
+    Waffles
+
+    >>> view = DefaultHeadingView(user, request)
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print content.h1
+    <h1>Waffles</h1>
+
+
+Public and private presentation
+-------------------------------
+
+The base-layout master templates uses the fmt:public-private-css formatter to
+add the 'public' or 'private' CSS class to the body tag. When the context is
+private, the 'private' class is added to the body's class attribute.
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+
+    >>> login('admin@canonical.com')
+    >>> team = factory.makeTeam(
+    ...     owner=user, name='a-private-team',
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> view = LocationlessView(team, request)
+    >>> body = find_tag_by_id(view.render(), 'document')
+    >>> print body['class']
+    tab-overview locationless private yui-skin-sam
+
+When the context is public, the 'public' class is in the class attribute.
+
+    >>> login(ANONYMOUS)
+    >>> team = factory.makeTeam(owner=user, name='a-public-team')
+    >>> view = LocationlessView(team, request)
+    >>> body = find_tag_by_id(view.render(), 'document')
+    >>> print body['class']
+    tab-overview locationless public yui-skin-sam
