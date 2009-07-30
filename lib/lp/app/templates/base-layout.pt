@@ -1,0 +1,202 @@
+<metal:page
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  define-macro="master"
+  tal:define="
+    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+    version string:Launchpad 2.2.6 (r${revno});
+    devmode modules/canonical.config/config/devmode;
+    rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
+    is_demo modules/canonical.config/config/launchpad/is_demo;
+    is_edge modules/canonical.config/config/launchpad/is_edge;
+    is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
+    icingroot string:${rooturl}+icing/rev${revno};
+    icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
+    CONTEXTS python:{'template':template, 'context': context, 'view':view};
+  "
+><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en" lang="en" dir="ltr">
+  <head tal:define="
+    yui string:${icingroot}/yui/3.0.0pr2/build;
+    lazr_js string:${icingroot}/lazr/build;
+    lp_js string:${icingroot}/build">
+    <title i18n:translate=""
+      tal:content="view/page_title|CONTEXTS/fmt:pagetitle">Launchpad</title>
+
+    <link rel="shortcut icon" href="/@@/launchpad.png" />
+
+    <tal:atomfeeds define="feed_links view/feed_links | nothing">
+      <link rel="alternate" type="application/atom+xml"
+        tal:repeat="link feed_links"
+        tal:attributes="title link/title;
+                        href link/href"/>
+    </tal:atomfeeds>
+
+    <metal:launchpad-stylesheet
+      use-macro="context/@@+base-layout-macros/launchpad-stylesheet-3-0" />
+
+    <style tal:condition="is_demo" type="text/css">
+      html, body {background-image: url(/@@/demo) !important;}
+    </style>
+
+    <tal:comment condition="nothing">
+      Internet Explorer apparently doubles the horizontal margins of the
+      application tabs, which causes the 'Answers' tab to wrap onto a second
+      row. To work around this, we give IE some speshul CSS:
+    </tal:comment>
+    <!--[if lte IE 7]>
+      <style type="text/css">#lp-apps span {margin: 0 0.125%;}</style>
+    <![endif]-->
+
+    <tal:comment condition="nothing">
+      This CSS collapses the contents of collapsible fieldsets,
+      without the flashing that would result from doing it in JavaScript.
+      activateCollapsibles() removes the class="collapsed" from fieldsets, to
+      re-show their divs, once the children themselves have been collapsed.
+    </tal:comment>
+    <style type="text/css">
+      fieldset.collapsed div, fieldset div.collapsed {display: none;}
+    </style>
+    <noscript>
+      <style type="text/css">
+        fieldset.collapsible div, fieldset div.collapsed {display: block;}
+      </style>
+    </noscript>
+
+    <metal:load-javascript
+      use-macro="context/@@+base-layout-macros/load-javascript" />
+    <metal:block define-slot="head_epilogue"></metal:block>
+  </head>
+
+  <body id="document"
+    tal:attributes="class string:tab-${view/menu:selectedfacetname}
+      ${view/macro:pagetype}
+      ${view/context/fmt:public-private-css}
+      yui-skin-sam">
+    <div class="yui-d0">
+      <div id="locationbar">
+        <tal:login replace="structure context/@@login_status" />
+        <form id="globalsearch" method="get" accept-charset="UTF-8"
+          class="sprite search-icon"
+          tal:condition="view/macro:pagehas/globalsearch"
+          tal:attributes="action string:${rooturl}+search">
+          <input type="search" id="search-text" name="field.text" />
+        </form>
+        <tal:hierarchy replace="structure context/@@+hierarchy" />
+        <div id="lp-apps" class="clearfix"
+          tal:condition="view/macro:pagehas/applicationtabs"
+          tal:define="facetmenu view/menu:facet">
+          <!-- :-) --><tal:facet repeat="link facetmenu">
+            <span
+              tal:condition="python: link.enabled and link.selected"
+              tal:attributes="title link/summary; class string:${link/name} active"
+              ><strong
+                tal:condition="not:link/linked"
+                tal:content="structure link/escapedtext"
+                /><a
+                  tal:condition="link/linked"
+                  tal:attributes="href link/url"
+                  tal:content="structure link/escapedtext" /></span>
+            <span
+              tal:condition="python: link.enabled and not link.selected"
+              tal:attributes="title link/summary; class link/name"
+              ><a
+                tal:condition="link/enabled"
+                tal:attributes="href link/url"
+                tal:content="structure link/escapedtext"
+                /></span>
+            <span
+              tal:condition="not:link/enabled"
+              tal:attributes="class string:${link/name} disabled-tab"
+              ><strong
+                tal:content="structure link/escapedtext" /></span>
+            <small tal:condition="not:repeat/link/end"> / </small>
+          </tal:facet>
+        </div>
+      </div><!--id="locationbar"-->
+
+      <tal:maintenance replace="structure context/@@+maintenancemessage" />
+      <tal:notifications
+        define="notifications request/notifications"
+        condition="notifications">
+        <metal:notifications
+          use-macro="context/@@+base-layout-macros/notifications"/>
+      </tal:notifications>
+
+      <div class="yui-t4"
+        tal:omit-tag="not: view/macro:pagehas/portlets">
+        <div id="maincontent" class="yui-main">
+          <div class="yui-b"
+            tal:attributes="
+              lang view/lang|default_language|default;
+              xml:lang view/lang|default_language|default;
+              dir view/dir|string:ltr">
+            <tal:location condition="view/macro:pagehas/applicationtabs">
+              <h1><tal:heading
+                tal:condition="context/title|nothing"
+                tal:content="context/title"
+                metal:define-slot="heading" /></h1>
+              <tal:breadcrumbs>
+                <!-- future breadcrumb rule -->
+              </tal:breadcrumbs>
+            </tal:location>
+            <metal:main define-slot="main" />
+          </div><!-- yui-b -->
+        </div><!-- yui-main -->
+
+        <div class="yui-b side"
+          tal:condition="view/macro:pagehas/portlets">
+          <metal:portlets define-slot="side" />
+        </div><!-- yui-b side -->
+      </div><!-- yui-t4 -->
+
+      <div id="footer" class="footer">
+        <div id="lp-arcana">
+          &copy;&nbsp;2004-2009&nbsp;<a
+            href="http://canonical.com/">Canonical&nbsp;Ltd.</a> |
+          <a href="/legal">Terms of use</a>
+          <span id="lp-version" tal:condition="not:is_lpnet"> |
+            <a href="https://help.launchpad.net/LaunchpadReleases"
+              tal:content="version"/>
+            <tal:devmode condition="devmode">devmode</tal:devmode>
+            <tal:demo condition="is_demo">demo site</tal:demo>
+            <tal:edge condition="is_edge">beta site</tal:edge>
+          </span>
+        </div>
+
+        <div id="colophon">
+          <a href="/+tour"
+            tal:condition="not:request/lp:person">What is Launchpad?</a>
+          <a href="/feedback"
+            tal:condition="request/lp:person">Contact us</a> |
+          <a href="https://help.launchpad.net/">Get help with Launchpad</a>
+        </div>
+      </div><!-- footer-->
+    </div><!-- yui-d0-->
+
+    <metal:lp-client-cache
+      use-macro="context/@@+base-layout-macros/lp-client-cache" />
+  </body>
+</html>
+
+<tal:template tal:condition="devmode">
+  <tal:comment
+    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
+    replace="structure string:&lt;!--
+    Facet name: ${view/menu:selectedfacetname}
+    Page type: ${view/macro:pagetype}
+    Has global search: ${view/macro:pagehas/globalsearch}
+    Has application tabs: ${view/macro:pagehas/applicationtabs}
+    Has side portlets: ${view/macro:pagehas/portlets}
+
+    At least ${log}
+
+    ${version}
+  --&gt;" />
+</tal:template>
+</metal:page>

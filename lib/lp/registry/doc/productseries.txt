@@ -9,7 +9,9 @@ ProductSeries.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IHasTranslationImports, IPersonSet, IProductSeries, IProductSet)
+    ...     IPersonSet, IProductSeries, IProductSet)
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     IHasTranslationImports)
     >>> from canonical.database.sqlbase import flush_database_updates
 
 First, get a product that has some ProductSeries in the sample data.
@@ -41,8 +43,8 @@ And verify that it looks like the series we think it should be.
 
     >>> trunk.product == firefox
     True
-    >>> trunk.name
-    u'trunk'
+    >>> print trunk.name
+    trunk
 
 It's also possible to ask a product for all its associated series.
 
@@ -71,7 +73,7 @@ owner or driver can call Product.newSeries().
     Unauthorized: (..., 'newSeries', 'launchpad.Driver')
 
     >>> login_person(firefox.owner)
-    >>> emacs = firefox.newSeries(series_driver , 'emacs', summary)
+    >>> emacs_series = firefox.newSeries(firefox.owner , 'emacs', summary)
 
     >>> firefox.driver = series_driver
     >>> login_person(series_driver)
@@ -80,13 +82,87 @@ owner or driver can call Product.newSeries().
 A newly created series is assumed to be in the development state.
 
     >>> login(ANONYMOUS)
-    >>> emacs.status.title
-    'Active Development'
+    >>> print emacs_series.status.title
+    Active Development
 
 Let's check that the new series is properly associated to its product.
 
     >>> flush_database_updates()
-    >>> firefox.getSeries('emacs') == emacs
+    >>> firefox.getSeries('emacs') == emacs_series
+    True
+
+
+= Drivers and release managers =
+
+A driver for an IProduct or IProject cannot modify a product series.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login_person(series_driver)
+    >>> print emacs_series.owner.name
+    name12
+    >>> print emacs_series.driver
+    None
+    >>> check_permission('launchpad.Edit', emacs_series)
+    False
+
+A person appointed to the series driver has the release manager role and can
+edit a product series.
+
+    >>> login_person(firefox.owner)
+    >>> emacs_series.driver = series_driver
+    >>> login_person(series_driver)
+    >>> check_permission('launchpad.Edit', emacs_series)
+    True
+
+    >>> login(ANONYMOUS)
+
+
+== ProductSeries releassefileglob ==
+
+Each ProductSeries may have a releassefileglob that describes the location
+of where release files are uploaded to. The product release finder process
+uses the releassefileglob to locate and retrieve files. The files are stored
+in the librarian. Each fill is associated with a release. If the series
+does not have a release for version in the file name, the finder will create
+it. The finder will also create the series milestone too if it does not
+exist. The success of product release finder to retrieve files, and create
+milestone and releases, is largely predicated on the quality of the
+releassefileglob.
+
+The field is constrained by the validate_release_glob() function. It verifies
+that the url uses one of the supported schemes (ftp, http, http).
+
+    >>> from lp.registry.interfaces.productseries import (
+    ...     validate_release_glob)
+
+    >>> validate_release_glob('ftp://ftp.gnu.org/gnu/emacs/emacs-21.*.gz')
+    True
+    >>> validate_release_glob('http://ftp.gnu.org/gnu/emacs/emacs-21.*.gz')
+    True
+    >>> validate_release_glob('https://ftp.gnu.org/gnu/emacs/emacs-21.*.gz')
+    True
+
+Invalid URLs and unsupported schemes raise a LaunchpadValidationError.
+
+    >>> validate_release_glob('ftp.gnu.org/gnu/emacs/emacs-21.*.gz')
+    Traceback (most recent call last):
+     ...
+    LaunchpadValidationError: ...
+
+    >>> validate_release_glob('wais://ftp.gnu.org/gnu/emacs/emacs-21.*.gz')
+    Traceback (most recent call last):
+     ...
+    LaunchpadValidationError: ...
+
+The URL must contain a glob (*) or , and may contain more than one.
+
+    >>> validate_release_glob('http://ftp.gnu.org/gnu/emacs/emacs-21.10.1.gz')
+    Traceback (most recent call last):
+     ...
+    LaunchpadValidationError: ...
+
+    >>> validate_release_glob('http://ftp.gnu.org/gnu/*/emacs-21.*.gz')
     True
 
 

@@ -1,4 +1,5 @@
-# (c) Canonical Ltd. 2004-2006, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -60,7 +61,6 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.signon.layers import IdLayer, OpenIDLayer
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
@@ -181,11 +181,11 @@ class LaunchpadBrowserPublication(
         request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
+        self.maybeNotifyReadOnlyMode(request)
 
-        # If we are running in read-only mode, notify the user
-        # provided they aren't using the SSO server.
-        if config.launchpad.read_only and not (
-            OpenIDLayer.providedBy(request) or IdLayer.providedBy(request)):
+    def maybeNotifyReadOnlyMode(self, request):
+        """Hook to notify about read-only mode."""
+        if config.launchpad.read_only:
             try:
                 INotificationResponse(request).addWarningNotification(
                     structured("""
@@ -197,7 +197,6 @@ class LaunchpadBrowserPublication(
                         """))
             except ComponentLookupError:
                 pass
-
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.
@@ -476,6 +475,14 @@ class LaunchpadBrowserPublication(
             # the publication, so there's nothing we need to do here.
             pass
 
+        # Log a soft OOPS for DisconnectionErrors and
+        # TransactionRollbackErrors, as per Bug #373837. We need to do
+        # this before we re-raise the excaptionsas a Retry.
+        if isinstance(
+            exc_info[1],
+            (DisconnectionError, TransactionRollbackError)):
+            getUtility(IErrorReportingUtility).raising(exc_info, request)
+
         def should_retry(exc_info):
             if not retry_allowed:
                 return False
@@ -510,7 +517,7 @@ class LaunchpadBrowserPublication(
 
             return False
 
-        # Reraise Retry exceptions ourselves rather than invoke
+        # Re-raise Retry exceptions ourselves rather than invoke
         # our superclass handleException method, as it will log OOPS
         # reports etc. This would be incorrect, as transaction retry
         # is a normal part of operation.

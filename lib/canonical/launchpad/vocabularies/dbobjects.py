@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies pulling stuff from the database.
 
@@ -10,6 +11,7 @@ __metaclass__ = type
 
 __all__ = [
     'BountyVocabulary',
+    'HostedBranchRestrictedOnOwnerVocabulary',
     'BranchRestrictedOnProductVocabulary',
     'BranchVocabulary',
     'BugNominatableSeriesesVocabulary',
@@ -54,17 +56,20 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from lp.code.model.branch import Branch
 from canonical.launchpad.database import (
     Archive, Bounty, Bug, BugTracker, BugWatch, Component, Country,
-    Distribution, DistroArchSeries, DistroSeries, Language, LanguagePack,
-    Person, POTemplate, Processor, ProcessorFamily, ProductSeries,
-    SourcePackageRelease, Specification, Sprint, TranslationGroup,
-    TranslationMessage)
+    Distribution, DistroArchSeries, DistroSeries, Language, Person,
+    Processor, ProcessorFamily, ProductSeries, SourcePackageRelease,
+    Specification, Sprint)
+from lp.translations.model.languagepack import LanguagePack
+from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.translationgroup import TranslationGroup
+from lp.translations.model.translationmessage import TranslationMessage
 from canonical.database.sqlbase import quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.services.worlddata.interfaces.language import ILanguage
-from canonical.launchpad.interfaces.languagepack import LanguagePackType
+from lp.translations.interfaces.languagepack import LanguagePackType
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.tales import FormattersAPI
@@ -72,11 +77,13 @@ from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 
+from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
@@ -113,11 +120,11 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     _table = Branch
     _orderBy = ['name', 'id']
-    displayname = 'Select a Branch'
+    displayname = 'Select a branch'
 
     def toTerm(self, branch):
         """The display should include the URL if there is one."""
-        return SimpleTerm(branch, branch.unique_name, branch.displayname)
+        return SimpleTerm(branch, branch.unique_name, branch.unique_name)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
@@ -180,6 +187,25 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.product)
+
+
+class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
+    """A vocabulary for hosted branches owned by the current user.
+
+    These are branches that the user is guaranteed to be able to push
+    to.
+    """
+    def __init__(self, context=None):
+        """Pass a Person as context, or anything else for the current user."""
+        super(HostedBranchRestrictedOnOwnerVocabulary, self).__init__(context)
+        if IPerson.providedBy(self.context):
+            self.user = context
+        else:
+            self.user = getUtility(ILaunchBag).user
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).ownedBy(self.user).withBranchType(
+            BranchType.HOSTED)
 
 
 class BugVocabulary(SQLObjectVocabularyBase):
@@ -665,13 +691,13 @@ class DistributionUsingMaloneVocabulary:
 
 class ProcessorVocabulary(NamedSQLObjectVocabulary):
 
-    displayname = 'Select a Processor'
+    displayname = 'Select a processor'
     _table = Processor
     _orderBy = 'name'
 
 
 class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
-    displayname = 'Select a Processor Family'
+    displayname = 'Select a processor family'
     _table = ProcessorFamily
     _orderBy = 'name'
 

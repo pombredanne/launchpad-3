@@ -1,4 +1,5 @@
-# Copyright 2007, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch feed (syndication) views."""
 
@@ -33,10 +34,16 @@ from lp.code.browser.branch import BranchView
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
 from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
+
+
+def revision_feed_id(revision):
+    """Return a consistent id for a revision to use as an id."""
+    return "tag:launchpad.net,%s:/revision/%s" % (
+        revision.revision_date.date().isoformat(), revision.revision_id)
 
 
 class BranchFeedEntry(FeedEntry):
@@ -237,25 +244,45 @@ class RevisionListingFeed(FeedBase):
         """See `IFeed`."""
         return "%s/@@/branch" % self.site_url
 
-    def _getRawItems(self):
-        """Get the raw set of items for the feed."""
-        raise NotImplementedError
+    def _getRevisionCache(self):
+        """Return the revision cache limited to the revision context."""
+        raise NotImplementedError(self._getRevisionCache)
 
     def _getItemsWorker(self):
         """Create the list of items.
 
         Called by getItems which may cache the results.
         """
-        items = self._getRawItems()
+        cache = self._getRevisionCache()
+        revisions = cache.public().getRevisions()
         # Convert the items into their feed entry representation.
-        items = [self.itemToFeedEntry(item) for item in items]
+        items = []
+        for revision in revisions:
+            content_view = self._createView(revision)
+            if content_view is not None:
+                entry = self.createFeedEntry(content_view)
+                items.append(entry)
+            # If we've hit our limit, stop iterating the revisions.
+            if len(items) >= self.quantity:
+                break
         return items
 
-    def itemToFeedEntry(self, revision):
-        """See `IFeed`."""
-        id = "tag:launchpad.net,%s:/revision/%s" % (
-            revision.revision_date.date().isoformat(), revision.revision_id)
+    def _createView(self, revision):
+        """Make a view for this revision.
+
+        :return: A view class, or None.
+        """
         content_view = RevisionFeedContentView(revision, self.request, self)
+        # If there is no longer an associated branch for this, return None as
+        # we don't want to show this revision.
+        if content_view.branch is None:
+            return None
+        return content_view
+
+    def createFeedEntry(self, content_view):
+        """Create the FeedEntry for the specified view."""
+        revision = content_view.context
+        id = revision_feed_id(revision)
         content = content_view.render()
         content_data = FeedTypedData(content=content,
                                      content_type="html",
@@ -294,14 +321,9 @@ class PersonRevisionFeed(RevisionListingFeed):
         else:
             return 'Latest Revisions by %s' % self.context.displayname
 
-    def _getRawItems(self):
-        """See `RevisionListingFeed._getRawItems`.
-
-        Return the public revisions by this person, or by people in this team.
-        """
-        query = getUtility(IRevisionSet).getPublicRevisionsForPerson(
-            self.context)
-        return list(query[:self.quantity])
+    def _getRevisionCache(self):
+        """See `RevisionListingFeed`."""
+        return getUtility(IRevisionCache).authoredBy(self.context)
 
 
 class ProjectRevisionFeedBase(RevisionListingFeed):
@@ -318,14 +340,9 @@ class ProductRevisionFeed(ProjectRevisionFeedBase):
 
     usedfor = IProduct
 
-    def _getRawItems(self):
-        """See `RevisionListingFeed._getRawItems`.
-
-        Return the public revisions in this product.
-        """
-        query = getUtility(IRevisionSet).getPublicRevisionsForProduct(
-            self.context)
-        return list(query[:self.quantity])
+    def _getRevisionCache(self):
+        """See `RevisionListingFeed`."""
+        return getUtility(IRevisionCache).inProduct(self.context)
 
 
 class ProjectRevisionFeed(ProjectRevisionFeedBase):
@@ -333,14 +350,9 @@ class ProjectRevisionFeed(ProjectRevisionFeedBase):
 
     usedfor = IProject
 
-    def _getRawItems(self):
-        """See `RevisionListingFeed._getRawItems`.
-
-        Return the public revisions in products that are part of this project.
-        """
-        query = getUtility(IRevisionSet).getPublicRevisionsForProject(
-            self.context)
-        return list(query[:self.quantity])
+    def _getRevisionCache(self):
+        """See `RevisionListingFeed`."""
+        return getUtility(IRevisionCache).inProject(self.context)
 
 
 class RevisionPerson:

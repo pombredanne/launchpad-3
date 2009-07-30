@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Hardware database related table classes."""
@@ -959,7 +961,10 @@ class HWDriverSet:
     def all_package_names(self):
         """See `IHWDriverSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(HWDriverPackageName)
+        # XXX Abel Deuring 2009-06-19 The clause package_name != None
+        # can be removed once bug #306265 is fixed.
+        result = store.find(HWDriverPackageName,
+                            HWDriverPackageName.package_name != None)
         result.order_by(HWDriverPackageName.package_name)
         return result
 

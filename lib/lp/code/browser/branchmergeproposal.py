@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0322,F0401
 
 """Views, navigation and actions for BranchMergeProposals."""
@@ -43,6 +45,8 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.browser.branch import DecoratedBug
+from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from lp.code.enums import (
@@ -54,8 +58,7 @@ from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.comments.interfaces.conversation import (
-    IComment, IConversation)
+from lp.services.comments.interfaces.conversation import IConversation
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
@@ -317,20 +320,6 @@ class BranchMergeProposalNavigation(Navigation):
             return None
 
 
-class CodeReviewDisplayComment:
-    """A code review comment or activity or both."""
-
-    implements(IComment)
-
-    delegates(ICodeReviewComment, 'comment')
-
-    def __init__(self, comment):
-        self.comment = comment
-        self.has_body = bool(self.comment.message_body)
-        self.has_footer = self.comment.vote is not None
-        self.date = self.comment.message.datecreated
-
-
 class CodeReviewConversation:
     """A code review conversation."""
 
@@ -400,7 +389,13 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         """Return whether or not the merge proposal has a linked bug or spec.
         """
         branch = self.context.source_branch
-        return branch.bug_branches or branch.spec_links
+        return branch.linked_bugs or branch.spec_links
+
+    @cachedproperty
+    def linked_bugs(self):
+        """Return DecoratedBugs linked to the source branch."""
+        branch = self.context.source_branch
+        return [DecoratedBug(bug, branch) for bug in branch.linked_bugs]
 
 
 class DecoratedCodeReviewVoteReference:
@@ -422,7 +417,10 @@ class DecoratedCodeReviewVoteReference:
         is_mergable = self.context.branch_merge_proposal.isMergable()
         self.can_change_review = (user == context.reviewer) and is_mergable
         branch = context.branch_merge_proposal.source_branch
-        self.trusted = (user is not None and user.inTeam(branch.reviewer))
+        review_team = context.branch_merge_proposal.target_branch.reviewer
+        reviewer = context.reviewer
+        self.trusted = (reviewer is not None and reviewer.inTeam(
+                        review_team))
         if user is None:
             self.user_can_review = False
         else:
@@ -1015,31 +1013,11 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         if new_status == curr_status:
             return
 
-        # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
-        # would be better as a dict mapping.
-        # See bug #281060.
-        if new_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
-            self.context.setAsWorkInProgress()
-        elif new_status == BranchMergeProposalStatus.NEEDS_REVIEW:
-            self.context.requestReview()
-        elif new_status == BranchMergeProposalStatus.CODE_APPROVED:
-            # Other half of the edge case.  If the status is currently queued,
-            # we need to dequeue, otherwise we just approve the branch.
-            if curr_status == BranchMergeProposalStatus.QUEUED:
-                self.context.dequeue()
-            else:
-                self.context.approveBranch(self.user, rev_id)
-        elif new_status == BranchMergeProposalStatus.REJECTED:
-            self.context.rejectBranch(self.user, rev_id)
-        elif new_status == BranchMergeProposalStatus.QUEUED:
-            self.context.enqueue(self.user, rev_id)
-        elif new_status == BranchMergeProposalStatus.MERGED:
-            self.context.markAsMerged(merge_reporter=self.user)
-        elif new_status == BranchMergeProposalStatus.SUPERSEDED:
+        if new_status == BranchMergeProposalStatus.SUPERSEDED:
             # Redirect the user to the resubmit view.
             self.next_url = canonical_url(self.context, view_name="+resubmit")
         else:
-            raise AssertionError('Unexpected queue status: ' % new_status)
+            self.context.setStatus(new_status, self.user, rev_id)
 
 
 class IAddVote(Interface):

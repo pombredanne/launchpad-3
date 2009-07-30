@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Furnish distroseries with lacking translations that its parent does have.
@@ -10,12 +13,12 @@ Only current translations are copied.
 """
 
 import _pythonpath
+
 import sys
 from zope.component import getUtility
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.copy_distroseries_translations import (
+from lp.translations.scripts.copy_distroseries_translations import (
     copy_distroseries_translations)
 
 
@@ -38,11 +41,13 @@ class TranslationsCopier(LaunchpadCronScript):
 
     def _getTargetSeries(self):
         """Retrieve target `DistroSeries`."""
+        from lp.registry.interfaces.distribution import IDistributionSet
         distro = self.options.distro
         series = self.options.series
         return getUtility(IDistributionSet)[distro][series]
 
     def main(self):
+        from lp.registry.interfaces.distribution import IDistributionSet
         distribution = getUtility(IDistributionSet)[self.options.distro]
         series = self._getTargetSeries()
 

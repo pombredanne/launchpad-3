@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=F0401
 
 """Browser views related to archive subscriptions."""
@@ -62,8 +64,7 @@ class PersonalArchiveSubscription:
     @property
     def displayname(self):
         """See `IPersonalArchiveSubscription`."""
-        return "%s's subscription to %s" % (
-            self.subscriber.displayname, self.archive.displayname)
+        return "Access to %s" % self.archive.displayname
 
 def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
     """Return the subscription for a subscriber to an archive."""
@@ -88,17 +89,17 @@ class IArchiveSubscriberUI(Interface):
     """
     subscriber = ParticipatingPersonChoice(
         title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
-        description=_("The person or team to subscribe."))
+        description=_("The person or team to grant access."))
 
     date_expires = Date(
         title=_("Date of Expiration"), required=False,
-        description=_("The date when the subscription will expire. "
-                      "Leave this blank for subscriptions that should "
+        description=_("The date when the access will expire. "
+                      "Leave this blank for access that should "
                       "never expire."))
 
     description = Text(
         title=_("Description"), required=False,
-        description=_("Optional notes about this subscription."))
+        description=_("Optional notes about this access."))
 
 
 class ArchiveSubscribersView(LaunchpadFormView):
@@ -183,12 +184,13 @@ class ArchiveSubscribersView(LaunchpadFormView):
 
         subscriber_individuals = data['subscriber'].displayname
         if data['subscriber'].is_team:
-            subscriber_individuals = "members of " + subscriber_individuals
+            subscriber_individuals = "Members of " + subscriber_individuals
 
         notification = (
-            "You have subscribed %(subscriber)s to %(archive)s. "
-            "If not already subscribed, %(subscriber_individuals)s "
-            "will be notified of the subscription via email."
+            "You have granted access for %(subscriber)s to install "
+            "software from %(archive)s. "
+            "%(subscriber_individuals)s will be notified of the access "
+            " via email."
             ) % {
                 'subscriber': data['subscriber'].displayname,
                 'archive': self.context.displayname,
@@ -236,11 +238,11 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 
         self.updateContextFromData(data)
 
-        notification = "The subscription for %s has been updated." % (
+        notification = "The access for %s has been updated." % (
             self.context.subscriber.displayname)
         self.request.response.addNotification(structured(notification))
 
-    @action(u'Cancel subscription', name='cancel')
+    @action(u'Cancel access', name='cancel')
     def cancel_subscription(self, action, data):
         """Cancel the context subscription."""
         self.context.cancel(self.user)
@@ -315,7 +317,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
 
             self.request.response.addNotification(structured(
                 "Launchpad has generated the new password you requested "
-                "for your subscription to the archive %s. Please follow "
+                "for your access to the archive %s. Please follow "
                 "the instructions below to update your custom "
                 "\"sources.list\"." % self.context.archive.displayname))
 
@@ -327,7 +329,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         if self.active_token is None:
             return None
 
-        comment = "Personal subscription of %s to %s" % (
+        comment = "Personal access of %s to %s" % (
             self.context.subscriber.displayname,
             self.context.archive.displayname)
 

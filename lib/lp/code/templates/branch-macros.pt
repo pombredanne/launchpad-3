@@ -104,13 +104,11 @@
       show_edit - show the edit form
   </tal:comment>
 
-  <tal:bug-tasks repeat="bug_branch branch/bug_branches">
-    <div tal:condition="bug_branch/bug/required:launchpad.View"
-         tal:define="bugtask bug_branch/bug_task;
-                     has_edit_permission bug_branch/required:launchpad.Edit;
-                     show_edit show_edit|nothing;
-                     show_edit python: show_edit and has_edit_permission;
-                     ">
+  <tal:bug-tasks repeat="bug view/linked_bugs">
+    <div tal:condition="bug/required:launchpad.View"
+         tal:define="bugtask bug/bugtask;
+                     show_edit show_edit|nothing;"
+         tal:attributes="id string:buglink-${bug/id}">
       <div class="bug-branch-summary">
       <tal:link replace="structure bugtask/fmt:link" />
       (<span tal:content="bugtask/importance/title"
@@ -124,8 +122,9 @@
        </span>)
        <tal:show-edit condition="show_edit|nothing">
          <a title="Remove link"
-            tal:condition="bug_branch/required:launchpad.Edit"
-            tal:attributes="href string:+bug/${bug_branch/bug/id}/+delete;">
+            class="delete-buglink"
+            tal:attributes="href string:+bug/${bug/id}/+delete;
+                            id string:delete-buglink-${bug/id}">
            <img src="/@@/remove"/>
          </a>
        </tal:show-edit>
@@ -169,6 +168,7 @@
        </dd></dl>
        </div>
     </div>
+
   </tal:spec-tasks>
 
 </metal:spec-branch-links>

@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure xmlns="http://namespaces.zope.org/zope">
   <utility
     name="Distribution"
@@ -44,6 +48,12 @@
   <utility
     name="NonMergedPeopleAndTeams"
     component="lp.registry.vocabularies.NonMergedPeopleAndTeamsVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    />
+
+  <utility
+    name="AdminMergeablePerson"
+    component="lp.registry.vocabularies.AdminMergeablePersonVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 

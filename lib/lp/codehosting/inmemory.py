@@ -1,4 +1,5 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """In-memory doubles of core codehosting objects."""
 
@@ -473,10 +474,13 @@ class FakeBranchPuller:
             branch = branches[-1]
             self.startMirroring(branch.id)
             default_branch = branch.target.default_stacked_on_branch
-            if default_branch:
-                default_branch_name = default_branch.unique_name
-            else:
+            if default_branch is None:
                 default_branch_name = ''
+            elif (branch.branch_type == BranchType.MIRRORED
+                  and default_branch.private):
+                default_branch_name = ''
+            else:
+                default_branch_name = '/' + default_branch.unique_name
             return (branch.id, branch.getPullURL(), branch.unique_name,
                     default_branch_name, branch.branch_type.name)
         else:

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
 
@@ -14,6 +15,7 @@ from storm.expr import Min
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.model.codeimportresult import CodeImportResult
 from canonical.config import config
@@ -32,7 +34,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
-from lp.registry.interfaces.person import PersonCreationRationale
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 
 
 class TestGarboScript(TestCase):
@@ -64,16 +66,16 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.runHourly()
 
-    def runDaily(self, maximum_chunk_size=2):
+    def runDaily(self, maximum_chunk_size=2, test_args=[]):
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
-        collector = DailyDatabaseGarbageCollector(test_args=[])
+        collector = DailyDatabaseGarbageCollector(test_args=test_args)
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
 
-    def runHourly(self, maximum_chunk_size=2):
+    def runHourly(self, maximum_chunk_size=2, test_args=[]):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
-        collector = HourlyDatabaseGarbageCollector(test_args=[])
+        collector = HourlyDatabaseGarbageCollector(test_args=test_args)
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
@@ -364,6 +366,37 @@ class TestGarbo(TestCaseWithFactory):
         transaction.commit()
         self.runDaily()
         self.assertEqual(mailing_list.getSubscription(person), None)
+
+    def test_PersonPruner(self):
+        personset = getUtility(IPersonSet)
+        # Switch the DB user because the garbo_daily user isn't allowed to
+        # create person entries.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        # Create two new person entries, both not linked to anything. One of
+        # them will have the present day as its date created, and so will not
+        # be deleted, whereas the other will have a creation date far in the
+        # past, so it will be deleted.
+        person = self.factory.makePerson(name='test-unlinked-person-new')
+        person_old = self.factory.makePerson(name='test-unlinked-person-old')
+        removeSecurityProxy(person_old).datecreated = datetime(
+            2008, 01, 01, tzinfo=UTC)
+        transaction.commit()
+
+        # Normally, the garbage collector will do nothing because the
+        # PersonPruner is experimental
+        self.runDaily()
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-new'), None)
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-old'), None)
+
+        # When we run the garbage collector with experimental jobs turned
+        # on, the old unlinked Person is removed.
+        self.runDaily(test_args=['--experimental'])
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-new'), None)
+        self.assertIs(personset.getByName('test-unlinked-person-old'), None)
 
 
 def test_suite():

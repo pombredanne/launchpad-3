@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -112,6 +116,14 @@
       provides="lp.code.interfaces.branchcollection.IAllBranches">
     <allow interface="lp.code.interfaces.branchcollection.IAllBranches"/>
   </securedutility>
+  <class class="lp.code.model.revisioncache.GenericRevisionCollection">
+    <allow interface="lp.code.interfaces.revisioncache.IRevisionCollection"/>
+  </class>
+  <securedutility
+      class="lp.code.model.revisioncache.GenericRevisionCollection"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache">
+    <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
+  </securedutility>
   <securedutility
       class="lp.code.model.branchpuller.BranchPuller"
       provides="lp.code.interfaces.branchpuller.IBranchPuller">
@@ -184,6 +196,7 @@
         set_attributes="whiteboard merged_revno commit_message                                                                                                 root_message_id review_diff"
         attributes="
                     deleteProposal
+                    setStatus
                     setAsWorkInProgress
                     requestReview
                     approveBranch
@@ -351,8 +364,12 @@
                     revision_count
                     warehouse_url
                     bug_branches
-                    related_bugs
+                    linked_bugs
+                    linkBug
+                    unlinkBug
                     spec_links
+                    linkSpecification
+                    unlinkSpecification
                     revision_history
                     subscriptions
                     subscribers
@@ -371,6 +388,8 @@
                     canBeDeleted
                     deletionRequirements
                     associatedProductSeries
+                    getProductSeriesPushingTranslations
+                    associatedSuiteSourcePackages
                     subscribe
                     getSubscription
                     hasSubscription
@@ -494,6 +513,7 @@
       provides="lp.code.interfaces.branch.IBranchCloud">
     <allow interface="lp.code.interfaces.branch.IBranchCloud"/>
   </securedutility>
+
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
@@ -787,6 +807,7 @@
   <adapter factory="lp.code.model.linkedbranch.ProductSeriesLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.ProductLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.PackageLinkedBranch" />
+  <adapter factory="lp.code.model.linkedbranch.DistributionPackageLinkedBranch" />
 
   <lp:help-folder
       folder="help" type="canonical.launchpad.layers.CodeLayer" />

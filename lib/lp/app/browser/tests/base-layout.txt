@@ -1,0 +1,283 @@
+===============================
+The base-layout master template
+===============================
+
+The base-layout master template defines macros that control the layout
+of the page. Any page can use these layout options by including
+    metal:use-macro="view/macro:page/<layout>"
+in the root element of the page template. The base layout template uses the
+YUI grid classes for positioning.
+
+    >>> from z3c.ptcompat import ViewPageTemplateFile
+    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> user = factory.makePerson(name='waffles')
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='/~waffles/+layout')
+    >>> request.setPrincipal(user)
+
+The view can define the template's title in the page_title property, or
+define it in the pagetitles module.
+
+    >>> class MainSideView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/main-side.pt')
+    ...     page_title = 'Test base-layout: main_side'
+
+The main_side layout uses all the defined features of the base-layout
+template. The example template uses the epilogue, main, and side slots. The
+global search and the applications tabs are present. The main and side
+content are positioned using the "yui-t4", "yui-main", "yui-b", and
+"yui-b side" classes.
+
+    >>> view = MainSideView(user, request)
+    >>> print view.render()
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: main_side</title> ...
+        <!-- Extra head content -->
+      </head>
+      <body id="document" class="tab-overview main_side public yui-skin-sam">
+        <div class="yui-d0">
+          <div id="locationbar"> ...
+             <form id="globalsearch" ...
+             <div id="lp-hierarchy" class="home">...
+             <div id="lp-apps" ...
+          <div class="yui-t4">
+            <div id="maincontent" class="yui-main">
+              <div class="yui-b" dir="ltr">
+                <h1>Heading</h1>
+                <!-- future breadcrumb rule -->
+                <div class="top-portlet">
+                  <p class="registered">
+                    Registered on 2005-09-16
+                    by <a class="sprite team" href="#">Illuminati team</a>
+                  </p>
+                  <p>
+                    Main content of the page.
+                  </p>
+                </div>
+              </div><!-- yui-b -->
+            </div><!-- yui-main -->
+            <div class="yui-b side">
+              <div id="object-actions" class="top-portlet">
+                <h2>Important actions</h2>
+              </div>
+            </div><!-- yui-b side -->
+          </div><!-- yui-t4 -->
+          <div id="footer" class="footer"> ...
+          </div><!-- footer-->
+        </div><!-- yui-d0-->
+        <script>LP.client.cache['context'] ...
+      </body>
+    </html> ...
+
+The main_only layout excludes the side slot, the main and epilogue slots are
+rendered. The global search and the applications tabs are present. The
+YUI Grid "yui-t4" and "yui-b side" divs are not rendered, allowing the main
+content to take up all the horizontal space.
+
+    >>> class MainOnlyView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/main-only.pt')
+    ...     page_title = 'Test base-layout: main_only'
+
+    >>> view = MainOnlyView(user, request)
+    >>> print view.render()
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: main_only</title> ...
+        <!-- Extra head content -->
+      </head>
+      <body id="document" class="tab-overview main_only public yui-skin-sam">
+        <div class="yui-d0">
+          <div id="locationbar"> ...
+             <form id="globalsearch" ...
+             <div id="lp-hierarchy" class="home">...
+             <div id="lp-apps" ...
+          <div id="maincontent" class="yui-main">
+            <div class="yui-b" dir="ltr">
+              <h1>Heading</h1>
+              <!-- future breadcrumb rule -->
+              <div class="top-portlet">
+                <p class="registered">
+                  Registered on 2005-09-16
+                  by <a class="sprite team" href="#">Illuminati team</a>
+                </p>
+                <p>
+                  Main content of the page.
+                </p>
+              </div>
+            </div><!-- yui-b -->
+          </div><!-- yui-main -->
+            <!-- yui-b side -->
+            <!-- yui-t4 -->
+          <div id="footer" class="footer"> ...
+          </div><!-- footer-->
+        </div><!-- yui-d0-->
+        <script>LP.client.cache['context'] ...
+      </body>
+    </html> ...
+
+The searchless template is intended for pages that provide search in the main
+content area, so the global search is not needed. The epilogue and main
+slots are rendered, as are the application tabs.
+
+    >>> class SearchlessView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/searchless.pt')
+    ...     page_title = 'Test base-layout: searchless'
+
+    >>> view = SearchlessView(user, request)
+    >>> print view.render()
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: searchless</title> ...
+        <!-- Extra head content -->
+      </head>
+      <body id="document" class="tab-overview searchless public yui-skin-sam">
+        <div class="yui-d0">
+          <div id="locationbar">
+            <div id="logincontrol"><a href="...">Log in / Register</a></div>
+            <div id="lp-hierarchy" class="home">...
+            <div id="lp-apps" ...
+          </div><!--id="locationbar"-->
+          <div id="maincontent" class="yui-main">
+            <div class="yui-b" dir="ltr">
+              <h1>Heading</h1>
+              <!-- future breadcrumb rule -->
+              <div class="top-portlet">
+                <p class="registered">
+                  Registered on 2005-09-16
+                  by <a class="sprite team" href="#">Illuminati team</a>
+                </p>
+                <p>
+                  Main content of the page.
+                </p>
+              </div>
+            </div><!-- yui-b -->
+          </div><!-- yui-main -->
+            <!-- yui-b side -->
+            <!-- yui-t4 -->
+          <div id="footer" class="footer"> ...
+          </div><!-- footer-->
+        </div><!-- yui-d0-->
+        <script>LP.client.cache['context'] ...
+      </body>
+    </html> ...
+
+The locationless template is intended for pages that provide content outside
+of normal application use. It is for exceptions. The epilogue and main
+slots are rendered. Global search and the application tabs are not included
+in the header. The layout does not have a heading slot to provide the h1
+or breadcrumbs; the template must provide its own h1 element.
+
+    >>> class LocationlessView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/locationless.pt')
+    ...     page_title = 'Test base-layout: locationless'
+
+    >>> view = LocationlessView(user, request)
+    >>> print view.render()
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: locationless</title> ...
+        <!-- Extra head content -->
+      </head>
+      <body id="document" class="tab-overview locationless public yui-skin-sam">
+        <div class="yui-d0">
+          <div id="locationbar">
+            <div id="logincontrol"><a href="...">Log in / Register</a></div>
+            <div id="lp-hierarchy" class="home">...<div
+              class="apps-separator"><!-- --></div>
+          </div><!--id="locationbar"-->
+          <div id="maincontent" class="yui-main">
+            <div class="yui-b" dir="ltr">
+              <div class="top-portlet">
+                <h1>Heading</h1>
+                <p class="registered">
+                  Registered on 2005-09-16
+                  by <a class="sprite team" href="#">Illuminati team</a>
+                </p>
+                <p>
+                  Main content of the page.
+                </p>
+              </div>
+            </div><!-- yui-b -->
+          </div><!-- yui-main -->
+            <!-- yui-b side -->
+            <!-- yui-t4 -->
+          <div id="footer" class="footer"> ...
+          </div><!-- footer-->
+        </div><!-- yui-d0-->
+        <script>LP.client.cache['context'] ...
+      </body>
+    </html> ...
+
+
+Page Headings
+-------------
+
+The example layouts all used the heading slot to define a heading for their
+test. The template controlled the heading.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print content.h1
+    <h1>Heading</h1>
+
+The page heading slot's default behaviour is to use the context.title.
+
+    >>> class DefaultHeadingView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile(
+    ...         'testfiles/default-heading-slot.pt')
+    ...     page_title = 'Test base-layout: default heading'
+
+    >>> print user.title
+    Waffles
+
+    >>> view = DefaultHeadingView(user, request)
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print content.h1
+    <h1>Waffles</h1>
+
+
+Public and private presentation
+-------------------------------
+
+The base-layout master templates uses the fmt:public-private-css formatter to
+add the 'public' or 'private' CSS class to the body tag. When the context is
+private, the 'private' class is added to the body's class attribute.
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+
+    >>> login('admin@canonical.com')
+    >>> team = factory.makeTeam(
+    ...     owner=user, name='a-private-team',
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> view = LocationlessView(team, request)
+    >>> body = find_tag_by_id(view.render(), 'document')
+    >>> print body['class']
+    tab-overview locationless private yui-skin-sam
+
+When the context is public, the 'public' class is in the class attribute.
+
+    >>> login(ANONYMOUS)
+    >>> team = factory.makeTeam(owner=user, name='a-public-team')
+    >>> view = LocationlessView(team, request)
+    >>> body = find_tag_by_id(view.render(), 'document')
+    >>> print body['class']
+    tab-overview locationless public yui-skin-sam

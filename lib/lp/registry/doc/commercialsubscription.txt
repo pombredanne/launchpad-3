@@ -501,23 +501,32 @@ Anonymous users cannot access 'forReview'.
     >>> gnome = product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
     ...
-    Unauthorized:... 'forReview', 'launchpad.Commercial'...
+    Unauthorized:... 'forReview', 'launchpad.ProjectReview'...
 
 No Privileges Person cannot access 'forReview'.
 
     >>> login('no-priv@canonical.com')
-    >>> check_permission('launchpad.Commercial', product_set)
+    >>> check_permission('launchpad.ProjectReview', product_set)
     False
     >>> gnome =  product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
     ...
-    Unauthorized:... 'forReview', 'launchpad.Commercial'...
+    Unauthorized:... 'forReview', 'launchpad.ProjectReview'...
 
-The commercial-member, a member of the Commercial admins team, can
-access 'forReview'.
+But if we add No Privileges Person to the Registry Experts team he can
+access it.
 
-    >>> login('commercial-member@canonical.com')
-    >>> check_permission('launchpad.Commercial', product_set)
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> registry_member = factory.makePerson()
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> registry = celebs.registry_experts
+    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> logout()
+
+    >>> login_person(registry_member)
+    >>> check_permission('launchpad.ProjectReview', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
     >>> for product in gnome:
@@ -531,7 +540,7 @@ access 'forReview'.
 An admin can access 'forReview'.
 
     >>> login('foo.bar@canonical.com')
-    >>> check_permission('launchpad.Commercial', product_set)
+    >>> check_permission('launchpad.ProjectReview', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
     >>> for product in gnome:
@@ -541,3 +550,20 @@ An admin can access 'forReview'.
     applets
     gnomebaker
     python-gnome2-dev
+
+Members of the registry experts celebrity have permission to review
+IProduct and IProject objects and access an IProjectSet.
+
+    >>> from lp.registry.interfaces.project import IProjectSet
+
+    >>> project_set = getUtility(IProjectSet)
+    >>> product = factory.makeProduct(name='dog')
+    >>> project = factory.makeProject(name='cat')
+
+    >>> login_person(registry_member)
+    >>> check_permission('launchpad.ProjectReview', project_set)
+    True
+    >>> check_permission('launchpad.ProjectReview', project)
+    True
+    >>> check_permission('launchpad.ProjectReview', product)
+    True

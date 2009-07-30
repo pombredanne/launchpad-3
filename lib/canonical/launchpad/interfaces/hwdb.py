@@ -1,4 +1,6 @@
-# Copyright 2007, 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces related to the hardware database."""
@@ -11,6 +13,7 @@ __all__ = [
     'HWSubClass',
     'HWSubmissionFormat',
     'HWSubmissionKeyNotUnique',
+    'HWSubmissionMissingFields',
     'HWSubmissionProcessingStatus',
     'IHWDBApplication',
     'IHWDevice',
@@ -54,6 +57,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
@@ -61,7 +65,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
-from lazr.restful.interfaces import ITopLevelEntryLink
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_read_operation, exported, operation_parameters,
@@ -94,6 +97,10 @@ class HWSubmissionKeyNotUnique(Exception):
     """Prevent two or more submission with identical submission_key."""
 
 
+class HWSubmissionMissingFields(Exception):
+    """Indicate that the HWDB client sent incomplete data."""
+
+
 class HWSubmissionProcessingStatus(DBEnumeratedType):
     """The status of a submission to the hardware database."""
 
@@ -121,7 +128,7 @@ class HWSubmissionFormat(DBEnumeratedType):
     VERSION_1 = DBItem(1, "Version 1")
 
 
-class IHWSubmission(Interface):
+class IHWSubmission(Interface, IPrivacy):
     """Raw submission data for the hardware database.
 
     See doc/hwdb.txt for details about the attributes.
@@ -142,6 +149,8 @@ class IHWSubmission(Interface):
         Choice(
             title=_(u'Submission Status'), required=True,
             vocabulary=HWSubmissionProcessingStatus, readonly=True))
+    # This is redefined from IPrivacy.private because the attribute is
+    # is required.
     private = exported(
         Bool(
             title=_(u'Private Submission'), required=True))
@@ -1145,7 +1154,7 @@ class IHWSubmissionBugSet(Interface):
         """
 
 
-class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
+class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""
 
     export_as_webservice_entry('hwdb')

@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 """Interface for objects that have a linked branch.
@@ -23,6 +25,18 @@ class ICanHasLinkedBranch(Interface):
     """Something that has a linked branch."""
 
     branch = Attribute("The linked branch.")
+    bzr_path = Attribute(
+        'The Bazaar branch path for the linked branch. '
+        'Note that this will be set even if there is no linked branch.')
+
+    def setBranch(branch, registrant=None):
+        """Set the linked branch.
+
+        :param branch: An `IBranch`. After calling this,
+            `ICanHasLinkedBranch.branch` will be 'branch'.
+        :param registrant: The `IPerson` linking the branch. Not used by all
+            implementations.
+        """
 
 
 class CannotHaveLinkedBranch(Exception):

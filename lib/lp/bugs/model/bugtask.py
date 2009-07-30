@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Classes that implement IBugTask and its related interfaces."""
@@ -1640,10 +1642,9 @@ class BugTaskSet:
         if clause:
             extra_clauses.append(clause)
 
-        hw_tables, hw_clauses = self._buildHardwareRelatedClause(params)
-
-        extra_clauses.extend(hw_clauses)
-        clauseTables.extend(hw_tables)
+        hw_clause = self._buildHardwareRelatedClause(params)
+        if hw_clause is not None:
+            extra_clauses.append(hw_clause)
 
         orderby_arg = self._processOrderBy(params)
 
@@ -1837,13 +1838,10 @@ class BugTaskSet:
             tables, clauses = make_submission_device_statistics_clause(
                 None, None, None, driver_name, package_name, False)
         else:
-            # make_submission_device_statistics_clause assumes that at least
-            # a driver, a package or a device is specified and thus returns
-            # always at least two tables. Returning these tables without
-            # any associated WHERE clauses leads to a huge cross join.
-            return [], []
+            return None
 
         tables.append(HWSubmission)
+        tables.append(Bug)
         clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
         bug_link_clauses = []
         if params.hardware_owner_is_bug_reporter:
@@ -1867,7 +1865,7 @@ class BugTaskSet:
             tables.append(HWSubmissionBug)
 
         if len(bug_link_clauses) == 0:
-            return [], []
+            return None
 
         clauses.append(Or(*bug_link_clauses))
         clauses.append(_userCanAccessSubmissionStormClause(params.user))
@@ -1875,7 +1873,9 @@ class BugTaskSet:
         tables = [convert_storm_clause_to_string(table) for table in tables]
         clauses = ['(%s)' % convert_storm_clause_to_string(clause)
                    for clause in clauses]
-        return tables, clauses
+        clause = 'Bug.id IN (SELECT DISTINCT Bug.id from %s WHERE %s)' % (
+            ', '.join(tables), ' AND '.join(clauses))
+        return clause
 
 
     def search(self, params, *args):
@@ -2005,6 +2005,29 @@ class BugTaskSet:
         bugtask.updateTargetNameCache()
 
         return bugtask
+
+    def getStatusCountsForProductSeries(self, user, product_series):
+        """See `IBugTaskSet`."""
+        bug_privacy_filter = get_bug_privacy_filter(user)
+        if bug_privacy_filter != "":
+            bug_privacy_filter = ' AND ' + bug_privacy_filter
+        cur = cursor()
+        condition = """
+            (BugTask.productseries = %s
+                 OR Milestone.productseries = %s)
+            """ % sqlvalues(product_series, product_series)
+        query = """
+            SELECT BugTask.status, count(*)
+            FROM BugTask
+                JOIN Bug ON BugTask.bug = Bug.id
+                LEFT JOIN Milestone ON BugTask.milestone = Milestone.id
+            WHERE
+                %s
+                %s
+            GROUP BY BugTask.status
+            """ % (condition, bug_privacy_filter)
+        cur.execute(query)
+        return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
                               bug=None, target=None):

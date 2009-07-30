@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Components related to IBugTarget."""
@@ -48,7 +50,14 @@ class HasBugsBase:
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    sourcepackagename=None, has_no_package=None):
+                    sourcepackagename=None, has_no_package=None,
+                    hardware_bus=None, hardware_vendor_id=None,
+                    hardware_product_id=None, hardware_driver_name=None,
+                    hardware_driver_package_name=None,
+                    hardware_owner_is_bug_reporter=None,
+                    hardware_owner_is_affected_by_bug=False,
+                    hardware_owner_is_subscribed_to_bug=False,
+                    hardware_is_linked_to_bug=False):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the

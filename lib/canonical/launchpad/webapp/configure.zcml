@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -51,18 +55,6 @@
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
         />
-    <!-- XXX StuartBishop 2009-03-04 bug=264783 Weee! Two OpenID Layers. -->
-    <adapter
-        for="canonical.signon.layers.IdLayer"
-        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
-        />
-    <adapter
-        for="canonical.signon.layers.OpenIDLayer"
-        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
-        />
-
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
         provides="canonical.launchpad.webapp.interfaces.IWebBrowserOriginatingRequest"
@@ -756,7 +748,7 @@
       for="zope.schema.interfaces.IChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.widgets.SinglePopupWidget"
+      factory="canonical.widgets.popup.VocabularyPickerWidget"
       permission="zope.Public"
       />
 

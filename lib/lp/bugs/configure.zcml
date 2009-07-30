@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -559,9 +563,12 @@
                     subscriptions
                     syncUpdate
                     date_last_updated
+                    getBugTask
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
+                    linkBranch
+                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -589,7 +596,7 @@
                     displayname
                     activity
                     initial_message
-                    bug_branches
+                    linked_branches
                     watches
                     cves
                     cve_links
@@ -611,7 +618,6 @@
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
-                    getBugTask
                     canBeNominatedFor
                     getNominationFor
                     getNominations
@@ -642,8 +648,6 @@
                     findCvesInText
                     newMessage
                     linkMessage
-                    addBranch
-                    removeBranch
                     addAttachment
                     unsubscribeFromDupes
                     subscribe

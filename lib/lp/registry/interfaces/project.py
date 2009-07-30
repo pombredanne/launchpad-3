@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Project-related interfaces for Launchpad."""
@@ -33,7 +35,7 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
 from lp.blueprints.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (

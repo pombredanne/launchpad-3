@@ -59,22 +59,26 @@ function doUpdate(transaction_id, response, args) {
 
 
 function renderSpark() {
-    spark_div = 'dev_focus_spark';
 
-    if(Y.get('#' + spark_div) !== null) {
-        json_url = branch_sparks[0][1];
-        var container = spark_div;
-        var uri = json_url;
-        var xhr_config = {
-            on: {
-                success: doUpdate,
-            },
-            arguments: {
-                'container': container
-            }
-        };
+    for (spark_div in branch_sparks) {
 
-      Y.io(uri, xhr_config);
+        spark_div = branch_sparks[spark_div][0];
+
+        if (Y.get('#' + spark_div) !== null) {
+            json_url = branch_sparks[0][1];
+            var container = spark_div;
+            var uri = json_url;
+            var xhr_config = {
+                on: {
+                    success: doUpdate,
+                },
+                arguments: {
+                    'container': container
+                }
+            };
+
+          Y.io(uri, xhr_config);
+        }
     }
 }
 
@@ -229,8 +233,7 @@ Y.on("domready", renderSpark);
       </tal:allow-setting-dev-focus>
       <tr tal:repeat="branch context/branches">
         <td>
-          <img src="/@@/branch" /> <a tal:attributes="href branch/fmt:url;
-                             title branch/displayname"
+          <img src="/@@/branch" /> <a tal:attributes="href branch/fmt:url"
              tal:content="branch/bzr_identity">
                Name
           </a>
@@ -366,7 +369,7 @@ Y.on("domready", renderSpark);
 </div>
 
 <tal:script
-    replace="structure string:&lt;script type='text/javascript'&gt;" />
+    replace="structure string:&lt;script id='branch-sparks' type='text/javascript'&gt;" />
 <tal:omit tal:omit-tag="">
 var branch_sparks = <tal:array replace="context/branch_sparks"/>;
 </tal:omit>

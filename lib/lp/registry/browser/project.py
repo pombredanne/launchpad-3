@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Project-related View Classes"""
 
@@ -25,7 +26,6 @@ __all__ = [
     'ProjectSetNavigation',
     'ProjectSetView',
     'ProjectSpecificationsMenu',
-    'ProjectTranslationsMenu',
     'ProjectView',
     ]
 
@@ -56,11 +56,11 @@ from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
-    Navigation, StandardLaunchpadFacets, stepthrough, structured)
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
+    canonical_url, custom_widget, enabled_with_permission, stepthrough,
+    structured)
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.widgets.popup import SinglePopupWidget
 
 
 class ProjectNavigation(Navigation):
@@ -112,7 +112,7 @@ class ProjectSetContextMenu(ContextMenu):
     usedfor = IProjectSet
     links = ['register', 'listall']
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.ProjectReview')
     def register(self):
         text = 'Register a project group'
         return Link('+new', text, icon='add')
@@ -286,18 +286,6 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
         return Link('+addquestion', text, icon='add')
 
 
-class ProjectTranslationsMenu(ApplicationMenu):
-
-    usedfor = IProject
-    facet = 'translations'
-    links = ['changetranslators']
-
-    @enabled_with_permission('launchpad.Edit')
-    def changetranslators(self):
-        text = 'Change translators'
-        return Link('+changetranslators', text, icon='edit')
-
-
 class ProjectView(HasAnnouncementsView, FeedsMixin):
     pass
 
@@ -331,7 +319,6 @@ class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
     field_names = ['name', 'owner', 'active', 'reviewed']
-    custom_widget('registrant', SinglePopupWidget)
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.
@@ -431,13 +418,12 @@ class ProjectAddProductView(ProductAddView):
         return ProjectGroupAddStepOne
 
 
-class ProjectSetView(object):
+class ProjectSetView(LaunchpadView):
 
     header = "Project groups registered in Launchpad"
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(ProjectSetView, self).__init__(context, request)
         self.form = self.request.form_ng
         self.soyuz = self.form.getOne('soyuz', None)
         self.rosetta = self.form.getOne('rosetta', None)

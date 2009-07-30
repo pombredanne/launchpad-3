@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistribution."""
@@ -14,7 +16,7 @@ __all__ = [
     'NoSuchDistribution',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, List, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from lazr.restful.fields import CollectionField, Reference
@@ -44,7 +46,7 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
@@ -195,6 +197,8 @@ class IDistributionPublic(
             # Really IDistroSeries, see below.
             value_type=Reference(schema=Interface)),
         exported_as="series")
+    architectures = List(
+        title=_("DistroArchSeries inside this Distribution"))
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
     is_read_only = Attribute(

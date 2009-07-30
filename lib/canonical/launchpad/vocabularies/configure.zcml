@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <utility
@@ -9,6 +13,12 @@
   <utility
     name="Branch"
     component="canonical.launchpad.vocabularies.BranchVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    />
+
+  <utility
+    name="HostedBranchRestrictedOnOwner"
+    component="canonical.launchpad.vocabularies.HostedBranchRestrictedOnOwnerVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 

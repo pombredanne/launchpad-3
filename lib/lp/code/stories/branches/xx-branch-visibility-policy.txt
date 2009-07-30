@@ -1,7 +1,7 @@
 = Branch Visibility Policy Pages =
 
 Controlling the branch visibility policies for products and projects is only
-available to launchpad admins.
+available to launchpad admins and launchpad commercial admins.
 
 Not to anonymous people.
 
@@ -43,12 +43,30 @@ Not even the owner of the project can get to it.
     ...
     Unauthorized: ...
 
-Launchpad admins however, can get to it.
+Launchpad admins however, can get to the page to the branch visibility
+overview page and to the page to actually modify the policies.
 
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> admin_browser.getLink('Define branch visibility').click()
     >>> print admin_browser.url
     http://launchpad.dev/firefox/+branchvisibility
+
+    >>> admin_browser.getLink('Customise policy for Mozilla Firefox').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/firefox/+addbranchvisibilitypolicy
+
+And members of the Launchpad Commercial team can view the pages.
+
+    >>> commercial_browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> commercial_browser.open('http://code.launchpad.dev/firefox')
+    >>> commercial_browser.getLink('Define branch visibility').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/firefox/+branchvisibility
+
+    >>> commercial_browser.getLink('Customise policy for Mozilla Firefox').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/firefox/+addbranchvisibilitypolicy
 
 
 == Default policies ==
@@ -58,6 +76,8 @@ objects are created for products they are constructed with the branch policy
 objects of their associated project if there is one.  If the product does not
 specify any branch visibility policy items and there is an inherited branch
 visibility policy, then that policy is used.
+
+    >>> admin_browser.open('http://launchpad.dev/firefox/+branchvisibility')
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'inherited'))
     Using inherited policy from the Mozilla Project.
@@ -183,6 +203,14 @@ items, nor will it be an error.
 
 See?  All still there.
 
+Before we remove them, let's ensure that the commercial admins can see
+the removal page.
+
+    >>> commercial_browser.open('http://launchpad.dev/firefox/+branchvisibility')
+    >>> commercial_browser.getLink('Remove policy items').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/firefox/+removebranchvisibilitypolicy
+
 Now to remove two.  The override for Everyone, and Launchpad Devs.
 
     >>> admin_browser.getControl('Everyone: Public').click()
@@ -195,13 +223,15 @@ Now to remove two.  The override for Everyone, and Launchpad Devs.
     Ubuntu Gnome Team: Private
 
 As you can see there is still a default visibility of Public.  This
-is now implicit rather than explicit.  So if we go bact to remove more
+is now implicit rather than explicit.  So if we go back to remove more
 items, there is only one more policy item to remove.  Once that is removed
-Firefox will go back to inheriting the polices of Mozilla.
+Firefox will go back to inheriting the polices of Mozilla. Let's let
+the commercial admin do the removal to ensure he has the permission.
 
-    >>> admin_browser.getLink('Remove policy items').click()
-    >>> admin_browser.getControl('Ubuntu Gnome Team: Private').click()
-    >>> admin_browser.getControl('Remove Selected Policy Items').click()
+    >>> commercial_browser.open('http://launchpad.dev/firefox/+branchvisibility')
+    >>> commercial_browser.getLink('Remove policy items').click()
+    >>> commercial_browser.getControl('Ubuntu Gnome Team: Private').click()
+    >>> commercial_browser.getControl('Remove Selected Policy Items').click()
 
-    >>> print_tag_with_id(admin_browser.contents, 'inherited')
+    >>> print_tag_with_id(commercial_browser.contents, 'inherited')
     Using inherited policy from the Mozilla Project.

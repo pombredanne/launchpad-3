@@ -1,7 +1,8 @@
 #!/usr/bin/python2.4
-
-# Copyright 2004 Canonical Ltd.  All rights reserved.
 #
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # arch-tag: 90e6eb79-83a2-47e8-9f8b-3c687079c923
 
 import unittest

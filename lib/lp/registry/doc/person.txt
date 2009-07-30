@@ -8,7 +8,9 @@ not Launchpad users.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IProductSet, IEmailAddressSet,
-    ...     IHasStanding, IHasTranslationImports)
+    ...     IHasStanding)
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     IHasTranslationImports)
 
 Any Person object (either a person or a team) implements IPerson...
 
@@ -346,15 +348,14 @@ Non-administrators may not change a person's standing.
     >>> login(ANONYMOUS)
 
 
-=== Ubunteros ===
+=== Ubuntu Code of Conduct signees ===
 
-Anybody who signed the last version of Ubuntu's Code of Conduct is
-considered an Ubuntero. To check if a person is an Ubuntero, use
-IPerson.is_ubuntero:
+Some people have signed the latest version of the Ubuntu Code of Conduct and
+others have not.
 
-    >>> foobar.is_ubuntero
+    >>> foobar.is_ubuntu_coc_signer
     True
-    >>> lifeless.is_ubuntero
+    >>> lifeless.is_ubuntu_coc_signer
     False
 
 
@@ -774,11 +775,11 @@ team list is actually sorted by date joined.
     >>> membership_list = foobar.getLatestApprovedMembershipsForPerson()
     >>> for membership in membership_list:
     ...     print membership.datejoined
+    2009-07-09 11:58:38.122886+00:00
     2008-05-14 12:07:14.227450+00:00
     2007-01-17 14:13:39.692693+00:00
     2006-05-15 22:23:29.062603+00:00
     2005-10-13 13:03:41.668724+00:00
-    2005-07-12 14:36:09.587753+00:00
 
 
 == Searching ==
@@ -808,6 +809,7 @@ address:
     Ubuntu branches (ubuntu-branches): []
     Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
     Ubuntu Gnome Team (name18): []
+    Ubuntu Security Team (ubuntu-security): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Ubuntu Translators (ubuntu-translators): []
     Ubuntu-branches-owner (ubuntu-branches-owner): [u'ubuntu-branches-owner@example.com']
@@ -833,6 +835,7 @@ Anonymous users cannot see non-public teams, such as 'myteam'.
     >>> print_people(personset.find('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
+    HWDB Team (hwdb-team): []
     Just a new team (new-team): []
     My Team (myteam): []
     No Team Memberships (no-team-memberships): [u'no-team-memberships@test.com']
@@ -842,6 +845,7 @@ Anonymous users cannot see non-public teams, such as 'myteam'.
     testing Spanish team (testing-spanish-team): []
     Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
     Ubuntu Gnome Team (name18): []
+    Ubuntu Security Team (ubuntu-security): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Warty Gnome Team (warty-gnome): []
     Warty Security Team (name20): []
@@ -852,6 +856,7 @@ But Owner, a member of that team, will see it in the results.
     >>> print_people(personset.find('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
+    HWDB Team (hwdb-team): []
     Just a new team (new-team): []
     My Team (myteam): []
     No Team Memberships (no-team-memberships): [u'no-team-memberships@test.com']
@@ -861,6 +866,7 @@ But Owner, a member of that team, will see it in the results.
     testing Spanish team (testing-spanish-team): []
     Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
     Ubuntu Gnome Team (name18): []
+    Ubuntu Security Team (ubuntu-security): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Warty Gnome Team (warty-gnome): []
     Warty Security Team (name20): []
@@ -911,12 +917,14 @@ Searching only for Teams based on their names or email addresses:
     >>> print_people(personset.findTeam('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
+    HWDB Team (hwdb-team): []
     Just a new team (new-team): []
     My Team (myteam): []
     Other Team (otherteam): []
     Simple Team (simple-team): []
     testing Spanish team (testing-spanish-team): []
     Ubuntu Gnome Team (name18): []
+    Ubuntu Security Team (ubuntu-security): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Warty Gnome Team (warty-gnome): []
     Warty Security Team (name20): []
@@ -928,12 +936,14 @@ the previous search will include myteam in the results.
     >>> print_people(personset.findTeam('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
+    HWDB Team (hwdb-team): []
     Just a new team (new-team): []
     My Team (myteam): []
     Other Team (otherteam): []
     Simple Team (simple-team): []
     testing Spanish team (testing-spanish-team): []
     Ubuntu Gnome Team (name18): []
+    Ubuntu Security Team (ubuntu-security): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Warty Gnome Team (warty-gnome): []
     Warty Security Team (name20): []
@@ -1110,7 +1120,16 @@ projects ordered by displayname.
 
 The method does not return inactive projects.
 
-    >>> login('commercial-member@canonical.com')
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> registry_member = factory.makePerson()
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> registry = celebs.registry_experts
+    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> logout()
+
+    >>> login_person(registry_member)
     >>> derby = getUtility(IProductSet).getByName('derby')
     >>> derby.active = False
     >>> for project in sabdfl.getOwnedProjects():
@@ -1140,7 +1159,7 @@ Searching for a non-existent project returns no matches.
     []
 
 
-== Translations ==
+== Languages ==
 
 Users can set their preferred languages, retrievable as
 Person.languages.
@@ -1190,37 +1209,6 @@ English names.
     en_GB  English (United Kingdom)
     ja     Japanese
     cy     Welsh
-
-ITranslationsPerson.translatable_languages yields the same list, except it
-leaves out US English and languages marked as non-visible such as 'zh' or
-'de_DE'.
-
-    >>> from canonical.launchpad.interfaces.translationsperson import (
-    ...     ITranslationsPerson)
-    >>> translations_daf = ITranslationsPerson(daf)
-    >>> for language in translations_daf.translatable_languages:
-    ...     print language.code, language.englishname
-    en_GB  English (United Kingdom)
-    ja     Japanese
-    cy     Welsh
-
-    >>> translations_carlos = ITranslationsPerson(carlos)
-    >>> for language in translations_carlos.translatable_languages:
-    ...     print language.code, language.englishname
-    ca     Catalan
-    es     Spanish
-
-The IPerson interface offers a way of returning POFileTranslator records
-for a Person:
-
-    >>> for pt in translations_carlos.translation_history:
-    ...     print pt.pofile.title
-    English (en) trans... of pkgconf-mozilla in Ubuntu Hoary package "mozilla"
-    Spanish (es) translation of alsa-utils in alsa-utils trunk
-    Spanish (es) translation of man in Ubuntu Hoary package "evolution"
-    Spanish (es) translation of evolution-2.2 in Evolution trunk
-    Japanese (ja) tran... of evolution-2.2 in Ubuntu Hoary package "evolution"
-    Spanish (es) trans... of evolution-2.2 in Ubuntu Hoary package "evolution"
 
 
 == Specification Lists ==

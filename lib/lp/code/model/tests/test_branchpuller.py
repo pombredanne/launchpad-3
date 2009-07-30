@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the branch puller model code."""
 
@@ -18,7 +19,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import BranchTypeError
 from lp.code.interfaces.branchpuller import IBranchPuller
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, login_person
 
 
 class TestMirroringForHostedBranches(TestCaseWithFactory):
@@ -255,6 +256,13 @@ class AcquireBranchToPullTests:
         branch.requestMirror()
         self.assertBranchIsAquired(branch)
 
+    def test_private(self):
+        # If there is a private branch that needs mirroring,
+        # acquireBranchToPull returns that.
+        branch = self.factory.makeAnyBranch(private=True)
+        removeSecurityProxy(branch).requestMirror()
+        self.assertBranchIsAquired(branch)
+
     def test_no_inprogress(self):
         # If a branch is being mirrored, it is not returned.
         branch = self.factory.makeAnyBranch()
@@ -292,6 +300,7 @@ class TestAcquireBranchToPullDirectly(TestCaseWithFactory,
     def assertBranchIsAquired(self, branch):
         """See `AcquireBranchToPullTests`."""
         acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
+        login_person(removeSecurityProxy(branch).owner)
         self.assertEqual(branch, acquired_branch)
         self.assertIsNot(None, acquired_branch.last_mirror_attempt)
         self.assertIs(None, acquired_branch.next_mirror_time)

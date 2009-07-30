@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Publishing interfaces."""
@@ -571,6 +573,28 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             title=_("Changes File URL"),
             description=_("A URL for this source publication's changes file "
                           "for the source upload.")))
+
+    package_creator = exported(
+        Reference(
+            IPerson,
+            title=_('Package Creator'),
+            description=_('The IPerson who created the source package.'),
+            required=False, readonly=True,
+        ))
+    package_maintainer = exported(
+        Reference(
+            IPerson,
+            title=_('Package Maintainer'),
+            description=_('The IPerson who maintains the source package.'),
+            required=False, readonly=True,
+        ))
+    package_signer = exported(
+        Reference(
+            IPerson,
+            title=_('Package Signer'),
+            description=_('The IPerson who signed the source package.'),
+            required=False, readonly=True,
+        ))
 
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)

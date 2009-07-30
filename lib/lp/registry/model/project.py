@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 """Launchpad Project-related Database Table Objects."""
 
@@ -30,7 +32,7 @@ from lp.blueprints.interfaces.sprintspecification import (
     SprintSpecificationStatus)
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.answers.interfaces.faqcollection import IFAQCollection

@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test Build features."""
 
 import unittest
@@ -6,9 +8,11 @@ import unittest
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
+from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -86,6 +90,101 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         depwait_build.updateDependencies()
         self.assertEquals(depwait_build.dependencies, '')
+
+
+class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Publish some builds for the test archive."""
+        super(BaseTestCaseWithThreeBuilds, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # Create three builds for the publisher's default
+        # distroseries.
+        self.builds = []
+        self.sources = []
+        gedit_src_hist = self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
+        self.builds += gedit_src_hist.createMissingBuilds()
+        self.sources.append(gedit_src_hist)
+
+        firefox_src_hist = self.publisher.getPubSource(
+            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED)
+        self.builds += firefox_src_hist.createMissingBuilds()
+        self.sources.append(firefox_src_hist)
+
+        gtg_src_hist = self.publisher.getPubSource(
+            sourcename="getting-things-gnome",
+            status=PackagePublishingStatus.PUBLISHED)
+        self.builds += gtg_src_hist.createMissingBuilds()
+        self.sources.append(gtg_src_hist)
+
+
+class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
+
+    def setUp(self):
+        """Publish some builds for the test archive."""
+        super(TestBuildSetGetBuildsForArchive, self).setUp()
+
+        # Short-cuts for our tests.
+        self.archive = self.publisher.distroseries.main_archive
+        self.build_set = getUtility(IBuildSet)
+
+    def test_getBuildsForArchive_no_params(self):
+        # All builds should be returned when called without filtering
+        builds = self.build_set.getBuildsForArchive(self.archive)
+        self.assertContentEqual(builds, self.builds)
+
+    def test_getBuildsForArchive_by_arch_tag(self):
+        # Results can be filtered by architecture tag.
+        i386_builds = self.builds[:]
+        hppa_build = i386_builds.pop()
+        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
+
+        builds = self.build_set.getBuildsForArchive(self.archive,
+                                                    arch_tag="i386")
+        self.assertContentEqual(builds, i386_builds)
+
+
+class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
+
+    def setUp(self):
+        super(TestBuildSetGetBuildsForBuilder, self).setUp()
+
+        # Short-cuts for our tests.
+        self.build_set = getUtility(IBuildSet)
+
+        # Create a 386 builder
+        owner = self.factory.makePerson()
+        processor_family = ProcessorFamilySet().getByProcessorName('386')
+        processor = processor_family.processors[0]
+        builder_set = getUtility(IBuilderSet)
+
+        self.builder = builder_set.new(
+            processor, 'http://example.com', 'Newbob', 'New Bob the Builder',
+            'A new and improved bob.', owner)
+
+        # Ensure that our builds were all built by the test builder.
+        for build in self.builds:
+            build.builder = self.builder
+
+    def test_getBuildsForBuilder_no_params(self):
+        # All builds should be returned when called without filtering
+        builds = self.build_set.getBuildsForBuilder(self.builder.id)
+        self.assertContentEqual(builds, self.builds)
+
+    def test_getBuildsForBuilder_by_arch_tag(self):
+        # Results can be filtered by architecture tag.
+        i386_builds = self.builds[:]
+        hppa_build = i386_builds.pop()
+        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
+
+        builds = self.build_set.getBuildsForBuilder(self.builder.id,
+                                                    arch_tag="i386")
+        self.assertContentEqual(builds, i386_builds)
 
 
 def test_suite():

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213,E0602
 
 """Bug task interfaces."""
@@ -1053,7 +1055,14 @@ class BugTaskSearchParams:
                        omit_duplicates=True, omit_targeted=None,
                        status_upstream=None, milestone_assignment=None,
                        milestone=None, component=None, nominated_for=None,
-                       sourcepackagename=None, has_no_package=None):
+                       sourcepackagename=None, has_no_package=None,
+                       hardware_bus=None, hardware_vendor_id=None,
+                       hardware_product_id=None, hardware_driver_name=None,
+                       hardware_driver_package_name=None,
+                       hardware_owner_is_bug_reporter=None,
+                       hardware_owner_is_affected_by_bug=False,
+                       hardware_owner_is_subscribed_to_bug=False,
+                       hardware_is_linked_to_bug=False):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1105,6 +1114,21 @@ class BugTaskSearchParams:
         if has_no_package:
             search_params.sourcepackagename = NULL
         search_params.nominated_for = nominated_for
+
+        search_params.hardware_bus = hardware_bus
+        search_params.hardware_vendor_id = hardware_vendor_id
+        search_params.hardware_product_id = hardware_product_id
+        search_params.hardware_driver_name = hardware_driver_name
+        search_params.hardware_driver_package_name = (
+            hardware_driver_package_name)
+        search_params.hardware_owner_is_bug_reporter = (
+            hardware_owner_is_bug_reporter)
+        search_params.hardware_owner_is_affected_by_bug = (
+            hardware_owner_is_affected_by_bug)
+        search_params.hardware_owner_is_subscribed_to_bug = (
+            hardware_owner_is_subscribed_to_bug)
+        search_params.hardware_is_linked_to_bug = (
+            hardware_is_linked_to_bug)
 
         return search_params
 
@@ -1179,6 +1203,16 @@ class IBugTaskSet(Interface):
 
         :param search_results: A result set yielding BugTask objects,
             typically the result of calling `BugTaskSet.search()`.
+        """
+
+    def getStatusCountsForProductSeries(user, product_series):
+        """Returns status counts for a product series' bugs.
+
+        Both the nominated and scheduled blueprints are included
+        in the count.
+
+        :param product_series: ProductSeries object.
+        :return: A list of tuples containing (status_id, count).
         """
 
     def createTask(bug, product=None, productseries=None, distribution=None,

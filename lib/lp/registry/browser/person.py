@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Person-related view classes."""
@@ -53,8 +55,6 @@ __all__ = [
     'PersonSpecWorkloadView',
     'PersonSpecWorkloadTableView',
     'PersonSubscribedBugTaskSearchListingView',
-    'PersonTranslationView',
-    'PersonTranslationRelicensingView',
     'PersonView',
     'PersonVouchersView',
     'RedirectToEditLanguagesView',
@@ -118,7 +118,6 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription, LocationWidget, PasswordChangeWidget)
-from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
@@ -129,7 +128,6 @@ from lp.soyuz.browser.archive import traverse_named_ppa
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
-from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
 from lp.soyuz.interfaces.archivesubscriber import (
@@ -147,8 +145,6 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.interfaces.pofiletranslator import (
-    IPOFileTranslatorSet)
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
@@ -183,23 +179,19 @@ from canonical.launchpad.interfaces.message import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
-from canonical.signon.interfaces.openidserver import (
-    IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.launchpad.interfaces.translationrelicensingagreement import (
-    ITranslationRelicensingAgreementEdit,
-    TranslationRelicensingAgreementOptions)
-from canonical.launchpad.interfaces.translationsperson import (
-    ITranslationsPerson)
 
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.signon.browser.openiddiscovery import (
+from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
@@ -623,14 +615,16 @@ class PersonSetNavigation(Navigation):
         if person is None:
             raise NotFoundError(name)
         # Redirect to /~name
-        return self.redirectSubTree(canonical_url(person))
+        return self.redirectSubTree(
+            canonical_url(person, request=self.request))
 
     @stepto('+me')
     def me(self):
         me = getUtility(ILaunchBag).user
         if me is None:
             raise Unauthorized("You need to be logged in to view this URL.")
-        return self.redirectSubTree(canonical_url(me), status=303)
+        return self.redirectSubTree(
+            canonical_url(me, request=self.request), status=303)
 
 
 class PersonSetContextMenu(ContextMenu):
@@ -830,26 +824,6 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Workload'
         summary = 'Show all specification work assigned'
         return Link('+specworkload', text, summary, icon='info')
-
-
-class PersonTranslationsMenu(NavigationMenu):
-
-    usedfor = IPerson
-    facet = 'translations'
-    links = ('overview', 'licensing', 'imports')
-
-    def overview(self):
-        text = 'Overview'
-        return Link('', text)
-
-    def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
-
-    def licensing(self):
-        text = 'Translations licensing'
-        enabled = (self.context == self.user)
-        return Link('+licensing', text, enabled=enabled)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
@@ -1502,7 +1476,7 @@ class PersonClaimView(LaunchpadFormView):
                          "Launchpad profile, which you seem to have used at "
                          "some point. If that's the case, you can "
                          '<a href="/people/+requestmerge'
-                         '?field.dupeaccount=%s">combine '
+                         '?field.dupe_person=%s">combine '
                          "this profile with the other one</a> (you'll "
                          "have to log in with the other profile first, "
                          "though). If that's not the case, please try with a "
@@ -2307,7 +2281,6 @@ class PersonVouchersView(LaunchpadFormView):
     """Form for displaying and redeeming commercial subscription vouchers."""
 
     custom_widget('voucher', LaunchpadDropdownWidget)
-    custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
         """Set up the fields for this view."""
@@ -2891,17 +2864,13 @@ class PersonView(LaunchpadView, FeedsMixin):
         We display it if:
         person has viewable ppa or current_user has lp.edit
         """
-        # Avoid circular import.
-        from lp.soyuz.interfaces.archive import IArchiveSet
-
         # If the current user has edit permission, show the section.
         if check_permission('launchpad.Edit', self.context):
             return True
 
         # If the current user is allowed to see any PPAs, show the
         # section.
-        ppas = getUtility(IArchiveSet).getPPAsForUser(self.context)
-        for ppa in ppas:
+        for ppa in self.context.ppas:
             if check_permission('launchpad.View', ppa):
                 return True
 
@@ -2981,7 +2950,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
-        "../../../canonical/signon/templates/person-xrds.pt")
+        "../../services/openid/templates/person-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
@@ -3003,12 +2972,11 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     @cachedproperty
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return CurrentOpenIDEndPoint.getOldServiceURL()
+        return CurrentOpenIDEndPoint.getServiceURL()
 
     @cachedproperty
     def openid_identity_url(self):
-        return IOpenIDPersistentIdentity(
-            self.context).old_openid_identity_url
+        return IOpenIDPersistentIdentity(self.context).openid_identity_url
 
     def processForm(self):
         if not self.request.form.get('unsubscribe'):
@@ -3349,118 +3317,6 @@ class PersonEditSSHKeysView(LaunchpadView):
         self.info_message = structured('Key "%s" removed' % comment)
 
 
-class PersonTranslationView(LaunchpadView):
-    """View for translation-related Person pages."""
-
-    _pofiletranslator_cache = None
-
-    @cachedproperty
-    def batchnav(self):
-        translations_person = ITranslationsPerson(self.context)
-        batchnav = BatchNavigator(
-            translations_person.translation_history, self.request)
-
-        pofiletranslatorset = getUtility(IPOFileTranslatorSet)
-        batch = batchnav.currentBatch()
-        self._pofiletranslator_cache = (
-            pofiletranslatorset.prefetchPOFileTranslatorRelations(batch))
-
-        return batchnav
-
-    @cachedproperty
-    def translation_groups(self):
-        """Return translation groups a person is a member of."""
-        translations_person = ITranslationsPerson(self.context)
-        return list(translations_person.translation_groups)
-
-    @cachedproperty
-    def translators(self):
-        """Return translators a person is a member of."""
-        translations_person = ITranslationsPerson(self.context)
-        return list(translations_person.translators)
-
-    @cachedproperty
-    def person_filter_querystring(self):
-        """Return person's name appropriate for including in links."""
-        return urllib.urlencode({'person': self.context.name})
-
-    def should_display_message(self, translationmessage):
-        """Should a certain `TranslationMessage` be displayed.
-
-        Return False if user is not logged in and message may contain
-        sensitive data such as email addresses.
-
-        Otherwise, return True.
-        """
-        if self.user:
-            return True
-        return not (
-            translationmessage.potmsgset.hide_translations_from_anonymous)
-
-
-class PersonTranslationRelicensingView(LaunchpadFormView):
-    """View for Person's translation relicensing page."""
-    schema = ITranslationRelicensingAgreementEdit
-    field_names = ['allow_relicensing', 'back_to']
-    custom_widget(
-        'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget('back_to', TextWidget, visible=False)
-
-    @property
-    def initial_values(self):
-        """Set the default value for the relicensing radio buttons."""
-        translations_person = ITranslationsPerson(self.context)
-        # If the person has previously made a choice, we default to that.
-        # Otherwise, we default to BSD, because that's what we'd prefer.
-        if translations_person.translations_relicensing_agreement == False:
-            default = TranslationRelicensingAgreementOptions.REMOVE
-        else:
-            default = TranslationRelicensingAgreementOptions.BSD
-        return {
-            "allow_relicensing": default,
-            "back_to": self.request.get('back_to'),
-            }
-
-    @property
-    def relicensing_url(self):
-        """Return an URL for this view."""
-        return canonical_url(self.context, view_name='+licensing')
-
-    def getSafeRedirectURL(self, url):
-        """Successful form submission should send to this URL."""
-        if url and url.startswith(self.request.getApplicationURL()):
-            return url
-        else:
-            return canonical_url(self.context)
-
-    @action(_("Confirm"), name="submit")
-    def submit_action(self, action, data):
-        """Store person's decision about translations relicensing.
-
-        Decision is stored through
-        `ITranslationsPerson.translations_relicensing_agreement`
-        which uses TranslationRelicensingAgreement table.
-        """
-        translations_person = ITranslationsPerson(self.context)
-        allow_relicensing = data['allow_relicensing']
-        if allow_relicensing == TranslationRelicensingAgreementOptions.BSD:
-            translations_person.translations_relicensing_agreement = True
-            self.request.response.addInfoNotification(_(
-                "Thank you for BSD-licensing your translations."))
-        elif (allow_relicensing ==
-            TranslationRelicensingAgreementOptions.REMOVE):
-            translations_person.translations_relicensing_agreement = False
-            self.request.response.addInfoNotification(_(
-                "We respect your choice. "
-                "Your translations will be removed once we complete the "
-                "switch to the BSD license. "
-                "Thanks for trying out Launchpad Translations."))
-        else:
-            raise AssertionError(
-                "Unknown allow_relicensing value: %r" % allow_relicensing)
-        self.next_url = self.getSafeRedirectURL(data['back_to'])
-
-
 class PersonGPGView(LaunchpadView):
     """View for the GPG-related actions for a Person
 
@@ -3664,11 +3520,17 @@ class PersonChangePasswordView(LaunchpadFormView):
         return canonical_url(self.context)
 
     def validate(self, form_values):
-        currentpassword = form_values.get('currentpassword')
+        current_password = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(currentpassword, self.context.password):
+        if not encryptor.validate(current_password, self.context.password):
             self.setFieldError('currentpassword', _(
                 "The provided password doesn't match your current password."))
+        # This is not part of the widget, since the value may
+        # be optional in some forms.
+        new_password = self.request.form.get('field.password', '')
+        if new_password.strip() == '':
+            self.setFieldError('password', _(
+                "Setting an empty password is not allowed."))
 
     @action(_("Change Password"), name="submit")
     def submit_action(self, action, data):
@@ -3676,6 +3538,11 @@ class PersonChangePasswordView(LaunchpadFormView):
         self.context.password = password
         self.request.response.addInfoNotification(_(
             "Password changed successfully"))
+
+    @property
+    def cancel_url(self):
+        """The URL that the 'Cancel' link should return to."""
+        return canonical_url(self.context)
 
 
 class BasePersonEditView(LaunchpadEditFormView):
@@ -3775,11 +3642,7 @@ class PersonEditView(BasePersonEditView):
         identifier = IOpenIDPersistentIdentity(self.context)
         unknown_trust_root_login_records = list(
             getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                identifier.old_openid_identity_url, True))
-        if identifier.new_openid_identifier is not None:
-            unknown_trust_root_login_records.extend(list(
-                getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                    identifier.new_openid_identity_url, True)))
+                identifier.openid_identity_url, True))
         return sorted([
             record.trust_root
             for record in unknown_trust_root_login_records])
@@ -4382,7 +4245,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
-                    '%s/+requestmerge?field.dupeaccount=%s'
+                    '%s/+requestmerge?field.dupe_person=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
                 self.addError(
                     structured(

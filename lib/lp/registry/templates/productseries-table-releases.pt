@@ -16,7 +16,7 @@
     </tr>
   </thead>
   <tbody id="milestone-rows">
-    <tal:row repeat="milestone view/released_and_active_milestones">
+    <tal:row repeat="milestone context/all_milestones">
       <tal:milestone replace="structure milestone/@@+productseries-table-row" />
     </tal:row>
   </tbody>

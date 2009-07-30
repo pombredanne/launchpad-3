@@ -1,4 +1,6 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=F0401
 
 """Unit tests for BranchMergeProposals."""
@@ -183,6 +185,35 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.assertEqual(
             [albert, bob],
             [review.reviewer for review in view.current_reviews])
+
+    def addReviewTeam(self):
+        review_team = self.factory.makeTeam(name='reviewteam')
+        target_branch = self.factory.makeAnyBranch()
+        self.bmp.target_branch.reviewer = review_team
+
+    def test_review_team_members_trusted(self):
+        """Members of the target branch's review team are trusted."""
+        self.addReviewTeam()
+        albert = self.factory.makePerson(name='albert')
+        albert.join(self.bmp.target_branch.reviewer)
+        self._createComment(albert, CodeReviewVote.APPROVE)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertTrue(view.reviews[0].trusted)
+
+    def test_review_team_nonmembers_untrusted(self):
+        """Non-members of the target branch's review team are untrusted."""
+        self.addReviewTeam()
+        albert = self.factory.makePerson(name='albert')
+        self._createComment(albert, CodeReviewVote.APPROVE)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertFalse(view.reviews[0].trusted)
+
+    def test_no_review_team_untrusted(self):
+        """If the target branch has no review team, everyone is untrusted."""
+        albert = self.factory.makePerson(name='albert')
+        self._createComment(albert, CodeReviewVote.APPROVE)
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+        self.assertFalse(view.reviews[0].trusted)
 
     def test_render_all_vote_types(self):
         # A smoke test that the view knows how to render all types of vote.

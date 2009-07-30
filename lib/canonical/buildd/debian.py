@@ -1,4 +1,6 @@
-# Copyright Canonical Limited
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
 #      and Adam Conrad <adam.conrad@canonical.com>
 

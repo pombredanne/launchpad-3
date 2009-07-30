@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Launchpad bug-related database table classes."""
@@ -66,7 +68,6 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
-from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
@@ -255,7 +256,7 @@ class Bug(SQLBase):
     questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
-    bug_branches = SQLMultipleJoin(
+    linked_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
@@ -277,7 +278,7 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
-        inside = self.bugtasks[0]
+        inside = self.default_bugtask
         return [
             IndexedMessage(message, inside, index)
             for index, message in enumerate(self.messages)]
@@ -531,17 +532,6 @@ class Bug(SQLBase):
                 Bug.duplicateof = %d""" % self.id,
                 prejoins=["person"], clauseTables=["Bug"]))
 
-        # Direct and "also notified" subscribers take precedence
-        # over subscribers from duplicates.
-        duplicate_subscriptions -= set(self.getDirectSubscriptions())
-        also_notified_subscriptions = set()
-        for also_notified_subscriber in self.getAlsoNotifiedSubscribers():
-            for duplicate_subscription in duplicate_subscriptions:
-                if also_notified_subscriber == duplicate_subscription.person:
-                    also_notified_subscriptions.add(duplicate_subscription)
-                    break
-        duplicate_subscriptions -= also_notified_subscriptions
-
         # Only add a subscriber once to the list.
         duplicate_subscribers = set(
             sub.person for sub in duplicate_subscriptions)
@@ -645,7 +635,8 @@ class Bug(SQLBase):
             key=operator.attrgetter('displayname'))
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
-                                     level=None):
+                                     level=None,
+                                     include_master_dupe_subscribers=True):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
         self.getDirectSubscribers(recipients)
@@ -655,7 +646,7 @@ class Bug(SQLBase):
                 "A private bug should never have implicit subscribers!")
         else:
             self.getIndirectSubscribers(recipients, level=level)
-            if self.duplicateof:
+            if include_master_dupe_subscribers and self.duplicateof:
                 # This bug is a public duplicate of another bug, so include
                 # the dupe target's subscribers in the recipient list. Note
                 # that we only do this for duplicate bugs that are public;
@@ -862,9 +853,9 @@ class Bug(SQLBase):
 
         return branch is not None
 
-    def addBranch(self, branch, registrant):
+    def linkBranch(self, branch, registrant):
         """See `IBug`."""
-        for bug_branch in shortlist(self.bug_branches):
+        for bug_branch in shortlist(self.linked_branches):
             if bug_branch.branch == branch:
                 return bug_branch
 
@@ -877,7 +868,7 @@ class Bug(SQLBase):
 
         return bug_branch
 
-    def removeBranch(self, branch, user):
+    def unlinkBranch(self, branch, user):
         """See `IBug`."""
         bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
         if bug_branch is not None:

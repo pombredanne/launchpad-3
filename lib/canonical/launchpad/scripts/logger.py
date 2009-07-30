@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0702
 
 """Logging setup for scripts.
@@ -111,8 +113,8 @@ class BufferLogger(FakeLogger):
     def __init__(self):
         self.buffer = StringIO()
 
-    def message(self, prefix, *stuff, **kw):
-        self.buffer.write('%s: %s\n' % (prefix, ' '.join(stuff)))
+    def message(self, prefix, msg, *stuff, **kw):
+        self.buffer.write('%s: %s\n' % (prefix, msg % stuff))
 
         if 'exc_info' in kw:
             exception = traceback.format_exception(*sys.exc_info())

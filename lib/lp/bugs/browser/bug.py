@@ -1,4 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
 
@@ -227,7 +228,7 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        if self.context.bug.bug_branches.count() > 0:
+        if self.context.bug.linked_branches.count() > 0:
             text = 'Link another branch'
         else:
             text = 'Link a related branch'
@@ -384,8 +385,15 @@ class BugViewMixin:
 
     @cachedproperty
     def duplicate_subscribers(self):
-        """Caches the list of subscribers from duplicates."""
-        return frozenset(self.context.getSubscribersFromDuplicates())
+        """Caches the list of subscribers from duplicates.
+
+        Don't use getSubscribersFromDuplicates here because that method
+        omits a user if the user is also a direct or indirect subscriber.
+        getSubscriptionsFromDuplicates doesn't, so find person objects via
+        this method.
+        """
+        dupe_subscriptions = self.context.getSubscriptionsFromDuplicates()
+        return frozenset([sub.person for sub in dupe_subscriptions])
 
     def subscription_class(self, subscribed_person):
         """Returns a set of CSS class names based on subscription status.

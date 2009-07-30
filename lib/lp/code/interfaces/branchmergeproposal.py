@@ -1,4 +1,6 @@
-# Copyright 2007, 20008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """The interface for branch merge proposals."""
@@ -32,13 +34,13 @@ from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
-from lp.services.job.interfaces.job import IJob
+from lp.services.job.interfaces.job import IJob, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
     export_write_operation, exported, operation_parameters,
-    operation_returns_entry, REQUEST_USER)
+    operation_returns_entry, rename_parameters_as, REQUEST_USER)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -146,9 +148,11 @@ class IBranchMergeProposal(Interface):
             title=_('The current diff of the source branch against the '
                     'target branch.'), readonly=True))
 
-    reviewed_revision_id = Attribute(
-        _("The revision id that has been approved by the reviewer."))
-
+    reviewed_revision_id = exported(
+        Text(
+            title=_("The revision id that has been approved by the reviewer.")
+            ),
+        exported_as='reviewed_revno')
 
     commit_message = exported(
         Summary(
@@ -172,7 +176,8 @@ class IBranchMergeProposal(Interface):
             title=_("Queued Revision ID"), readonly=True,
             required=False,
             description=_("The revision id that has been queued for "
-                          "landing.")))
+                          "landing.")),
+        exported_as='queued_revno')
 
     merged_revno = exported(
         Int(
@@ -276,6 +281,26 @@ class IBranchMergeProposal(Interface):
 
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
+
+    @call_with(user=REQUEST_USER)
+    @rename_parameters_as(revision_id='revno')
+    @operation_parameters(
+        status=Choice(
+            title=_("The new status of the merge proposal."),
+            vocabulary=BranchMergeProposalStatus),
+        revision_id=Text(
+            description=_("An optional parameter for specifying the "
+                "revision of the branch for the status change."),
+            required=False))
+    @export_write_operation()
+    def setStatus(status, user, revision_id):
+        """Set the state of the merge proposal to the specified status.
+
+        :param status: The new status of the merge proposal.
+        :param user: The user making the change.
+        :param revision_id: The revno to provide to the underlying status
+            change method.
+        """
 
     def setAsWorkInProgress():
         """Set the state of the merge proposal to 'Work in progress'.
@@ -439,13 +464,13 @@ class IBranchMergeProposal(Interface):
         """
 
     def createCommentFromMessage(message, vote, review_type,
-                                 original_email=None):
+                                 original_email):
         """Create an `ICodeReviewComment` from an IMessage.
 
         :param message: The IMessage to use.
         :param vote: A CodeReviewVote (or None).
         :param review_type: A string (or None).
-        :param original_email: Optional original email message.
+        :param original_email: Original email message.
         """
 
     def deleteProposal():
@@ -555,14 +580,11 @@ for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
 
 
-class ICreateMergeProposalJob(Interface):
+class ICreateMergeProposalJob(IRunnableJob):
     """A Job that creates a branch merge proposal.
 
     It uses a Message, which must contain a merge directive.
     """
-
-    def run():
-        """Run this job and create the merge proposals."""
 
 
 class ICreateMergeProposalJobSource(Interface):
@@ -575,11 +597,8 @@ class ICreateMergeProposalJobSource(Interface):
         """Iterate through jobs that are ready to run."""
 
 
-class IMergeProposalCreatedJob(Interface):
+class IMergeProposalCreatedJob(IRunnableJob):
     """Interface for review diffs."""
-
-    def run():
-        """Perform the diff and email specified by this job."""
 
 
 class IMergeProposalCreatedJobSource(Interface):

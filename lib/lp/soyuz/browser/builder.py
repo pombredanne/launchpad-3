@@ -1,4 +1,5 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builders."""
 
@@ -265,9 +266,11 @@ class HiddenBuilder:
 
     # This method is required because the builder history page will have this
     # cloaked context if the builder is currently processing a private build.
-    def getBuildRecords(self, build_state=None, name=None, user=None):
+    def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
+        user=None):
         """See `IHasBuildRecords`."""
-        return self.context.getBuildRecords(build_state, name, user)
+        return self.context.getBuildRecords(
+            build_state, name, arch_tag, user)
 
 
 class BuilderView(CommonBuilderView, BuildRecordsView):

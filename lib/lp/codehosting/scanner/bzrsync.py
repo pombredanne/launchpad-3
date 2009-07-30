@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Import version control metadata from a Bazaar branch into the database."""
 
@@ -24,8 +26,9 @@ from bzrlib import urlutils
 from lazr.uri import URI
 
 from lp.codehosting import iter_list_chunks
-from lp.codehosting.puller.worker import BranchMirrorer, BranchPolicy
+from lp.codehosting.puller.worker import BranchMirrorer
 from lp.codehosting.scanner import events
+from lp.codehosting.vfs.branchfs import BranchPolicy
 from lp.code.interfaces.branch import (
     BranchFormat, ControlFormat, RepositoryFormat)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
@@ -112,7 +115,6 @@ class BzrSync:
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
-        self.trans_manager.begin()
         self.setFormats(bzr_branch)
         db_ancestry, db_history, db_branch_revision_map = (
             self.retrieveDatabaseAncestry())
@@ -137,7 +139,6 @@ class BzrSync:
         self.insertBranchRevisions(bzr_branch, revids_to_insert)
         self.trans_manager.commit()
         # Synchronize the RevisionCache for this branch.
-        self.trans_manager.begin()
         getUtility(IRevisionSet).updateRevisionCacheForBranch(self.db_branch)
         self.trans_manager.commit()
 
@@ -153,7 +154,6 @@ class BzrSync:
         # not been updated. Since this has no ill-effect, and can only err on
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
-        self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
         notify(
             events.ScanCompleted(

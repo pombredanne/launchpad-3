@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """People Merge related wiew classes."""
 
@@ -12,26 +13,26 @@ __all__ = [
     'RequestPeopleMergeView']
 
 
-from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus, IEmailAddressSet
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import (
-    IAdminPeopleMergeSchema, IAdminTeamMergeSchema, IPersonSet)
-from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus)
+    IAdminPeopleMergeSchema, IAdminTeamMergeSchema, IPersonSet,
+    IRequestPeopleMerge)
+from lp.registry.interfaces.mailinglist import MailingListStatus
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 
 
-class RequestPeopleMergeView(AddView):
+class RequestPeopleMergeView(LaunchpadFormView):
     """The view for the page where the user asks a merge of two accounts.
 
     If the dupe account have only one email address we send a message to that
@@ -41,15 +42,13 @@ class RequestPeopleMergeView(AddView):
     of those (s)he wants to claim.
     """
 
-    _nextURL = '.'
+    label = 'Merge Launchpad accounts'
+    schema = IRequestPeopleMerge
 
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
-        user = getUtility(ILaunchBag).user
-        dupeaccount = data['dupeaccount']
-        if dupeaccount == user:
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        dupeaccount = data['dupe_person']
+        if dupeaccount == self.user:
             # Please, don't try to merge you into yourself.
             return
 
@@ -59,7 +58,7 @@ class RequestPeopleMergeView(AddView):
             # The dupe account have more than one email address. Must redirect
             # the user to another page to ask which of those emails (s)he
             # wants to claim.
-            self._nextURL = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
+            self.next_url = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
             return
 
         assert emails_count == 1
@@ -70,7 +69,7 @@ class RequestPeopleMergeView(AddView):
         # hidden email addresses.
         from zope.security.proxy import removeSecurityProxy
         token = logintokenset.new(
-            user, login, removeSecurityProxy(email).email,
+            self.user, login, removeSecurityProxy(email).email,
             LoginTokenType.ACCOUNTMERGE)
 
         # XXX: SteveAlexander 2006-03-07: An experiment to see if this
@@ -78,7 +77,7 @@ class RequestPeopleMergeView(AddView):
         import canonical.database.sqlbase
         canonical.database.sqlbase.flush_database_updates()
         token.sendMergeRequestEmail()
-        self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
+        self.next_url = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 
 class AdminMergeBaseView(LaunchpadFormView):
@@ -191,17 +190,27 @@ class AdminTeamMergeView(AdminMergeBaseView):
 
     def validate(self, data):
         """Check there are no mailing lists associated with the dupe team."""
+        # If errors have already been discovered there is no need to continue,
+        # especially since some of our expected data may be missing in the
+        # case of user-entered invalid data.
+        if len(self.errors) > 0:
+            return
+
         super(AdminTeamMergeView, self).validate(data)
-        mailing_list = getUtility(IMailingListSet).get(
-            data['dupe_person'].name)
+        dupe_team = data['dupe_person']
+        # Our code doesn't know how to merge a team's superteams, so we
+        # prohibit that here.
+        if dupe_team.super_teams.count() > 0:
+            self.addError(_(
+                "${name} has super teams, so it can't be merged.",
+                mapping=dict(name=dupe_team.name)))
         # We cannot merge the teams if there is a mailing list on the
         # duplicate person, unless that mailing list is purged.
-        if (mailing_list is not None and
-            mailing_list.status != MailingListStatus.PURGED):
+        if (dupe_team.mailing_list is not None and
+            dupe_team.mailing_list.status != MailingListStatus.PURGED):
             self.addError(_(
                 "${name} is associated with a Launchpad mailing list; we "
-                "can't merge it.",
-                mapping=dict(name=data['dupe_person'].name)))
+                "can't merge it.", mapping=dict(name=dupe_team.name)))
 
     @action('Merge', name='merge')
     def merge_action(self, action, data):

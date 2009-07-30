@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test helpers for common AJAX widgets."""
 
@@ -8,6 +9,7 @@ __all__ = []
 
 from windmill.authoring import WindmillTestClient
 
+from canonical.launchpad.windmill.testing import constants
 from canonical.launchpad.windmill.testing import lpuser
 
 
@@ -15,7 +17,8 @@ class InlineEditorWidgetTest:
     """Test that the inline editor widget is working properly on a page."""
 
     def __init__(self, url, widget_id, expected_value, new_value, name=None,
-                 suite='inline_editor', user=lpuser.NO_PRIV):
+                 suite='inline_editor', user=lpuser.NO_PRIV,
+                 widget_tag='h1'):
         """Create a new InlineEditorWidgetTest.
 
         :param url: The URL to the page on which the widget lives.
@@ -24,6 +27,7 @@ class InlineEditorWidgetTest:
         :param new_value: The value to change the field to.
         :param suite: The suite in which this test is part of.
         :param user: The user who should be logged in.
+        :param widget_tag: Element tag the widget is inside of.
         """
         self.url = url
         if name is None:
@@ -36,6 +40,7 @@ class InlineEditorWidgetTest:
         self.new_value = new_value
         self.suite = suite
         self.user = user
+        self.widget_tag = widget_tag
 
     def __call__(self):
         """Tests the widget is hooked and works properly.
@@ -52,36 +57,33 @@ class InlineEditorWidgetTest:
         self.user.ensure_login(client)
 
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        widget_base = u"//%s[@id='%s']" % (self.widget_tag, self.widget_id)
         client.waits.forElement(
-            xpath=u"//h1[@id='%s']/a/img" % self.widget_id, timeout=u'8000')
+            xpath=widget_base + '/a', timeout=constants.FOR_ELEMENT)
         client.asserts.assertText(
-            xpath=u"//h1[@id='%s']/span[1]" % self.widget_id,
-            validator=self.expected_value)
-        client.click(xpath=u"//h1[@id='%s']/a/img" % self.widget_id)
+            xpath=widget_base + '/span[1]', validator=self.expected_value)
+        client.click(xpath=widget_base + '/a')
         client.waits.forElement(
-            xpath=u"//h1[@id='%s']/a/img" % self.widget_id, timeout=u'8000')
+            xpath=widget_base + '/a', timeout=constants.FOR_ELEMENT)
         client.waits.forElement(
-            timeout=u'8000',
-            xpath=u"//h1[@id='%s']//textarea" % self.widget_id)
+            xpath=widget_base + '//textarea', timeout=constants.FOR_ELEMENT)
         client.type(
-            xpath=u"//h1[@id='%s']//textarea" % self.widget_id,
-            text=self.new_value)
-        client.click(xpath=u"//h1[@id='%s']//button[1]" % self.widget_id)
+            xpath=widget_base + '//textarea', text=self.new_value)
+        client.click(xpath=widget_base + '//button[1]')
         client.asserts.assertNode(
-            xpath=u"//h1[@id='%s']/span[1]" % self.widget_id)
+            xpath=widget_base + '/span[1]')
         client.asserts.assertText(
-            xpath=u"//h1[@id='%s']/span[1]" % self.widget_id,
-            validator=self.new_value)
+            xpath=widget_base + '/span[1]', validator=self.new_value)
 
         # And make sure it's actually saved on the server.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertNode(
-            xpath=u"//h1[@id='%s']/span[1]" % self.widget_id)
+            xpath=widget_base + '/span[1]')
         client.asserts.assertText(
-            xpath=u"//h1[@id='%s']/span[1]" % self.widget_id,
-            validator=self.new_value)
+            xpath=widget_base + '/span[1]', validator=self.new_value)
+
 
 def _search_picker_widget(client, search_text, result_index):
     """Search in picker widget and select an item."""
@@ -89,7 +91,9 @@ def _search_picker_widget(client, search_text, result_index):
     search_box_xpath = (u"//table[contains(@class, 'yui-picker') "
                          "and not(contains(@class, 'yui-picker-hidden'))]"
                          "//input[@class='yui-picker-search']")
-    client.waits.forElement(xpath=search_box_xpath, timeout=u'20000')
+    client.waits.forElement(
+        xpath=search_box_xpath,
+        timeout=constants.FOR_ELEMENT)
     client.type(text=search_text, xpath=search_box_xpath)
     client.click(
         xpath=u"//table[contains(@class, 'yui-picker') "
@@ -100,7 +104,7 @@ def _search_picker_widget(client, search_text, result_index):
                      "and not(contains(@class, 'yui-picker-hidden'))]"
                      "//ul[@class='yui-picker-results']/li[%d]/span"
                      % result_index)
-    client.waits.forElement(xpath=item_xpath, timeout=u'20000')
+    client.waits.forElement(xpath=item_xpath, timeout=constants.FOR_ELEMENT)
     client.click(xpath=item_xpath)
 
 
@@ -140,14 +144,16 @@ class InlinePickerWidgetSearchTest:
 
         # Load page.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Click on edit button.
         button_xpath = (
             u"//span[@id='%s']"
              "/button[not(contains(@class, 'yui-activator-hidden'))]"
              % self.activator_id)
-        client.waits.forElement(xpath=button_xpath, timeout=u'20000')
+        client.waits.forElement(
+            xpath=button_xpath,
+            timeout=constants.FOR_ELEMENT)
         client.click(xpath=button_xpath)
 
         # Search picker.
@@ -162,12 +168,12 @@ class InlinePickerWidgetSearchTest:
 
         # Reload the page to verify that the selected value is persisted.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Verify update, again.
         client.waits.forElement(
             xpath=u"//span[@id='%s']//a" % self.activator_id,
-            timeout=u'20000')
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertText(
             xpath=u"//span[@id='%s']//a" % self.activator_id,
             validator=self.new_value)
@@ -285,7 +291,7 @@ class FormPickerWidgetTest:
 
         # Load page.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Click on "Choose" link to show picker for the given field.
         client.click(id=self.choose_link_id)

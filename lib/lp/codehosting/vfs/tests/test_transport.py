@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Launchpad code hosting Bazaar transport."""
 
@@ -6,7 +7,11 @@ __metaclass__ = type
 
 import unittest
 
-from bzrlib.tests import test_transport_implementations
+try:
+    from bzrlib.tests import per_transport
+except ImportError:
+    from bzrlib.tests import test_transport_implementations as per_transport
+
 from bzrlib.transport import chroot, get_transport, Transport
 from bzrlib.transport.local import LocalTransport
 from bzrlib.urlutils import local_path_to_url
@@ -74,8 +79,7 @@ class TestingServer(LaunchpadInternalServer):
         LaunchpadInternalServer.tearDown(self)
 
 
-class TestLaunchpadTransportImplementation(
-        test_transport_implementations.TransportTests):
+class TestLaunchpadTransportImplementation(per_transport.TransportTests):
     """Implementation tests for `LaunchpadTransport`.
 
     We test the transport chrooted to the .bzr directory of a branch -- see

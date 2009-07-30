@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchiveSubscriber."""
 
@@ -67,7 +68,7 @@ class ArchiveSubscriber(Storm):
     @property
     def displayname(self):
         """See `IArchiveSubscriber`."""
-        return "%s's subscription to %s" % (
+        return "%s's access to %s" % (
             self.subscriber.displayname, self.archive.displayname)
 
     def cancel(self, cancelled_by):

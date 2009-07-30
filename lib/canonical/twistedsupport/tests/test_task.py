@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for our task support."""
 
@@ -25,14 +26,15 @@ class NoopTaskConsumer:
     def taskStarted(self, task):
         """Do nothing."""
 
+    def noTasksFound(self):
+        """Do nothing."""
+
     def taskProductionFailed(self, reason):
         """Do nothing."""
 
 
-class AppendingTaskConsumer:
+class AppendingTaskConsumer(NoopTaskConsumer):
     """Task consumer that logs calls to `taskStarted`."""
-
-    implements(ITaskConsumer)
 
     def __init__(self, data_sink):
         self.data_sink = data_sink
@@ -40,9 +42,6 @@ class AppendingTaskConsumer:
     def taskStarted(self, task):
         """Log that 'task' has started."""
         self.data_sink.append(task)
-
-    def taskProductionFailed(self, reason):
-        """Do nothing."""
 
 
 class LoggingSource:
@@ -106,6 +105,19 @@ class TestPollingTaskSource(TestCase):
         task_source = self.makeTaskSource()
         task_source.start(self._default_task_consumer)
         self.assertEqual(1, self._num_task_producer_calls)
+
+    def test_noTasksFound_called_when_no_tasks_found(self):
+        # When a call to the producer indicates that no job is found, the
+        # 'noTasksFound' method is called on the consumer.
+        class NoTasksFoundCountingConsumer:
+            def __init__(self):
+                self._noTasksFound_calls = 0
+            def noTasksFound(self):
+                self._noTasksFound_calls += 1
+        task_source = self.makeTaskSource(task_producer=lambda: None)
+        consumer = NoTasksFoundCountingConsumer()
+        task_source.start(consumer)
+        self.assertEqual(1, consumer._noTasksFound_calls)
 
     def test_start_continues_polling(self):
         # Calling `start` on a PollingTaskSource begins polling the task
@@ -201,6 +213,60 @@ class TestPollingTaskSource(TestCase):
         deferred.callback('foo')
         self.assertEqual(['foo'], tasks_called)
 
+    def test_only_one_producer_call_at_once(self):
+        # If the task producer returns a Deferred, it will not be called again
+        # until that deferred has fired, even if takes longer than the
+        # interval we're polling at.
+        tasks_called = []
+        produced_deferreds = []
+        def producer():
+            deferred = Deferred()
+            produced_deferreds.append(deferred)
+            return deferred
+        clock = Clock()
+        interval = self.factory.getUniqueInteger()
+        task_source = self.makeTaskSource(
+            task_producer=producer, interval=interval, clock=clock)
+        task_source.start(AppendingTaskConsumer(tasks_called))
+        # The call to start calls producer.  It returns a deferred which has
+        # not been fired.
+        self.assertEqual(len(produced_deferreds), 1)
+        # If 'interval' seconds passes and the deferred has still not fired
+        # the producer is not called again.
+        clock.advance(interval)
+        self.assertEqual(len(produced_deferreds), 1)
+        # If the task-getting deferred is fired and more time passes, we poll
+        # again.
+        produced_deferreds[0].callback(None)
+        clock.advance(interval)
+        self.assertEqual(len(produced_deferreds), 2)
+
+    def test_taskStarted_deferred_doesnt_delay_polling(self):
+        # If taskStarted returns a deferred, we don't wait for it to fire
+        # before polling again.
+        class DeferredStartingConsumer(NoopTaskConsumer):
+            def taskStarted(self, task):
+                started.append(task)
+                return Deferred()
+        interval = self.factory.getUniqueInteger()
+        clock = Clock()
+        produced = []
+        started = []
+        def producer():
+            value = self.factory.getUniqueInteger()
+            produced.append(value)
+            return value
+        task_source = self.makeTaskSource(
+            task_producer=producer, interval=interval, clock=clock)
+        consumer = DeferredStartingConsumer()
+        task_source.start(consumer)
+        # The call to start polls once and taskStarted is called.
+        self.assertEqual((1, 1), (len(produced), len(started)))
+        # Even though taskStarted returned a deferred which has not yet fired,
+        # we poll again after 'interval' seconds.
+        clock.advance(interval)
+        self.assertEqual((2, 2), (len(produced), len(started)))
+
     def test_producer_errors_call_taskProductionFailed(self):
         # If the producer raises an error, then we call taskProductionFailed
         # on the task consumer.
@@ -218,6 +284,32 @@ class TestPollingTaskSource(TestCase):
         self.assertEqual(1, len(consumer._task_production_failed_calls))
         reason = consumer._task_production_failed_calls[0]
         self.assertTrue(reason.check(ZeroDivisionError))
+
+    def test_taskProductionFailed_deferred_doesnt_delay_polling(self):
+        # If taskProductionFailed returns a deferred, we don't wait for it to
+        # fire before polling again.
+        class DeferredFailingConsumer(NoopTaskConsumer):
+            def taskProductionFailed(self, reason):
+                failures.append(reason)
+                return Deferred()
+        interval = self.factory.getUniqueInteger()
+        clock = Clock()
+        produced = []
+        failures = []
+        def producer():
+            exc = RuntimeError()
+            produced.append(exc)
+            raise exc
+        task_source = self.makeTaskSource(
+            task_producer=producer, interval=interval, clock=clock)
+        consumer = DeferredFailingConsumer()
+        task_source.start(consumer)
+        # The call to start polls once and taskProductionFailed is called.
+        self.assertEqual((1, 1), (len(produced), len(failures)))
+        # Even though taskProductionFailed returned a deferred which has not
+        # yet fired, we poll again after 'interval' seconds.
+        clock.advance(interval)
+        self.assertEqual((2, 2), (len(produced), len(failures)))
 
 
 class TestParallelLimitedTaskConsumer(TestCase):
@@ -280,6 +372,27 @@ class TestParallelLimitedTaskConsumer(TestCase):
         d.addCallback(task_log.append)
         consumer.taskStarted(lambda: None)
         self.assertEqual([None], task_log)
+
+    def test_consume_returns_deferred_fires_if_no_tasks_found(self):
+        # `consume` returns a Deferred that fires if no tasks are found when
+        # no tasks are running.
+        consumer = self.makeConsumer()
+        task_log = []
+        d = consumer.consume(LoggingSource([]))
+        d.addCallback(task_log.append)
+        consumer.noTasksFound()
+        self.assertEqual([None], task_log)
+
+    def test_consume_deferred_no_fire_if_no_tasks_found_and_job_running(self):
+        # If no tasks are found while a job is running, the Deferred returned
+        # by `consume` is not fired.
+        consumer = self.makeConsumer()
+        task_log = []
+        d = consumer.consume(LoggingSource([]))
+        d.addCallback(task_log.append)
+        consumer.taskStarted(self._neverEndingTask)
+        consumer.noTasksFound()
+        self.assertEqual([], task_log)
 
     def test_source_stopped_when_tasks_done(self):
         # When no more tasks are running, we stop the task source.

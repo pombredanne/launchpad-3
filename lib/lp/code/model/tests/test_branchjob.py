@@ -1,4 +1,5 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchJobs."""
 
@@ -26,11 +27,12 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from lp.testing import TestCaseWithFactory
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
@@ -45,9 +47,9 @@ from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
     IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, BranchUpgradeJob,
-    ReclaimBranchSpaceJob, RevisionMailJob, RevisionsAddedJob,
-    RosettaUploadJob)
+    BranchDiffJob, BranchJob, BranchJobDerived, BranchJobType,
+    BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
+    RevisionsAddedJob, RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
@@ -71,6 +73,18 @@ class TestBranchJob(TestCaseWithFactory):
         job_id = branch_job.job.id
         branch_job.destroySelf()
         self.assertRaises(SQLObjectNotFound, BranchJob.get, job_id)
+
+
+class TestBranchJobDerived(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_getOopsMailController(self):
+        """By default, no mail is sent about failed BranchJobs."""
+        branch = self.factory.makeAnyBranch()
+        job = BranchJob(branch, BranchJobType.STATIC_DIFF, {})
+        derived = BranchJobDerived(job)
+        self.assertIs(None, derived.getOopsMailController('x'))
 
 
 class TestBranchDiffJob(TestCaseWithFactory):
@@ -483,6 +497,79 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             committer='J. Random Hacker <jrandom@example.org>')
         return branch, tree
 
+    def makeRevisionsAddedWithMergeCommit(self, authors=None,
+                                          include_ghost=False):
+        """Create a RevisionsAdded job with a revision that is a merge.
+
+        :param authors: If specified, the list of authors of the commit
+            that merges the others.
+        :param include_ghost:If true, add revision 2c as a ghost revision.
+        """
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.branch.nick = 'nicholas'
+        tree.commit('rev1')
+        tree2 = tree.bzrdir.sprout('tree2').open_workingtree()
+        tree2.commit('rev2a', rev_id='rev2a-id', committer='foo@')
+        tree2.commit('rev3', rev_id='rev3-id',
+                     authors=['bar@', 'baz@blaine.com'])
+        tree.merge_from_branch(tree2.branch)
+        tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
+        tree3.commit('rev2b', rev_id='rev2b-id', committer='qux@')
+        tree.merge_from_branch(tree3.branch)
+        if include_ghost:
+            tree.add_parent_tree_id('rev2c-id')
+        tree.commit('rev2d', rev_id='rev2d-id', timestamp=1000, timezone=0,
+            committer='J. Random Hacker <jrandom@example.org>',
+            authors=authors)
+        return RevisionsAddedJob.create(branch, 'rev2d-id', 'rev2d-id', '')
+
+    def test_getMergedRevisionIDs(self):
+        """Ensure the correct revision ids are returned for a merge."""
+        job = self.makeRevisionsAddedWithMergeCommit(include_ghost=True)
+        job.bzr_branch.lock_write()
+        graph = job.bzr_branch.repository.get_graph()
+        self.addCleanup(job.bzr_branch.unlock)
+        self.assertEqual(set(['rev2a-id', 'rev3-id', 'rev2b-id', 'rev2c-id']),
+                         job.getMergedRevisionIDs('rev2d-id', graph))
+
+    def test_findRelatedBMP(self):
+        """The related branch merge proposals can be identified."""
+        self.useBzrBranches()
+        target_branch, tree = self.create_branch_and_tree('tree')
+        desired_proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch)
+        desired_proposal.source_branch.last_scanned_id = 'rev2a-id'
+        wrong_revision_proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch)
+        wrong_revision_proposal.source_branch.last_scanned_id = 'rev3-id'
+        wrong_target_proposal = self.factory.makeBranchMergeProposal()
+        wrong_target_proposal.source_branch.last_scanned_id = 'rev2a-id'
+        job = RevisionsAddedJob.create(target_branch, 'rev2b-id', 'rev2b-id',
+                                       '')
+        self.assertEqual([desired_proposal],
+                         list(job.findRelatedBMP(['rev2a-id'])))
+
+    def test_getAuthors(self):
+        """Ensure getAuthors returns the authors for the revisions."""
+        job = self.makeRevisionsAddedWithMergeCommit()
+        job.bzr_branch.lock_write()
+        self.addCleanup(job.bzr_branch.unlock)
+        graph = job.bzr_branch.repository.get_graph()
+        revision_ids = ['rev2a-id', 'rev3-id', 'rev2b-id']
+        self.assertEqual(set(['foo@', 'bar@', 'baz@blaine.com', 'qux@']),
+                         job.getAuthors(revision_ids, graph))
+
+    def test_getAuthors_with_ghost(self):
+        """getAuthors ignores ghosts when returning the authors."""
+        job = self.makeRevisionsAddedWithMergeCommit(include_ghost=True)
+        job.bzr_branch.lock_write()
+        graph = job.bzr_branch.repository.get_graph()
+        self.addCleanup(job.bzr_branch.unlock)
+        revision_ids = ['rev2a-id', 'rev3-id', 'rev2b-id', 'rev2c-id']
+        self.assertEqual(set(['foo@', 'bar@', 'baz@blaine.com', 'qux@']),
+                         job.getAuthors(revision_ids, graph))
+
     def test_getRevisionMessage(self):
         """getRevisionMessage provides a correctly-formatted message."""
         self.useBzrBranches()
@@ -497,6 +584,138 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
         '  rev1\n', message)
+
+    def test_getRevisionMessage_with_merge_authors(self):
+        """Merge authors are included after the main bzr log."""
+        person = self.factory.makePerson(name='baz',
+            displayname='Basil Blaine',
+            email='baz@blaine.com',
+            email_address_status=EmailAddressStatus.VALIDATED)
+        job = self.makeRevisionsAddedWithMergeCommit()
+        message = job.getRevisionMessage('rev2d-id', 1)
+        self.assertEqual(
+        u'Merge authors:\n'
+        '  bar@\n'
+        '  Basil Blaine (baz)\n'
+        '  foo@\n'
+        '  qux@\n'
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2d\n', message)
+
+    def test_getRevisionMessage_with_merge_authors_and_authors(self):
+        """Merge authors are separate from normal authors."""
+        job = self.makeRevisionsAddedWithMergeCommit(authors=['quxx'])
+        message = job.getRevisionMessage('rev2d-id', 1)
+        self.assertEqual(
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'author: quxx\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2d\n', message)
+
+    def makeJobAndBMP(self):
+        job = self.makeRevisionsAddedWithMergeCommit()
+        hacker = self.factory.makePerson(displayname='J. Random Hacker',
+                                         name='jrandom')
+        bmp = self.factory.makeBranchMergeProposal(target_branch=job.branch,
+                                                   registrant=hacker)
+        bmp.source_branch.last_scanned_id = 'rev3-id'
+        return job, bmp
+
+    def test_getRevisionMessage_with_related_BMP(self):
+        """Information about related proposals is displayed."""
+        job, bmp = self.makeJobAndBMP()
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
+        message = job.getRevisionMessage('rev2d-id', 1)
+        self.assertEqual(
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
+        'Related merge proposals:\n'
+        '  %s\n'
+        '  proposed by: J. Random Hacker (jrandom)\n'
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2d\n' % canonical_url(bmp), message)
+
+    def test_getRevisionMessage_with_BMP_with_requested_review(self):
+        """Information about incomplete reviews is omitted.
+
+        If there is a related branch merge proposal, and it has
+        requested reviews which have not been completed, they are ignored.
+        """
+        job, bmp = self.makeJobAndBMP()
+        reviewer = self.factory.makePerson()
+        bmp.nominateReviewer(reviewer, bmp.registrant)
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
+        message = job.getRevisionMessage('rev2d-id', 1)
+        self.assertEqual(
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
+        'Related merge proposals:\n'
+        '  %s\n'
+        '  proposed by: J. Random Hacker (jrandom)\n'
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2d\n' % canonical_url(bmp), message)
+
+    def test_getRevisionMessage_with_related_rejected_BMP(self):
+        """The reviewer is shown for non-approved proposals."""
+        job = self.makeRevisionsAddedWithMergeCommit()
+        hacker = self.factory.makePerson(displayname='J. Random Hacker',
+                                         name='jrandom')
+        reviewer = self.factory.makePerson(displayname='J. Random Reviewer',
+                                           name='jrandom2')
+        job.branch.reviewer = reviewer
+        bmp = self.factory.makeBranchMergeProposal(target_branch=job.branch,
+                                                   registrant=hacker)
+        bmp.rejectBranch(reviewer, 'rev3-id')
+        bmp.source_branch.last_scanned_id = 'rev3-id'
+        message = job.getRevisionMessage('rev2d-id', 1)
+        self.assertEqual(
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
+        'Related merge proposals:\n'
+        '  %s\n'
+        '  proposed by: J. Random Hacker (jrandom)\n'
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2d\n' % canonical_url(bmp), message)
 
     def test_email_format(self):
         """Contents of the email are as expected."""
@@ -956,7 +1175,7 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         # ReclaimBranchSpaceJob implements IReclaimBranchSpaceJob.
         job = getUtility(IReclaimBranchSpaceJobSource).create(
             self.factory.getUniqueInteger())
-        self.assertCorrectlyProvides(job, IReclaimBranchSpaceJob)
+        self.assertProvides(job, IReclaimBranchSpaceJob)
 
     def test_scheduled_in_future(self):
         # A freshly created ReclaimBranchSpaceJob is scheduled to run in a

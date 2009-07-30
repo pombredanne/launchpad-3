@@ -22,8 +22,11 @@ according the selected buildstate, by default All.
     ...
     ...     field_state = find_tag_by_id(contents, 'build_state') is not None
     ...     field_name = find_tag_by_id(contents, 'build_text') is not None
+    ...     field_arch = find_tag_by_id(contents, 'arch_tag') is not None
     ...
-    ...     if field_state and field_name:
+    ...     if field_state and field_name and field_arch:
+    ...         return "State, Arch and Name present"
+    ...     elif field_state and field_name:
     ...         return "State and Name present"
     ...     elif field_state and not field_name :
     ...         return "State present, Name not present"
@@ -40,12 +43,12 @@ For Distribution, it's possible to filter build results by state and name:
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
-For Distrorelease, same as Distribution:
+For DistroSeries, an architecture filter is also presented:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> anon_browser.getLink("Show builds").click()
     >>> print check_builds_options(anon_browser.contents)
-    State and Name present
+    State, Arch and Name present
 
 For DistroArchSeries, same as Distribution:
 

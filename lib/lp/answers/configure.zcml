@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:i18n="http://namespaces.zope.org/i18n"
@@ -98,11 +102,12 @@
     <require
       permission="launchpad.Moderate"
       attributes="reject"
+      set_attributes="assignee"
       />
     <require
       permission="launchpad.Admin"
       attributes="setStatus"
-      set_attributes="priority assignee whiteboard"
+      set_attributes="priority whiteboard"
       />
     <!-- IBugLinkTarget -->
     <allow attributes="bugs bug_links" />

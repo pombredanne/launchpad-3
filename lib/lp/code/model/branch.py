@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212,W0141,F0401
 
 __metaclass__ = type
@@ -51,6 +53,7 @@ from lp.code.model.branchmergeproposal import (
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.revision import Revision
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
@@ -58,6 +61,7 @@ from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet)
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      InvalidBranchMergeProposal)
@@ -196,9 +200,29 @@ class Branch(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='branch', orderBy='id')
 
+    linked_bugs = SQLRelatedJoin(
+        'Bug', joinColumn='branch', otherColumn='bug',
+        intermediateTable='BugBranch', orderBy='id')
+
+    def linkBug(self, bug, registrant):
+        """See `IBranch`."""
+        return bug.linkBranch(self, registrant)
+
+    def unlinkBug(self, bug, user):
+        """See `IBranch`."""
+        return bug.unlinkBranch(self, user)
+
     spec_links = SQLMultipleJoin('SpecificationBranch',
         joinColumn='branch',
         orderBy='id')
+
+    def linkSpecification(self, spec, registrant):
+        """See `IBranch`."""
+        return spec.linkBranch(self, registrant)
+
+    def unlinkSpecification(self, spec, user):
+        """See `IBranch`."""
+        return spec.unlinkBranch(self, user)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_last_modified = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -361,13 +385,7 @@ class Branch(SQLBase):
             is_dev_focus = (series_branch == self)
         else:
             is_dev_focus = False
-        return bazaar_identity(
-            self, self.associatedProductSeries(), is_dev_focus)
-
-    @property
-    def related_bugs(self):
-        """See `IBranch`."""
-        return [bug_branch.bug for bug_branch in self.bug_branches]
+        return bazaar_identity(self, is_dev_focus)
 
     @property
     def warehouse_url(self):
@@ -466,6 +484,9 @@ class Branch(SQLBase):
                     spec_link.destroySelf))
         for series in self.associatedProductSeries():
             alteration_operations.append(ClearSeriesBranch(series, self))
+        for series in self.getProductSeriesPushingTranslations():
+            alteration_operations.append(
+                ClearSeriesTranslationsBranch(series, self))
 
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
@@ -510,6 +531,22 @@ class Branch(SQLBase):
         return Store.of(self).find(
             ProductSeries,
             ProductSeries.branch == self)
+
+    def getProductSeriesPushingTranslations(self):
+        """See `IBranch`."""
+        # Imported here to avoid circular import.
+        from lp.registry.model.productseries import ProductSeries
+        return Store.of(self).find(
+            ProductSeries,
+            ProductSeries.translations_branch == self)
+
+    def associatedSuiteSourcePackages(self):
+        """See `IBranch`."""
+        series_set = getUtility(IFindOfficialBranchLinks)
+        # Order by the pocket to get the release one first.
+        links = series_set.findForBranch(self).order_by(
+            SeriesSourcePackageBranch.pocket)
+        return [link.suite_sourcepackage for link in links]
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
@@ -884,6 +921,21 @@ class ClearSeriesBranch(DeletionOperation):
         self.affected_object.syncUpdate()
 
 
+class ClearSeriesTranslationsBranch(DeletionOperation):
+    """Deletion operation that clears a series' translations branch."""
+
+    def __init__(self, series, branch):
+        DeletionOperation.__init__(
+            self, series,
+            _('This series exports its translations to this branch.'))
+        self.branch = branch
+
+    def __call__(self):
+        if self.affected_object.branch == self.branch:
+            self.affected_object.branch = None
+        self.affected_object.syncUpdate()
+
+
 class ClearOfficialPackageBranch(DeletionOperation):
     """Deletion operation that clears an official package branch."""
 
@@ -978,6 +1030,23 @@ class BranchSet:
             Desc(Branch.date_created), Desc(Branch.id))
         latest_branches.config(limit=quantity)
         return latest_branches
+
+    def getByUniqueName(self, unique_name):
+        """See `IBranchSet`."""
+        return getUtility(IBranchLookup).getByUniqueName(unique_name)
+
+    def getByUrl(self, url):
+        """See `IBranchSet`."""
+        return getUtility(IBranchLookup).getByUrl(url)
+
+    def getBranches(self, limit=50):
+        """See `IBranchSet`."""
+        anon_branches = getUtility(IAllBranches).visibleByUser(None)
+        branches = anon_branches.scanned().getBranches()
+        branches.order_by(
+            Desc(Branch.date_last_modified), Desc(Branch.id))
+        branches.config(limit=limit)
+        return branches
 
 
 class BranchCloud:

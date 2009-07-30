@@ -1,4 +1,5 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class for sending out emails."""
 
@@ -48,18 +49,24 @@ class BaseMailer:
         self.message_id = message_id
         self.notification_type = notification_type
 
+    def _getToAddresses(self, recipient, email):
+        return [format_address(recipient.displayname, email)]
+
     def generateEmail(self, email, recipient):
         """Generate the email for this recipient.
 
+        :param email: Email address of the recipient to send to.
+        :param recipient: The Person to send to.
         :return: (headers, subject, body) of the email.
         """
-        to_address = format_address(recipient.displayname, email)
+        to_addresses = self._getToAddresses(recipient, email)
         headers = self._getHeaders(email)
         subject = self._getSubject(email)
         body = self._getBody(email)
         ctrl = MailController(
-            self.from_address, to_address, subject, body, headers)
-        self._addAttachments(ctrl)
+            self.from_address, to_addresses, subject, body, headers,
+            envelope_to=[email])
+        self._addAttachments(ctrl, email)
         return ctrl
 
     def _getSubject(self, email):
@@ -83,10 +90,12 @@ class BaseMailer:
             headers['Message-Id'] = self.message_id
         return headers
 
-    def _addAttachments(self, ctrl):
+    def _addAttachments(self, ctrl, email):
         """Add any appropriate attachments to a MailController.
 
         Default implementation does nothing.
+        :param ctrl: The MailController to add attachments to.
+        :param email: The email address of the recipient.
         """
         pass
 

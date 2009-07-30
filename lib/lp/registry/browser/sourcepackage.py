@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
 
@@ -6,9 +7,9 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePackageBreadcrumbBuilder',
+    'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
     'SourcePackageNavigation',
-    'SourcePackageTranslationsExportView',
     'SourcePackageView',
     ]
 
@@ -21,18 +22,17 @@ from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
-from canonical.launchpad.browser.poexportrequest import BaseExportView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from canonical.launchpad.browser.translations import TranslationsMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.packaging import IPackaging
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
-    NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
+    action, ApplicationMenu, GetitemNavigation, LaunchpadEditFormView, Link,
+    redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -111,54 +111,21 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
         return Link('+gethelp', 'Help and support options', icon='info')
 
 
-class SourcePackageTranslationsMenu(NavigationMenu):
+class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
+    schema = ISourcePackage
+    field_names = ['productseries']
 
-    usedfor = ISourcePackage
-    facet = 'translations'
-    links = ('overview', 'translationdownload', 'imports')
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
-    def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
+    @action(_("Change"), name="change")
+    def change(self, action, data):
+        self.context.setPackaging(data['productseries'], self.user)
+        self.status_message = 'Upstream link updated, thank you!'
+        self.next_url = canonical_url(self.context)
 
-    @enabled_with_permission('launchpad.ExpensiveRequest')
-    def translationdownload(self):
-        text = 'Download'
-        enabled = bool(self.context.getCurrentTranslationTemplates().any())
-        return Link('+export', text, icon='download', enabled=enabled)
-
-    def overview(self):
-        return Link('', 'Overview', icon='info')
-
-
-class SourcePackageTranslationsExportView(BaseExportView):
-    """Request tarball export of all translations for source package.
-    """
-
-    def processForm(self):
-        """Process form submission requesting translations export."""
-        templates = list(
-            self.context.getCurrentTranslationTemplates(just_ids=True))
-        pofiles = list(self.context.getCurrentTranslationFiles(just_ids=True))
-        if len(pofiles) > 0:
-            pofiles = None
-        return (templates, pofiles)
-
-    def getDefaultFormat(self):
-        templates = self.context.getCurrentTranslationTemplates()
-        if not bool(templates.any()):
-            return None
-        format = templates[0].source_file_format
-        for template in templates:
-            if template.source_file_format != format:
-                self.request.response.addInfoNotification(
-                    "This package has templates with different native "
-                    "file formats.  If you proceed, all translations will be "
-                    "exported in the single format you specify.")
-        return format
-
-
-class SourcePackageView(BuildRecordsView, TranslationsMixin):
+class SourcePackageView(BuildRecordsView):
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -174,6 +141,10 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
         self.error_message = None
         self.processForm()
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
     def processForm(self):
         # look for an update to any of the things we track
         form = self.request.form
@@ -183,7 +154,9 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
                 # we need to create or update the packaging
                 self.context.setPackaging(new_ps, self.user)
                 self.productseries_widget.setRenderedValue(new_ps)
-                self.status_message = 'Upstream link updated, thank you!'
+                self.request.response.addInfoNotification(
+                    'Upstream link updated, thank you!')
+                self.request.response.redirect(canonical_url(self.context))
             else:
                 self.error_message = structured('Invalid series given.')
 

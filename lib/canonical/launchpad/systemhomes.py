@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
 
@@ -29,7 +30,10 @@ from canonical.launchpad.interfaces import (
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
+    IWebServiceApplication)
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationsoverview import (
+    ITranslationsOverview)
 from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
     IHWVendorIDSet, ParameterError)
@@ -45,6 +49,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lazr.restful import ServiceRootResource
+from lazr.restful.interfaces import ITopLevelEntryLink
 
 
 class AuthServerApplication:
@@ -235,7 +240,7 @@ class RosettaApplication:
 
 class HWDBApplication:
     """See `IHWDBApplication`."""
-    implements(IHWDBApplication)
+    implements(IHWDBApplication, ITopLevelEntryLink)
 
     link_name = 'hwdb'
     entry_type = IHWDBApplication

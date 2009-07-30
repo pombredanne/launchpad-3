@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -819,9 +821,13 @@ class BuildSet:
                 IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
-    def _handleOptionalParams(
-        self, queries, tables, status=None, name=None, pocket=None):
+    def handleOptionalParamsForBuildQueries(
+        self, queries, tables, status=None, name=None, pocket=None,
+        arch_tag=None):
         """Construct query clauses needed/shared by all getBuild..() methods.
+
+        This method is not exposed via the public interface as it is only
+        used to DRY-up trusted code.
 
         :param queries: container to which to add any resulting query clauses.
         :param tables: container to which to add joined tables.
@@ -831,15 +837,26 @@ class BuildSet:
             query clause if present.
         :param pocket: optional pocket for which to add a query clause if
             present.
+        :param arch_tag: optional architecture tag for which to add a
+            query clause if present.
         """
+
         # Add query clause that filters on build state if the latter is
         # provided.
         if status is not None:
-            queries.append('buildstate=%s' % sqlvalues(status))
+            queries.append('Build.buildstate=%s' % sqlvalues(status))
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
-            queries.append('pocket=%s' % sqlvalues(pocket))
+            queries.append('Build.pocket=%s' % sqlvalues(pocket))
+
+        # Add query clause that filters on architecture tag if provided.
+        if arch_tag is not None:
+            queries.append('''
+                Build.distroarchseries = DistroArchSeries.id AND
+                DistroArchSeries.architecturetag = %s
+            ''' % sqlvalues(arch_tag))
+            tables.extend(['DistroArchSeries'])
 
         # Add query clause that filters on source package release name if the
         # latter is provided.
@@ -851,14 +868,15 @@ class BuildSet:
             ''' % quote_like(name))
             tables.extend(['SourcePackageRelease', 'SourcePackageName'])
 
-
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
-                            user=None):
+                            arch_tag=None, user=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
 
-        self._handleOptionalParams(queries, clauseTables, status, name)
+        self.handleOptionalParamsForBuildQueries(
+            queries, clauseTables, status, name, pocket=None,
+            arch_tag=arch_tag)
 
         # This code MUST match the logic in the Build security adapter,
         # otherwise users are likely to get 403 errors, or worse.
@@ -882,13 +900,13 @@ class BuildSet:
                             orderBy=["-Build.datebuilt", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
-                            pocket=None):
+                            pocket=None, arch_tag=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
 
-        self._handleOptionalParams(
-            queries, clauseTables, status, name, pocket)
+        self.handleOptionalParamsForBuildQueries(
+            queries, clauseTables, status, name, pocket, arch_tag)
 
         # Ordering according status
         # * SUPERSEDED & All by -datecreated
@@ -956,7 +974,7 @@ class BuildSet:
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        self._handleOptionalParams(
+        self.handleOptionalParamsForBuildQueries(
             condition_clauses, clauseTables, status, name, pocket)
 
         # Only pick builds from the distribution's main archive to

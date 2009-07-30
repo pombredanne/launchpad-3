@@ -1,4 +1,6 @@
-# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0702
 
 __metaclass__ = type
@@ -16,7 +18,6 @@ __all__ = [
 import os
 from StringIO import StringIO
 import socket
-import sys
 
 from twisted.internet import defer, error, reactor
 from twisted.protocols.basic import NetstringReceiver, NetstringParseError
@@ -26,7 +27,8 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
 from canonical.cachedproperty import cachedproperty
-from lp.codehosting.vfs import branch_id_to_path
+from canonical.twistedsupport.task import (
+    ParallelLimitedTaskConsumer, PollingTaskSource)
 from lp.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from lp.codehosting.puller import get_lock_id_for_branch_id
@@ -274,7 +276,7 @@ class PullerMaster:
         'scripts/mirror-branch.py')
     protocol_class = PullerMonitorProtocol
 
-    def __init__(self, branch_id, source_url, unique_name, branch_type,
+    def __init__(self, branch_id, source_url, unique_name, branch_type_name,
                  default_stacked_on_url, logger, client,
                  available_oops_prefixes):
         """Construct a PullerMaster object.
@@ -298,10 +300,9 @@ class PullerMaster:
         """
         self.branch_id = branch_id
         self.source_url = source_url.strip()
-        path = branch_id_to_path(branch_id)
         self.destination_url = 'lp-mirrored:///%s' % (unique_name,)
         self.unique_name = unique_name
-        self.branch_type = branch_type
+        self.branch_type_name = branch_type_name
         self.default_stacked_on_url = default_stacked_on_url
         self.logger = logger
         self.branch_puller_endpoint = client
@@ -333,7 +334,7 @@ class PullerMaster:
         command = [
             interpreter, self.path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), str(self.unique_name),
-            self.branch_type.name, self.oops_prefix,
+            self.branch_type_name, self.oops_prefix,
             self.default_stacked_on_url]
         self.logger.debug("executing %s", command)
         env = os.environ.copy()
@@ -414,12 +415,11 @@ class JobScheduler:
     branches.
     """
 
-    def __init__(self, branch_puller_endpoint, logger, branch_type):
+    def __init__(self, branch_puller_endpoint, logger):
         self.branch_puller_endpoint = branch_puller_endpoint
         self.logger = logger
         self.actualLock = None
-        self.branch_type = branch_type
-        self.name = 'branch-puller-%s' % branch_type.name.lower()
+        self.name = 'branch-puller'
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
 
     @cachedproperty
@@ -433,42 +433,43 @@ class JobScheduler:
         return set(
             [str(i) for i in range(config.supermirror.maximum_workers)])
 
-    def _run(self, puller_masters):
-        """Run all branches_to_mirror registered with the JobScheduler."""
-        self.logger.info('%d branches to mirror', len(puller_masters))
-        assert config.supermirror.maximum_workers is not None, (
-            "config.supermirror.maximum_workers is not defined.")
-        semaphore = defer.DeferredSemaphore(
-            config.supermirror.maximum_workers)
-        deferreds = [
-            semaphore.run(puller_master.run)
-            for puller_master in puller_masters]
-        deferred = defer.gatherResults(deferreds)
-        deferred.addCallback(self._finishedRunning)
+    def _turnJobTupleIntoTask(self, job_tuple):
+        """Turn the return value of `acquireBranchToPull` into a job.
+
+        `IBranchPuller.acquireBranchToPull` returns either an empty tuple
+        (indicating there are no branches to pull currently) or a tuple of 6
+        arguments, which are more or less those needed to construct a
+        `PullerMaster` object.
+        """
+        if len(job_tuple) == 0:
+            return None
+        (branch_id, pull_url, unique_name,
+         default_stacked_on_url, branch_type_name) = job_tuple
+        master = PullerMaster(
+            branch_id, pull_url, unique_name, branch_type_name,
+            default_stacked_on_url, self.logger,
+            self.branch_puller_endpoint, self.available_oops_prefixes)
+        return master.run
+
+    def _poll(self):
+        deferred = self.branch_puller_endpoint.callRemote(
+            'acquireBranchToPull')
+        deferred.addCallback(self._turnJobTupleIntoTask)
         return deferred
 
     def run(self):
-        deferred = self.branch_puller_endpoint.callRemote(
-            'getBranchPullQueue', self.branch_type.name)
-        deferred.addCallback(self.getPullerMasters)
-        deferred.addCallback(self._run)
+        consumer = ParallelLimitedTaskConsumer(
+            config.supermirror.maximum_workers)
+        self.consumer = consumer
+        source = PollingTaskSource(
+            config.supermirror.polling_interval, self._poll)
+        deferred = consumer.consume(source)
+        deferred.addCallback(self._finishedRunning)
         return deferred
 
     def _finishedRunning(self, ignored):
         self.logger.info('Mirroring complete')
         return ignored
-
-    def getPullerMaster(self, branch_id, branch_src, unique_name,
-                        default_stacked_on_url):
-        branch_src = branch_src.strip()
-        return PullerMaster(
-            branch_id, branch_src, unique_name, self.branch_type,
-            default_stacked_on_url, self.logger,
-            self.branch_puller_endpoint, self.available_oops_prefixes)
-
-    def getPullerMasters(self, branches_to_pull):
-        return [
-            self.getPullerMaster(*branch) for branch in branches_to_pull]
 
     def lock(self):
         self.actualLock = GlobalLock(self.lockfilename)

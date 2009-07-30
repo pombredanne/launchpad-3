@@ -1,4 +1,6 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -371,6 +373,8 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         store = Store.of(self)
         results = store.find(Person,
+                             TeamParticipation.person == Person.id,
+                             TeamParticipation.team == self.team,
                              MailingListSubscription.person == Person.id,
                              MailingListSubscription.mailing_list == self)
         return results.order_by(Person.displayname)

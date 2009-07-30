@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Classes to represent source packages in a distribution."""
@@ -34,6 +36,7 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
+from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
 from canonical.launchpad.database.structuralsubscription import (
@@ -88,6 +91,14 @@ class DistributionSourcePackage(BugTargetBase,
             self.sourcepackagename.name, self.distribution.displayname)
 
     @property
+    def development_version(self):
+        """See `IDistributionSourcePackage`."""
+        series = self.distribution.currentseries
+        if series is None:
+            return None
+        return series.getSourcePackage(self.sourcepackagename)
+
+    @property
     def _self_in_database(self):
         """Return the equivalent database-backed record of self."""
         # XXX: allenap 2008-11-13 bug=297736: This is a temporary
@@ -122,9 +133,6 @@ class DistributionSourcePackage(BugTargetBase,
     bug_reporting_guidelines = property(
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
-
-    def __getitem__(self, version):
-        return self.getVersion(version)
 
     @property
     def latest_overall_publication(self):
@@ -219,7 +227,8 @@ class DistributionSourcePackage(BugTargetBase,
 
     def findRelatedArchives(self,
                             exclude_archive=None,
-                            archive_purpose=ArchivePurpose.PPA):
+                            archive_purpose=ArchivePurpose.PPA,
+                            required_karma=0):
         """See `IDistributionSourcePackage`."""
 
         extra_args = []
@@ -232,6 +241,12 @@ class DistributionSourcePackage(BugTargetBase,
         if archive_purpose is not None:
             extra_args.append(Archive.purpose == archive_purpose)
 
+        # Include only those archives containing the source package released
+        # by a person with karma for this source package greater than that
+        # specified.
+        if required_karma > 0:
+            extra_args.append(KarmaTotalCache.karma_total >= required_karma)
+
         store = Store.of(self.distribution)
         results = store.find(
             Archive,
@@ -243,14 +258,19 @@ class DistributionSourcePackage(BugTargetBase,
             (SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == self.sourcepackagename,
+            # Ensure that the package was not copied.
+            SourcePackageRelease.upload_archive == Archive.id,
+            # Next, the joins for the ordering by soyuz karma of the
+            # SPR creator.
+            KarmaTotalCache.person == SourcePackageRelease.creatorID,
             *extra_args
             )
 
         # Note: If and when we later have a field on IArchive to order by,
         # such as IArchive.rank, we will then be able to return distinct
         # results. As it is, we cannot return distinct results while ordering
-        # by SPR.dateuploaded.
-        results.order_by(Desc(SourcePackageRelease.dateuploaded))
+        # by a non-selected column.
+        results.order_by(Desc(KarmaTotalCache.karma_total))
 
         return results
 

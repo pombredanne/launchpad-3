@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -137,7 +138,7 @@ archive_index = ContextDisplayName('%s')
 
 archive_subscriber_edit = ContextDisplayName('Edit %s')
 
-archive_subscribers = ContextDisplayName('Manage subscriptions for %s')
+archive_subscribers = ContextDisplayName('Manage access to %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -168,6 +169,8 @@ branch_add = 'Register a branch'
 
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
+
+branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
 branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
 
@@ -488,6 +491,8 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
+distribution_branches = ContextTitle('Branches for %s')
+
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_change_mirror_admin = 'Change mirror administrator'
@@ -525,6 +530,8 @@ distribution_builds = ContextTitle('%s builds')
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_branches = ContextTitle('Branches for the %s')
+distributionsourcepackage_branches_grouped = ContextTitle(
+    'Branches for the %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -908,7 +915,7 @@ active_reviews = ContextDisplayName('Pending proposals for %s')
 
 person_archive_subscription = ContextDisplayName('%s')
 
-person_archive_subscriptions = 'Private PPA subscriptions'
+person_archive_subscriptions = 'Private PPA access'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
@@ -1130,6 +1137,9 @@ productserieslanguage_index = ContextTitle('%s')
 productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_linkbranch = ContextTitle('Link an existing branch to %s')
+
+productseries_link_translations_branch = ContextTitle(
+    "Set translations export branch for %s")
 
 productseries_index = ContextTitle('%s')
 

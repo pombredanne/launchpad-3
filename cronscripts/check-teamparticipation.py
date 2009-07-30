@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 """Check for invalid/missing TeamParticipation entries.
@@ -28,13 +31,14 @@ from canonical.lp import initZopeless
 
 
 if __name__ == '__main__':
-    execute_zcml_for_scripts()
-    ztm = initZopeless(implicitBegin=False)
     parser = optparse.OptionParser(
         description="Check for invalid/missing TeamParticipation entries.")
     logger_options(parser)
     options, args = parser.parse_args(sys.argv[1:])
     log = logger(options, 'check-teamparticipation')
+
+    execute_zcml_for_scripts()
+    ztm = initZopeless(implicitBegin=False)
 
     # Check self-participation.
     query = """

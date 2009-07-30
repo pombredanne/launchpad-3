@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -45,11 +47,13 @@ from zope.traversing.interfaces import ITraversable
 from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
+from canonical.launchpad.layers import WebServiceLayer
 
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
+from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import InvalidNamespace
 from lp.code.interfaces.linkedbranch import (
@@ -73,7 +77,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
+from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -83,9 +87,9 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 
 from canonical.launchpad.webapp import (
@@ -183,6 +187,18 @@ class LinkView(LaunchpadView):
     The link is not rendered if it's not enabled and we are not in development
     mode.
     """
+    MODIFY_ICONS = ('edit', 'remove', 'trash-icon')
+
+    @property
+    def sprite_class(self):
+        """Return the class used to display the link's icon."""
+        if self.context.icon in self.MODIFY_ICONS:
+            # The 3.0 UI design says these are displayed like other icons
+            # But they do not have the same use so we want to keep this rule
+            # separate.
+            return 'sprite modify'
+        else:
+            return 'sprite'
 
     def render(self):
         """Render the menu link if it's enabled or we're in dev mode."""
@@ -570,6 +586,7 @@ class LaunchpadRootNavigation(Navigation):
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
+        'branches': IBranchSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
         'builders': IBuilderSet,
@@ -672,6 +689,10 @@ class LaunchpadRootNavigation(Navigation):
         # If this is a HTTP POST, we don't want to issue a redirect.
         # Doing so would go against the HTTP standard.
         if self.request.method == 'POST':
+            return None
+
+        # If this is a web service request, don't redirect.
+        if WebServiceLayer.providedBy(self.request):
             return None
 
         mainsite_host = config.vhost.mainsite.hostname

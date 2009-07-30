@@ -18,7 +18,7 @@ ProductSeries series page
 Each project has a page that lists the status of all its series.
 
     >>> anon_browser.open('http://launchpad.dev/firefox')
-    >>> anon_browser.getLink('Series timeline').click()
+    >>> anon_browser.getLink('View full history').click()
     >>> print anon_browser.title
     Mozilla Firefox timeline
 
@@ -38,7 +38,7 @@ Any user can see that the trunk series is the focus of development and that
 it is highlighted.
 
     >>> print series_trunk['class']
-    highlighted
+    highlighted series
 
 The 1.0 series is not the focus of development, it is active, so it is not
 highlighted.
@@ -52,16 +52,16 @@ highlighted.
     The 1.0 branch of the Mozilla web browser. Currently, this is the ...
 
     >>> print series_1_0['class']
-    unhighlighted
+    unhighlighted series
 
-Any user can see that obsolete series are dimmed.
+Any user can see that obsolete series are dimmed. Obsolete series do not
+show bug status counts because it is expensive to retrieve the information.
 
     >>> series_xxx = find_tag_by_id(content, 'series-xxx')
     >>> print extract_text(series_xxx)
     xxx series Obsolete
-    Bugs targeted: None
     Blueprints targeted: None
     Use true GTK UI.
 
     >>> print series_xxx['class']
-    dimmed
+    dimmed series

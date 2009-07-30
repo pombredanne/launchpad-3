@@ -1,4 +1,6 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211
 
 """Single selection widget using a popup to select one item from many."""
@@ -10,7 +12,7 @@ import cgi
 import simplejson
 
 from zope.interface import Attribute, implements, Interface
-from zope.app import zapi
+from zope.component import getUtility
 from zope.schema import TextLine
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.interfaces import ISimpleInputWidget
@@ -198,7 +200,7 @@ class SinglePopupView(object):
         if not vocabulary_name:
             raise UnexpectedFormData('No vocabulary specified')
         try:
-            factory = zapi.getUtility(IVocabularyFactory, vocabulary_name)
+            factory = getUtility(IVocabularyFactory, vocabulary_name)
         except ComponentLookupError:
             # Couldn't find the vocabulary? Adios!
             raise UnexpectedFormData(
@@ -259,7 +261,8 @@ class VocabularyPickerWidget(SinglePopupWidget):
 
     popup_name = 'popup-vocabulary-picker'
 
-    header = 'Select an item'
+    # Defaults to self.vocabulary.displayname.
+    header = None
 
     step_title = 'Search'
 
@@ -271,11 +274,9 @@ class VocabularyPickerWidget(SinglePopupWidget):
     def show_widget_id(self):
         return 'show-widget-%s' % self.suffix
 
-    def chooseLink(self):
-        js_file = os.path.join(os.path.dirname(__file__),
-                               'templates/vocabulary-picker.js')
-        js_template = open(js_file).read()
-
+    @property
+    def vocabulary_name(self):
+        """The name of the field's vocabulary."""
         choice = IChoice(self.context)
         if choice.vocabularyName is None:
             # The webservice that provides the results of the search
@@ -286,9 +287,21 @@ class VocabularyPickerWidget(SinglePopupWidget):
                 "vocabulary specified as a string, so it can't be loaded "
                 "by the vocabulary registry."
                 % (choice.context, choice.__name__))
+        return choice.vocabularyName
+
+    def chooseLink(self):
+        js_file = os.path.join(os.path.dirname(__file__),
+                               'templates/vocabulary-picker.js')
+        js_template = open(js_file).read()
+
+        if self.header is None:
+            header = self.vocabulary.displayname
+        else:
+            header = self.header
+
         js = js_template % dict(
-            vocabulary=choice.vocabularyName,
-            header=self.header,
+            vocabulary=self.vocabulary_name,
+            header=header,
             step_title=self.step_title,
             show_widget_id=self.show_widget_id,
             input_id=self.name)
@@ -301,7 +314,6 @@ class VocabularyPickerWidget(SinglePopupWidget):
 
 
 class PersonPickerWidget(VocabularyPickerWidget):
-    header = 'Select a person or team'
     include_create_team_link = False
 
     def chooseLink(self):

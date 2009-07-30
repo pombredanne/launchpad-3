@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 """Refresh and verify cached POFile translation statistics."""
@@ -7,7 +10,7 @@
 import _pythonpath
 
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.verify_pofile_stats import (
+from lp.translations.scripts.verify_pofile_stats import (
     VerifyPOFileStatsProcess)
 
 

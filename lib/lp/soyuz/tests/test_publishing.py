@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test native publication workflow for Soyuz. """
 
 import datetime
@@ -150,7 +152,7 @@ class SoyuzTestPublisher:
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
-                     maintainer=None, date_uploaded=UTC_NOW):
+                     maintainer=None, creator=None, date_uploaded=UTC_NOW):
         """Return a mock source publishing record."""
         if sourcename is None:
             sourcename = self.default_package_name
@@ -165,11 +167,13 @@ class SoyuzTestPublisher:
             archive = distroseries.main_archive
         if maintainer is None:
             maintainer = self.person
+        if creator is None:
+            creator = self.person
 
         spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
             maintainer=maintainer,
-            creator=self.person,
+            creator=creator,
             component=component,
             section=section,
             urgency=urgency,
@@ -487,16 +491,45 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
 
 class TestNativePublishing(TestNativePublishingBase):
 
-    def testPublish(self):
-        """Test publishOne in normal conditions (new file)."""
+    def test_publish_source(self):
+        # Source publications result in a PUBLISHED publishing record and
+        # the corresponding files are dumped in the disk pool/.
         pub_source = self.getPubSource(filecontent='Hello world')
         pub_source.publish(self.disk_pool, self.logger)
-        self.layer.commit()
+        self.assertEqual(
+            PackagePublishingStatus.PUBLISHED,
+            pub_source.secure_record.status)
+        pool_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
+        self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
-        pub_source.sync()
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
-        foo_name = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
-        self.assertEqual(open(foo_name).read().strip(), 'Hello world')
+    def test_publish_binaries(self):
+        # Binary publications result in a PUBLISHED publishing record and
+        # the corresponding files are dumped in the disk pool/.
+        pub_binary = self.getPubBinaries(filecontent='Hello world')[0]
+        pub_binary.publish(self.disk_pool, self.logger)
+        self.assertEqual(
+            PackagePublishingStatus.PUBLISHED,
+            pub_binary.secure_record.status)
+        pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
+        self.assertEqual(open(pool_path).read().strip(), 'Hello world')
+
+    def test_publish_ddeb_for_ppas(self):
+        # DDEB publications in PPAs result in a PUBLISHED publishing record
+        # but the corresponding files are *not* dumped in the disk pool/.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        pub_binary = self.getPubBinaries(
+            filecontent='Hello world', format=BinaryPackageFormat.DDEB,
+            archive=cprov.archive)[0]
+
+        # Publication happens in the database domain.
+        pub_binary.publish(self.disk_pool, self.logger)
+        self.assertEqual(
+            PackagePublishingStatus.PUBLISHED,
+            pub_binary.secure_record.status)
+
+        # But the DDEB isn't dumped to the repository pool/.
+        pool_path = "%s/main/f/foo/foo-bin_666_all.ddeb" % self.pool_dir
+        self.assertFalse(os.path.exists(pool_path))
 
     def testPublishingOverwriteFileInPool(self):
         """Test if publishOne refuses to overwrite a file in pool.

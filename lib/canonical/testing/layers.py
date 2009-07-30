@@ -1,4 +1,6 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # We like global!
 # pylint: disable-msg=W0603,W0702
 
@@ -903,6 +905,13 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._original_sigint = signal.getsignal(signal.SIGINT)
         TwistedLayer._original_sigterm = signal.getsignal(signal.SIGTERM)
         TwistedLayer._original_sigchld = signal.getsignal(signal.SIGCHLD)
+        # XXX MichaelHudson, 2009-07-14, bug=399118: If a test case in this
+        # layer launches a process with spawnProcess, there should really be a
+        # SIGCHLD handler installed to avoid PotentialZombieWarnings.  But
+        # some tests in this layer use tachandler and it is fragile when a
+        # SIGCHLD handler is installed.  tachandler needs to be fixed.
+        # from twisted.internet import reactor
+        # signal.signal(signal.SIGCHLD, reactor._handleSigchld)
 
     @classmethod
     def _restore_signals(cls):
@@ -1270,6 +1279,11 @@ class PageTestLayer(LaunchpadFunctionalLayer):
             access_logger.log(MockHTTPTask(response._response, first_line))
             return response
 
+        # Setting STAGGER_RETRIES makes tests like notfound-traversals.txt go
+        # much, much faster by avoiding calls to time.sleep()
+        cls._original_stagger_retries = zope.publisher.http.STAGGER_RETRIES
+        zope.publisher.http.STAGGER_RETRIES = False
+
         PageTestLayer.orig__call__ = (
                 zope.app.testing.functional.HTTPCaller.__call__)
         zope.app.testing.functional.HTTPCaller.__call__ = my__call__
@@ -1281,6 +1295,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         PageTestLayer.resetBetweenTests(True)
         zope.app.testing.functional.HTTPCaller.__call__ = (
                 PageTestLayer.orig__call__)
+        zope.publisher.http.STAGGER_RETRIES = cls._original_stagger_retries
         if PageTestLayer.profiler:
             PageTestLayer.profiler.dump_stats(
                 os.environ.get('PROFILE_PAGETESTS_REQUESTS'))

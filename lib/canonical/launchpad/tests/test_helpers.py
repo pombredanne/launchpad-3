@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import unittest
 
@@ -9,7 +10,7 @@ from zope.interface import implements
 
 from canonical.launchpad import helpers
 from canonical.launchpad.ftests import login
-from canonical.launchpad.translationformat import LaunchpadWriteTarFile
+from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
 from lp.testing.factory import LaunchpadObjectFactory
 

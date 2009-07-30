@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213,E0211
 
 """Interfaces including and related to IJob."""
@@ -94,3 +96,16 @@ class IJob(Interface):
 
     def queue():
         """Mark the job as queued for processing."""
+
+
+class IRunnableJob(IJob):
+    """Interface for jobs that can be run via the JobRunner."""
+
+    def notifyOops(oops):
+        """Notify interested parties that this job produced an OOPS.
+
+        :param oops: The oops produced by this Job.
+        """
+
+    def run():
+        """Run this job."""
