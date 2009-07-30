@@ -167,13 +167,18 @@ class ChooseProductStep(AlsoAffectsStep):
         # Tell the user to search for it using the popup widget as it'll allow
         # the user to register a new product if the one he is looking for is
         # not yet registered.
+        widget_link_id = self.widgets['product'].show_widget_id
         self.setFieldError(
             'product',
-            structured(
-                'There is no project in Launchpad named "%s". Please '
-                '<a href="/projects">search for it</a> as it may be '
-                'registered with a different name.',
-                entered_product))
+            structured("""
+                There is no project in Launchpad named "%s". Please 
+                <a href="/projects"
+                onclick="YUI().use('event').Event.simulate(
+                         document.getElementById('%s'), 'click');
+                         return false;"
+                >search for it</a> as it may be
+                registered with a different name.""",
+                entered_product, widget_link_id))
 
     def main_action(self, data):
         """Perform the 'Continue' action."""
