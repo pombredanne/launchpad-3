@@ -475,7 +475,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
     product = exported(
         ReferenceChoice(
             title=_('Project'),
-            required=False,
+            required=False, readonly=True,
             vocabulary='Product',
             schema=Interface,
             description=_("The project this branch belongs to.")),
