@@ -376,11 +376,12 @@ class LoginOrRegister:
     def preserve_query(self):
         """Return zero or more hidden inputs that preserve the URL's query."""
         L = []
+        html = '<input type="hidden" name="%s" value="%s" />'
         for name, value in self.iter_form_items():
-            L.append('<input type="hidden" name="%s" value="%s" />' % (
-                name, cgi.escape(value, quote=True)
-                ))
-
+            # Thanks to apport (https://launchpad.net/bugs/61171), we need to
+            # do this here.
+            value = value.decode('ascii', 'replace')
+            L.append(html % (name, cgi.escape(value, quote=True)))
         return '\n'.join(L)
 
 
