@@ -86,3 +86,4 @@ def confirm_dbrevision_on_startup(*ignored):
         confirm_dbrevision(cur)
     finally:
         con.close()
+
