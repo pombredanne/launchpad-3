@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 import os
+import cgi
 import simplejson
 
 from zope.schema.interfaces import IChoice
@@ -35,13 +36,37 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     style = ''
     cssClass = ''
 
+    step_title = 'Search'
     # Defaults to self.vocabulary.displayname.
     header = None
 
-    step_title = 'Search'
+    @cachedproperty
+    def matches(self):
+        """Return a list of matches (as ITokenizedTerm) to whatever the
+        user currently has entered in the form.
+        """
+        # Pull form value using the parent class to avoid loop
+        formValue = super(VocabularyPickerWidget, self)._getFormInput()
+        if not formValue:
+            return []
+
+        vocab = self.vocabulary
+        # Special case - if the entered value is valid, it is an object
+        # rather than a string (I think this is a bug somewhere)
+        if not isinstance(formValue, basestring):
+            return [vocab.getTerm(formValue)]
+
+        search_results = vocab.searchForTerms(formValue)
+
+        if search_results.count() > 25:
+            # If we have too many results to be useful in a list, return
+            # an empty list.
+            return []
+
+        return search_results
 
     @cachedproperty
-    def form_token(self):
+    def formToken(self):
         val = self._getFormValue()
 
         # We have a valid object - return the corresponding token
@@ -51,6 +76,21 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
         # Just return the existing invalid token
         return val
 
+    def inputField(self):
+        d = {
+            'formToken' : cgi.escape(self.formToken, quote=True),
+            'name': self.name,
+            'displayWidth': self.displayWidth,
+            'displayMaxWidth': self.displayMaxWidth,
+            'onKeyPress': self.onKeyPress,
+            'style': self.style,
+            'cssClass': self.cssClass
+        }
+        return """<input type="text" value="%(formToken)s" id="%(name)s"
+                         name="%(name)s" size="%(displayWidth)s"
+                         maxlength="%(displayMaxWidth)s"
+                         onKeyPress="%(onKeyPress)s" style="%(style)s"
+                         class="%(cssClass)s" />""" % d
     @property
     def suffix(self):
         return self.name.replace('.', '-')
