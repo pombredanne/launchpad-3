@@ -116,55 +116,6 @@ created for the attachments.
     Attachment: Attachment description.
     ----------------------------------------
 
-== Advanced +filebug ==
-
-Even though the user will land on the guided +filebug initially, he may
-choose to follow the link to the advanced +filebug page.
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/firefox/+filebug/%s' % blob_token)
-    >>> user_browser.getLink('Advanced reporting options').click()
-
-The token is still present in the URL.
-
-    >>> user_browser.url.endswith(blob_token)
-    True
-
-If we submit the bug, the same information as above will be added to the
-bug.
-
-    >>> user_browser.getControl('Summary').value = 'An advanced bug'
-    >>> user_browser.getControl('Further information').value = (
-    ...     'An advanced bug description.')
-    >>> user_browser.getControl('Submit Bug Report').click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/...'
-
-    >>> print find_tag_by_id(
-    ...     user_browser.contents, 'bug-description').renderContents()
-    <p>An advanced bug description.</p>
-    <p>This should be added to the description.</p>
-
-Two attachments were added.
-
-    >>> attachment_portlet = find_portlet(
-    ...     user_browser.contents, 'Bug attachments')
-    >>> for li in attachment_portlet('li', 'download'):
-    ...     print li.a.renderContents()
-    attachment1
-    Attachment description.
-
-And three comments were added, including the empty comment that was
-created for the attachments.
-
-    >>> print_comments(user_browser.contents)
-    <p>This should be added as a comment.</p>
-    ----------------------------------------
-    <p>This should be added as another comment.</p>
-    ----------------------------------------
-    Attachment: attachment1
-    Attachment: Attachment description.
-    ----------------------------------------
 
 === Initial bug summary ===
 
@@ -208,10 +159,12 @@ initialized with that value.
 
     >>> user_browser.open(
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
-    ...     '+filebug-advanced/%s' % blob_token)
+    ...     '+filebug/%s' % blob_token)
+    >>> user_browser.getControl('Summary').value = 'Another summary'
+    >>> user_browser.getControl('Continue').click()
 
     >>> user_browser.getControl('Tags').value
-    'foo bar'
+    'bar foo'
 
 The user can of course change the tags if he wants.
 

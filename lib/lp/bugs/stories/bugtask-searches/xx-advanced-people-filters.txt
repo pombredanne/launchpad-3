@@ -181,12 +181,13 @@ first we'll register a couple of bugs for the Mozilla Firefox product:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/firefox/')
     >>> browser.getLink('Report a bug').click()
-    >>> browser.getLink('Advanced reporting options').click()
     >>> print extract_text(find_main_content(browser.contents))
     Report a bug...
     >>> report_bug_url = browser.url
 
     >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Continue').click()
+
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
     >>> print extract_text(find_main_content(browser.contents))
@@ -195,6 +196,7 @@ first we'll register a couple of bugs for the Mozilla Firefox product:
 
     >>> browser.open(report_bug_url)
     >>> browser.getControl('Summary').value = 'Test Bug 2'
+    >>> browser.getControl('Continue').click()
     >>> browser.getControl('Further information').value = 'Test Bug 2'
     >>> browser.getControl('Submit').click()
     >>> print extract_text(find_main_content(browser.contents))
