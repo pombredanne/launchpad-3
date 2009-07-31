@@ -83,7 +83,7 @@
         <span class="dynamic unseen">
           <a href="+affectsmetoo" class="js-action">
             <img class="editicon" src="/@@/edit" alt="Edit" />
-            <span class="value"></span>
+            <span class="value">Does this bug affect you?</span>
             <img src="/@@/flame-icon" alt=""/>
           </a>
         </span>
