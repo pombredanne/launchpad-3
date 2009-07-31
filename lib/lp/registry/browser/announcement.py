@@ -17,7 +17,7 @@ __all__ = [
     'HasAnnouncementsView',
     ]
 
-from zope.interface import Interface
+from zope.interface import implements, Interface
 
 from zope.schema import Choice, TextLine
 
@@ -37,14 +37,12 @@ from canonical.launchpad.browser.feeds import (
     AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-
+from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets import AnnouncementDateWidget
 
 
-class AnnouncementContextMenu(ContextMenu):
-
-    usedfor = IAnnouncement
-    links = ['edit', 'retarget', 'retract']
+class AnnouncementMenuMixin:
+    """A mixin of links common to many menus."""
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -53,13 +51,37 @@ class AnnouncementContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def retarget(self):
-        text = 'Move to another project'
+        text = 'Move announcement'
         return Link('+retarget', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def retract(self):
         text = 'Retract announcement'
-        return Link('+retract', text, icon='edit')
+        return Link('+retract', text, icon='remove')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete announcement'
+        return Link('+delete', text, icon='trash-icon')
+
+
+class AnnouncementContextMenu(ContextMenu, AnnouncementMenuMixin):
+
+    usedfor = IAnnouncement
+    links = ['edit', 'retarget', 'retract', 'delete']
+
+
+class IAnnouncemenEditMenu(Interface):
+    """A marker interface for modify announcement navigation menu."""
+
+
+class AnnouncementEditNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
+    """A sub-menu for different aspects of modifying an announcement."""
+
+    usedfor = IAnnouncemenEditMenu
+    facet = 'overview'
+    title = 'Change announcement'
+    links = ('edit', 'retarget', 'retract', 'delete')
 
 
 class AnnouncementFormMixin:
@@ -114,6 +136,8 @@ class AnnouncementAddView(LaunchpadFormView):
 class AnnouncementEditView(AnnouncementFormMixin, LaunchpadFormView):
     """A view which allows you to edit the announcement."""
 
+    implements(IAnnouncemenEditMenu)
+
     schema = AddAnnouncementForm
     field_names = ['title', 'summary', 'url', ]
     label = _('Modify this announcement')
@@ -144,6 +168,8 @@ class AnnouncementRetargetForm(Interface):
 
 
 class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
+
+    implements(IAnnouncemenEditMenu)
 
     schema = AnnouncementRetargetForm
     field_names = ['target']
@@ -194,6 +220,8 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
 
 class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
 
+    implements(IAnnouncemenEditMenu)
+
     schema = IAnnouncement
     label = _('Retract this announcement')
 
@@ -204,6 +232,8 @@ class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
 
 
 class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
+
+    implements(IAnnouncemenEditMenu)
 
     schema = IAnnouncement
     label = _('Delete this announcement')
