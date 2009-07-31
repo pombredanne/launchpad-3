@@ -14,7 +14,8 @@ bug is not marked as affecting them.
 
    >>> user_browser.open(test_bug_url)
    >>> print extract_text(find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetoo'))
+   ...     user_browser.contents, 'affectsmetoo').find(
+   ...         None, 'static'))
    This bug doesn't affect me
 
 Next to the statement is a link containing an edit icon.
@@ -42,7 +43,8 @@ The bug page loads again, and now the text is changed, to make it
 clear to the user that they have marked this bug as affecting them.
 
    >>> print extract_text(find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetoo'))
+   ...     user_browser.contents, 'affectsmetoo').find(
+   ...         None, 'static'))
    This bug affects me too
 
 Next to it, we also see the 'hot bug' icon, to indicate that the user
@@ -65,5 +67,6 @@ The user changes his selection to 'No' and submits the form.
 Back at the bug page, the text changes once again.
 
    >>> print extract_text(find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetoo'))
+   ...     user_browser.contents, 'affectsmetoo').find(
+   ...         None, 'static'))
    This bug doesn't affect me
