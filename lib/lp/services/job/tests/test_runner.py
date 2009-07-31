@@ -154,14 +154,13 @@ class TestJobRunner(TestCaseWithFactory):
                          notification.get_payload(decode=True))
         self.assertEqual('Launchpad internal error', notification['subject'])
 
-    def assertNoNewOops(self, old_oops):
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
-        if old_oops is None:
-            self.assertIs(None, oops)
-        else:
-            self.assertEqual(oops.id, old_oops.id)
-
     def test_runAll_mails_user_errors(self):
+        """User errors should be mailed out without oopsing.
+
+        User errors are identified by the RunnableJob.user_error_types
+        attribute.  They do not cause an oops to be recorded, and their
+        error messages are mailed to interested parties verbatim.
+        """
         job_1, job_2 = self.makeTwoJobs()
         class ExampleError(Exception):
             pass

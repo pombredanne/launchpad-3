@@ -59,7 +59,7 @@ class BaseRunnableJob:
         return MailController(from_addr, recipients, subject, body)
 
     def getUserErrorMailController(self, e):
-        """Return a MailController for notifying people about oopses.
+        """Return a MailController for notifying about user errors.
 
         Return None if there is no-one to notify.
         """
@@ -134,7 +134,7 @@ class JobRunner(object):
                 self.incomplete_jobs.append(job)
             except job.user_error_types, e:
                 job.notifyUserError(e)
-            except Exception, e:
+            except Exception:
                 info = sys.exc_info()
                 errorlog.globalErrorUtility.raising(info)
                 oops = errorlog.globalErrorUtility.getLastOopsReport()
