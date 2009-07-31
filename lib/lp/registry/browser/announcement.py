@@ -55,9 +55,16 @@ class AnnouncementMenuMixin:
         return Link('+retarget', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def publish(self):
+        text = 'Publish announcement'
+        enabled = not self.context.published
+        return Link('+publish', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
     def retract(self):
         text = 'Retract announcement'
-        return Link('+retract', text, icon='remove')
+        enabled = self.context.published
+        return Link('+retract', text, icon='remove', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -68,20 +75,30 @@ class AnnouncementMenuMixin:
 class AnnouncementContextMenu(ContextMenu, AnnouncementMenuMixin):
 
     usedfor = IAnnouncement
-    links = ['edit', 'retarget', 'retract', 'delete']
+    links = ('edit', 'retarget', 'publish', 'retract', 'delete')
 
 
-class IAnnouncemenEditMenu(Interface):
+class IAnnouncementEditMenu(Interface):
     """A marker interface for modify announcement navigation menu."""
 
 
 class AnnouncementEditNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
     """A sub-menu for different aspects of modifying an announcement."""
 
-    usedfor = IAnnouncemenEditMenu
+    usedfor = IAnnouncementEditMenu
     facet = 'overview'
     title = 'Change announcement'
-    links = ('edit', 'retarget', 'retract', 'delete')
+    links = ('edit', 'retarget', 'publish', 'retract', 'delete')
+
+    def __init__(self, context):
+        super(AnnouncementEditNavigationMenu, self).__init__(context)
+        # Links always expect the context if be a model object, not a view.
+        if isinstance(self.context, LaunchpadView):
+            self.view = context
+            self.context = context.context
+        else:
+            self.view = None
+            self.context = context
 
 
 class AnnouncementFormMixin:
@@ -114,7 +131,7 @@ class AnnouncementAddView(LaunchpadFormView):
     @action(_('Make announcement'), name='announce')
     def announce_action(self, action, data):
         """Registers a new announcement."""
-        announcement = self.context.announce(
+        self.context.announce(
             user = self.user,
             title = data.get('title'),
             summary = data.get('summary'),
@@ -136,7 +153,7 @@ class AnnouncementAddView(LaunchpadFormView):
 class AnnouncementEditView(AnnouncementFormMixin, LaunchpadFormView):
     """A view which allows you to edit the announcement."""
 
-    implements(IAnnouncemenEditMenu)
+    implements(IAnnouncementEditMenu)
 
     schema = AddAnnouncementForm
     field_names = ['title', 'summary', 'url', ]
@@ -169,7 +186,7 @@ class AnnouncementRetargetForm(Interface):
 
 class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
 
-    implements(IAnnouncemenEditMenu)
+    implements(IAnnouncementEditMenu)
 
     schema = AnnouncementRetargetForm
     field_names = ['target']
@@ -205,6 +222,8 @@ class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
 
 class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
 
+    implements(IAnnouncementEditMenu)
+
     schema = AddAnnouncementForm
     field_names = ['publication_date']
     label = _('Publish this announcement')
@@ -220,7 +239,7 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
 
 class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
 
-    implements(IAnnouncemenEditMenu)
+    implements(IAnnouncementEditMenu)
 
     schema = IAnnouncement
     label = _('Retract this announcement')
@@ -233,7 +252,7 @@ class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
 
 class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
 
-    implements(IAnnouncemenEditMenu)
+    implements(IAnnouncementEditMenu)
 
     schema = IAnnouncement
     label = _('Delete this announcement')
