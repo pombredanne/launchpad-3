@@ -3,8 +3,7 @@
 Sprints or meetings can be coordinated using Launchpad.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISprint, ISprintSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces import ISprintSet, IPersonSet
     >>> sprintset = getUtility(ISprintSet)
 
 To find a sprint by name, use:
@@ -75,7 +74,7 @@ We're directly using the database classes here, bypassing the security
 proxies because this is just set-up for the next step, it's not the exact
 functionality we're testing.
 
-    >>> from canonical.launchpad.database import SprintSet
+    >>> from lp.blueprints.model.sprint import SprintSet
     >>> futurista = SprintSet()["futurista"]
     >>> for sprintspec in futurista.specificationLinks():
     ...     sprintspec.status = SprintSpecificationStatus.PROPOSED
