@@ -1716,5 +1716,27 @@ class TestBranchSetOwner(TestCaseWithFactory):
         self.assertEqual(person, branch.owner)
 
 
+class TestBranchSetTarget(TestCaseWithFactory):
+    """Tests for IBranch.setTarget."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_junk_branch_to_project_branch(self):
+        # A junk branch can be moved to a project.
+        branch = self.factory.makePersonalBranch()
+        project = self.factory.makeProduct()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, project=project)
+        self.assertEqual(project, branch.target.context)
+
+    def test_junk_branch_to_package_branch(self):
+        # A junk branch can be moved to a source package.
+        branch = self.factory.makePersonalBranch()
+        source_package = self.factory.makeSourcePackage()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, source_package=source_package)
+        self.assertEqual(source_package, branch.target.context)
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
