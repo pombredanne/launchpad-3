@@ -160,7 +160,7 @@ distroarchseries:
 
 Check that the source package was correctly imported:
 
-    >>> from lp.registry.model.sourcepackagename import SourcePackageName,
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from canonical.launchpad.database import BinaryPackageName
     >>> n = SourcePackageName.selectOneBy(name="ekg")
     >>> ekg = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
