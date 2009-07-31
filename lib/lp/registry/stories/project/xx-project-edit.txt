@@ -9,7 +9,7 @@ The maintainer of a project can edit its details.
     'Change project group details'
 
     >>> soup = find_main_content(browser.contents)
-    >>> print soup.first('h1').renderContents()
+    >>> print browser.title
     Change project group details
 
     >>> browser.getControl(name='field.name').value = 'new-name'
@@ -40,10 +40,6 @@ But administrators can access the page:
     'http://launchpad.dev/new-name/+review'
     >>> admin_browser.title
     'Change project group details'
-
-    >>> soup = find_main_content(admin_browser.contents)
-    >>> print soup.first('h1').renderContents()
-    Review upstream project group details
 
 Mark the project as reviewed.
 

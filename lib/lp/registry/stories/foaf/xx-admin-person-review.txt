@@ -11,10 +11,6 @@ information.
     >>> print admin_browser.title
     Review Guilherme Salgado
 
-    >>> content = find_main_content(admin_browser.contents)
-    >>> print extract_text(content.h1)
-    Review person
-
     >>> admin_browser.getControl(
     ...     'Display Name', index=0).value = 'The one and only Salgado'
     >>> admin_browser.getControl('Change').click()
@@ -39,9 +35,6 @@ The +reviewaccount page displays account information that is normally
 hidden from the UI.
 
     >>> content = find_main_content(admin_browser.contents)
-    >>> print extract_text(content.h1)
-    Review person's account
-
     >>> for tr in content.find(id='summary').findAll('tr'):
     ...     print extract_text(tr)
     Created: 2005-06-06

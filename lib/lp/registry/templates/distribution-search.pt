@@ -8,12 +8,9 @@
 >
   <body>
 
-<tal:heading metal:fill-slot="heading">
-  <h1>Search packages in <tal:title replace="context/title" /></h1>
-</tal:heading>
-
 <div metal:fill-slot="main">
   <div class="top-portlet">
+    <h1>Search packages in <tal:title replace="context/title" /></h1>
     <form name="search" method="GET">
       <div>
         <label for="text">

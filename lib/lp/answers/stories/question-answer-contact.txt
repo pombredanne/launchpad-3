@@ -20,8 +20,8 @@ Anybody can become an answer contact. To register as an answer contact,
 the user clicks on the 'Set answer Contact' link:
 
     >>> browser.getLink('Set answer contact').click()
-    >>> print find_main_content(browser.contents).find('h1')
-    <h1>Manage answer contacts</h1>
+    >>> print browser.title
+    Answer contact for Ubuntu Linux
 
     >>> description = find_main_content(browser.contents).p
     >>> print extract_text(description)
@@ -73,8 +73,8 @@ link to in the notice to review the changes. Sample Person's browser
 sends the accept-languages header with English and Spanish.
 
     >>> browser.getLink('Your preferred languages').click()
-    >>> print extract_text(find_main_content(browser.contents).find('h1'))
-    Your language preferences
+    >>> print browser.title
+    Sample Person's preferred languages
 
     >>> browser.getControl('English', index=0).selected
     True
@@ -160,8 +160,8 @@ languages. He must add Spanish to the team's preferred languages.
     'Landscape Developers in Launchpad'
 
     >>> browser.getLink('Set preferred languages').click()
-    >>> print extract_text(find_main_content(browser.contents).find('h1'))
-    Landscape Developers's language preferences
+    >>> print browser.title
+    Landscape Developers's preferred languages
 
 Sample Person may be surprised to see English is already selected.
 Per the notification issued in the first example above, English was
