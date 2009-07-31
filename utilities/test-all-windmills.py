@@ -19,11 +19,12 @@ The script exit codes are:
 import subprocess
 import os
 import sys
+from lp.scripts.utilities.lpwindmill import runLaunchpad
 
 
 # Test runner configuration hash
 runner_config = {
-    'runner':  'bin/lp-windmill',
+    'runner':  'bin/windmill',
     'port':    8085,
     'browser': 'firefox',
 }
@@ -88,7 +89,7 @@ def run_suite(suite_config):
     ]
 
     try:
-        retcode = subprocess.call(test_command)
+        return subprocess.call(test_command)
     except OSError, e:
         sys.stderr.write(
             "Error: Test command failed to execute: " + test_command + "\n")
@@ -101,14 +102,18 @@ def run_all_windmills():
 
     Returns the number of test suites that failed.
     """
+    # Set up the launchpad instance, and install the atexit handlers that
+    # will clean everything up when this script exits.
+    runLaunchpad()
+
     failures = 0
 
     for suite_name, suite_config in test_suites.items():
         print "Running the %s test suite" % suite_name
 
-        success = run_suite(suite_config)
+        exit_status = run_suite(suite_config)
 
-        if not success:
+        if exit_status != 0:
             print "Failure: Test failures in the %s test suite" % suite_name
             print
             failures += 1
