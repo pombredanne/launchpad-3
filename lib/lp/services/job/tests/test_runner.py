@@ -152,6 +152,7 @@ class TestJobRunner(TestCaseWithFactory):
             notification.get_payload(decode=True))
         self.assertNotIn('Fake exception.  Foobar, I say!',
                          notification.get_payload(decode=True))
+        self.assertEqual('Launchpad internal error', notification['subject'])
 
     def assertNoNewOops(self, old_oops):
         oops = errorlog.globalErrorUtility.getLastOopsReport()

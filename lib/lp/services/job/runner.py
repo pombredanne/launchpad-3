@@ -32,6 +32,8 @@ class BaseRunnableJob:
     """
     delegates(IJob, 'job')
 
+    user_error_types = ()
+
     def getOopsRecipients(self):
         """Return a list of email-ids to notify about oopses."""
         return getErrorRecipients()
@@ -48,12 +50,13 @@ class BaseRunnableJob:
         recipients = self.getOopsRecipients()
         if len(recipients) == 0:
             return None
+        subject = 'Launchpad internal error'
         body = (
             'Launchpad encountered an internal error during the following'
             ' operation: %s.  It was logged with id %s.  Sorry for the'
             ' inconvenience.' % (self.getOperationDescription(), oops_id))
         from_addr = config.canonical.noreply_from_address
-        return MailController(from_addr, recipients, 'NullJob failed.', body)
+        return MailController(from_addr, recipients, subject, body)
 
     def getUserErrorMailController(self, e):
         """Return a MailController for notifying people about oopses.
@@ -63,10 +66,10 @@ class BaseRunnableJob:
         recipients = self.getErrorRecipients()
         if len(recipients) == 0:
             return None
+        subject = 'Launchpad error while %s' % self.getOperationDescription()
         body = (
             'Launchpad encountered an error during the following'
             ' operation: %s.  %s' % (self.getOperationDescription(), str(e)))
-        subject = 'Launchpad error while %s' % self.getOperationDescription()
         from_addr = config.canonical.noreply_from_address
         return MailController(from_addr, recipients, subject, body)
 
