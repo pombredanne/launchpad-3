@@ -28,9 +28,6 @@ runner_config = {
     'browser': 'firefox',
 }
 
-# Test suite configuration
-test_root_dir = 'lib/canonical/launchpad/windmill/tests/'
-
 # A hash of test suites to run.  Each key has two parts: the path to the test
 # suite root directory (relative to the test root directory) and the domain
 # that the test runner must use during suite execution.
