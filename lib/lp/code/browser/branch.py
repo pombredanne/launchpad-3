@@ -36,12 +36,15 @@ import simplejson
 from zope.app.form.browser import TextAreaWidget
 from zope.traversing.interfaces import IPathAdapter
 from zope.component import getUtility, queryAdapter
+from zope.event import notify
 from zope.formlib import form
-from zope.interface import Interface, implements
+from zope.interface import Interface, implements, providedBy
 from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, Text
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.uri import URI
 
 from canonical.cachedproperty import cachedproperty
@@ -574,7 +577,6 @@ class BranchEditSchema(Interface):
     the user to be able to edit it.
     """
     use_template(IBranch, include=[
-        'owner',
         'name',
         'url',
         'description',
@@ -582,6 +584,7 @@ class BranchEditSchema(Interface):
         'whiteboard',
         ])
     private = copy_field(IBranch['private'], readonly=False)
+    owner = copy_field(IBranch['owner'], readonly=False)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -598,9 +601,12 @@ class BranchEditFormView(LaunchpadEditFormView):
     @action('Change Branch', name='change')
     def change_action(self, action, data):
         # If the owner or product has changed, add an explicit notification.
+        branch_before_modification = Snapshot(
+            self.context, providing=providedBy(self.context))
         if 'owner' in data:
-            new_owner = data['owner']
+            new_owner = data.pop('owner')
             if new_owner != self.context.owner:
+                self.context.setOwner(new_owner, self.user)
                 self.request.response.addNotification(
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
@@ -616,7 +622,13 @@ class BranchEditFormView(LaunchpadEditFormView):
                 else:
                     self.request.response.addNotification(
                         "The branch is now publicly accessible.")
-        if self.updateContextFromData(data):
+        if self.updateContextFromData(data, notify_modified=False):
+            # Notify the object has changed with the snapshot that was taken
+            # earler.
+            field_names = [
+                form_field.__name__ for form_field in self.form_fields]
+            notify(ObjectModifiedEvent(
+                self.context, branch_before_modification, field_names))
             # Only specify that the context was modified if there
             # was in fact a change.
             self.context.date_last_modified = UTC_NOW

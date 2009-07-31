@@ -372,7 +372,7 @@ class LaunchpadEditFormView(LaunchpadFormView):
 
     render_context = True
 
-    def updateContextFromData(self, data, context=None):
+    def updateContextFromData(self, data, context=None, notify_modified=True):
         """Update the context object based on form data.
 
         If no context is given, the view's context is used.
@@ -391,7 +391,7 @@ class LaunchpadEditFormView(LaunchpadFormView):
 
         was_changed = form.applyChanges(context, self.form_fields,
                                         data, self.adapters)
-        if was_changed:
+        if was_changed and notify_modified:
             field_names = [form_field.__name__
                            for form_field in self.form_fields]
             notify(ObjectModifiedEvent(
