@@ -1,16 +1,16 @@
-<tal:root
+<div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
-  <div id="related-pages" class="portlet">
-    <h2 tal:content="view/title">Subtitle</h2>
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="related-pages" class="portlet">
+  <h2 tal:content="view/title">Menu title</h2>
 
-    <ul>
-      <tal:link tal:repeat="link view/links">
+  <ul>
+    <tal:link tal:repeat="link view/links">
+      <tal:enabled tal:condition="link/enabled">
         <li tal:condition="link/linked">
-          <a tal:condition="link/enabled"
-            tal:replace="structure link/fmt:icon-link" />
+          <a tal:replace="structure link/fmt:icon-link" />
         </li>
-      </tal:link>
-    </ul>
-  </div>
-</tal:root>
+      </tal:enabled>
+    </tal:link>
+  </ul>
+</div>
