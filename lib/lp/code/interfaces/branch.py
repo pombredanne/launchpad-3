@@ -19,6 +19,7 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
     'BranchExists',
+    'BranchTargetError',
     'BranchTypeError',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
@@ -66,7 +67,7 @@ from lp.code.enums import (
     UICreatableBranchType,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchtarget import IBranchTarget, IHasBranchTarget
+from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPrivacy)
@@ -107,6 +108,10 @@ class BranchExists(BranchCreationException):
             'for %(context)s.' % params)
         self.existing_branch = existing_branch
         BranchCreationException.__init__(self, message)
+
+
+class BranchTargetError(Exception):
+    """Raised when there is an error determining a branch target."""
 
 
 class CannotDeleteBranch(Exception):
@@ -427,12 +432,20 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
-        new_target=Reference(
-            title=_("The new target of the branch."),
-            schema=IBranchTarget))
+        project=Reference(
+            title=_("The project the branch belongs to."),
+            schema=Interface, required=False), # Really IProduct
+        source_package=Reference(
+            title=_("The source package the branch belongs to."),
+            schema=Interface, required=False)) # Really ISourcePackage
     @export_write_operation()
-    def setTarget(new_target, user):
-        """Set the target of the branch to be `new_target`."""
+    def setTarget(user, project=None, source_package=None):
+        """Set the target of the branch to be `project` or `source_package`.
+
+        Only one of `project` or `source_package` can be set, and if neither
+        is set, the branch gets moved into the junk namespace of the branch
+        owner.
+        """
 
     reviewer = exported(
         PublicPersonChoice(
