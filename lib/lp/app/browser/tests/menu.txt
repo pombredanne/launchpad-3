@@ -36,10 +36,10 @@ are usually bound to a view.
     >>> class EditView(LaunchpadView):
     ...     """A simple view."""
     ...     implements(IEditMenuMarker)
-    ...     # A hack that reveals secret of how facet work.
+    ...     # A hack that reveals secret of how facets work.
     ...     __launchpad_facetname__ = 'overview'
 
-    # Menu's are normally registered using the menu ZCML directive.
+    # Menus are normally registered using the menu ZCML directive.
     >>> provideAdapter(
     ...     EditMenu, [IEditMenuMarker], INavigationMenu, name="overview")
 
@@ -53,7 +53,7 @@ to the named adapter: <tal:menu replace="structure view/@@+related-pages" />
     >>> print menu_view.template.filename
     /.../navigationmenu-related-pages.pt
 
-The view provides access the menu's title and links. The both enabled
+The view provides access the menu's title and links. Both the enabled
 and disabled links are included.
 
     >>> print menu_view.title
@@ -64,9 +64,10 @@ and disabled links are included.
     True   http://launchpad.dev/~beaker/+edit-people
     False  http://launchpad.dev/~beaker/+admin
 
-The view renders the a heading using the menu title and a list of the
-enabled and linked links. The template uses the inline-link rules, if the
-link has a icon, the classes are set, otherwise a style attribute is used.
+The view renders the heading using the menu title and a list of the links. A
+link is rendered only if its 'enabled' and 'linked' properties are true. The
+template uses the inline-link rules, if the link has an icon, the classes are
+set, otherwise a style attribute is used.
 
     >>> print menu_view.render()
     <div id="related-pages" class="portlet">
@@ -83,8 +84,8 @@ link has a icon, the classes are set, otherwise a style attribute is used.
       </ul>
     </div>
 
-The link is not displayed if the link matches the requested URL (not linked).
-The page will not render a link to itself.
+The link is not displayed if the link matches the requested URL (linked is
+False). The page will not render a link to itself.
 
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://launchpad.dev/~beaker/+edit')
