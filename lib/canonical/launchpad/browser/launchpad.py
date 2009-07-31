@@ -187,13 +187,16 @@ class LinkView(LaunchpadView):
     The link is not rendered if it's not enabled and we are not in development
     mode.
     """
-    AFTER_ICONS = ('edit', 'remove', 'trash-icon')
+    MODIFY_ICONS = ('edit', 'remove', 'trash-icon')
 
     @property
     def sprite_class(self):
         """Return the class used to display the link's icon."""
-        if self.context.icon in self.AFTER_ICONS:
-            return 'sprite-after'
+        if self.context.icon in self.MODIFY_ICONS:
+            # The 3.0 UI design says these are displayed like other icons
+            # But they do not have the same use so we want to keep this rule
+            # separate.
+            return 'sprite modify'
         else:
             return 'sprite'
 

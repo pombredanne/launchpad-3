@@ -91,6 +91,14 @@ class DistributionSourcePackage(BugTargetBase,
             self.sourcepackagename.name, self.distribution.displayname)
 
     @property
+    def development_version(self):
+        """See `IDistributionSourcePackage`."""
+        series = self.distribution.currentseries
+        if series is None:
+            return None
+        return series.getSourcePackage(self.sourcepackagename)
+
+    @property
     def _self_in_database(self):
         """Return the equivalent database-backed record of self."""
         # XXX: allenap 2008-11-13 bug=297736: This is a temporary
