@@ -97,7 +97,7 @@ def branch_to_pickerentry(branch):
 @implementer(IPickerEntry)
 @adapter(ISourcePackageName)
 def sourcepackagename_to_pickerentry(sourcepackagename):
-    """Adapts IBranch to IPickerEntry."""
+    """Adapts ISourcePackageName to IPickerEntry."""
     extra = default_pickerentry_adapter(sourcepackagename)
     descriptions = getSourcePackageDescriptions([sourcepackagename])
     extra.description = descriptions.get(
@@ -153,6 +153,9 @@ class HugeVocabularyJSONView:
                     term.value, request=api_request,
                     path_only_if_possible=True)
             except NoCanonicalUrl:
+                # The exception is caught, because the api_url is only
+                # needed for inplace editing via a REST call. The
+                # form picker doesn't need the api_url.
                 entry['api_uri'] = 'Could not find canonical url.'
             picker_entry = IPickerEntry(term.value)
             if picker_entry.description is not None:
