@@ -36,7 +36,7 @@ class BaseRunnableJob:
 
     def getOopsRecipients(self):
         """Return a list of email-ids to notify about oopses."""
-        return getErrorRecipients()
+        return self.getErrorRecipients()
 
     def getErrorRecipients(self):
         """Return a list of email-ids to notify about user errors."""
