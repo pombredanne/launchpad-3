@@ -1900,6 +1900,10 @@ class ViewArchive(AuthorizationBase):
             or user.inTeam(celebrities.commercial_admin)):
             return True
 
+        # Owners can view the PPA.
+        if user.inTeam(self.obj.owner):
+            return True
+
         # Uploaders can view private PPAs.
         if self.obj.is_ppa and self.obj.canUpload(user):
             return True
