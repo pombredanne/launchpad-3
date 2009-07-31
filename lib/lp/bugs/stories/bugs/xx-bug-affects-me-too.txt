@@ -70,3 +70,40 @@ Back at the bug page, the text changes once again.
    ...     user_browser.contents, 'affectsmetoo').find(
    ...         None, 'static'))
    This bug doesn't affect me
+
+
+== Static and dynamic support ==
+
+A bug page contains markup to support both static (no Javascript) and
+dynamic (Javascript enabled) scenarios.
+
+   >>> def class_filter(css_class):
+   ...     def test(node):
+   ...         return css_class in node.get('class', '').split()
+   ...     return test
+
+   >>> static_content = find_tag_by_id(
+   ...     user_browser.contents, 'affectsmetoo').find(
+   ...         class_filter('static'))
+
+   >>> static_content is not None
+   True
+
+   >>> dynamic_content = find_tag_by_id(
+   ...     user_browser.contents, 'affectsmetoo').find(
+   ...         class_filter('dynamic'))
+
+   >>> dynamic_content is not None
+   True
+
+The dynamic content is hidden by the presence of the "unseen" CSS
+class.
+
+   >>> print static_content.get('class')
+   static
+
+   >>> print dynamic_content.get('class')
+   dynamic unseen
+
+It is the responsibilty of Javascript running in the page to unhide
+the dynamic content and hide the static content.
