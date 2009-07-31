@@ -372,29 +372,39 @@ span.see-all {
     padding-left: 1em;
     }
 
+/* == Context heading and application tabs == */
+div.context-heading img {
+    float: left;
+    margin: 0 1.5em 0 0;
+}
+div.context-heading h1 {
+    padding-top: 0; /* Potentially a general style? */
+    margin-bottom: 0.2em;  /* Potentially a general style? */
+    color: #000000;
+    font-weight: bold; /* Hmm... bold is a bit too, um, bold? */
+}
+
 /* === Location application tabs === */
 /* In most pages, we present a list of six application facets: */
-ul.lp-apps {
-    font-weight: bold;
-    font-size: 90%;
-}
-ul.lp-apps li {
+.context-heading li {
     display:inline;
     list-style-type: none;
 }
-ul.lp-apps li a {
-    padding: 0.2em 0.5em;
+.context-heading li a {
+    padding: 0.3em 0.5em;
 }
-ul.lp-apps li a:link, ul.lp-apps li a:visited {
+.context-heading li a:link, .context-heading li a:visited {
     color: #000;
     background-color: #fff;
     text-decoration: none;
 }
-ul.lp-apps li.active a {
+.context-heading li.active a {
+    font-weight: bold;
     color: #fff;
     background-color: #747474;
 }
-ul.lp-apps li a:hover {
+.context-heading li a:hover {
+    color: #000;
     background-color: #f3f3f3;
 }
 

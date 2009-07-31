@@ -88,32 +88,6 @@
           <input type="search" id="search-text" name="field.text" />
         </form>
         <tal:hierarchy replace="structure context/@@+hierarchy" />
-        <ul class="lp-apps" class="clearfix"
-          tal:condition="view/macro:pagehas/applicationtabs"
-          tal:define="facetmenu view/menu:facet">
-          <tal:facet repeat="link facetmenu">
-            <li
-              tal:condition="python: link.enabled and link.selected"
-              tal:attributes="title link/summary; class string:${link/name} active"
-              ><a
-                  tal:condition="link/linked"
-                  tal:attributes="href link/url"
-                  tal:content="structure link/escapedtext" /></li>
-            <li
-              tal:condition="python: link.enabled and not link.selected"
-              tal:attributes="title link/summary; class link/name"
-              ><a
-                tal:condition="link/enabled"
-                tal:attributes="href link/url"
-                tal:content="structure link/escapedtext"
-                /></li>
-            <li
-              tal:condition="not:link/enabled"
-              tal:attributes="class string:${link/name} disabled-tab"
-              ><strong
-                tal:content="structure link/escapedtext" /></li>
-          </tal:facet>
-        </ul>
       </div><!--id="locationbar"-->
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
@@ -132,15 +106,8 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <tal:location condition="view/macro:pagehas/applicationtabs">
-              <h1><tal:heading
-                tal:condition="context/title|nothing"
-                tal:content="context/title"
-                metal:define-slot="heading" /></h1>
-              <tal:breadcrumbs>
-                <!-- future breadcrumb rule -->
-              </tal:breadcrumbs>
-            </tal:location>
+            <metal:heading_nav use-macro="
+              context/@@+base-layout-macros/context-heading-with-menu"/>
             <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->

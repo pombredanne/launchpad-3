@@ -9,7 +9,7 @@
   <body>
 
 <div metal:fill-slot="main">
-  <div class="top-portlet">
+  <div class="portlet">
   <h1>Search packages in <span tal:replace="context/title" /></h1>
 
   <form name="search" method="GET">
