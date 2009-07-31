@@ -34,6 +34,10 @@ class BaseRunnableJob:
 
     def getOopsRecipients(self):
         """Return a list of email-ids to notify about oopses."""
+        return getErrorRecipients()
+
+    def getErrorRecipients(self):
+        """Return a list of email-ids to notify about user errors."""
         return []
 
     def getOopsMailController(self, oops_id):
@@ -51,9 +55,31 @@ class BaseRunnableJob:
         from_addr = config.canonical.noreply_from_address
         return MailController(from_addr, recipients, 'NullJob failed.', body)
 
+    def getUserErrorMailController(self, e):
+        """Return a MailController for notifying people about oopses.
+
+        Return None if there is no-one to notify.
+        """
+        recipients = self.getErrorRecipients()
+        if len(recipients) == 0:
+            return None
+        body = (
+            'Launchpad encountered an error during the following'
+            ' operation: %s.  %s' % (self.getOperationDescription(), str(e)))
+        subject = 'Launchpad error while %s' % self.getOperationDescription()
+        from_addr = config.canonical.noreply_from_address
+        return MailController(from_addr, recipients, subject, body)
+
     def notifyOops(self, oops):
         """Report this oops."""
         ctrl = self.getOopsMailController(oops.id)
+        if ctrl is None:
+            return
+        ctrl.send()
+
+    def notifyUserError(self, e):
+        """See `IRunnableJob`."""
+        ctrl = self.getUserErrorMailController(e)
         if ctrl is None:
             return
         ctrl.send()
@@ -103,8 +129,8 @@ class JobRunner(object):
                 self.runJob(job)
             except LeaseHeld:
                 self.incomplete_jobs.append(job)
-            except job.user_errors:
-                pass
+            except job.user_error_types, e:
+                job.notifyUserError(e)
             except Exception, e:
                 info = sys.exc_info()
                 errorlog.globalErrorUtility.raising(info)

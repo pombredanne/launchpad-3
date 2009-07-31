@@ -25,18 +25,25 @@ class NullJob(BaseRunnableJob):
 
     JOB_COMPLETIONS = []
 
-    def __init__(self, completion_message, oops_recipients=None):
+    def __init__(self, completion_message, oops_recipients=None,
+                 error_recipients=None):
         self.message = completion_message
         self.job = Job()
         self.oops_recipients = oops_recipients
         if self.oops_recipients is None:
             self.oops_recipients = []
+        self.error_recipients = error_recipients
+        if self.error_recipients is None:
+            self.error_recipients = []
 
     def run(self):
         NullJob.JOB_COMPLETIONS.append(self.message)
 
     def getOopsRecipients(self):
         return self.oops_recipients
+
+    def getErrorRecipients(self):
+        return self.error_recipients
 
     def getOperationDescription(self):
         return 'appending a string to a list'
@@ -146,26 +153,37 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertNotIn('Fake exception.  Foobar, I say!',
                          notification.get_payload(decode=True))
 
+    def assertNoNewOops(self, old_oops):
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        if old_oops is None:
+            self.assertIs(None, oops)
+        else:
+            self.assertEqual(oops.id, old_oops.id)
+
     def test_runAll_mails_user_errors(self):
         job_1, job_2 = self.makeTwoJobs()
         class ExampleError(Exception):
             pass
         def raiseError():
-            # Ensure that jobs which call transaction.abort work, too.
-            transaction.abort()
             raise ExampleError('Fake exception.  Foobar, I say!')
         job_1.run = raiseError
-        job_1.user_errors = (ExampleError,)
-        job_1.oops_recipients = ['jrandom@example.org']
+        job_1.user_error_types = (ExampleError,)
+        job_1.error_recipients = ['jrandom@example.org']
         runner = JobRunner([job_1, job_2])
         reporter = errorlog.globalErrorUtility
         old_oops = reporter.getLastOopsReport()
         runner.runAll()
-        oops = reporter.getLastOopsReport()
-        if old_oops is None:
-            self.assertIs(None, oops)
-        else:
-            self.assertEqual(oops.id, old_oops.id)
+        self.assertNoNewOops(old_oops)
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        body = notifications[0].get_payload(decode=True)
+        self.assertEqual(
+            'Launchpad encountered an error during the following operation:'
+            ' appending a string to a list.  Fake exception.  Foobar, I say!',
+            body)
+        self.assertEqual(
+            'Launchpad error while appending a string to a list',
+            notifications[0]['subject'])
 
     def test_runAll_requires_IRunnable(self):
         """Supplied classes must implement IRunnableJob.
