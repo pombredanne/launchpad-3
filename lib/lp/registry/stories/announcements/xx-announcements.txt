@@ -555,7 +555,7 @@ it.
 
     >>> priv_browser.open('http://launchpad.dev/kubuntu/+announcements')
     >>> priv_browser.getLink(edit_link_text).click()
-    >>> priv_browser.getLink('Move announcement').click()
+    >>> priv_browser.getLink('move this announcement').click()
     >>> print priv_browser.url
     http://launchpad.dev/kubuntu/+announcement/.../+retarget
     >>> priv_browser.getControl('For').value = 'guadalinex'
@@ -572,7 +572,7 @@ not be able to move it.
     ...     setupBrowser(auth="Basic colin.watson@ubuntulinux.com:test")
     >>> kamion_browser.open('http://launchpad.dev/guadalinex/+announcements')
     >>> kamion_browser.getLink(edit_link_text).click()
-    >>> kamion_browser.getLink('Move announcement').click()
+    >>> kamion_browser.getLink('move this announcement').click()
     >>> print kamion_browser.url
     http://launchpad.dev/guadalinex/+announcement/.../+retarget
     >>> kamion_browser.getControl('For').value = 'kubuntu'

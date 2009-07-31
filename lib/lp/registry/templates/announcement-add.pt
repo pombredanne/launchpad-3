@@ -3,7 +3,10 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
 
@@ -13,9 +16,11 @@
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
   </metal:block>
 
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
+
 <div metal:fill-slot="main">
 
-  <div class="top-portlet">
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
@@ -23,7 +28,6 @@
       subscribe to an RSS feed of your announcements.
     </div>
 
-  </div>
   </div>
 
 </div>
