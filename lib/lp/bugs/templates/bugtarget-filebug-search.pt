@@ -60,7 +60,7 @@
   </div>
 
   <tal:most-common-bugs condition="view/most_common_bugs">
-    <h2>Most Frequently Reported Bugs</h2>
+    <h2>Most frequently reported bugs</h2>
 
     <table class="listing" id="most-common-bugs">
       <thead>
