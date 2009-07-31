@@ -11,8 +11,8 @@
 
 <div metal:fill-slot="main">
   <div class="top-portlet">
-  <div metal:use-macro="context/@@launchpad_form/form">
-    <div metal:fill-slot="extra_info">
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <div metal:fill-slot="extra_info">
         <p>
           Examine the project's overview tab first, then examine if the
           project is using code, bugs, etc.... <strong>Mark the project
@@ -60,7 +60,6 @@
           If the project looks like a test, a prank, or spam,
           <strong>deactivate it</strong>.
         </p>
-      </div>
 
       <input type="hidden" name="next_url"
         tal:attributes="value view/next_url" />
@@ -87,7 +86,8 @@
           </tr>
         </tbody>
       </table>
-  </div>
+      </div>
+    </div>
   </div>
 
   <tal:menu replace="structure view/@@+related-pages" />

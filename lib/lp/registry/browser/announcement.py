@@ -51,7 +51,7 @@ class AnnouncementMenuMixin:
 
     @enabled_with_permission('launchpad.Edit')
     def retarget(self):
-        text = 'Move to another project'
+        text = 'Move announcement'
         return Link('+retarget', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

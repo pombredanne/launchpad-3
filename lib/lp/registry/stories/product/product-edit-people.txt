@@ -55,7 +55,7 @@
   >>> admin_browser.getLink('Change details').click()
   >>> admin_browser.url
   'http://launchpad.dev/firefox/+edit'
-  >>> admin_browser.getLink('People').click()
+  >>> admin_browser.getLink('Change people').click()
   >>> admin_browser.url
   'http://launchpad.dev/firefox/+edit-people'
 
@@ -120,7 +120,7 @@
   >>> browser.getLink('Change details').click()
   >>> browser.url
   'http://launchpad.dev/firefox/+edit'
-  >>> browser.getLink('People').click()
+  >>> browser.getLink('Change people').click()
   >>> browser.url
   'http://launchpad.dev/firefox/+edit-people'
 

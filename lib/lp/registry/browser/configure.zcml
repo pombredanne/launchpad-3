@@ -771,7 +771,7 @@
         template="../templates/announcements-all.pt"/>
     <browser:menus
         classes="
-            AnnouncementContextMenu"
+            AnnouncementContextMenu AnnouncementEditNavigationMenu"
         module="lp.registry.browser.announcement"/>
     <facet
         facet="overview">

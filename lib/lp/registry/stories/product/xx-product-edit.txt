@@ -5,10 +5,8 @@ Page to edit a product - does the page load as the product owner?
     >>> browser.getLink('Change details').click()
     >>> print browser.url
     http://launchpad.dev/firefox/+edit
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...<title>Change project details</title>...
-    ...<h2>Change project details:</h2>...
+    >>> print browser.title
+    Change project details
 
 We try to change the project related to that product. First with a invalid
 project.
@@ -360,7 +358,7 @@ The product can then be reactivated.
     >>> registry_browser.getControl(name='field.active').value = True
     >>> registry_browser.getControl(name='field.actions.change').click()
     >>> print registry_browser.url
-    http://launchpad.dev/firefox/
+    http://launchpad.dev/firefox
     >>> contents = find_main_content(registry_browser.contents)
     >>> print contents.find(id='project-inactive')
     None

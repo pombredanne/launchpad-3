@@ -7,7 +7,7 @@ Appoint Sample Person as the driver of Firefox product.
   >>> browser.getLink('Change details').click()
   >>> browser.url
   'http://launchpad.dev/firefox/+edit'
-  >>> browser.getLink('People').click()
+  >>> browser.getLink('Change people').click()
   >>> browser.url
   'http://launchpad.dev/firefox/+edit-people'
   >>> browser.title
