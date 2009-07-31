@@ -216,6 +216,7 @@ caption {caption-side: bottom; text-align: left;}
 dt dfn {font-style: normal; font-weight: bold;}
 dd {margin-bottom: 1em;}
 input {visibility:inherit;}
+input[type=radio] {margin-left: 1em;}
 kbd {
   background-color: #ddd;
   border: 1px solid;
@@ -403,6 +404,7 @@ dd .whiteboard {
 /* === Forms === */
 
 form {border: 0; margin: 0; padding: 0;}
+form table label {font-weight: bold;}
 fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
 input[type="text"], input[type="search"], input[type="password"], textarea {
   font-family: sans-serif;
@@ -417,9 +419,9 @@ form input[type="submit"], form input[type="text"], form select, form textarea {
   margin-right: 0.5em;
 }
 button{padding:0;}
-input.urlTextType {width: 100%;}
+input.urlTextType {width: 40em;}
 .fieldRequired, .fieldOptional {color: #999;}
-.formHelp {margin-top: 0.2em; margin-bottom: 0.5em; color: #777;}
+.formHelp {margin: 0.2em 0 0.5em 0.2em; color: #777;}
 /* Hack to add breathing room to bug status forms: */
 table.listing div.field>table {margin-top: 0.5em;}
 table.listing div.field>label, table.listing div.field>div>label,
@@ -1391,7 +1393,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 #portlets .portlet h2, div.aside h2 {
   border-bottom: 1px solid #ccc;
   color: inherit !important;
-    /* http://launchpad.dev/ubuntu/+source/pmount/+filebug-advanced */
   font-weight: bold;
   margin: 0 0 1em;
   padding: 0 0 1px;

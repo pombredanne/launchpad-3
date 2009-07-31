@@ -224,7 +224,7 @@
     <browser:page
         name="+filebug-advanced"
         for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FrontPageFileBugAdvancedView"
+        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
@@ -392,7 +392,7 @@
     <browser:page
         name="+filebug-advanced"
         for="lp.registry.interfaces.project.IProject"
-        class="lp.bugs.browser.bugtarget.ProjectFileBugAdvancedView"
+        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
