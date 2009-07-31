@@ -361,6 +361,7 @@
         <allow
             attributes="
                 distribution
+                development_version
                 sourcepackagename
                 name
                 displayname
@@ -1302,7 +1303,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="product name owner driver summary branch
-                            status releasefileglob
+                            translations_branch status releasefileglob
                             translations_autoimport_mode"/>
         <require
             permission="launchpad.AnyPerson"

@@ -103,7 +103,6 @@ from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
 from canonical.widgets.lazrjs import TextLineEditorWidget
-from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import (
     LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -1129,7 +1128,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
-    custom_widget('registrant', SinglePopupWidget)
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.

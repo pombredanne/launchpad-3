@@ -105,13 +105,13 @@ by getInputValue().
     u'mozilla'
 
 The project is actually selected using a contained widget associated
-with the field's vocabulary. In this case, it is a SinglePopupWidget
+with the field's vocabulary. In this case, it is a VocabularyPickerWidget
 which offers a link to Choose the proper project:
 
     >>> widget.target_widget
-    <...SinglePopupWidget...>
+    <...VocabularyPickerWidget...>
     >>> print widget.target_widget.popupHref()
-    javascript:popup_window('@@popup-window?vocabulary=Project...
+    javascript:popup_window('@@popup-vocabulary-picker?vocabulary=Project&...
 
 If an non-existant distribution name is provided, a widget error is
 raised:

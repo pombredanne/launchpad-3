@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
+    'LinkTranslationsBranchView',
     'ProductSeriesBreadcrumbBuilder',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
@@ -47,14 +48,13 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.codeimport import (
     ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser import StatusCount
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView,
@@ -69,6 +69,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -417,6 +418,17 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         return (branch is not None and
                 check_permission('launchpad.View', branch))
 
+    @property
+    def is_obsolete(self):
+        """Return True if the series is OBSOLETE"
+
+        Obsolete series do not need to display as much information as other
+        series. Accessing private bugs is an expensive operation and showing
+        them for obsolete series can be a problem if many series are being
+        displayed.
+        """
+        return self.context.status == DistroSeriesStatus.OBSOLETE
+
     @cachedproperty
     def bugtask_status_counts(self):
         """A list StatusCounts summarising the targeted bugtasks."""
@@ -583,6 +595,27 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the product series page."""
+
+
+class LinkTranslationsBranchView(LaunchpadEditFormView):
+    """View to set the series' translations export branch."""
+
+    schema = IProductSeries
+    field_names = ['translations_branch']
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context) + '/+translations-settings'
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Translations export branch updated.')
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the settings page."""
 
 
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
