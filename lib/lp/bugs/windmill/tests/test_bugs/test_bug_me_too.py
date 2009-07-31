@@ -62,4 +62,4 @@ def test_me_too():
     client.click(xpath=u"//span[@id='affectsmetoo']")
     client.waits.forElement(id=u'yui-pretty-overlay-modal')
 
-    # Do more here...
+    # XXX: Gavin Panella bug=361097 2009-07-31: Finish this.
