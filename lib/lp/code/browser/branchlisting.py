@@ -247,9 +247,9 @@ class BranchListingSort(EnumeratedType):
         """)
 
     REGISTRANT = Item("""
-        by registrant name
+        by owner name
 
-        Sort branches by the display name of the registrant.
+        Sort branches by the display name of the owner.
         """)
 
     MOST_RECENTLY_CHANGED_FIRST = Item("""
