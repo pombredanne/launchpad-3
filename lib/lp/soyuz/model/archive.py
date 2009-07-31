@@ -1544,8 +1544,8 @@ class ArchiveSet:
                 # that consists of themselves.
                 extra_exprs.append(
                     Or(
-                        Archive.private == False,
-                        Archive.enabled == True,
+                        And(Archive.private == False,
+                            Archive.enabled == True),
                         Archive.ownerID.is_in(user_teams_subselect)))
 
         else:
@@ -1560,7 +1560,7 @@ class ArchiveSet:
             Archive.distribution == distribution,
             *extra_exprs)
 
-        return query
+        return query.order_by(Archive.name)
 
     def getPublicationsInArchives(self, source_package_name, archive_list,
                                   distribution):
