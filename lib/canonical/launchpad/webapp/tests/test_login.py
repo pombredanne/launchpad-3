@@ -19,14 +19,15 @@ class TestLoginOrRegister_preserve_query(TestCase):
         # Apport can construct ASCII-encoded URLs containing non-ASCII
         # characters (in the query string), where they send users to so that
         # they can finish reporting bugs. Apport shouldn't do that but we
-        # can't OOPS when it does, so we decode the query string back and
-        # replace those non-ASCII characters. For more details, see
-        # https://launchpad.net/bugs/61171.
+        # can't OOPS when it does, so we use UnicodeDammit to figure out its
+        # original encoding and decode it back. If UnicodeDammit can't figure
+        # out the correct encoding, we replace those non-ASCII characters. For
+        # more details, see https://launchpad.net/bugs/61171.
         logout()
         browser = setupBrowser()
         browser.open('http://launchpad.dev/+login?foo=subproc%E9s')
-        self.assertIn(
-            'subproc', browser.getControl(name='foo', index=0).value)
+        self.assertEquals(
+            'subproc\xc3\xa9s', browser.getControl(name='foo', index=0).value)
 
 
 def test_suite():
