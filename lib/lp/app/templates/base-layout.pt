@@ -137,7 +137,7 @@
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
             <tal:location condition="view/macro:pagehas/applicationtabs">
-              <h1
+              <h2
                 tal:condition="context/title|nothing"
                 tal:content="context/title"
                 metal:define-slot="heading" />
