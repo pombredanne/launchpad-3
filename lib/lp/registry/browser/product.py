@@ -1020,12 +1020,17 @@ class ProductDownloadFilesView(LaunchpadView,
 
 
 class ProductBrandingView(BrandingChangeView):
-
+    """A view to set branding."""
     implements(IProductEditMenu)
 
     label = "Change branding"
     schema = IProduct
     field_names = ['icon', 'logo', 'mugshot']
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change %s's branding" % self.context.title
 
     @property
     def cancel_url(self):
@@ -1068,6 +1073,11 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     custom_widget('licenses', LicenseWidget)
     custom_widget('bugtracker', ProductBugTrackerWidget)
     custom_widget('license_info', GhostWidget)
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change %s's details" % self.context.title
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1129,6 +1139,11 @@ class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
 
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Administer %s' % self.context.title
+
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.
 
@@ -1188,6 +1203,7 @@ class ProductAdminView(ProductEditView):
 
 
 class ProductReviewLicenseView(ProductEditView):
+    """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
         "license_reviewed",
@@ -1196,6 +1212,11 @@ class ProductReviewLicenseView(ProductEditView):
         "private_bugs",
         "reviewer_whiteboard",
         ]
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Review %s' % self.context.title
 
     def validate(self, data):
         """See `LaunchpadFormView`.
@@ -1630,7 +1651,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
     implements(IProductEditMenu)
 
-    label = "Change people"
+    label = "Change the roles of people"
     schema = IProduct
     field_names = [
         'owner',
@@ -1641,6 +1662,11 @@ class ProductEditPeopleView(LaunchpadEditFormView):
                   include_create_team_link=True)
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
                   include_create_team_link=True)
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change the roles of %s's people" % self.context.title
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):

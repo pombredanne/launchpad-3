@@ -59,8 +59,8 @@
   >>> admin_browser.url
   'http://launchpad.dev/firefox/+edit-people'
 
-  >>> admin_browser.title
-  'Change the roles of people'
+  >>> print admin_browser.title
+  Change the roles of Mozilla Firefox's people
 
   There is a link to create a new team.
 

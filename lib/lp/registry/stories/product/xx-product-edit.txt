@@ -6,7 +6,7 @@ Page to edit a product - does the page load as the product owner?
     >>> print browser.url
     http://launchpad.dev/firefox/+edit
     >>> print browser.title
-    Change project details
+    Change Mozilla Firefox's details
 
 We try to change the project related to that product. First with a invalid
 project.
@@ -92,8 +92,8 @@ But administrators can access the page:
 
     >>> admin_browser.url
     'http://launchpad.dev/firefox/+admin'
-    >>> admin_browser.title
-    'Administer Mozilla Firefox in Launchpad'
+    >>> print admin_browser.title
+    Administer Mozilla Firefox
 
 And in that page they can set aliases to the product.
 
