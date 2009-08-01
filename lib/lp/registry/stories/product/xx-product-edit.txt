@@ -335,17 +335,17 @@ inactive with a link to a form to re-activate it. Admins and
 Commercial Admins can still see the product, but regular users
 can't.
 
-    >>> registry_browser.open('http://launchpad.dev/firefox/')
+    >>> registry_browser.open('http://launchpad.dev/firefox')
     >>> contents = find_main_content(registry_browser.contents)
     >>> print contents.find(id='project-inactive')
     <p...This project is currently inactive...
     <a...href="+review-license"...
-    >>> admin_browser.open('http://launchpad.dev/firefox/')
+    >>> admin_browser.open('http://launchpad.dev/firefox')
     >>> contents = find_main_content(admin_browser.contents)
     >>> print contents.find(id='project-inactive')
     <p...This project is currently inactive...
     <a...href="+review-license"...
-    >>> user_browser.open('http://launchpad.dev/firefox/')
+    >>> user_browser.open('http://launchpad.dev/firefox')
     Traceback (most recent call last):
     ...
     NotFound...
