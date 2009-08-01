@@ -253,6 +253,13 @@
          want it to apply to the page template's CONTEXTS dict.
       -->
     <adapter
+        for="canonical.launchpad.interfaces.IPPA"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PPAFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="dict"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PageTemplateContextsAPI"

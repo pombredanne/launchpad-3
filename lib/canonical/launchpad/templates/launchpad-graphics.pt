@@ -778,7 +778,14 @@
         <td>
           <img alt="" src="/@@/ppa-icon" />
         </td>
-        <td>Icon for PPAs</td>
+        <td>Icon for active PPAs</td>
+      </tr>
+      <tr>
+        <td>ppa-icon-inactive</td>
+        <td>
+          <img alt="" src="/@@/ppa-icon-inactive" />
+        </td>
+        <td>Icon for inactive PPAs</td>
       </tr>
       <tr>
         <td>ppa-large</td>
