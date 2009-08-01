@@ -730,7 +730,7 @@ let us use a DTD to define the html entities that standard xml is missing.
 Deletion
 --------
 
-You can permanently delete an announcement.
+An owner can permanently delete an announcement.
 
     >>> kamion_browser.open('http://launchpad.dev/guadalinex/+announcements')
     >>> no_announcements(kamion_browser.contents)

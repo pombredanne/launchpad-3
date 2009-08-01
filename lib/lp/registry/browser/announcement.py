@@ -18,26 +18,25 @@ __all__ = [
     ]
 
 from zope.interface import implements, Interface
-
 from zope.schema import Choice, TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from lp.registry.interfaces.announcement import IAnnouncement
-from canonical.launchpad import _
-from canonical.launchpad.fields import AnnouncementDate, Summary, Title
-from canonical.launchpad.interfaces.validation import valid_webref
 
-from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadView, LaunchpadFormView, Link
-    )
+from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
     AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
+from canonical.launchpad.fields import AnnouncementDate, Summary, Title
+from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadFormView)
+from canonical.launchpad.webapp.menu import (
+    ContextMenu, enabled_with_permission, Link, NavigationMenu)
+from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
 from canonical.widgets import AnnouncementDateWidget
 
 
@@ -73,7 +72,7 @@ class AnnouncementMenuMixin:
 
 
 class AnnouncementContextMenu(ContextMenu, AnnouncementMenuMixin):
-
+    """The menu for working with an Announcement."""
     usedfor = IAnnouncement
     links = ('edit', 'retarget', 'publish', 'retract', 'delete')
 
@@ -103,6 +102,11 @@ class AnnouncementEditNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
 
 class AnnouncementFormMixin:
     """A mixin to provide the common form features."""
+
+    @property
+    def page_title(self):
+        """The html page title."""
+        return self.label
 
     @property
     def cancel_url(self):
@@ -152,7 +156,6 @@ class AnnouncementAddView(LaunchpadFormView):
 
 class AnnouncementEditView(AnnouncementFormMixin, LaunchpadFormView):
     """A view which allows you to edit the announcement."""
-
     implements(IAnnouncementEditMenu)
 
     schema = AddAnnouncementForm
@@ -185,7 +188,7 @@ class AnnouncementRetargetForm(Interface):
 
 
 class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
-
+    """A view to move an annoucement to another project."""
     implements(IAnnouncementEditMenu)
 
     schema = AnnouncementRetargetForm
@@ -221,7 +224,7 @@ class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
 
 
 class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
-
+    """A view to publish an annoucement."""
     implements(IAnnouncementEditMenu)
 
     schema = AddAnnouncementForm
@@ -238,7 +241,7 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
 
 
 class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
-
+    """A view to unpublish an announcement."""
     implements(IAnnouncementEditMenu)
 
     schema = IAnnouncement
@@ -251,7 +254,7 @@ class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
 
 
 class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
-
+    """A view to delete an annoucement."""
     implements(IAnnouncementEditMenu)
 
     schema = IAnnouncement

@@ -4,29 +4,24 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only"
-  i18n:domain="launchpad"
->
+  i18n:domain="launchpad">
+  <body>
+    <div metal:fill-slot="main">
+      <div class="top-portlet">
+        <div metal:use-macro="context/@@launchpad_form/form">
 
-<body>
+          <p metal:fill-slot="extra_info" class="documentDescription">
+            If you want to remove this announcement from the publishing list, so
+            that it is not published accidentally, press "Retract" below. Note
+            that someone else can still come along and publish the item.
+            Alternatively, you can <a href="+delete">delete this announcement
+            permanently</a>.
+          </p>
 
-<div metal:fill-slot="main">
+        </div>
+      </div>
 
-  <div class="top-portlet">
-  <div metal:use-macro="context/@@launchpad_form/form">
-
-    <p metal:fill-slot="extra_info" class="documentDescription">
-      If you want to remove this announcement from the publishing list, so
-      that it is not published accidentally, press "Retract" below. Note
-      that someone else can still come along and publish the item.
-      Alternatively, you can <a href="+delete">delete this announcement
-      permanently</a>.
-    </p>
-
-  </div>
-  </div>
-
-  <tal:menu replace="structure view/@@+related-pages" />
-</div>
-
-</body>
+      <tal:menu replace="structure view/@@+related-pages" />
+    </div>
+  </body>
 </html>
