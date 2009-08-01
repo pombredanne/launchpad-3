@@ -928,7 +928,8 @@ In the default implementation, the following database modification will
 be automatically reverted in a GET request.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.database import EmailAddress, Person
+    >>> from canonical.launchpad.database import EmailAddress
+    >>> from lp.registry.model.person import Person
     >>> from canonical.launchpad.interfaces import IMasterStore
     >>> login('foo.bar@canonical.com')
     >>> txn = transaction.begin()

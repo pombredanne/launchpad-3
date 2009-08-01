@@ -8,7 +8,6 @@ __metaclass__ = type
 import atexit
 import os
 import unittest
-from xml.dom.minidom import parseString
 import xmlrpclib
 
 import bzrlib.branch
@@ -23,8 +22,9 @@ from lp.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
 from lp.codehosting import get_bzr_path, get_bzr_plugins_path
 from lp.codehosting.vfs import branch_id_to_path
+from lp.registry.model.person import Person
+from lp.registry.model.product import Product
 from canonical.config import config
-from canonical.launchpad import database
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.testing import ZopelessAppServerLayer
@@ -203,11 +203,11 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
 
     def getDatabaseBranch(self, personName, productName, branchName):
         """Look up and return the specified branch from the database."""
-        owner = database.Person.byName(personName)
+        owner = Person.byName(personName)
         if productName is None:
             product = None
         else:
-            product = database.Product.selectOneBy(name=productName)
+            product = Product.selectOneBy(name=productName)
         namespace = get_branch_namespace(owner, product)
         return namespace.getByName(branchName)
 
@@ -300,11 +300,11 @@ class AcceptanceTests(SSHTestCase):
     def makeDatabaseBranch(self, owner_name, product_name, branch_name,
                            branch_type=BranchType.HOSTED):
         """Create a new branch in the database."""
-        owner = database.Person.selectOneBy(name=owner_name)
+        owner = Person.selectOneBy(name=owner_name)
         if product_name == '+junk':
             product = None
         else:
-            product = database.Product.selectOneBy(name=product_name)
+            product = Product.selectOneBy(name=product_name)
         if branch_type == BranchType.MIRRORED:
             url = 'http://example.com'
         else:
@@ -382,7 +382,7 @@ class AcceptanceTests(SSHTestCase):
         # rename as far as bzr is concerned: the URL changes.
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        branch.product = database.Product.byName('firefox')
+        branch.product = Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
 
         self.assertNotBranch(
@@ -471,8 +471,8 @@ class AcceptanceTests(SSHTestCase):
         # the branch doesn't exist.
 
         # 'salgado' is a member of landscape-developers.
-        salgado = database.Person.selectOneBy(name='salgado')
-        landscape_dev = database.Person.selectOneBy(
+        salgado = Person.selectOneBy(name='salgado')
+        landscape_dev = Person.selectOneBy(
             name='landscape-developers')
         self.assertTrue(
             salgado.inTeam(landscape_dev),

@@ -14,10 +14,10 @@
           enctype="multipart/form-data"
           accept-charset="UTF-8">
 
-      <h2 tal:condition="view/label"
+      <h1 tal:condition="view/label"
           tal:content="view/label"
           metal:define-slot="heading"
-          >Add Something</h2>
+          >Add Something</h1>
 
       <div metal:define-macro="formbody">
 

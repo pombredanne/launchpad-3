@@ -22,8 +22,9 @@ Here we have some imports and utility fetch.
     ...     IProductSet, ISourcePackageNameSet)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue, RosettaImportStatus)
-    >>> from canonical.launchpad.database import (
-    ...     DistroSeries, ProductSeries, SourcePackageName)
+    >>> from lp.registry.model.distroseries import DistroSeries
+    >>> from lp.registry.model.productseries import ProductSeries
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from canonical.launchpad.ftests import login, syncUpdate
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
