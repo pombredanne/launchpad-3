@@ -25,9 +25,7 @@
   </div>
   </div>
 
-  <tal:menu
-    condition="view/fmt:menu/navigation|nothing"
-    replace="structure view/@@+related-pages" />
+  <tal:menu replace="structure view/@@+related-pages" />
 </div>
 
 </body>
