@@ -1264,6 +1264,11 @@ class ProductAddSeriesView(LaunchpadFormView):
             name=data['name'],
             summary=data['summary'],
             branch=data['branch'])
+        if (self.user != self.context.owner
+            and self.user in self.context.drivers):
+            # The user is a product driver, and should be the driver of this
+            # series to make him the release manager.
+            self.series.driver = self.user
 
     @property
     def next_url(self):

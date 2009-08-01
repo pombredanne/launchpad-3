@@ -327,11 +327,27 @@ Drivers, which include project driver and owners can access the
     >>> check_permission('launchpad.Driver', view)
     True
 
-    >>> firefox.driver = factory.makePerson()
+    >>> firefox.driver = factory.makePerson(name="driver")
     >>> login_person(firefox.driver)
     >>> view = create_view(firefox, name='+addseries')
     >>> check_permission('launchpad.Driver', view)
     True
+
+When a driver who is not also an owner creates a series, he is automatically
+assigned as the series driver to make him the release manager.
+
+    >>> form = {
+    ...     'field.name': 'my-series',
+    ...     'field.summary': 'my series',
+    ...     'field.branch': '',
+    ...     'field.releasefileglob': '',
+    ...     'field.actions.add': 'Register series',
+    ...     }
+    >>> view = create_initialized_view(firefox, name='+addseries', form=form)
+    >>> view.errors
+    []
+    >>> print view.series.driver.name
+    driver
 
 
 Programming languages
