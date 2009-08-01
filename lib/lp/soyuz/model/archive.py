@@ -1535,13 +1535,15 @@ class ArchiveSet:
                 # that consists of themselves.
                 extra_exprs.append(
                     Or(
-                        Archive.private == False,
+                        And(Archive.private == False,
+                            Archive.enabled == True),
                         Archive.ownerID.is_in(user_teams_subselect)))
 
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
             extra_exprs.append(Archive.private == False)
+            extra_exprs.append(Archive.enabled == True)
 
 
         query = Store.of(distribution).find(
@@ -1549,7 +1551,7 @@ class ArchiveSet:
             Archive.distribution == distribution,
             *extra_exprs)
 
-        return query
+        return query.order_by(Archive.name)
 
     def getPublicationsInArchives(self, source_package_name, archive_list,
                                   distribution):

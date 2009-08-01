@@ -113,6 +113,45 @@ And finally Copy archives.
     >>> print test_tales("archive/image:icon", archive=copy)
     <img ... src="/@@/distribution" />
 
+PPAs have a 'link' formatter, which returns the appropriate HTML used
+for referring to them in other pages.
+
+    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+    <a href="/~sabdfl/+archive/ppa"
+       class="sprite ppa-icon">PPA for Mark Shuttleworth</a>
+
+Disabled PPAs links use a different icon and are only linkified for users
+with launchpad.View on them.
+
+    >>> login('foo.bar@canonical.com')
+    >>> sabdfl.archive.enabled = False
+
+    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+    <a href="/~sabdfl/+archive/ppa" class="sprite ppa-icon-inactive">PPA
+    for Mark Shuttleworth</a>
+
+    >>> login(ANONYMOUS)
+
+    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+    <span class="sprite ppa-icon-inactive">PPA for Mark Shuttleworth</span>
+
+Private PPAs links are not rendered for users without launchpad.View
+on them.
+
+    >>> login('foo.bar@canonical.com')
+    >>> sabdfl.archive.enabled = True
+    >>> sabdfl.archive.buildd_secret = 'x'
+    >>> sabdfl.archive.private = True
+
+    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+    <a href="/~sabdfl/+archive/ppa" class="sprite ppa-icon">PPA
+    for Mark Shuttleworth</a>
+
+    >>> login(ANONYMOUS)
+
+    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+
+
 We also have icons for builds which may have different dimensions.
 
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
