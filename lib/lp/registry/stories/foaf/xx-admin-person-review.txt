@@ -1,13 +1,15 @@
-= Review person =
+Review person
+=============
 
-Launchpad admins such as Foo Bar can review users and update some of their
-information.
+Launchpad admins such as Foo Bar can review users and update some of
+their information.
 
     >>> admin_browser.open('http://launchpad.dev/~salgado')
 
     >>> admin_browser.getLink('Administer').click()
     >>> print admin_browser.url
     http://launchpad.dev/~salgado/+review
+
     >>> print admin_browser.title
     Review Guilherme Salgado
 
@@ -18,7 +20,8 @@ information.
     The one and only Salgado in Launchpad
 
 
-== Review account ==
+Review account
+--------------
 
 The review page has a link to the review account page.
 
@@ -82,7 +85,8 @@ Launchpad, and can change the account too.
     The user is reactivated. He must use the "forgot password" to log in.
 
 
-== Restricted to admins ==
+Restricted to admins
+--------------------
 
 Non admins cannot access the +review and +reviewaccount pages.
 
@@ -101,3 +105,4 @@ Non admins cannot access the +review and +reviewaccount pages.
     Traceback (most recent call last):
     ...
     Unauthorized: ...
+
