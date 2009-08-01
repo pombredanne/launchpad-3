@@ -209,8 +209,8 @@ And check out the report:
 
     >>> admin_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> admin_browser.getLink('fix').click()
-    >>> admin_browser.title
-    'Change project details'
+    >>> print admin_browser.title
+    Change Mozilla Firefox's details
 
     >>> admin_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> admin_browser.getLink('change').click()
