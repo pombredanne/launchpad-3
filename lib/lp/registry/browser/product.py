@@ -292,10 +292,6 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class IProductEditMenu(Interface):
-    """A marker interface for the 'Change details' navigation menu."""
-
-
 class ProductNavigationMenu(NavigationMenu):
 
     usedfor = IProduct
@@ -324,17 +320,11 @@ class ProductNavigationMenu(NavigationMenu):
         text = 'Branch Visibility Policy'
         return Link('+branchvisibility', text)
 
-
-class ProductEditNavigationMenu(NavigationMenu):
-    """A sub-menu for different aspects of editing a Product's details."""
-
-    usedfor = IProductEditMenu
-    facet = 'overview'
-    title = 'Change project'
-    links = ('details', 'branding', 'people', 'review_license', 'administer')
+class ProductEditLinksMixin:
+    """A mixin class for menus that need Product edit links."""
 
     @enabled_with_permission('launchpad.Edit')
-    def details(self):
+    def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
 
@@ -344,7 +334,7 @@ class ProductEditNavigationMenu(NavigationMenu):
         return Link('+branding', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def people(self):
+    def reassign(self):
         text = 'Change people'
         return Link('+edit-people', text, icon='edit')
 
@@ -359,7 +349,20 @@ class ProductEditNavigationMenu(NavigationMenu):
         return Link('+admin', text, icon='edit')
 
 
-class ProductOverviewMenu(ApplicationMenu):
+class IProductEditMenu(Interface):
+    """A marker interface for the 'Change details' navigation menu."""
+
+
+class ProductEditNavigationMenu(NavigationMenu, ProductEditLinksMixin):
+    """A sub-menu for different aspects of editing a Product's details."""
+
+    usedfor = IProductEditMenu
+    facet = 'overview'
+    title = 'Change project'
+    links = ('edit', 'branding', 'reassign', 'review_license', 'administer')
+
+
+class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
 
     usedfor = IProduct
     facet = 'overview'
@@ -377,16 +380,6 @@ class ProductOverviewMenu(ApplicationMenu):
         'review_license',
         'rdf',
         ]
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def reassign(self):
-        text = 'Change maintainer'
-        return Link('+edit-people', text, icon='edit')
 
     def top_contributors(self):
         text = u'\u00BB More contributors'
@@ -425,16 +418,6 @@ class ProductOverviewMenu(ApplicationMenu):
             '<abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
-
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
-
-    @enabled_with_permission('launchpad.ProjectReview')
-    def review_license(self):
-        text = 'Review project'
-        return Link('+review-license', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
