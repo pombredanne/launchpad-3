@@ -1055,9 +1055,9 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
-        self.product = getUtility(IProductSet).getByName('firefox')
+        self.product = self.factory.makeProduct()
 
-        self.user = getUtility(IPersonSet).getByName('no-priv')
+        self.user = self.factory.makePerson()
         self.source = self.factory.makeProductBranch(
             name='source-branch', owner=self.user, product=self.product)
         self.target = self.factory.makeProductBranch(
@@ -1070,7 +1070,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def test_junkSource(self):
         """Junk branches cannot be used as a source for merge proposals."""
-        self.source.product = None
+        self.source.setTarget(user=self.source.owner)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
@@ -1079,12 +1079,13 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         """The product of the target branch must match the product of the
         source branch.
         """
-        self.target.product = None
+        self.target.setTarget(user=self.target.owner)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
 
-        self.target.product = getUtility(IProductSet).getByName('bzr')
+        project = self.factory.makeProduct()
+        self.target.setTarget(user=self.target.owner, project=project)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
@@ -1098,12 +1099,13 @@ class BranchAddLandingTarget(TestCaseWithFactory):
     def test_dependentBranchSameProduct(self):
         """The dependent branch, if it is there, must be for the same product.
         """
-        self.dependent.product = None
+        self.dependent.setTarget(user=self.dependent.owner)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target, self.dependent)
 
-        self.dependent.product = getUtility(IProductSet).getByName('bzr')
+        project = self.factory.makeProduct()
+        self.dependent.setTarget(user=self.dependent.owner, project=project)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target, self.dependent)
