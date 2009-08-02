@@ -214,8 +214,7 @@ class TestBranch(TestCaseWithFactory):
         # attribute is updated too.
         branch = self.factory.makeAnyBranch()
         new_owner = self.factory.makePerson()
-        login('admin@canonical.com')
-        branch.owner = new_owner
+        removeSecurityProxy(branch).owner = new_owner
         # Call the function that is normally called through the event system
         # to auto reload the fields updated by the db triggers.
         update_trigger_modified_fields(branch)
