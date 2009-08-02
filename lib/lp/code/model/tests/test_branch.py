@@ -1737,6 +1737,52 @@ class TestBranchSetTarget(TestCaseWithFactory):
         branch.setTarget(user=branch.owner, source_package=source_package)
         self.assertEqual(source_package, branch.target.context)
 
+    def test_project_branch_to_other_project_branch(self):
+        # Move a branch from one project to another.
+        branch = self.factory.makeProductBranch()
+        project = self.factory.makeProduct()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, project=project)
+        self.assertEqual(project, branch.target.context)
+
+    def test_project_branch_to_package_branch(self):
+        # Move a branch from a project to a package.
+        branch = self.factory.makeProductBranch()
+        source_package = self.factory.makeSourcePackage()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, source_package=source_package)
+        self.assertEqual(source_package, branch.target.context)
+
+    def test_project_branch_to_junk_branch(self):
+        # Move a branch from a project to junk.
+        branch = self.factory.makeProductBranch()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner)
+        self.assertEqual(branch.owner, branch.target.context)
+
+    def test_package_branch_to_other_package_branch(self):
+        # Move a branch from one package to another.
+        branch = self.factory.makePackageBranch()
+        source_package = self.factory.makeSourcePackage()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, source_package=source_package)
+        self.assertEqual(source_package, branch.target.context)
+
+    def test_package_branch_to_project_branch(self):
+        # Move a branch from a package to a project.
+        branch = self.factory.makePackageBranch()
+        project = self.factory.makeProduct()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, project=project)
+        self.assertEqual(project, branch.target.context)
+
+    def test_package_branch_to_junk_branch(self):
+        # Move a branch from a package to junk.
+        branch = self.factory.makePackageBranch()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner)
+        self.assertEqual(branch.owner, branch.target.context)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
