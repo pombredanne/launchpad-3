@@ -8,13 +8,13 @@ __metaclass__ = type
 import atexit
 import os
 import unittest
-from xml.dom.minidom import parseString
 import xmlrpclib
 
 import bzrlib.branch
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
+from zope.security.proxy import removeSecurityProxy
 
 from lp.codehosting.bzrutils import DenyingServer
 from lp.codehosting.tests.helpers import (
@@ -382,7 +382,8 @@ class AcceptanceTests(SSHTestCase):
         # rename as far as bzr is concerned: the URL changes.
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        branch.product = database.Product.byName('firefox')
+        removeSecurityProxy(branch).product = database.Product.byName(
+            'firefox')
         LaunchpadZopelessTestSetup().txn.commit()
 
         self.assertNotBranch(
