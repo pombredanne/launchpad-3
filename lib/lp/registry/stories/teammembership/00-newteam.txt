@@ -31,7 +31,7 @@ Regular users can create teams.
 
 The owner of a team is always added as an administrator of his team.
 
-    >>> from canonical.launchpad.database import Person
+    >>> from lp.registry.model.person import Person
     >>> [a.name for a in Person.byName('myemail').adminmembers]
     [u'name12']
 

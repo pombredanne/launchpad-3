@@ -377,11 +377,12 @@ div.context-heading img {
     float: left;
     margin: 0 1.5em 0 0;
 }
-div.context-heading h1 {
-    padding-top: 0; /* Potentially a general style? */
-    margin-bottom: 0.2em;  /* Potentially a general style? */
+div.context-heading h1, div.context-heading h2 {
+    padding-top: 0.1em;
+    margin-bottom: 0.8em;
     color: #000000;
-    font-weight: bold; /* Hmm... bold is a bit too, um, bold? */
+    font-weight: bold;
+    clear: none;
 }
 
 /* === Location application tabs === */

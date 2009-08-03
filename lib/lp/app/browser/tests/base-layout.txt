@@ -51,7 +51,7 @@ content are positioned using the "yui-t4", "yui-main", "yui-b", and
               <div class="yui-b" dir="ltr">
                 <div class="context-heading top-portlet">
                   <img ...
-                  <h1>Waffles</h1>
+                  <h2>Waffles</h2>
                   <!-- Application Menu -->
                   <ul>...
                 </div>...
@@ -107,11 +107,12 @@ content to take up all the horizontal space.
             <div class="yui-b" dir="ltr">
               <div class="context-heading top-portlet">
                 <img ...
-                <h1>Waffles</h1>
+                <h2>Waffles</h2>
                 <!-- Application Menu -->
                 <ul>...
               </div>...
               <div class="portlet">
+                <h1>Heading</h1>
                 <p class="registered">
                   Registered on 2005-09-16
                   by <a class="sprite team" href="#">Illuminati team</a>
@@ -159,11 +160,12 @@ slots are rendered, as are the application tabs.
             <div class="yui-b" dir="ltr">
               <div class="context-heading top-portlet">
                 <img ...
-                <h1>Waffles</h1>
+                <h2>Waffles</h2>
                 <!-- Application Menu -->
                 <ul>...
               </div>...
               <div class="portlet">
+                <h1>Heading</h1>
                 <p class="registered">
                   Registered on 2005-09-16
                   by <a class="sprite team" href="#">Illuminati team</a>
@@ -246,7 +248,8 @@ test. The template controlled the heading.
     >>> print content.h1
     <h1>Heading</h1>
 
-The page heading slot's default behaviour is to use the context.title.
+The page heading slot's default behaviour is to use the context.title and
+place it in a <h2>.
 
     >>> class DefaultHeadingView(LaunchpadView):
     ...     """A simple view to test base-layout."""
@@ -260,8 +263,8 @@ The page heading slot's default behaviour is to use the context.title.
 
     >>> view = DefaultHeadingView(user, request)
     >>> content = find_tag_by_id(view.render(), 'maincontent')
-    >>> print content.h1
-    <h1>Waffles</h1>
+    >>> print content.h2
+    <h2>Waffles</h2>
 
 
 Public and private presentation

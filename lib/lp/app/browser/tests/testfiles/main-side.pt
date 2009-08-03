@@ -12,7 +12,7 @@
   </head>
 
   <body>
-    <tal:heading metal:fill-slot="heading">Heading</tal:heading>
+    <tal:heading metal:fill-slot="heading"><h1>Heading</h1></tal:heading>
     <tal:main metal:fill-slot="main">
       <div class="portlet">
         <p class="registered">

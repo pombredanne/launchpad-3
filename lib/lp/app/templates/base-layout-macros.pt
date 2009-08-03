@@ -302,10 +302,10 @@
   <div class="context-heading top-portlet"
        tal:condition="view/macro:pagehas/applicationtabs">
     <span tal:replace="structure context/image:logo"></span>
-    <h1><tal:heading
+    <h2
       tal:condition="context/title|nothing"
       tal:content="context/title"
-      metal:define-slot="heading" /></h1>
+      metal:define-slot="heading" />
     <!-- Application Menu -->
     <ul
       tal:condition="view/macro:pagehas/applicationtabs"

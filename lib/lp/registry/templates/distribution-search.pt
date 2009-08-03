@@ -10,25 +10,23 @@
 
 <div metal:fill-slot="main">
   <div class="portlet">
-  <h1>Search packages in <span tal:replace="context/title" /></h1>
+    <h1>Search packages in <tal:title replace="context/title" /></h1>
+    <form name="search" method="GET">
+      <div>
+        <label for="text">
+          Show <span tal:replace="context/title" /> packages containing:
+        </label>
+      </div>
 
-  <form name="search" method="GET">
-    <div>
-      <label for="text">
-        Show <span tal:replace="context/title" /> packages containing:
-      </label>
-    </div>
+      <input type="text" name="text" size="35"
+        tal:attributes="value request/text|nothing" />
 
-    <input type="text" name="text" size="35"
-      tal:attributes="value request/text|nothing" />
+      <input type="submit" value="Search"
+          tal:condition="not: view/search_requested" />
 
-    <input type="submit" value="Search"
-        tal:condition="not: view/search_requested" />
-
-    <input type="submit" value="Search Again"
-        tal:condition="view/search_requested" />
-  </form>
-
+      <input type="submit" value="Search Again"
+          tal:condition="view/search_requested" />
+    </form>
   </div>
 
   <tal:search_requested condition="view/search_requested">
