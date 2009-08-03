@@ -183,16 +183,13 @@ class DistroSeriesVersionField(UniqueField):
             raise LaunchpadValidationError(
                 "%s is not a valid version" % version)
         # Avoid circular import hell.
-        from lp.archivepublisher.debversion import (
-            BadEpochError, BadInputError, BadRevisionError, BadUpstreamError,
-            Version, VersionError)
+        from lp.archivepublisher.debversion import Version, VersionError
         try:
             # XXX sinzui 2009-07-25 bug=404613: DistributionMirror and buildd
             # have stricter version rules than the schema. The version must
             # be a debversion.
             Version(version)
-        except (BadEpochError, BadInputError, BadRevisionError,
-            BadUpstreamError, VersionError), error:
+        except VersionError, error:
             raise LaunchpadValidationError(
                 "'%s': %s" % (version, error[0]))
 
