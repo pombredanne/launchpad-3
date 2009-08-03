@@ -197,6 +197,8 @@ class FacetLink(MenuLink):
 # Marker object that means 'all links are to be enabled'.
 ALL_LINKS = object()
 
+MENU_ANNOTATION_KEY = 'canonical.launchpad.webapp.menu.links'
+
 
 class MenuBase(UserAttributeCache):
     """Base class for facets and menus."""
@@ -220,12 +222,32 @@ class MenuBase(UserAttributeCache):
         """Override this in subclasses to do initialization."""
         pass
 
-    def _get_link(self, name):
+    def _buildLink(self, name):
         method = getattr(self, name)
         linkdata = method()
         # The link need only provide ILinkData.  We need an ILink so that
         # we can set attributes on it like 'name' and 'url' and 'linked'.
         return ILink(linkdata)
+
+    def _get_link(self, name):
+        request = get_current_browser_request()
+        if request is not None:
+            # XXX: I think we must not use a weak ref here because if we do so
+            # and templates do stuff like "context/menu:bugs/foo", then there
+            # would be no reference to the Link object, which would allow it
+            # to be garbage collected during the course of the request. On the
+            # other hand, I'm not 100% sure it's ok to use a dict in
+            # request.annotations.
+            cache = request.annotations.setdefault(
+                #MENU_ANNOTATION_KEY, WeakValueDictionary())
+                MENU_ANNOTATION_KEY, {})
+            key = (self._baseclassname, name)
+            link = cache.get(key)
+            if link is None:
+                link = self._buildLink(name)
+                cache[key] = link
+            return link
+        return self._buildLink(name)
 
     def _rootUrlForSite(self, site):
         """Return the root URL for the given site."""
