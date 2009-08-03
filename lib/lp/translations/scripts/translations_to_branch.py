@@ -101,6 +101,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         for source in productseries:
             try:
                 self._exportToBranch(source)
+
+                if self.txn:
+                    self.txn.commit()
             except (KeyboardInterrupt, SystemExit):
                 raise
             except Exception, e:
