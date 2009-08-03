@@ -44,10 +44,12 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(WADL_FILE): $(BZR_VERSION_INFO)
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@.tmp
+	mv $@.tmp $@
 
 $(API_INDEX): $(WADL_FILE)
-	bin/apiindex $(WADL_FILE) > $@
+	bin/apiindex $(WADL_FILE) > $@.tmp
+	mv $@.tmp $@
 
 apidoc: compile $(API_INDEX)
 
