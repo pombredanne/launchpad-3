@@ -106,8 +106,16 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <metal:heading_nav use-macro="
-              context/@@+base-layout-macros/location-portlet"/>
+            <div class="location-portlet top-portlet"
+                 tal:condition="view/macro:pagehas/applicationtabs">
+              <span tal:replace="structure context/image:logo"></span>
+              <h2
+                tal:condition="context/title|nothing"
+                tal:content="context/title"
+                metal:define-slot="heading" />
+              <metal:heading_nav use-macro="
+                context/@@+base-layout-macros/location-tabs"/>
+            </div>
             <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->

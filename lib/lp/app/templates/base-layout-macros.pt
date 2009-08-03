@@ -298,42 +298,34 @@
 </metal:lp-client-cache>
 
 
-<metal:location-portlet define-macro="location-portlet">
-  <div class="location-portlet top-portlet"
-       tal:condition="view/macro:pagehas/applicationtabs">
-    <span tal:replace="structure context/image:logo"></span>
-    <h2
-      tal:condition="context/title|nothing"
-      tal:content="context/title"
-      metal:define-slot="heading" />
-    <!-- Application Menu -->
-    <ul
-      tal:condition="view/macro:pagehas/applicationtabs"
-      tal:define="facetmenu view/menu:facet">
-      <tal:facet repeat="link facetmenu">
-        <li
-          tal:condition="python: link.enabled and link.selected"
-          tal:attributes="title link/summary; class string:${link/name} active"
-          ><a
-            tal:condition="link/linked"
-            tal:attributes="href link/url"
-            tal:content="structure link/escapedtext" /></li>
-        <li
-          tal:condition="python: link.enabled and not link.selected"
-          tal:attributes="title link/summary; class link/name"
-          ><a
-            tal:condition="link/enabled"
-            tal:attributes="href link/url"
-            tal:content="structure link/escapedtext"
-            /></li>
-        <li
-          tal:condition="not:link/enabled"
-          tal:attributes="class string:${link/name} disabled-tab"
-          ><tal:disabled-link-text
-             tal:content="link/escapedtext" /></li>
-      </tal:facet>
-    </ul>
-  </div>
-</metal:location-portlet>
+<metal:location-tabs define-macro="location-tabs">
+  <!-- Application Menu -->
+  <ul
+    tal:condition="view/macro:pagehas/applicationtabs"
+    tal:define="facetmenu view/menu:facet">
+    <tal:facet repeat="link facetmenu">
+      <li
+        tal:condition="python: link.enabled and link.selected"
+        tal:attributes="title link/summary; class string:${link/name} active"
+        ><a
+          tal:condition="link/linked"
+          tal:attributes="href link/url"
+          tal:content="structure link/escapedtext" /></li>
+      <li
+        tal:condition="python: link.enabled and not link.selected"
+        tal:attributes="title link/summary; class link/name"
+        ><a
+          tal:condition="link/enabled"
+          tal:attributes="href link/url"
+          tal:content="structure link/escapedtext"
+          /></li>
+      <li
+        tal:condition="not:link/enabled"
+        tal:attributes="class string:${link/name} disabled-tab"
+        ><tal:disabled-link-text
+           tal:content="link/escapedtext" /></li>
+    </tal:facet>
+  </ul>
+</metal:location-tabs>
 
 </macros>
