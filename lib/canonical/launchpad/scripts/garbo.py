@@ -14,10 +14,11 @@ import transaction
 from psycopg2 import IntegrityError
 from zope.component import getUtility
 from zope.interface import implements
-from storm.locals import SQL, Max, Min
+from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
 from canonical.database import postgresql
+from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.hwdb import HWSubmission
@@ -26,9 +27,6 @@ from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from lp.registry.model.person import Person
-from lp.services.scripts.base import (
-    LaunchpadCronScript, SilentLaunchpadScriptFailure)
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
@@ -38,6 +36,8 @@ from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
 from lp.registry.model.mailinglist import MailingListSubscription
 from lp.registry.model.person import Person
+from lp.services.scripts.base import (
+    LaunchpadCronScript, SilentLaunchpadScriptFailure)
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -622,8 +622,8 @@ class PersonPruner(TunableLoop):
                 "Deleted the following unlinked people: %s" % people_ids)
         except IntegrityError:
             # This case happens when a Person is linked to something
-            # during the run. It is unlikely to occur, so just ignore it again.
-            # Everything will clear up next run.
+            # during the run. It is unlikely to occur, so just ignore
+            # it again. Everything will clear up next run.
             transaction.abort()
             self.log.warning(
                 "Failed to delete %d Person records. Left for next time."
@@ -638,18 +638,20 @@ class BugNotificationPruner(TunableLoop):
     """
     def _to_remove(self):
         return IMasterStore(BugNotification).find(
-            BugNotification,
-            BugNotification.date_emailed < SQL("""
-                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '30 days'
-                """))
+            BugNotification.id,
+            BugNotification.date_emailed < THIRTY_DAYS_AGO)
 
     def isDone(self):
-        return self._to_remove.any() is not None
+        return self._to_remove().any() is None
 
     def __call__(self, chunk_size):
         chunk_size = int(chunk_size)
-        num_removed = self._to_remove()[:chunk_size].remove()
-        self.log.debug("Removed %d rows", num_removed)
+        ids_to_remove = list(self._to_remove()[:chunk_size])
+        num_removed = IMasterStore(BugNotification).find(
+            BugNotification,
+            In(BugNotification.id, ids_to_remove)).remove()
+        transaction.commit()
+        self.log.debug("Removed %d rows" % num_removed)
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
@@ -752,6 +754,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         HWSubmissionEmailLinker,
         MailingListSubscriptionPruner,
         PersonEmailAddressLinkChecker,
+        BugNotificationPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

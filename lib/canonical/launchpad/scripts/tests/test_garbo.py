@@ -11,15 +11,16 @@ import time
 import unittest
 
 from pytz import UTC
-from storm.expr import Min
+from storm.expr import Min, SQL
 from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.model.codeimportresult import CodeImportResult
 from canonical.config import config
+from canonical.database.constants import THIRTY_DAYS_AGO, UTC_NOW
 from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
@@ -35,6 +36,9 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
+from lp.bugs.model.bugnotification import (
+    BugNotification, BugNotificationRecipient)
+from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.model.person import Person
 
@@ -68,17 +72,17 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.runHourly()
 
-    def runDaily(self, maximum_chunk_size=2, test_args=[]):
+    def runDaily(self, maximum_chunk_size=2, test_args=()):
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
-        collector = DailyDatabaseGarbageCollector(test_args=test_args)
+        collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
         return collector
 
-    def runHourly(self, maximum_chunk_size=2, test_args=[]):
+    def runHourly(self, maximum_chunk_size=2, test_args=()):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
-        collector = HourlyDatabaseGarbageCollector(test_args=test_args)
+        collector = HourlyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
@@ -401,6 +405,72 @@ class TestGarbo(TestCaseWithFactory):
         self.assertIsNot(
             personset.getByName('test-unlinked-person-new'), None)
         self.assertIs(personset.getByName('test-unlinked-person-old'), None)
+
+    def test_BugNotificationPruner(self):
+        # Create some sample data
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        notification = BugNotification(
+            messageID=1,
+            bugID=1,
+            is_comment=True,
+            date_emailed=None)
+        recipient = BugNotificationRecipient(
+            bug_notification=notification,
+            personID=1,
+            reason_header='Whatever',
+            reason_body='Whatever')
+        # We don't create an entry exactly 30 days old to avoid
+        # races in the test.
+        for delta in range(-45, -14, 2):
+            message = Message(rfc822msgid=str(delta))
+            notification = BugNotification(
+                message=message,
+                bugID=1,
+                is_comment=True,
+                date_emailed=UTC_NOW + SQL("interval '%d days'" % delta))
+            recipient = BugNotificationRecipient(
+                bug_notification=notification,
+                personID=1,
+                reason_header='Whatever',
+                reason_body='Whatever')
+
+        store = IMasterStore(BugNotification)
+
+        # Ensure we are at a known starting point.
+        num_unsent = store.find(
+            BugNotification,
+            BugNotification.date_emailed == None).count()
+        num_old = store.find(
+            BugNotification,
+            BugNotification.date_emailed < THIRTY_DAYS_AGO).count()
+        num_new = store.find(
+            BugNotification,
+            BugNotification.date_emailed > THIRTY_DAYS_AGO).count()
+
+        self.assertEqual(num_unsent, 1)
+        self.assertEqual(num_old, 8)
+        self.assertEqual(num_new, 8)
+
+        # Run the garbage collector.
+        transaction.commit()
+        self.runDaily()
+
+        # We should have 9 BugNotifications left.
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed == None).count(),
+            num_unsent)
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed > THIRTY_DAYS_AGO).count(),
+            num_new)
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed < THIRTY_DAYS_AGO).count(),
+            0)
 
     def test_PersonEmailAddressLinkChecker(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')

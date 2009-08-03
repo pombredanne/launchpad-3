@@ -25,6 +25,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification, IBugNotificationRecipient, IBugNotificationSet)
+
+
 class BugNotification(SQLBase):
     """A textual representation about a bug change."""
     implements(IBugNotification)
