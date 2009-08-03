@@ -63,10 +63,21 @@ logging.addLevelName(DEBUG9, 'DEBUG9')
 
 
 class FakeLogger:
-    """Emulates a proper logger, just printing everything out to stdout.
-    Used exclusively in doc tests."""
+    """Emulates a proper logger, just printing everything out the given file.
+    """
+    def __init__(self, output_file=None):
+        """The default output_file is sys.stdout."""
+        self.output_file = output_file
+
     def message(self, prefix, *stuff, **kw):
-        print prefix, ' '.join(stuff)
+        # We handle the default output file here because sys.stdout
+        # might have been reassigned. Between now and when this object
+        # was instantiated.
+        if self.output_file is None:
+            output_file = sys.stdout
+        else:
+            output_file = self.output_file
+        print >> output_file, prefix, ' '.join(stuff)
 
         if 'exc_info' in kw:
             exception = traceback.format_exception(*sys.exc_info())
@@ -102,10 +113,11 @@ class FakeLogger:
 class QuietFakeLogger(FakeLogger):
     """Extra quiet FakeLogger.
 
-    Does not print any message.
+    Does not print any message. Messages can be retrieved from
+    logger.output_file, which is a StringIO instance.
     """
-    def message(self, prefix, *stuff, **kw):
-        pass
+    def __init__(self):
+        self.output_file = StringIO()
 
 
 class BufferLogger(FakeLogger):

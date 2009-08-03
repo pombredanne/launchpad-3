@@ -19,6 +19,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.model.codeimportresult import CodeImportResult
 from canonical.config import config
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
@@ -35,6 +36,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.model.person import Person
 
 
 class TestGarboScript(TestCase):
@@ -72,6 +74,7 @@ class TestGarbo(TestCaseWithFactory):
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
+        return collector
 
     def runHourly(self, maximum_chunk_size=2, test_args=[]):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
@@ -79,6 +82,7 @@ class TestGarbo(TestCaseWithFactory):
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
+        return collector
 
     def test_OAuthNoncePruner(self):
         now = datetime.utcnow().replace(tzinfo=UTC)
@@ -397,6 +401,44 @@ class TestGarbo(TestCaseWithFactory):
         self.assertIsNot(
             personset.getByName('test-unlinked-person-new'), None)
         self.assertIs(personset.getByName('test-unlinked-person-old'), None)
+
+    def test_PersonEmailAddressLinkChecker(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        # Make an EmailAddress record reference a non-existant Person.
+        emailaddress = IMasterStore(EmailAddress).get(EmailAddress, 16)
+        emailaddress.personID = -1
+
+        # Make a Person record reference a different Account to its
+        # EmailAddress records.
+        person = IMasterStore(Person).get(Person, 1)
+        person_email = Store.of(person).find(
+            EmailAddress, person=person).any()
+        person.accountID = -1
+
+        transaction.commit()
+
+        # Run the garbage collector. We should get two ERROR reports
+        # about the corrupt data.
+        collector = self.runDaily()
+
+        # The PersonEmailAddressLinkChecker is not intelligent enough
+        # to repair corruption. It is only there to alert us to the
+        # issue so data can be manually repaired and the cause
+        # tracked down and fixed.
+        self.assertEqual(emailaddress.personID, -1)
+        self.assertNotEqual(person.accountID, person_email.accountID)
+
+        # The corruption has been reported though as a ERROR messages.
+        log_output = collector.logger.output_file.getvalue()
+        error_message_1 = (
+            "ERROR Corruption - "
+            "'test@canonical.com' is linked to a non-existant Person.")
+        self.assertNotEqual(log_output.find(error_message_1), -1)
+        error_message_2 = (
+            "ERROR Corruption - "
+            "'mark@hbd.com' and 'sabdfl' reference different Accounts")
+        self.assertNotEqual(log_output.find(error_message_2), -1)
 
 
 def test_suite():

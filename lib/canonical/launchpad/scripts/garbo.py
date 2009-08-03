@@ -427,8 +427,8 @@ class PersonEmailAddressLinkChecker(TunableLoop):
     """
     maximum_chunk_size = 1000
 
-    def __init__(self, log):
-        super(PersonEmailAddressLinkChecker, self).__init__(log)
+    def __init__(self, log, abort_time=None):
+        super(PersonEmailAddressLinkChecker, self).__init__(log, abort_time)
 
         self.person_store = IMasterStore(Person)
         self.email_store = IMasterStore(EmailAddress)
@@ -500,11 +500,11 @@ class PersonEmailAddressLinkChecker(TunableLoop):
     def report(self, person, emailaddress):
         if person is None:
             self.log.error(
-                "Corruption - '%s' is linked to a non-existant Person"
+                "Corruption - '%s' is linked to a non-existant Person."
                 % emailaddress.email)
         else:
             self.log.error(
-                "Corruption - '%s' and '%s' reference different Accounts"
+                "Corruption - '%s' and '%s' reference different Accounts."
                 % (emailaddress.email, person.name))
 
 
@@ -514,7 +514,7 @@ class PersonPruner(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(PersonPruner, self).__init__(log, abort_time)
-        self.offset = 0
+        self.offset = 1
         self.store = IMasterStore(Person)
         self.log.debug("Creating LinkedPeople temporary table.")
         self.store.execute(
