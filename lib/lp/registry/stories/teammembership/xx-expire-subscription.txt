@@ -23,7 +23,8 @@ variables:
 
 Let's do it under the wraps:
 
-    >>> from canonical.launchpad.database import Person, TeamMembership
+    >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.teammembership import TeamMembership
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> sampleperson = Person.byName('name12')
     >>> team = Person.byName('name20')
