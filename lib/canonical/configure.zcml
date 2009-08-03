@@ -19,6 +19,7 @@
     <include package="lp.services.inlinehelp" file="meta.zcml" />
     <include package="lp.services.openid" />
     <include package="lp.services.job" />
+    <include package="lp.services.scripts" />
     <include package="lp.services.worlddata" />
     <include package="lazr.uri" />
     <include package="canonical.librarian" />

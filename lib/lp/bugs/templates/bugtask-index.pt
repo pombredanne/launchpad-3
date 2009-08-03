@@ -32,6 +32,7 @@
             Y.bugs.setup_bugtask_index();
         });
       </script>
+
       <style type="text/css"
         tal:define ="editor_skin string:${icingroot}/lazr/build/inlineedit/assets/skins/sam"
         tal:content="string:
@@ -137,6 +138,12 @@
         }
 
         "/>
+
+        /* Align the "add comment" link to the right of the comment box. */
+        #add-comment-form textarea { width: 100%; max-width=60em;}
+        #add-comment-form { max-width: 60em; padding-bottom: 4em; }
+        #add-comment-form .actions {float: right;}
+      </style>
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
@@ -416,10 +423,45 @@
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">
           <tal:logged-in condition="view/user">
-            <fieldset class="collapsible collapsed" id="add-comment-form">
-              <legend><a href="+addcomment">Add a comment/attachment</a></legend>
-              <div tal:content="structure context/@@+addcomment-form" />
-            </fieldset>
+            <div tal:define="comment_form nocall:context/@@+addcomment-form;
+                 dummy comment_form/initialize"
+                 id="add-comment-form">
+              <div
+                  tal:condition="context/bug/duplicateof"
+                  class="warning message"
+                  id="warning-comment-on-duplicate">
+                  Remember, this bug report is a duplicate.
+                  Comment here only if you think the duplicate status is wrong.
+              </div>
+              <h2>Comment</h2>
+              <form action="+addcomment"
+                    method="post"
+                    enctype="multipart/form-data"
+                    accept-charset="UTF-8">
+                <tal:comment-input
+                  replace="structure comment_form/widgets/comment" />
+                <div class="actions"
+                  tal:content="structure
+                  comment_form/actions/field.actions.save/render" />
+              </form>
+              <tal:comment condition="nothing">
+                <!-- If javascript is enabled, hide the Save Changes button.
+                It will be replaced later by an "Add comment" link,
+                which does commenting inline. The reason for hiding the
+                button is that it's kind of ugly having it transformed
+                into a link. Better to hide it and have it appear after
+                a while. At some point we should be able to hook up
+                inline commenting earlier than in the on-load handler,
+                which would make this hack not needed. -->
+              </tal:comment>
+              <script type="text/javascript">
+                var button = document.getElementById('field.actions.save');
+                button.style.display = 'none';
+              </script>
+            </div>
+            <tal:attachment-link
+                define="add_attachment_link context_menu/addcomment"
+                replace="structure add_attachment_link/render" />
           </tal:logged-in>
 
           <tal:not-logged-in condition="not: view/user">
@@ -448,7 +490,7 @@
         </tal:comment-list-truncated>
       </tal:comments>
 
-      <div id="mentoring" style="margin-top: 2em;">
+      <div id="mentoring" style="margin-top: 4em">
         <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
                      condition="mentoring_offers">
           <p>

@@ -3,8 +3,8 @@
 This test covers the use case when a package includes translations and is
 uploaded into the system.
 
-  >>> from canonical.launchpad.database import (
-  ...     ProcessorFamily, GPGKey)
+  >>> from canonical.launchpad.database import ProcessorFamily
+  >>> from lp.registry.model.gpgkey import GPGKey
   >>> from lp.soyuz.model.component import Component
   >>> from lp.soyuz.model.section import Section
   >>> from lp.soyuz.model.publishing import (

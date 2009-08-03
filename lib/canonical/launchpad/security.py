@@ -1333,9 +1333,17 @@ class EditPackageUpload(AdminByAdminsTeam):
     usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
-        """Return True if user has an ArchivePermission or is an admin."""
+        """Return True if user has an ArchivePermission or is an admin.
+
+        If it's a delayed-copy, check if the user can upload to its targeted
+        archive.
+        """
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
+
+        if self.obj.is_delayed_copy:
+            archive_append = AppendArchive(self.obj.archive)
+            return archive_append.checkAuthenticated(user)
 
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
@@ -1876,18 +1884,24 @@ class ViewArchive(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the archive.
 
-        Anyone can see a public archive.
+        Anyone can see a public and enabled archive.
 
-        Only Launchpad admins and uploaders can view private archives.
+        Only Launchpad admins and uploaders can view private or disabled
+        archives.
         """
-        # No further checks are required if the archive is not private.
-        if not self.obj.private:
+        # No further checks are required if the archive is public and
+        # enabled.
+        if not self.obj.private and self.obj.enabled:
             return True
 
         # Administrator are allowed to view private archives.
         celebrities = getUtility(ILaunchpadCelebrities)
         if (user.inTeam(celebrities.admin)
             or user.inTeam(celebrities.commercial_admin)):
+            return True
+
+        # Owners can view the PPA.
+        if user.inTeam(self.obj.owner):
             return True
 
         # Uploaders can view private PPAs.
@@ -1898,24 +1912,38 @@ class ViewArchive(AuthorizationBase):
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
-        return not self.obj.private
+        return not self.obj.private and self.obj.enabled
 
 
 class AppendArchive(AuthorizationBase):
     """Restrict appending (upload and copy) operations on archives.
 
+    No one can upload to disabled archives.
+
     PPA upload rights are managed via `IArchive.canUpload`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
+
+    Appending to ubuntu main archives can also be done by the
+    'ubuntu-security' celebrity.
     """
     permission = 'launchpad.Append'
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
+        if not self.obj.enabled:
+            return False
+
         if user.inTeam(self.obj.owner):
             return True
 
         if self.obj.is_ppa and self.obj.canUpload(user):
+            return True
+
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (self.obj.is_main and
+            self.obj.distribution == celebrities.ubuntu and
+            user.inTeam(celebrities.ubuntu_security)):
             return True
 
         return False

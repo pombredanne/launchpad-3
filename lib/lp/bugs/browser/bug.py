@@ -223,7 +223,7 @@ class BugContextMenu(ContextMenu):
 
     def addcomment(self):
         """Return the 'Comment or attach file' Link."""
-        text = 'Comment or attach file'
+        text = 'Add an attachment'
         return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
@@ -385,8 +385,15 @@ class BugViewMixin:
 
     @cachedproperty
     def duplicate_subscribers(self):
-        """Caches the list of subscribers from duplicates."""
-        return frozenset(self.context.getSubscribersFromDuplicates())
+        """Caches the list of subscribers from duplicates.
+
+        Don't use getSubscribersFromDuplicates here because that method
+        omits a user if the user is also a direct or indirect subscriber.
+        getSubscriptionsFromDuplicates doesn't, so find person objects via
+        this method.
+        """
+        dupe_subscriptions = self.context.getSubscriptionsFromDuplicates()
+        return frozenset([sub.person for sub in dupe_subscriptions])
 
     def subscription_class(self, subscribed_person):
         """Returns a set of CSS class names based on subscription status.

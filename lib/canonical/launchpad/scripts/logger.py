@@ -113,8 +113,8 @@ class BufferLogger(FakeLogger):
     def __init__(self):
         self.buffer = StringIO()
 
-    def message(self, prefix, *stuff, **kw):
-        self.buffer.write('%s: %s\n' % (prefix, ' '.join(stuff)))
+    def message(self, prefix, msg, *stuff, **kw):
+        self.buffer.write('%s: %s\n' % (prefix, msg % stuff))
 
         if 'exc_info' in kw:
             exception = traceback.format_exception(*sys.exc_info())

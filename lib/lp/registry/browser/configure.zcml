@@ -770,9 +770,10 @@
         permission="zope.Public"
         template="../templates/announcements-all.pt"/>
     <browser:menus
+        module="lp.registry.browser.announcement"
         classes="
-            AnnouncementContextMenu"
-        module="lp.registry.browser.announcement"/>
+            AnnouncementContextMenu
+            AnnouncementEditNavigationMenu"/>
     <facet
         facet="overview">
         <browser:navigation
@@ -1753,6 +1754,13 @@
         permission="launchpad.Admin"
         template="../templates/productseries-review.pt"/>
     <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+link-translations-branch"
+        class="lp.registry.browser.productseries.LinkTranslationsBranchView"
+        template="../templates/productseries-link-translations-branch.pt"
+        facet="translations"
+        permission="launchpad.Edit"/>
+    <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="canonical.launchpad.browser.AskAQuestionButtonView"
@@ -2238,7 +2246,7 @@
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="launchpad.AnyPerson"
-        class="lp.registry.browser.sourcepackage.SourcePackageView"
+        class="lp.registry.browser.sourcepackage.SourcePackageChangeUpstreamView"
         name="+edit-packaging"
         facet="overview"
         template="../templates/sourcepackage-edit-packaging.pt"

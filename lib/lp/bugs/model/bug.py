@@ -68,7 +68,6 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
-from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
@@ -99,7 +98,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.person import Person, ValidPersonCache
 from lp.registry.model.pillar import pillar_sort_key
 
 
@@ -279,7 +277,7 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
-        inside = self.bugtasks[0]
+        inside = self.default_bugtask
         return [
             IndexedMessage(message, inside, index)
             for index, message in enumerate(self.messages)]
@@ -475,6 +473,7 @@ class Bug(SQLBase):
         # the same time as retrieving the bug subscriptions (as a left
         # join). However, this ran slowly (far from optimal query
         # plan), so we're doing it as two queries now.
+        from lp.registry.model.person import Person, ValidPersonCache
         valid_persons = Store.of(self).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
@@ -497,6 +496,7 @@ class Bug(SQLBase):
         the relevant subscribers and rationales will be registered on
         it.
         """
+        from lp.registry.model.person import Person
         subscribers = list(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -533,17 +533,6 @@ class Bug(SQLBase):
                 Bug.duplicateof = %d""" % self.id,
                 prejoins=["person"], clauseTables=["Bug"]))
 
-        # Direct and "also notified" subscribers take precedence
-        # over subscribers from duplicates.
-        duplicate_subscriptions -= set(self.getDirectSubscriptions())
-        also_notified_subscriptions = set()
-        for also_notified_subscriber in self.getAlsoNotifiedSubscribers():
-            for duplicate_subscription in duplicate_subscriptions:
-                if also_notified_subscriber == duplicate_subscription.person:
-                    also_notified_subscriptions.add(duplicate_subscription)
-                    break
-        duplicate_subscriptions -= also_notified_subscriptions
-
         # Only add a subscriber once to the list.
         duplicate_subscribers = set(
             sub.person for sub in duplicate_subscriptions)
@@ -568,6 +557,7 @@ class Bug(SQLBase):
         if self.private:
             return []
 
+        from lp.registry.model.person import Person
         dupe_subscribers = set(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -1060,6 +1050,7 @@ class Bug(SQLBase):
         # Since we can't prejoin, cache all people at once so we don't
         # have to do it while rendering, which is a big deal for bugs
         # with a million comments.
+        from lp.registry.model.person import Person
         owner_ids = set()
         for chunk in chunks:
             if chunk.message.ownerID:

@@ -7,21 +7,13 @@
 
 __metaclass__ = type
 
-__all__ = [
-    'IVPOTExportSet',
-    'IVPOTExport'
-    ]
+__all__ = ['IVPOTExport']
 
 from zope.interface import Interface
 from zope.schema import Int, Object, Text
 
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.potmsgset import IPOTMsgSet
-class IVPOTExportSet(Interface):
-    """A collection of IVPOTExport-providing rows."""
-
-    def get_potemplate_rows(potemplate):
-        """Return all rows which belong to a particular PO template."""
 
 
 class IVPOTExport(Interface):
