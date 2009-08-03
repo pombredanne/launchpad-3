@@ -3,68 +3,120 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
-  <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:portlets>
+<body>
+
+<div metal:fill-slot="heading">
+  <div>
+    <a tal:attributes="href context/sourcepackage/fmt:url">
+      &ldquo;<span tal:replace="context/sourcepackage/name"/>&rdquo;
+      source package in
+      <span tal:replace="context/distribution/displayname" />
+    </a>
+  </div>
+  <tal:version content="context/version" />
+</div>
+
+<div metal:fill-slot="side">
+  <div class="yui-u first portlet downloads">
+    <h2>Download source</h2>
+    <ul>
+      <li id="files" tal:content="structure context/sourcepackagerelease/@@+files" />
+    </ul>
+  </div>
+</div>
+
 
 <div metal:fill-slot="main">
 
-    <div>
-      <a
-        tal:attributes="href context/sourcepackage/fmt:url"
-        tal:content="context/sourcepackage/title"
-      />
-    </div>
-    <h1><tal:release replace="context/version" /> version</h1>
-
-  <h2>Download source</h2>
-
-   <div id="files" tal:content="structure context/sourcepackagerelease/@@+files" />
-
-  <tal:has_packages condition="context/sample_binary_packages">
-    <p>
-      Binary packages produced in
-      <span tal:replace="context/distribution/displayname" />
-      for this version of
-      <a tal:attributes="href context/sourcepackage/fmt:url"
-         tal:content="context/sourcepackage/name"/>:
-    </p>
-
-    <ul class="binary package">
-      <li tal:repeat="drbp context/sample_binary_packages">
-        <strong>
-          <a tal:attributes="href drbp/fmt:url"
-             tal:content="drbp/name"
-             class="sprite package-binary">apache-utils</a>:
-          <span tal:replace="drbp/summary">package summary</span>
-        </strong>
-        <div>
-           <span tal:replace="drbp/description">
-             description goes here
-           </span>
-        </div>
-      </li>
-    </ul>
-  </tal:has_packages>
-
-  <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs" />
-
-  <div tal:replace="structure context/@@+portlet-builds" />
-
-  <h2>Publishing history</h2>
-  <div id="publishing_history">
-    <tal:block repeat="publishing context/publishing_history"
-               replace="structure publishing/@@+listing-detailed">
-    </tal:block>
+  <div id="changelog" class="top-portlet">
+    <tal:changelog content="structure context/sourcepackagerelease/@@+changelog"/>
   </div>
+
+  <div id="package-diffs" class="portlet yui-u">
+  <h2>Available diffs</h2>
+  <a href="blah">3.5+nobinonly-0ubuntu1 (in Ubuntu) to 3.5.1+build1+nobinonly-0ubuntu1</a>  (1.9 KiB)
+    <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs"/>
+  </div>
+
+  <div id="publishing-history" class="portlet yui-u">
+    <h2>Publishing history</h2>
+    <div id="publishing_history">
+      <tal:block repeat="publishing context/publishing_history"
+                 replace="structure publishing/@@+listing-detailed">
+      </tal:block>
+    </div>
+  </div>
+
+    <div class="portlet yui-i">
+      <h2>Binary packages produced in
+        <span tal:replace="context/distribution/displayname" />
+        for this version of
+        <a tal:attributes="href context/sourcepackage/fmt:url"
+           tal:content="context/sourcepackage/name"/>
+      </h2>
+
+      <table class="listing">
+
+      <thead><tr><strong>
+      <td>Binary name</td>
+      <td>Intrepid i386</td>
+      <td>Intrepid amd64</td>
+      <td>Jaunty lpia</td>
+      </strong></tr></thead>
+
+      <tr>
+        <td><img src="/@@/treeCollapsed">
+          <span class="sprite package-binary">foo-flimflam</span></td>
+        <td><img src="/@@/yes"></td>
+        <td><img src="/@@/yes"></td>
+        <td><img src="/@@/no"></td>
+      </tr>
+      <tr>
+        <td><img src="/@@/treeCollapsed">
+          <span class="sprite package-binary">foo-dev</span></td>
+        <td><img src="/@@/yes"></td>
+        <td><img src="/@@/yes"></td>
+        <td><img src="/@@/no"></td>
+      </tr>
+      <tr>
+        <td><img src="/@@/treeExpanded">
+          <span class="sprite package-binary">foo-bin</span></td>
+        <td><img src="/@@/yes"></td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+
+      <tr>
+        <td style="padding-left: 1em" colspan=4>
+          <div><strong>Package Summary Here</strong></div>
+          <div>Package description here</div>
+          <h3>Files</h3>
+            <div style="padding-left: 1em"><a href="blah">abrowser-3.5_3.5~b4~hg20090330r24021+nobinonly-0ubuntu1_all.deb</a>  (68.5 KiB)</div>
+          <h3>Package Relationships</h3>
+            <div style="padding-left: 1em">
+            <div>Depends: <a href="blah">abrowser-3.5-branding, firefox-3.5</a></div>
+            <div>Conflicts: <a href="blah">aabrowser-3.1 (<< 3.1~b4~hg20090317)</a></div>
+            <div>Provides: <a href="blah">aabrowser-3.1</a></div>
+            <div>Replaces: <a href="blah">aabrowser-3.1</a></div>
+            <div>Suggests:</div>
+            <div>Recommends:</div>
+            <div>Pre-Depends on:</div>
+            <div>Enhances:</div>
+            <div>Breaks:</div>
+            </div>
+        </td>
+      </tr>
+
+
+   </table>
+   </div>
+
+
+
 
 </div>
 </body>
