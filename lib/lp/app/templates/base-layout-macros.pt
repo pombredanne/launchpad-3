@@ -329,8 +329,8 @@
         <li
           tal:condition="not:link/enabled"
           tal:attributes="class string:${link/name} disabled-tab"
-          ><strong
-             tal:content="structure link/escapedtext" /></li>
+          ><tal:disabled-link-text
+             tal:content="link/escapedtext" /></li>
       </tal:facet>
     </ul>
   </div>

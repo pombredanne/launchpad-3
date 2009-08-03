@@ -408,7 +408,9 @@ div.context-heading h1, div.context-heading h2 {
     color: #000;
     background-color: #f3f3f3;
 }
-
+.context-heading li.disabled-tab {
+    color: #747474;
+}
 /* Side content exceptions */
 .side {
     padding: 0.5em;
