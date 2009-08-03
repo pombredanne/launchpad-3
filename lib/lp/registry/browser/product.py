@@ -103,7 +103,6 @@ from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
 from canonical.widgets.lazrjs import TextLineEditorWidget
-from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import (
     LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -293,10 +292,6 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class IProductEditMenu(Interface):
-    """A marker interface for the 'Change details' navigation menu."""
-
-
 class ProductNavigationMenu(NavigationMenu):
 
     usedfor = IProduct
@@ -325,31 +320,49 @@ class ProductNavigationMenu(NavigationMenu):
         text = 'Branch Visibility Policy'
         return Link('+branchvisibility', text)
 
+class ProductEditLinksMixin:
+    """A mixin class for menus that need Product edit links."""
 
-class ProductEditNavigationMenu(NavigationMenu):
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        text = 'Change people'
+        return Link('+edit-people', text, icon='edit')
+
+    @enabled_with_permission('launchpad.ProjectReview')
+    def review_license(self):
+        text = 'Review project'
+        return Link('+review-license', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
+
+
+class IProductEditMenu(Interface):
+    """A marker interface for the 'Change details' navigation menu."""
+
+
+class ProductEditNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     """A sub-menu for different aspects of editing a Product's details."""
 
     usedfor = IProductEditMenu
     facet = 'overview'
-    title = 'Change project details'
-    links = ('details', 'branding', 'people')
-
-    def details(self):
-        target = '+edit'
-        text = 'Details'
-        return Link(target, text)
-
-    def branding(self):
-        text = 'Branding'
-        return Link('+branding', text)
-
-    def people(self):
-        text = 'People'
-        summary = 'Someone with permission to set goals for all series'
-        return Link('+edit-people', text, summary)
+    title = 'Change project'
+    links = ('edit', 'branding', 'reassign', 'review_license', 'administer')
 
 
-class ProductOverviewMenu(ApplicationMenu):
+class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
 
     usedfor = IProduct
     facet = 'overview'
@@ -370,16 +383,6 @@ class ProductOverviewMenu(ApplicationMenu):
         'branchvisibility',
         'rdf',
         ]
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def reassign(self):
-        text = 'Change maintainer'
-        return Link('+edit-people', text, icon='edit')
 
     def top_contributors(self):
         text = 'More contributors'
@@ -426,16 +429,6 @@ class ProductOverviewMenu(ApplicationMenu):
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text, icon='info')
-
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
-
-    @enabled_with_permission('launchpad.ProjectReview')
-    def review_license(self):
-        text = 'Review project'
-        return Link('+review-license', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def branchvisibility(self):
@@ -1067,12 +1060,22 @@ class ProductDownloadFilesView(LaunchpadView,
 
 
 class ProductBrandingView(BrandingChangeView):
-
+    """A view to set branding."""
     implements(IProductEditMenu)
 
-    label = None
+    label = "Change branding"
     schema = IProduct
     field_names = ['icon', 'logo', 'mugshot']
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change %s's branding" % self.context.title
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
@@ -1080,6 +1083,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     implements(IProductEditMenu)
 
+    label = "Edit details"
     schema = IProduct
     field_names = [
         "displayname",
@@ -1109,6 +1113,11 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     custom_widget('licenses', LicenseWidget)
     custom_widget('bugtracker', ProductBugTrackerWidget)
     custom_widget('license_info', GhostWidget)
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change %s's details" % self.context.title
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1169,7 +1178,11 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
-    custom_widget('registrant', SinglePopupWidget)
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Administer %s' % self.context.title
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.
@@ -1230,6 +1243,7 @@ class ProductAdminView(ProductEditView):
 
 
 class ProductReviewLicenseView(ProductEditView):
+    """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
         "license_reviewed",
@@ -1238,6 +1252,11 @@ class ProductReviewLicenseView(ProductEditView):
         "private_bugs",
         "reviewer_whiteboard",
         ]
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Review %s' % self.context.title
 
     def validate(self, data):
         """See `LaunchpadFormView`.
@@ -1672,6 +1691,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
     implements(IProductEditMenu)
 
+    label = "Change the roles of people"
     schema = IProduct
     field_names = [
         'owner',
@@ -1682,6 +1702,11 @@ class ProductEditPeopleView(LaunchpadEditFormView):
                   include_create_team_link=True)
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
                   include_create_team_link=True)
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change the roles of %s's people" % self.context.title
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):

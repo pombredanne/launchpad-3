@@ -807,6 +807,7 @@
   <adapter factory="lp.code.model.linkedbranch.ProductSeriesLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.ProductLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.PackageLinkedBranch" />
+  <adapter factory="lp.code.model.linkedbranch.DistributionPackageLinkedBranch" />
 
   <lp:help-folder
       folder="help" type="canonical.launchpad.layers.CodeLayer" />

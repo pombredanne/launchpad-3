@@ -175,9 +175,10 @@ class BMPMailer(BranchMailer):
 
     def _addAttachments(self, ctrl, email):
         if self.review_diff is not None:
+            # Using .txt as a file extension makes Gmail display it inline.
             ctrl.addAttachment(
                 self.review_diff.diff.text, content_type='text/x-diff',
-                inline=True, filename='review.diff')
+                inline=True, filename='review-diff.txt')
 
     def _generateTemplateParams(self):
         """For template params that don't change, calcualte just once."""

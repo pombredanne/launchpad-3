@@ -43,6 +43,7 @@ __all__ = [
     'ProductSeriesVocabulary',
     'ProductVocabulary',
     'ProjectVocabulary',
+    'SourcePackageNameVocabulary',
     'UserTeamsParticipationVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -90,8 +91,9 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
-    NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
+    BatchedCountableIterator, CountableIterator, IHugeVocabulary,
+    NamedSQLObjectHugeVocabulary, NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase)
 
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -120,6 +122,7 @@ from lp.registry.model.product import Product
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.project import Project
+from lp.registry.model.sourcepackagename import SourcePackageName
 
 
 class BasePersonVocabulary:
@@ -1266,7 +1269,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             sub_status = "(expires %s)" % date_formatter.displaydate()
         return SimpleTerm(project,
                           project.name,
-                          sub_status)
+                          '%s %s' % (project.title, sub_status))
 
     def getTermByToken(self, token):
         """Return the term for the given token."""
@@ -1459,3 +1462,26 @@ class FeaturedProjectVocabulary(DistributionOrProductOrProjectVocabulary):
                    AND PillarName.name = %s""" % sqlvalues(obj.name)
         return PillarName.selectOne(
                    query, clauseTables=['FeaturedProject']) is not None
+
+
+class SourcePackageNameIterator(BatchedCountableIterator):
+    """A custom iterator for SourcePackageNameVocabulary.
+
+    Used to iterate over vocabulary items and provide full
+    descriptions.
+
+    Note that the reason we use special iterators is to ensure that we
+    only do the search for descriptions across source package names that
+    we actually are attempting to list, taking advantage of the
+    resultset slicing that BatchNavigator does.
+    """
+    def getTermsWithDescriptions(self, results):
+        return [SimpleTerm(obj, obj.name, obj.name) for obj in results]
+
+
+class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
+    """A vocabulary that lists source package names."""
+    displayname = 'Select a source package'
+    _table = SourcePackageName
+    _orderBy = 'name'
+    iterator = SourcePackageNameIterator

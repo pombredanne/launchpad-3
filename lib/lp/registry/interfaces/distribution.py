@@ -355,12 +355,20 @@ class IDistributionPublic(
         """
 
     def removeOldCacheItems(archive, log):
-        """Delete any cache records for removed packages."""
+        """Delete any cache records for removed packages.
+
+        Also purges all existing cache records for disabled archives.
+
+        :param archive: target `IArchive`.
+        :param log: the context logger object able to print DEBUG level
+            messages.
+        """
 
     def updateCompleteSourcePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the source package cache.
 
-        Consider every non-REMOVED sourcepackage.
+        Consider every non-REMOVED sourcepackage and entirely skips updates
+        for disabled archives.
 
         :param archive: target `IArchive`;
         :param log: logger object for printing debug level information;

@@ -481,3 +481,12 @@ span.see-all {
     border-top: 1px solid #d0d0d0;
     border-bottom: 1px solid #d0d0d0;
     }
+
+/* From nice_pre in tales.py */
+pre.wrap {
+  white-space: -moz-pre-wrap;
+  white-space: -o-pre-wrap;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+

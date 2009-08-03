@@ -1,4 +1,5 @@
-= Editing a Project =
+Editing a Project
+=================
 
 The maintainer of a project can edit its details.
 
@@ -9,7 +10,7 @@ The maintainer of a project can edit its details.
     'Change project group details'
 
     >>> soup = find_main_content(browser.contents)
-    >>> print soup.first('h1').renderContents()
+    >>> print browser.title
     Change project group details
 
     >>> browser.getControl(name='field.name').value = 'new-name'
@@ -38,12 +39,9 @@ But administrators can access the page:
 
     >>> admin_browser.url
     'http://launchpad.dev/new-name/+review'
+
     >>> admin_browser.title
     'Change project group details'
-
-    >>> soup = find_main_content(admin_browser.contents)
-    >>> print soup.first('h1').renderContents()
-    Review upstream project group details
 
 Mark the project as reviewed.
 
@@ -71,8 +69,8 @@ Other users cannot see the Project group status in the details portlet.
     Driver: Not yet appointed
     Bug tracker: The Mozilla.org Bug Tracker
 
-Administrators can also change the maintainer and registrant independent of
-each other, as well as adding aliases to the project group.
+Administrators can also change the maintainer and registrant independent
+of each other, as well as adding aliases to the project group.
 
     >>> admin_browser.open('http://launchpad.dev/new-name')
     >>> admin_browser.getLink('Administer').click()
@@ -80,12 +78,14 @@ each other, as well as adding aliases to the project group.
     >>> admin_browser.getControl('Registrant').value = 'ddaa'
     >>> admin_browser.getControl('Aliases').value
     ''
+
     >>> admin_browser.getControl('Aliases').value = 'old-name'
     >>> admin_browser.getControl('Change').click()
 
     >>> admin_browser.getLink('Administer').click()
     >>> admin_browser.getControl('Aliases').value
     'old-name'
+
     >>> admin_browser.goBack()
 
 The project maintainer and registrant are now updated.
@@ -95,6 +95,7 @@ The project maintainer and registrant are now updated.
     ...           tag.find(text='Maintainer:').findParent('tr'))
     Maintainer:
     Celso Providelo
+
     >>> tag = find_tag_by_id(admin_browser.contents, 'portlet-lifecycle')
     >>> print extract_text(
     ...       tag.find(text='Registered by:').findParent('tr'))
@@ -115,8 +116,10 @@ teams as registrants.
     ...           tag.find(text='Maintainer:').findParent('tr'))
     Maintainer:
     Celso Providelo
+
     >>> tag = find_tag_by_id(admin_browser.contents, 'portlet-lifecycle')
     >>> print extract_text(
     ...       tag.find(text='Registered by:').findParent('tr'))
     Registered by:
     Registry Administrators
+

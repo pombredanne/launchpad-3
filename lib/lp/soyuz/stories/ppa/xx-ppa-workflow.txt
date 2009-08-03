@@ -624,3 +624,53 @@ Back to his profile page Celso and anyone can his multiple PPAs.
     Edge PPA
     PPA for Celso Providelo
     Create a new PPA
+
+PPAs can be disabled due to ToS violations or simply because the owner
+requested it. An administrator can disable Celso's 'edge' PPA.
+
+    >>> ppa_url = cprov_browser.getLink('Edge PPA').url
+    >>> admin_browser.open(ppa_url)
+    >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.getControl(name="field.enabled").value = False
+    >>> admin_browser.getControl("Save").click()
+
+Anonymous access or users with no permission to view Celso's 'edge'
+ppa can see it listed in Celso's profile page.
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov")
+    >>> browser.open("http://launchpad.dev/~cprov")
+
+    >>> print_tag_with_id(anon_browser.contents, 'ppas')
+    Personal package archives
+    Edge PPA
+    PPA for Celso Providelo
+
+    >>> print_tag_with_id(browser.contents, 'ppas')
+    Personal package archives
+    Edge PPA
+    PPA for Celso Providelo
+
+However the reference to Celso's 'Edge PPA' is not linked.
+
+    >>> print anon_browser.getLink('Edge PPA')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> print browser.getLink('Edge PPA')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+And direct access to the PPA page is also denied.
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/edge")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> browser.open("http://launchpad.dev/~cprov/+archive/edge")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+

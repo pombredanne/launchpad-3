@@ -12,7 +12,7 @@ from zope.component import getUtility
 import transaction
 
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.database import KarmaCache
+from lp.registry.model.karma import KarmaCache
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import IPersonSet, IProductSet
 from canonical.testing import LaunchpadFunctionalLayer
