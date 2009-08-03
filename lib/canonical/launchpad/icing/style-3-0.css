@@ -400,6 +400,11 @@ div.location-portlet h1 {
        heading above. */
     margin-left: -0.5em; 
 }
+/* If the first list item is active, we ensure the highlight is aligned
+ * with the heading above. */
+.location-portlet li:first-child.active a {
+    margin-left: 0
+}
 .location-portlet li a:link, .location-portlet li a:visited {
     color: #000;
     background-color: #fff;
