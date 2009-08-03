@@ -299,7 +299,7 @@
 
 
 <metal:context-heading-with-menu define-macro="context-heading-with-menu">
-  <div class="context-heading top-portlet"
+  <div class="location-portlet top-portlet"
        tal:condition="view/macro:pagehas/applicationtabs">
     <span tal:replace="structure context/image:logo"></span>
     <h2

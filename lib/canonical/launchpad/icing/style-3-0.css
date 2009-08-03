@@ -373,11 +373,11 @@ span.see-all {
     }
 
 /* == Context heading and application tabs == */
-div.context-heading img {
+div.location-portlet img {
     float: left;
     margin: 0 1.5em 0 0;
 }
-div.context-heading h1, div.context-heading h2 {
+div.location-portlet h1, div.location-portlet h2 {
     padding-top: 0.1em;
     margin-bottom: 0.8em;
     color: #000000;
@@ -387,28 +387,28 @@ div.context-heading h1, div.context-heading h2 {
 
 /* === Location application tabs === */
 /* In most pages, we present a list of six application facets: */
-.context-heading li {
+.location-portlet li {
     display:inline;
     list-style-type: none;
 }
-.context-heading li a {
+.location-portlet li a {
     padding: 0.3em 0.5em;
 }
-.context-heading li a:link, .context-heading li a:visited {
+.location-portlet li a:link, .location-portlet li a:visited {
     color: #000;
     background-color: #fff;
     text-decoration: none;
 }
-.context-heading li.active a {
+.location-portlet li.active a {
     font-weight: bold;
     color: #fff;
     background-color: #747474;
 }
-.context-heading li a:hover {
+.location-portlet li a:hover {
     color: #000;
     background-color: #f3f3f3;
 }
-.context-heading li.disabled-tab {
+.location-portlet li.disabled-tab {
     color: #747474;
 }
 /* Side content exceptions */
