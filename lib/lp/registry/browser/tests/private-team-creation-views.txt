@@ -400,7 +400,7 @@ those permitted by private teams.
     ...     bugtask = bug.default_bugtask
     ...     bugtask.transitionToAssignee(team)
     ...     # A branch.
-    ...     branch = factory.makeBranch(owner=team)
+    ...     branch = factory.makeBranch(owner=team, registrant=team_owner)
     ...     # A branch subscription.
     ...     from lp.code.enums import (
     ...         BranchSubscriptionDiffSize,
