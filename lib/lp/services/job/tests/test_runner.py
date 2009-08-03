@@ -105,6 +105,25 @@ class TestJobRunner(TestCaseWithFactory):
         oops = reporter.getLastOopsReport()
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
 
+    def test_runAll_aborts_transaction_on_error(self):
+        """runAll should abort the transaction on oops."""
+
+        class DBAlterJob(NullJob):
+
+            def __init__(self):
+                super(DBAlterJob, self).__init__('')
+
+            def run(self):
+                self.job.log = 'hello'
+                raise ValueError
+
+        job = DBAlterJob()
+        runner = JobRunner([job])
+        runner.runAll()
+        # If the transaction was committed, job.log == 'hello'.  If it was
+        # aborted, it is None.
+        self.assertIs(None, job.job.log)
+
     def test_runAll_mails_oopses(self):
         """Email interested parties about OOPses."""
         job_1, job_2 = self.makeTwoJobs()

@@ -14,7 +14,7 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import (
     cursor, flush_database_caches, flush_database_updates, sqlvalues)
-from canonical.launchpad.database import TeamMembership
+from lp.registry.model.teammembership import TeamMembership
 from canonical.launchpad.ftests import login, login_person
 from lp.registry.interfaces.person import (
     IPersonSet, TeamSubscriptionPolicy)
