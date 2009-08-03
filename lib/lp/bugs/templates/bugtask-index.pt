@@ -275,7 +275,7 @@
       <div tal:condition="context/bug/cves">
         <h2>CVE References</h2>
         <ul>
-          <li class="cve" tal:repeat="cve context/bug/cves">
+          <li class="sprite cve" tal:repeat="cve context/bug/cves">
             <a tal:attributes="href cve/fmt:url;
                                title cve/description/fmt:shorten/40"
                tal:content="cve/sequence"
