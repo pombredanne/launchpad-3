@@ -226,7 +226,7 @@ Loosening to substring matches gives another result:
 
     >>> results = ubuntu.searchBinaryPackages("mozilla", exact_match=False)
     >>> print results[0]
-    <security proxied lp.registry.model.distributionsourcepackagecache.DistributionSourcePackageCache instance ...
+    <...DistributionSourcePackageCache instance ...
 
     >>> print [result.name for result in results]
     [u'mozilla-firefox']
@@ -250,7 +250,7 @@ We can do an FTI search:
 
     >>> fti_results = ubuntu.searchBinaryPackagesFTI("browser")
     >>> print results[0]
-    <security proxied lp.registry.model.distributionsourcepackagecache.DistributionSourcePackageCache instance ...
+    <...DistributionSourcePackageCache instance ...
 
     >>> print [result.name for result in fti_results]
     [u'mozilla-firefox']

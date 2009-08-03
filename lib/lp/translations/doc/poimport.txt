@@ -13,7 +13,7 @@ Here are some imports we need to get this test running.
     ...     ILanguageSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue, RosettaImportStatus)
-    >>> from canonical.launchpad.database import SourcePackageName
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> from lp.translations.scripts.po_import import (
     ...     AutoApproveProcess, ImportProcess)
@@ -40,7 +40,7 @@ Normal procedure is to import a template, followed by translations.
 A template is created first.  After that, imports are done using the
 POFile.importFromQueue and POTemplate.importFromQueue methods.
 
-    >>> from canonical.launchpad.database import ProductRelease
+    >>> from lp.registry.model.productrelease import ProductRelease
     >>> release = ProductRelease.get(3)
     >>> release.productseries.product.name
     u'firefox'

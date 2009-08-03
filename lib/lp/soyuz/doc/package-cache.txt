@@ -108,7 +108,7 @@ cache when it's updated.
   >>> ubuntu.searchSourcePackages('foobar').count()
   1
 
-  >>> from canonical.launchpad.database import (
+  >>> from lp.soyuz.model.distributionsourcepackagecache import (
   ...    DistributionSourcePackageCache)
 
   >>> foobar_cache = DistributionSourcePackageCache.selectOneBy(
