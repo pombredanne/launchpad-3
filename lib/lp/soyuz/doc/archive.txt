@@ -1804,21 +1804,23 @@ which can be used to get archives of a specific purpose(s) for a distribution
 (note: the sample data currently contains one copy archive for ubuntu, and
 one has been created above):
 
-First create a function to print the names of a set of archives:
+First create a function to print the names of a set of archives and
+its relevant attributes.
 
     >>> def print_archive_names(archives):
-    ...     names = [archive.name for archive in archives]
-    ...     names.sort()
-    ...     for name in names:
-    ...         print name
+    ...     print 'Name Owner Private Enabled'
+    ...     for a in archives:
+    ...         print a.name, a.owner.name, a.private, a.enabled
+
+Anonymous lookups return only public and enabled archives for the
+given purpose:
 
     >>> archive_set = getUtility(IArchiveSet)
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=ArchivePurpose.COPY)
     >>> print_archive_names(ubuntu_copy_archives)
-    my-copy-archive
-    there-we-go
-
+    Name             Owner         Private  Enabled
+    my-copy-archive  person-name6  False    True
 
 The method `getArchivesForDistribution` can also be used with multiple
 purposes. First we'll check how many partner archives are in the DB:
@@ -1826,16 +1828,18 @@ purposes. First we'll check how many partner archives are in the DB:
     >>> partner_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=ArchivePurpose.PARTNER)
     >>> print_archive_names(partner_archives)
-    partner
+    Name             Owner         Private  Enabled
+    partner          ubuntu-team   False    True
 
 And then use `getArchivesForDistribution` to get all copy and partner
 archives:
+
     >>> copy_n_partner_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY, ArchivePurpose.PARTNER])
     >>> print_archive_names(copy_n_partner_archives)
-    my-copy-archive
-    partner
-    there-we-go
+    Name             Owner         Private  Enabled
+    my-copy-archive  person-name6  False    True
+    partner          ubuntu-team   False    True
 
 First we create three copy archives for ubuntu:
 
@@ -1859,11 +1863,11 @@ Now the `getArchivesForDistribution` finds the relevant COPY archives:
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY])
     >>> print_archive_names(ubuntu_copy_archives)
-    fine-copy
-    my-copy-archive
-    team-archive
-    there-we-go
-    ultimate-copy
+    Name             Owner         Private  Enabled
+    fine-copy        person-name12 False    True
+    my-copy-archive  person-name6  False    True
+    team-archive     t1            False    True
+    ultimate-copy    person-name9  False    True
 
 The `getArchivesForDistribution` method can also be used to get an
 archive using an archive name:
@@ -1871,7 +1875,8 @@ archive using an archive name:
     >>> primary_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, name='primary')
     >>> print_archive_names(primary_archives)
-    primary
+    Name             Owner         Private  Enabled
+    primary          ubuntu-team   False    True
 
 After making two of the archives private, the getArchivesForDistribution()
 method will by default only return public archives:
@@ -1884,12 +1889,13 @@ method will by default only return public archives:
     ...     ubuntu, name='team-archive')[0]
     >>> team_archive.buildd_secret = 'really secret'
     >>> team_archive.private = True
+
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY])
     >>> print_archive_names(ubuntu_copy_archives)
-    fine-copy
-    there-we-go
-    ultimate-copy
+    Name             Owner         Private  Enabled
+    fine-copy        person-name12 False    True
+    ultimate-copy    person-name9  False    True
 
 Similarly, a user who has no privs for the private archive will not see
 the private archives:
@@ -1897,9 +1903,9 @@ the private archives:
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY], user=cprov)
     >>> print_archive_names(ubuntu_copy_archives)
-    fine-copy
-    there-we-go
-    ultimate-copy
+    Name             Owner         Private  Enabled
+    fine-copy        person-name12 False    True
+    ultimate-copy    person-name9  False    True
 
 The owner of the archive will also see their private archive in the results:
 
@@ -1907,22 +1913,23 @@ The owner of the archive will also see their private archive in the results:
     ...     ubuntu, purposes=[ArchivePurpose.COPY],
     ...     user=my_copy_archive.owner)
     >>> print_archive_names(ubuntu_copy_archives)
-    fine-copy
-    my-copy-archive
-    there-we-go
-    ultimate-copy
+    Name             Owner         Private  Enabled
+    fine-copy        person-name12 False    True
+    my-copy-archive  person-name6  True     True
+    ultimate-copy    person-name9  False    True
 
-An admin will see all the private archive in the results:
+An admin will see all the private and disabled archives in the results:
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY], user=foobar)
     >>> print_archive_names(ubuntu_copy_archives)
-    fine-copy
-    my-copy-archive
-    team-archive
-    there-we-go
-    ultimate-copy
+    Name             Owner         Private  Enabled
+    fine-copy        person-name12 False    True
+    my-copy-archive  person-name6  True     True
+    team-archive     t1            True     True
+    there-we-go      juergen       False    False
+    ultimate-copy    person-name9  False    True
 
 And if the archive is owned by a team, then anyone in the team will also
 be able to view the private team archive:
@@ -1931,10 +1938,10 @@ be able to view the private team archive:
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY], user=cprov)
     >>> print_archive_names(ubuntu_copy_archives)
-    fine-copy
-    team-archive
-    there-we-go
-    ultimate-copy
+    Name             Owner         Private  Enabled
+    fine-copy        person-name12 False    True
+    team-archive     t1            True     True
+    ultimate-copy    person-name9  False    True
 
 
 == Getting publishing records across a set of Archives ==
@@ -2061,9 +2068,48 @@ preserved.
     >>> check_permission('launchpad.Append', cprov_archive)
     True
 
+On the other hand, if Celso's PPA is disabled, only the view
+permissions are kept. No one has permission to upload or copy sources
+to it.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.enabled = False
+
+    >>> login("carlos@canonical.com")
+    >>> check_permission('launchpad.Append', cprov_archive)
+    False
+
+    >>> login("celso.providelo@canonical.com")
+    >>> check_permission('launchpad.Append', cprov_archive)
+    False
+
+Similarly to private PPAs, disabled public PPAs can only be viewed by
+owners or uploaders.
+
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.buildd_secret = ''
     >>> cprov_archive.private = False
+
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.View', cprov_archive)
+    False
+
+    >>> login('david.allouche@canonical.com')
+    >>> check_permission('launchpad.View', cprov_archive)
+    False
+
+    >>> login("carlos@canonical.com")
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+    >>> login("celso.providelo@canonical.com")
+    >>> check_permission('launchpad.View', cprov_archive)
+    True
+
+Re-enable Celso's PPA.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.enabled = True
 
 Another important aspect of the upload permission for ubuntu main
 archives (PRIMARY, PARTNER and DEBUG) is that in addition to owners
@@ -2251,7 +2297,7 @@ all result in a NotFound exception:
     >>> sabdfl.archive.syncSources(["bogus"], cprov.archive, "release")
     Traceback (most recent call last):
     ...
-    SourceNotFound: No such source package: 'bogus'.
+    NoSuchSourcePackageName: No such source package: 'bogus'.
 
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "badpocket")
     Traceback (most recent call last):

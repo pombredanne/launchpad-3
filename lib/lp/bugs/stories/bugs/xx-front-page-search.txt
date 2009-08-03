@@ -110,21 +110,12 @@ in the Launchpad.
     There is no project named 'invalid' registered in Launchpad
 
 If the user doesn't know what name to write, he can use the 'Choose'
-link that will present him with a search box.
+link if the browser supports javascript. The test browser does not
+support javascript, so a 'Find' link pointing to /people is displayed.
 
-    >>> choose_link = anon_browser.getLink('Choose')
-    >>> choose_link.url
-    "javascript:popup_window('@@popup-window?..."
-
-Since the link is a javascript popup, we can't follow the link directly,
-so let's extract the real URL and open it manually.
-
-    >>> import re
-    >>> search_url = re.search(
-    ...     "popup_window\('([^']*)'", choose_link.url).group(1)
-    >>> user_browser.open('http://bugs.launchpad.dev/' + search_url)
-    >>> user_browser.title
-    'Select a project'
+    >>> find_link = anon_browser.getLink('Find')
+    >>> find_link.url
+    'http://bugs.launchpad.dev/people/'
 
 'Project' in this context means either a product, distribution or a
 project.

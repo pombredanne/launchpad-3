@@ -33,7 +33,7 @@ This is a dummy logger class to capture the export's log messages.
 
 Here's somebody to make a request.
 
-    >>> from canonical.launchpad.database import Person
+    >>> from lp.registry.model.person import Person
     >>> person = Person.get(1)
 
 

@@ -28,27 +28,28 @@ runner_config = {
     'browser': 'firefox',
 }
 
-# Test suite configuration
-test_root_dir = 'lib/canonical/launchpad/windmill/tests/'
-
 # A hash of test suites to run.  Each key has two parts: the path to the test
 # suite root directory (relative to the test root directory) and the domain
 # that the test runner must use during suite execution.
 test_suites = {
     'registry': {
-        'suite_dir': 'test_registry',
+        'suite_dir': 'lib/canonical/launchpad/windmill/tests/test_registry',
         'domain':    'launchpad.dev'
     },
     'bugs': {
-        'suite_dir': 'test_bugs',
+        'suite_dir': 'lib/lp/bugs/windmill',
         'domain':    'bugs.launchpad.dev'
     },
+    'code': {
+        'suite_dir': 'lib/lp/code/windmill',
+        'domain':    'code.launchpad.dev'
+    },
     'soyuz': {
-        'suite_dir': 'test_soyuz',
+        'suite_dir': 'lib/canonical/launchpad/windmill/tests/test_soyuz',
         'domain':    'launchpad.dev'
     },
     'translations': {
-        'suite_dir': 'test_translations',
+        'suite_dir': 'lib/lp/translations/windmill',
         'domain':    'translations.launchpad.dev'
     },
 }
@@ -60,7 +61,7 @@ def run_suite(suite_config):
     config['url'] = 'http://%s:%s' % (
         suite_config['domain'],
         runner_config['port'])
-    config['suite'] = os.path.join(test_root_dir, suite_config['suite_dir'])
+    config['suite'] = suite_config['suite_dir']
 
     # Do we have a test runner?
     if not os.path.exists(config['runner']):

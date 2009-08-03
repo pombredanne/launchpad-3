@@ -59,12 +59,6 @@
     </div>
   </div>
 
-      <p>
-        &#187;
-        <a tal:attributes="href view/advanced_filebug_url"
-        >Advanced reporting options</a>
-      </p>
-
   <tal:most-common-bugs condition="view/most_common_bugs">
     <h2>Most Frequently Reported Bugs</h2>
 

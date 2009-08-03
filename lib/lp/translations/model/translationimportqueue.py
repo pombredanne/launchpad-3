@@ -145,7 +145,7 @@ class TranslationImportQueueEntry(SQLBase):
     @property
     def sourcepackage(self):
         """See ITranslationImportQueueEntry."""
-        from canonical.launchpad.database import SourcePackage
+        from lp.registry.model.sourcepackage import SourcePackage
 
         if self.sourcepackagename is None or self.distroseries is None:
             return None
