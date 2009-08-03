@@ -7,12 +7,14 @@ __metaclass__ = type
 
 import unittest
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import CannotUploadToArchive, verify_upload
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import TestCaseWithFactory
 
 
@@ -42,6 +44,29 @@ class TestPermission(TestCaseWithFactory):
         removeSecurityProxy(team).addMember(person, team.teamowner)
         ssp = self.factory.makeSuiteSourcePackage()
         self.assertCanUpload(person, ssp, ppa)
+
+    def test_arbitrary_person_cannot_upload_to_primary_archive(self):
+        # By default, you can't upload to the primary archive.
+        person = self.factory.makePerson()
+        ssp = self.factory.makeSuiteSourcePackage()
+        archive = ssp.distribution.main_archive
+        self.assertRaises(
+            CannotUploadToArchive, verify_upload, person, ssp, archive)
+
+    def test_package_specific_rights(self):
+        # A person can be granted specific rights for uploading a package,
+        # based only on the source package name. If they have these rights,
+        # they can upload to the package.
+        person = self.factory.makePerson()
+        ssp = self.factory.makeSuiteSourcePackage()
+        # We can't use a PPA, because they have a different logic for
+        # permissions. We can't create an arbitrary archive, because there's
+        # only one primary archive per distro.
+        archive = ssp.distribution.main_archive
+        permission_set = getUtility(IArchivePermissionSet)
+        removeSecurityProxy(permission_set).newPackageUploader(
+            archive, person, ssp.sourcepackagename)
+        self.assertCanUpload(person, ssp, archive)
 
     # XXX: Why doesn't nascentupload:verify_acl() check to see if the signer
     # is allowed to upload the specific package?

@@ -29,3 +29,7 @@ def verify_upload(person, suite_sourcepackage, archive):
     if archive.purpose == ArchivePurpose.PPA:
         if not archive.canUpload(person):
             raise CannotUploadToArchive(person, archive)
+    else:
+        spn = suite_sourcepackage.sourcepackagename
+        if not archive.canUpload(person, spn):
+            raise CannotUploadToArchive(person, archive)
