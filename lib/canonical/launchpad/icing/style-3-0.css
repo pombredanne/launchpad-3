@@ -384,6 +384,9 @@ div.location-portlet h1, div.location-portlet h2 {
     font-weight: bold;
     clear: none;
 }
+div.location-portlet h1 {
+    margin-bottom: 0.2em;
+}
 
 /* === Location portlet tabs === */
 /* In most pages, we present a list of six application facets: */
