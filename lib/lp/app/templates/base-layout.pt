@@ -107,7 +107,7 @@
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
             <metal:heading_nav use-macro="
-              context/@@+base-layout-macros/context-heading-with-menu"/>
+              context/@@+base-layout-macros/location-portlet"/>
             <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->

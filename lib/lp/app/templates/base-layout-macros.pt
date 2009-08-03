@@ -298,7 +298,7 @@
 </metal:lp-client-cache>
 
 
-<metal:context-heading-with-menu define-macro="context-heading-with-menu">
+<metal:location-portlet define-macro="location-portlet">
   <div class="location-portlet top-portlet"
        tal:condition="view/macro:pagehas/applicationtabs">
     <span tal:replace="structure context/image:logo"></span>
@@ -334,6 +334,6 @@
       </tal:facet>
     </ul>
   </div>
-</metal:context-heading-with-menu>
+</metal:location-portlet>
 
 </macros>
