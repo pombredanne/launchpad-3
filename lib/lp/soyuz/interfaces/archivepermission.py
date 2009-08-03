@@ -335,8 +335,8 @@ class IArchivePermissionSet(Interface):
         :param archive: The archive the permission applies to.
         :param person: An `IPerson` for whom you want to add permission.
         :param packageset: An `IPackageset` or a string package set name.
-        :param explicit: True if the package set in question requires
-            specialist skills for proper handling.
+        :param explicit: True if the permissions granted by this package set
+            exclude permissions granted by non-explicit package sets.
         :raises ValueError: if an `ArchivePermission` record for this
             person and packageset already exists *but* with a different
             'explicit' flag value.
