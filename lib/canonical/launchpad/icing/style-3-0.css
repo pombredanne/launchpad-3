@@ -396,12 +396,13 @@ div.location-portlet h1 {
 }
 .location-portlet li a {
     padding: 0.3em 0.5em;
-    /* Ensure the text of the first location tab is aligned with the
-       heading above. */
+}
+/* The text of the first tab should align with the heading directly
+   above it - unless the first tab is active, in which case the highlight
+   (margin) should align instead */
+.location-portlet li:first-child a {
     margin-left: -0.5em; 
 }
-/* If the first list item is active, we ensure the highlight is aligned
- * with the heading above. */
 .location-portlet li:first-child.active a {
     margin-left: 0
 }
