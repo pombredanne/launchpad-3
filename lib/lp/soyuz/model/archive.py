@@ -23,6 +23,7 @@ from zope.event import notify
 from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
+from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -33,16 +34,13 @@ from canonical.database.sqlbase import (
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table)
-from lp.soyuz.model.archivedependency import (
-    ArchiveDependency)
+from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
-from lp.soyuz.model.archivesubscriber import (
-    ArchiveSubscriber)
+from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 from lp.soyuz.model.build import Build
-from lp.registry.model.distributionsourcepackagecache import (
+from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from lp.soyuz.model.distroseriespackagecache import (
-    DistroSeriesPackageCache)
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
@@ -51,24 +49,21 @@ from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.publishedpackage import PublishedPackage
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadSource)
+from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, SourceNotFound, default_name_by_purpose)
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
+    PocketNotFound, default_name_by_purpose)
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -77,16 +72,14 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.packagecopyrequest import (
-    IPackageCopyRequestSet)
+from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from lp.soyuz.scripts.packagecopier import (
-    CannotCopy, do_copy)
+    active_publishing_status, PackagePublishingPocket,
+    PackagePublishingStatus, IPublishingSet)
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.scripts.packagecopier import CannotCopy, do_copy
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from lp.registry.interfaces.person import (
@@ -211,14 +204,25 @@ class Archive(SQLBase):
     @property
     def series_with_sources(self):
         """See `IArchive`."""
-        cur = cursor()
-        query = """SELECT DISTINCT distroseries FROM
-                      SourcePackagePublishingHistory WHERE
-                      SourcePackagePublishingHistory.archive = %s"""
-        cur.execute(query % self.id)
-        published_series_ids = [int(row[0]) for row in cur.fetchall()]
-        return [s for s in self.distribution.serieses if s.id in
-                published_series_ids]
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        # Import DistroSeries here to avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+
+        distro_serieses = store.find(
+            DistroSeries,
+            DistroSeries.distribution == self.distribution,
+            SourcePackagePublishingHistory.distroseries == DistroSeries.id,
+            SourcePackagePublishingHistory.archive == self,
+            SourcePackagePublishingHistory.status.is_in(
+                active_publishing_status))
+
+        distro_serieses.config(distinct=True)
+
+        # Ensure the ordering is the same as presented by
+        # Distribution.serieses
+        return sorted(
+            distro_serieses, key=lambda a: Version(a.version), reverse=True)
 
     @property
     def dependencies(self):
@@ -1055,13 +1059,8 @@ class Archive(SQLBase):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
         sources = []
-        name_utility = getUtility(ISourcePackageNameSet)
         for name in source_names:
-            try:
-                source_package_name = name_utility[name]
-            except NotFoundError, e:
-                # Webservice-friendly exception.
-                raise SourceNotFound(e)
+            source_package_name = getUtility(ISourcePackageNameSet)[name]
             # Grabbing the item at index 0 ensures it's the most recent
             # publication.
             sources.append(
@@ -1074,13 +1073,7 @@ class Archive(SQLBase):
                    to_series=None, include_binaries=False):
         """See `IArchive`."""
         # Find and validate the source package version required.
-        try:
-            source_package_name = getUtility(
-                ISourcePackageNameSet)[source_name]
-        except NotFoundError, e:
-            # Webservice-friendly exception.
-            raise SourceNotFound(e)
-
+        source_package_name = getUtility(ISourcePackageNameSet)[source_name]
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True)[0]
 
@@ -1542,13 +1535,15 @@ class ArchiveSet:
                 # that consists of themselves.
                 extra_exprs.append(
                     Or(
-                        Archive.private == False,
+                        And(Archive.private == False,
+                            Archive.enabled == True),
                         Archive.ownerID.is_in(user_teams_subselect)))
 
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
             extra_exprs.append(Archive.private == False)
+            extra_exprs.append(Archive.enabled == True)
 
 
         query = Store.of(distribution).find(
@@ -1556,7 +1551,7 @@ class ArchiveSet:
             Archive.distribution == distribution,
             *extra_exprs)
 
-        return query
+        return query.order_by(Archive.name)
 
     def getPublicationsInArchives(self, source_package_name, archive_list,
                                   distribution):

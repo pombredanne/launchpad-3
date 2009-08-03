@@ -54,11 +54,22 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from lp.code.model.branch import Branch
-from canonical.launchpad.database import (
-    Archive, Bounty, Bug, BugTracker, BugWatch, Component, Country,
-    Distribution, DistroArchSeries, DistroSeries, Language, Person,
-    Processor, ProcessorFamily, ProductSeries, SourcePackageRelease,
-    Specification, Sprint)
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugtracker import BugTracker
+from canonical.launchpad.database.bounty import Bounty
+from canonical.launchpad.database import Archive, BugWatch
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.processor import Processor, ProcessorFamily
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.services.worlddata.model.country import Country
+from lp.services.worlddata.model.language import Language
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.person import Person
+from lp.registry.model.productseries import ProductSeries
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.sprint import Sprint
 from lp.translations.model.languagepack import LanguagePack
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationgroup import TranslationGroup
@@ -120,11 +131,11 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     _table = Branch
     _orderBy = ['name', 'id']
-    displayname = 'Select a Branch'
+    displayname = 'Select a branch'
 
     def toTerm(self, branch):
         """The display should include the URL if there is one."""
-        return SimpleTerm(branch, branch.unique_name, branch.displayname)
+        return SimpleTerm(branch, branch.unique_name, branch.unique_name)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
@@ -691,13 +702,13 @@ class DistributionUsingMaloneVocabulary:
 
 class ProcessorVocabulary(NamedSQLObjectVocabulary):
 
-    displayname = 'Select a Processor'
+    displayname = 'Select a processor'
     _table = Processor
     _orderBy = 'name'
 
 
 class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
-    displayname = 'Select a Processor Family'
+    displayname = 'Select a processor family'
     _table = ProcessorFamily
     _orderBy = 'name'
 
