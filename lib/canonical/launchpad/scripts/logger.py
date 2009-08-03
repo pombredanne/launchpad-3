@@ -69,7 +69,7 @@ class FakeLogger:
         """The default output_file is sys.stdout."""
         self.output_file = output_file
 
-    def message(self, prefix, *stuff, **kw):
+    def message(self, prefix, msg, *stuff, **kw):
         # We handle the default output file here because sys.stdout
         # might have been reassigned. Between now and when this object
         # was instantiated.
@@ -77,7 +77,7 @@ class FakeLogger:
             output_file = sys.stdout
         else:
             output_file = self.output_file
-        print >> output_file, prefix, ' '.join(stuff)
+        print >> output_file, prefix, msg % stuff
 
         if 'exc_info' in kw:
             exception = traceback.format_exception(*sys.exc_info())
