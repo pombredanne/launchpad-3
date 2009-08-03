@@ -32,6 +32,7 @@ from lp.services.scripts.base import (
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
+from lp.bugs.model.bugnotification import BugNotification
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
@@ -627,6 +628,28 @@ class PersonPruner(TunableLoop):
             self.log.warning(
                 "Failed to delete %d Person records. Left for next time."
                 % chunk_size)
+
+
+class BugNotificationPruner(TunableLoop):
+    """Prune `BugNotificationRecipient` records no longer of interest.
+
+    We discard all rows older than 30 days that have been sent. We
+    keep 30 days worth or records to help diagnose email delivery issues.
+    """
+    def _to_remove(self):
+        return IMasterStore(BugNotification).find(
+            BugNotification,
+            BugNotification.date_emailed < SQL("""
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '30 days'
+                """))
+
+    def isDone(self):
+        return self._to_remove.any() is not None
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+        num_removed = self._to_remove()[:chunk_size].remove()
+        self.log.debug("Removed %d rows", num_removed)
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
