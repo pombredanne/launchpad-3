@@ -1,4 +1,3 @@
-
 Branding
 ========
 
@@ -12,7 +11,7 @@ for IPerson and ISprint, we do not currently allow the customisation of the
 icon, as we think this will create too much noise in the UI.
 
 Team branding
-=============
+-------------
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+branding')
@@ -39,7 +38,8 @@ Team branding
     u'/@@/team-logo'
     >>> browser.getControl(name='field.logo.action').value
     ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    >>> find_tag_by_id(
+    ...     browser.contents, 'field.mugshot_current_img').get('src')
     u'/@@/team-mugshot'
 
     >>> from canonical.launchpad.ftests import set_branding
@@ -64,12 +64,13 @@ Here we see the updated values.
     u'.../logo.png'
     >>> browser.getControl(name='field.mugshot.action').value
     ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    >>> find_tag_by_id(
+    ...     browser.contents, 'field.mugshot_current_img').get('src')
     u'.../mugshot.png'
 
 
 Distribution branding
-=====================
+---------------------
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/kubuntu/+edit')
@@ -95,7 +96,8 @@ Distribution branding
     u'/@@/distribution-logo'
     >>> browser.getControl(name='field.logo.action').value
     ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    >>> find_tag_by_id(
+    ...     browser.contents, 'field.mugshot_current_img').get('src')
     u'/@@/distribution-mugshot'
 
     >>> from canonical.launchpad.ftests import set_branding
@@ -119,12 +121,13 @@ Here we see the updated values.
     u'.../logo.png'
     >>> browser.getControl(name='field.mugshot.action').value
     ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    >>> find_tag_by_id(
+    ...     browser.contents, 'field.mugshot_current_img').get('src')
     u'.../mugshot.png'
 
 
 Project branding
-================
+----------------
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/mozilla/+branding')
@@ -151,7 +154,8 @@ Project branding
     u'/@@/project-logo'
     >>> browser.getControl(name='field.logo.action').value
     ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    >>> find_tag_by_id(
+    ...     browser.contents, 'field.mugshot_current_img').get('src')
     u'/@@/project-mugshot'
 
     >>> from canonical.launchpad.ftests import set_branding
@@ -176,12 +180,13 @@ Here we see the updated values.
     u'.../logo.png'
     >>> browser.getControl(name='field.mugshot.action').value
     ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    >>> find_tag_by_id(
+    ...     browser.contents, 'field.mugshot_current_img').get('src')
     u'.../mugshot.png'
 
 
 Product branding
-================
+----------------
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/jokosher/+branding')
@@ -210,7 +215,8 @@ Product branding
     u'/@@/product-logo'
     >>> browser.getControl(name='field.logo.action').value
     ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    >>> find_tag_by_id(
+    ...     browser.contents, 'field.mugshot_current_img').get('src')
     u'/@@/product-mugshot'
 
     >>> from canonical.launchpad.ftests import set_branding
@@ -237,12 +243,13 @@ Here we see the updated values.
     u'.../logo.png'
     >>> browser.getControl(name='field.mugshot.action').value
     ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    >>> find_tag_by_id(
+    ...     browser.contents, 'field.mugshot_current_img').get('src')
     u'.../mugshot.png'
 
 
 Sprint branding
-===============
+---------------
 
 Again, for Sprints, we have not exposed icon editing through the UI.
 
@@ -261,17 +268,14 @@ Again, for Sprints, we have not exposed icon editing through the UI.
     >>> browser.url
     'http://launchpad.dev/sprints/futurista/+branding'
 
-    #>>> browser.getControl(name='field.icon.action').value
-    #['keep']
-    #>>> find_tag_by_id(browser.contents, 'field.icon_current_img').get('src')
-    #u'/@@/meeting'
     >>> browser.getControl(name='field.logo.action').value
     ['keep']
     >>> find_tag_by_id(browser.contents, 'field.logo_current_img').get('src')
     u'/@@/meeting-logo'
     >>> browser.getControl(name='field.logo.action').value
     ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    >>> find_tag_by_id(
+    ...     browser.contents, 'field.mugshot_current_img').get('src')
     u'/@@/meeting-mugshot'
 
     >>> from canonical.launchpad.ftests import set_branding
@@ -286,15 +290,12 @@ Here we see the updated values.
     >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change branding').click()
 
-    #>>> browser.getControl(name='field.icon.action').value
-    #['keep']
-    #>>> find_tag_by_id(browser.contents, 'field.icon_current_img').get('src')
-    #u'.../icon.png'
     >>> browser.getControl(name='field.logo.action').value
     ['keep']
     >>> find_tag_by_id(browser.contents, 'field.logo_current_img').get('src')
     u'.../logo.png'
     >>> browser.getControl(name='field.mugshot.action').value
     ['keep']
-    >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
+    >>> find_tag_by_id(
+    ...     browser.contents, 'field.mugshot_current_img').get('src')
     u'.../mugshot.png'

@@ -1,4 +1,5 @@
-= Distribution upstream bug report pages =
+Distribution upstream bug report pages
+======================================
 
 Upstream bug report pages for distributions contain all sorts of fun
 information that describe how well the bugs are forwarded to upstreams.
@@ -74,7 +75,8 @@ https://bugs.edge.launchpad.net/malone/+bug/188020
     -- kiko, 2008-02-01
 
 
-== Useful links ==
+Useful links
+------------
 
 The table includes a number of convenience links:
 
@@ -106,7 +108,8 @@ The table includes a number of convenience links:
     ...
 
 
-=== Links to bug queries ===
+Links to bug queries
+....................
 
 Let's look more carefully at the above six links associated with counts.
 
@@ -177,7 +180,8 @@ Link 6: Triaged bugs marked upstream lacking a watch (1)
     10 another test bug Medium      Triaged
 
 
-=== Links to fix registration data ===
+Links to fix registration data
+..............................
 
 As you saw before, we also offer links to find products and connect packages
 with no packaging links (though you need to be logged in to actually see or
@@ -345,7 +349,8 @@ The report now renders an icon and a link to the branch page:
 (This means that anyone can use bzr branch lp:firefox to pull this code.)
 
 
-== Empty distributions ==
+Empty distributions
+-------------------
 
 Some distributions aren't as happening as others. The page still works for
 them, though:

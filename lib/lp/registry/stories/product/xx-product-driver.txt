@@ -1,33 +1,37 @@
-= Appointing a Product Driver =
+Appointing a Product Driver
+===========================
 
 Appoint Sample Person as the driver of Firefox product.
 
-  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/firefox')
-  >>> browser.getLink('Change details').click()
-  >>> browser.url
-  'http://launchpad.dev/firefox/+edit'
-  >>> browser.getLink('Change people').click()
-  >>> browser.url
-  'http://launchpad.dev/firefox/+edit-people'
-  >>> print browser.title
-  Change the roles of Mozilla Firefox's people
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/firefox')
+    >>> browser.getLink('Change details').click()
+    >>> browser.url
+    'http://launchpad.dev/firefox/+edit'
 
-  >>> browser.getControl('Driver').value = 'name12'
-  >>> browser.getControl('Save changes').click()
+    >>> browser.getLink('Change people').click()
+    >>> browser.url
+    'http://launchpad.dev/firefox/+edit-people'
 
-After changing the driver, the user is redirected to the overview page where a
-message inform him of the driver change.
+    >>> print browser.title
+    Change the roles of Mozilla Firefox's people
 
-  >>> browser.url
-  'http://launchpad.dev/firefox'
+    >>> browser.getControl('Driver').value = 'name12'
+    >>> browser.getControl('Save changes').click()
 
-  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-  ...     tag.renderContents()
-  'Successfully changed the driver to Sample Person'
+After changing the driver, the user is redirected to the overview page
+where a message inform him of the driver change.
+
+    >>> browser.url
+    'http://launchpad.dev/firefox'
+
+    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+    ...     tag.renderContents()
+    'Successfully changed the driver to Sample Person'
 
 Sample Person is listed as the driver of the product.
 
-  >>> main = find_main_content(browser.contents)
-  >>> extract_text(main.find(id='driver'))
-  u'Driver: Sample Person'
+    >>> main = find_main_content(browser.contents)
+    >>> extract_text(main.find(id='driver'))
+    u'Driver: Sample Person'
+
