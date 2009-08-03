@@ -671,14 +671,19 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Delete any records that are no longer applicable.
 
         Consider all binarypackages marked as REMOVED.
-        'log' is required, it should be a logger object able to print
-        DEBUG level messages.
+
+        Also purges all existing cache records for disabled archives.
+
+        :param archive: target `IArchive`.
+        :param log: the context logger object able to print DEBUG level
+            messages.
         """
 
     def updateCompletePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the binary package cache
 
-        Consider all binary package names published in this distro series.
+        Consider all binary package names published in this distro series
+        and entirely skips updates for disabled archives
 
         :param archive: target `IArchive`;
         :param log: logger object for printing debug level information;
