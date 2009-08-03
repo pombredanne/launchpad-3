@@ -746,6 +746,8 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         super(HourlyDatabaseGarbageCollector, self).add_my_options()
         # By default, abort any tunable loop taking more than 15 minutes.
         self.parser.set_defaults(abort_task=900)
+        # And abort the script if it takes more than 55 minutes.
+        self.parser.set_defaults(abort_script=55*60)
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
