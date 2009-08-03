@@ -4,7 +4,7 @@
   define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.2.6 (r${revno});
+    version string:Launchpad 2.2.7 (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;
