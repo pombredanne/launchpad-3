@@ -770,9 +770,10 @@
         permission="zope.Public"
         template="../templates/announcements-all.pt"/>
     <browser:menus
+        module="lp.registry.browser.announcement"
         classes="
-            AnnouncementContextMenu"
-        module="lp.registry.browser.announcement"/>
+            AnnouncementContextMenu
+            AnnouncementEditNavigationMenu"/>
     <facet
         facet="overview">
         <browser:navigation

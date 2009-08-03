@@ -871,7 +871,10 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     @cachedproperty
     def ppas_for_user(self):
         """Return all PPAs for which the user accessing the page can copy."""
-        return list(getUtility(IArchiveSet).getPPAsForUser(self.user))
+        return list(
+            ppa
+            for ppa in getUtility(IArchiveSet).getPPAsForUser(self.user)
+            if check_permission('launchpad.Append', ppa))
 
     @cachedproperty
     def can_copy(self):

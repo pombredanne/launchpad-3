@@ -34,16 +34,13 @@ from canonical.database.sqlbase import (
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table)
-from lp.soyuz.model.archivedependency import (
-    ArchiveDependency)
+from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
-from lp.soyuz.model.archivesubscriber import (
-    ArchiveSubscriber)
+from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 from lp.soyuz.model.build import Build
-from lp.registry.model.distributionsourcepackagecache import (
+from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from lp.soyuz.model.distroseriespackagecache import (
-    DistroSeriesPackageCache)
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
@@ -52,8 +49,7 @@ from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.publishedpackage import PublishedPackage
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadSource)
+from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
@@ -61,15 +57,13 @@ from lp.soyuz.interfaces.archive import (
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
     PocketNotFound, default_name_by_purpose)
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -78,17 +72,14 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.packagecopyrequest import (
-    IPackageCopyRequestSet)
+from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingPocket,
     PackagePublishingStatus, IPublishingSet)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from lp.soyuz.scripts.packagecopier import (
-    CannotCopy, do_copy)
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.scripts.packagecopier import CannotCopy, do_copy
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from lp.registry.interfaces.person import (
@@ -1544,13 +1535,15 @@ class ArchiveSet:
                 # that consists of themselves.
                 extra_exprs.append(
                     Or(
-                        Archive.private == False,
+                        And(Archive.private == False,
+                            Archive.enabled == True),
                         Archive.ownerID.is_in(user_teams_subselect)))
 
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
             extra_exprs.append(Archive.private == False)
+            extra_exprs.append(Archive.enabled == True)
 
 
         query = Store.of(distribution).find(
@@ -1558,7 +1551,7 @@ class ArchiveSet:
             Archive.distribution == distribution,
             *extra_exprs)
 
-        return query
+        return query.order_by(Archive.name)
 
     def getPublicationsInArchives(self, source_package_name, archive_list,
                                   distribution):
