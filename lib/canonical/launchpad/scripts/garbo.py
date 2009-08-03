@@ -421,9 +421,11 @@ class PersonEmailAddressLinkChecker(TunableLoop):
     We can't use referential integrity to ensure references remain valid,
     so we have to check regularly for any bugs that creep into our code.
 
-    We don't repair links yet, but can easily add this feature. I'd
+    We don't repair links yet, but could add this feature. I'd
     rather track down the source of problems and fix problems there
-    and avoid automatic repair, which might be dangerous.
+    and avoid automatic repair, which might be dangerous. In particular,
+    replication lag introduces a number of race conditions that would
+    need to be addressed.
     """
     maximum_chunk_size = 1000
 
@@ -441,8 +443,7 @@ class PersonEmailAddressLinkChecker(TunableLoop):
             SELECT Person.id, EmailAddress.id
             FROM EmailAddress, Person
             WHERE EmailAddress.person = Person.id
-                AND (COALESCE(Person.account, -1)
-                    != COALESCE(EmailAddress.account, -1))
+                AND Person.account IS DISTINCT FROM EmailAddress.account
             UNION
             SELECT NULL, EmailAddress.id
             FROM EmailAddress LEFT OUTER JOIN Person
