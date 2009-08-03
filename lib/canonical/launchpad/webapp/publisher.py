@@ -14,6 +14,7 @@ __all__ = [
     'canonical_url',
     'canonical_url_iterator',
     'get_current_browser_request',
+    'HTTP_MOVED_PERMANENTLY',
     'nearest',
     'Navigation',
     'rootObject',
@@ -46,6 +47,10 @@ from canonical.launchpad.webapp.interfaces import (
     NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
+
+
+# HTTP Status code constants - define as appropriate.
+HTTP_MOVED_PERMANENTLY = 301
 
 
 class DecoratorAdvisor:

@@ -42,7 +42,7 @@ Now update Tomcat to actually have this data:
 
     >>> import transaction
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import Product
+    >>> from lp.registry.model.product import Product
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
 
