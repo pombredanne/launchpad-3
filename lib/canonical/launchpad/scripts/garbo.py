@@ -636,6 +636,8 @@ class BugNotificationPruner(TunableLoop):
     We discard all rows older than 30 days that have been sent. We
     keep 30 days worth or records to help diagnose email delivery issues.
     """
+    maximum_chunk_size = 10000
+
     def _to_remove(self):
         return IMasterStore(BugNotification).find(
             BugNotification.id,
