@@ -18,6 +18,7 @@ from zope.component import getUtility
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
@@ -1125,7 +1126,7 @@ class TestBranchMergeProposalJob(TestCaseWithFactory):
 
 class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
         """MergeProposalCreatedJob provides the expected interfaces."""
@@ -1245,6 +1246,18 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
             'notifying people about the proposal to merge %s into %s' %
             (bmp.source_branch.bzr_identity, bmp.target_branch.bzr_identity))
         self.assertIn(message, ctrl.body)
+
+    def test_MergeProposalCreateJob_with_sourcepackage_branch(self):
+        """Jobs for merge proposals with sourcepackage branches work."""
+        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
+        bmp = self.factory.makeBranchMergeProposal(
+            target_branch=self.factory.makePackageBranch(),
+            review_diff=review_diff)
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        job = MergeProposalCreatedJob.create(bmp)
+        transaction.commit()
+        self.layer.switchDbUser(config.mpcreationjobs.dbuser)
+        job.run()
 
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
