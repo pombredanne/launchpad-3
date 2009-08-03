@@ -372,7 +372,7 @@ span.see-all {
     padding-left: 1em;
     }
 
-/* == Context heading and application tabs == */
+/* == Location portlet heading styles */
 div.location-portlet img {
     float: left;
     margin: 0 1.5em 0 0;
@@ -385,7 +385,7 @@ div.location-portlet h1, div.location-portlet h2 {
     clear: none;
 }
 
-/* === Location application tabs === */
+/* === Location portlet tabs === */
 /* In most pages, we present a list of six application facets: */
 .location-portlet li {
     display:inline;
@@ -411,6 +411,7 @@ div.location-portlet h1, div.location-portlet h2 {
 .location-portlet li.disabled-tab {
     color: #747474;
 }
+
 /* Side content exceptions */
 .side {
     padding: 0.5em;
