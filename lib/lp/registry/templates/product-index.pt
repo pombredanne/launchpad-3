@@ -3,43 +3,30 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main" class="pillar"
-      tal:define="overview_menu context/menu:overview">
-      <div class="section">
-        <div style="float:right">
-          <tal:review
-            content="structure overview_menu/review_license/fmt:link-icon" />
-          <tal:admin
-            content="structure overview_menu/administer/fmt:link-icon" />
-          <tal:edit
-            content="structure overview_menu/edit/fmt:link-icon" />
-        </div>
-        <tal:mugshot replace="structure context/image:mugshot" />
-        <h1 tal:replace="structure view/title_edit_widget">
-          Name of project
-        </h1>
+    <tal:heading metal:fill-slot="heading">
+      <div style="float:left">
+        <tal:mugshot replace="structure context/image:logo" />
+      </div>
+      <h1 tal:replace="structure view/title_edit_widget">project title</h1>
+    </tal:heading>
+
+    <tal:main metal:fill-slot="main"
+      define="overview_menu context/menu:overview">
+      <div class="top-portlet">
         <p id="project-admin-whiteboard" class="whiteboard"
-           tal:condition="context/required:launchpad.ProjectReview">
-          <span tal:content="context/reviewer_whiteboard" />
-          (<a href="+review-license">edit reviewer whiteboard</a>)
+          tal:condition="context/required:launchpad.ProjectReview">
+          <tal:whiteboard content="context/reviewer_whiteboard" />
+          <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
         </p>
-        <p tal:condition="not: context/active"
-           class="warning message"
-           id="project-inactive" >
+
+        <p id="project-inactive" class="warning message"
+          tal:condition="not: context/active">
           This project is currently inactive
-          <tal:comment condition="nothing">
-            This page links to the +review-license form to reactivate
-            the product since both the admins and commercial-admins
-            have access to this form unlike the product/+admin form.
-          </tal:comment>
-          <a href="+review-license">(change this)</a>
+          <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
         </p>
 
         <p id="license-status" tal:condition="view/show_license_status">
@@ -47,223 +34,227 @@
             This project's license is proprietary.
           </strong>
         </p>
-      </div>
-      <div class="description" tal:content="context/summary">
-        $Product.summary goes here. This should be quite short,
-        just a single paragraph of text really, giving the project
-        highlights.
-      </div>
 
-      <div
-         class="description"
-         tal:content="structure context/description/fmt:text-to-html"
-         tal:condition="context/description"
-      >
-        $Product.description goes here. This should be a longer piece of
-        text, up to three paragraphs in length, which gives much more
-        detailed information about the open source project in question.
-      </div>
+        <div class="description" tal:content="context/summary">
+          $Product.summary goes here. This should be quite short,
+          just a single paragraph of text really, giving the project
+          highlights.
+        </div>
 
-      <tal:has-external-links condition="view/has_external_links">
-        <ul>
+        <div class="description"
+          tal:content="structure context/description/fmt:text-to-html"
+          tal:condition="context/description">
+          $Product.description goes here. This should be a longer piece of
+          text, up to three paragraphs in length, which gives much more
+          detailed information about the open source project in question.
+        </div>
+
+        <ul id="external-links" class="horizontal"
+          tal:condition="view/has_external_links">
           <li tal:condition="view/should_display_homepage">
-            <a id="homepageurl-link"
-               class="sprite external-link"
-               rel="nofollow"
-               tal:attributes="href context/homepageurl">
-              <strong>Home page</strong>
-            </a>
+            <a id="homepageurl-link" class="sprite external-link"
+              rel="nofollow"
+              tal:attributes="href context/homepageurl">Home page</a>
           </li>
-          <li tal:condition="view/sourceforge_url">
-            <a id="sourceforge-link"
-               class="sprite external-link"
-               tal:attributes="href view/sourceforge_url">
-              <strong>Sourceforge project</strong>
-            </a>
-          </li>
-          <li tal:condition="view/freshmeat_url">
-            <a id="freshmeat-link"
-               class="sprite external-link"
-               tal:attributes="href view/freshmeat_url">
-              <strong>Freshmeat record</strong>
-            </a>
-          </li>
-          <li tal:condition="context/wikiurl">
-            <a id="wikiurl-link"
-               class="sprite external-link"
-               tal:attributes="href context/wikiurl">
-              <strong>Wiki</strong>
-            </a>
-          </li>
-          <li tal:condition="context/screenshotsurl">
-            <a id="screenshotsurl-link"
-               class="sprite external-link"
-               tal:attributes="href context/screenshotsurl">
-              <strong>Screenshots</strong>
-            </a>
-          </li>
-          <li tal:condition="context/downloadurl">
-            <a id="downloadurl-link"
-               class="sprite external-link"
-               tal:attributes="href context/downloadurl">
-              <strong>External downloads</strong>
-            </a>
+          <li tal:repeat="link view/external_links">
+            <a tal:replace="structure link/fmt:link" />
           </li>
         </ul>
-      </tal:has-external-links>
-
-      <p id="partof" tal:condition="context/project">
-        <strong>Part of:</strong> <tal:link replace="structure context/project/fmt:link" />
-      </p>
-
-      <p id="aliases" tal:condition="context/aliases">
-        <strong>Also known as:</strong>
-        <tal:aliases repeat="alias context/aliases">
-          <tal:alias replace="alias">something</tal:alias
-            ><tal:comma condition="not:repeat/alias/end">,</tal:comma>
-        </tal:aliases>
-      </p>
-
-      <tal:launchpad_usage define="uses_launchpad view/uses_launchpad_for">
-        <p id="uses">
-          <tal:uses_launchpad condition="uses_launchpad">
-            <strong>Uses Launchpad for: </strong>
-            <tal:uses content="structure uses_launchpad" />.
-          </tal:uses_launchpad>
-          <tal:no_launchpad condition="not: uses_launchpad">
-            <strong>Does not use Launchpad for development.</strong>
-          </tal:no_launchpad>
-        </p>
-      </tal:launchpad_usage>
-
-      <span tal:condition="view/show_programming_languages">
-      <p id="product-languages" />
-        <strong>Programming Languages:</strong>
-        <span tal:content="structure view/languages_edit_widget" />
-     </span>
-
-      <p id="owner" tal:condition="context/owner">
-        <strong>Maintainer:</strong> <tal:link replace="structure context/owner/fmt:link" />
-      </p>
-
-      <p id="driver" tal:condition="view/effective_driver">
-        <strong>Driver:</strong> <tal:link replace="structure view/effective_driver/fmt:link" />
-      </p>
-
-      <p id="driver" tal:condition="not: view/effective_driver">
-        <strong>Driver:</strong> Not yet appointed
-      </p>
-
-      <div>
-        <strong>Licenses:</strong>
-        <tal:licenses repeat="license context/licenses">
-          <tal:license replace="license/title">GPL</tal:license><tal:comma
-              condition="not:repeat/license/end">,</tal:comma>
-        </tal:licenses>
-        <tal:none condition="not:context/licenses">None specified</tal:none>
-        <tal:has_description condition="context/license_info">
-          (<tal:description replace="context/license_info" />)
-        </tal:has_description>
       </div>
 
-      <tal:subscription_info
-         condition="view/show_commercial_subscription_info"
-      >
-        <p id="commercial_subscription"
-           tal:condition="context/commercial_subscription">
-          <strong>Commercial subscription expires:</strong>
-          <tal:expiry content="context/commercial_subscription/date_expires/fmt:date" />
-        </p>
-      </tal:subscription_info>
+      <div class="yui-g">
+        <div id="project-info" class="yui-u first portlet">
+          <h2>Project information</h2>
 
-      <div class="actions">
-        <a
-           tal:define="link context/menu:bugs/filebug"
-           tal:condition="context/official_malone"
-           tal:attributes="href link/url"
-        >
-          <img
-             tal:attributes="alt link/text"
-             src="/+icing/but-sml-reportabug.gif"
-          />
-        </a>
-        <a
-           tal:define="link context/menu:translations/overview"
-           tal:condition="context/official_rosetta"
-           tal:attributes="href link/url"
-         >
-          <img
-             tal:attributes="alt link/text"
-             src="/+icing/but-sml-helptranslate.gif"
-          />
-        </a>
-        <a
-           tal:define="link context/menu:answers/new"
-           tal:condition="context/official_answers"
-           tal:attributes="href link/url"
-        >
-          <img
-             tal:attributes="alt link/text"
-             src="/+icing/but-sml-askaquestion.gif"
-          />
-        </a>
-        <a
-           tal:define="link overview_menu/mentorship"
-           tal:condition="context/mentoring_offers/count"
-           tal:attributes="href link/url"
-        >
-          <img
-             tal:attributes="alt link/text"
-             src="/+icing/but-sml-mentoring.gif"
-          />
-        </a>
+          <div class="two-column-list"> 
+            <dl id="partof" tal:condition="context/project">
+              <dt>Part of:</dt>
+              <dd><a tal:replace="structure context/project/fmt:link" /></dd>
+            </dl>
+
+            <dl id="owner" tal:condition="context/owner">
+              <dt>Maintainer:</dt>
+              <dd><a tal:replace="structure context/owner/fmt:link" /></dd>
+            </dl>
+
+            <dl id="aliases" tal:condition="context/aliases">
+              <dt>Also known as:</dt>
+              <dd><tal:aliases repeat="alias context/aliases">
+                <tal:alias replace="alias">something</tal:alias
+                  ><tal:comma condition="not:repeat/alias/end">,</tal:comma>
+              </tal:aliases></dd>
+            </dl>
+
+            <dl id="driver">
+              <dt>Driver:</dt>
+              <dd tal:condition="view/effective_driver">
+                <a tal:replace="structure view/effective_driver/fmt:link" /></dd>
+              <dd tal:condition="not: view/effective_driver">
+                Not yet appointed.</dd>
+            </dl>
+
+            <dl id="uses" tal:define="uses_launchpad view/uses_launchpad_for">
+              <tal:uses_launchpad condition="uses_launchpad">
+                <dt>Uses Launchpad for:</dt>
+                <dd><tal:uses content="structure uses_launchpad" />.</dd>
+              </tal:uses_launchpad>
+              <tal:no_launchpad condition="not: uses_launchpad">
+                <dt>Does not use Launchpad for development.</dt>
+                <dd></dd>
+              </tal:no_launchpad>
+            </dl>
+
+            <dl id="product-languages"
+              tal:condition="view/show_programming_languages">
+              <dt>Languages:</dt>
+              <dd tal:content="structure view/languages_edit_widget" />
+            </dl>
+
+            <dl>
+              <dt>Licenses:</dt>
+              <dd>
+                <tal:licenses repeat="license context/licenses">
+                  <tal:license replace="license/title">GPL</tal:license><tal:comma
+                      condition="not:repeat/license/end">,</tal:comma>
+                </tal:licenses>
+                <tal:none condition="not:context/licenses">None specified</tal:none>
+                <tal:has_description condition="context/license_info">
+                  (<tal:description replace="context/license_info" />)
+                </tal:has_description>
+              </dd>
+              <dd id="commercial_subscription"
+                tal:condition="context/commercial_subscription">
+                Commercial subscription expires
+                <tal:expiry content="context/commercial_subscription/date_expires/fmt:date" />
+              </dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="yui-u portlet">
+          <h2>
+            <span class="see-all"><a
+              tal:replace="structure overview_menu/series/fmt:link" /></span>
+            Series and milestones
+          </h2>
+
+          <iframe style="width: 90%"
+            metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
+
+          <ul class="horizontal"
+            tal:condition="overview_menu/series_add/enabled">
+            <li><a tal:replace="structure overview_menu/series_add/fmt:link" /></li>
+          </ul>
+        </div>
       </div>
 
       <tal:warning-for-owner
-        condition="view/show_commercial_subscription_info"
-      >
-        <div class="section"
-             tal:content="structure context/@@+portlet-requires-subscription"
-             tal:condition="view/requires_commercial_subscription"
-        />
-        <div class="section"
-             tal:content="structure context/@@+portlet-license-missing"
-             tal:condition="not: context/licenses"
-        />
+        condition="view/show_commercial_subscription_info">
+        <div class="yui-g">
+          <div
+            tal:condition="view/requires_commercial_subscription"
+            tal:content="structure context/@@+portlet-requires-subscription"/>
+          <div
+            tal:condition="not: context/licenses"
+            tal:content="structure context/@@+portlet-license-missing" />
+        </div>
       </tal:warning-for-owner>
 
-      <div
-         tal:condition="context/coming_sprints"
-         tal:content="structure context/@@+portlet-coming-sprints"
-         class="section"
-      />
-      <div
-         class="section"
-         tal:content="structure context/@@+portlet-latestannouncements"
-      />
-
-      <div class="portlet">
-        <h2>Series and milestones</h2>
-
-        <iframe
-          metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
-        <div
-           class="actions"
-           tal:content="structure overview_menu/series_add/render"
-        />
-        <a href="+series">&#x00BB; View full history</a>
+      <div class="yui-g">
+        <div class="first yui-u"
+          tal:content="structure context/@@+portlet-top-contributors" />
+         
+        <div class="yui-u"
+          tal:content="structure context/@@+portlet-packages" />
       </div>
 
-      <tal:contrib replace="structure context/@@+portlet-top-contributors" />
-      <tal:packages replace="structure context/@@+portlet-packages" />
-
-      <div class="section">
-        <h2>Registered</h2>
-        <tal:created replace="context/datecreated/fmt:approximatedate" /> by
-        <tal:registrant replace="structure context/registrant/fmt:link" />
-        <p />
-        <div tal:content="structure overview_menu/rdf/render" />
+      <div class="yui-g">
+        <div class="first yui-u"
+          tal:content="structure context/@@+portlet-coming-sprints" />
       </div>
-    </div>
+    </tal:main>
+
+    <tal:side metal:fill-slot="side"
+      define="overview_menu context/menu:overview">
+      <div id="object-actions" class="top-portlet">
+        <ul>
+          <li>
+            <tal:edit
+              content="structure overview_menu/edit/fmt:link-icon" />
+          </li>
+          <li>
+            <tal:review
+              content="structure overview_menu/review_license/fmt:link-icon" />
+          </li>
+          <li>
+            <tal:admin
+              content="structure overview_menu/administer/fmt:link-icon" />
+          </li>
+        </ul>
+      </div>
+
+        <div id="downloads" class="top-portlet downloads"
+          tal:define="release view/latest_release_with_download_files"
+          tal:condition="release">
+          <h2>Downloads</h2>
+
+          <ul>
+            <li tal:repeat="file release/files">
+              <a tal:attributes="href file/fmt:url;
+                                 title file/description;"
+                tal:content="file/libraryfile/filename" />
+            </li>
+          </ul>
+
+          <div class="released">
+            Released <tal:date replace="release/datereleased/fmt:displaydate" />
+          </div>
+
+          <div class="alternate">
+            <a style="text-decoration: underline;"
+              tal:define="link overview_menu/downloads"
+              tal:attributes="href link/fmt:url;
+                              title link/summary"
+              tal:content="structure link/escapedtext" /> |
+            <a style="text-decoration: underline;"
+              tal:define="link overview_menu/rdf"
+              tal:attributes="href link/fmt:url;
+                              title link/summary"
+              tal:content="structure link/escapedtext" />
+          </div>
+        </div>
+
+
+      <div id="involvement" class="portlet involvement">
+        <h2>Get Involved</h2>
+
+        <ul>
+          <li tal:condition="context/official_malone">
+            <a class="bugs"
+              tal:attributes="href context/menu:bugs/filebug/url">Report a Bug</a>
+          </li>
+          <li tal:condition="context/official_answers">
+            <a class="question"
+              tal:attributes="href context/menu:answers/new/url">Ask a question</a>
+          </li>
+          <li tal:condition="context/official_rosetta">
+            <a class="translate"
+              tal:attributes="href context/menu:translations/overview/url">Help translate</a>
+          </li>
+          <li tal:condition="context/official_codehosting">
+            <a class="code"
+              tal:attributes="href context/menu:branches/branch_add/url">Submit code</a>
+          </li>
+          <li tal:condition="context/official_blueprints">
+            <a class="blueprint"
+              tal:attributes="href context/menu:specications/new/url">Register a Blueprint</a>
+          </li>
+        </ul>
+      </div>
+
+      <div tal:replace="structure context/@@+portlet-latestannouncements" />
+    </tal:side>
+
+
   </body>
 </html>

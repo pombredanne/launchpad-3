@@ -360,11 +360,14 @@ class ProductOverviewMenu(ApplicationMenu):
         'mentorship',
         'distributions',
         'packages',
+        'series',
         'series_add',
+        'downloads',
         'announce',
         'announcements',
         'administer',
         'review_license',
+        'branchvisibility',
         'rdf',
         ]
 
@@ -379,8 +382,8 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+edit-people', text, icon='edit')
 
     def top_contributors(self):
-        text = u'\u00BB More contributors'
-        return Link('+topcontributors', text)
+        text = 'More contributors'
+        return Link('+topcontributors', text, icon='info')
 
     def distributions(self):
         text = 'Packaging information'
@@ -394,6 +397,10 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
+    def series(self):
+        text = 'View full history'
+        return Link('+series', text, icon='info')
+
     @enabled_with_permission('launchpad.Driver')
     def series_add(self):
         text = 'Register a series'
@@ -406,7 +413,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = u'\u00BB More announcements'
+        text = 'Read all announcements'
         enabled = bool(self.context.announcements())
         return Link('+announcements', text, enabled=enabled)
 
@@ -415,6 +422,10 @@ class ProductOverviewMenu(ApplicationMenu):
             '<abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
+
+    def downloads(self):
+        text = 'Downloads'
+        return Link('+download', text, icon='info')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
@@ -425,6 +436,11 @@ class ProductOverviewMenu(ApplicationMenu):
     def review_license(self):
         text = 'Review project'
         return Link('+review-license', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def branchvisibility(self):
+        text = 'Branch Visibility Policy'
+        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
@@ -872,6 +888,30 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 self.context.wikiurl or
                 self.context.screenshotsurl or
                 self.context.downloadurl)
+
+    @property
+    def external_links(self):
+        """The project's external links.
+
+        The home pag link is not included because its link must have the
+        rel=nofollow attribute.
+        """
+        from canonical.launchpad.webapp.menu import MenuLink
+        urls = [
+            ('Sourceforge project', self.sourceforge_url),
+            ('Freshmeat record', self.freshmeat_url),
+            ('Wiki', self.context.wikiurl),
+            ('Screenshots', self.context.screenshotsurl),
+            ('External downloads', self.context.downloadurl),
+            ]
+        links = []
+        for (text, url) in urls:
+            if url is not None:
+                menu_link = MenuLink(
+                    Link(url, text, icon='external-link', enabled=True))
+                menu_link.url = url
+                links.append(menu_link)
+        return links
 
     @property
     def should_display_homepage(self):

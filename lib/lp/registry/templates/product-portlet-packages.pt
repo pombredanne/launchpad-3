@@ -4,20 +4,30 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-packages"
-     tal:condition="context/sourcepackages">
-  <h2>Packages</h2>
-  <div class="portletBody portletContent">
-    <ul>
-      <li tal:repeat="package context/sourcepackages">
-        <a tal:content="package/title"
-           tal:attributes="href package/fmt:url"
-           class="sprite package-source">
-             apache in ubuntu hoary
-        </a>
-      </li>
-    </ul>
+<div class="portlet" id="portlet-packages">
+  <h2>
+    <span class="see-all"><a
+      tal:replace="structure context/menu:overview/packages/fmt:link" /></span>
+    Packages
+  </h2>
+  
+  <p tal:condition="not: context/sourcepackages">
+    <tal:name replace="context/displayname" /> has no packages.
+  </p>
 
-  </div>
+  <dl tal:condition="context/sourcepackages">
+    <tal:pair tal:repeat="package context/sourcepackages">
+      <dt>
+        <a class="sprite package-source"
+          tal:attributes="href package/fmt:url"
+          tal:content="package/title">apache in ubuntu hoary</a>
+      </dt>
+      <dd tal:repeat="release package/distinctreleases">
+        <strong>Version
+          <tal:version content="release/version">2.3</tal:version></strong>
+        uploaded <tal:date replace="release/dateuploaded/fmt:date" />
+      </dd>
+    </tal:pair>
+  </dl>
 </div>
 </tal:root>

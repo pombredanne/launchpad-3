@@ -192,6 +192,9 @@ div.columns div.right div.portlet {
     width: auto;
     margin-right: 24%;
     }
+.first .yui-u {
+    float: left;
+}
 .footer {
     clear: both;
     margin-top: 2em;
@@ -305,13 +308,13 @@ span.see-all {
     }
 .see-all a {
     padding-left: 8px;
-    background: url(../images/link-grey-arrow.gif) left center no-repeat;
+    background: url(/@@/link-grey-arrow.gif) left center no-repeat;
     font-size: 72%;
     color: #484848;
     text-decoration: underline;
     }
 .rss-right {
-    background: url(https://launchpad.net/@@/rss.png) right center no-repeat;
+    background: url(/@@/rss.png) right center no-repeat;
     }
 .logo {
     float: left;
@@ -395,15 +398,13 @@ span.see-all {
     background: #fbfbfb;
     }
 
-.downloads {
-    font-weight: bold;
-    }
 .downloads a {
     color: #4f843c;
     }
 .downloads li {
     margin: 0;
     padding: 2px 0 0;
+    font-weight: bold;
     }
 .downloads li a {
     display: block;
@@ -412,20 +413,25 @@ span.see-all {
     -moz-border-radius: 1.5%;
     -webkit-border-radius: 1.5%;
     border-radius: 1.5%;
-    background: #4f843c url(../images/bg-project-downloads.gif) center right no-repeat;
+    background: #4f843c url(/@@/bg-project-downloads.png) center right no-repeat;
     padding: 6%;
+    padding-right: 50px;
     color: #fff;
     font-size: 108%;
     text-decoration: underline;
     }
 .downloads .released {
     margin: 0 0 0.5em 0;
-    background: #f3f3f3 url(../images/bg-project-released.gif) right bottom no-repeat;
+    background: #f3f3f3 url(/@@/bg-project-released.png) right bottom no-repeat;
     padding: 0.4em 0.2em;
     font-size: 85%;
-    font-weight: normal;
     text-align: right;
     }
+.downloads .alternate {
+    font-size: 85%;
+    text-align: right;
+    }
+
 
 .involvement ul {
     border-top: 1px solid #d0d0d0;
@@ -442,23 +448,23 @@ span.see-all {
     }
 .involvement a.bugs {
     color: #b9413e;
-    background: url(../images/red-arrow.gif) right center no-repeat;
+    background: url(/@@/bugs-arrow-right.png) right center no-repeat;
     }
 .involvement a.question {
     color: #5265b2;
-    background: url(../images/blue-arrow.gif) right center no-repeat;
+    background: url(/@@/answers-arrow-right.png) right center no-repeat;
     }
 .involvement a.translate {
     color: #c5458e;
-    background: url(../images/pink-arrow.gif) right center no-repeat;
+    background: url(/@@/translations-arrow-right.png) right center no-repeat;
     }
 .involvement a.code {
     color: #d39f57;
-    background: url(../images/yellow-arrow.gif) right center no-repeat;
+    background: url(/@@/images/code-arrow-right.png) right center no-repeat;
     }
 .involvement a.blueprint {
     color: #5ba4c6;
-    background: url(../images/lightblue-arrow.gif) right center no-repeat;
+    background: url(/@@/images/blueprints-arrow-right.png) right center no-repeat;
     }
 
 .announcements li {
@@ -475,12 +481,3 @@ span.see-all {
     border-top: 1px solid #d0d0d0;
     border-bottom: 1px solid #d0d0d0;
     }
-
-
-/* Should not be needed with real data */
-.timeline {
-    width: 100%;
-    color: #484848;
-    background: #f7f7f7;
-    }
-

@@ -1157,7 +1157,7 @@ class SourcePackageFormatterAPI(CustomizableFormatter):
 class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IProductReleaseFile` objects to a formatted string."""
 
-    traversable_names = {'link': 'link'}
+    traversable_names = {'link': 'link', 'url': 'url'}
 
     def link(self, view_name):
         """A hyperlinked ProductReleaseFile.
@@ -1192,6 +1192,10 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         else:
             html += ')'
         return html % replacements
+
+    def url(self, view_name):
+        """Return the URL to download the file."""
+        return self._getDownloadURL(self._context.libraryfile)
 
     @property
     def _release(self):
