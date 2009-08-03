@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from storm.expr import Join, SQL
 
+from canonical.launchpad.helpers import shortlist
 from lp.codehosting.vfs import get_multi_server
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp.interfaces import (
@@ -80,6 +81,12 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
                     committer.writeFile(pofile_path, pofile_contents)
 
+                    # We're not actually writing any changes to the
+                    # database, but it's not polite to stay in one
+                    # transaction for too long.
+                    if self.txn:
+                        self.txn.commit()
+
             self._commit(source, committer)
         finally:
             committer.unlock()
@@ -88,20 +95,17 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         """Loop over `productseries_iter` and export their translations."""
         items_done = 0
         items_failed = 0
-        for source in productseries_iter:
+
+        productseries = shortlist(productseries_iter, longest_expected=2000)
+
+        for source in productseries:
             try:
                 self._exportToBranch(source)
-
-                # We're not actually writing any changes to the
-                # database, but it's not polite to stay in one
-                # transaction for too long.
-                if self.txn:
-                    self.txn.commit()
             except (KeyboardInterrupt, SystemExit):
                 raise
             except Exception, e:
                 items_failed += 1
-                self.logger.warn("Failure: %s" % e)
+                self.logger.error("Failure: %s" % e)
                 if self.txn:
                     self.txn.abort()
 
