@@ -138,9 +138,13 @@ facet is not applied correctly before using getMultiAdapter().
 
     >>> edit_nav_menu = ProductEditNavigationMenu(firefox)
     >>> check_menu_links(edit_nav_menu)
-    details: http://launchpad.dev/firefox/+edit
+    edit: http://launchpad.dev/firefox/+edit
         SimpleViewClass: product-edit.pt
     branding: http://launchpad.dev/firefox/+branding
         SimpleViewClass: object-branding.pt
-    people: http://launchpad.dev/firefox/+edit-people
+    reassign: http://launchpad.dev/firefox/+edit-people
         SimpleViewClass: product-edit-people.pt
+    review_license: http://launchpad.dev/firefox/+review-license
+        SimpleViewClass: product-review-license.pt
+    administer: http://launchpad.dev/firefox/+admin
+        SimpleViewClass: product-admin.pt
