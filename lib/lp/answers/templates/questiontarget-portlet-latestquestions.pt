@@ -1,15 +1,25 @@
-<div class="portlet" id="portlet-latest-questions"
-     tal:condition="view/getLatestQuestions">
-  <h2>Latest questions</h2>
-  <div class="portletBody portletContent">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-latest-questions"
+  tal:define="questions view/getLatestQuestions">
+  <h2>
+    <span class="see-all"><a
+      tal:define="link view/menu:answers/open"
+      tal:attributes="href link/url">All open questions</a></span>
+    Latest questions
+  </h2>
 
-    <ul>
-      <li tal:repeat="question view/getLatestQuestions">
-           <span tal:attributes="class string:questionstatus${question/status/name} ${question/image:sprite_css}"
-           >[<tal:block tal:replace="structure question/status/title" />]</span>
-        <a tal:content="question/title/fmt:shorten/80"
-           tal:attributes="href question/fmt:url">question title</a>
-      </li>
-    </ul>
-  </div>
+  <ul tal:condition="questions">
+    <li tal:repeat="question questions">
+      <a
+        tal:attributes="class string: ${question/image:sprite_css};
+                        href question/fmt:url;"
+        tal:content="question/title/fmt:shorten/80">question title</a>
+      <br />Posted <tal:when replace="question/datecreated/fmt:displaydate" />
+    </li>
+  </ul>
+
+  <p tal:condition="not: questions">
+    <tal:name replace="context/displayname" /> has no questions.
+  </p>
 </div>

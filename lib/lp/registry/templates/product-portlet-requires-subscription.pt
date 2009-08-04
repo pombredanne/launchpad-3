@@ -17,20 +17,24 @@
     </strong>
   </div>
   <div>
-    <img style="float:left;" alt="Expiration warning"
-      src="/@@/expiration-large" />
-    The licensing of your project does not qualify for free
-    hosting. You have two options to continue using Launchpad
-    for this project.
-    <ul>
+    <p>
+      <img style="float:left;" alt="Expiration warning"
+        src="/@@/expiration-large" />
+      The licensing of your project does not qualify for free
+      hosting. You have two options to continue using Launchpad
+      for this project.
+    </p>
+    <ul class="bulleted" style="clear:left;">
       <li><a href="+purchase-subscription">Purchase a subscription.</a></li>
       <li><a href="mailto:feedback@launchpad.net">Contact us</a>
           about changing your license.
       </li>
     </ul>
-    To qualify for free hosting, the project's licensing must meet the
-    following requirements:
-    <ul>
+    <p>
+      To qualify for free hosting, the project's licensing must meet the
+      following requirements:
+    </p>
+    <ul class="bulleted">
       <li>Must make the source code freely available.</li>
       <li>Must allow modification and distribution of modified copies under
           the same license.</li>
@@ -44,10 +48,12 @@
       <li>Must not contaminate other software licenses.</li>
     </ul>
 
-    <a tal:define="config modules/canonical.config/config"
-       tal:attributes="href config/commercial/licensing_policy_url">
-      View licensing policies
-    </a>
+    <p>
+      <a tal:define="config modules/canonical.config/config"
+        tal:attributes="href config/commercial/licensing_policy_url">
+        View licensing policies
+      </a>
+    </p>
   </div>
 </div>
 </tal:root>

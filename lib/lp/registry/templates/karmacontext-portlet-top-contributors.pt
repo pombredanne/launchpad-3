@@ -1,27 +1,26 @@
 <div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-top-contributors"
-  tal:condition="view/getTopFiveContributors">
-  <h2>Top contributors</h2>
+  class="portlet" id="portlet-top-contributors">
+  <h2>
+    <span class="see-all"><a
+      tal:replace="structure context/menu:overview/top_contributors/fmt:link" /></span>
+    Top contributors
+  </h2>
 
-    <table>
-      <tr tal:repeat="contributor view/getTopFiveContributors">
-        <td>
-          <a tal:replace="structure contributor/person/fmt:link">
-            Guilherme Salgado
-          </a>
-        </td>
-        <td align="right">
-          <span tal:replace="contributor/karmavalue" /> points
-        </td>
-      </tr>
-    </table>
+  <p tal:condition="not: view/getTopFiveContributors">
+    There are no contributors to this project.
+  </p>
 
-  <div
-    tal:define="link context/menu:overview/top_contributors"
-    tal:content="structure link/render"
-    class="actions"
-  />
+  <dl tal:condition="view/getTopFiveContributors">
+    <tal:contributor tal:repeat="contributor view/getTopFiveContributors">
+      <dt>
+        <a tal:replace="structure contributor/person/fmt:link">
+          Guilherme Salgado</a>
+        <strong>
+          <tal:karma replace="contributor/karmavalue" /> points
+        </strong>
+      </dt>
+    </tal:contributor>
+  </dl>
 </div>
