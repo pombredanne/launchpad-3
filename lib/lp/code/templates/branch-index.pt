@@ -20,10 +20,12 @@
     }
   </style>
   <script type="text/javascript"
+      tal:condition="devmode"
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/branchsubscription.js">
   </script>
   <script type="text/javascript"
+      tal:condition="devmode"
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/branchlinks.js">
   </script>

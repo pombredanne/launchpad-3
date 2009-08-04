@@ -161,7 +161,7 @@ And now let's get back to renaming.
 Distributions get slightly wider permissions to manage their templates
 autonomously.
 
-    >>> from canonical.launchpad.database import Distribution
+    >>> from lp.registry.model.distribution import Distribution
     >>> from lp.translations.model.potemplate import POTemplateSet
     >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
     >>> hoary = ubuntu['hoary']

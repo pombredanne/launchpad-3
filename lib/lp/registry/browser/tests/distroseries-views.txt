@@ -137,9 +137,10 @@ initial value remains.
     True
 
 
-== Creating distroseries ==
+Creating distroseries
+---------------------
 
-The distroseries name is unique and it cannot contain spaces
+A distroseries is created using the distroseries view.
 
     >>> view = create_view(ubuntu, '+addseries')
     >>> print view.page_title
@@ -175,8 +176,16 @@ A distroseries is created whent the required field are submitted.
     >>> print sane_distroseries.name
     sane
 
+    # Save this series to test name and version constraints.
+    >>> transaction.commit()
+
+Distroseries name
+-----------------
+
 The distroseries name is unique.
 
+    >>> form['field.name'] = 'sane'
+    >>> form['field.version'] = '2009.07'
     >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
     >>> for error in view.errors:
     ...     print error[2]
@@ -191,3 +200,46 @@ The distroseries name cannot contain spaces.
     Invalid name 'insane name'...
 
 
+Distroseries version
+--------------------
+
+Versions cannot contain spaces.
+
+    >>> form['field.name'] = '6-06-series'
+    >>> form['field.version'] = '6.06 LTS'
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    6.06 LTS is not a valid version
+
+The distroseries version must be a valid debversion.
+
+    >>> form['field.version'] = 'Hardy-6.06-LTS'
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    'Hardy-6.06-LTS': Bad upstream version format
+
+The distroseries version is unique to a distribution. Version '2009.06'
+cannot be reused by another Ubuntu series.
+
+    >>> print sane_distroseries.version
+    2009.06
+
+    >>> form['field.name'] = 'experimental'
+    >>> form['field.version'] = '2009.06'
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    2009.06 is already in use by another version in this distribution.
+
+But version '2009.06' can be used by another distribution.
+
+    >>> other_distro = factory.makeDistribution(name='other-distro')
+    >>> view = create_initialized_view(other_distro, '+addseries', form=form)
+    >>> view.errors
+    []
+
+    >>> experimental_distroseries = other_distro.getSeries('experimental')
+    >>> print experimental_distroseries.version
+    2009.06
