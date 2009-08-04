@@ -268,6 +268,24 @@ We can add a new message to a bug by calling the newMessage method.
   self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/1'
   subject: u'A new message'
 
+We don't have to submit a subject when we add a new message.
+
+  >>> print webservice.named_post(
+  ...     "/bugs/5", 'newMessage',
+  ...     content='This is a new message with no subject.')
+  HTTP/1.1 201 Created
+  Content-Length: 0
+  Content-Type: text/plain
+  Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/2
+  ...
+
+  >>> pprint_entry(webservice.get("/firefox/+bug/5/comments/2").jsonBody())
+    bug_attachments_collection_link: ...
+    content: u'This is a new message with no subject.'
+    ...
+    self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/2'
+    subject: None
+
 
 Bug tasks
 ---------
