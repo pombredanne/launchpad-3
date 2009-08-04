@@ -31,7 +31,7 @@ class IDiff(Interface):
         title=_('Textual contents of a diff.'), readonly=True,
         description=_("The text may be cut off at a defined maximum size."))
 
-    oversized_diff = Bool(
+    oversized = Bool(
         readonly=True,
         description=_(
             "True if the size of the content is over the defined maximum "

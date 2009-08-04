@@ -45,11 +45,11 @@ class TestDiff(TestCaseWithFactory):
         diff = self._create_diff(content)
         self.assertEqual(content, diff.text)
 
-    def test_oversized_diff_normal(self):
+    def test_oversized_normal(self):
         # A diff smaller than config.diff.max_read_size is not oversized.
         content = "1234567890" * 10
         diff = self._create_diff(content)
-        self.assertFalse(diff.oversized_diff)
+        self.assertFalse(diff.oversized)
 
     def test_text_read_limited_by_config(self):
         # IDiff.text will read at most config.diff.max_read_size bytes from
@@ -59,12 +59,12 @@ class TestDiff(TestCaseWithFactory):
         diff = self._create_diff(content)
         self.assertEqual(content[:25], diff.text)
 
-    def test_oversized_diff_for_big_diff(self):
+    def test_oversized_for_big_diff(self):
         # A diff larger than config.diff.max_read_size is oversized.
         self.pushConfig("diff", max_read_size=25)
         content = "1234567890" * 10
         diff = self._create_diff(content)
-        self.assertTrue(diff.oversized_diff)
+        self.assertTrue(diff.oversized)
 
 
 class TestStaticDiff(TestCaseWithFactory):

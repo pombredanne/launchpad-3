@@ -51,7 +51,7 @@ class Diff(SQLBase):
                 self.diff_text.close()
 
     @property
-    def oversized_diff(self):
+    def oversized(self):
         # If the size of the content of the librarian file is over the
         # config.diff.max_read_size, then we have an oversized diff.
         if self.diff_text is None:

@@ -214,7 +214,7 @@ class BMPMailer(BranchMailer):
                 params['gap'] = '\n\n'
 
         if (self.review_diff is not None and
-            self.review_diff.diff.oversized_diff):
+            self.review_diff.diff.oversized):
             params['diff_cutoff_warning'] = (
                 "The attached diff has been truncated due to its size.")
 
