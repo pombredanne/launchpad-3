@@ -6,26 +6,64 @@
 __metaclass__ = type
 
 
+from cStringIO import StringIO
+from textwrap import dedent
 from unittest import TestLoader
 
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 import transaction
 
+from canonical.config import config
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 from lp.code.model.diff import Diff, StaticDiff
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from lp.testing import login, login_person, TestCaseWithFactory
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestDiff(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_providesInterface(self):
         verifyObject(IDiff, Diff())
+
+    def _create_diff(self, content):
+        # Create a Diff object with the content specified.
+        sio = StringIO()
+        sio.write(content)
+        size = sio.tell()
+        sio.seek(0)
+        return Diff.fromFile(sio, size)
+
+    def test_text_reads_librarian_content(self):
+        # IDiff.text will read at most config.diff.max_read_size bytes from
+        # the librarian.
+        content = "1234567890" * 10
+        diff = self._create_diff(content)
+        # Commit to make the alias available for reading.
+        transaction.commit()
+        text = diff.text
+        self.assertEqual(content, text)
+
+    def test_text_read_limited_by_config(self):
+        # IDiff.text will read at most config.diff.max_read_size bytes from
+        # the librarian.
+        content = "1234567890" * 10
+        diff = self._create_diff(content)
+        # Commit to make the alias available for reading.
+        transaction.commit()
+        try:
+            config.push(
+                "test", dedent("""\
+                    [diff]
+                    max_read_size: 25
+                    """))
+            text = diff.text
+            self.assertEqual(content[:25], text)
+        finally:
+            config.pop("test")
 
 
 class TestStaticDiff(TestCaseWithFactory):
