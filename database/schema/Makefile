@@ -192,5 +192,5 @@ lintdata:
 	$(call build_new_sampledata,${TEMPLATE_WITH_TEST_SAMPLEDATA},${LINTDATA})
 	$(call build_new_sampledata,${TEMPLATE_WITH_DEV_SAMPLEDATA},${LINTDATA_DEV})
 
-.PHONY: default base all
+.PHONY: default test dev create check search_path all doc diagram newsampledata_test newsampledata_dev newsampledata lintdata
 
