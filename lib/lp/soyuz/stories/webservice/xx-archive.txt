@@ -878,3 +878,60 @@ error is returned.
     ...
     CannotCopy: private 1.1 in hoary
     (same version already uploaded and waiting in ACCEPTED queue)
+
+
+= Archive dependencies =
+
+Archives can specify dependencies on pockets and components of other
+archives. Found at <dependentarchive.id>/+dependency/<dependencyarchive.id>,
+these IArchiveDependency records can be retrieved through the API.
+
+First we'll add an explicit dependency on the primary archive to
+cprov's PPA. We can't do this through the webservice yet.
+
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_ppa_db = getUtility(IPersonSet).getByName('cprov').archive
+    >>> dep = cprov_ppa_db.addArchiveDependency(
+    ...     cprov_ppa_db.distribution.main_archive,
+    ...     PackagePublishingPocket.RELEASE,
+    ...     component=getUtility(IComponentSet)['universe'])
+    >>> logout()
+
+We can then request that dependency, and see that we get all of its
+attributes.
+
+    >>> cprov_main_dependency = webservice.named_get(
+    ...     '/~cprov/+archive/ppa', 'getArchiveDependency',
+    ...     dependency=ubuntu['main_archive_link']).jsonBody()
+    >>> pprint_entry(cprov_main_dependency)
+    archive_link: u'http://.../~cprov/+archive/ppa'
+    component_name: u'universe'
+    date_created: ...
+    dependency_link: u'http://.../ubuntu/+archive/primary'
+    pocket: u'Release'
+    resource_type_link: u'http://.../#archive_dependency'
+    self_link: u'http://.../~cprov/+archive/ppa/+dependency/1'
+    title: u'Primary Archive for Ubuntu Linux - RELEASE (main, universe)'
+
+Asking for an archive on which there is no dependency returns None.
+
+    >>> debian = webservice.get('/debian').jsonBody()
+    >>> webservice.named_get(
+    ...     '/~cprov/+archive/ppa', 'getArchiveDependency',
+    ...     dependency=debian['main_archive_link']).jsonBody()
+
+Crafting a URL to a non-dependency 404s:
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+dependency/2')
+    HTTP/1.1 404 Not Found
+    ...
+
+A 404 also occurs if we ask for an archive that doesn't exist.
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+dependency/123456')
+    HTTP/1.1 404 Not Found
+    ...
