@@ -81,10 +81,10 @@
           controls and information in the correct places.
         </tal:comment>
         <span class="dynamic unseen">
-          <img class="editicon" src="/@@/edit" alt="Edit" />
+          <img src="/@@/flame-icon" alt=""/>
           <a href="+affectsmetoo" class="js-action"
              ><span class="value">Does this bug affect you?</span></a>
-          <img src="/@@/flame-icon" alt=""/>
+          <img class="editicon" src="/@@/edit" alt="Edit" />
         </span>
 
         <script type="text/javascript" tal:content="string:
