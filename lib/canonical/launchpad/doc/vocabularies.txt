@@ -338,14 +338,13 @@ All the source packages in Launchpad.
     >>> len(spn_terms)
     2
     >>> [(term.token, term.title) for term in spn_terms]
-    [('mozilla', 'Not yet built'),
-     ('mozilla-firefox', u'Source of: mozilla-firefox, mozilla-firefox-data')]
+    [('mozilla', u'mozilla'), ('mozilla-firefox', u'mozilla-firefox')]
 
     >>> spn_terms = spn_vocabulary.searchForTerms("pmount")
     >>> len(spn_terms)
     1
     >>> [(term.token, term.title) for term in spn_terms]
-    [('pmount', u'Source of: pmount')]
+    [('pmount', u'pmount')]
 
 
 === BranchVocabulary ===

@@ -1479,7 +1479,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.build-success, li.build-success   {list-style-image: url(/@@/build-success);}
 ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
-ul.cve, li.cve                       {list-style-image: url(/@@/cve);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
@@ -1799,6 +1798,7 @@ p.update-failure-message {
 .update-in-progress-message {
     background: url(/@@/spinner) center left no-repeat;
     padding-left: 18px;
+    color: #999;
 }
 
 a.update-retry {
