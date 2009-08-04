@@ -73,7 +73,6 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         self.assertEqual(
             [branch],
             list(self.branch_puller.getPullQueue(branch.branch_type)))
-        next_mirror_time = branch.next_mirror_time
         branch.mirrorComplete('rev1')
         self.assertEqual(
             [branch],
