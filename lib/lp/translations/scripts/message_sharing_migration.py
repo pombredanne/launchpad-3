@@ -146,6 +146,8 @@ def bequeathe_flags(source_message, target_message, incumbents=None):
 
 class MessageSharingMerge(LaunchpadScript):
 
+    templateset = None
+
     def add_my_options(self):
         self.parser.add_option('-d', '--distribution', dest='distribution',
             help="Distribution to merge messages for.")
@@ -165,6 +167,16 @@ class MessageSharingMerge(LaunchpadScript):
         self.parser.add_option('-x', '--dry-run', dest='dry_run',
             action='store_true',
             help="Dry run, don't really make any changes.")
+
+    def _setUpUtilities(self):
+        """Prepare a few members that several methods need.
+
+        Calling this again later does nothing.
+        """
+        if self.templateset is None:
+            self.templateset = getUtility(IPOTemplateSet)
+            self.compare_template_precedence = (
+                self.templateset.compareSharingPrecedence)
 
     def main(self):
         actions = (
@@ -214,7 +226,9 @@ class MessageSharingMerge(LaunchpadScript):
                     "Unknown source package name: '%s'" %
                         self.options.sourcepackage)
 
-        subset = getUtility(IPOTemplateSet).getSharingSubset(
+        self._setUpUtilities()
+
+        subset = self.templateset.getSharingSubset(
                 product=product, distribution=distribution,
                 sourcepackagename=sourcepackagename)
         equivalence_classes = subset.groupEquivalentPOTemplates(
@@ -250,6 +264,7 @@ class MessageSharingMerge(LaunchpadScript):
 
     def _mergePOTMsgSets(self, potemplates):
         """Merge POTMsgSets for given sequence of sharing templates."""
+        self._setUpUtilities()
 
         # Map each POTMsgSet key (context, msgid, plural) to its
         # representative POTMsgSet.
@@ -267,8 +282,7 @@ class MessageSharingMerge(LaunchpadScript):
         # through the templates, starting at the most representative and
         # moving towards the least representative.  For any unique potmsgset
         # key we find, the first POTMsgSet is the representative one.
-        templateset = getUtility(IPOTemplateSet)
-        order_check = OrderingCheck(cmp=templateset.compareSharingPrecedence)
+        order_check = OrderingCheck(cmp=self.compare_template_precedence)
 
         for template in potemplates:
             order_check.check(template)
@@ -345,8 +359,8 @@ class MessageSharingMerge(LaunchpadScript):
 
     def _mergeTranslationMessages(self, potemplates):
         """Share `TranslationMessage`s between templates where possible."""
-        templateset = getUtility(IPOTemplateSet)
-        order_check = OrderingCheck(cmp=templateset.compareSharingPrecedence)
+        self._setUpUtilities()
+        order_check = OrderingCheck(cmp=self.compare_template_precedence)
         for template in potemplates:
             order_check.check(template)
             for potmsgset in template.getPOTMsgSets(False):
@@ -539,8 +553,10 @@ class MessageSharingMerge(LaunchpadScript):
             # This message was shared.  Maybe we can still save it for at
             # least one template by making it diverged.
             target_ttis = source_potmsgset.getAllTranslationTemplateItems()
-            for tti in target_ttis:
-                if self._divergeTo(message, target_potmsgset, tti.potemplate):
+            target_templates = [tti.potemplate for tti in target_ttis]
+            target_templates.sort(self.compare_template_precedence)
+            for template in target_templates:
+                if self._divergeTo(message, target_potmsgset, template):
                     return True
 
         # No, there's no place where this message can be preserved.  It'll
