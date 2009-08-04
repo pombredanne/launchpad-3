@@ -280,11 +280,11 @@ We don't have to submit a subject when we add a new message.
   ...
 
   >>> pprint_entry(webservice.get("/firefox/+bug/5/comments/2").jsonBody())
-    bug_attachments_collection_link: ...
-    content: u'This is a new message with no subject.'
-    ...
-    self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/2'
-    subject: u'Re: Firefox does not support SVG'
+  bug_attachments_collection_link: ...
+  content: u'This is a new message with no subject.'
+  ...
+  self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/2'
+  subject: u'Re: Firefox install instructions should be complete'
 
 
 Bug tasks
@@ -1051,7 +1051,7 @@ attachment. This is where our comment is recorded.
   parent_link: None
   resource_type_link: u'http://.../#message'
   self_link: u'http://.../firefox/+bug/1/comments/2'
-  subject: None
+  subject: u'Re: Firefox does not support SVG'
 
 The message also links back to the attachments that were uploaded at
 the same time.
