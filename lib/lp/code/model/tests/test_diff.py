@@ -7,12 +7,10 @@ __metaclass__ = type
 
 
 from cStringIO import StringIO
-from textwrap import dedent
 from unittest import TestLoader
 
 import transaction
 
-from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
@@ -20,21 +18,6 @@ from lp.code.model.diff import Diff, StaticDiff
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from lp.testing import login, login_person, TestCaseWithFactory
-
-
-def small_max_read_size(func):
-    """A decorator that pushes a small max_read_size."""
-    def wrapper(*args):
-        try:
-            config.push(
-                "test", dedent("""\
-                    [diff]
-                    max_read_size: 25
-                    """))
-            func(*args)
-        finally:
-            config.pop("test")
-    return wrapper
 
 
 class TestDiff(TestCaseWithFactory):
@@ -68,17 +51,17 @@ class TestDiff(TestCaseWithFactory):
         diff = self._create_diff(content)
         self.assertFalse(diff.oversized_diff)
 
-    @small_max_read_size
     def test_text_read_limited_by_config(self):
         # IDiff.text will read at most config.diff.max_read_size bytes from
         # the librarian.
+        self.pushConfig("diff", max_read_size=25)
         content = "1234567890" * 10
         diff = self._create_diff(content)
         self.assertEqual(content[:25], diff.text)
 
-    @small_max_read_size
     def test_oversized_diff_for_big_diff(self):
         # A diff larger than config.diff.max_read_size is oversized.
+        self.pushConfig("diff", max_read_size=25)
         content = "1234567890" * 10
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized_diff)
