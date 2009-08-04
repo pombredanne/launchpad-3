@@ -12,6 +12,7 @@
         <tal:mugshot replace="structure context/image:logo" />
       </div>
       <h1 tal:replace="structure view/title_edit_widget">project title</h1>
+      <br style="clear:both"/>
     </tal:heading>
 
     <tal:main metal:fill-slot="main"
@@ -20,6 +21,7 @@
         <p id="project-admin-whiteboard" class="whiteboard"
           tal:condition="context/required:launchpad.ProjectReview">
           <tal:whiteboard content="context/reviewer_whiteboard" />
+          (whiteboard)
           <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
         </p>
 
@@ -27,12 +29,6 @@
           tal:condition="not: context/active">
           This project is currently inactive
           <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
-        </p>
-
-        <p id="license-status" tal:condition="view/show_license_status">
-          <strong tal:content="structure context/license_status/description">
-            This project's license is proprietary.
-          </strong>
         </p>
 
         <div class="description" tal:content="context/summary">
@@ -66,7 +62,7 @@
         <div id="project-info" class="yui-u first portlet">
           <h2>Project information</h2>
 
-          <div class="two-column-list"> 
+          <div class="two-column-list">
             <dl id="partof" tal:condition="context/project">
               <dt>Part of:</dt>
               <dd><a tal:replace="structure context/project/fmt:link" /></dd>
@@ -162,8 +158,16 @@
 
       <div class="yui-g">
         <div class="first yui-u"
+          tal:content="structure context/@@+portlet-listfaqs" />
+
+        <div class="yui-u"
+          tal:content="structure context/@@+portlet-latestquestions" />
+      </div>
+
+      <div class="yui-g">
+        <div class="first yui-u"
           tal:content="structure context/@@+portlet-top-contributors" />
-         
+
         <div class="yui-u"
           tal:content="structure context/@@+portlet-packages" />
       </div>

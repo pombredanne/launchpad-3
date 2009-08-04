@@ -12,10 +12,13 @@ __all__ = [
 
 from urllib import urlencode
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    IFAQCollection, ISearchFAQsForm, QUESTION_STATUS_DEFAULT_SEARCH,
-    QuestionSort)
+from lp.answers.interfaces.faqcollection import (
+    IFAQCollection, ISearchFAQsForm, FAQSort)
+from lp.answers.interfaces.questionenums import QuestionSort
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, LaunchpadFormView, Link,
     safe_action)
@@ -80,6 +83,17 @@ class SearchFAQsView(LaunchpadFormView):
         """Return a BatchNavigator of the matching FAQs."""
         faqs = self.context.searchFAQs(search_text=self.search_text)
         return BatchNavigator(faqs, self.request)
+
+    @cachedproperty
+    def latest_faqs(self):
+        """Return the latest faqs created for this target.
+
+        This is used by the +portlet-listfaqs view.
+        """
+        quantity = 5
+        faqs = self.context.searchFAQs(
+            search_text=self.search_text, sort=FAQSort.NEWEST_FIRST)
+        return faqs[:quantity]
 
     @safe_action
     @action(_('Search'), name='search')

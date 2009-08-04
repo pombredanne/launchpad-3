@@ -10,7 +10,7 @@
       tal:replace="structure context/menu:overview/packages/fmt:link" /></span>
     Packages
   </h2>
-  
+
   <p tal:condition="not: context/sourcepackages">
     <tal:name replace="context/displayname" /> has no packages.
   </p>
