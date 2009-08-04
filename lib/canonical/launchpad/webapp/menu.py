@@ -232,15 +232,11 @@ class MenuBase(UserAttributeCache):
     def _get_link(self, name):
         request = get_current_browser_request()
         if request is not None:
-            # XXX: I think we must not use a weak ref here because if we do so
-            # and templates do stuff like "context/menu:bugs/foo", then there
+            # We must not use a weak ref here because if we do so and
+            # templates do stuff like "context/menu:bugs/foo", then there
             # would be no reference to the Link object, which would allow it
-            # to be garbage collected during the course of the request. On the
-            # other hand, I'm not 100% sure it's ok to use a dict in
-            # request.annotations.
-            cache = request.annotations.setdefault(
-                #MENU_ANNOTATION_KEY, WeakValueDictionary())
-                MENU_ANNOTATION_KEY, {})
+            # to be garbage collected during the course of the request.
+            cache = request.annotations.setdefault(MENU_ANNOTATION_KEY, {})
             key = (self._baseclassname, name)
             link = cache.get(key)
             if link is None:
