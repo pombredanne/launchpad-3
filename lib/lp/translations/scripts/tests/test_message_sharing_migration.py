@@ -41,7 +41,7 @@ class TranslatableProductMixin:
         self.stable_template.iscurrent = False
         self.templates = [self.trunk_template, self.stable_template]
 
-        self.script = MessageSharingMerge('tms-merging-test')
+        self.script = MessageSharingMerge('tms-merging-test', test_args=[])
         self.script.logger.setLevel(ERROR)
 
 
