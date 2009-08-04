@@ -3,7 +3,7 @@
 
 """Tests for BranchMergeProposal mailings"""
 
-from unittest import TestLoader, TestCase
+from unittest import TestLoader
 import transaction
 
 from zope.security.proxy import removeSecurityProxy
@@ -22,20 +22,17 @@ from lp.code.mail.branchmergeproposal import (
 from lp.code.model.branch import update_trigger_modified_fields
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from canonical.launchpad.webapp import canonical_url
-from lp.testing import login, login_person, TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 
 
-class TestMergeProposalMailing(TestCase):
+class TestMergeProposalMailing(TestCaseWithFactory):
     """Test that reasonable mailings are generated"""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCase.setUp(self)
-        login('admin@canonical.com')
-        self.factory = LaunchpadObjectFactory()
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
 
     def makeProposalWithSubscriber(self, diff_text=None,
                                    initial_comment=None):
@@ -181,6 +178,22 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         self.assertEqual('inline; filename="review.diff"',
                          attachment['Content-Disposition'])
         self.assertEqual('Fake diff', attachment.get_payload(decode=True))
+
+    def test_generateEmail_attaches_diff_oversize_truncated(self):
+        """An oversized diff will be truncated, and the receiver informed."""
+        self.pushConfig("diff", max_read_size=25)
+        content = "1234567890" * 10
+        bmp, subscriber = self.makeProposalWithSubscriber(
+            diff_text=content)
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        (attachment,) = ctrl.attachments
+        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual('inline; filename="review.diff"',
+                         attachment['Content-Disposition'])
+        self.assertEqual(content[:25], attachment.get_payload(decode=True))
+        warning_text = "The attached diff has been truncated due to its size."
+        self.assertTrue(warning_text in ctrl.body)
 
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""

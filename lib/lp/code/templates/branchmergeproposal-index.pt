@@ -130,6 +130,10 @@
       <div class="boardCommentBody attachmentBody">
         <tal:diff replace="structure view/review_diff/fmt:diff" />
       </div>
+      <div class="boardCommentFooter"
+           tal:condition="view/review_diff_oversized">
+        The diff has been truncated for viewing.
+      </div>
     </tal:real-diff>
     <tal:empty-diff condition="not: attachment">
       <div class="boardCommentBody attachmentBody">
