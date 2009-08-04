@@ -255,6 +255,16 @@ class AcquireBranchToPullTests:
         branch.requestMirror()
         self.assertBranchIsAquired(branch)
 
+    def test_remote_branch_not_acquired(self):
+        # On a few occasions a branch type that is mirrored has been
+        # converted, with non-NULL next_mirror_time, to a remote branch, which
+        # is not mirrored.  These branches should not be returned.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch.requestMirror()
+        removeSecurityProxy(branch).branch_type = BranchType.REMOTE
+        self.assertNoBranchIsAquired()
+
+
     def test_private(self):
         # If there is a private branch that needs mirroring,
         # acquireBranchToPull returns that.
