@@ -34,10 +34,10 @@ class IArchiveDependency(Interface):
             required=False, readonly=True))
 
     archive = exported(
-        Choice(
+        Reference(
+            IArchive,
             title=_('Target archive'),
             required=True,
-            vocabulary='PPA',
             description=_("The PPA affected by this dependecy.")))
 
     dependency = exported(
