@@ -1731,7 +1731,7 @@ beside the mugshot. */
 #sources-list-entries {
   border: 1px solid gray;
   padding: 0.3em;
-  margin-bottom: 1em;
+  margin: 1em 0 1em 0;
   float: left; /* So the border doesn't use 100% of the page */
 }
 
