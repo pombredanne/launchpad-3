@@ -176,7 +176,7 @@ You can select the user you connect as:
 
 >>> setup = LaunchpadZopelessTestSetup(dbuser=config.librarian.dbuser)
 >>> setup.setUp()
->>> from canonical.launchpad.database import SourcePackageName
+>>> from lp.registry.model.sourcepackagename import SourcePackageName
 >>> SourcePackageName.get(1).name
 Traceback (most recent call last):
 ...

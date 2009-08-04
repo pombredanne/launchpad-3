@@ -90,6 +90,8 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['parent'].schema = \
         ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
+IBranchMergeProposal['nominateReviewer'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewVoteReference
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
 IHasBranches['getBranches'].queryTaggedValue(

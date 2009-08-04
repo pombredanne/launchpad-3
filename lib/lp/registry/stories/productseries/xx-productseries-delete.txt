@@ -34,7 +34,7 @@ of development.
     >>> owner_browser.getLink('Cancel').click()
     >>> owner_browser.open('http://launchpad.dev/firefox/+edit')
     >>> print owner_browser.title
-    Change project details
+    Change Mozilla Firefox's details
 
     >>> owner_browser.getControl('Development focus').value = ['2']
     >>> owner_browser.getControl('Change').click()
