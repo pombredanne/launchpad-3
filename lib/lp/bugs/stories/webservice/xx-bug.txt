@@ -284,7 +284,7 @@ We don't have to submit a subject when we add a new message.
     content: u'This is a new message with no subject.'
     ...
     self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/2'
-    subject: None
+    subject: u'Re: Firefox does not support SVG'
 
 
 Bug tasks
