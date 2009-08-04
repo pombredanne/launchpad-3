@@ -75,7 +75,7 @@
         class="lp.blueprints.browser.sprint.SprintBrandingView"
         permission="launchpad.Edit"
         facet="overview"
-        template="../../../canonical/launchpad/templates/object-branding.pt"/>
+        template="../../../lp/registry/templates/object-branding.pt"/>
     <browser:page
         name="+attend"
         for="lp.blueprints.interfaces.sprint.ISprint"
