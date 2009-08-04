@@ -15,6 +15,7 @@ We publish a subset of their attributes.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
+    dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
@@ -77,6 +78,7 @@ The archive has the following attributes:
     >>> main_archive = webservice.get(
     ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(main_archive)
+    dependencies_collection_link: u'http://.../ubuntutest/+archive/primary/dependencies'
     description: None
     displayname: u'Primary Archive for Ubuntu Test'
     distribution_link: u'http://.../ubuntutest'
@@ -704,6 +706,7 @@ attributes are only exposed when the requestor has View permission in
 the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/ppa").jsonBody())
+    dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'tag:launchpad.net:2008:redacted'
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
@@ -715,6 +718,7 @@ the IArchive context, in this case only Celso has it.
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/ppa").jsonBody())
+    dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
@@ -921,6 +925,12 @@ Asking for an archive on which there is no dependency returns None.
     >>> webservice.named_get(
     ...     '/~cprov/+archive/ppa', 'getArchiveDependency',
     ...     dependency=debian['main_archive_link']).jsonBody()
+
+Archives will also give us a list of their custom dependencies.
+
+    >>> print_self_link_of_entries(
+    ...     webservice.get('/~cprov/+archive/ppa/dependencies').jsonBody())
+    http://.../~cprov/+archive/ppa/+dependency/1
 
 Crafting a URL to a non-dependency 404s:
 
