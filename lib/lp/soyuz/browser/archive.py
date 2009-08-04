@@ -34,6 +34,8 @@ from zope.interface import implements
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
+from sqlobject import SQLObjectNotFound
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
@@ -285,6 +287,20 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         else:
             return None
 
+    @stepthrough('+dependency')
+    def traverse_dependency(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            # Not a number.
+            return None
+
+        try:
+            archive = getUtility(IArchiveSet).get(id)
+        except SQLObjectNotFound:
+            return None
+
+        return self.context.getArchiveDependency(archive)
 
 class ArchiveContextMenu(ContextMenu):
     """Overview Menu for IArchive."""
