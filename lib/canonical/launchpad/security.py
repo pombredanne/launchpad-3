@@ -2181,20 +2181,9 @@ class EditArchivePermissionSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if user.inTeam(celebrities.admin):
-            return True
-
-        techboard = getUtility(IPersonSet).getByName("techboard")
-        if techboard is None:
-            # We expect techboard to be present but it's not.  Log an
-            # OOPS.
-            error = AssertionError(
-                "'techboard' team is missing, has it been renamed?")
-            info = (error.__class__, error, None)
-            globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info)
-            return False
-        return user.inTeam(techboard)
+        return (
+            user.inTeam(celebrities.admin)
+            or user.inTeam(celebrities.ubuntu_techboard))
 
 
 class LinkOfficialSourcePackageBranches(AuthorizationBase):
