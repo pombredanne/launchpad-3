@@ -12,37 +12,52 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, Object
+from zope.schema import Choice, Datetime, Int, Object, TextLine
 
 from canonical.launchpad import _
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class IArchiveDependency(Interface):
     """ArchiveDependency interface."""
+    export_as_webservice_entry()
 
     id = Int(title=_("The archive ID."), readonly=True)
 
-    date_created = Datetime(
-        title=_("Instant when the dependency was created."),
-        required=False, readonly=True)
+    date_created = exported(
+        Datetime(
+            title=_("Instant when the dependency was created."),
+            required=False, readonly=True))
 
-    archive = Choice(
-        title=_('Target archive'),
-        required=True,
-        vocabulary='PPA',
-        description=_("The PPA affected by this dependecy."))
+    archive = exported(
+        Choice(
+            title=_('Target archive'),
+            required=True,
+            vocabulary='PPA',
+            description=_("The PPA affected by this dependecy.")))
 
-    dependency = Object(
-        schema=IArchive,
-        title=_("The archive set as a dependency."),
-        required=False)
+    dependency = exported(
+        Reference(
+            schema=IArchive,
+            title=_("The archive set as a dependency."),
+            required=False)) # XXX: Huh? How is it not required?
 
-    pocket = Choice(
-        title=_("Pocket"), required=True, vocabulary=PackagePublishingPocket)
+    pocket = exported(
+        Choice(
+            title=_("Pocket"), required=True,
+            vocabulary=PackagePublishingPocket))
 
     component = Choice(
         title=_("Component"), required=True, vocabulary='Component')
 
-    title = Attribute("Archive dependency title.")
+    # We don't want to export IComponent, so the name is exported specially.
+    component_name = exported(
+        TextLine(
+            title=_("Component name"),
+            required=True))
+
+    title = exported(TextLine(title=_("Archive dependency title.")))
