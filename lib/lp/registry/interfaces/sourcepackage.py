@@ -23,7 +23,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.soyuz.interfaces.component import IComponent
-from lazr.restful.fields import Reference
+from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
     export_write_operation, exported, operation_parameters,
@@ -86,9 +86,12 @@ class ISourcePackage(IBugTarget):
         "The best guess we have as to the Launchpad Project associated with "
         "this SourcePackage.")
 
+    # This is really a reference to an IProductSeries.
     productseries = exported(
-        Reference(
-            Interface, title=_("Product Series"), required=False,
+        ReferenceChoice(
+            title=_("Product Series"), required=False,
+            vocabulary="ProductSeries",
+            schema=Interface,
             description=_(
                 "The best guess we have as to the Launchpad ProductSeries "
                 "for this Source Package. Try find packaging information for "
@@ -126,6 +129,9 @@ class ISourcePackage(IBugTarget):
 
     development_version = Attribute(
         "This package on the distro's current series.")
+
+    distribution_sourcepackage = Attribute(
+        "The IDistributionSourcePackage for this source package.")
 
     def __getitem__(version):
         """Return the source package release with the given version in this

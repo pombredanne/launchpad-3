@@ -394,7 +394,7 @@ And the new one is:
 Now, let's ensure that we've covered every one of Rosetta's karma
 actions.
 
-    >>> from canonical.launchpad.database import KarmaCategory
+    >>> from lp.registry.model.karma import KarmaCategory
     >>> translation_category = KarmaCategory.byName('translations')
     >>> for karma_action in translation_category.karmaactions:
     ...     assert karma_action in karma_helper.added_karma_actions, (
