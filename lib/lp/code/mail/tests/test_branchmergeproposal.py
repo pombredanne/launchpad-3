@@ -32,7 +32,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        super(TestMergeProposalMailing, self).setUp('admin@canonical.com')
 
     def makeProposalWithSubscriber(self, diff_text=None,
                                    initial_comment=None):
