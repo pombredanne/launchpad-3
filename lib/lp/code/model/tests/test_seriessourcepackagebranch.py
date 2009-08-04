@@ -22,7 +22,6 @@ class TestSeriesSourcePackageBranchSet(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.link_set = SeriesSourcePackageBranchSet()
-        self.distro = self.factory.makeDistribution()
 
     def makeLinkedPackageBranch(self, distribution, sourcepackagename):
         """Make a new package branch and make it official."""
@@ -62,6 +61,29 @@ class TestSeriesSourcePackageBranchSet(TestCaseWithFactory):
             distro_source_package)
         self.assertEqual(
             sorted([b1, b2]), sorted([link.branch for link in links]))
+
+    def test_delete(self):
+        # SeriesSourcePackageBranchSet.delete removes the link between a
+        # particular branch and a (distro_series, pocket, sourcepackagename)
+        # tupled.
+        distro_series = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename=sourcepackagename, distroseries=distro_series)
+        branch_release = self.factory.makePackageBranch(
+            distroseries=distro_series, sourcepackagename=sourcepackagename)
+        branch_updates = self.factory.makePackageBranch(
+            distroseries=distro_series, sourcepackagename=sourcepackagename)
+        self.link_set.new(
+            distro_series, PackagePublishingPocket.RELEASE, sourcepackagename,
+            branch_release, branch_release.owner)
+        self.link_set.new(
+            distro_series, PackagePublishingPocket.UPDATES, sourcepackagename,
+            branch_updates, branch_updates.owner)
+        self.link_set.delete(sourcepackage, PackagePublishingPocket.UPDATES)
+        links = self.link_set.findForSourcePackage(sourcepackage)
+        self.assertEqual(
+            sorted([branch_release]), sorted([link.branch for link in links]))
 
 
 def test_suite():
