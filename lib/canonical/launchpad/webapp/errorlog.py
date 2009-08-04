@@ -208,7 +208,7 @@ class ErrorReport:
                 break
             start, end, db_id, statement = re.match(
                 r'^(\d+)-(\d+)(?:@([\w-]+))?(.*)', line).groups()
-            db_id = intern(database_id) # This string is repeated lots.
+            db_id = intern(db_id) # This string is repeated lots.
             statements.append(
                 (int(start), int(end), db_id, statement))
 
