@@ -255,17 +255,10 @@ class TestDiffFormatter(TestCase):
             ########
             # A merge directive comment.
             ''')
-        try:
-            config.push(
-                "test", dedent("""\
-                    [diff]
-                    max_format_lines: 3
-                    """))
-            html = FormattersAPI(diff).format_diff()
-            line_count = html.count('<td class="line-no">')
-            self.assertEqual(3, line_count)
-        finally:
-            config.pop("test")
+        self.pushConfig("diff", max_format_lines=3)
+        html = FormattersAPI(diff).format_diff()
+        line_count = html.count('<td class="line-no">')
+        self.assertEqual(3, line_count)
 
 
 class TestPreviewDiffFormatter(TestCaseWithFactory):
