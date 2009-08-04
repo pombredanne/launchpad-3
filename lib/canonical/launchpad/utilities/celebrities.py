@@ -137,6 +137,7 @@ class LaunchpadCelebrities:
     ubuntu_branches = CelebrityDescriptor(IPersonSet, 'ubuntu-branches')
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
     ubuntu_security = CelebrityDescriptor(IPersonSet, 'ubuntu-security')
+    ubuntu_techboard = CelebrityDescriptor(IPersonSet, 'techboard')
     vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
 
     @property
