@@ -45,7 +45,7 @@ class IArchiveDependency(Interface):
         Reference(
             schema=IArchive,
             title=_("The archive set as a dependency."),
-            required=False)) # XXX: Huh? How is it not required?
+            required=False))
 
     pocket = exported(
         Choice(
