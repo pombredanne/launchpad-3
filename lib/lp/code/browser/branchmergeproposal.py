@@ -412,7 +412,7 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         review_diff = self.context.review_diff
         if review_diff is None:
             return False
-        if review_diff.oversized:
+        if review_diff.diff.oversized:
             return True
         diff_text = self.review_diff
         return diff_text.count('\n') >= config.diff.max_format_lines
