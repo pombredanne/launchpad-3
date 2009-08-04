@@ -22,6 +22,21 @@ from lp.code.interfaces.diff import (
 from lp.testing import login, login_person, TestCaseWithFactory
 
 
+def small_max_read_size(func):
+    """A decorator that pushes a small max_read_size."""
+    def wrapper(*args):
+        try:
+            config.push(
+                "test", dedent("""\
+                    [diff]
+                    max_read_size: 25
+                    """))
+            func(*args)
+        finally:
+            config.pop("test")
+    return wrapper
+
+
 class TestDiff(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -35,35 +50,38 @@ class TestDiff(TestCaseWithFactory):
         sio.write(content)
         size = sio.tell()
         sio.seek(0)
-        return Diff.fromFile(sio, size)
+        diff = Diff.fromFile(sio, size)
+        # Commit to make the alias available for reading.
+        transaction.commit()
+        return diff
 
     def test_text_reads_librarian_content(self):
         # IDiff.text will read at most config.diff.max_read_size bytes from
         # the librarian.
         content = "1234567890" * 10
         diff = self._create_diff(content)
-        # Commit to make the alias available for reading.
-        transaction.commit()
-        text = diff.text
-        self.assertEqual(content, text)
+        self.assertEqual(content, diff.text)
 
+    def test_oversized_diff_normal(self):
+        # A diff smaller than config.diff.max_read_size is not oversized.
+        content = "1234567890" * 10
+        diff = self._create_diff(content)
+        self.assertFalse(diff.oversized_diff)
+
+    @small_max_read_size
     def test_text_read_limited_by_config(self):
         # IDiff.text will read at most config.diff.max_read_size bytes from
         # the librarian.
         content = "1234567890" * 10
         diff = self._create_diff(content)
-        # Commit to make the alias available for reading.
-        transaction.commit()
-        try:
-            config.push(
-                "test", dedent("""\
-                    [diff]
-                    max_read_size: 25
-                    """))
-            text = diff.text
-            self.assertEqual(content[:25], text)
-        finally:
-            config.pop("test")
+        self.assertEqual(content[:25], diff.text)
+
+    @small_max_read_size
+    def test_oversized_diff_for_big_diff(self):
+        # A diff larger than config.diff.max_read_size is oversized.
+        content = "1234567890" * 10
+        diff = self._create_diff(content)
+        self.assertTrue(diff.oversized_diff)
 
 
 class TestStaticDiff(TestCaseWithFactory):

@@ -50,6 +50,15 @@ class Diff(SQLBase):
             finally:
                 self.diff_text.close()
 
+    @property
+    def oversized_diff(self):
+        # If the size of the content of the librarian file is over the
+        # config.diff.max_read_size, then we have an oversized diff.
+        if self.diff_text is None:
+            return False
+        diff_size = self.diff_text.content.filesize
+        return diff_size > config.diff.max_read_size
+
     @classmethod
     def fromTrees(klass, from_tree, to_tree, filename=None):
         """Create a Diff from two Bazaar trees.

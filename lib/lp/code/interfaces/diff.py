@@ -27,7 +27,15 @@ from canonical.launchpad import _
 class IDiff(Interface):
     """A diff that is stored in the Library."""
 
-    text = Text(title=_('Textual contents of a diff.'), readonly=True)
+    text = Text(
+        title=_('Textual contents of a diff.'), readonly=True,
+        description=_("The text may be cut off at a defined maximum size."))
+
+    oversized_diff = Bool(
+        readonly=True,
+        description=_(
+            "True if the size of the content is over the defined maximum "
+            "size."))
 
     diff_text = exported(
         Bytes(title=_('Content of this diff'), required=True, readonly=True))
