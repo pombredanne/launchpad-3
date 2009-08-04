@@ -10,12 +10,13 @@ from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctestunit import DocTestSuite
 
+from canonical.config import config
 from canonical.launchpad.ftests import test_tales
-from lp.testing import login, TestCase, TestCaseWithFactory
 from canonical.launchpad.testing.pages import find_tags_by_class
 from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from lp.testing import login, TestCase, TestCaseWithFactory
 
 
 def test_requestapi():
@@ -239,6 +240,32 @@ class TestDiffFormatter(TestCase):
              'diff-comment text',
              'diff-comment text'],
             [str(tag['class']) for tag in text])
+
+    def test_config_value_limits_line_count(self):
+        # The config.diff.max_line_format contains the maximum number of lines
+        # to format.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,6 +2435,8 @@
+                 def format_diff(self):
+            -        removed this line
+            +        added this line
+            ########
+            # A merge directive comment.
+            ''')
+        try:
+            config.push(
+                "test", dedent("""\
+                    [diff]
+                    max_format_lines: 3
+                    """))
+            html = FormattersAPI(diff).format_diff()
+            line_count = html.count('<td class="line-no">')
+            self.assertEqual(3, line_count)
+        finally:
+            config.pop("test")
 
 
 class TestPreviewDiffFormatter(TestCaseWithFactory):
