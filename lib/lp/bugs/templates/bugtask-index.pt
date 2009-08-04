@@ -137,13 +137,11 @@
             margin-right: 5px;
         }
 
-        "/>
-
-        /* Align the "add comment" link to the right of the comment box. */
+        /* Align the 'add comment' link to the right of the comment box. */
         #add-comment-form textarea { width: 100%; max-width=60em;}
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
-      </style>
+        "/>
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
