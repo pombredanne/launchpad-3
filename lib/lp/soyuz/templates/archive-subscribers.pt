@@ -13,13 +13,12 @@
   </metal:block>
 
   <div metal:fill-slot="heading">
-    <h2 tal:content="context/displayname">PPA for Celso Providelo</h2>
+    <h1 tal:content="CONTEXTS/fmt:pagetitle">
+      Manage access to Blah PPA
+    </h1>
   </div>
   <div metal:fill-slot="main">
     <div class="portlet">
-      <h1 tal:content="CONTEXTS/fmt:pagetitle">
-        Manage access to Blah PPA
-      </h1>
       <p>You can grant access to people or teams to install software
          from your PPA.
       </p>

@@ -13,14 +13,13 @@
   </metal:block>
 
   <div metal:fill-slot="heading">
-    <h2 tal:content="context/archive/displayname">PPA for Celso Providelo</h2>
+      <h1 tal:content="CONTEXTS/fmt:pagetitle">
+        Edit access for Joe Smith
+      </h1>
   </div>
 
   <div metal:fill-slot="main">
     <div class="portlet">
-      <h1 tal:content="CONTEXTS/fmt:pagetitle">
-        Edit access for Joe Smith
-      </h1>
       <p>You can update the expiry or description for the granted access,
          or cancel the access all-together.</p>
       <div metal:use-macro="context/@@launchpad_form/form" />
