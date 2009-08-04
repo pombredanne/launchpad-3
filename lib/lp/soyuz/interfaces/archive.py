@@ -185,12 +185,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
     signing_key = Object(
         title=_('Repository sigining key.'), required=False, schema=IGPGKey)
 
-    dependencies = exported(
-        CollectionField(
-            title=_("Archive dependencies recorded for this archive."),
-            value_type=Reference(schema=Interface), # Really IArchiveDependency
-            readonly=True))
-
     expanded_archive_dependencies = Attribute(
         "The expanded list of archive dependencies. It includes the implicit "
         "PRIMARY archive dependency for PPAs.")
@@ -754,6 +748,12 @@ class IArchiveView(IHasBuildRecords):
         title=_("Buildd Secret"), required=False,
         description=_("The password used by the builder to access the "
                       "archive."))
+
+    dependencies = exported(
+        CollectionField(
+            title=_("Archive dependencies recorded for this archive."),
+            value_type=Reference(schema=Interface), # Really IArchiveDependency
+            readonly=True))
 
     description = exported(
         Text(
