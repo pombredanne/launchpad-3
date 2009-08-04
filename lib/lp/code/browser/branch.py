@@ -601,6 +601,10 @@ class BranchEditFormView(LaunchpadEditFormView):
     @action('Change Branch', name='change')
     def change_action(self, action, data):
         # If the owner or product has changed, add an explicit notification.
+        # We take our own snapshot here to make sure that the snapshot records
+        # changes to the owner and private, and we notify the listeners
+        # explicitly below rather than the notification that would normally be
+        # sent in updateContextFromData.
         branch_before_modification = Snapshot(
             self.context, providing=providedBy(self.context))
         if 'owner' in data:

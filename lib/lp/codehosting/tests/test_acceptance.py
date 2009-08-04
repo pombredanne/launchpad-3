@@ -14,7 +14,6 @@ import bzrlib.branch
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
-from zope.security.proxy import removeSecurityProxy
 
 from lp.codehosting.bzrutils import DenyingServer
 from lp.codehosting.tests.helpers import (
@@ -383,7 +382,7 @@ class AcceptanceTests(SSHTestCase):
         # rename as far as bzr is concerned: the URL changes.
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        removeSecurityProxy(branch).product = Product.byName('firefox')
+        branch.setTarget(user=branch.owner, project=Product.byName('firefox'))
         LaunchpadZopelessTestSetup().txn.commit()
 
         self.assertNotBranch(

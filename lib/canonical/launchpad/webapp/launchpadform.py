@@ -386,8 +386,9 @@ class LaunchpadEditFormView(LaunchpadFormView):
         """
         if context is None:
             context = self.context
-        context_before_modification = Snapshot(
-            context, providing=providedBy(context))
+        if notify_modified:
+            context_before_modification = Snapshot(
+                context, providing=providedBy(context))
 
         was_changed = form.applyChanges(context, self.form_fields,
                                         data, self.adapters)

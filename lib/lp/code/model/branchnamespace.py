@@ -177,7 +177,7 @@ class _BaseNamespace:
         # attributes are readonly through the interface.
         naked_branch = removeSecurityProxy(branch)
         naked_branch.owner = self.owner
-        self.target.retargetBranch(naked_branch)
+        self.target._retargetBranch(naked_branch)
         naked_branch.name = new_name
 
     def createBranchWithPrefix(self, branch_type, prefix, registrant,

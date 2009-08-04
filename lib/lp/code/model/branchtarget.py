@@ -129,15 +129,15 @@ class PackageBranchTarget(_BaseBranchTarget):
         # those cases.
         return bug.default_bugtask
 
-    def retargetBranch(self, branch):
-        """See `IBranchTarget`."""
-        # Since product, distroseries and sourcepackagename are not writable
-        # as defined by the interface, we need to rip off the security proxy
-        # here.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.product = None
-        naked_branch.distroseries = self.sourcepackage.distroseries
-        naked_branch.sourcepackagename = self.sourcepackage.sourcepackagename
+    def _retargetBranch(self, branch):
+        """Set the branch target to refer to this target.
+
+        This only updates the target related attributes of the branch, and
+        expects a branch without a security proxy as a parameter.
+        """
+        branch.product = None
+        branch.distroseries = self.sourcepackage.distroseries
+        branch.sourcepackagename = self.sourcepackage.sourcepackagename
 
 
 class PersonBranchTarget(_BaseBranchTarget):
@@ -193,15 +193,15 @@ class PersonBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return bug.default_bugtask
 
-    def retargetBranch(self, branch):
-        """See `IBranchTarget`."""
-        # Since product, distroseries and sourcepackagename are not writable
-        # as defined by the interface, we need to rip off the security proxy
-        # here.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.product = None
-        naked_branch.distroseries = None
-        naked_branch.sourcepackagename = None
+    def _retargetBranch(self, branch):
+        """Set the branch target to refer to this target.
+
+        This only updates the target related attributes of the branch, and
+        expects a branch without a security proxy as a parameter.
+        """
+        branch.product = None
+        branch.distroseries = None
+        branch.sourcepackagename = None
 
 
 class ProductBranchTarget(_BaseBranchTarget):
@@ -286,15 +286,15 @@ class ProductBranchTarget(_BaseBranchTarget):
             task = bug.bugtasks[0]
         return task
 
-    def retargetBranch(self, branch):
-        """See `IBranchTarget`."""
-        # Since product, distroseries and sourcepackagename are not writable
-        # as defined by the interface, we need to rip off the security proxy
-        # here.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.product = self.product
-        naked_branch.distroseries = None
-        naked_branch.sourcepackagename = None
+    def _retargetBranch(self, branch):
+        """Set the branch target to refer to this target.
+
+        This only updates the target related attributes of the branch, and
+        expects a branch without a security proxy as a parameter.
+        """
+        branch.product = self.product
+        branch.distroseries = None
+        branch.sourcepackagename = None
 
 
 def get_canonical_url_data_for_target(branch_target):

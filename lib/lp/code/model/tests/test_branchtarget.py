@@ -49,19 +49,19 @@ class BaseBranchTargetTests:
     def test_retargetBranch_packageBranch(self):
         # Retarget an existing package branch to this target.
         branch = self.factory.makePackageBranch()
-        self.target.retargetBranch(branch)
+        self.target._retargetBranch(removeSecurityProxy(branch))
         self.assertEqual(self.target, branch.target)
 
     def test_retargetBranch_productBranch(self):
         # Retarget an existing product branch to this target.
         branch = self.factory.makeProductBranch()
-        self.target.retargetBranch(branch)
+        self.target._retargetBranch(removeSecurityProxy(branch))
         self.assertEqual(self.target, branch.target)
 
     def test_retargetBranch_personalBranch(self):
         # Retarget an existing personal branch to this target.
         branch = self.factory.makePersonalBranch()
-        self.target.retargetBranch(branch)
+        self.target._retargetBranch(removeSecurityProxy(branch))
         self.assertEqual(self.target, branch.target)
 
 
@@ -236,7 +236,7 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # match the target as the target is the branch owner for a personal
         # branch.
         branch = self.factory.makePackageBranch(owner=self.original)
-        self.target.retargetBranch(branch)
+        self.target._retargetBranch(removeSecurityProxy(branch))
         self.assertEqual(self.target, branch.target)
 
     def test_retargetBranch_productBranch(self):
@@ -245,7 +245,7 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # match the target as the target is the branch owner for a personal
         # branch.
         branch = self.factory.makeProductBranch(owner=self.original)
-        self.target.retargetBranch(branch)
+        self.target._retargetBranch(removeSecurityProxy(branch))
         self.assertEqual(self.target, branch.target)
 
     def test_retargetBranch_personalBranch(self):
@@ -254,7 +254,7 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # match the target as the target is the branch owner for a personal
         # branch.
         branch = self.factory.makePersonalBranch(owner=self.original)
-        self.target.retargetBranch(branch)
+        self.target._retargetBranch(removeSecurityProxy(branch))
         self.assertEqual(self.target, branch.target)
 
 

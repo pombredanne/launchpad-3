@@ -49,7 +49,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
-        project=self.factory.makeProduct()
+        project = self.factory.makeProduct()
         branch.setTarget(user=branch.owner, project=project)
         # Commit and switch to the script db user.
         transaction.commit()

@@ -32,7 +32,6 @@ __all__ = [
     'IBranchNavigationMenu',
     'IBranchSet',
     'NoSuchBranch',
-    'UnknownBranchTargetError',
     'UnknownBranchTypeError',
     'user_has_special_branch_access',
     ]
@@ -120,10 +119,6 @@ class CannotDeleteBranch(Exception):
 
 class UnknownBranchTypeError(Exception):
     """Raised when the user specifies an unrecognized branch type."""
-
-
-class UnknownBranchTargetError(Exception):
-    """Raised when an unexpected type is passed through as a branch target."""
 
 
 class BranchCreationForbidden(BranchCreationException):
