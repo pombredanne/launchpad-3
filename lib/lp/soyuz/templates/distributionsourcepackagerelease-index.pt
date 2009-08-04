@@ -10,21 +10,55 @@
 <body>
 
 <div metal:fill-slot="heading">
-  <div>
+  <h1>
     <a tal:attributes="href context/sourcepackage/fmt:url">
       &ldquo;<span tal:replace="context/sourcepackage/name"/>&rdquo;
       source package in
       <span tal:replace="context/distribution/displayname" />
     </a>
-  </div>
-  <tal:version content="context/version" />
+  </h1>
+  <h2><tal:version content="context/version" /></h2>
 </div>
 
 <div metal:fill-slot="side">
-  <div class="yui-u first portlet downloads">
+<style>
+h2 {font-weight: bold;}
+.phistory {
+    border-top: 1px solid #d0d0d0;
+}
+</style>
+
+  <div id="downloads" class="yui-u first portlet downloads">
     <h2>Download source</h2>
     <ul>
-      <li id="files" tal:content="structure context/sourcepackagerelease/@@+files" />
+      <li id="files"> <a href="blah">alsa-utils_1.0.20.orig.tar.gz  (1.2 MiB)</a></li>
+      <li id="files"> <a href="blah">alsa-utils_1.0.20-2ubuntu1.diff.gz  (42.4 KiB)</a></li>
+      <li id="files"> <a href="blah">alsa-utils_1.0.20-2ubuntu1.dsc  (1.6 KiB)</a></li>
+    </ul>
+  </div>
+  <div id="package-diffs" class="portlet yui-u downloads">
+    <h2>Available diffs</h2>
+    <ul>
+    <li id="files"><a href="blah">1.0.9-4ubuntu1 to 1.0.9a-4ubuntu1</a>  (1.9 KiB)</li>
+      <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs"/>
+    </ul>
+    </div>
+  <div id="publishing-history" class="portlet yui-u">
+    <h2>Publishing history</h2>
+    <ul>
+    <li class="phistory">
+      <img src="/@@/treeCollapsed">
+      1.2-2ubuntu1 karmic-security
+    </li>
+    <li class="phistory" tal:repeat="publication context/publishing_history">
+      <img src="/@@/treeExpanded">
+      <tal:version content="publication/sourcepackagerelease/version"/>
+      <tal:suite define="pocket publication/pocket"
+                  content="string:${publication/distroseries/name}-${pocket/name/lower}"/>
+      <div style="padding-left: 1em;">
+        <div tal:content="structure publication/@@+record-details" />
+      </div>
+    </li>
     </ul>
   </div>
 </div>
@@ -34,21 +68,6 @@
 
   <div id="changelog" class="top-portlet">
     <tal:changelog content="structure context/sourcepackagerelease/@@+changelog"/>
-  </div>
-
-  <div id="package-diffs" class="portlet yui-u">
-  <h2>Available diffs</h2>
-  <a href="blah">3.5+nobinonly-0ubuntu1 (in Ubuntu) to 3.5.1+build1+nobinonly-0ubuntu1</a>  (1.9 KiB)
-    <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs"/>
-  </div>
-
-  <div id="publishing-history" class="portlet yui-u">
-    <h2>Publishing history</h2>
-    <div id="publishing_history">
-      <tal:block repeat="publishing context/publishing_history"
-                 replace="structure publishing/@@+listing-detailed">
-      </tal:block>
-    </div>
   </div>
 
     <div class="portlet yui-i">
