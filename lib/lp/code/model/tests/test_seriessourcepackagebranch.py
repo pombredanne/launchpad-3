@@ -49,13 +49,13 @@ class TestSeriesSourcePackageBranchSet(TestCaseWithFactory):
         b2 = self.makeLinkedPackageBranch(distribution, sourcepackagename)
 
         # Make one more on same source package on different distro.
-        b3 = self.makeLinkedPackageBranch(None, sourcepackagename)
+        self.makeLinkedPackageBranch(None, sourcepackagename)
 
         # Make one more on different source package, same different distro.
-        b4 = self.makeLinkedPackageBranch(distribution, None)
+        self.makeLinkedPackageBranch(distribution, None)
 
         # And one more unrelated linked package branch.
-        b5 = self.makeLinkedPackageBranch(None, None)
+        self.makeLinkedPackageBranch(None, None)
 
         links = self.link_set.findForDistributionSourcePackage(
             distro_source_package)
