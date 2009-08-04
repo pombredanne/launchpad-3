@@ -310,15 +310,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
         not found.
         """
 
-    def getArchiveDependency(dependency):
-        """Return the `IArchiveDependency` object for the given dependency.
-
-        :param dependency: is an `IArchive` object.
-
-        :return: `IArchiveDependency` or None if a corresponding object
-            could not be found.
-        """
-
     def removeArchiveDependency(dependency):
         """Remove the `IArchiveDependency` record for the given dependency.
 
@@ -918,6 +909,15 @@ class IArchiveView(IHasBuildRecords):
         :type source_ids: ``list``
         :return: A dict consisting of the overall status summaries for the
             given ids that belong in the archive.
+        """
+
+    def getArchiveDependency(dependency):
+        """Return the `IArchiveDependency` object for the given dependency.
+
+        :param dependency: is an `IArchive` object.
+
+        :return: `IArchiveDependency` or None if a corresponding object
+            could not be found.
         """
 
 
