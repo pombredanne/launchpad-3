@@ -398,13 +398,9 @@ div.location-portlet h1 {
     padding: 0.3em 0.5em;
 }
 /* The text of the first tab should align with the heading directly
-   above it - unless the first tab is active, in which case the highlight
-   (margin) should align instead */
+   above it */
 .location-portlet li:first-child a {
     margin-left: -0.5em; 
-}
-.location-portlet li:first-child.active a {
-    margin-left: 0
 }
 .location-portlet li a:link, .location-portlet li a:visited {
     color: #000;
