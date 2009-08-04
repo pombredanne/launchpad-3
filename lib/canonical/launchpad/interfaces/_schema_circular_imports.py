@@ -163,6 +163,7 @@ patch_reference_property(
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
+patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
 patch_collection_return_type(

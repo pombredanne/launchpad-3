@@ -57,7 +57,7 @@ from lazr.restful.declarations import (
     export_write_operation, operation_parameters,
     operation_returns_collection_of, operation_returns_entry,
     rename_parameters_as, webservice_error)
-from lazr.restful.fields import Reference
+from lazr.restful.fields import CollectionField, Reference
 
 
 class ArchiveDependencyError(Exception):
@@ -185,9 +185,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
     signing_key = Object(
         title=_('Repository sigining key.'), required=False, schema=IGPGKey)
 
-    dependencies = Attribute(
-        "Archive dependencies recorded for this archive and ordered by owner "
-        "displayname.")
+    dependencies = exported(
+        CollectionField(
+            title=_("Archive dependencies recorded for this archive."),
+            value_type=Reference(schema=Interface), # Really IArchiveDependency
+            readonly=True))
 
     expanded_archive_dependencies = Attribute(
         "The expanded list of archive dependencies. It includes the implicit "
