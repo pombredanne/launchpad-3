@@ -123,7 +123,7 @@ from canonical.launchpad.searchbuilder import all, any, NULL
 
 from canonical.launchpad import helpers
 
-from lp.bugs.browser.bug import BugContextMenu, BugTextView
+from lp.bugs.browser.bug import BugContextMenu, BugViewMixin, BugTextView
 from lp.bugs.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
@@ -463,7 +463,7 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
+class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     def __init__(self, context, request):

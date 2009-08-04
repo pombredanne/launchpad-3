@@ -1902,8 +1902,9 @@ class BugTaskSet:
                            AutoTables(SQL("1=1"), clauseTables)))
 
         # Build up the joins
-        from canonical.launchpad.database import (
-            Bug, Product, SourcePackageName)
+        from lp.bugs.model.bug import Bug
+        from lp.registry.model.product import Product
+        from lp.registry.model.sourcepackagename import SourcePackageName
         joins = Alias(result._get_select(), "BugTask")
         joins = Join(joins, Bug, BugTask.bug == Bug.id)
         joins = LeftJoin(joins, Product, BugTask.product == Product.id)
