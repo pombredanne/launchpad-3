@@ -52,6 +52,8 @@ from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission)
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriber)
+from lp.soyuz.interfaces.archivedependency import (
+    IArchiveDependency)
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
@@ -186,6 +188,9 @@ patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
 patch_entry_return_type(IArchive, 'newSubscription', IArchiveSubscriber)
+patch_plain_parameter_type(
+    IArchive, 'getArchiveDependency', 'dependency', IArchive)
+patch_entry_return_type(IArchive, 'getArchiveDependency', IArchiveDependency)
 patch_plain_parameter_type(
     IArchive, 'getPublishedSources', 'distroseries', IDistroSeries)
 patch_collection_return_type(

@@ -55,7 +55,8 @@ from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry, exported,
     export_read_operation, export_factory_operation, export_operation_as,
     export_write_operation, operation_parameters,
-    operation_returns_collection_of, rename_parameters_as, webservice_error)
+    operation_returns_collection_of, operation_returns_entry,
+    rename_parameters_as, webservice_error)
 from lazr.restful.fields import Reference
 
 
@@ -911,6 +912,10 @@ class IArchiveView(IHasBuildRecords):
             given ids that belong in the archive.
         """
 
+    @operation_parameters(
+        dependency=Reference(schema=Interface)) #Really IArchive. See below.
+    @operation_returns_entry(schema=Interface) #Really IArchiveDependency.
+    @export_read_operation()
     def getArchiveDependency(dependency):
         """Return the `IArchiveDependency` object for the given dependency.
 
