@@ -30,7 +30,7 @@ from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.tales import TeamFormatterAPI
 from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.popup import VocabularyPickerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
 class BugTaskAssigneeWidget(Widget):
@@ -51,7 +51,7 @@ class BugTaskAssigneeWidget(Widget):
         #
         # See zope.app.form.interfaces.IInputWidget.
         self.required = False
-        self.assignee_chooser_widget = SinglePopupWidget(
+        self.assignee_chooser_widget = VocabularyPickerWidget(
             context, context.vocabulary, request)
         self.setUpNames()
 
@@ -419,7 +419,7 @@ class BugTaskBugWatchWidget(RadioWidget):
             contents='\n'.join(rendered_items))
 
 
-class BugTaskSourcePackageNameWidget(SinglePopupWidget):
+class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
     """A widget for associating a bugtask with a SourcePackageName.
 
     It accepts both binary and source package names.

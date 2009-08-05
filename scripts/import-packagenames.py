@@ -11,7 +11,6 @@ from optparse import OptionParser
 
 import _pythonpath
 from canonical.lp import initZopeless
-from canonical.launchpad.database import SourcePackageName
 from canonical.launchpad.database import BinaryPackageName
 
 
@@ -98,6 +97,7 @@ class ProcessNames:
 
 
     def processSource(self):
+        from lp.registry.model.sourcepackagename import SourcePackageName
         if not self.source_list:
             return
 

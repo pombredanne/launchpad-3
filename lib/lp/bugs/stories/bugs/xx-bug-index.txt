@@ -120,11 +120,11 @@ bugs.
     >>> print user_browser.getLink('List open bugs').url
     http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bugs
 
-There's also a link on the page that will take the user to the "Add a
-comment/attachment" page, for use when JavaScript isn't available.
+There's also a link on the page that will take the user to the "Add an
+attachment" page, for use when JavaScript isn't available.
 
-    >>> print user_browser.getLink('Add a comment/attachment').url
-    http://launchpad.dev/ubuntu/+source/.../+bug/1/+addcomment
+    >>> print user_browser.getLink('Add an attachment').url
+    http://bugs.launchpad.dev/ubuntu/+source/.../+bug/1/+addcomment
 
 
 == Navigatig to a bug in the wrong context ==
