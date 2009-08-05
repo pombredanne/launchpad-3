@@ -28,6 +28,7 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
+from lp.archiveuploader.permission import components_valid_for
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
@@ -477,16 +478,6 @@ class NascentUpload:
     # Signature and ACL stuff
     #
 
-    def _components_valid_for(self, person):
-        """Return the set of components this person could upload to."""
-        permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForUploader(
-            self.policy.archive, person)
-        possible_components = set(
-            permission.component for permission in permissions)
-
-        return possible_components
-
     def verify_acl(self):
         """Check the signer's upload rights.
 
@@ -542,7 +533,8 @@ class NascentUpload:
         # If source_name is None then the package must be new, but we
         # kick it out anyway because it's impossible to look up
         # any permissions for it.
-        possible_components = self._components_valid_for(signer)
+        possible_components = components_valid_for(
+            self.policy.archive, signer)
         if not possible_components:
             # The user doesn't have package-specific rights or
             # component rights, so kick him out entirely.
