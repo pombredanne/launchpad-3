@@ -8,9 +8,6 @@
 >
   <body>
     <tal:heading metal:fill-slot="heading">
-      <div style="float:left">
-        <tal:mugshot replace="structure context/image:logo" />
-      </div>
       <h1 tal:replace="structure view/title_edit_widget">project title</h1>
       <br style="clear:both"/>
     </tal:heading>
@@ -18,20 +15,13 @@
     <tal:main metal:fill-slot="main"
       define="overview_menu context/menu:overview">
       <div class="top-portlet">
-        <p id="project-admin-whiteboard" class="whiteboard"
-          tal:condition="context/required:launchpad.ProjectReview">
-          <tal:whiteboard content="context/reviewer_whiteboard" />
-          (whiteboard)
-          <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
-        </p>
-
         <p id="project-inactive" class="warning message"
           tal:condition="not: context/active">
           This project is currently inactive
           <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
         </p>
 
-        <div class="description" tal:content="context/summary">
+        <div class="summary" tal:content="context/summary">
           $Product.summary goes here. This should be quite short,
           just a single paragraph of text really, giving the project
           highlights.
@@ -125,6 +115,13 @@
                   <tal:expiry content="context/commercial_subscription/date_expires/fmt:date" />
                 </dd>
               </dl>
+
+              <p id="project-admin-whiteboard" class="whiteboard"
+                tal:condition="context/required:launchpad.ProjectReview">
+                <tal:whiteboard content="context/reviewer_whiteboard" />
+                (whiteboard)
+                <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
+              </p>
             </div>
           </div>
         </div>
@@ -195,7 +192,9 @@
         </ul>
 
         <div class="released">
-          Released <tal:date replace="release/datereleased/fmt:displaydate" />
+          <span>
+          released <tal:date replace="release/datereleased/fmt:displaydate" />
+          </span>
         </div>
 
         <div class="alternate">

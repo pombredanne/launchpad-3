@@ -8,7 +8,7 @@
   <h2>
     <span class="see-all"><a
       tal:replace="structure context/menu:overview/packages/fmt:link" /></span>
-    Packages
+    Packages in distributions
   </h2>
 
   <p tal:condition="not: context/sourcepackages">

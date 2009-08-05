@@ -183,7 +183,7 @@ div.columns div.right div.portlet {
 
 /* Page layout */
 .yui-d0 {
-    margin: 10px 20px; /* 20px sides are 2.0 backward compatability */
+    margin: 10px 20px;
     }
 .yui-t4 .yui-b {
     width: 21%;
@@ -240,7 +240,8 @@ Pixels  Percent
 /* Default text presentation */
 html, body {
     font-family: bitstream vera sans, arial, helvetica, clean, sans-serif;
-    font-size: 97%; /* 2.0 backward compatability */
+    font-family: sans-serif;
+    font-size: 93%;
     }
 body.private {
     /* It must be obvious to the user that the context is private */
@@ -250,7 +251,6 @@ h1 {
     clear: none;
     padding-top: 6px; /* An offset from the logo. */
     font-size: 197%;
-    margin-bottom: 0.5em; /* 2.0 backward compatability */
     }
 h2 {
     margin-bottom: 0.3em;
@@ -274,7 +274,10 @@ ol li {
 	list-style: decimal outside;
 	}
 li {
-    padding-bottom: .2em;
+    padding-bottom: .3em;
+    }
+dt {
+    margin-bottom: .1em;
     }
 dd {
     margin-bottom: .8em;
@@ -325,7 +328,6 @@ span.see-all {
     margin: 0 5px 0 0;
     }
 .registered {
-    margin-top: -0.5em; /* 2.0 backward compatability */
     font-size: 85%;
     color: #666;
     font-style: italic;
@@ -334,14 +336,22 @@ span.see-all {
     clear: both;
     font-size: 100%;
     }
+.summary {
+    margin: 0 0 1em 0;
+    font-size: 138.5%;
+    }
+
 
 /* Common list presentations. */
 .bulleted {
     margin-bottom: 0.5em;
     }
 .bulleted li {
-    margin: auto auto 0.2em 2em;
+    margin: 0 0 0 2em;
     list-style-type: disc;
+    }
+.horizontal {
+    margin: 1em 0 0 0;
     }
 .horizontal li {
     display: inline;
@@ -422,17 +432,20 @@ span.see-all {
     text-decoration: underline;
     }
 .downloads .released {
-    margin: 0 0 0.5em 0;
-    background: #f3f3f3 url(/@@/bg-project-released.png) right bottom no-repeat;
-    padding: 0.4em 0.2em;
-    font-size: 85%;
+    margin: .3em 0 1em 0;
+    padding: 0 .2em 0 0;
     text-align: right;
+    }
+.downloads .released span {
+    -moz-border-radius: 0 0 3% 3%;
+    -webkit-border-radius: 0 0 5% 5%;
+    border-radius: 0 0 3% 3%;
+    background: #d3e3c7;
+    padding: 0.2em 1em;
     }
 .downloads .alternate {
-    font-size: 85%;
     text-align: right;
     }
-
 
 .involvement ul {
     border-top: 1px solid #d0d0d0;
@@ -469,7 +482,6 @@ span.see-all {
     }
 
 .announcements li {
-    font-size: 85%;
     margin-bottom: 0.5em;
     }
 .announcements li strong,
