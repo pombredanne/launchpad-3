@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
-from zope.app.error.interfaces import IErrorReportingUtility
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
@@ -74,7 +73,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, PersonVisibility)
+    IPerson, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
