@@ -21,7 +21,7 @@ class IHasAnnouncements(Interface):
     def getAnnouncement(id):
         """Return the requested announcement."""
 
-    def announcements(limit=5, published_only=True):
+    def getAnnouncements(limit=5, published_only=True):
         """Return a list of announcements visible to this user.
 
             :param limit: restrict the results to `limit` announcements.  If

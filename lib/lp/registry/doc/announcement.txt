@@ -165,7 +165,7 @@ announcements, and vice versa.
 
     >>> for pillar in [tomcat, derby, apache, kubuntu]:
     ...   print pillar.name
-    ...   for announcement in pillar.announcements():
+    ...   for announcement in pillar.getAnnouncements():
     ...     print announcement.title
     tomcat
     Apache Tomcat JK 1.2.25 Web Server Connector released
@@ -180,7 +180,7 @@ announcements, and vice versa.
     kubuntu
     Kubuntu 7.10 now available for download
 
-    >>> for announcement in apache.announcements(published_only=False):
+    >>> for announcement in apache.getAnnouncements(published_only=False):
     ...   if announcement.published is False:
     ...     print announcement.title
     Last Call for OSSummit Asia CFP

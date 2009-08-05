@@ -139,7 +139,7 @@ class HasAnnouncements:
             return None
         return announcement
 
-    def announcements(self, limit=5, published_only=True):
+    def getAnnouncements(self, limit=5, published_only=True):
         """See IHasAnnouncements."""
 
         # Create the SQL query.
