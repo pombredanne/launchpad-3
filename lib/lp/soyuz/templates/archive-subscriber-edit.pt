@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
   >
 <body>
@@ -15,14 +12,18 @@
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
   </metal:block>
 
-  <div metal:fill-slot="main">
+  <div metal:fill-slot="heading">
+      <h1 tal:content="CONTEXTS/fmt:pagetitle">
+        Edit access for Joe Smith
+      </h1>
+  </div>
 
-    <h1 tal:content="CONTEXTS/fmt:pagetitle">
-      Edit access for Joe Smith
-    </h1>
-    <p>You can update the expiry or description for the granted access,
-       or cancel the access all-together.</p>
-    <div metal:use-macro="context/@@launchpad_form/form" />
+  <div metal:fill-slot="main">
+    <div class="portlet">
+      <p>You can update the expiry or description for the granted access,
+         or cancel the access all-together.</p>
+      <div metal:use-macro="context/@@launchpad_form/form" />
+    </div><!-- portlet -->
   </div>
 </body>
 </html>
