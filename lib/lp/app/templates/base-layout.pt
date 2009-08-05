@@ -109,7 +109,7 @@
             <div class="location-portlet top-portlet"
                  tal:condition="view/macro:pagehas/applicationtabs">
               <span tal:replace="structure context/image:logo"></span>
-              <h2 tal:content="context/fmt:location_title">
+              <h2 tal:replace="structure context/fmt:location_heading">
                 Celso Providelo
               </h2>
               <metal:heading_nav

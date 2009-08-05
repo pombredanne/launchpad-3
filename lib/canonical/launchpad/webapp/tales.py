@@ -419,7 +419,7 @@ class ObjectFormatterAPI:
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
         'public-private-css': 'public_private_css',
-        'location_title': 'location_title',
+        'location_heading': 'location_heading',
         }
 
     def __init__(self, context):
@@ -486,17 +486,24 @@ class ObjectFormatterAPI:
         else:
             return 'public'
 
-    def location_title(self):
-        """Return the title of the nearest object supporting a logo."""
+    def location_heading(self):
+        """Return a heading for the nearest object supporting a logo."""
         context = self._context
         if not IHasLogo.providedBy(context):
             context = nearest(context, IHasLogo)
+            heading = 'h2'
+        else:
+            heading = 'h1'
 
         if context is None:
-            return 'Launchpad'
+            title = 'Launchpad.net'
         else:
-            return context.title
+            title = context.title
 
+        return "<%(heading)s>%(title)s</%(heading)s>" % {
+            'heading': heading,
+            'title': title
+            }
 
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects

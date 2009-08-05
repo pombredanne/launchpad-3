@@ -386,6 +386,7 @@ div.location-portlet h1, div.location-portlet h2 {
 }
 div.location-portlet h1 {
     margin-bottom: 0.2em;
+    padding-top: 0;
 }
 
 /* === Location portlet tabs === */
@@ -396,6 +397,7 @@ div.location-portlet h1 {
 }
 .location-portlet li a, .location-portlet li span {
     padding: 0.3em 0.5em;
+    margin-right: 0.4em;
 }
 /* The text of the first tab should align with the heading directly
    above it */
