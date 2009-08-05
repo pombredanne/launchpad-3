@@ -9,9 +9,7 @@ __metaclass__ = type
 
 import bisect
 import cgi
-from cStringIO import StringIO
 from email.Utils import formatdate
-from itertools import islice
 import math
 import os.path
 import re
@@ -2711,8 +2709,7 @@ class FormattersAPI:
         result = ['<table class="diff">']
 
         max_format_lines = config.diff.max_format_lines
-        textlines = islice(StringIO(text), max_format_lines)
-        for row, line in enumerate(textlines):
+        for row, line in enumerate(text.splitlines()[:max_format_lines]):
             result.append('<tr>')
             result.append('<td class="line-no">%s</td>' % (row+1))
             if line.startswith('==='):

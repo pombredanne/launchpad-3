@@ -210,6 +210,13 @@ class TestDiffFormatter(TestCase):
             '<td class="text"> </td></tr></table>',
             FormattersAPI(' ').format_diff())
 
+    def test_format_unicode(self):
+        # Sometimes the strings contain unicode, those should work too.
+        self.assertEqual(
+            u'<table class="diff"><tr><td class="line-no">1</td>'
+            u'<td class="text">Unicode \u1010</td></tr></table>',
+            FormattersAPI(u'Unicode \u1010').format_diff())
+
     def test_cssClasses(self):
         # Different parts of the diff have different css classes.
         diff = dedent('''\
