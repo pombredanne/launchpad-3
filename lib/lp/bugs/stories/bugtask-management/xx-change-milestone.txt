@@ -32,8 +32,8 @@ Affects table, and in the selected value of the Milestone menu.
     >>> owner_browser.getControl('Save Changes', index=0).click()
     >>> table = find_tag_by_id(owner_browser.contents, 'affected-software')
     >>> print extract_text(table)
-    Affects          Status  Importance  Assigned to            Milestone
-    Mozilla Firefox  New     Low         Mark Shuttleworth Edit 1.0
+    Affects          Status  Importance  Assigned to        Milestone
+    Mozilla Firefox  New     Low         Mark Shuttleworth  1.0
     ...
     >>> milestone_control = owner_browser.getControl(
     ...     name='firefox.milestone', index=0)
@@ -85,7 +85,7 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
     >>> print extract_text(table)
     Affects                   Status  Importance  Assigned to        Milestone
-    Mozilla Firefox           New     Low         Mark Shuttleworth...1.0
+    Mozilla Firefox           New     Low         Mark Shuttleworth  1.0
     ...
     mozilla-firefox (Ubuntu)  New     Medium
     ...
@@ -100,9 +100,9 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
     >>> print extract_text(table)
     Affects                   Status  Importance  Assigned to        Milestone
-    Mozilla Firefox           New     Low         Mark Shuttleworth...1.0
+    Mozilla Firefox           New     Low         Mark Shuttleworth  1.0
     ...
-    mozilla-firefox (Ubuntu)  New     Medium      Nobody Edit        5.04.rc1
+    mozilla-firefox (Ubuntu)  New     Medium                         5.04.rc1
     ...
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_mozilla-firefox.milestone')

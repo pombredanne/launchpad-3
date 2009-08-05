@@ -25,7 +25,7 @@ An unprivileged user can confirm the bug:
     >>> print user_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
     >>> print_highlighted_bugtask(user_browser)
-    mozilla-firefox (Ubuntu)  Confirmed  Medium     Nobody Edit
+    mozilla-firefox (Ubuntu)  Confirmed  Medium
 
 But he cannot change the status to Won't Fix or to Triaged, and so
 those statuses are not shown in the UI:
@@ -80,7 +80,7 @@ The new Bug Supervisor for Ubuntu can change the status to Won't Fix:
     >>> print bug_supervisor_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
     >>> print_highlighted_bugtask(bug_supervisor_browser)
-    mozilla-firefox (Ubuntu)  Won't Fix  Medium     Nobody Edit
+    mozilla-firefox (Ubuntu)  Won't Fix  Medium
 
 Now the bug has been changed, a regular user can see the Won't Fix
 status. Earlier it was not even displayed as an option.
@@ -105,7 +105,7 @@ And a regular user can change other aspects of the bug:
     >>> print bug_supervisor_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
     >>> print_highlighted_bugtask(bug_supervisor_browser)
-    mozilla-firefox (Ubuntu)  Won't Fix  Medium     Nobody Edit
+    mozilla-firefox (Ubuntu)  Won't Fix  Medium
 
 The Bug Supervisor for Ubuntu can also change the status to Triaged:
 
@@ -123,5 +123,5 @@ The Bug Supervisor for Ubuntu can also change the status to Triaged:
     >>> print bug_supervisor_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/iceweasel/+bug/1
     >>> print_highlighted_bugtask(bug_supervisor_browser)
-    iceweasel (Ubuntu)  Triaged  Medium     Nobody Edit
+    iceweasel (Ubuntu)  Triaged  Medium
 
