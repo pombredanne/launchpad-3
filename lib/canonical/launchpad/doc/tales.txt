@@ -1052,6 +1052,25 @@ do with 'None/fmt:foo'.
     ''
 
 
+== The fmt: namespace to get location titles ==
+
+The `fmt:location_title` is used when you want the title of the nearest
+object that implements IHasLogo.
+
+    >>> print test_tales("series/fmt:location_title", series=ubuntu['warty'])
+    Ubuntu Linux
+    >>> print test_tales("ppa/fmt:location_title", ppa=sabdfl.archive)
+    Mark Shuttleworth
+
+This can be used together with the `image:logo` formatter which
+also returns the logo of the nearest object that provides a logo.
+
+    >>> print test_tales("series/image:logo", series=ubuntu['warty'])
+    <img ... src="/@@/distribution-logo" />
+    >>> print test_tales("ppa/image:logo", ppa=sabdfl.archive)
+    <img ... src="/@@/person-logo" />
+
+
 == The lp: namespace for presenting DBSchema items ==
 
 This is deprecated, and should raise a deprecation warning in the future,
