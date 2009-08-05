@@ -384,7 +384,7 @@
         class="lp.registry.browser.project.ProjectBrandingView"
         facet="overview"
         permission="launchpad.Edit"
-        template="../../../canonical/launchpad/templates/object-branding.pt"/>
+        template="../templates/object-branding.pt"/>
     <browser:page
         name="+review"
         for="lp.registry.interfaces.project.IProject"
@@ -770,9 +770,10 @@
         permission="zope.Public"
         template="../templates/announcements-all.pt"/>
     <browser:menus
+        module="lp.registry.browser.announcement"
         classes="
-            AnnouncementContextMenu"
-        module="lp.registry.browser.announcement"/>
+            AnnouncementContextMenu
+            AnnouncementEditNavigationMenu"/>
     <facet
         facet="overview">
         <browser:navigation
@@ -869,7 +870,7 @@
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonBrandingView"
             permission="launchpad.Edit"
-            template="../../../canonical/launchpad/templates/object-branding.pt"/>
+            template="../templates/object-branding.pt"/>
         <browser:page
             name="+edithomepage"
             for="lp.registry.interfaces.person.IPerson"
@@ -1506,7 +1507,7 @@
         facet="overview"
         class="lp.registry.browser.product.ProductBrandingView"
         permission="launchpad.Edit"
-        template="../../../canonical/launchpad/templates/object-branding.pt"/>
+        template="../templates/object-branding.pt"/>
     <browser:page
         name="+admin"
         for="lp.registry.interfaces.product.IProduct"

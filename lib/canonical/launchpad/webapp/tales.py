@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -518,6 +518,11 @@ class ObjectImageDisplayAPI:
             return 'sprite meeting'
         elif IBug.providedBy(context):
             return 'sprite bug'
+        elif IPPA.providedBy(context):
+            if context.enabled:
+                return 'sprite ppa-icon'
+            else:
+                return 'sprite ppa-icon-inactive'
         elif IBranch.providedBy(context):
             return 'sprite branch'
         elif ISpecification.providedBy(context):
@@ -1479,6 +1484,41 @@ class CodeReviewCommentFormatterAPI(CustomizableFormatter):
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
         return {'author': self._context.message.owner.displayname}
+
+
+class PPAFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for `IPPA` objects."""
+
+    _link_summary_template = '%(display_name)s'
+    _link_permission = 'launchpad.View'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        return {
+            'display_name': self._context.displayname,
+            }
+
+    def link(self, view_name):
+        """Return html including a link for the context PPA.
+
+        Render a link using CSS sprites for users with permission to view
+        the PPA.
+
+        Disabled PPAs are listed with sprites but not linkified.
+
+        Unaccessible private PPA are not rendered at all (empty string
+        is returned).
+        """
+        summary = self._make_link_summary()
+        css = self.sprite_css()
+        if check_permission(self._link_permission, self._context):
+            url = self.url(view_name)
+            return '<a href="%s" class="%s">%s</a>' % (url, css, summary)
+        else:
+            if not self._context.private:
+                return '<span class="%s">%s</span>' % (css, summary)
+            else:
+                return ''
 
 
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
@@ -2717,7 +2757,8 @@ class FormattersAPI:
             return text
         result = ['<table class="diff">']
 
-        for row, line in enumerate(text.split('\n')):
+        max_format_lines = config.diff.max_format_lines
+        for row, line in enumerate(text.splitlines()[:max_format_lines]):
             result.append('<tr>')
             result.append('<td class="line-no">%s</td>' % (row+1))
             if line.startswith('==='):

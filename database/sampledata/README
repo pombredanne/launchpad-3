@@ -38,7 +38,7 @@ To update the sample data:
 
             make
 
-    3.  Connect to the db, and then do any INSERT or UPDATE commands you need:
+    3a. Connect to the db, and then do any INSERT or UPDATE commands you need:
 
             psql -d launchpad_dev -f my_sample_data_mods.sql
 
@@ -47,6 +47,15 @@ To update the sample data:
         the line above.
 
         If there are errors, fix and start again.
+
+    3b. Alternatively, use 'make harness' to connect to the database and use
+        any APIs you need:
+
+            make harness
+
+        Or:
+
+            make harness LPCONFIG=test-playground
 
     4.  Make a fresh snapshot of the sample data to newsampledata.sql:
 

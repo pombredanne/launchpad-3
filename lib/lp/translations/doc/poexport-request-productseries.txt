@@ -8,7 +8,7 @@
 This is a dummy logger class to capture the export's log messages.
 
     >>> from canonical.launchpad.ftests.logger import MockLogger
-    >>> from canonical.launchpad.database import Person
+    >>> from lp.registry.model.person import Person
     >>> person = Person.selectOneBy(name='name12')
 
 An arbitrary logged-in user requests an export of all translations for
@@ -18,8 +18,8 @@ At the UI level, this is easy.  At the level we are looking at now, this
 consists of a series of requests for all templates and translations attached
 to the product series.
 
-    >>> from canonical.launchpad.database import (
-    ...     Product, ProductSeries)
+    >>> from lp.registry.model.product import Product
+    >>> from lp.registry.model.productseries import ProductSeries
     >>> from lp.translations.model.potemplate import POTemplate
     >>> evolution_product = Product.selectOneBy(name='evolution')
     >>> evolution_trunk = ProductSeries.selectOneBy(

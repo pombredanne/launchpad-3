@@ -1,12 +1,11 @@
+<tal:root xmlns:tal="http://xml.zope.org/namespaces/tal"
+          omit-tag="">
 <tal:input replace="structure view/inputField" />
 
 <tal:search_results tal:condition="not: view/hasValidInput">
-  <select
-      tal:define="matches view/matches"
-      tal:condition="python:len(matches) > 0"
-      >
+  <select tal:condition="view/matches">
     <option
-        tal:repeat="match matches"
+        tal:repeat="match view/matches"
         tal:attributes="value match/token;
             selected python:path('match/token') == path('view/formToken');
             onclick string:this.form['${view/name}'].value = this.value"
@@ -16,4 +15,4 @@
 </tal:search_results>
 
 <tal:chooseLink replace="structure view/chooseLink" />
-
+</tal:root>

@@ -1,6 +1,6 @@
 = Launchpad Celebrities =
 
-https://launchpad.canonical.com/LaunchpadCelebrities
+https://dev.launchpad.net/LaunchpadCelebrities
 
 There are a number of special objects, some of which exist in the
 database, which we want to give easy access to in the code. To this end,
@@ -210,4 +210,16 @@ archive.
 
     >>> ubuntu_security = personset.getByName('ubuntu-security')
     >>> celebs.ubuntu_security == ubuntu_security
+    True
+
+
+== Ubuntu technical board ==
+
+There's a celebrity for the Ubuntu technical board, the 'techboard' team. It's
+used for determining who is allowed to create new package sets.
+
+    >>> ubuntu_techboard = personset.getByName('techboard')
+    >>> print ubuntu_techboard.name
+    techboard
+    >>> celebs.ubuntu_techboard == ubuntu_techboard
     True

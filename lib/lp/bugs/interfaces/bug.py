@@ -147,6 +147,13 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
+def optional_message_subject_field():
+    """A modified message subject field allowing None as a value."""
+    subject_field = copy_field(IMessage['subject'])
+    subject_field.required = False
+    return subject_field
+
+
 class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
@@ -313,7 +320,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     followup_subject = Attribute("The likely subject of the next message.")
 
     @operation_parameters(
-        subject=copy_field(IMessage['subject']),
+        subject=optional_message_subject_field(),
         content=copy_field(IMessage['content']))
     @call_with(owner=REQUEST_USER)
     @export_factory_operation(IMessage, [])

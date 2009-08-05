@@ -142,6 +142,8 @@ span.invisible {left:-9999em;display:block;}
 .zoom-in {background:url(icon-sprites-2) 0 -1056px no-repeat;}
 .zoom-out {background:url(icon-sprites-2) 0 -1088px no-repeat;}
 .arquitecture {background:url(icon-sprites-2) 0 -1120px no-repeat;}
+.ppa-icon {background:url(icon-sprites-2) 0 -1147px no-repeat;}
+.ppa-icon-inactive {background:url(icon-sprites-2) 0 -1171px no-repeat;}
 
 .bug-status-expand {background:url(icon-sprites-3) 0 -10px no-repeat;}
 .merge-proposal {background:url(icon-sprites-3) 0 -46px no-repeat;}
@@ -216,6 +218,7 @@ caption {caption-side: bottom; text-align: left;}
 dt dfn {font-style: normal; font-weight: bold;}
 dd {margin-bottom: 1em;}
 input {visibility:inherit;}
+input[type=radio] {margin-left: 1em;}
 kbd {
   background-color: #ddd;
   border: 1px solid;
@@ -403,6 +406,7 @@ dd .whiteboard {
 /* === Forms === */
 
 form {border: 0; margin: 0; padding: 0;}
+form table label {font-weight: bold;}
 fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
 input[type="text"], input[type="search"], input[type="password"], textarea {
   font-family: sans-serif;
@@ -417,9 +421,9 @@ form input[type="submit"], form input[type="text"], form select, form textarea {
   margin-right: 0.5em;
 }
 button{padding:0;}
-input.urlTextType {width: 100%;}
+input.urlTextType {width: 40em;}
 .fieldRequired, .fieldOptional {color: #999;}
-.formHelp {margin-top: 0.2em; margin-bottom: 0.5em; color: #777;}
+.formHelp {margin: 0.2em 0 0.5em 0.2em; color: #777;}
 /* Hack to add breathing room to bug status forms: */
 table.listing div.field>table {margin-top: 0.5em;}
 table.listing div.field>label, table.listing div.field>div>label,
@@ -1475,7 +1479,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
 ul.build-success, li.build-success   {list-style-image: url(/@@/build-success);}
 ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
-ul.cve, li.cve                       {list-style-image: url(/@@/cve);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
@@ -1727,6 +1730,7 @@ beside the mugshot. */
 #sources-list-entries {
   border: 1px solid gray;
   padding: 0.3em;
+  margin: 1em 0 1em 0;
   float: left; /* So the border doesn't use 100% of the page */
 }
 
@@ -1795,6 +1799,7 @@ p.update-failure-message {
 .update-in-progress-message {
     background: url(/@@/spinner) center left no-repeat;
     padding-left: 18px;
+    color: #999;
 }
 
 a.update-retry {
@@ -1841,6 +1846,16 @@ form.archive-subscription-activation button {
 form.archive-subscription-activation button:hover {
     text-decoration: underline;
 }
+
+/* Disabled PPAs when linkified (uploaders) should be gray and when not
+   linkified should be lined-through. */
+a.ppa-icon-inactive {
+    color: gray;
+}
+span.ppa-icon-inactive {
+    text-decoration: line-through;
+}
+
 
 /* --- Code --- */
 

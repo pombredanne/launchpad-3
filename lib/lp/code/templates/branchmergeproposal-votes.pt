@@ -15,7 +15,8 @@
   </thead>
   <tbody>
     <!-- Current reviews -->
-    <tr tal:repeat="review view/current_reviews">
+    <tr tal:repeat="review view/current_reviews"
+        tal:attributes="id string:review-${review/reviewer/name}">
       <td>
         <tal:reviewer replace="structure review/reviewer/fmt:link:mainsite">
         Eric the Reviewer</tal:reviewer>
@@ -41,7 +42,8 @@
       </td>
     </tr>
     <!-- Pending reviews -->
-    <tr tal:repeat="review view/requested_reviews">
+    <tr tal:repeat="review view/requested_reviews"
+        tal:attributes="id string:review-${review/reviewer/name}">
       <td tal:content="structure review/reviewer/fmt:link:mainsite" />
       <td tal:content="review/review_type" />
       <td>
@@ -68,7 +70,7 @@
           </form>
       </td>
     </tr>
-    <tr>
+    <tr id="email-review">
       <td colspan="4" style="padding-top: 1em; patting-bottom: 0.5em">
         Review <a href="https://help.launchpad.net/Code/Review"
                   class="help">via email</a>:
@@ -82,8 +84,11 @@
                         condition="link/enabled">
     <tr>
       <td colspan="4" style="text-align:right">
-        <div tal:content="structure link/render">
-          Request review
+        <div>
+          <a id="request-review"
+             class="sprite add"
+             tal:attributes="href link/url"
+             tal:content="link/text">Request a review</a>
         </div>
       </td>
     </tr>

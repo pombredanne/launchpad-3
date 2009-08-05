@@ -41,6 +41,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from lazr.lifecycle.event import ObjectModifiedEvent
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -398,7 +399,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             result.append(dict(style=style, comment=comment))
         return result
 
-    @property
+    @cachedproperty
     def review_diff(self):
         """Return a (hopefully) intelligently encoded review diff."""
         if self.context.review_diff is None:
@@ -408,7 +409,25 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         except UnicodeDecodeError:
             diff = self.context.review_diff.diff.text.decode('windows-1252',
                                                              'replace')
-        return diff
+        # Strip off the trailing carriage returns.
+        return diff.rstrip('\n')
+
+    @cachedproperty
+    def review_diff_oversized(self):
+        """Return True if the review_diff is over the configured size limit.
+
+        The diff can be over the limit in two ways.  If the diff is oversized
+        in bytes it will be cut off at the Diff.text method.  If the number of
+        lines is over the max_format_lines, then it is cut off at the fmt:diff
+        processing.
+        """
+        review_diff = self.context.review_diff
+        if review_diff is None:
+            return False
+        if review_diff.diff.oversized:
+            return True
+        diff_text = self.review_diff
+        return diff_text.count('\n') >= config.diff.max_format_lines
 
     @property
     def has_bug_or_spec(self):

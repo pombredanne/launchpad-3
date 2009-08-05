@@ -1901,18 +1901,24 @@ class ViewArchive(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the archive.
 
-        Anyone can see a public archive.
+        Anyone can see a public and enabled archive.
 
-        Only Launchpad admins and uploaders can view private archives.
+        Only Launchpad admins and uploaders can view private or disabled
+        archives.
         """
-        # No further checks are required if the archive is not private.
-        if not self.obj.private:
+        # No further checks are required if the archive is public and
+        # enabled.
+        if not self.obj.private and self.obj.enabled:
             return True
 
         # Administrator are allowed to view private archives.
         celebrities = getUtility(ILaunchpadCelebrities)
         if (user.inTeam(celebrities.admin)
             or user.inTeam(celebrities.commercial_admin)):
+            return True
+
+        # Owners can view the PPA.
+        if user.inTeam(self.obj.owner):
             return True
 
         # Uploaders can view private PPAs.
@@ -1923,11 +1929,13 @@ class ViewArchive(AuthorizationBase):
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
-        return not self.obj.private
+        return not self.obj.private and self.obj.enabled
 
 
 class AppendArchive(AuthorizationBase):
     """Restrict appending (upload and copy) operations on archives.
+
+    No one can upload to disabled archives.
 
     PPA upload rights are managed via `IArchive.canUpload`;
 
@@ -1940,6 +1948,9 @@ class AppendArchive(AuthorizationBase):
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
+        if not self.obj.enabled:
+            return False
+
         if user.inTeam(self.obj.owner):
             return True
 
@@ -2187,20 +2198,9 @@ class EditArchivePermissionSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if user.inTeam(celebrities.admin):
-            return True
-
-        techboard = getUtility(IPersonSet).getByName("techboard")
-        if techboard is None:
-            # We expect techboard to be present but it's not.  Log an
-            # OOPS.
-            error = AssertionError(
-                "'techboard' team is missing, has it been renamed?")
-            info = (error.__class__, error, None)
-            globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info)
-            return False
-        return user.inTeam(techboard)
+        return (
+            user.inTeam(celebrities.admin)
+            or user.inTeam(celebrities.ubuntu_techboard))
 
 
 class LinkOfficialSourcePackageBranches(AuthorizationBase):
@@ -2248,17 +2248,6 @@ class EditPackagesetSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if user.inTeam(celebrities.admin):
-            return True
-
-        techboard = getUtility(IPersonSet).getByName("techboard")
-        if techboard is None:
-            # We expect techboard to be present but it's not.  Log an
-            # OOPS.
-            error = AssertionError(
-                "'techboard' team is missing, has it been renamed?")
-            info = (error.__class__, error, None)
-            global_error_utility = getUtility(IErrorReportingUtility)
-            global_error_utility.raising(info)
-            return False
-        return user.inTeam(techboard)
+        return (
+            user.inTeam(celebrities.admin)
+            or user.inTeam(celebrities.ubuntu_techboard))

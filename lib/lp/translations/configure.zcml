@@ -11,12 +11,6 @@
     i18n_domain="launchpad">
     <include
         package=".browser"/>
-    <securedutility
-        class="lp.translations.model.vpotexport.VPOTExportSet"
-        provides="lp.translations.interfaces.vpotexport.IVPOTExportSet">
-        <allow
-            interface="lp.translations.interfaces.vpotexport.IVPOTExportSet"/>
-    </securedutility>
     <class
         class="lp.translations.model.vpotexport.VPOTExport">
         <allow
