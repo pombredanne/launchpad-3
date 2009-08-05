@@ -113,13 +113,13 @@
             top: -25px;
         }
 
-        .yui-skin-sam .yui-ieditor-content {
+        #bug-description .yui-ieditor-content {
             top: -29px;
             left: -5px;
             width:600px;
         }
 
-        .yui-ieditor-multiline .yui-ieditor-content {
+        #bug-description .yui-ieditor-content {
             top: -29px;
             left: -5px;
         }
