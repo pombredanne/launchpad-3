@@ -14,7 +14,7 @@ ResultSet:
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> store = Store.of(ubuntu)
-    >>> from canonical.launchpad.database import Distribution
+    >>> from lp.registry.model.distribution import Distribution
     >>> result_set = store.find(Distribution)
 
     >>> from zope.security.checker import ProxyFactory

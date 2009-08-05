@@ -43,7 +43,7 @@ redirect to the Ubuntu Hoary page showing the milestone we added.
 Try to target a distribution bug to this milestone.  The form uses the
 database ID for the milestone, so we find the ID:
 
-    >>> from canonical.launchpad.database import Distribution
+    >>> from lp.registry.model.distribution import Distribution
     >>> ubuntu = Distribution.byName('ubuntu')
     >>> for milestone in ubuntu.milestones:
     ...     if milestone.name == 'sounder01':

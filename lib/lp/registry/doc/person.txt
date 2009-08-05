@@ -811,6 +811,7 @@ address:
     Ubuntu Gnome Team (name18): []
     Ubuntu Security Team (ubuntu-security): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
+    Ubuntu Technical Board (techboard): []
     Ubuntu Translators (ubuntu-translators): []
     Ubuntu-branches-owner (ubuntu-branches-owner): [u'ubuntu-branches-owner@example.com']
 

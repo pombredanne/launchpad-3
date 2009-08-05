@@ -77,7 +77,7 @@ we'll ask the user to contact a Launchpad administrator.
     # objects so that we can call syncUpdate on them and change their status
     # at our discretion.
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.database import MailingListSet
+    >>> from lp.registry.model.mailinglist import MailingListSet
     >>> list_set = MailingListSet()
     >>> mailing_list = list_set.get('landscape-developers')
     >>> mailing_list.status = MailingListStatus.REGISTERED

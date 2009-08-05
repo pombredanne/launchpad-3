@@ -187,7 +187,8 @@ function sparkline(branch_id, o) {
     }
 }
 
-Y.on("domready", renderSpark);
+// XXX TimPenhey 2009-08-03 bug 408207 - disable sparklines
+// Y.on("domready", renderSpark);
 
 });
 

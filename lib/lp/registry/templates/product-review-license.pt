@@ -3,31 +3,16 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
 <div metal:fill-slot="main">
-
-  <div style="margin-bottom: 1em">
-    This project was registered by <a tal:attributes="href
-    context/owner/fmt:url" tal:content="context/owner/fmt:unique_displayname" />
-    <a
-      tal:condition="context/owner/preferredemail"
-      tal:attributes="href string:mailto:${context/owner/preferredemail/email}"
-      tal:content="string: &lt;${context/owner/preferredemail/email}&gt;" /> on
-    <span tal:replace="context/datecreated/fmt:datetime" />
-  </div>
-
-
-  <div metal:use-macro="context/@@launchpad_form/form">
-    <div metal:fill-slot="extra_info">
-      <div style="max-width: 45em;">
+  <div class="top-portlet">
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <div metal:fill-slot="extra_info">
         <p>
           Examine the project's overview tab first, then examine if the
           project is using code, bugs, etc.... Mark the project reviewed now.
@@ -50,7 +35,7 @@
           should contact the project owner if you do.
         </p>
 
-        <ul>
+        <ul class="bulleted">
           <li>
             The project has no license.
           </li>
@@ -71,7 +56,6 @@
         <p>
           If the project looks like a test, a prank, or spam, deactivate it.
         </p>
-      </div>
 
       <input type="hidden" name="next_url"
         tal:attributes="value view/next_url" />
@@ -98,8 +82,11 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </div>
+
+  <tal:menu replace="structure view/@@+related-pages" />
 </div>
 
 </body>
