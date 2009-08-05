@@ -26,6 +26,9 @@ import os.path
 import pytz
 from storm.store import Store
 import transaction
+
+from twisted.python.util import mergeFunctionMetadata
+
 from zope.component import ComponentLookupError, getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -99,7 +102,8 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
-from lp.testing import time_counter
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.testing import run_with_login, time_counter
 
 SPACE = ' '
 
@@ -124,7 +128,7 @@ def default_master_store(func):
             return func(*args, **kw)
         finally:
             store_selector.pop()
-    return with_default_master_store
+    return mergeFunctionMetadata(func, with_default_master_store)
 
 
 # We use this for default paramters where None has a specific meaning.  For
@@ -1557,6 +1561,24 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
+
+    def makePackageSet(self, name=None, description=None, owner=None,
+                       packages=()):
+        """Make an `IPackageset`."""
+        if name is None:
+            name = self.getUniqueString(u'package-set-name')
+        if description is None:
+            description = self.getUniqueString(u'package-set-description')
+        if owner is None:
+            person = self.getUniqueString(u'package-set-owner')
+            owner = self.makePerson(name=person)
+        techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
+        ps_set = getUtility(IPackagesetSet)
+        package_set = run_with_login(
+            techboard.teamowner,
+            lambda: ps_set.new(name, description, owner))
+        run_with_login(owner, lambda: package_set.add(packages))
+        return package_set
 
     def getAnyPocket(self):
         return PackagePublishingPocket.RELEASE
