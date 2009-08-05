@@ -1,5 +1,5 @@
--- Copyright 2009 Canonical Ltd.  This software is licensed under the
--- GNU Affero General Public License version 3 (see the file LICENSE).
+--- Copyright 2009 Canonical Ltd.  This software is licensed under the
+--- GNU Affero General Public License version 3 (see the file LICENSE).
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -813,6 +813,7 @@ INSERT INTO account (id, date_created, creation_rationale, status, date_status_s
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (2436231, '2008-06-27 14:49:11.149508', 8, 20, '2008-06-27 14:49:11.149508', 'Brad Crittenden', 'mTmeENb', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (2436241, '2008-11-04 12:59:26.965843', 8, 20, '2008-11-04 13:09:43.807125', 'PPA key guard', 'cF4PNk3', NULL, '771/ppa-key-guard');
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (2436242, '2009-03-17 07:26:14.024613', 1, 20, '2009-03-17 07:26:14.024613', 'Ubuntu-branches-owner', 'GMX7shE', 'Activated when the preferred email was set.', '359/ubuntu-branches-owner');
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (2436243, '2009-08-04 10:50:39.383407', 1, 20, '2009-08-04 10:50:39.383407', 'Techboard Owner', 'kYFxQYP', 'Activated when the preferred email was set.', NULL);
 
 
 ALTER TABLE account ENABLE TRIGGER ALL;
@@ -2382,6 +2383,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (79, 'admin@canonical.com', 16, 2, '2008-08-05 12:01:32.086327', 161);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (80, 'ppa-key-guard@launchpad.net', 243625, 4, '2008-11-04 12:59:26.965843', 2436241);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (81, 'ubuntu-branches-owner@example.com', 243627, 4, '2009-03-17 07:26:14.024613', 2436242);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (82, 'techboard-owner@example.com', 243631, 4, '2009-08-04 10:50:39.383407', 2436243);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -4756,6 +4758,8 @@ INSERT INTO person (id, displayname, teamowner, teamdescription, name, language,
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243628, 'Ubuntu branches', 243627, 'Celebrity team that controls official source package branches.', 'ubuntu-branches', NULL, NULL, NULL, NULL, 3, NULL, '2009-03-17 07:27:39.306182', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243629, 'Ubuntu Security Team', 4, NULL, 'ubuntu-security', NULL, NULL, NULL, NULL, 2, NULL, '2009-07-14 20:23:59.698654', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243630, 'HWDB Team', 16, NULL, 'hwdb-team', NULL, NULL, NULL, NULL, 3, NULL, '2009-07-09 09:12:39.400351', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243631, 'Techboard Owner', NULL, NULL, 'techboard-owner', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-04 10:50:39.370018', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 2436243);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243632, 'Ubuntu Technical Board', 243631, NULL, 'techboard', NULL, NULL, NULL, NULL, 3, NULL, '2009-08-04 10:50:39.370018', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -9158,6 +9162,7 @@ INSERT INTO teammembership (id, person, team, status, date_joined, date_expires,
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (102, 243617, 243630, 2, '2009-07-09 11:58:38.122886', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2009-07-09 11:58:38.122886');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (103, 243622, 243630, 2, '2009-07-09 11:58:38.122886', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2009-07-09 11:58:38.122886');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (104, 243623, 243630, 2, '2009-07-09 11:58:38.122886', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2009-07-09 11:58:38.122886');
+INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (105, 243631, 243632, 3, '2009-08-04 10:50:47.920683', NULL, NULL, NULL, 243631, NULL, 243631, '2009-08-04 10:50:47.920683', NULL, NULL, '2009-08-04 10:50:47.920683', NULL, NULL, NULL, '2009-08-04 10:50:39.370018');
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9365,6 +9370,9 @@ INSERT INTO teamparticipation (id, team, person) VALUES (216, 243630, 243611);
 INSERT INTO teamparticipation (id, team, person) VALUES (217, 243630, 243617);
 INSERT INTO teamparticipation (id, team, person) VALUES (218, 243630, 243622);
 INSERT INTO teamparticipation (id, team, person) VALUES (219, 243630, 243623);
+INSERT INTO teamparticipation (id, team, person) VALUES (220, 243631, 243631);
+INSERT INTO teamparticipation (id, team, person) VALUES (221, 243632, 243632);
+INSERT INTO teamparticipation (id, team, person) VALUES (222, 243632, 243631);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
