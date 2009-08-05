@@ -2772,7 +2772,8 @@ class FormattersAPI:
             return text
         result = ['<table class="diff">']
 
-        for row, line in enumerate(text.split('\n')):
+        max_format_lines = config.diff.max_format_lines
+        for row, line in enumerate(text.splitlines()[:max_format_lines]):
             result.append('<tr>')
             result.append('<td class="line-no">%s</td>' % (row+1))
             if line.startswith('==='):
