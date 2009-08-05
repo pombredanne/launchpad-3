@@ -237,7 +237,7 @@ class MenuBase(UserAttributeCache):
             # would be no reference to the Link object, which would allow it
             # to be garbage collected during the course of the request.
             cache = request.annotations.setdefault(MENU_ANNOTATION_KEY, {})
-            key = (self._baseclassname, name)
+            key = (self.__class__, self.context, name)
             link = cache.get(key)
             if link is None:
                 link = self._buildLink(name)

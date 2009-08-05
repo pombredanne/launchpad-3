@@ -339,7 +339,6 @@ Next, we return the link as HTML.
     # We need to use a real launchpad test request so the view adapter
     # lookups will work.  That request also needs to implement
     # IParticipation so that the login machinery will work.
-
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from zope.security.interfaces import IParticipation
     >>> class InteractiveTestRequest(LaunchpadTestRequest):
@@ -354,7 +353,6 @@ Next, we return the link as HTML.
     <a class="menu-link-None sprite icon" title="summary">text--&gt;</a>
 
     # Clean up our special login.
-
     >>> login(ANONYMOUS)
 
 
@@ -436,6 +434,7 @@ To test this, we need a dummy request object that provides `getURL()`.
     ...         self.query = query
     ...         self.url1 = url1  # returned from getURL(1)
     ...         self.method = 'GET'
+    ...         self.annotations = {}
     ... 
     ...     def getURL(self, level=0):
     ...         assert 0 <= level <=1, 'level must be 0 or 1'
@@ -470,9 +469,9 @@ To test this, we need a dummy request object that provides `getURL()`.
 The following request is for a url that is different from all of the
 facet menu links for 'sesamestreet'.  So, all links will be linked.
 
-    >>> request = URI('http://launchpad.dev/sesamestreet/+xxx')
+    >>> request_uri = URI('http://launchpad.dev/sesamestreet/+xxx')
     >>> facets = Facets(street)
-    >>> for link in facets.iterlinks(request):
+    >>> for link in facets.iterlinks(request_uri):
     ...     print link.url, link.linked
     http://launchpad.dev/sesamestreet/+foo True
     http://launchpad.dev/sesamestreet/+bar True
@@ -480,19 +479,19 @@ facet menu links for 'sesamestreet'.  So, all links will be linked.
 This next request is for +foo, but with a query string.  So, both links
 will still be linked.
 
-    >>> request = FakeRequest(
-    ...     'http://launchpad.dev/sesamestreet/+foo', query="123")
+    >>> request_uri = URI(
+    ...     'http://launchpad.dev/sesamestreet/+foo?a=123')
     >>> facets = Facets(street)
-    >>> for link in facets.iterlinks():
+    >>> for link in facets.iterlinks(request_uri):
     ...     print link.url, link.linked
     http://launchpad.dev/sesamestreet/+foo True
     http://launchpad.dev/sesamestreet/+bar True
 
 Next, we'll use the link +bar.  The +bar link will not be linked.
 
-    >>> request = URI('http://launchpad.dev/sesamestreet/+bar')
+    >>> request_uri = URI('http://launchpad.dev/sesamestreet/+bar')
     >>> facets = Facets(street)
-    >>> for link in facets.iterlinks(request):
+    >>> for link in facets.iterlinks(request_uri):
     ...     print link.url, link.linked
     http://launchpad.dev/sesamestreet/+foo True
     http://launchpad.dev/sesamestreet/+bar False
@@ -500,9 +499,9 @@ Next, we'll use the link +bar.  The +bar link will not be linked.
 Now, we use +bar with a trailing slash.  The +bar link will still be not
 linked.
 
-    >>> request = URI('http://launchpad.dev/sesamestreet/+bar/')
+    >>> request_uri = URI('http://launchpad.dev/sesamestreet/+bar/')
     >>> facets = Facets(street)
-    >>> for link in facets.iterlinks(request):
+    >>> for link in facets.iterlinks(request_uri):
     ...     print link.url, link.linked
     http://launchpad.dev/sesamestreet/+foo True
     http://launchpad.dev/sesamestreet/+bar False
@@ -527,9 +526,9 @@ will be the common case for default links.
     ...             'More explanation about Baz of %s' % self.context.name)
     ...         return Link(target, text, summary)
 
-    >>> request = URI('http://launchpad.dev/sesamestreet/+bar')
+    >>> request_uri = URI('http://launchpad.dev/sesamestreet/+bar')
     >>> facets = BlankTargetTestFacets(street)
-    >>> for link in facets.iterlinks(request):
+    >>> for link in facets.iterlinks(request_uri):
     ...     print link.url, link.linked
     http://launchpad.dev/sesamestreet True
     http://launchpad.dev/sesamestreet/+bar False
@@ -588,10 +587,10 @@ from earlier in this doctest.
     >>> canonical_url(street)
     u'http://launchpad.dev/sesamestreet'
 
-    >>> request = URI('http://launchpad.dev/sesamestreet')
+    >>> request_uri = URI('http://launchpad.dev/sesamestreet')
 
     >>> facets = AbsoluteUrlTargetTestFacets(street)
-    >>> for link in facets.iterlinks(request):
+    >>> for link in facets.iterlinks(request_uri):
     ...     print link.url, link.linked
     http://launchpad.dev/sesamestreet False
     ftp://barlink.example.com/barbarbar True

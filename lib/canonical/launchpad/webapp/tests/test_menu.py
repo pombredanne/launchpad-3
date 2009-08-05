@@ -16,7 +16,6 @@ from lp.testing import ANONYMOUS, login, logout, TestCase
 
 class TestMenu(MenuBase):
     links = ['test_link']
-    _baseclassname = 'TestMenu'
     times_called = 0
 
     def test_link(self):
@@ -64,6 +63,19 @@ class TestMenuBaseLinkCaching(TestCase):
         request = get_current_browser_request()
         cache = request.annotations.get(MENU_ANNOTATION_KEY)
         self.assertEquals([link], cache.values())
+
+    def test_cache_key_is_unique(self):
+        # The cache key must include the link name, the context of the link
+        # and the class where the link is defined.
+        login(ANONYMOUS)
+        context = object()
+        menu = TestMenu(context)
+        link = menu._get_link('test_link')
+        cache = get_current_browser_request().annotations.get(
+            MENU_ANNOTATION_KEY)
+        self.assertEquals(len(cache.keys()), 1)
+        self.assertContentEqual(
+            cache.keys()[0], (menu.__class__, context, 'test_link'))
 
     
 def test_suite():
