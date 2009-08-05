@@ -2519,8 +2519,7 @@ class PersonView(LaunchpadView, FeedsMixin):
             categories.update(category for category in contrib['categories'])
         sort = {'code': 0, 'bugs': 1, 'blueprints': 2, 'translations': 3,
                 'answers': 4, 'specs': 5, 'soyuz': 6}
-        return sorted(categories, key=attrgetter('name'),
-                      cmp=lambda x,y: cmp(sort[x], sort[y]))
+        return sorted(categories, key=lambda category: sort[category.name])
 
     @cachedproperty
     def context_is_probably_a_team(self):
