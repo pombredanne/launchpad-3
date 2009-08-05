@@ -306,7 +306,10 @@
       <li
         tal:condition="python: link.enabled and link.selected"
         tal:attributes="title link/summary; class string:${link/name} active"
-        ><a
+        ><span
+          tal:condition="not:link/linked"
+          tal:content="structure link/escapedtext"
+          /><a
           tal:condition="link/linked"
           tal:attributes="href link/url"
           tal:content="structure link/escapedtext" /></li>

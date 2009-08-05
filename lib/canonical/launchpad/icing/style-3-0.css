@@ -394,12 +394,12 @@ div.location-portlet h1 {
     display:inline;
     list-style-type: none;
 }
-.location-portlet li a {
+.location-portlet li a, .location-portlet li span {
     padding: 0.3em 0.5em;
 }
 /* The text of the first tab should align with the heading directly
    above it */
-.location-portlet li:first-child a {
+.location-portlet li:first-child a, .location-portlet li:first-child span {
     margin-left: -0.5em; 
 }
 .location-portlet li a:link, .location-portlet li a:visited {
@@ -407,7 +407,7 @@ div.location-portlet h1 {
     background-color: #fff;
     text-decoration: none;
 }
-.location-portlet li.active a {
+.location-portlet li.active a, .location-portlet li.active span {
     font-weight: bold;
     color: #fff;
     background-color: #747474;
