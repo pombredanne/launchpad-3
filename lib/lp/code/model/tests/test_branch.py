@@ -40,7 +40,7 @@ from lp.code.enums import (
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
@@ -58,7 +58,6 @@ from lp.code.model.branchmergeproposal import (
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
@@ -1721,6 +1720,17 @@ class TestBranchSetTarget(TestCaseWithFactory):
     """Tests for IBranch.setTarget."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_not_both_project_and_source_package(self):
+        # Only one of project or source_package can be passed in, not both.
+        branch = self.factory.makePersonalBranch()
+        project = self.factory.makeProduct()
+        source_package = self.factory.makeSourcePackage()
+        login_person(branch.owner)
+        self.assertRaises(
+            BranchTargetError,
+            branch.setTarget,
+            user=branch.owner, project=project, source_package=source_package)
 
     def test_junk_branch_to_project_branch(self):
         # A junk branch can be moved to a project.

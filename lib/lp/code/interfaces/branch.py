@@ -440,6 +440,10 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
         Only one of `project` or `source_package` can be set, and if neither
         is set, the branch gets moved into the junk namespace of the branch
         owner.
+
+        :raises BranchTargetError: if both project and source_package are set,
+        or if either the project or source_package fail to be adapted to an
+        `IBranchTarget`.
         """
 
     reviewer = exported(
