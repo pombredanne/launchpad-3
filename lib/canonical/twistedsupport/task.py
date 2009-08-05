@@ -107,6 +107,8 @@ class PollingTaskSource:
 
     def start(self, task_consumer):
         """See `ITaskSource`."""
+        # Probably calling stop here then immediately overwriting the
+        # LoopingCall isn't the right thing to do.
         self.stop()
         self._looping_call = LoopingCall(self._poll, task_consumer)
         self._looping_call.clock = self._clock
@@ -220,7 +222,9 @@ class ParallelLimitedTaskConsumer:
             raise NotRunningError(self)
         self._worker_count += 1
         if self._worker_count >= self._worker_limit:
-            self._task_source.stop()
+            self._stop()
+        else:
+            self._task_source.start(self)
         d = defer.maybeDeferred(task)
         # We don't expect these tasks to have interesting return values or
         # failure modes.
