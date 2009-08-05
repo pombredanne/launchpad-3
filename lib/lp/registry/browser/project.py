@@ -13,6 +13,7 @@ __all__ = [
     'ProjectBountiesMenu',
     'ProjectBrandingView',
     'ProjectBreadcrumbBuilder',
+    'ProjectBugsMenu',
     'ProjectEditView',
     'ProjectFacets',
     'ProjectMaintainerReassignmentView',
@@ -137,25 +138,21 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     def bugs(self):
         site = 'bugs'
         text = 'Bugs'
-
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def answers(self):
         site = 'answers'
         text = 'Answers'
-
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def specifications(self):
         site = 'blueprints'
         text = 'Blueprints'
-
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def translations(self):
         site = 'translations'
         text = 'Translations'
-
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
 
@@ -284,6 +281,17 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     def new(self):
         text = 'Ask a question'
         return Link('+addquestion', text, icon='add')
+
+
+class ProjectBugsMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'bugs'
+    links = ['new']
+
+    def new(self):
+        text = 'Report a Bug'
+        return Link('+filebug', text, icon='add')
 
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):

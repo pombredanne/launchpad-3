@@ -482,6 +482,7 @@
             ProjectFacets
             ProjectOverviewMenu
             ProjectBountiesMenu
+            ProjectBugsMenu
             ProjectSeriesSpecificationsMenu
             ProjectSpecificationsMenu
             ProjectSetContextMenu

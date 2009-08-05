@@ -3,41 +3,35 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/default"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
   <body>
 
-    <metal:portlets fill-slot="portlets">
-      <tal:portlet tal:replace="structure context/@@+portlet-lifecycle" />
-      <tal:portlet tal:replace="structure context/@@+portlet-milestones" />
-    </metal:portlets>
-
-    <div metal:fill-slot="main">
-
-    <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
-      This project is currently inactive <a href="+review">(change this)</a>
-    </p>
-
-    <tal:block condition="view/required:launchpad.Edit">
-      <p tal:condition="not: context/products" class="warning message"> 
-        There are no projects registered for
-        <span tal:replace="context/displayname">project displayname</span>.
-        <br />
-        You need to <a href="+newproduct">register another project that is
-        part of <tal:project replace="context/displayname" /></a> or associate
-        an existing project with it.
-      </p>
-    </tal:block>
-
-      <div
-        style="width: 200px; height: 200px; float: right;"
-        tal:content="structure context/image:mugshot"
-      />
+    <tal:heading metal:fill-slot="heading">
+      <div style="float:left">
+        <tal:logo tal:content="structure context/image:logo" />
+      </div>
       <h1 tal:content="context/title">Mozilla</h1>
+    </tal:heading>
+
+    <tal:main metal:fill-slot="main">
+
+    <div class="top-portlet">
+      <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
+        This project is currently inactive <a href="+review">(change this)</a>
+      </p>
+
+      <tal:block condition="view/required:launchpad.Edit">
+        <p tal:condition="not: context/products" class="warning message"> 
+          There are no projects registered for
+          <span tal:replace="context/displayname">project displayname</span>.
+          <br />
+          You need to <a href="+newproduct">register another project that is
+          part of <tal:project replace="context/displayname" /></a> or associate
+          an existing project with it.
+        </p>
+      </tal:block>
 
       <div class="description" tal:content="context/summary">
         This is the project group Summary, which should be a single paragraph
@@ -68,35 +62,16 @@
           </a>
         </li>
       </ul>
-      <ul class="buttons" tal:condition="context/products">
-        <li>
-          <a href="+filebug">
-            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
-          </a>
-        </li>
-        <li tal:content="structure context/@@+ask-a-question-button" />
-        <li tal:content="structure context/@@+help-translate-button" />
-        <li tal:define="has_mentoring context/mentoring_offers/count">
-          <a href="+mentoring" tal:condition="has_mentoring">
-            <img alt="Mentoring available"
-                 src="/+icing/but-sml-mentoring.gif"/>
-          </a>
-          <a href="+mentoring" tal:condition="not: has_mentoring">
-            <img alt="No mentoring available"
-                 src="/+icing/but-sml-mentoring-off.gif" />
-          </a>
-        </li>
-      </ul>
-      <div class="left">
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-coming-sprints"
-        />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestannouncements"
-        />
-        <div class="portlet" id="products">
+      <div class="discreet" style="text-align: right"
+            tal:content="structure context/menu:overview/rdf/fmt:link-icon" />
+    </div>
+
+      <div class="yui-g">
+        <div class="yui-u first portlet">
+          <h2>Project group information</h2>
+          <tal:details replace="structure context/@@+details" />
+        </div>
+        <div class="yui-u portlet" id="products">
           <h2>Projects</h2>
           <p tal:condition="not: context/products"> 
             There are no projects registered for
@@ -132,18 +107,69 @@
             part of <tal:project replace="context/displayname" /></a>
           </tal:block>
         </div>
-        <div tal:replace="structure context/@@+portlet-latestspecs" />
       </div>
-      <div class="right">
-        <div tal:replace="structure context/@@+details" />
-        <div tal:replace="structure context/@@+portlet-top-contributors" />
-        <div tal:replace="structure context/@@+portlet-latestbugs" />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestquestions"
-        />
+      <div class="yui-g">
+        <div class="yui-u first"
+             tal:content="structure context/@@+portlet-coming-sprints" />
+        <div class="yui-u"
+             tal:content="structure context/@@+portlet-latestspecs" />
       </div>
-    </div>
+      <div class="yui-g">
+        <div class="yui-u first"
+             tal:content="structure context/@@+portlet-latestbugs" />
+        <div class="yui-u"
+             tal:content="structure context/@@+portlet-latestquestions" />
+      </div>
+      <div class="yui-g">
+        <div class="yui-u first"
+             tal:content="structure context/@@+portlet-top-contributors" />
+      </div>
+    </tal:main>
+
+    <tal:side metal:fill-slot="side"
+              define="overview_menu context/menu:overview">
+      <div id="object-actions" class="top-portlet">
+        <ul>
+          <li>
+            <tal:edit
+              content="structure overview_menu/subscribe/fmt:link-icon" />
+          </li>
+          <li>
+            <tal:edit
+              content="structure overview_menu/edit/fmt:link-icon" />
+          </li>
+          <li>
+            <tal:edit
+              content="structure overview_menu/administer/fmt:link-icon" />
+          </li>
+          <li>
+            <tal:edit
+              content="structure overview_menu/branch_visibility/fmt:link-icon" />
+          </li>
+        </ul>
+      </div>
+      <div id="involvement" class="portlet involvement"
+           tal:condition="context/products">
+        <h2>Get Involved</h2>
+        <ul>
+          <li>
+            <a class="bugs"
+              tal:attributes="href context/menu:bugs/new/url">Report a Bug</a>
+          </li>
+          <li>
+            <a class="question"
+              tal:attributes="href context/menu:answers/new/url">Ask a question</a>
+          </li>
+          <li>
+            <a class="translate"
+              tal:attributes="href context/menu:translations/overview/url">Help translate</a>
+          </li>
+        </ul>
+      </div>
+      <tal:portlet tal:replace="structure context/@@+portlet-latestannouncements" />
+      <tal:portlet tal:replace="structure context/@@+portlet-milestones" />
+    </tal:side>
+
   </body>
 </html>
 
