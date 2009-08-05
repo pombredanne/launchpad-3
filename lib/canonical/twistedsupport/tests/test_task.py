@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, succeed
 from twisted.internet.task import Clock
 
 from zope.interface import implements
@@ -57,6 +57,7 @@ class LoggingSource:
 
     def stop(self):
         self._log.append('stop')
+        return succeed(None)
 
 
 class TestPollingTaskSource(TestCase):
@@ -404,9 +405,40 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.taskStarted(lambda: None)
         self.assertEqual([None], task_log)
 
-    def test_consume_returns_deferred_fires_if_no_tasks_found(self):
+    def test_consume_deferred_does_not_fire_until_stop_deferred_fires(self):
+        # XXX
+        class Source(LoggingSource):
+            def __init__(self, log):
+                super(Source, self).__init__(log)
+                self.stop_deferreds = []
+            def stop(self):
+                super(Source, self).stop()
+                d = Deferred()
+                self.stop_deferreds.append(d)
+                return d
+        consumer = self.makeConsumer()
+        consume_log = []
+        source = Source([])
+        d = consumer.consume(source)
+        d.addCallback(consume_log.append)
+        consumer.taskStarted(lambda: None)
+        self.assertEqual([], consume_log)
+        source.stop_deferreds[0].callback(None)
+        self.assertEqual([None], consume_log)
+
+
+    def test_consume_deferred_fires_if_no_tasks_found(self):
         # `consume` returns a Deferred that fires if no tasks are found when
         # no tasks are running.
+        consumer = self.makeConsumer()
+        task_log = []
+        d = consumer.consume(LoggingSource([]))
+        d.addCallback(task_log.append)
+        consumer.noTasksFound()
+        self.assertEqual([None], task_log)
+
+    def test_consume_deferred_fires_no_tasks_found_when_stop_finishes(self):
+        # XXX.
         consumer = self.makeConsumer()
         task_log = []
         d = consumer.consume(LoggingSource([]))

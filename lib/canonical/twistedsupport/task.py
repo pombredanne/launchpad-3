@@ -177,6 +177,17 @@ class ParallelLimitedTaskConsumer:
         self._worker_limit = worker_limit
         self._worker_count = 0
         self._terminationDeferred = None
+        self._stopping_lock = defer.DeferredLock()
+
+    def _stop(self):
+        def _release_or_stop(ignored):
+            if self._worker_count == 0:
+                self._terminationDeferred.callback(None)
+            else:
+                self._stopping_lock.release()
+        def _call_stop(ignored):
+            return self._task_source.stop().addCallback(_release_or_stop)
+        return self._stopping_lock.acquire().addCallback(_call_stop)
 
     def consume(self, task_source):
         """Start consuming tasks from 'task_source'.
@@ -226,8 +237,7 @@ class ParallelLimitedTaskConsumer:
         find any jobs, if we actually start any jobs then the exit condition
         in _taskEnded will always be reached before this one.
         """
-        if self._worker_count == 0:
-            self._terminationDeferred.callback(None)
+        self._stop()
 
     def taskProductionFailed(self, reason):
         """See `ITaskConsumer`.
@@ -249,9 +259,7 @@ class ParallelLimitedTaskConsumer:
         """
         if self._task_source is None:
             raise NotRunningError(self)
-        self._task_source.stop()
-        if self._worker_count == 0:
-            self._terminationDeferred.callback(None)
+        self._stop()
 
     def _taskEnded(self, ignored):
         """Handle a task reaching completion.
@@ -265,8 +273,7 @@ class ParallelLimitedTaskConsumer:
         """
         self._worker_count -= 1
         if self._worker_count == 0:
-            self._task_source.stop()
-            self._terminationDeferred.callback(None)
+            self._stop()
         elif self._worker_count < self._worker_limit:
             self._task_source.start(self)
         else:
