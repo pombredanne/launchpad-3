@@ -601,7 +601,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries = sourcepackage.distroseries
 
         if registrant is None:
-            registrant = owner
+            if owner.is_team:
+                registrant = owner.teamowner
+            else:
+                registrant = owner
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
