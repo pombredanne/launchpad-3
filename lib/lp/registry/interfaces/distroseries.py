@@ -16,12 +16,15 @@ __all__ = [
     'NoSuchDistroSeries',
     ]
 
+from zope.component import getUtility
 from zope.schema import Bool, Datetime, Choice, Object, TextLine
 from zope.interface import Interface, Attribute
+
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
-    ContentNameField, Description, PublicPersonChoice, Summary, Title)
+    ContentNameField, Description, PublicPersonChoice, Summary, Title,
+    UniqueField)
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
@@ -33,8 +36,10 @@ from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
@@ -134,6 +139,61 @@ class DistroSeriesNameField(ContentNameField):
             return None
 
 
+class DistroSeriesVersionField(UniqueField):
+    """A class to ensure `IDistroSeries` has unique versions."""
+    errormessage = _(
+        "%s is already in use by another version in this distribution.")
+    attribute = 'version'
+
+    @property
+    def _content_iface(self):
+        return IDistroSeries
+
+    @property
+    def _distribution(self):
+        if self._content_iface.providedBy(self.context):
+            return self.context.distribution
+        else:
+            return self.context
+
+    def _getByName(self, version):
+        """Return the `IDistroSeries` for the specified distribution version.
+
+        The distribution is the context's distribution (which may
+        the context itself); A version is unique to a distribution.
+        """
+        found_series = None
+        for series in getUtility(IDistroSeriesSet).findByVersion(version):
+            if (series.distribution == self._distribution
+                and series != self.context):
+                # A version is unique to a distribution, but a distroseries
+                # may edit itself.
+                found_series = series
+                break
+        return found_series
+
+    def _getByAttribute(self, version):
+        """Return the content object with the given attribute."""
+        return self._getByName(version)
+
+    def _validate(self, version):
+        """See `UniqueField`."""
+        super(DistroSeriesVersionField, self)._validate(version)
+        if not sane_version(version):
+            raise LaunchpadValidationError(
+                "%s is not a valid version" % version)
+        # Avoid circular import hell.
+        from lp.archivepublisher.debversion import Version, VersionError
+        try:
+            # XXX sinzui 2009-07-25 bug=404613: DistributionMirror and buildd
+            # have stricter version rules than the schema. The version must
+            # be a debversion.
+            Version(version)
+        except VersionError, error:
+            raise LaunchpadValidationError(
+                "'%s': %s" % (version, error[0]))
+
+
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
 
@@ -191,7 +251,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                           "availability of security updates and any other "
                           "relevant information.")))
     version = exported(
-        TextLine(
+        DistroSeriesVersionField(
             title=_("Version"), required=True,
             description=_("The version string for this series.")))
     distribution = exported(
@@ -671,14 +731,19 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Delete any records that are no longer applicable.
 
         Consider all binarypackages marked as REMOVED.
-        'log' is required, it should be a logger object able to print
-        DEBUG level messages.
+
+        Also purges all existing cache records for disabled archives.
+
+        :param archive: target `IArchive`.
+        :param log: the context logger object able to print DEBUG level
+            messages.
         """
 
     def updateCompletePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the binary package cache
 
-        Consider all binary package names published in this distro series.
+        Consider all binary package names published in this distro series
+        and entirely skips updates for disabled archives
 
         :param archive: target `IArchive`;
         :param log: logger object for printing debug level information;
