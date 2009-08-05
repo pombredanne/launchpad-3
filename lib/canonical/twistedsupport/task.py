@@ -37,6 +37,9 @@ class ITaskSource(Interface):
         """Stop generating tasks.
 
         Any subsequent calls to `stop` are silently ignored.
+
+        :return: A Deferred that will fire when the source is stopped.  It is
+            possible that tasks may be produced until this deferred fires.
         """
 
 
@@ -100,6 +103,7 @@ class PollingTaskSource:
             clock = reactor
         self._clock = clock
         self._looping_call = None
+        self._lock = defer.succeed(None)
 
     def start(self, task_consumer):
         """See `ITaskSource`."""
@@ -123,6 +127,12 @@ class PollingTaskSource:
             # don't let any deferred it returns delay subsequent polls.
             task_consumer.taskProductionFailed(reason)
         d = defer.maybeDeferred(self._task_producer)
+        self._lock = defer.Deferred()
+        def release_lock(value):
+            self._lock.callback(None)
+            self._lock = defer.succeed(None)
+            return value
+        d.addBoth(release_lock)
         d.addCallbacks(got_task, task_failed)
         return d
 
@@ -131,6 +141,9 @@ class PollingTaskSource:
         if self._looping_call is not None:
             self._looping_call.stop()
             self._looping_call = None
+        d = defer.Deferred()
+        self._lock.addCallback(d.callback)
+        return d
 
 
 class AlreadyRunningError(Exception):
