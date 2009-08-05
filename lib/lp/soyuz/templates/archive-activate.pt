@@ -22,8 +22,6 @@
     <a href="https://help.launchpad.net/Packaging/PPA">PPA help page</a>.
   </div>
 
-  <div class="portlet">
-
   <p tal:condition="view/is_private_team" id="ppa-privacy-statement">
     <img src="/@@/info" />
     Since '<tal:name replace="string:${context/displayname}"/>' is
@@ -55,8 +53,6 @@
       <input tal:replace="structure view/actions/field.actions.activate/render" />
       or <a tal:attributes="href context/fmt:url">Cancel</a>
     </div>
-
-  </div>
 
   </div>
 
