@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'CannotUploadToArchive',
+    'components_valid_for',
     'verify_upload',
     ]
 
@@ -26,6 +27,12 @@ class CannotUploadToArchive(Exception):
         """
         Exception.__init__(
             self, '%s has no upload rights to %s' % (person, archive))
+
+
+def components_valid_for(archive, person):
+    permission_set = getUtility(IArchivePermissionSet)
+    permissions = permission_set.componentsForUploader(archive, person)
+    return set(permission.component for permission in permissions)
 
 
 def verify_upload(person, suite_sourcepackage, archive):

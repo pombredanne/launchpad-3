@@ -12,10 +12,34 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import DatabaseFunctionalLayer
 
-from lp.archiveuploader.permission import CannotUploadToArchive, verify_upload
+from lp.archiveuploader.permission import (
+    CannotUploadToArchive, components_valid_for, verify_upload)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import TestCaseWithFactory
+
+
+class TestComponents(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_components_for_arbitrary_person(self):
+        # By default, a person cannot upload to any component of an archive.
+        archive = self.factory.makeArchive()
+        person = self.factory.makePerson()
+        self.assertEqual(set(), components_valid_for(archive, person))
+
+    def test_components_for_person_with_permissions(self):
+        # If a person has been explicitly granted upload permissions to a
+        # particular component, then those components are included in
+        # components_valid_for.
+        archive = self.factory.makeArchive()
+        component = self.factory.makeComponent()
+        person = self.factory.makePerson()
+        ap_set = removeSecurityProxy(getUtility(IArchivePermissionSet))
+        ap_set.newComponentUploader(archive, person, component)
+        self.assertEqual(
+            set([component]), components_valid_for(archive, person))
 
 
 class TestPermission(TestCaseWithFactory):
