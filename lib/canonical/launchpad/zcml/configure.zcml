@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -6,7 +10,6 @@
 
     <!-- Content class configuration -->
     <include file="account.zcml" />
-    <include file="authtoken.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binaryandsourcepackagename.zcml" />
     <include file="bountysubscription.zcml" />
@@ -31,7 +34,6 @@
     <include file="packaging.zcml" />
     <include file="personnotification.zcml" />
     <include file="personproduct.zcml" />
-    <include file="scriptactivity.zcml" />
     <include file="structuralsubscription.zcml" />
     <include file="temporaryblobstorage.zcml" />
     <include file="webservice.zcml" />

@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -7,12 +11,6 @@
     i18n_domain="launchpad">
     <include
         package=".browser"/>
-    <securedutility
-        class="lp.translations.model.vpotexport.VPOTExportSet"
-        provides="lp.translations.interfaces.vpotexport.IVPOTExportSet">
-        <allow
-            interface="lp.translations.interfaces.vpotexport.IVPOTExportSet"/>
-    </securedutility>
     <class
         class="lp.translations.model.vpotexport.VPOTExport">
         <allow

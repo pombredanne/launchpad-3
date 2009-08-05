@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 from canonical.launchpad.windmill.testing import lpuser
 
 from windmill.authoring import WindmillTestClient
@@ -25,23 +28,6 @@ def test_filebug_extra_options():
     client.asserts.assertText(
         xpath=u"//form[@name='launchpadform']//p",
         validator=u'No similar bug reports were found.')
-
-    # Check out the expander.
-    _test_expander(client)
-
-
-def test_advanced_filebug_extra_options():
-    """Test the extra options area on +filebug-advanced pages.
-
-    See `test_filebug_extra_options`.
-    """
-    client = WindmillTestClient("File bug extra options test")
-    lpuser.SAMPLE_PERSON.ensure_login(client)
-
-    # Open a +filebug-advanced page and wait for it to finish loading.
-    client.open(
-        url=u'http://bugs.launchpad.dev:8085/firefox/+filebug-advanced')
-    client.waits.forPageLoad(timeout=u'20000')
 
     # Check out the expander.
     _test_expander(client)

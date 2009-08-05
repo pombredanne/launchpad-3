@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
 
@@ -870,7 +871,10 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     @cachedproperty
     def ppas_for_user(self):
         """Return all PPAs for which the user accessing the page can copy."""
-        return list(getUtility(IArchiveSet).getPPAsForUser(self.user))
+        return list(
+            ppa
+            for ppa in getUtility(IArchiveSet).getPPAsForUser(self.user)
+            if check_permission('launchpad.Append', ppa))
 
     @cachedproperty
     def can_copy(self):
@@ -879,8 +883,15 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
     @cachedproperty
     def can_copy_to_context_ppa(self):
-        """Whether or not the current user can copy to the context PPA."""
-        return self.context.canUpload(self.user)
+        """Whether or not the current user can copy to the context PPA.
+
+        It's always False for non-PPA archives, copies to non-PPA archives
+        are explicitly denied in the UI.
+        """
+        # XXX cprov 2009-07-17 bug=385503: copies cannot be properly traced
+        # that's why we explicitly don't allow them do be done via the UI
+        # in main archives, only PPAs.
+        return self.context.is_ppa and self.context.canUpload(self.user)
 
     def createDestinationArchiveField(self):
         """Create the 'destination_archive' field."""
@@ -1368,6 +1379,10 @@ class ArchiveActivateView(LaunchpadFormView):
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
 
+    @property
+    def ubuntu(self):
+        return getUtility(ILaunchpadCelebrities).ubuntu
+
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
@@ -1400,8 +1415,7 @@ class ArchiveActivateView(LaunchpadFormView):
         # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
         # for Ubuntu distribution. This check should be revisited when we
         # start supporting PPAs for other distribution (debian, mainly).
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if proposed_name is not None and proposed_name == ubuntu.name:
+        if proposed_name is not None and proposed_name == self.ubuntu.name:
             self.setFieldError(
                 'name',
                 "Archives cannot have the same name as its distribution.")

@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0613,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -36,9 +38,11 @@ from canonical.launchpad.interfaces import (
     IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProject, IDistributionSourcePackage, ISprint, LicenseStatus,
     NotFoundError)
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.code.interfaces.branch import IBranch
+from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
@@ -412,7 +416,7 @@ class ObjectFormatterAPI:
     # The names which can be traversed further (e.g context/fmt:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
     # Names which are allowed but can't be traversed further.
-    final_traversable_names = {}
+    final_traversable_names = {'public-private-css': 'public_private_css',}
 
     def __init__(self, context):
         self._context = context
@@ -471,6 +475,13 @@ class ObjectFormatterAPI:
             "No link implementation for %r, IPathAdapter implementation "
             "for %r." % (self, self._context))
 
+    def public_private_css(self):
+        """Return the CSS class that represents the object's privacy."""
+        if IPrivacy.providedBy(self._context) and self._context.private:
+            return 'private'
+        else:
+            return 'public'
+
 
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects
@@ -507,6 +518,15 @@ class ObjectImageDisplayAPI:
             return 'sprite meeting'
         elif IBug.providedBy(context):
             return 'sprite bug'
+        elif IPPA.providedBy(context):
+            if context.enabled:
+                return 'sprite ppa-icon'
+            else:
+                return 'sprite ppa-icon-inactive'
+        elif IBranch.providedBy(context):
+            return 'sprite branch'
+        elif ISpecification.providedBy(context):
+            return 'sprite blueprint'
         return None
 
     def default_logo_resource(self, context):
@@ -909,6 +929,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
                          }
 
     final_traversable_names = {'local-time': 'local_time'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
@@ -1465,6 +1486,41 @@ class CodeReviewCommentFormatterAPI(CustomizableFormatter):
         return {'author': self._context.message.owner.displayname}
 
 
+class PPAFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for `IPPA` objects."""
+
+    _link_summary_template = '%(display_name)s'
+    _link_permission = 'launchpad.View'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        return {
+            'display_name': self._context.displayname,
+            }
+
+    def link(self, view_name):
+        """Return html including a link for the context PPA.
+
+        Render a link using CSS sprites for users with permission to view
+        the PPA.
+
+        Disabled PPAs are listed with sprites but not linkified.
+
+        Unaccessible private PPA are not rendered at all (empty string
+        is returned).
+        """
+        summary = self._make_link_summary()
+        css = self.sprite_css()
+        if check_permission(self._link_permission, self._context):
+            url = self.url(view_name)
+            return '<a href="%s" class="%s">%s</a>' % (url, css, summary)
+        else:
+            if not self._context.private:
+                return '<span class="%s">%s</span>' % (css, summary)
+            else:
+                return ''
+
+
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
     """Adapter for ISpecificationBranch objects to a formatted string."""
 
@@ -1490,6 +1546,7 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         'aliases': 'aliases',
         'external-link': 'external_link',
         'external-title-link': 'external_title_link'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def link(self, view_name):
         """Return an HTML link to the bugtracker page.
@@ -1554,6 +1611,7 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
     final_traversable_names = {
         'external-link': 'external_link',
         'external-link-short': 'external_link_short'}
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def _make_external_link(self, summary=None):
         """Return an external HTML link to the target of the bug watch.
@@ -1963,6 +2021,7 @@ class LinkFormatterAPI(ObjectFormatterAPI):
         'icon-link': 'link',
         'link-icon': 'link',
         }
+    final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
     def icon(self):
         """Return the icon representation of the link."""
@@ -2467,8 +2526,6 @@ class FormattersAPI:
         fall back for IE by using the IE specific word-wrap property.
 
         TODO: Test IE compatibility. StuartBishop 20041118
-        TODO: This should probably just live in the stylesheet if this
-            CSS implementation is good enough. StuartBishop 20041118
         """
         if not self._stringtoformat:
             return self._stringtoformat
@@ -2476,13 +2533,7 @@ class FormattersAPI:
             linkified_text = re_substitute(self._re_linkify,
                 self._linkify_substitution, break_long_words,
                 cgi.escape(self._stringtoformat))
-            return ('<pre style="'
-                    'white-space: -moz-pre-wrap;'
-                    'white-space: -o-pre-wrap;'
-                    'word-wrap: break-word;'
-                    '">%s</pre>'
-                    % linkified_text
-                    )
+            return '<pre class="wrap">%s</pre>' % linkified_text
 
     # Match lines that start with one or more quote symbols followed
     # by a space. Quote symbols are commonly '|', or '>'; they are
@@ -2706,7 +2757,8 @@ class FormattersAPI:
             return text
         result = ['<table class="diff">']
 
-        for row, line in enumerate(text.split('\n')):
+        max_format_lines = config.diff.max_format_lines
+        for row, line in enumerate(text.splitlines()[:max_format_lines]):
             result.append('<tr>')
             result.append('<td class="line-no">%s</td>' % (row+1))
             if line.startswith('==='):

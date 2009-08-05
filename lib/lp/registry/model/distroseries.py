@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Database classes for a distribution series."""
@@ -1054,17 +1056,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            Archive.id = %s AND
+            BinaryPackagePublishingHistory.archive = Archive.id AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
+            BinaryPackagePublishingHistory.dateremoved is NULL AND
+            Archive.enabled = TRUE
             """ % sqlvalues(self, archive),
             distinct=True,
-            clauseTables=['BinaryPackagePublishingHistory',
-                          'DistroArchSeries',
-                          'BinaryPackageRelease']))
+            clauseTables=[
+                'Archive',
+                'DistroArchSeries',
+                'BinaryPackagePublishingHistory',
+                'BinaryPackageRelease']))
 
         # remove the cache entries for binary packages we no longer want
         for cache in self.getBinaryPackageCaches(archive):
@@ -1076,6 +1082,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def updateCompletePackageCache(self, archive, log, ztm, commit_chunk=500):
         """See `IDistroSeries`."""
+        # Do not create cache entries for disabled archives.
+        if not archive.enabled:
+            return
+
         # Get the set of package names to deal with.
         bpns = IStore(BinaryPackageName).find(
             BinaryPackageName,

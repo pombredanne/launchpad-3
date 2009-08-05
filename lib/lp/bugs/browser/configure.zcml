@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -220,7 +224,7 @@
     <browser:page
         name="+filebug-advanced"
         for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FrontPageFileBugAdvancedView"
+        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
@@ -388,7 +392,7 @@
     <browser:page
         name="+filebug-advanced"
         for="lp.registry.interfaces.project.IProject"
-        class="lp.bugs.browser.bugtarget.ProjectFileBugAdvancedView"
+        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page

@@ -1,4 +1,5 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
 
@@ -599,7 +600,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries = sourcepackage.distroseries
 
         if registrant is None:
-            registrant = owner
+            if owner.is_team:
+                registrant = owner.teamowner
+            else:
+                registrant = owner
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
@@ -1013,6 +1017,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
             email_address = person.preferredemail.email
         mail['From'] = email_address
+        mail['To'] = self.makePerson().preferredemail.email
         if subject is None:
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject

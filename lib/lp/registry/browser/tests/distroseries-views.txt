@@ -137,9 +137,10 @@ initial value remains.
     True
 
 
-== Creating distroseries ==
+Creating distroseries
+---------------------
 
-The distroseries name is unique and it cannot contain spaces
+A distroseries is created using the distroseries view.
 
     >>> view = create_view(ubuntu, '+addseries')
     >>> print view.page_title
@@ -175,8 +176,16 @@ A distroseries is created whent the required field are submitted.
     >>> print sane_distroseries.name
     sane
 
+    # Save this series to test name and version constraints.
+    >>> transaction.commit()
+
+Distroseries name
+-----------------
+
 The distroseries name is unique.
 
+    >>> form['field.name'] = 'sane'
+    >>> form['field.version'] = '2009.07'
     >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
     >>> for error in view.errors:
     ...     print error[2]
@@ -191,89 +200,46 @@ The distroseries name cannot contain spaces.
     Invalid name 'insane name'...
 
 
-== Hiding translations ==
+Distroseries version
+--------------------
 
-Each distroseries has a switch that allows administrators to either
-reveal its translations to the public or hide them from the public.
+Versions cannot contain spaces.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.registry.browser.distroseries import (
-    ...     DistroSeriesView)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, ITeamMembershipSet, TeamMembershipStatus)
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     TranslationUnavailable)
+    >>> form['field.name'] = '6-06-series'
+    >>> form['field.version'] = '6.06 LTS'
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    6.06 LTS is not a valid version
 
-    >>> def check_translations_access(distroseries):
-    ...     """Return any objections to current user accessing
-    ...     `distroseries` translations.'
-    ...     """
-    ...     request = LaunchpadTestRequest()
-    ...     view = DistroSeriesView(distroseries, request)
-    ...     view.initialize()
-    ...
-    ...     try:
-    ...         view.checkTranslationsViewable()
-    ...     except TranslationUnavailable, message:
-    ...         return unicode(message)
-    ...     return None
+The distroseries version must be a valid debversion.
 
-    >>> def check_effect_of_hiding(distroseries):
-    ...     """Describe how hiding translations for `distroseries`
-    ...     affects current user's access to them.
-    ...     """
-    ...     original_hide_flag = distroseries.hide_all_translations
-    ...     distroseries = removeSecurityProxy(distroseries)
-    ...
-    ...     distroseries.hide_all_translations = False
-    ...     objection = check_translations_access(distroseries)
-    ...     if objection is None:
-    ...         print "User can access revealed translations."
-    ...     else:
-    ...         print "No access to revealed translations!", objection
-    ...
-    ...     distroseries.hide_all_translations = True
-    ...     objection = check_translations_access(distroseries)
-    ...     if objection is None:
-    ...         print "User can access hidden translations."
-    ...     else:
-    ...         print "User can not access hidden translations:", objection
-    ...
-    ...     distroseries.hide_all_translations = original_hide_flag
+    >>> form['field.version'] = 'Hardy-6.06-LTS'
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    'Hardy-6.06-LTS': Bad upstream version format
 
-An administrator will be able to access the translations no matter what
-happens.
+The distroseries version is unique to a distribution. Version '2009.06'
+cannot be reused by another Ubuntu series.
 
-    >>> login('foo.bar@canonical.com')
-    >>> check_effect_of_hiding(hoary)
-    User can access revealed translations.
-    User can access hidden translations.
+    >>> print sane_distroseries.version
+    2009.06
 
-A Translations admin ("translations expert") can also still access the
-translations even when they're hidden.
+    >>> form['field.name'] = 'experimental'
+    >>> form['field.version'] = '2009.06'
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    2009.06 is already in use by another version in this distribution.
 
-    >>> expert = factory.makePerson('expert@example.com')
-    >>> expert_team = getUtility(ILaunchpadCelebrities).rosetta_experts
-    >>> membership = getUtility(ITeamMembershipSet).new(
-    ...     expert, expert_team, TeamMembershipStatus.APPROVED,
-    ...     expert_team)
-    >>> login_person(expert)
-    >>> check_effect_of_hiding(hoary)
-    User can access revealed translations.
-    User can access hidden translations.
+But version '2009.06' can be used by another distribution.
 
-A regular user can no longer see the translations once they're hidden.
+    >>> other_distro = factory.makeDistribution(name='other-distro')
+    >>> view = create_initialized_view(other_distro, '+addseries', form=form)
+    >>> view.errors
+    []
 
-    >>> login('no-priv@canonical.com')
-    >>> check_effect_of_hiding(hoary)
-    User can access revealed translations.
-    User can not access hidden translations: Translations for this
-    release series are not currently available.  Please come back soon.
-
-The same goes for anonymous users.
-
-    >>> login(ANONYMOUS)
-    >>> check_effect_of_hiding(hoary)
-    User can access revealed translations.
-    User can not access hidden translations: Translations for this
-    release series are not currently available.  Please come back soon.
+    >>> experimental_distroseries = other_distro.getSeries('experimental')
+    >>> print experimental_distroseries.version
+    2009.06

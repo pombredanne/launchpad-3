@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 from zope.app.pagetemplate.viewpagetemplatefile import (
     BoundPageTemplate)
 from zope.security.proxy import removeSecurityProxy
@@ -33,4 +36,3 @@ class FormNamespaceView(view):
             raise TraversalError("The URL does not correspond to a form.")
 
         return self.context
-

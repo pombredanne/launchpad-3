@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -384,6 +388,7 @@
                     canBeDeleted
                     deletionRequirements
                     associatedProductSeries
+                    getProductSeriesPushingTranslations
                     associatedSuiteSourcePackages
                     subscribe
                     getSubscription
@@ -425,9 +430,9 @@
                     "/>
     <require
         permission="launchpad.Edit"
-        attributes="destroySelf setPrivate"
+        attributes="destroySelf setPrivate setOwner setTarget"
         set_attributes="name url mirror_status_message
-                        owner author description product lifecycle_status
+                        description lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
                         last_scanned last_scanned_id revision_count branch_type
@@ -802,6 +807,7 @@
   <adapter factory="lp.code.model.linkedbranch.ProductSeriesLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.ProductLinkedBranch" />
   <adapter factory="lp.code.model.linkedbranch.PackageLinkedBranch" />
+  <adapter factory="lp.code.model.linkedbranch.DistributionPackageLinkedBranch" />
 
   <lp:help-folder
       folder="help" type="canonical.launchpad.layers.CodeLayer" />

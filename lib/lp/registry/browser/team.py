@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -30,8 +31,7 @@ from zope.interface import Interface, implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from canonical.widgets import (
-    HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
+from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -169,9 +169,6 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     """View for editing team details."""
     schema = ITeam
 
-    # teamowner cannot be a HiddenUserWidget or the edit form would change the
-    # owner to the person doing the editing.
-    custom_widget('teamowner', SinglePopupWidget, visible=False)
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
@@ -187,6 +184,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         # class list.
         self.field_names = list(self.field_names)
         self.field_names.remove('contactemail')
+        self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
         self.conditionallyOmitVisibility()
 

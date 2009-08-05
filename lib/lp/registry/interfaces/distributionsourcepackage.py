@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Source package in Distribution interfaces."""
@@ -67,6 +69,11 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
     releases = Attribute(
         "The list of all releases of this source package "
         "in this distribution.")
+
+    development_version = Attribute(
+        "The development version of this source package. 'None' if there is "
+        "no such package -- this occurs when there is no current series for "
+        "the distribution.")
 
     def getReleasesAndPublishingHistory():
         """Return a list of all releases of this source package in this

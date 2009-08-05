@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for IDiff, etc."""
 
@@ -14,8 +15,9 @@ from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from canonical.uuid import generate_uuid
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase
+from canonical.uuid import generate_uuid
 
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
@@ -44,9 +46,18 @@ class Diff(SQLBase):
         else:
             self.diff_text.open()
             try:
-                return self.diff_text.read()
+                return self.diff_text.read(config.diff.max_read_size)
             finally:
                 self.diff_text.close()
+
+    @property
+    def oversized(self):
+        # If the size of the content of the librarian file is over the
+        # config.diff.max_read_size, then we have an oversized diff.
+        if self.diff_text is None:
+            return False
+        diff_size = self.diff_text.content.filesize
+        return diff_size > config.diff.max_read_size
 
     @classmethod
     def fromTrees(klass, from_tree, to_tree, filename=None):

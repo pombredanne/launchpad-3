@@ -1,5 +1,7 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
-"""Test Build features."""
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Test Archive features."""
 
 from datetime import datetime
 import pytz
@@ -11,6 +13,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -133,6 +136,112 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         num_results = results.count()
         self.assertEquals(1, num_results, "Expected 1 publication but "
                                           "got %s" % num_results)
+
+
+class TestArchiveRepositorySize(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestArchiveRepositorySize, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+        self.ppa = self.factory.makeArchive(
+            name="testing", distribution=self.publisher.ubuntutest)
+
+    def test_binaries_size_does_not_include_ddebs_for_ppas(self):
+        # DDEBs are not computed in the PPA binaries size because
+        # they are not being published. See bug #399444.
+        self.assertEquals(0, self.ppa.binaries_size)
+        self.publisher.getPubBinaries(
+            filecontent='X', format=BinaryPackageFormat.DDEB,
+            archive=self.ppa)
+        self.assertEquals(0, self.ppa.binaries_size)
+
+    def test_binaries_size_includes_ddebs_for_other_archives(self):
+        # DDEBs size are computed for all archive purposes, except PPAs.
+        previous_size = self.publisher.ubuntutest.main_archive.binaries_size
+        self.publisher.getPubBinaries(
+            filecontent='X', format=BinaryPackageFormat.DDEB)
+        self.assertEquals(
+            previous_size + 1,
+            self.publisher.ubuntutest.main_archive.binaries_size)
+
+
+class TestSeriesWithSources(TestCaseWithFactory):
+    """Create some sources in different series."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestSeriesWithSources, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # Create three sources for the two different distroseries.
+        breezy_autotest = self.publisher.distroseries
+        ubuntu_test = breezy_autotest.distribution
+        self.serieses = [breezy_autotest]
+        self.serieses.append(self.factory.makeDistroRelease(
+            distribution=ubuntu_test, name="foo-series"))
+
+        self.sources = []
+        gedit_src_hist = self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
+        self.sources.append(gedit_src_hist)
+
+        firefox_src_hist = self.publisher.getPubSource(
+            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
+            distroseries=self.serieses[1])
+        self.sources.append(firefox_src_hist)
+
+        gtg_src_hist = self.publisher.getPubSource(
+            sourcename="getting-things-gnome",
+            status=PackagePublishingStatus.PUBLISHED,
+            distroseries=self.serieses[1])
+        self.sources.append(gtg_src_hist)
+
+        # Shortcuts for test readability.
+        self.archive = self.serieses[0].main_archive
+
+    def test_series_with_sources_returns_all_series(self):
+        # Calling series_with_sources returns all series with publishings.
+        serieses = self.archive.series_with_sources
+        serieses_names = [series.displayname for series in serieses]
+
+        self.assertContentEqual(
+            [u'Breezy Badger Autotest', u'Foo-series'],
+            serieses_names)
+
+    def test_series_with_sources_ignore_non_published_records(self):
+        # If all publishings in a series are deleted or superseded
+        # the series will not be returned.
+        self.sources[0].secure_record.status = (
+            PackagePublishingStatus.DELETED)
+
+        serieses = self.archive.series_with_sources
+        serieses_names = [series.displayname for series in serieses]
+
+        self.assertContentEqual([u'Foo-series'], serieses_names)
+
+    def test_series_with_sources_ordered_by_version(self):
+        # The returned series are ordered by the distroseries version.
+        serieses = self.archive.series_with_sources
+        versions = [series.version for series in serieses]
+
+        # Latest version should be first
+        self.assertEqual(
+            [u'6.6.6', u'1.0'], versions,
+            "The latest version was not first.")
+
+        # Update the version of breezyautotest and ensure that the
+        # latest version is still first.
+        self.serieses[0].version = u'0.5'
+        serieses = self.archive.series_with_sources
+        versions = [series.version for series in serieses]
+        self.assertEqual(
+            [u'1.0', u'0.5'], versions,
+            "The latest version was not first.")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

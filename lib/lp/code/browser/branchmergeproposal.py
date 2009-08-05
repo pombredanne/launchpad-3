@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0322,F0401
 
 """Views, navigation and actions for BranchMergeProposals."""
@@ -40,10 +42,12 @@ from zope.security.proxy import removeSecurityProxy
 from lazr.lifecycle.event import ObjectModifiedEvent
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 
 from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.branch import DecoratedBug
+from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from lp.code.enums import (
@@ -55,8 +59,7 @@ from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.comments.interfaces.conversation import (
-    IComment, IConversation)
+from lp.services.comments.interfaces.conversation import IConversation
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
@@ -318,20 +321,6 @@ class BranchMergeProposalNavigation(Navigation):
             return None
 
 
-class CodeReviewDisplayComment:
-    """A code review comment or activity or both."""
-
-    implements(IComment)
-
-    delegates(ICodeReviewComment, 'comment')
-
-    def __init__(self, comment):
-        self.comment = comment
-        self.has_body = bool(self.comment.message_body)
-        self.has_footer = self.comment.vote is not None
-        self.date = self.comment.message.datecreated
-
-
 class CodeReviewConversation:
     """A code review conversation."""
 
@@ -384,7 +373,7 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
             result.append(dict(style=style, comment=comment))
         return result
 
-    @property
+    @cachedproperty
     def review_diff(self):
         """Return a (hopefully) intelligently encoded review diff."""
         if self.context.review_diff is None:
@@ -394,7 +383,25 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         except UnicodeDecodeError:
             diff = self.context.review_diff.diff.text.decode('windows-1252',
                                                              'replace')
-        return diff
+        # Strip off the trailing carriage returns.
+        return diff.rstrip('\n')
+
+    @cachedproperty
+    def review_diff_oversized(self):
+        """Return True if the review_diff is over the configured size limit.
+
+        The diff can be over the limit in two ways.  If the diff is oversized
+        in bytes it will be cut off at the Diff.text method.  If the number of
+        lines is over the max_format_lines, then it is cut off at the fmt:diff
+        processing.
+        """
+        review_diff = self.context.review_diff
+        if review_diff is None:
+            return False
+        if review_diff.diff.oversized:
+            return True
+        diff_text = self.review_diff
+        return diff_text.count('\n') >= config.diff.max_format_lines
 
     @property
     def has_bug_or_spec(self):

@@ -1,13 +1,13 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """PO file export view tests."""
 
 __metaclass__ = type
 
 import unittest
 import transaction
-from zope.component import getUtility
 
-from lp.translations.interfaces.vpoexport import IVPOExportSet
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -19,7 +19,7 @@ TEST_MESSAGES = [
     {'msgid':'Good morning', 'string':'Bonan matenon', 'sequence':2},
     {'msgid':'Thank you', 'string':'Dankon', 'sequence':1},
     ]
-EXPECTED_SEQUENCE = [1, 2 ,0, 0]
+EXPECTED_SEQUENCE = [1, 2, 0, 0]
 
 class VPOExportSetTestCase(unittest.TestCase):
     """Test the PO file export view."""
@@ -47,11 +47,10 @@ class VPOExportSetTestCase(unittest.TestCase):
 
         transaction.commit()
 
-    def test_get_pofile_rows_sequence(self):
+    def test_getTranslationRows_sequence(self):
         # Test for correct sorting of obsolete messages (where sequence=0).
-        vpoexportset = getUtility(IVPOExportSet)
         for rownum, row in enumerate(
-            vpoexportset.get_pofile_rows(self.pofile)):
+            self.pofile.getTranslationRows()):
             self.failUnlessEqual(
                 row.sequence, EXPECTED_SEQUENCE[rownum],
                 "VPOExportSet does not sort obsolete messages (sequence=0) "

@@ -1,5 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
-
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to branch merge proposals."""
 
@@ -175,9 +175,10 @@ class BMPMailer(BranchMailer):
 
     def _addAttachments(self, ctrl, email):
         if self.review_diff is not None:
+            # Using .txt as a file extension makes Gmail display it inline.
             ctrl.addAttachment(
                 self.review_diff.diff.text, content_type='text/x-diff',
-                inline=True, filename='review.diff')
+                inline=True, filename='review-diff.txt')
 
     def _generateTemplateParams(self):
         """For template params that don't change, calcualte just once."""
@@ -192,6 +193,7 @@ class BMPMailer(BranchMailer):
             'gap': '',
             'reviews': '',
             'whiteboard': '', # No more whiteboard.
+            'diff_cutoff_warning': '',
             }
 
         requested_reviews = []
@@ -211,6 +213,12 @@ class BMPMailer(BranchMailer):
             params['comment'] = (self.comment.message.text_contents)
             if len(requested_reviews) > 0:
                 params['gap'] = '\n\n'
+
+        if (self.review_diff is not None and
+            self.review_diff.diff.oversized):
+            params['diff_cutoff_warning'] = (
+                "The attached diff has been truncated due to its size.")
+
         return params
 
     def _getTemplateParams(self, email):

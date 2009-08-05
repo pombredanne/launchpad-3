@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch collections."""
 
@@ -796,6 +797,50 @@ class TestSearch(TestCaseWithFactory):
         branch2 = self.factory.makeProductBranch(product=product, name='bar')
         search_results = self.collection.inProduct(product).search('foo')
         self.assertEqual([branch1], list(search_results))
+
+
+class TestGetTeamsWithBranches(TestCaseWithFactory):
+    """Test the BranchCollection.getTeamsWithBranches method."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.all_branches = getUtility(IAllBranches)
+
+    def test_no_teams(self):
+        # If the user is not a member of any teams, there are no results, even
+        # if the person owns a branch themselves.
+        person = self.factory.makePerson()
+        self.factory.makeAnyBranch(owner=person)
+        teams = list(self.all_branches.getTeamsWithBranches(person))
+        self.assertEqual([], teams)
+
+    def test_team_branches(self):
+        # Return the teams that the user is in, that have branches.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=person)
+        self.factory.makeBranch(owner=team)
+        # Make another team that person is in that has no branches.
+        self.factory.makeTeam(owner=person)
+        teams = list(self.all_branches.getTeamsWithBranches(person))
+        self.assertEqual([team], teams)
+
+    def test_respects_restrictions(self):
+        # Create a team with branches on a product, and another branch in a
+        # different namespace owned by a different team that the person is a
+        # member of.  Restricting the collection will return just the teams
+        # that have branches in that restricted collection.
+        person = self.factory.makePerson()
+        team1 = self.factory.makeTeam(owner=person)
+        branch = self.factory.makeProductBranch(owner=team1)
+        # Make another team that person is in that owns a branch in a
+        # different namespace to the namespace of the branch owned by team1.
+        team2 = self.factory.makeTeam(owner=person)
+        self.factory.makeAnyBranch(owner=team2)
+        collection = self.all_branches.inProduct(branch.product)
+        teams = list(collection.getTeamsWithBranches(person))
+        self.assertEqual([team1], teams)
 
 
 def test_suite():

@@ -1,4 +1,5 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """In-memory doubles of core codehosting objects."""
 
@@ -467,7 +468,8 @@ class FakeBranchPuller:
     def acquireBranchToPull(self):
         branches = sorted(
             [branch for branch in self._branch_set
-            if branch.next_mirror_time is not None],
+             if branch.next_mirror_time is not None
+             and branch.branch_type != BranchType.REMOTE],
             key=operator.attrgetter('next_mirror_time'))
         if branches:
             branch = branches[-1]

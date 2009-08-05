@@ -1,30 +1,70 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Diff, etc."""
 
 __metaclass__ = type
 
 
+from cStringIO import StringIO
 from unittest import TestLoader
 
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 import transaction
 
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 from lp.code.model.diff import Diff, StaticDiff
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from lp.testing import login, login_person, TestCaseWithFactory
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestDiff(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_providesInterface(self):
         verifyObject(IDiff, Diff())
+
+    def _create_diff(self, content):
+        # Create a Diff object with the content specified.
+        sio = StringIO()
+        sio.write(content)
+        size = sio.tell()
+        sio.seek(0)
+        diff = Diff.fromFile(sio, size)
+        # Commit to make the alias available for reading.
+        transaction.commit()
+        return diff
+
+    def test_text_reads_librarian_content(self):
+        # IDiff.text will read at most config.diff.max_read_size bytes from
+        # the librarian.
+        content = "1234567890" * 10
+        diff = self._create_diff(content)
+        self.assertEqual(content, diff.text)
+
+    def test_oversized_normal(self):
+        # A diff smaller than config.diff.max_read_size is not oversized.
+        content = "1234567890" * 10
+        diff = self._create_diff(content)
+        self.assertFalse(diff.oversized)
+
+    def test_text_read_limited_by_config(self):
+        # IDiff.text will read at most config.diff.max_read_size bytes from
+        # the librarian.
+        self.pushConfig("diff", max_read_size=25)
+        content = "1234567890" * 10
+        diff = self._create_diff(content)
+        self.assertEqual(content[:25], diff.text)
+
+    def test_oversized_for_big_diff(self):
+        # A diff larger than config.diff.max_read_size is oversized.
+        self.pushConfig("diff", max_read_size=25)
+        content = "1234567890" * 10
+        diff = self._create_diff(content)
+        self.assertTrue(diff.oversized)
 
 
 class TestStaticDiff(TestCaseWithFactory):

@@ -228,7 +228,7 @@ method.
 
 Verify that empty packages have a size of zero.
 
-    >>> from canonical.launchpad.database import SourcePackageName
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> linux_src = SourcePackageName.selectOneBy(
     ...     name="linux-source-2.6.15")
     >>> spr = SourcePackageRelease.selectOneBy(

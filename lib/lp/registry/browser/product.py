@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
 
@@ -32,7 +33,6 @@ __all__ = [
     'ProductSetReviewLicensesView',
     'ProductSetView',
     'ProductSpecificationsMenu',
-    'ProductTranslationsMenu',
     'ProductView',
     'SortSeriesMixin',
     'ProjectAddStepOne',
@@ -88,7 +88,6 @@ from lp.registry.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -104,11 +103,9 @@ from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
 from canonical.widgets.lazrjs import TextLineEditorWidget
-from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import (
     LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
-from lp.registry.model.productseries import ProductSeries
 
 
 OR = '|'
@@ -295,10 +292,6 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class IProductEditMenu(Interface):
-    """A marker interface for the 'Change details' navigation menu."""
-
-
 class ProductNavigationMenu(NavigationMenu):
 
     usedfor = IProduct
@@ -327,31 +320,49 @@ class ProductNavigationMenu(NavigationMenu):
         text = 'Branch Visibility Policy'
         return Link('+branchvisibility', text)
 
+class ProductEditLinksMixin:
+    """A mixin class for menus that need Product edit links."""
 
-class ProductEditNavigationMenu(NavigationMenu):
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        text = 'Change people'
+        return Link('+edit-people', text, icon='edit')
+
+    @enabled_with_permission('launchpad.ProjectReview')
+    def review_license(self):
+        text = 'Review project'
+        return Link('+review-license', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
+
+
+class IProductEditMenu(Interface):
+    """A marker interface for the 'Change details' navigation menu."""
+
+
+class ProductEditNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     """A sub-menu for different aspects of editing a Product's details."""
 
     usedfor = IProductEditMenu
     facet = 'overview'
-    title = 'Change project details'
-    links = ('details', 'branding', 'people')
-
-    def details(self):
-        target = '+edit'
-        text = 'Details'
-        return Link(target, text)
-
-    def branding(self):
-        text = 'Branding'
-        return Link('+branding', text)
-
-    def people(self):
-        text = 'People'
-        summary = 'Someone with permission to set goals for all series'
-        return Link('+edit-people', text, summary)
+    title = 'Change project'
+    links = ('edit', 'branding', 'reassign', 'review_license', 'administer')
 
 
-class ProductOverviewMenu(ApplicationMenu):
+class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
 
     usedfor = IProduct
     facet = 'overview'
@@ -369,16 +380,6 @@ class ProductOverviewMenu(ApplicationMenu):
         'review_license',
         'rdf',
         ]
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def reassign(self):
-        text = 'Change maintainer'
-        return Link('+edit-people', text, icon='edit')
 
     def top_contributors(self):
         text = u'\u00BB More contributors'
@@ -417,16 +418,6 @@ class ProductOverviewMenu(ApplicationMenu):
             '<abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
-
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
-
-    @enabled_with_permission('launchpad.ProjectReview')
-    def review_license(self):
-        text = 'Review project'
-        return Link('+review-license', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
@@ -504,45 +495,6 @@ class ProductBountiesMenu(ApplicationMenu):
     def link(self):
         text = 'Link existing bounty'
         return Link('+linkbounty', text, icon='edit')
-
-
-class ProductTranslationsMenu(NavigationMenu):
-
-    usedfor = IProduct
-    facet = 'translations'
-    links = (
-        'overview',
-        'translators',
-        'translationdownload',
-        'imports',
-        )
-
-    def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
-
-    @enabled_with_permission('launchpad.Edit')
-    def translators(self):
-        text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
-
-    @enabled_with_permission('launchpad.AnyPerson')
-    def translationdownload(self):
-        text = 'Download'
-        preferred_series = self.context.primary_translatable
-        enabled = (self.context.official_rosetta and
-            preferred_series is not None)
-        link = ''
-        if enabled:
-            link = '%s/+export' % preferred_series.name
-            text = 'Download "%s"' % preferred_series.name
-
-        return Link(link, text, icon='download', enabled=enabled)
-
-    def overview(self):
-        text = 'Overview'
-        link = canonical_url(self.context, rootsite='translations')
-        return Link(link, text, icon='translation')
 
 
 def _sort_distros(a, b):
@@ -920,36 +872,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 self.context.homepageurl not in
                     [self.freshmeat_url, self.sourceforge_url])
 
-    @cachedproperty
-    def uses_translations(self):
-        """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and self.primary_translatable)
-
-    @cachedproperty
-    def primary_translatable(self):
-        """Return a dictionary with the info for a primary translatable.
-
-        If there is no primary translatable object, returns an empty
-        dictionary.
-
-        The dictionary has the keys:
-         * 'title': The title of the translatable object.
-         * 'potemplates': a set of PO Templates for this object.
-         * 'base_url': The base URL to reach the base URL for this object.
-        """
-        translatable = self.context.primary_translatable
-        naked_translatable = removeSecurityProxy(translatable)
-
-        if (translatable is None or
-            not isinstance(naked_translatable, ProductSeries)):
-            return {}
-
-        return {
-            'title': translatable.title,
-            'potemplates': translatable.getCurrentTranslationTemplates(),
-            'base_url': canonical_url(translatable)
-            }
-
     def requestCountry(self):
         return ICountry(self.request, None)
 
@@ -1098,12 +1020,22 @@ class ProductDownloadFilesView(LaunchpadView,
 
 
 class ProductBrandingView(BrandingChangeView):
-
+    """A view to set branding."""
     implements(IProductEditMenu)
 
-    label = None
+    label = "Change branding"
     schema = IProduct
     field_names = ['icon', 'logo', 'mugshot']
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change %s's branding" % self.context.title
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
@@ -1111,6 +1043,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     implements(IProductEditMenu)
 
+    label = "Edit details"
     schema = IProduct
     field_names = [
         "displayname",
@@ -1140,6 +1073,11 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     custom_widget('licenses', LicenseWidget)
     custom_widget('bugtracker', ProductBugTrackerWidget)
     custom_widget('license_info', GhostWidget)
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change %s's details" % self.context.title
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1197,15 +1135,14 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         return self.next_url
 
 
-class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
-    label = "Select a new translation group"
-    field_names = ["translationgroup", "translationpermission"]
-
-
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
-    custom_widget('registrant', SinglePopupWidget)
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Administer %s' % self.context.title
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.
@@ -1266,6 +1203,7 @@ class ProductAdminView(ProductEditView):
 
 
 class ProductReviewLicenseView(ProductEditView):
+    """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
         "license_reviewed",
@@ -1274,6 +1212,11 @@ class ProductReviewLicenseView(ProductEditView):
         "private_bugs",
         "reviewer_whiteboard",
         ]
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Review %s' % self.context.title
 
     def validate(self, data):
         """See `LaunchpadFormView`.
@@ -1708,6 +1651,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
     implements(IProductEditMenu)
 
+    label = "Change the roles of people"
     schema = IProduct
     field_names = [
         'owner',
@@ -1718,6 +1662,11 @@ class ProductEditPeopleView(LaunchpadEditFormView):
                   include_create_team_link=True)
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
                   include_create_team_link=True)
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change the roles of %s's people" % self.context.title
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):

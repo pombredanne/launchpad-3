@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -512,32 +516,6 @@
             permission="zope.Public"
             set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
     </class>
-    <facet
-        facet="overview">
-        
-        <!-- MentoringOffer -->
-        
-        <class
-            class="canonical.launchpad.database.MentoringOffer">
-            <allow
-                interface="canonical.launchpad.interfaces.IMentoringOffer"/>
-        </class>
-        
-        <!-- IHasMentoringOffers -->
-        
-        
-        <!-- ICanBeMentored -->
-        
-        
-        <!-- MentoringOfferSet -->
-        
-        <securedutility
-            class="canonical.launchpad.database.MentoringOfferSet"
-            provides="canonical.launchpad.interfaces.IMentoringOfferSet">
-            <allow
-                interface="canonical.launchpad.interfaces.IMentoringOfferSet"/>
-        </securedutility>
-    </facet>
     <facet
         facet="bugs">
         

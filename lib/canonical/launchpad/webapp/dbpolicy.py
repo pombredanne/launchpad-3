@@ -1,4 +1,5 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad database policies."""
 
@@ -13,7 +14,7 @@ __all__ = [
 from datetime import datetime, timedelta
 from textwrap import dedent
 
-from storm.cache import Cache
+from storm.cache import Cache, GenerationalCache
 from storm.zope.interfaces import IZStorm
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
@@ -27,7 +28,6 @@ from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy, IStoreSelector,
     MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore, SLAVE_FLAVOR)
-from contrib.generationalcache import GenerationalCache
 
 
 def _now():

@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Person-related view classes."""
@@ -116,7 +118,6 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription, LocationWidget, PasswordChangeWidget)
-from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
@@ -127,7 +128,6 @@ from lp.soyuz.browser.archive import traverse_named_ppa
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
-from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
 from lp.soyuz.interfaces.archivesubscriber import (
@@ -179,8 +179,9 @@ from canonical.launchpad.interfaces.message import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
-from canonical.signon.interfaces.openidserver import (
-    IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from lp.soyuz.interfaces.sourcepackagerelease import (
@@ -190,7 +191,7 @@ from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.signon.browser.openiddiscovery import (
+from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
@@ -614,14 +615,16 @@ class PersonSetNavigation(Navigation):
         if person is None:
             raise NotFoundError(name)
         # Redirect to /~name
-        return self.redirectSubTree(canonical_url(person))
+        return self.redirectSubTree(
+            canonical_url(person, request=self.request))
 
     @stepto('+me')
     def me(self):
         me = getUtility(ILaunchBag).user
         if me is None:
             raise Unauthorized("You need to be logged in to view this URL.")
-        return self.redirectSubTree(canonical_url(me), status=303)
+        return self.redirectSubTree(
+            canonical_url(me, request=self.request), status=303)
 
 
 class PersonSetContextMenu(ContextMenu):
@@ -1473,7 +1476,7 @@ class PersonClaimView(LaunchpadFormView):
                          "Launchpad profile, which you seem to have used at "
                          "some point. If that's the case, you can "
                          '<a href="/people/+requestmerge'
-                         '?field.dupeaccount=%s">combine '
+                         '?field.dupe_person=%s">combine '
                          "this profile with the other one</a> (you'll "
                          "have to log in with the other profile first, "
                          "though). If that's not the case, please try with a "
@@ -2278,7 +2281,6 @@ class PersonVouchersView(LaunchpadFormView):
     """Form for displaying and redeeming commercial subscription vouchers."""
 
     custom_widget('voucher', LaunchpadDropdownWidget)
-    custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
         """Set up the fields for this view."""
@@ -2860,16 +2862,15 @@ class PersonView(LaunchpadView, FeedsMixin):
         """Return True if "Personal package archives" is to be shown.
 
         We display it if:
-        person has viewable ppa or current_user has lp.edit
+        person has any public PPA or current_user has lp.edit
         """
         # If the current user has edit permission, show the section.
         if check_permission('launchpad.Edit', self.context):
             return True
 
-        # If the current user is allowed to see any PPAs, show the
-        # section.
+        # If the current user has any public PPA, show the section.
         for ppa in self.context.ppas:
-            if check_permission('launchpad.View', ppa):
+            if not ppa.private:
                 return True
 
         return False
@@ -2948,7 +2949,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
-        "../../../canonical/signon/templates/person-xrds.pt")
+        "../../services/openid/templates/person-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
@@ -3518,11 +3519,17 @@ class PersonChangePasswordView(LaunchpadFormView):
         return canonical_url(self.context)
 
     def validate(self, form_values):
-        currentpassword = form_values.get('currentpassword')
+        current_password = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(currentpassword, self.context.password):
+        if not encryptor.validate(current_password, self.context.password):
             self.setFieldError('currentpassword', _(
                 "The provided password doesn't match your current password."))
+        # This is not part of the widget, since the value may
+        # be optional in some forms.
+        new_password = self.request.form.get('field.password', '')
+        if new_password.strip() == '':
+            self.setFieldError('password', _(
+                "Setting an empty password is not allowed."))
 
     @action(_("Change Password"), name="submit")
     def submit_action(self, action, data):
@@ -3530,6 +3537,11 @@ class PersonChangePasswordView(LaunchpadFormView):
         self.context.password = password
         self.request.response.addInfoNotification(_(
             "Password changed successfully"))
+
+    @property
+    def cancel_url(self):
+        """The URL that the 'Cancel' link should return to."""
+        return canonical_url(self.context)
 
 
 class BasePersonEditView(LaunchpadEditFormView):
@@ -4232,7 +4244,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
-                    '%s/+requestmerge?field.dupeaccount=%s'
+                    '%s/+requestmerge?field.dupe_person=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
                 self.addError(
                     structured(

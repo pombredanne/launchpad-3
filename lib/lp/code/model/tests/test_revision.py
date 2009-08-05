@@ -1,4 +1,5 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Revisions."""
 
@@ -145,7 +146,8 @@ class TestRevisionKarma(TestCaseWithFactory):
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
-        branch.product = self.factory.makeProduct()
+        project = self.factory.makeProduct()
+        branch.setTarget(user=branch.owner, project=project)
         # The revision is now identified as needing karma allocated.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))

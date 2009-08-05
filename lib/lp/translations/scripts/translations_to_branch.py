@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export translation snapshots to bzr branches where requested."""
 
@@ -11,6 +12,8 @@ from zope.component import getUtility
 
 from storm.expr import Join, SQL
 
+from canonical.launchpad.helpers import shortlist
+from lp.codehosting.vfs import get_multi_server
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -78,9 +81,43 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
                     committer.writeFile(pofile_path, pofile_contents)
 
+                    # We're not actually writing any changes to the
+                    # database, but it's not polite to stay in one
+                    # transaction for too long.
+                    if self.txn:
+                        self.txn.commit()
+
             self._commit(source, committer)
         finally:
             committer.unlock()
+
+    def _exportToBranches(self, productseries_iter):
+        """Loop over `productseries_iter` and export their translations."""
+        items_done = 0
+        items_failed = 0
+
+        productseries = shortlist(productseries_iter, longest_expected=2000)
+
+        for source in productseries:
+            try:
+                self._exportToBranch(source)
+
+                if self.txn:
+                    self.txn.commit()
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except Exception, e:
+                items_failed += 1
+                self.logger.error("Failure: %s" % e)
+                if self.txn:
+                    self.txn.abort()
+
+            items_done += 1
+            if self.txn:
+                self.txn.begin()
+
+        self.logger.info("Processed %d item(s); %d failure(s)." % (
+            items_done, items_failed))
 
     def main(self):
         """See `LaunchpadScript`."""
@@ -102,28 +139,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # testing.
         productseries = productseries.order_by(ProductSeries.id)
 
-        items_done = 0
-        items_failed = 0
-        for source in productseries:
-            try:
-                self._exportToBranch(source)
-
-                # We're not actually writing any changes to the
-                # database, but it's not polite to stay in one
-                # transaction for too long.
-                if self.txn:
-                    self.txn.commit()
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except Exception, e:
-                items_failed += 1
-                self.logger.warn("Failure: %s" % e)
-                if self.txn:
-                    self.txn.abort()
-
-            items_done += 1
-            if self.txn:
-                self.txn.begin()
-
-        self.logger.info("Processed %d item(s); %d failure(s)." % (
-            items_done, items_failed))
+        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver.setUp()
+        try:
+            self._exportToBranches(productseries)
+        finally:
+            bzrserver.tearDown()

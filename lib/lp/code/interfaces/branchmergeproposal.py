@@ -1,4 +1,6 @@
-# Copyright 2007, 20008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """The interface for branch merge proposals."""
@@ -32,7 +34,7 @@ from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
-from lp.services.job.interfaces.job import IJob
+from lp.services.job.interfaces.job import IJob, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
@@ -429,6 +431,7 @@ class IBranchMergeProposal(Interface):
             title=_("A reviewer."), schema=IPerson),
         review_type=Text())
     @call_with(registrant=REQUEST_USER)
+    @operation_returns_entry(Interface) # Really ICodeReviewVoteReference
     @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
@@ -462,13 +465,13 @@ class IBranchMergeProposal(Interface):
         """
 
     def createCommentFromMessage(message, vote, review_type,
-                                 original_email=None):
+                                 original_email):
         """Create an `ICodeReviewComment` from an IMessage.
 
         :param message: The IMessage to use.
         :param vote: A CodeReviewVote (or None).
         :param review_type: A string (or None).
-        :param original_email: Optional original email message.
+        :param original_email: Original email message.
         """
 
     def deleteProposal():
@@ -578,14 +581,11 @@ for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
 
 
-class ICreateMergeProposalJob(Interface):
+class ICreateMergeProposalJob(IRunnableJob):
     """A Job that creates a branch merge proposal.
 
     It uses a Message, which must contain a merge directive.
     """
-
-    def run():
-        """Run this job and create the merge proposals."""
 
 
 class ICreateMergeProposalJobSource(Interface):
@@ -598,11 +598,8 @@ class ICreateMergeProposalJobSource(Interface):
         """Iterate through jobs that are ready to run."""
 
 
-class IMergeProposalCreatedJob(Interface):
+class IMergeProposalCreatedJob(IRunnableJob):
     """Interface for review diffs."""
-
-    def run():
-        """Perform the diff and email specified by this job."""
 
 
 class IMergeProposalCreatedJobSource(Interface):

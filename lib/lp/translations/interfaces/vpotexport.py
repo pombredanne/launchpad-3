@@ -1,25 +1,19 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for efficient POT file exports."""
 
 __metaclass__ = type
 
-__all__ = [
-    'IVPOTExportSet',
-    'IVPOTExport'
-    ]
+__all__ = ['IVPOTExport']
 
 from zope.interface import Interface
 from zope.schema import Int, Object, Text
 
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.potmsgset import IPOTMsgSet
-class IVPOTExportSet(Interface):
-    """A collection of IVPOTExport-providing rows."""
-
-    def get_potemplate_rows(potemplate):
-        """Return all rows which belong to a particular PO template."""
 
 
 class IVPOTExport(Interface):

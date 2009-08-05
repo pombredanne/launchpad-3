@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interface for objects which have a bug contact."""
@@ -12,13 +14,14 @@ __all__ = [
 from zope.schema import Choice
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
 
 class IHasBugSupervisor(IStructuralSubscriptionTarget):
 
-    bug_supervisor = Choice(
+    bug_supervisor = PublicPersonChoice(
         title=_("Bug Supervisor"),
         description=_(
             "The person or team responsible for bug management."),

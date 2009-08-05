@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # We use global in this module.
 # pylint: disable-msg=W0602
 
@@ -110,7 +112,15 @@ def summarize_requests():
     """Produce human-readable summary of requests issued so far."""
     secs = get_request_duration()
     statements = getattr(_local, 'request_statements', [])
-    log = "%s queries issued in %.2f seconds" % (len(statements), secs)
+    from canonical.launchpad.webapp.errorlog import (
+        maybe_record_user_requested_oops)
+    oopsid = maybe_record_user_requested_oops()
+    if oopsid is None:
+        oops_str = ""
+    else:
+        oops_str = " %s" % oopsid
+    log = "%s queries issued in %.2f seconds%s" % (
+        len(statements), secs, oops_str)
     return log
 
 
@@ -124,7 +134,7 @@ def store_sql_statements_and_request_duration(event):
 def get_request_statements():
     """Get the list of executed statements in the request.
 
-    The list is composed of (starttime, endtime, statement) tuples.
+    The list is composed of (starttime, endtime, db_id, statement) tuples.
     Times are given in milliseconds since the start of the request.
     """
     return getattr(_local, 'request_statements', [])
@@ -155,7 +165,11 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
     # convert times to integer millisecond values
     starttime = int((starttime - request_starttime) * 1000)
     endtime = int((endtime - request_starttime) * 1000)
-    _local.request_statements.append((starttime, endtime, statement))
+    # A string containing no whitespace that lets us identify which Store
+    # is being used.
+    database_identifier = connection_wrapper._database.name
+    _local.request_statements.append(
+        (starttime, endtime, database_identifier, statement))
 
     # store the last executed statement as an attribute on the current
     # thread
@@ -264,6 +278,8 @@ class LaunchpadDatabase(Postgres):
         # opinion on what uri is.
         # pylint: disable-msg=W0231
         self._uri = uri
+        # A unique name for this database connection.
+        self.name = uri.database
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
@@ -337,6 +353,9 @@ class LaunchpadDatabase(Postgres):
 
 
 class LaunchpadSessionDatabase(Postgres):
+
+    # A unique name for this database connection.
+    name = 'session'
 
     def raw_connect(self):
         self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,

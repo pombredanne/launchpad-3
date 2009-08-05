@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = ['Packageset', 'PackagesetSet']
@@ -12,12 +13,11 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.interfaces.packageset import (
-    IPackageset, IPackagesetSet)
+    IPackageset, IPackagesetSet, NoSuchPackageSet)
 
 
 def _order_result_set(result_set):
@@ -311,7 +311,10 @@ class PackagesetSet:
         store = IStore(Packageset)
         if not isinstance(name, unicode):
             name = unicode(name, 'utf-8')
-        return store.find(Packageset, Packageset.name == name).one()
+        package_set = store.find(Packageset, Packageset.name == name).one()
+        if package_set is None:
+            raise NoSuchPackageSet(name)
+        return package_set
 
     def getByOwner(self, owner):
         """See `IPackagesetSet`."""

@@ -36,7 +36,7 @@ Get a translation for a particular message and check it has a translation.
 
 Get a person to create a translation with.
 
-    >>> from canonical.launchpad.database import Person
+    >>> from lp.registry.model.person import Person
     >>> person = Person.get(1)
     >>> pofile.canEditTranslations(person)
     True

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing the CodeHandler."""
 
@@ -731,6 +732,7 @@ class TestCodeHandler(TestCaseWithFactory):
             )
         self.assertEqual(notification['to'],
             mail['from'])
+        self.assertEqual(0, bmp.all_comments.count())
 
 
 class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):

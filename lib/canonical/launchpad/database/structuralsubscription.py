@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = ['StructuralSubscription',
@@ -85,7 +86,7 @@ class StructuralSubscription(SQLBase):
                 #   here because importing it from the top
                 #   doesn't play well with the loading
                 #   sequence.
-                from canonical.launchpad.database import (
+                from lp.registry.model.distributionsourcepackage import (
                     DistributionSourcePackage)
                 return DistributionSourcePackage(
                     self.distribution, self.sourcepackagename)

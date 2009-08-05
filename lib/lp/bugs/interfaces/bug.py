@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213,E0602
 
 """Interfaces related to bugs."""
@@ -35,7 +37,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.launchpad import  IPrivacy, NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlink import IHasLinkedBranches
@@ -145,7 +147,14 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
-class IBug(ICanBeMentored, IHasLinkedBranches):
+def optional_message_subject_field():
+    """A modified message subject field allowing None as a value."""
+    subject_field = copy_field(IMessage['subject'])
+    subject_field.required = False
+    return subject_field
+
+
+class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
 
@@ -178,6 +187,8 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
     readonly_duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is guarded by setPrivate().
     private = exported(
         Bool(title=_("This bug report should be private"), required=False,
              description=_("Private bug reports are visible only to "
@@ -309,7 +320,7 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
     followup_subject = Attribute("The likely subject of the next message.")
 
     @operation_parameters(
-        subject=copy_field(IMessage['subject']),
+        subject=optional_message_subject_field(),
         content=copy_field(IMessage['content']))
     @call_with(owner=REQUEST_USER)
     @export_factory_operation(IMessage, [])
@@ -390,7 +401,8 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
     def getSubscribersFromDuplicates():
         """Return IPersons subscribed from dupes of this bug."""
 
-    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
+    def getBugNotificationRecipients(duplicateof=None, old_bug=None,
+                                     include_master_dupe_subscribers=True):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -399,6 +411,8 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
         rationales. See
         canonical.launchpad.interfaces.BugNotificationRecipients for
         details of this implementation.
+        If this bug is a dupe, set include_master_dupe_subscribers to
+        False to not include the master bug's subscribers.
         """
 
     def addChangeNotification(text, person, recipients=None, when=None):

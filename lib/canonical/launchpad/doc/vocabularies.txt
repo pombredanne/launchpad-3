@@ -338,14 +338,13 @@ All the source packages in Launchpad.
     >>> len(spn_terms)
     2
     >>> [(term.token, term.title) for term in spn_terms]
-    [('mozilla', 'Not yet built'),
-     ('mozilla-firefox', u'Source of: mozilla-firefox, mozilla-firefox-data')]
+    [('mozilla', u'mozilla'), ('mozilla-firefox', u'mozilla-firefox')]
 
     >>> spn_terms = spn_vocabulary.searchForTerms("pmount")
     >>> len(spn_terms)
     1
     >>> [(term.token, term.title) for term in spn_terms]
-    [('pmount', u'Source of: pmount')]
+    [('pmount', u'pmount')]
 
 
 === BranchVocabulary ===
@@ -457,13 +456,38 @@ The BranchRestrictedOnProduct behaves the same way as the more generic
 BranchVocabulary with respect to the tokens and privacy awareness.
 
 
+=== HostedBranchRestrictedOnOwner ===
+
+Here's a vocabulary for all hosted branches owned by the current user.
+
+    >>> from lp.code.enums import BranchType
+
+    >>> a_user = factory.makePerson(name='a-branching-user')
+    >>> product1 = factory.makeProduct(name='product-one')
+    >>> mirrored_branch = factory.makeBranch(
+    ...     owner=a_user, product=product1, name='mirrored',
+    ...     branch_type=BranchType.MIRRORED)
+    >>> product2 = factory.makeProduct(name='product-two')
+    >>> hosted_branch = factory.makeBranch(
+    ...     owner=a_user, product=product2, name='hosted')
+    >>> foreign_branch = factory.makeBranch()
+
+It returns branches owned by the user, but not ones owned by others, nor
+ones that aren't hosted on Launchpad.
+
+    >>> branch_vocabulary = vocabulary_registry.get(
+    ...     a_user, "HostedBranchRestrictedOnOwner")
+    >>> print_vocab_branches(branch_vocabulary, None)
+    ~a-branching-user/product-two/hosted
+
+
 === Processor ===
 
 All processors type available in Launchpad.
 
     >>> vocab = vocabulary_registry.get(None, "Processor")
     >>> vocab.displayname
-    'Select a Processor'
+    'Select a processor'
 
     >>> [term.token for term in vocab.searchForTerms('386')]
     ['386']

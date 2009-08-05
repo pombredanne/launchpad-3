@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to branches."""
 
@@ -321,9 +322,10 @@ class BranchMailer(BaseMailer):
         """
         if not self._includeDiff(email):
             return
+        # Using .txt as a file extension makes Gmail display it inline.
         ctrl.addAttachment(
             self.diff, content_type='text/x-diff', inline=True,
-                filename='revision.diff')
+                filename='revision-diff.txt')
 
     @staticmethod
     def _format_user_address(user):

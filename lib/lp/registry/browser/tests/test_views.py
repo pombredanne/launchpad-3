@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Run the view tests.
 """
@@ -24,6 +26,7 @@ special_test_layer = {
     'user-to-user-views.txt': LaunchpadFunctionalLayer,
     'distribution-views.txt': LaunchpadFunctionalLayer,
     'distributionsourcepackage-views.txt': LaunchpadFunctionalLayer,
+    'product-edit-people-view.txt': LaunchpadFunctionalLayer,
 }
 
 
