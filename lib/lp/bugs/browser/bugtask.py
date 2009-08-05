@@ -3050,6 +3050,10 @@ class BugTaskTableRowView(LaunchpadView):
                 MilestoneVocabulary(self.context),
                 value_fn=lambda item: canonical_url(
                     item, request=IWebServiceClientRequest(self.request)))
+            items.append({
+                "name": "Remove milestone",
+                "disabled": False,
+                "value": None})
         else:
             items = '[]'
 
@@ -3101,7 +3105,11 @@ class BugTaskTableRowView(LaunchpadView):
             'importance_value': self.context.importance.title,
             'milestone_widget_items': self.milestone_widget_items,
             'milestone_value': (self.context.milestone and
-                                self.context.milestone.name or ''),
+                                canonical_url(
+                                    self.context.milestone,
+                                    request=IWebServiceClientRequest(
+                                        self.request)) or
+                                None),
             'user_can_edit_importance': self.user_can_edit_importance})
 
 
