@@ -22,16 +22,8 @@ First we have to go to the +requestmerge page.
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/people/+requestmerge')
-    >>> print_location(browser.contents)
-    Hierarchy: Launchpad
-    Tabs:
-    * Launchpad Home (selected) - http://launchpad.dev/
-    * Code - http://code.launchpad.dev/
-    * Bugs - http://bugs.launchpad.dev/
-    * Blueprints - http://blueprints.launchpad.dev/
-    * Translations - http://translations.launchpad.dev/
-    * Answers - http://answers.launchpad.dev/
-    Main heading: Merge Launchpad accounts
+    >>> print browser.title
+    Merge Launchpad accounts
 
 If we try to merge a nonexistent account, we'll get an error page.
 

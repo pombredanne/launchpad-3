@@ -98,7 +98,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.person import Person, ValidPersonCache
 from lp.registry.model.pillar import pillar_sort_key
 
 
@@ -474,6 +473,7 @@ class Bug(SQLBase):
         # the same time as retrieving the bug subscriptions (as a left
         # join). However, this ran slowly (far from optimal query
         # plan), so we're doing it as two queries now.
+        from lp.registry.model.person import Person, ValidPersonCache
         valid_persons = Store.of(self).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
@@ -496,6 +496,7 @@ class Bug(SQLBase):
         the relevant subscribers and rationales will be registered on
         it.
         """
+        from lp.registry.model.person import Person
         subscribers = list(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -556,6 +557,7 @@ class Bug(SQLBase):
         if self.private:
             return []
 
+        from lp.registry.model.person import Person
         dupe_subscribers = set(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -723,6 +725,8 @@ class Bug(SQLBase):
                    content=None, parent=None, bugwatch=None,
                    remote_comment_id=None):
         """Create a new Message and link it to this bug."""
+        if subject is None:
+            subject = self.followup_subject()
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
@@ -1048,6 +1052,7 @@ class Bug(SQLBase):
         # Since we can't prejoin, cache all people at once so we don't
         # have to do it while rendering, which is a big deal for bugs
         # with a million comments.
+        from lp.registry.model.person import Person
         owner_ids = set()
         for chunk in chunks:
             if chunk.message.ownerID:

@@ -130,6 +130,7 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
     ubuntu_security = Attribute("The 'ubuntu-security' team.")
+    ubuntu_techboard = Attribute("The Ubuntu technical board.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
 
 
