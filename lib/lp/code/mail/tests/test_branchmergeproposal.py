@@ -98,6 +98,28 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         self.assertEqual([bmp.address], ctrl.to_addrs)
         mailer.sendAll()
 
+    def test_forCreation_with_bugs(self):
+        """If there are related bugs, include 'Related bugs'."""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        bug = self.factory.makeBug(title='I am a bug')
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        expected = (
+            'Related bugs:\n'
+            '  #%d I am a bug\n'
+            '  %s\n' % (bug.id, canonical_url(bug))
+        )
+        self.assertIn(expected, ctrl.body)
+
+    def test_forCreation_without_bugs(self):
+        """If there are no related bugs, omit 'Related bugs'."""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        bug = self.factory.makeBug()
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        self.assertNotIn('Related bugs:\n', ctrl.body)
+
     def test_to_addrs_includes_reviewers(self):
         """The addresses for the to header include requested reviewers"""
         request, requester = self.makeReviewRequest()

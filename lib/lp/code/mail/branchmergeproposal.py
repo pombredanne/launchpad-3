@@ -219,7 +219,22 @@ class BMPMailer(BranchMailer):
             params['diff_cutoff_warning'] = (
                 "The attached diff has been truncated due to its size.")
 
+        params['related_bugs'] = self._getRelatedBugs()
         return params
+
+    def _getRelatedBugs(self):
+        """Return a string describing related bugs, if any.
+
+        Related bugs are defined as those linked to the source branch.
+        """
+        bug_chunks = []
+        for bug in self.merge_proposal.source_branch.linked_bugs:
+            bug_chunks.append('  #%d %s\n' % (bug.id, bug.title))
+            bug_chunks.append('  %s\n' % canonical_url(bug))
+        if len(bug_chunks) == 0:
+            return ''
+        else:
+            return 'Related bugs:\n' + ''.join(bug_chunks)
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
