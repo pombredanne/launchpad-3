@@ -42,7 +42,7 @@ class TestIncoming(TestCaseWithFactory):
             self.assertIs(None, current_oops)
         else:
             self.assertEqual(old_oops.id, current_oops.id)
-        (notification,) = pop_notifications()
+        [notification] = pop_notifications()
         body = notification.get_payload()[0].get_payload(decode=True)
         self.assertIn(
             "An error occurred while processing a mail you sent to "
