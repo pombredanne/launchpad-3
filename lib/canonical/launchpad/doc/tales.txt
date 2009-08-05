@@ -1070,6 +1070,16 @@ also returns the logo of the nearest object that provides a logo.
     >>> print test_tales("ppa/image:logo", ppa=sabdfl.archive)
     <img ... src="/@@/person-logo" />
 
+Similarly to the `image:logo` formatter, if the object cannot produce a
+logo, the title defaults to 'Launchpad'.
+
+    >>> from canonical.launchpad.webapp.publisher import rootObject
+    >>> print test_tales(
+    ...     "root_object/fmt:location_title", root_object=rootObject)
+    Launchpad
+    >>> print test_tales(
+    ...     "root_object/image:logo", root_object=rootObject)
+    <img ... src="/@@/launchpad-logo" />
 
 == The lp: namespace for presenting DBSchema items ==
 

@@ -488,11 +488,14 @@ class ObjectFormatterAPI:
 
     def location_title(self):
         """Return the title of the nearest object supporting a logo."""
-        location = nearest(self._context, IHasLogo)
-        if location is not None:
-            return location.title
+        context = self._context
+        if not IHasLogo.providedBy(context):
+            context = nearest(context, IHasLogo)
+
+        if context is None:
+            return 'Launchpad'
         else:
-            return ''
+            return context.title
 
 
 class ObjectImageDisplayAPI:

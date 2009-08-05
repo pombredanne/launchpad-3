@@ -301,7 +301,6 @@
 <metal:location-tabs define-macro="location-tabs">
   <!-- Application Menu -->
   <ul
-    tal:condition="view/macro:pagehas/applicationtabs"
     tal:define="facetmenu view/menu:facet">
     <tal:facet repeat="link facetmenu">
       <li

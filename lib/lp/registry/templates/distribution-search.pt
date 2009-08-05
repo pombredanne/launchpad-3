@@ -6,11 +6,14 @@
   metal:use-macro="view/macro:page/searchless"
   i18n:domain="launchpad"
 >
-  <body>
+<body>
+
+<div metal:fill-slot="heading">
+  <h1>Search packages in <tal:title replace="context/title" /></h1>
+</div>
 
 <div metal:fill-slot="main">
-  <div class="portlet">
-    <h1>Search packages in <tal:title replace="context/title" /></h1>
+  <div class="top-portlet">
     <form name="search" method="GET">
       <div>
         <label for="text">

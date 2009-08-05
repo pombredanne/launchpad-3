@@ -106,7 +106,16 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <tal:location condition="view/macro:pagehas/applicationtabs">
+            <div class="location-portlet top-portlet">
+              <span tal:replace="structure context/image:logo"></span>
+              <h2 tal:content="context/fmt:location_title">
+                Celso Providelo
+              </h2>
+              <metal:heading_nav
+                use-macro="context/@@+base-layout-macros/location-tabs"/>
+            </div>
+            <div tal:condition="view/macro:pagehas/applicationtabs"
+                 class="portlet">
               <h2
                 tal:condition="context/title|nothing"
                 tal:content="context/title"
@@ -114,7 +123,7 @@
               <tal:breadcrumbs>
                 <!-- future breadcrumb rule -->
               </tal:breadcrumbs>
-            </tal:location>
+            </div>
             <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->
