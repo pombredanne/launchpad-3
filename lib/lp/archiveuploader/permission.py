@@ -9,7 +9,10 @@ __all__ = [
     'verify_upload',
     ]
 
+from zope.component import getUtility
+
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 
 
 class CannotUploadToArchive(Exception):
@@ -26,10 +29,17 @@ class CannotUploadToArchive(Exception):
 
 
 def verify_upload(person, suite_sourcepackage, archive):
+    # For PPAs...
     if archive.purpose == ArchivePurpose.PPA:
         if not archive.canUpload(person):
             raise CannotUploadToArchive(person, archive)
-    else:
-        spn = suite_sourcepackage.sourcepackagename
-        if not archive.canUpload(person, spn):
-            raise CannotUploadToArchive(person, archive)
+        else:
+            return True
+
+    # For any other archive...
+    spn = suite_sourcepackage.sourcepackagename
+    ap_set = getUtility(IArchivePermissionSet)
+    if not (
+        archive.canUpload(person, spn)
+        or ap_set.isSourceUploadAllowed(archive, spn, person)):
+        raise CannotUploadToArchive(person, archive)

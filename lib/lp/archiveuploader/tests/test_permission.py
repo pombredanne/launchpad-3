@@ -68,10 +68,18 @@ class TestPermission(TestCaseWithFactory):
             archive, person, ssp.sourcepackagename)
         self.assertCanUpload(person, ssp, archive)
 
-    # XXX: Why doesn't nascentupload:verify_acl() check to see if the signer
-    # is allowed to upload the specific package?
-
-    # XXX: What's the next test to write?
+    def test_packageset_specific_rights(self):
+        # A person with rights to upload to the package set can upload the
+        # package set to the archive.
+        person = self.factory.makePerson()
+        ssp = self.factory.makeSuiteSourcePackage()
+        archive = ssp.distribution.main_archive
+        package_set = self.factory.makePackageSet(
+            packages=[ssp.sourcepackagename])
+        permission_set = getUtility(IArchivePermissionSet)
+        removeSecurityProxy(permission_set).newPackagesetUploader(
+            archive, person, package_set)
+        self.assertCanUpload(person, ssp, archive)
 
 
 def test_suite():
