@@ -23,9 +23,10 @@ Bug subscriptions
 -----------------
 
     >>> # Create the necessary teams.
-    >>> from lp.registry.interfaces.person import PersonVisibility
     >>> team_owner = factory.makePerson(name='team-owner')
-    >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.person import IPersonSet, PersonVisibility
+    >>> admin_user = getUtility(IPersonSet).getByEmail('admin@canonical.com')
+    >>> login_person(admin_user)
     >>> priv_team = factory.makeTeam(name='private-team',
     ...     owner=team_owner,
     ...     visibility=PersonVisibility.PRIVATE)
@@ -102,12 +103,12 @@ Branch ownership
 Private teams can be assigned as the owner of a branch
 
     >>> branch = factory.makeBranch()
-    >>> branch.owner = priv_team
+    >>> branch.setOwner(priv_team, user=admin_user)
 
 But private membership teams cannot own a branch.
 
     >>> branch = factory.makeBranch()
-    >>> branch.owner = pm_team
+    >>> branch.setOwner(pm_team, user=admin_user)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
