@@ -207,8 +207,9 @@ class ErrorReport:
             if line == '':
                 break
             start, end, db_id, statement = re.match(
-                r'^(\d+)-(\d+)(?:@([\w-]+))?(.*)', line).groups()
-            db_id = intern(db_id) # This string is repeated lots.
+                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line).groups()
+            if db_id is not None:
+                db_id = intern(db_id) # This string is repeated lots.
             statements.append(
                 (int(start), int(end), db_id, statement))
 
