@@ -267,6 +267,7 @@ use, which enforces the user to be an admin or a member of the "techboard"
 Set up a helper function to check access:
 
     >>> from zope.security.checker import canAccess
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> restricted_methods = (
     ...     'newPackageUploader', 'newComponentUploader', 'newQueueAdmin',
     ...     'deletePackageUploader', 'deleteComponentUploader',
@@ -274,30 +275,14 @@ Set up a helper function to check access:
     >>> def checkAccess(true_or_false):
     ...     for method in restricted_methods:
     ...         assert(canAccess(permission_set, method) == true_or_false)
-
-If, for some reason, the techboard team is missing, the security adapter
-will not allow access and generates an OOPS.
-
-    >>> login("test@canonical.com")
-    >>> from zope.app.error.interfaces import IErrorReportingUtility
-    >>> report = getUtility(IErrorReportingUtility).getLastOopsReport()
-    >>> checkAccess(False)
-    >>> report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
-    >>> print report.id == report2.id
-    False
-    >>> print report2.value
-    'techboard' team is missing, has it been renamed?
-
-Set up the techboard team:
-
-    >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, TeamSubscriptionPolicy)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     TeamMembershipStatus)
     >>> personset = getUtility(IPersonSet)
-    >>> owner = personset.getByName("name16")
-    >>> techboard = personset.newTeam(
-    ...     owner, "techboard", "techboard",
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
+    >>> techboard = removeSecurityProxy(techboard)
 
 Ordinary users have no access:
 
@@ -312,7 +297,9 @@ Admins have access:
 Now add "test@canonical.com" to the techboard team and log in as him.
 
     >>> person = personset.getByEmail("test@canonical.com")
-    >>> person.join(techboard)
+    >>> techboard.addMember(
+    ...     person, reviewer=person, status=TeamMembershipStatus.APPROVED,
+    ...     force_team_add=True)
     >>> login_person(person)
 
 newPackageUploader() creates a permission for a person to upload to a
