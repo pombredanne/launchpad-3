@@ -3061,6 +3061,11 @@ class BugTaskTableRowView(LaunchpadView):
 
         return items
 
+    @property
+    def target_has_milestones(self):
+        """Are there any milestones we can target?"""
+        return list(MilestoneVocabulary(self.context)) != []
+
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)

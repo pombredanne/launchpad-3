@@ -131,6 +131,7 @@
 
     <td style="width: 20%; vertical-align: middle">
       <div class="milestone-content"
+           tal:condition="view/target_has_milestones"
            style="width: 100%; float: left">
         <tal:not-milestoned condition="not: context/milestone">
           <a href="+editstatus"> 
