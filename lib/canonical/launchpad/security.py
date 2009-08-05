@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
-from zope.app.error.interfaces import IErrorReportingUtility
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
@@ -62,7 +61,7 @@ from lp.registry.interfaces.milestone import (
     IMilestone, IProjectMilestone)
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
-from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
@@ -72,7 +71,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, PersonVisibility)
+    IPerson, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
@@ -194,6 +193,7 @@ class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
         return (user.inTeam(celebrities.registry_experts)
                 or user.inTeam(celebrities.admin))
 
+
 class ReviewProduct(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProduct
 
@@ -208,8 +208,6 @@ class ReviewProject(ReviewByRegistryExpertsOrAdmins):
 
 class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectSet
-
-
 
 
 class ViewPillar(AuthorizationBase):
@@ -384,8 +382,7 @@ class AdminSpecification(AuthorizationBase):
             if user.inTeam(driver):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
-        return (user.inTeam(self.obj.target.owner) or
-                user.inTeam(admins))
+        return (user.inTeam(targetowner) or user.inTeam(admins))
 
 
 class DriverSpecification(AuthorizationBase):
@@ -512,6 +509,7 @@ class EditProjectMilestoneNever(AuthorizationBase):
     def checkAuthenticated(self, user):
         """IProjectMilestone is a fake content object."""
         return False
+
 
 class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
@@ -2222,6 +2220,15 @@ class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
         return (
             user.inTeam(celebrities.ubuntu_branches)
             or user.inTeam(celebrities.admin))
+
+
+class EditPackageset(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPackageset
+
+    def checkAuthenticated(self, user):
+        """The owner of a package set can edit the object."""
+        return user.inTeam(self.obj.owner)
 
 
 class EditPackagesetSet(AuthorizationBase):
