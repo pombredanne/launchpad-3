@@ -245,8 +245,8 @@ Announcements which have been retracted can be published again:
 
     >>> apache_asia.published
     False
-    >>> apache_asia.set_publication_date(datetime(2007, 11, 11, 7, 0, 0,
-    ...                                           tzinfo=pytz.utc))
+    >>> apache_asia.setPublicationDate(datetime(2007, 11, 11, 7, 0, 0,
+    ...                                         tzinfo=pytz.utc))
     >>> apache_asia.published
     True
 
@@ -255,13 +255,13 @@ current date and time:
 
     >>> print apache_oss.date_announced
     None
-    >>> apache_oss.set_publication_date(NOW)
+    >>> apache_oss.setPublicationDate(NOW)
     >>> apache_oss.date_announced is not None
     True
 
 And you can reset the date of publication:
 
-    >>> apache_oss.set_publication_date(None)
+    >>> apache_oss.setPublicationDate(None)
 
 
 == Retargeting ==

@@ -236,7 +236,7 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
     @action(_('Publish'), name='publish')
     def publish_action(self, action, data):
         publication_date = data['publication_date']
-        self.context.set_publication_date(publication_date)
+        self.context.setPublicationDate(publication_date)
         self.next_url = canonical_url(self.context.target)+'/+announcements'
 
 

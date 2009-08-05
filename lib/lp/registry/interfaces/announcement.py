@@ -96,7 +96,7 @@ class IAnnouncement(Interface):
     def retract():
         """Take this announcement off any public web pages and RSS feeds."""
 
-    def set_publication_date(publication_date):
+    def setPublicationDate(publication_date):
         """Set the publication date. The value passed is either:
 
           None: publish it at some future date,

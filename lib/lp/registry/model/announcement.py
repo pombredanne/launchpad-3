@@ -101,7 +101,7 @@ class Announcement(SQLBase):
         self.active = False
         self.date_last_modified = UTC_NOW
 
-    def set_publication_date(self, publication_date):
+    def setPublicationDate(self, publication_date):
         """See `IAnnouncement`."""
         self.date_announced = publication_date
         self.date_last_modified = None
@@ -204,7 +204,7 @@ class MakesAnnouncements(HasAnnouncements):
             distribution = distribution
             )
 
-        announcement.set_publication_date(publication_date)
+        announcement.setPublicationDate(publication_date)
         return announcement
 
 
