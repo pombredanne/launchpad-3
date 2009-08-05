@@ -102,6 +102,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.testing import run_with_login, time_counter
 
@@ -1334,6 +1335,12 @@ class LaunchpadObjectFactory(ObjectFactory):
         return distroseries.newArch(
             architecturetag, processorfamily, official, owner,
             supports_virtualized)
+
+    def makeComponent(self, name=None):
+        """Make a new `IComponent`."""
+        if name is None:
+            name = self.getUniqueString()
+        return getUtility(IComponentSet).ensure(name)
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
