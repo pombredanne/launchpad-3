@@ -1,7 +1,8 @@
 <div 
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   class="portlet" id="portlet-latest-faqs"
-  tal:define="faqs view/latest_faqs">
+  tal:define="faqs view/latest_faqs"
+  tal:condition="faqs">
   <h2>
     <span class="see-all"><a
       tal:replace="structure view/menu:answers/list_all/fmt:link" /></span>
@@ -24,7 +25,10 @@
     </li>
   </ul>
   
-  <p tal:condition="not: faqs">
-    <tal:name replace="context/displayname" /> has no FAQs.
-  </p>
+  <ul class="horizontal"
+    tal:condition="context/required:launchpad.Moderate">
+    <li>
+      <a tal:replace="structure view/menu:answers/create_faq/fmt:link" />
+    </li>
+  </ul>
 </div>

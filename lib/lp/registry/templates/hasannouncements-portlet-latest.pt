@@ -5,7 +5,8 @@
   omit-tag="">
 <tal:news define="announcements view/latest_announcements;
                   overview_menu context/menu:overview">
-<div id="portlet-latest-announcements" class="portlet announcements">
+<div id="portlet-latest-announcements" class="portlet announcements"
+  tal:condition="announcements">
   <h2>
     <span style="float: right;"><a title="Atom 1.0 feed"
       tal:attributes="href view/feed_url"><img src="/@@/rss.png"/></a></span>

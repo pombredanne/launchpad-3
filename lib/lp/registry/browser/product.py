@@ -362,6 +362,19 @@ class ProductEditNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     links = ('edit', 'branding', 'reassign', 'review_license', 'administer')
 
 
+class IProductActionMenu(Interface):
+    """A marker interface for the global action navigation menu."""
+
+
+class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
+    """A sub-menu for acting upon a Product."""
+
+    usedfor = IProductActionMenu
+    facet = 'overview'
+    title = 'Actions'
+    links = ('edit', 'review_license', 'administer')
+
+
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
 
     usedfor = IProduct
@@ -826,6 +839,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                   ProductDownloadFileMixin, UsesLaunchpadMixin):
 
     __used_for__ = IProduct
+    implements(IProductActionMenu)
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)
