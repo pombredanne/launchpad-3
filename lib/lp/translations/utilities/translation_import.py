@@ -130,6 +130,14 @@ class ExistingPOFileInDatabase:
             "pt%d.translation AS translation%d" % (form, form)
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
 
+        substitutions = {
+            'translation_columns': ', '.join(translations),
+            'translation_joins': '\n'.join(msgstr_joins),
+            'language': quote(self.pofile.language),
+            'variant': quote(self.pofile.variant),
+            'potemplate': quote(self.pofile.potemplate),
+        }
+
         sql = '''
         SELECT
             POMsgId.msgid AS msgid,
@@ -141,18 +149,14 @@ class ExistingPOFileInDatabase:
             %(translation_columns)s
           FROM POTMsgSet
             JOIN TranslationTemplateItem ON
-              TranslationTemplateItem.potmsgset=POTMsgSet.id
-            JOIN POTemplate ON
-              POTemplate.id=TranslationTemplateItem.potemplate
-            JOIN POFile ON
-              POFile.potemplate=POTemplate.id AND
-              POFile.id=%(pofile)s
+              TranslationTemplateItem.potmsgset = POTMsgSet.id AND
+              TranslationTemplateItem.potemplate = %(potemplate)s
             JOIN TranslationMessage ON
               POTMsgSet.id=TranslationMessage.potmsgset AND
-              (TranslationMessage.potemplate=POTemplate.id OR
+              (TranslationMessage.potemplate = %(potemplate)s OR
                TranslationMessage.potemplate IS NULL) AND
-              POFile.language=TranslationMessage.language AND
-              POFile.variant IS NOT DISTINCT FROM TranslationMessage.variant
+              TranslationMessage.language = %(language)s AND
+              TranslationMessage.variant IS NOT DISTINCT FROM %(variant)s
             %(translation_joins)s
             JOIN POMsgID ON
               POMsgID.id=POTMsgSet.msgid_singular
@@ -163,9 +167,7 @@ class ExistingPOFileInDatabase:
           ORDER BY
             TranslationTemplateItem.sequence,
             TranslationMessage.potemplate NULLS LAST
-          ''' % { 'translation_columns' : ','.join(translations),
-                  'translation_joins' : '\n'.join(msgstr_joins),
-                  'pofile' : quote(self.pofile) }
+          ''' % substitutions
         cur = cursor()
         cur.execute(sql)
         rows = cur.fetchall()
