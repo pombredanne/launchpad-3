@@ -415,126 +415,6 @@ selected. As there is no such link, nothing will be selected.
     selected: False
 
 
-== How do we tell whether a link from a facetmenu is linked? ==
-
-A link is linked if its link's target differs from the current URL.
-
-To test this, we need a dummy request object that provides `getURL()`.
-
-    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> from zope.publisher.interfaces.browser import IBrowserRequest
-    >>> from canonical.launchpad.webapp.vhosts import allvhosts
-    >>> class FakeRequest:
-    ...     implements(IHTTPApplicationRequest, IBrowserRequest)
-    ... 
-    ...     interaction = None
-    ... 
-    ...     def __init__(self, url, query=None, url1=None):
-    ...         self.url = url
-    ...         self.query = query
-    ...         self.url1 = url1  # returned from getURL(1)
-    ...         self.method = 'GET'
-    ...         self.annotations = {}
-    ... 
-    ...     def getURL(self, level=0):
-    ...         assert 0 <= level <=1, 'level must be 0 or 1'
-    ...         if level == 0:
-    ...             return self.url
-    ...         else:
-    ...             assert self.url1 is not None, (
-    ...                 'Must set url1 in FakeRequest')
-    ...             return self.url1
-    ... 
-    ...     def getRootURL(self, rootsite):
-    ...         if rootsite is not None:
-    ...             return allvhosts.configs[rootsite].rooturl
-    ...         else:
-    ...             return self.getApplicationURL() + '/'
-    ...
-    ...     def getApplicationURL(self):
-    ...         # Just the http://place:port part, so stop at the 3rd slash.
-    ...         return '/'.join(self.url.split('/', 3)[:3])
-    ... 
-    ...     def get(self, key, default=None):
-    ...         assert key == 'QUERY_STRING', 'we handle only QUERY_STRING'
-    ...         if self.query is None:
-    ...             return default
-    ...         else:
-    ...             return self.query
-    ... 
-    ...     def setPrincipal(self, principal):
-    ...         self.principal = principal
-    >>> from lazr.uri import URI
-
-The following request is for a url that is different from all of the
-facet menu links for 'sesamestreet'.  So, all links will be linked.
-
-    >>> request_uri = URI('http://launchpad.dev/sesamestreet/+xxx')
-    >>> facets = Facets(street)
-    >>> for link in facets.iterlinks(request_uri):
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/+foo True
-    http://launchpad.dev/sesamestreet/+bar True
-
-This next request is for +foo, but with a query string.  So, both links
-will still be linked.
-
-    >>> request_uri = URI(
-    ...     'http://launchpad.dev/sesamestreet/+foo?a=123')
-    >>> facets = Facets(street)
-    >>> for link in facets.iterlinks(request_uri):
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/+foo True
-    http://launchpad.dev/sesamestreet/+bar True
-
-Next, we'll use the link +bar.  The +bar link will not be linked.
-
-    >>> request_uri = URI('http://launchpad.dev/sesamestreet/+bar')
-    >>> facets = Facets(street)
-    >>> for link in facets.iterlinks(request_uri):
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/+foo True
-    http://launchpad.dev/sesamestreet/+bar False
-
-Now, we use +bar with a trailing slash.  The +bar link will still be not
-linked.
-
-    >>> request_uri = URI('http://launchpad.dev/sesamestreet/+bar/')
-    >>> facets = Facets(street)
-    >>> for link in facets.iterlinks(request_uri):
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/+foo True
-    http://launchpad.dev/sesamestreet/+bar False
-
-We need to test the case when we have a link with a blank target. This
-will be the common case for default links.
-
-    >>> class BlankTargetTestFacets(Facets):
-    ... 
-    ...     links = Facets.links + ['baz']
-    ...     defaultlink = 'foo'
-    ... 
-    ...     def foo(self):
-    ...         target = ''
-    ...         text = 'Foo'
-    ...         return Link(target, text)
-    ... 
-    ...     def baz(self):
-    ...         target = '+baz'
-    ...         text = 'Baz'
-    ...         summary = (
-    ...             'More explanation about Baz of %s' % self.context.name)
-    ...         return Link(target, text, summary)
-
-    >>> request_uri = URI('http://launchpad.dev/sesamestreet/+bar')
-    >>> facets = BlankTargetTestFacets(street)
-    >>> for link in facets.iterlinks(request_uri):
-    ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet True
-    http://launchpad.dev/sesamestreet/+bar False
-    http://launchpad.dev/sesamestreet/+baz True
-
-
 === Absolute url targets ===
 
 We will want to make links with absolute urls as targets.
@@ -587,6 +467,7 @@ from earlier in this doctest.
     >>> canonical_url(street)
     u'http://launchpad.dev/sesamestreet'
 
+    >>> from lazr.uri import URI
     >>> request_uri = URI('http://launchpad.dev/sesamestreet')
 
     >>> facets = AbsoluteUrlTargetTestFacets(street)
@@ -868,7 +749,49 @@ link should appear linked. The request is also set as the menu's
 
     >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.launchpad.webapp import LaunchpadView
-
+    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    >>> from zope.publisher.interfaces.browser import IBrowserRequest
+    >>> from canonical.launchpad.webapp.vhosts import allvhosts
+    >>> class FakeRequest:
+    ...     implements(IHTTPApplicationRequest, IBrowserRequest)
+    ... 
+    ...     interaction = None
+    ... 
+    ...     def __init__(self, url, query=None, url1=None):
+    ...         self.url = url
+    ...         self.query = query
+    ...         self.url1 = url1  # returned from getURL(1)
+    ...         self.method = 'GET'
+    ...         self.annotations = {}
+    ... 
+    ...     def getURL(self, level=0):
+    ...         assert 0 <= level <=1, 'level must be 0 or 1'
+    ...         if level == 0:
+    ...             return self.url
+    ...         else:
+    ...             assert self.url1 is not None, (
+    ...                 'Must set url1 in FakeRequest')
+    ...             return self.url1
+    ... 
+    ...     def getRootURL(self, rootsite):
+    ...         if rootsite is not None:
+    ...             return allvhosts.configs[rootsite].rooturl
+    ...         else:
+    ...             return self.getApplicationURL() + '/'
+    ...
+    ...     def getApplicationURL(self):
+    ...         # Just the http://place:port part, so stop at the 3rd slash.
+    ...         return '/'.join(self.url.split('/', 3)[:3])
+    ... 
+    ...     def get(self, key, default=None):
+    ...         assert key == 'QUERY_STRING', 'we handle only QUERY_STRING'
+    ...         if self.query is None:
+    ...             return default
+    ...         else:
+    ...             return self.query
+    ... 
+    ...     def setPrincipal(self, principal):
+    ...         self.principal = principal
     >>> request = FakeRequest('http://launchpad.dev/sesamestreet/+bar')
     >>> view = LaunchpadView(house, request)
     >>> view.__launchpad_facetname__ = 'bar'
