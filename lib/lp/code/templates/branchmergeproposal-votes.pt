@@ -44,7 +44,13 @@
     <!-- Pending reviews -->
     <tr tal:repeat="review view/requested_reviews"
         tal:attributes="id string:review-${review/reviewer/name}">
-      <td tal:content="structure review/reviewer/fmt:link:mainsite" />
+      <td>
+        <tal:reviewer
+          tal:replace="structure review/reviewer/fmt:link:mainsite" />
+          <a tal:condition="review/user_can_reassign"
+             tal:attributes="href string:reviews/${review/id}/+reassign"><img
+             src="/@@/edit" title="Reassign reviewer" alt="Reassign" /></a>
+      </td>
       <td tal:content="review/review_type" />
       <td>
         <tal:date-requested condition="review/show_date_requested">
@@ -55,10 +61,6 @@
       </td>
       <td>
         <span class="votePENDING">Pending</span>
-        <tal:reassign-link condition="review/user_can_reassign">
-          <a tal:attributes="href
-          string:reviews/${review/id}/+reassign">[Reassign]</a>
-        </tal:reassign-link>
         <tal:vote-link condition="review/user_can_review">
           <a tal:attributes="href string:+review?claim=${review/reviewer/name}&amp;review_type=${review/review_type_str}">[Review]</a>
         </tal:vote-link>
