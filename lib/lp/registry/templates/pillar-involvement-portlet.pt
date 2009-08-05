@@ -1,0 +1,30 @@
+<div 
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="involvement" class="portlet involvement"
+  tal:condition="view/has_involvement">
+  <h2>Get Involved</h2>
+
+  <ul>
+    <li tal:condition="context/official_malone">
+      <a class="bugs"
+        tal:attributes="href context/menu:bugs/filebug/url">Report a Bug</a>
+    </li>
+    <li tal:condition="context/official_answers">
+      <a class="question"
+        tal:attributes="href context/menu:answers/new/url">Ask a question</a>
+    </li>
+    <li tal:condition="context/official_rosetta">
+      <a class="translate"
+        tal:attributes="href context/menu:translations/overview/url">Help translate</a>
+    </li>
+    <li tal:condition="context/official_codehosting">
+      <a class="code"
+        tal:attributes="href context/menu:branches/branch_add/url">Submit code</a>
+    </li>
+    <li tal:condition="context/official_blueprints">
+      <a class="blueprint"
+        tal:attributes="href context/menu:specications/new/url">Register a Blueprint</a>
+    </li>
+  </ul>
+</div>
