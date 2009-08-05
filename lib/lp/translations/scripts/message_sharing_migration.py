@@ -8,8 +8,9 @@ __all__ = [ 'MessageSharingMerge' ]
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.scripts.base import (
@@ -339,6 +340,10 @@ class MessageSharingMerge(LaunchpadScript):
                             sacrifice_flags(
                                 message,
                                 (clashing_current, clashing_imported))
+                            # XXX JeroenVermeulen 2009-08-04 bug=403992:
+                            # This can still somehow violate the
+                            # constraint against multiple current
+                            # messages!
                             message.potmsgset = representative
                         else:
                             # This message is identical in contents to one
@@ -375,7 +380,13 @@ class MessageSharingMerge(LaunchpadScript):
         potmsgset (because we start out with one) and potemplate (because
         that's sorted out in the nested dicts).
         """
-        return (tm.language, tm.variant) + tuple(tm.all_msgstrs)
+        tm = removeSecurityProxy(tm)
+        msgstr_ids = [
+            getattr(tm, 'msgstr%dID' % form)
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)
+                ]
+            
+        return (tm.language, tm.variant) + tuple(msgstr_ids)
 
     def _mapExistingMessages(self, potmsgset):
         """Map out the existing TranslationMessages for `potmsgset`.
@@ -510,6 +521,8 @@ class MessageSharingMerge(LaunchpadScript):
         :param existing_tms: a dict as returned by
             `_mapExistingMessages`.
         :param current_tms: a dict as returned by `_findUsedMessages`.
+        :param imported_tms: a dict as returned by `_findUsedMessages`.
+        :param message: the TranslationMessage to find clashes for.
         """
         twins_dict = existing_tms.get(
             self._getPOTMsgSetTranslationMessageKey(message))
