@@ -20,10 +20,12 @@
     }
   </style>
   <script type="text/javascript"
+      tal:condition="devmode"
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/branchsubscription.js">
   </script>
   <script type="text/javascript"
+      tal:condition="devmode"
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/branchlinks.js">
   </script>
@@ -398,10 +400,12 @@
   <div id="related-bugs-and-blueprints">
     <h2>Linked bug reports and blueprints</h2>
     <div id="buglinks" class="actions">
-      <tal:bugs tal:define="branch context;
-                            show_edit python:True;">
-        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
-      </tal:bugs>
+      <div id="buglink-list">
+        <tal:bugs tal:define="branch context;
+                              show_edit python:True;">
+          <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+        </tal:bugs>
+      </div>
 
       <div
         tal:define="link context_menu/link_bug"

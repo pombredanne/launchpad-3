@@ -41,7 +41,7 @@ Here's the person who'll be doing the import.
 
 Now it's time to create the new potemplate
 
-    >>> from canonical.launchpad.database import ProductRelease
+    >>> from lp.registry.model.productrelease import ProductRelease
     >>> release = ProductRelease.get(3)
     >>> release.productseries.product.name
     u'firefox'

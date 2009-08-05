@@ -61,7 +61,6 @@ from canonical.launchpad.webapp import (
     canonical_url, custom_widget, enabled_with_permission, stepthrough,
     structured)
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.widgets.popup import SinglePopupWidget
 
 
 class ProjectNavigation(Navigation):
@@ -320,7 +319,6 @@ class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
     field_names = ['name', 'owner', 'active', 'reviewed']
-    custom_widget('registrant', SinglePopupWidget)
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.

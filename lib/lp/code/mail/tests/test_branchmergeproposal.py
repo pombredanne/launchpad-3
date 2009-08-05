@@ -175,7 +175,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
         self.assertEqual('text/x-diff', attachment['Content-Type'])
-        self.assertEqual('inline; filename="review.diff"',
+        self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual('Fake diff', attachment.get_payload(decode=True))
 

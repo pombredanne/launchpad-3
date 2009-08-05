@@ -12,11 +12,19 @@
 
 <body>
 
-<style type="text/css" metal:fill-slot="head_epilogue">
-  #code-review-votes {
-    margin: 2em 0;
-  }
-</style>
+
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    #code-review-votes {
+      margin: 2em 0;
+    }
+  </style>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/codereview.js">
+  </script>
+</metal:block>
+
 
 <div metal:fill-slot="main"
      tal:define="context_menu context/menu:context">
@@ -73,7 +81,8 @@
     </div>
   </tal:whiteboard>
 
-  <tal:votes replace="structure context/@@+votes"/>
+  <div id="votes-target"
+    tal:content="structure context/@@+votes" />
 
   <tal:comments condition="view/conversation"
                 replace="structure view/conversation/@@+render"/>
@@ -142,6 +151,25 @@
     </tal:empty-diff>
   </div>
   </div>
+
+<tal:script
+  replace="structure
+  string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
+  <!--
+  YUI().use('io-base', 'code.codereview', function(Y) {
+
+
+  if(Y.UA.ie) {
+      return;
+  }
+
+  Y.on('domready', function() {
+      Y.code.codereview.connect_links();
+  });
+
+  });
+  -->
+<tal:script replace="structure string:&lt;/script&gt;" />
 
 </div>
 </body>

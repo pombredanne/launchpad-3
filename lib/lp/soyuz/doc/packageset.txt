@@ -557,32 +557,15 @@ use, which enforces the user to be an admin or a member of the "techboard"
 (Ubuntu Technical Board) team.
 
     >>> from zope.security.checker import canAccess
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     TeamMembershipStatus)
     >>> restricted_methods = ('new',)
-
-If, for some reason, the techboard team is missing, the security adapter
-will not allow access and generates an OOPS.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, TeamSubscriptionPolicy)
-    >>> personset = getUtility(IPersonSet)
-    >>> login('js@example.com')
-    >>> from zope.app.error.interfaces import IErrorReportingUtility
-    >>> report = getUtility(IErrorReportingUtility).getLastOopsReport()
-    >>> canAccess(ps_factory, 'new')
-    False
-    >>> report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
-    >>> print report.id == report2.id
-    False
-    >>> print report2.value
-    'techboard' team is missing, has it been renamed?
-
-Set up the techboard team:
-
-    >>> login("foo.bar@canonical.com")
-    >>> owner = personset.getByName("name16")
-    >>> techboard = personset.newTeam(
-    ...     owner, "techboard", "techboard",
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
+    >>> techboard = removeSecurityProxy(techboard)
 
 Ordinary users have no access:
 
@@ -598,7 +581,9 @@ Admins have access:
 
 Now add "test@canonical.com" to the techboard team and log in as him.
 
-    >>> person2.join(techboard)
+    >>> techboard.addMember(
+    ...     person2, reviewer=person2, status=TeamMembershipStatus.APPROVED,
+    ...     force_team_add=True)
     >>> login_person(person2)
 
 Create a new package set.
@@ -959,8 +944,8 @@ the 'techboard' team).
 
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(ubuntu_archive, kde_ps))
-    primary    juergen:          kde ->           UPLOAD (implicit)
     primary  techboard:          kde ->           UPLOAD (implicit)
+    primary    juergen:          kde ->           UPLOAD (implicit)
 
 
 == Checking package set based upload permissions ==
@@ -1019,7 +1004,7 @@ as follows:
     ...         ubuntu_archive, 'vapour-ware', person2))
     Traceback (most recent call last):
     ...
-    SourceNotFound: No such source package: 'vapour-ware'.
+    NoSuchSourcePackageName: No such source package: 'vapour-ware'.
 
 Now for the verdict: is 'hacker' allowed to upload 'mozilla-firefox'?
 

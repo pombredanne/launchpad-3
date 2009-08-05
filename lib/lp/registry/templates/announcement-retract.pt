@@ -3,33 +3,25 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+  <body>
+    <div metal:fill-slot="main">
+      <div class="top-portlet">
+        <div metal:use-macro="context/@@launchpad_form/form">
 
-<body>
+          <p metal:fill-slot="extra_info" class="documentDescription">
+            If you want to remove this announcement from the publishing list, so
+            that it is not published accidentally, press "Retract" below. Note
+            that someone else can still come along and publish the item.
+            Alternatively, you can <a href="+delete">delete this announcement
+            permanently</a>.
+          </p>
 
-<metal:portlets fill-slot="portlets">
-</metal:portlets>
+        </div>
+      </div>
 
-<div metal:fill-slot="main">
-
-  <div metal:use-macro="context/@@launchpad_form/form">
-
-    <p metal:fill-slot="extra_info" class="documentDescription">
-      If you want to remove this announcement from the publishing list, so
-      that it is not published accidentally, press "Retract" below. Note
-      that someone else can still come along and publish the item.
-      Alternatively, you can <a href="+delete">delete this announcement
-      permanently</a>.
-    </p>
-
-  </div>
-
-</div>
-
-</body>
+      <tal:menu replace="structure view/@@+related-pages" />
+    </div>
+  </body>
 </html>

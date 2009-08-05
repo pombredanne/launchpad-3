@@ -5,9 +5,10 @@ There are a bunch of meta classes used for combine information from
 our Database Model for packages in a intuitive manner, they are:
 
  >>> from canonical.launchpad.database import (
- ...     Distribution, DistributionSourcePackageRelease,
- ...     DistroSeriesSourcePackageRelease, SourcePackageRelease,
- ...     SourcePackageName)
+ ...     DistributionSourcePackageRelease,
+ ...     DistroSeriesSourcePackageRelease, SourcePackageRelease)
+ >>> from lp.registry.model.distribution import Distribution
+ >>> from lp.registry.model.sourcepackagename import SourcePackageName
 
  >>> from canonical.launchpad.interfaces import (
  ...     IDistributionSourcePackageRelease,

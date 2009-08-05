@@ -47,6 +47,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.branch import DecoratedBug
+from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
 from lp.code.enums import (
@@ -58,8 +59,7 @@ from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.comments.interfaces.conversation import (
-    IComment, IConversation)
+from lp.services.comments.interfaces.conversation import IConversation
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
@@ -319,20 +319,6 @@ class BranchMergeProposalNavigation(Navigation):
             return self.context.getVoteReference(id)
         except WrongBranchMergeProposal:
             return None
-
-
-class CodeReviewDisplayComment:
-    """A code review comment or activity or both."""
-
-    implements(IComment)
-
-    delegates(ICodeReviewComment, 'comment')
-
-    def __init__(self, comment):
-        self.comment = comment
-        self.has_body = bool(self.comment.message_body)
-        self.has_footer = self.comment.vote is not None
-        self.date = self.comment.message.datecreated
 
 
 class CodeReviewConversation:

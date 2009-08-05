@@ -123,8 +123,11 @@ hostnames=$(cat <<EOF
     code.launchpad.dev
     feeds.launchpad.dev
     id.launchpad.dev
+    keyserver.launchpad.dev
     lists.launchpad.dev
     openid.launchpad.dev
+    ppa.launchpad.dev
+    private-ppa.launchpad.dev
     shipit.edubuntu.dev
     shipit.kubuntu.dev
     shipit.ubuntu.dev
