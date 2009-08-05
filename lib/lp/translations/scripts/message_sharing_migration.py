@@ -303,13 +303,7 @@ class MessageSharingMerge(LaunchpadScript):
             # translation messages.  We don't need do this for subordinates
             # because the algorithm will refuse to add new duplicates to the
             # representative POTMsgSet anyway.
-            existing_tms = self._scrubPOTMsgSetTranslations(representative)
-
-            # Keep track of current/imported TranslationMessages for
-            # representative.  These will matter when we try to merge
-            # subordinate TranslationMessages into the representative, some
-            # of which may be current or imported as well.
-            current_tms, imported_tms = self._findUsedMessages(existing_tms)
+            self._scrubPOTMsgSetTranslations(representative)
 
             seen_potmsgsets = set([representative])
 
@@ -340,10 +334,6 @@ class MessageSharingMerge(LaunchpadScript):
                             sacrifice_flags(
                                 message,
                                 (clashing_current, clashing_imported))
-                            # XXX JeroenVermeulen 2009-08-04 bug=403992:
-                            # This can still somehow violate the
-                            # constraint against multiple current
-                            # messages!
                             message.potmsgset = representative
                         else:
                             # This message is identical in contents to one
@@ -411,33 +401,6 @@ class MessageSharingMerge(LaunchpadScript):
             per_template[tm.potemplate].append(tm)
 
         return existing_tms
-
-    def _findUsedMessages(self, translations):
-        """Fish current and imported messages out of translations dict.
-
-        :param translations: a dict as returned by
-            `_mapExistingMessages` or `_scrubPOTMsgSetTranslations`.  All
-            information is taken from this dict; no other messages are
-            considered.
-        :return: a pair of dicts, each mapping (potemplate, language,
-            variant) to a TranslationMessage or to None.  The dicts map
-            out current and imported messages, respectively.  Shared
-            messages have a POTemplate of None.
-        """
-        current_messages = {}
-        imported_messages = {}
-        for per_template in translations.itervalues():
-            for tms in per_template.itervalues():
-                assert len(tms) == 1, (
-                    "Unexpected list size: %d items." % len(tms))
-                tm = tms[0]
-                key = (tm.potemplate, tm.language, tm.variant)
-                if tm.is_current:
-                    current_messages[key] = tm
-                if tm.is_imported:
-                    imported_messages[key] = tm
-
-        return current_messages, imported_messages
 
     def _scrubPOTMsgSetTranslations(self, potmsgset):
         """Map out translations for `potmsgset`, and eliminate duplicates.
@@ -510,43 +473,6 @@ class MessageSharingMerge(LaunchpadScript):
 
         # Clashes with a twin message not real clashes: in such cases the
         # message can be merged into the twin without problems.
-        return filter_clashes(clashing_current, clashing_imported, twin)
-
-    def _findClashesFromDicts(self, existing_tms, current_tms, imported_tms,
-                              message):
-        """Like `_findClashes`, but from cached dicts.
-        
-        This saves some database querying for the common case.
-
-        :param existing_tms: a dict as returned by
-            `_mapExistingMessages`.
-        :param current_tms: a dict as returned by `_findUsedMessages`.
-        :param imported_tms: a dict as returned by `_findUsedMessages`.
-        :param message: the TranslationMessage to find clashes for.
-        """
-        twins_dict = existing_tms.get(
-            self._getPOTMsgSetTranslationMessageKey(message))
-        if twins_dict is None:
-            twin = None
-        else:
-            twins = twins_dict.get(message.potemplate)
-            if twins is None:
-                twin = None
-            else:
-                assert len(twins) == 1, "Did not expect %d twins." % (
-                    len(twins))
-                twin = twins[0]
-
-        subkey = message.potemplate, message.language, message.variant
-        if message.is_current:
-            clashing_current = current_tms.get(subkey)
-        else:
-            clashing_current = None
-        if message.is_imported:
-            clashing_imported = imported_tms.get(subkey)
-        else:
-            clashing_imported = None
-
         return filter_clashes(clashing_current, clashing_imported, twin)
 
     def _saveByDiverging(self, message, target_potmsgset, source_potmsgset):
