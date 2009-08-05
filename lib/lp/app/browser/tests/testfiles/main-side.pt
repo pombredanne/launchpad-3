@@ -14,7 +14,7 @@
   <body>
     <tal:heading metal:fill-slot="heading"><h1>Heading</h1></tal:heading>
     <tal:main metal:fill-slot="main">
-      <div class="portlet">
+      <div class="top-portlet">
         <p class="registered">
           Registered on 2005-09-16
           by <a class="sprite team" href="#">Illuminati team</a>

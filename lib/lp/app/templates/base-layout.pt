@@ -106,16 +106,15 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <div class="location-portlet top-portlet"
-                 tal:condition="view/macro:pagehas/applicationtabs">
-              <span tal:replace="structure context/image:logo"></span>
+            <tal:location condition="view/macro:pagehas/applicationtabs">
               <h2
                 tal:condition="context/title|nothing"
                 tal:content="context/title"
                 metal:define-slot="heading" />
-              <metal:heading_nav use-macro="
-                context/@@+base-layout-macros/location-tabs"/>
-            </div>
+              <tal:breadcrumbs>
+                <!-- future breadcrumb rule -->
+              </tal:breadcrumbs>
+            </tal:location>
             <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->

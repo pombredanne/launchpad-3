@@ -49,13 +49,9 @@ content are positioned using the "yui-t4", "yui-main", "yui-b", and
           <div class="yui-t4">
             <div id="maincontent" class="yui-main">
               <div class="yui-b" dir="ltr">
-                <div class="location-portlet top-portlet">
-                  <img ...
-                  <h1>Heading</h1>
-                  <!-- Application Menu -->
-                  <ul>...
-                </div>...
-                <div class="portlet">
+                <h1>Heading</h1>
+                <!-- future breadcrumb rule -->
+                <div class="top-portlet">
                   <p class="registered">
                     Registered on 2005-09-16
                     by <a class="sprite team" href="#">Illuminati team</a>
@@ -105,13 +101,9 @@ content to take up all the horizontal space.
              <div id="lp-hierarchy" class="home">...
           <div id="maincontent" class="yui-main">
             <div class="yui-b" dir="ltr">
-              <div class="location-portlet top-portlet">
-                <img ...
-                <h2>Waffles</h2>
-                <!-- Application Menu -->
-                <ul>...
-              </div>...
-              <div class="portlet">
+              <h2>Waffles</h2>
+              <!-- future breadcrumb rule -->
+              <div class="top-portlet">
                 <h1>Heading</h1>
                 <p class="registered">
                   Registered on 2005-09-16
@@ -158,13 +150,9 @@ slots are rendered, as are the application tabs.
           </div><!--id="locationbar"-->
           <div id="maincontent" class="yui-main">
             <div class="yui-b" dir="ltr">
-              <div class="location-portlet top-portlet">
-                <img ...
-                <h2>Waffles</h2>
-                <!-- Application Menu -->
-                <ul>...
-              </div>...
-              <div class="portlet">
+              <h2>Waffles</h2>
+              <!-- future breadcrumb rule -->
+              <div class="top-portlet">
                 <h1>Heading</h1>
                 <p class="registered">
                   Registered on 2005-09-16
