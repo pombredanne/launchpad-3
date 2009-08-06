@@ -17,6 +17,7 @@ from canonical.launchpad.webapp import (
 
 
 class ReassignSchema(Interface):
+    """Schema to use when reassigning the reviewer for a requested review."""
 
     reviewer = PublicPersonChoice( title=_('Reviewer'), required=True,
             description=_('A person who you want to review this.'),
@@ -24,10 +25,12 @@ class ReassignSchema(Interface):
 
 
 class CodeReviewVoteReassign(LaunchpadFormView):
+    """View for reassinging the reviewer for a requested review."""
 
     schema = ReassignSchema
 
     @action('Reassign', name='reassign')
     def reassign_action(self, action, data):
+        """Use the form data to change the review request reviewer."""
         self.context.reviewer = data['reviewer']
         self.next_url = canonical_url(self.context.branch_merge_proposal)

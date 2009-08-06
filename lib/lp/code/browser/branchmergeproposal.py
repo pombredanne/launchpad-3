@@ -292,6 +292,7 @@ class BranchMergeProposalNavigation(Navigation):
 
     @stepthrough('reviews')
     def traverse_review(self, id):
+        """Navigate to a CodeReviewVoteReference through its BMP."""
         try:
             id = int(id)
         except ValueError:
@@ -300,7 +301,6 @@ class BranchMergeProposalNavigation(Navigation):
             return self.context.getVoteReference(id)
         except WrongBranchMergeProposal:
             return None
-
 
     @stepthrough('comments')
     def traverse_comment(self, id):
@@ -510,6 +510,7 @@ class DecoratedCodeReviewVoteReference:
     def status_text(self):
         """The text shown in the table of the users vote."""
         return self.status_text_map[self.context.comment.vote]
+
 
 class BranchMergeProposalVoteView(LaunchpadView):
     """The view used for the tables of votes and requested reviews."""

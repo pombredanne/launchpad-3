@@ -18,10 +18,12 @@ from lp.code.browser.codereviewvote import CodeReviewVoteReassign
 
 
 class TestReassignReviewer(TestCaseWithFactory):
+    """Test functionality for changing the reviewer."""
 
     layer = DatabaseFunctionalLayer
 
     def test_reassign(self):
+        """A reviewer can reassign their vote to someone else."""
         bmp = self.factory.makeBranchMergeProposal()
         reviewer = self.factory.makePerson()
         login_person(bmp.registrant)

@@ -192,15 +192,18 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         return view.requested_reviews[0]
 
     def test_user_can_reassign_assignee(self):
+        """The user can reassign if they are the assignee."""
         review_request = self.makeReviewRequest()
         self.assertTrue(review_request.user_can_reassign)
 
     def test_user_can_reassign_registrant(self):
+        """The user can reassign if they are the registrant."""
         registrant = self.factory.makePerson()
         review_request = self.makeReviewRequest(registrant, registrant)
         self.assertTrue(review_request.user_can_reassign)
 
-    def test_user_can_reassign_random_person(self):
+    def test_user_cannot_reassign_random_person(self):
+        """Random people cannot reassign reviews."""
         viewer = self.factory.makePerson()
         review_request = self.makeReviewRequest(viewer)
         self.assertFalse(review_request.user_can_reassign)
