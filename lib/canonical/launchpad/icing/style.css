@@ -798,6 +798,8 @@ hierarchy, and the application tabs. */
 }
 
 /* === Location application tabs === */
+/* NOTE: This whole section (everything for #lp-apps) can be removed once
+ * pages have updated to the 3.0 templates */
 /* In most pages, the location bar includes six centered application tabs: */
 #lp-apps {
   position: relative;
