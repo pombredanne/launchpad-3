@@ -481,6 +481,11 @@ not included.
     http://.../+download/test.txt: test file (4 bytes)
     http://.../+download/test.txt/+md5:
 
+The url for the release file can be retrieved using fmt:url.
+
+    >>> print test_tales("release_file/fmt:url", release_file=release_file)
+    http://launchpad.dev/.../+download/test.txt
+
 
 === Product series ===
 
