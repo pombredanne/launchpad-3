@@ -576,7 +576,7 @@ class POTemplate(SQLBase, RosettaStats):
             # current POTemplate be returned first.
             orderBy=['(TranslationTemplateItem.POTemplate<>%s)' % (
                 sqlvalues(self))])[:2]
-        if result and len(list(result)) > 0:
+        if result.count() > 0:
             return result[0]
         else:
             return None
