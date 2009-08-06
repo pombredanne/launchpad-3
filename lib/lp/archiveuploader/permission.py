@@ -41,12 +41,11 @@ def components_valid_for(archive, person):
     return set(permission.component for permission in permissions)
 
 
-def verify_upload(person, sourcepackagename, suite_sourcepackage, archive,
-                  component, strict_component=True):
+def verify_upload(person, sourcepackagename, archive, component,
+                  strict_component=True):
     """Can 'person' upload 'suite_sourcepackage' to 'archive'?
 
     :param person: The `IPerson` trying to upload to the package.
-    :param suite_sourcepackage: The `ISuiteSourcePackage` being uploaded to.
     :param archive: The `IArchive` being uploaded to.
     :param strict_component: True if access to the specific component for the
         package is needed to upload to it. If False, then access to any

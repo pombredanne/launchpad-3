@@ -54,7 +54,7 @@ class TestPermission(TestCaseWithFactory):
         # For now, just check that doesn't raise an exception.
         component = ssp.sourcepackage.latest_published_component
         verify_upload(
-            person, ssp.sourcepackagename, ssp, archive, component,
+            person, ssp.sourcepackagename, archive, component,
             strict_component)
 
     def makeGPGKey(self, owner):
@@ -96,7 +96,7 @@ class TestPermission(TestCaseWithFactory):
         ssp = self.factory.makeSuiteSourcePackage()
         self.assertRaises(
             CannotUploadToArchive,
-            verify_upload, person, ssp.sourcepackagename, ssp, ppa, None)
+            verify_upload, person, ssp.sourcepackagename, ppa, None)
 
     def test_owner_can_upload_to_ppa(self):
         # If the archive is a PPA, and you own it, then you can upload pretty
@@ -115,7 +115,7 @@ class TestPermission(TestCaseWithFactory):
         archive = ssp.distribution.main_archive
         self.assertRaises(
             CannotUploadToArchive,
-            verify_upload, person, ssp.sourcepackagename, ssp, archive, None)
+            verify_upload, person, ssp.sourcepackagename, archive, None)
 
     def test_package_specific_rights(self):
         # A person can be granted specific rights for uploading a package,
