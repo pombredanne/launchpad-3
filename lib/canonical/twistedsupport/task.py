@@ -226,8 +226,8 @@ class ParallelLimitedTaskConsumer:
         self._worker_count += 1
         if self._worker_count >= self._worker_limit:
             self._stop()
-        #else:
-        #    self._task_source.start(self)
+        else:
+            self._task_source.start(self)
         d = defer.maybeDeferred(task)
         # We don't expect these tasks to have interesting return values or
         # failure modes.

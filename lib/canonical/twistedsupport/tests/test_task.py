@@ -515,7 +515,7 @@ class TestParallelLimitedTaskConsumer(TestCase):
         del log[:]
         # Finishes immediately, all tasks are done.
         consumer.taskStarted(lambda: None)
-        self.assertEqual(['stop'], log)
+        self.assertEqual(1, log.count('stop'))
 
     def test_taskStarted_before_consume_raises_error(self):
         # taskStarted can only be called after we have started consuming. This
@@ -550,10 +550,10 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.consume(source)
         del log[:]
         consumer.taskStarted(self._neverEndingTask)
-        self.assertEqual([], log)
+        self.assertEqual(0, log.count('stop'))
         for i in range(worker_limit - 1):
             consumer.taskStarted(self._neverEndingTask)
-        self.assertEqual(['stop'], log)
+        self.assertEqual(1, log.count('stop'))
 
     def test_passing_working_limit_stops_source(self):
         # If we have already reached the worker limit, and taskStarted is
