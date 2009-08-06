@@ -30,6 +30,12 @@ class CannotUploadToArchive(Exception):
 
 
 def components_valid_for(archive, person):
+    """Return the components that 'person' can upload to 'archive'.
+
+    :param archive: The `IArchive` than 'person' wishes to upload to.
+    :param person: An `IPerson` wishing to upload to an archive.
+    :return: A `set` of `IComponent`s that 'person' can upload to.
+    """
     permission_set = getUtility(IArchivePermissionSet)
     permissions = permission_set.componentsForUploader(archive, person)
     return set(permission.component for permission in permissions)
@@ -37,6 +43,17 @@ def components_valid_for(archive, person):
 
 def verify_upload(person, suite_sourcepackage, archive,
                   strict_component=True):
+    """Can 'person' upload 'suite_sourcepackage' to 'archive'?
+
+    :param person: The `IPerson` trying to upload to the package.
+    :param suite_sourcepackage: The `ISuiteSourcePackage` being uploaded to.
+    :param archive: The `IArchive` being uploaded to.
+    :param strict_component: True if access to the specific component for the
+        package is needed to upload to it. If False, then access to any
+        package will do.
+    :raise CannotUploadToArchive: If 'person' cannot upload to the archive.
+    :return: Nothing of interest.
+    """
     # For PPAs...
     if archive.purpose == ArchivePurpose.PPA:
         if not archive.canUpload(person):
