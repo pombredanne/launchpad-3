@@ -207,9 +207,6 @@ class ParallelLimitedTaskConsumer:
         self._task_source = task_source
         self._terminationDeferred = defer.Deferred()
         self._stopping_lock = defer.DeferredLock()
-        # This merely begins polling. This means that we acquire our initial
-        # batch of work at the rate of one task per polling interval. As long
-        # as the polling interval is small, this is probably OK.
         task_source.start(self)
         return self._terminationDeferred
 

@@ -540,6 +540,18 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.taskStarted(lambda: log.append('task'))
         self.assertEqual(['task'], log)
 
+    def test_taskStarted_restarts_source(self):
+        # If, after the task passed to taskStarted has been started, the
+        # consumer is not yet at its worker_limit, it starts the source again
+        # in order consume as many pending jobs as we can as quickly as we
+        # can.
+        log = []
+        consumer = self.makeConsumer()
+        consumer.consume(LoggingSource(log))
+        del log[:]
+        consumer.taskStarted(self._neverEndingTask)
+        self.assertEqual([('start', consumer)], log)
+
     def test_reaching_working_limit_stops_source(self):
         # Each time taskStarted is called, we start a worker. When we reach
         # the worker limit, we tell the source to stop generating work.
