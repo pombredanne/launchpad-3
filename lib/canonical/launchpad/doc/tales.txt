@@ -481,6 +481,11 @@ not included.
     http://.../+download/test.txt: test file (4 bytes)
     http://.../+download/test.txt/+md5:
 
+The url for the release file can be retrieved using fmt:url.
+
+    >>> print test_tales("release_file/fmt:url", release_file=release_file)
+    http://launchpad.dev/.../+download/test.txt
+
 
 === Product series ===
 
@@ -1051,6 +1056,42 @@ do with 'None/fmt:foo'.
     >>> test_tales('foo/fmt:exactduration', foo=None)
     ''
 
+
+== The fmt: namespace to get a location heading ==
+
+The `fmt:location_heading` is used when you want a heading for the nearest
+object that implements IHasLogo.
+
+    >>> print test_tales("series/fmt:location_heading", series=ubuntu['warty'])
+    <h2>Ubuntu Linux</h2>
+    >>> print test_tales("ppa/fmt:location_heading", ppa=sabdfl.archive)
+    <h2>Mark Shuttleworth</h2>
+
+This can be used together with the `image:logo` formatter which
+also returns the logo of the nearest object that provides a logo.
+
+    >>> print test_tales("series/image:logo", series=ubuntu['warty'])
+    <img ... src="/@@/distribution-logo" />
+    >>> print test_tales("ppa/image:logo", ppa=sabdfl.archive)
+    <img ... src="/@@/person-logo" />
+
+If the current context itself defines the location (ie. it implements
+IHasLogo) then an h1 heading will be used instead.
+
+    >>> print test_tales("person/fmt:location_heading", person=sabdfl)
+    <h1>Mark Shuttleworth</h1>
+
+Similarly to the `image:logo` formatter, if the object cannot produce a
+logo, the title defaults to 'Launchpad.net' (differentiating from
+the Launchpad project within Launchpad.net).
+
+    >>> from canonical.launchpad.webapp.publisher import rootObject
+    >>> print test_tales(
+    ...     "root_object/fmt:location_heading", root_object=rootObject)
+    <h2>Launchpad.net</h2>
+    >>> print test_tales(
+    ...     "root_object/image:logo", root_object=rootObject)
+    <img ... src="/@@/launchpad-logo" />
 
 == The lp: namespace for presenting DBSchema items ==
 

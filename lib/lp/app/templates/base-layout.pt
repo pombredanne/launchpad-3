@@ -88,36 +88,6 @@
           <input type="search" id="search-text" name="field.text" />
         </form>
         <tal:hierarchy replace="structure context/@@+hierarchy" />
-        <div id="lp-apps" class="clearfix"
-          tal:condition="view/macro:pagehas/applicationtabs"
-          tal:define="facetmenu view/menu:facet">
-          <!-- :-) --><tal:facet repeat="link facetmenu">
-            <span
-              tal:condition="python: link.enabled and link.selected"
-              tal:attributes="title link/summary; class string:${link/name} active"
-              ><strong
-                tal:condition="not:link/linked"
-                tal:content="structure link/escapedtext"
-                /><a
-                  tal:condition="link/linked"
-                  tal:attributes="href link/url"
-                  tal:content="structure link/escapedtext" /></span>
-            <span
-              tal:condition="python: link.enabled and not link.selected"
-              tal:attributes="title link/summary; class link/name"
-              ><a
-                tal:condition="link/enabled"
-                tal:attributes="href link/url"
-                tal:content="structure link/escapedtext"
-                /></span>
-            <span
-              tal:condition="not:link/enabled"
-              tal:attributes="class string:${link/name} disabled-tab"
-              ><strong
-                tal:content="structure link/escapedtext" /></span>
-            <small tal:condition="not:repeat/link/end"> / </small>
-          </tal:facet>
-        </div>
       </div><!--id="locationbar"-->
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
@@ -136,7 +106,17 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <tal:location condition="view/macro:pagehas/applicationtabs">
+            <div class="location-portlet top-portlet"
+                 tal:condition="view/macro:pagehas/applicationtabs">
+              <span tal:replace="structure context/image:logo"></span>
+              <h2 tal:replace="structure context/fmt:location_heading">
+                Celso Providelo
+              </h2>
+              <metal:heading_nav
+                use-macro="context/@@+base-layout-macros/location-tabs"/>
+            </div>
+            <div tal:condition="view/macro:pagehas/applicationtabs"
+                 class="portlet">
               <h2
                 tal:condition="context/title|nothing"
                 tal:content="context/title"
@@ -144,7 +124,7 @@
               <tal:breadcrumbs>
                 <!-- future breadcrumb rule -->
               </tal:breadcrumbs>
-            </tal:location>
+            </div>
             <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->
