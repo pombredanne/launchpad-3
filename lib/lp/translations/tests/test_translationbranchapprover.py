@@ -95,13 +95,13 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
 
     def test_template_name(self):
         # The name is derived from the file name and must be a valid name.
-        translation_domain = ('Invalid-Name_with illlegal#Characters')
+        translation_domain = (u'Invalid-Name_with illegal#Characters')
         template_path = translation_domain + u'.pot'
         entry = self._upload_file(template_path)
         approver = self._create_approver(template_path)
         approver.approve(entry)
         self.assertTrue(valid_name(entry.potemplate.name))
-        self.assertEqual('invalid-name-withillegalcharacters',
+        self.assertEqual(u'invalid-name-withillegalcharacters',
                          entry.potemplate.name)
 
     def test_replace_existing_approved(self):
