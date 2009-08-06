@@ -303,7 +303,9 @@ class TestPollingTaskSource(TestCase):
         self.assertEqual([False], stop_called)
 
     def test_stop_start_stop_when_polling_doesnt_poll_again(self):
-        # XXX
+        # If, while task acquisition is in progress, stop(), start() and
+        # stop() again are called in sequence, we shouldn't try to acquire
+        # another job when the first acquisition completes.
         produced_deferreds = []
         def producer():
             d = Deferred()

@@ -106,13 +106,14 @@ class PollingTaskSource:
             clock = reactor
         self._clock = clock
         self._looping_call = None
+        # _polling_lock is used to prevent concurrent attempts to poll for
+        # work, and to delay the firing of the deferred returned from stop()
+        # until any poll in progress at the moment of the call is complete.
         self._polling_lock = defer.DeferredLock()
-        self._started = False
 
     def start(self, task_consumer):
         """See `ITaskSource`."""
         self.stop()
-        self._started = True
         self._looping_call = LoopingCall(self._poll, task_consumer)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
@@ -132,7 +133,9 @@ class PollingTaskSource:
             # don't let any deferred it returns delay subsequent polls.
             task_consumer.taskProductionFailed(reason)
         def poll():
-            if self._started:
+            # If stop() has been called before the lock was acquired, don't
+            # actually poll for more work.
+            if self._looping_call:
                 d = defer.maybeDeferred(self._task_producer)
                 return d.addCallbacks(got_task, task_failed)
         return self._polling_lock.run(poll)
@@ -142,9 +145,8 @@ class PollingTaskSource:
         if self._looping_call is not None:
             self._looping_call.stop()
             self._looping_call = None
-        self._started = False
         def _return_still_stopped():
-            return not self._started
+            return self._looping_call is None
         return self._polling_lock.run(_return_still_stopped)
 
 
@@ -190,8 +192,11 @@ class ParallelLimitedTaskConsumer:
             else:
                 self._stopping_lock.release()
         def _call_stop(ignored):
-            return self._task_source.stop().addCallback(_release_or_stop)
-        return self._stopping_lock.acquire().addCallback(_call_stop)
+            return self._task_source.stop()
+        d = self._stopping_lock.acquire()
+        d.addCallback(_call_stop)
+        d.addCallback(_release_or_stop)
+        return d
 
     def consume(self, task_source):
         """Start consuming tasks from 'task_source'.
