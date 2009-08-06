@@ -273,9 +273,19 @@ Debian changelogs.
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p>LP: <a href="/bugs/123" title="No such bug">#123</a>.</p>
 
+Works with multiple bugs:
+
     >>> text = 'LP: #123, #2.\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p>LP: <a href="/bugs/123" title="No such bug">#123</a>, <a href="/bugs/2" title="Blackhole Trash folder">#2</a>.</p>
+
+And with lower case 'lp' too:
+
+    >>> text = 'lp: #123, #2.\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>lp: <a href="/bugs/123" title="No such bug">#123</a>, <a href="/bugs/2" title="Blackhole Trash folder">#2</a>.</p>
+
+Even line breaks cannot stop the power of bug linking:
 
     >>> text = 'LP:  #123,\n#2.\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
