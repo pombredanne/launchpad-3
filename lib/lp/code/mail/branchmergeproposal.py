@@ -6,8 +6,10 @@
 
 __metaclass__ = type
 
+from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.mail import get_msgid
 from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchMergeProposalDelta
@@ -32,8 +34,15 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
     """Notify branch subscribers when merge proposals are updated."""
     if event.user is None:
         return
+    if isinstance(event.user, UnauthenticatedPrincipal):
+        from_address = config.canonical.noreply_from_address
+        from_person = None
+    else:
+        from_person = IPerson(event.user)
+        from_address = None
     mailer = BMPMailer.forModification(
-        event.object_before_modification, merge_proposal, IPerson(event.user))
+        event.object_before_modification, merge_proposal, from_person,
+        from_address)
     if mailer is not None:
         mailer.sendAll()
 
@@ -104,18 +113,23 @@ class BMPMailer(BranchMailer):
             review_diff=merge_proposal.review_diff)
 
     @classmethod
-    def forModification(cls, old_merge_proposal, merge_proposal, from_user):
+    def forModification(cls, old_merge_proposal, merge_proposal,
+                        from_user=None, from_address=None):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
         :param from_user: The user that the creation notification should
-            come from.
+            come from.  Must be supplied if from_address not specified.
+        :param from_address: The from address to use.  Must be supplied
+            if from_user is not specified.
         """
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
-        assert from_user.preferredemail is not None, (
-            'The sender must have an email address.')
-        from_address = cls._format_user_address(from_user)
+        if from_address is None:
+            assert from_user is not None
+            assert from_user.preferredemail is not None, (
+                'The sender must have an email address.')
+            from_address = cls._format_user_address(from_user)
         delta = BranchMergeProposalDelta.construct(
                 old_merge_proposal, merge_proposal)
         if delta is None:

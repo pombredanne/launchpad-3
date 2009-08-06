@@ -18,7 +18,7 @@ from lp.codehosting.scanner import events
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES, notify_modified)
 
 
 def is_series_branch(branch):
@@ -62,7 +62,7 @@ def merge_detected(logger, source, target, proposal=None):
         if is_development_focus(target):
             mark_branch_merged(logger, source)
     else:
-        proposal.markAsMerged()
+        notify_modified(proposal, proposal.markAsMerged)
         # If there is an explicit merge proposal, change the branch's
         # status when it's been merged into a development focus or any
         # other series branch.
