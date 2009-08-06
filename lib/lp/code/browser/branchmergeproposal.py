@@ -44,7 +44,6 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
@@ -511,23 +510,6 @@ class DecoratedCodeReviewVoteReference:
     def status_text(self):
         """The text shown in the table of the users vote."""
         return self.status_text_map[self.context.comment.vote]
-
-class ReassignSchema(Interface):
-
-    reviewer = PublicPersonChoice( title=_('Reviewer'), required=True,
-            description=_('A person who you want to review this.'),
-            vocabulary='ValidPersonOrTeam')
-
-
-class CodeReviewVoteReassign(LaunchpadFormView):
-
-    schema = ReassignSchema
-
-    @action('Reassign', name='reassign')
-    def reassign_action(self, action, data):
-        self.context.reviewer = data['reviewer']
-        self.next_url = canonical_url(self.context.branch_merge_proposal)
-
 
 class BranchMergeProposalVoteView(LaunchpadView):
     """The view used for the tables of votes and requested reviews."""

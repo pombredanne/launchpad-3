@@ -64,7 +64,7 @@
     <browser:page
         for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"
         name="+reassign"
-        class="lp.code.browser.branchmergeproposal.CodeReviewVoteReassign"
+        class="lp.code.browser.codereviewvote.CodeReviewVoteReassign"
         facet="branches"
         permission="launchpad.AnyPerson"
         template="../templates/reviewrequest-reassign.pt"/>
