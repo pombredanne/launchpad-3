@@ -294,7 +294,7 @@ People who are logged in can perform reviews.
     Reviewer                         Review Type  Date Requested Status
     No Privileges Person (community)                             Disapprove ...
 
-People can claim review for teams of which they are a member.
+People can claim reviews for teams of which they are a member.
 
     >>> sample_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
     ...     '/klingon/+merge/1')
