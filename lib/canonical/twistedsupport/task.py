@@ -103,13 +103,15 @@ class PollingTaskSource:
             clock = reactor
         self._clock = clock
         self._looping_call = None
-        self._lock = defer.succeed(None)
+        self._polling_lock = defer.DeferredLock()
+        self._started = False
 
     def start(self, task_consumer):
         """See `ITaskSource`."""
         # Probably calling stop here then immediately overwriting the
         # LoopingCall isn't the right thing to do.
         self.stop()
+        self._started = True
         self._looping_call = LoopingCall(self._poll, task_consumer)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
@@ -128,24 +130,20 @@ class PollingTaskSource:
             # If task production fails, we inform the consumer of this, but we
             # don't let any deferred it returns delay subsequent polls.
             task_consumer.taskProductionFailed(reason)
-        d = defer.maybeDeferred(self._task_producer)
-        self._lock = defer.Deferred()
-        def release_lock(value):
-            self._lock.callback(None)
-            self._lock = defer.succeed(None)
-            return value
-        d.addBoth(release_lock)
-        d.addCallbacks(got_task, task_failed)
-        return d
+        def poll():
+            if self._started:
+                d = defer.maybeDeferred(self._task_producer)
+                return d.addCallbacks(got_task, task_failed)
+        return self._polling_lock.run(poll)
 
     def stop(self):
         """See `ITaskSource`."""
         if self._looping_call is not None:
             self._looping_call.stop()
             self._looping_call = None
-        d = defer.Deferred()
-        self._lock.addCallback(d.callback)
-        return d
+        def _return_still_stopped():
+            return not self._started
+        return self._polling_lock.run(_return_still_stopped)
 
 
 class AlreadyRunningError(Exception):
@@ -223,8 +221,8 @@ class ParallelLimitedTaskConsumer:
         self._worker_count += 1
         if self._worker_count >= self._worker_limit:
             self._stop()
-        else:
-            self._task_source.start(self)
+        #else:
+        #    self._task_source.start(self)
         d = defer.maybeDeferred(task)
         # We don't expect these tasks to have interesting return values or
         # failure modes.
