@@ -1116,6 +1116,11 @@ class TestNotifyModified(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_notify_modified_generates_notification(self):
+        """notify_modified generates an event.
+
+        notify_modified runs the callable with the specified args and kwargs,
+        and generates a ObjectModifiedEvent.
+        """
         bmp = self.factory.makeBranchMergeProposal()
         login_person(bmp.target_branch.owner)
         # Approve branch to prevent enqueue from approving it, which would

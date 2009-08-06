@@ -615,7 +615,7 @@ class IMergeProposalCreatedJobSource(Interface):
 
 
 def notify_modified(proposal, func, *args, **kwargs):
-    """Perform the method, then notify that it has been performed.
+    """Call func, then notify about the changes it made.
 
     :param proposal: the merge proposal to notify about.
     :param func: The callable that will modify the merge proposal.
