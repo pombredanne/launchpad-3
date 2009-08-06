@@ -345,8 +345,13 @@ class TranslationImportQueueEntry(SQLBase):
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
 
-        if (potemplate is None and (sourcepackagename is None or
-            self.sourcepackagename.name != sourcepackagename.name)):
+        is_for_distro = self.distroseries is not None
+        know_package = (
+            sourcepackagename is not None and
+            self.sourcepackagename is not None and
+            self.sourcepackagename.name == sourcepackagename.name)
+
+        if potemplate is None and is_for_distro and not know_package:
             # The source package from where this translation doesn't have the
             # template that this translation needs it, and thus, we look for
             # it in a different source package as a second try. To do it, we
