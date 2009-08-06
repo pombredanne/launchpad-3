@@ -154,6 +154,8 @@ class TestPermission(TestCaseWithFactory):
         self.assertCanUpload(person, ssp, archive)
 
     def test_non_strict_component_rights(self):
+        # If we aren't testing strict component access, then we only need to
+        # have access to an arbitrary component.
         person = self.factory.makePerson()
         ssp = self.factory.makeSuiteSourcePackage()
         archive = ssp.distribution.main_archive
@@ -161,6 +163,8 @@ class TestPermission(TestCaseWithFactory):
         self.setComponent(archive, ssp, component_a)
         permission_set = getUtility(IArchivePermissionSet)
         component_b = self.factory.makeComponent()
+        self.assertRaises(
+            CannotUploadToArchive, verify_upload, person, ssp, archive)
         removeSecurityProxy(permission_set).newComponentUploader(
             archive, person, component_b)
         self.assertCanUpload(person, ssp, archive, strict_component=False)
