@@ -347,7 +347,9 @@ class UnreferencedContentPruner:
             SELECT COALESCE(max(id), 0) FROM UnreferencedLibraryFileContent
             """)
         self.max_id = cur.fetchone()[0]
-        log.debug("%d unreferenced LibraryFileContent rows to remove.")
+        log.debug(
+            "%d unreferenced LibraryFileContent rows to remove."
+            % self.max_id)
 
     def isDone(self):
         if self.index > self.max_id:
