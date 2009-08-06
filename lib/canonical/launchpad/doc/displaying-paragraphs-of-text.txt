@@ -265,6 +265,19 @@ links:
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="/bugs/2" title="Blackhole Trash folder">bug 2</a></p>
 
+    >>> text = 'LP: #123.\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>LP: <a href="/bugs/123" title="No such bug">#123</a>.</p>
+
+    >>> text = 'LP: #123, #2.\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>LP: <a href="/bugs/123" title="No such bug">#123</a>, <a href="/bugs/2" title="Blackhole Trash folder">#2</a>.</p>
+
+    >>> text = 'LP:  #123,\n#2.\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>LP:  <a href="/bugs/123" title="No such bug">#123</a>,<br />
+    <a href="/bugs/2" title="Blackhole Trash folder">#2</a>.</p>
+
 To check a private bug, we need to log in and set a bug to be private.
 
     >>> from zope.component import getUtility
@@ -471,10 +484,11 @@ an AssertionError.
 
     >>> matchobj = re.match(
     ...     ('(?P<bug>xxx)?(?P<faq>www)?(?P<url>yyy)?(?P<oops>zzz)?'
-    ...      '(?P<lpbranchurl>www)?'),
+    ...      '(?P<lpbranchurl>www)?(?P<clbug>vvv)?'),
     ...     'fish')
     >>> sorted(matchobj.groupdict().items())
     [('bug', None),
+     ('clbug', None),
      ('faq', None),
       ('lpbranchurl', None),
       ('oops', None),
