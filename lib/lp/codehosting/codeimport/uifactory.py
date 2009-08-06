@@ -23,10 +23,6 @@ class LoggingUIFactory(TextUIFactory):
     def __init__(self, time_source=time.time, writer=None, interval=60.0):
         """Construct a `LoggingUIFactory`.
 
-        :param bar_type: See `TextUIFactory.__init__`.
-        :param stdin: See `TextUIFactory.__init__`.
-        :param stdout: See `TextUIFactory.__init__`.
-        :param stderr: See `TextUIFactory.__init__`.
         :param time_source: A callable that returns time in seconds since the
             epoch.  Defaults to ``time.time`` and should be replaced with
             something deterministic in tests.
