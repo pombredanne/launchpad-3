@@ -177,7 +177,7 @@ class TextAreaEditorWidget(TextLineEditorWidget):
     #   trigger: the trigger (button) HTML code
     #   value: the current field value
     WIDGET_TEMPLATE = dedent(u"""\
-        <div id="%(id)s">
+        <div id="multi-text-editor">
           <div class="clearfix">
             %(edit_controls)s
             <h2>%(title)s</h2>
@@ -227,7 +227,7 @@ class BugDescriptionEditorWidget(TextAreaEditorWidget):
             function set_controls() {
                 var edit_controls = Y.get('.edit-controls');
                 var edit_text = Y.get(
-                    '#bug-description .yui-editable_text-text');
+                    '#edit-description .yui-editable_text-text');
                 edit_controls.on('mouseover', function(e) {
                     edit_controls.addClass('edit-controls-hover');
                     edit_text.addClass('yui-editable_text-text-hover');

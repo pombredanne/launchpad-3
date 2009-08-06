@@ -1010,7 +1010,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             self.context.bug,
             'description',
             canonical_url(self.context, view_name='+edit'),
-            id="bug-description",
+            id="edit-description",
             title="Bug Description",
             value=description)
 
