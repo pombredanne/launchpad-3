@@ -6,7 +6,9 @@ cover the various rules and semantics surrounding the notifications
 themselves; for that, see bugnotifications.txt.
 
 The reference spec associated with this document is available on the
-Launchpad wiki. <https://launchpad.canonical.com/FormattingBugNotifications>
+Launchpad development wiki:
+
+    https://dev.launchpad.net/Bugs/Specs/FormattingBugNotifications
 
 You need to be logged in to edit bugs in Malone, so let's get started:
 

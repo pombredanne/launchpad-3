@@ -19,6 +19,7 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
     'BranchExists',
+    'BranchTargetError',
     'BranchTypeError',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
@@ -90,7 +91,7 @@ class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
 
     def __init__(self, existing_branch):
-        # XXX: JonathanLange 2008-12-04 spec=package-branches: This error
+        # XXX: TimPenhey 2009-07-12 bug=405214: This error
         # message logic is incorrect, but the exact text is being tested
         # in branch-xmlrpc.txt.
         params = {'name': existing_branch.name}
@@ -106,6 +107,10 @@ class BranchExists(BranchCreationException):
             'for %(context)s.' % params)
         self.existing_branch = existing_branch
         BranchCreationException.__init__(self, message)
+
+
+class BranchTargetError(Exception):
+    """Raised when there is an error determining a branch target."""
 
 
 class CannotDeleteBranch(Exception):
@@ -402,13 +407,44 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
             title=_("The user that registered the branch."),
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
+
     owner = exported(
         ParticipatingPersonChoice(
             title=_('Owner'),
-            required=True,
+            required=True, readonly=True,
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("Either yourself or a team you are a member of. "
                           "This controls who can modify the branch.")))
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        new_owner=Reference(
+            title=_("The new owner of the branch."),
+            schema=IPerson))
+    @export_write_operation()
+    def setOwner(new_owner, user):
+        """Set the owner of the branch to be `new_owner`."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        project=Reference(
+            title=_("The project the branch belongs to."),
+            schema=Interface, required=False), # Really IProduct
+        source_package=Reference(
+            title=_("The source package the branch belongs to."),
+            schema=Interface, required=False)) # Really ISourcePackage
+    @export_write_operation()
+    def setTarget(user, project=None, source_package=None):
+        """Set the target of the branch to be `project` or `source_package`.
+
+        Only one of `project` or `source_package` can be set, and if neither
+        is set, the branch gets moved into the junk namespace of the branch
+        owner.
+
+        :raise: `BranchTargetError` if both project and source_package are set,
+          or if either the project or source_package fail to be adapted to an
+          IBranchTarget.
+        """
 
     reviewer = exported(
         PublicPersonChoice(
@@ -469,7 +505,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
     product = exported(
         ReferenceChoice(
             title=_('Project'),
-            required=False,
+            required=False, readonly=True,
             vocabulary='Product',
             schema=Interface,
             description=_("The project this branch belongs to.")),

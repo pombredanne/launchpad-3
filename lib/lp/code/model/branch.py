@@ -58,7 +58,7 @@ from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchTypeError, CannotDeleteBranch,
+    BranchTargetError, BranchTypeError, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet)
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -72,7 +72,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    IPerson, validate_person_not_private_membership, validate_public_person)
 
 
 class Branch(SQLBase):
@@ -114,6 +114,12 @@ class Branch(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_person_not_private_membership, notNull=True)
+
+    def setOwner(self, new_owner, user):
+        """See `IBranch`."""
+        new_namespace = self.target.getNamespace(new_owner)
+        new_namespace.moveBranch(self, user, rename_if_necessary=True)
+
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
@@ -162,6 +168,28 @@ class Branch(SQLBase):
         else:
             target = self.product
         return IBranchTarget(target)
+
+    def setTarget(self, user, project=None, source_package=None):
+        """See `IBranch`."""
+        if project is not None:
+            if source_package is not None:
+                raise BranchTargetError(
+                    'Cannot specify both a project and a source package.')
+            else:
+                target = IBranchTarget(project)
+                if target is None:
+                    raise BranchTargetError(
+                        '%r is not a valid project target' % project)
+        elif source_package is not None:
+            target = IBranchTarget(source_package)
+            if target is None:
+                raise BranchTargetError(
+                    '%r is not a valid source package target' % source_package)
+        else:
+            target = IBranchTarget(self.owner)
+            # Person targets are always valid.
+        namespace = target.getNamespace(self.owner)
+        namespace.moveBranch(self, user, rename_if_necessary=True)
 
     @property
     def namespace(self):
