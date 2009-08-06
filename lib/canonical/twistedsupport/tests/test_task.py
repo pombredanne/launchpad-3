@@ -422,7 +422,7 @@ class TestParallelLimitedTaskConsumer(TestCase):
         stop_deferred.callback(True)
         self.assertEqual([None], consume_log)
 
-    def test_consumer_doesnt_finish_if_restarted_while_stopping(self):
+    def test_consumer_doesnt_finish_if_stop_doesnt_stop(self):
         # XXX
         consumer = self.makeConsumer()
         consume_log = []
@@ -431,9 +431,8 @@ class TestParallelLimitedTaskConsumer(TestCase):
         d = consumer.consume(source)
         d.addCallback(consume_log.append)
         source.stop()
-        source.start(consumer)
         self.assertEqual([], consume_log)
-        stop_deferred.callback(None)
+        stop_deferred.callback(False)
         self.assertEqual([], consume_log)
 
     def test_consume_deferred_fires_if_no_tasks_found(self):
