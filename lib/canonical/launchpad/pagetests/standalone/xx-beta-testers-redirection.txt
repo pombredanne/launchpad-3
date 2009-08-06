@@ -27,7 +27,7 @@ person:
     ...         function(*args, **kwargs)
     ...     except HTTPError, exc:
     ...         print str(exc)
-    ...         location = exc.headers.getheader('Location')
+    ...         location = exc.hdrs.getheader('Location')
     ...         if location is not None:
     ...             print 'Location:', location
 
