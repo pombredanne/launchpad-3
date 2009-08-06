@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'get_status_count',
     'MilestoneOverlayMixin',
-    'PillarView',
     'RegistryDeleteViewMixin',
     'StatusCount',
     ]
@@ -20,7 +19,6 @@ from zope.component import getUtility
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
 class StatusCount:
@@ -122,16 +120,3 @@ class RegistryDeleteViewMixin:
             for release_file in release.files:
                 release_file.destroySelf()
             release.destroySelf()
-
-
-class PillarView(LaunchpadView):
-    """A view for any `IPillar`."""
-
-    @property
-    def has_involvement(self):
-        """This `IPillar` uses Launchpad."""
-        pillar = self.context
-        return (
-            pillar.official_codehosting or pillar.official_malone
-            or pillar.official_answers or pillar.official_blueprints
-            or pillar.official_rosetta)

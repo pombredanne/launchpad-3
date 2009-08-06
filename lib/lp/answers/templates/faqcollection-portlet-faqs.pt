@@ -1,4 +1,4 @@
-<div 
+<div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   class="portlet" id="portlet-latest-faqs"
   tal:define="faqs view/latest_faqs"
@@ -24,7 +24,7 @@
         tal:content="faq/title">How do I do this?</a>
     </li>
   </ul>
-  
+
   <ul class="horizontal"
     tal:condition="context/required:launchpad.Moderate">
     <li>

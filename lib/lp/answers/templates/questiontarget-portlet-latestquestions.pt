@@ -1,14 +1,16 @@
 <div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   class="portlet" id="portlet-latest-questions"
-  tal:define="questions view/getLatestQuestions">
+  tal:define="questions view/getLatestQuestions"
+  tal:condition="questions">
   <h2>
     <span class="see-all"><a
-      tal:define="link view/menu:answers/open"
+      tal:define="link view/menu:answers/need_attention"
       tal:attributes="href link/url">All open questions</a></span>
     Latest questions
   </h2>
 
+  <div class="portletBody portletContent">
   <ul tal:condition="questions">
     <li tal:repeat="question questions">
       <a
@@ -22,4 +24,5 @@
   <p tal:condition="not: questions">
     <tal:name replace="context/displayname" /> has no questions.
   </p>
+  </div>
 </div>
