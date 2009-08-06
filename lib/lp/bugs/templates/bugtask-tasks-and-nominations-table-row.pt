@@ -64,7 +64,7 @@
            style="float: left"
            tal:content="context/status/title" />
         <a href="+editstatus" style="margin-left: 3px">
-          <img class="editicon" src="/@@/edit-transparent" />
+          <img class="editicon" src="/@@/edit" />
         </a>
       </div>
     </td>
@@ -78,7 +78,7 @@
            style="float: left"
            tal:content="context/importance/title" />
         <a href="+editstatus" style="margin-left: 3px">
-          <img class="editicon" src="/@@/edit-transparent" />
+          <img class="editicon" src="/@@/edit" />
         </a>
       </div>
     </td>
@@ -140,20 +140,20 @@
           <a href="+editstatus" class="nulltext js-action">Target to milestone</a>
           <a href="+editstatus" class="value" style="display:none" />
           <a href="+editstatus">
-            <img class="editicon" style="display:none" src="/@@/edit-transparent">
+            <img class="editicon" style="display:none" src="/@@/edit">
           </a>
         </tal:not-milestoned>
         <tal:milestoned condition="context/milestone">
           <a href="+editstatus">
             <img class="addicon" style="display:none" src="/@@/add">
           </a>
-          <a href="+editstatus" style="display:none" class="nulltext">
+          <a href="+editstatus" style="display:none" class="nulltext js-sction">
             Target to milestone
           </a>
           <a href="+editstatus" class="value"
               tal:content="context/milestone/title" />
           <a href="+editstatus">
-            <img class="editicon" src="/@@/edit-transparent">
+            <img class="editicon" src="/@@/edit">
           </a>
         </tal:milestoned>
       </div>
