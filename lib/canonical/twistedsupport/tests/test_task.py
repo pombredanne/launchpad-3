@@ -150,7 +150,8 @@ class TestPollingTaskSource(TestCase):
         self.assertEqual(0, self._num_task_producer_calls)
 
     def test_stop_deferred_fires_immediately_if_no_polling(self):
-        # XXX
+        # Calling stop when the source is not polling returns a deferred that
+        # fires immediately with True.
         task_source = self.makeTaskSource()
         task_source.start(NoopTaskConsumer())
         stop_deferred = task_source.stop()
@@ -256,13 +257,16 @@ class TestPollingTaskSource(TestCase):
         self.assertEqual(len(produced_deferreds), 2)
 
     def test_stop_deferred_doesnt_fire_until_polling_finished(self):
-        # XXX
+        # If there is a call to the task producer outstanding when stop() is
+        # called, stop() returns a deferred that fires when the poll finishes.
+        # The value fired with is True if the source is still stopped when the
+        # deferred fires.
         produced_deferred = Deferred()
         def producer():
             return produced_deferred
         task_source = self.makeTaskSource(task_producer=producer)
         task_source.start(NoopTaskConsumer())
-        # The call to start calls producer.  It returns a produced_deferred
+        # The call to start calls producer.  It returns produced_deferred
         # which has not been fired, so stop returns a deferred that has not
         # been fired.
         stop_deferred = task_source.stop()
@@ -275,14 +279,18 @@ class TestPollingTaskSource(TestCase):
         self.assertEqual([True], stop_called)
 
     def test_stop_deferred_fires_with_false_if_source_restarted(self):
-        # XXX
+        # If there is a call to the task producer outstanding when stop() is
+        # called, stop() returns a deferred that fires when the poll finishes.
+        # The value fired with is False if the source is no longer stopped
+        # when the deferred fires.
         produced_deferred = Deferred()
         def producer():
             return produced_deferred
         task_source = self.makeTaskSource(task_producer=producer)
         task_source.start(NoopTaskConsumer())
-        # The call to start calls producer.  It returns a deferred which has
-        # not been fired so stop returns a deferred that has not been fired.
+        # The call to start calls producer.  It returns produced_deferred
+        # which has not been fired so stop returns a deferred that has not
+        # been fired.
         stop_deferred = task_source.stop()
         stop_called = []
         stop_deferred.addCallback(stop_called.append)
@@ -437,7 +445,9 @@ class TestParallelLimitedTaskConsumer(TestCase):
         self.assertEqual([None], task_log)
 
     def test_consumer_doesnt_finish_until_stop_deferred_fires(self):
-        # XXX
+        # The Deferred returned by `consume` does not fire until the deferred
+        # returned by the source's stop() method fires with True to indicate
+        # that the source is still stopped.
         consumer = self.makeConsumer()
         consume_log = []
         stop_deferred = Deferred()
@@ -450,7 +460,9 @@ class TestParallelLimitedTaskConsumer(TestCase):
         self.assertEqual([None], consume_log)
 
     def test_consumer_doesnt_finish_if_stop_doesnt_stop(self):
-        # XXX
+        # The Deferred returned by `consume` does not fire when the deferred
+        # returned by the source's stop() method fires with False to indicate
+        # that the source has been restarted.
         consumer = self.makeConsumer()
         consume_log = []
         stop_deferred = Deferred()
@@ -472,16 +484,6 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.taskStarted(self._neverEndingTask)
         consumer.noTasksFound()
         self.assertEqual([], task_log)
-
-    def test_consumer_stopping_twice_fires_once(self):
-        # XXX.
-        consumer = self.makeConsumer()
-        task_log = []
-        d = consumer.consume(LoggingSource([]))
-        d.addCallback(task_log.append)
-        consumer.noTasksFound()
-        consumer.noTasksFound()
-        self.assertEqual([None], task_log)
 
     def test_source_stopped_when_tasks_done(self):
         # When no more tasks are running, we stop the task source.

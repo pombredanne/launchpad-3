@@ -181,12 +181,14 @@ class ParallelLimitedTaskConsumer:
         self._worker_limit = worker_limit
         self._worker_count = 0
         self._terminationDeferred = None
-        self._stopping_lock = defer.DeferredLock()
+        self._stopping_lock = None
 
     def _stop(self):
         def _release_or_stop(still_stopped):
             if still_stopped and self._worker_count == 0:
                 self._terminationDeferred.callback(None)
+                # Note that in this case we don't release the lock: we don't
+                # want to try to fire the _terminationDeferred twice!
             else:
                 self._stopping_lock.release()
         def _call_stop(ignored):
@@ -206,6 +208,7 @@ class ParallelLimitedTaskConsumer:
             raise AlreadyRunningError(self, self._task_source)
         self._task_source = task_source
         self._terminationDeferred = defer.Deferred()
+        self._stopping_lock = defer.DeferredLock()
         # This merely begins polling. This means that we acquire our initial
         # batch of work at the rate of one task per polling interval. As long
         # as the polling interval is small, this is probably OK.
