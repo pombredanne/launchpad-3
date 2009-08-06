@@ -1650,5 +1650,72 @@ class TestBranchSpecLinks(TestCaseWithFactory):
         self.assertEqual(branch.spec_links.count(), 0)
 
 
+class TestBranchIsPersonTrustedReviewer(TestCaseWithFactory):
+    """Test the `IBranch.isPersonTrustedReviewer` method."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertTrustedReviewer(self, branch, person):
+        """Assert that `person` is a trusted reviewer for the `branch`."""
+        self.assertTrue(branch.isPersonTrustedReviewer(person))
+
+    def assertNotTrustedReviewer(self, branch, person):
+        """Assert that `person` is not a trusted reviewer for the `branch`."""
+        self.assertFalse(branch.isPersonTrustedReviewer(person))
+
+    def test_none_is_not_trusted(self):
+        # If None is passed in as the person, the method returns false.
+        branch = self.factory.makeAnyBranch()
+        self.assertNotTrustedReviewer(branch, None)
+
+    def test_branch_owner_is_trusted(self):
+        # The branch owner is a trusted reviewer.
+        branch = self.factory.makeAnyBranch()
+        self.assertTrustedReviewer(branch, branch.owner)
+
+    def test_non_branch_owner_is_not_trusted(self):
+        # Someone other than the branch owner is not a trusted reviewer.
+        branch = self.factory.makeAnyBranch()
+        reviewer = self.factory.makePerson()
+        self.assertNotTrustedReviewer(branch, reviewer)
+
+    def test_lp_admins_always_trusted(self):
+        # Launchpad admins are special, and as such, are trusted.
+        branch = self.factory.makeAnyBranch()
+        admins = getUtility(ILaunchpadCelebrities).admin
+        # Grab a random admin, the teamowner is good enough here.
+        self.assertTrustedReviewer(branch, admins.teamowner)
+
+    def test_member_of_team_owned_branch(self):
+        # If the branch is owned by a team, any team member is a trusted
+        # reviewer.
+        team = self.factory.makeTeam()
+        branch = self.factory.makeAnyBranch(owner=team)
+        self.assertTrustedReviewer(branch, team.teamowner)
+
+    def test_review_team_member_is_trusted(self):
+        # If the reviewer is a member of the review team, but not the owner
+        # they are still trusted.
+        team = self.factory.makeTeam()
+        branch = self.factory.makeAnyBranch(reviewer=team)
+        self.assertTrustedReviewer(branch, team.teamowner)
+
+    def test_branch_owner_not_review_team_member_is_trusted(self):
+        # If the owner of the branch is not in the review team, they are still
+        # trusted.
+        team = self.factory.makeTeam()
+        branch = self.factory.makeAnyBranch(reviewer=team)
+        self.assertFalse(branch.owner.inTeam(team))
+        self.assertTrustedReviewer(branch, branch.owner)
+
+    def test_community_reviewer(self):
+        # If the reviewer is not a member of the owner, or the review team,
+        # they are not trusted reviewers.
+        team = self.factory.makeTeam()
+        branch = self.factory.makeAnyBranch(reviewer=team)
+        reviewer = self.factory.makePerson()
+        self.assertNotTrustedReviewer(branch, reviewer)
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

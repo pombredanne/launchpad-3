@@ -117,14 +117,7 @@ The votes on a branch merge proposal can be checked through the API.
 
 A review can be performed through the API.
 
-    >>> person = webservice.get('/~target').jsonBody()
-    >>> is_valid = webservice.named_get(
-    ...     merge_proposal['self_link'], 'isPersonValidReviewer',
-    ...     reviewer=person['self_link']).jsonBody()
-    >>> print is_valid
-    True
-
-A review can be requested of the person 'target', since he's a valid reviewer.
+A review can be requested of the person 'target'.
 
     >>> reviewer_webservice = webservice_for_person(
     ...     target_owner, permission=OAuthPermission.WRITE_PUBLIC)
