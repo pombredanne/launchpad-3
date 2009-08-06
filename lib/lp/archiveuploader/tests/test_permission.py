@@ -52,8 +52,10 @@ class TestPermission(TestCaseWithFactory):
     def assertCanUpload(self, person, ssp, archive, strict_component=True):
         """Assert that 'person' can upload 'ssp' to 'archive'."""
         # For now, just check that doesn't raise an exception.
+        component = ssp.sourcepackage.latest_published_component
         verify_upload(
-            person, ssp.sourcepackagename, ssp, archive, strict_component)
+            person, ssp.sourcepackagename, ssp, archive, component,
+            strict_component)
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
@@ -94,7 +96,7 @@ class TestPermission(TestCaseWithFactory):
         ssp = self.factory.makeSuiteSourcePackage()
         self.assertRaises(
             CannotUploadToArchive,
-            verify_upload, person, ssp.sourcepackagename, ssp, ppa)
+            verify_upload, person, ssp.sourcepackagename, ssp, ppa, None)
 
     def test_owner_can_upload_to_ppa(self):
         # If the archive is a PPA, and you own it, then you can upload pretty
@@ -113,7 +115,7 @@ class TestPermission(TestCaseWithFactory):
         archive = ssp.distribution.main_archive
         self.assertRaises(
             CannotUploadToArchive,
-            verify_upload, person, ssp.sourcepackagename, ssp, archive)
+            verify_upload, person, ssp.sourcepackagename, ssp, archive, None)
 
     def test_package_specific_rights(self):
         # A person can be granted specific rights for uploading a package,
@@ -166,9 +168,6 @@ class TestPermission(TestCaseWithFactory):
         self.setComponent(archive, ssp, component_a)
         permission_set = getUtility(IArchivePermissionSet)
         component_b = self.factory.makeComponent()
-        self.assertRaises(
-            CannotUploadToArchive,
-            verify_upload, person, ssp.sourcepackagename, ssp, archive)
         removeSecurityProxy(permission_set).newComponentUploader(
             archive, person, component_b)
         self.assertCanUpload(person, ssp, archive, strict_component=False)

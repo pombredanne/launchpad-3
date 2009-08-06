@@ -42,7 +42,7 @@ def components_valid_for(archive, person):
 
 
 def verify_upload(person, sourcepackagename, suite_sourcepackage, archive,
-                  strict_component=True):
+                  component, strict_component=True):
     """Can 'person' upload 'suite_sourcepackage' to 'archive'?
 
     :param person: The `IPerson` trying to upload to the package.
@@ -67,7 +67,6 @@ def verify_upload(person, sourcepackagename, suite_sourcepackage, archive,
         or ap_set.isSourceUploadAllowed(archive, sourcepackagename, person)):
         return
 
-    component = suite_sourcepackage.sourcepackage.latest_published_component
     if component is not None:
         if strict_component:
             if archive.canUpload(person, component):
