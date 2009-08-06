@@ -30,6 +30,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from canonical.launchpad.interfaces import IBug
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
@@ -240,6 +241,10 @@ class IBranchMergeProposal(Interface):
             title=_("All messages discussing this merge proposal"),
             value_type=Reference(schema=Interface), # ICodeReviewComment
             readonly=True))
+
+    related_bugs = CollectionField(
+            title=_("Bugs related to this merge proposal."),
+            value_type=Reference(schema=IBug), readonly=True)
 
     address = exported(
         TextLine(
