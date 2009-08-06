@@ -177,6 +177,12 @@ def handleMail(trans=transaction):
                 msg)
         trans.commit()
 
+    def _handle_user_error(error, mail):
+        mailbox.delete(mail_id)
+        send_process_error_notification(
+            mail['From'], 'Submit Request Failure', str(error), mail)
+        trans.commit()
+
     log = getLogger('process-mail')
     mailbox = getUtility(IMailBox)
     log.info("Opening the mail box.")
@@ -250,10 +256,7 @@ def handleMail(trans=transaction):
                 try:
                     principal = authenticateEmail(mail)
                 except InvalidSignature, error:
-                    _handle_error(
-                        "Invalid signature for %s:\n    %s" % (mail['From'],
-                                                               str(error)),
-                        file_alias_url)
+                    _handle_user_error(error, mail)
                     continue
                 except InactiveAccount:
                     _handle_error(
