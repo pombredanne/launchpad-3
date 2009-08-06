@@ -243,7 +243,7 @@ class MessageSharingMerge(LaunchpadScript):
             templates = equivalence_classes[name]
             self.logger.info(
                 "Merging equivalence class '%s': %d template(s) (%d / %d)" % (
-                    name, len(templates) + 1, number, class_count))
+                    name, len(templates), number + 1, class_count))
             self.logger.debug("Templates: %s" % str(templates))
 
             if self.options.merge_potmsgsets:
