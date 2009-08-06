@@ -49,6 +49,11 @@ class TestPermission(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        permission_set = getUtility(IArchivePermissionSet)
+        self.permission_set = removeSecurityProxy(permission_set)
+
     def assertCanUpload(self, person, ssp, archive, strict_component=True):
         """Assert that 'person' can upload 'ssp' to 'archive'."""
         # For now, just check that doesn't raise an exception.
@@ -127,8 +132,7 @@ class TestPermission(TestCaseWithFactory):
         # permissions. We can't create an arbitrary archive, because there's
         # only one primary archive per distro.
         archive = ssp.distribution.main_archive
-        permission_set = getUtility(IArchivePermissionSet)
-        removeSecurityProxy(permission_set).newPackageUploader(
+        self.permission_set.newPackageUploader(
             archive, person, ssp.sourcepackagename)
         self.assertCanUpload(person, ssp, archive)
 
@@ -140,8 +144,7 @@ class TestPermission(TestCaseWithFactory):
         archive = ssp.distribution.main_archive
         package_set = self.factory.makePackageSet(
             packages=[ssp.sourcepackagename])
-        permission_set = getUtility(IArchivePermissionSet)
-        removeSecurityProxy(permission_set).newPackagesetUploader(
+        self.permission_set.newPackagesetUploader(
             archive, person, package_set)
         self.assertCanUpload(person, ssp, archive)
 
@@ -153,9 +156,7 @@ class TestPermission(TestCaseWithFactory):
         archive = ssp.distribution.main_archive
         component = self.factory.makeComponent()
         self.setComponent(archive, ssp, component)
-        permission_set = getUtility(IArchivePermissionSet)
-        removeSecurityProxy(permission_set).newComponentUploader(
-            archive, person, component)
+        self.permission_set.newComponentUploader(archive, person, component)
         self.assertCanUpload(person, ssp, archive)
 
     def test_non_strict_component_rights(self):
@@ -166,10 +167,8 @@ class TestPermission(TestCaseWithFactory):
         archive = ssp.distribution.main_archive
         component_a = self.factory.makeComponent()
         self.setComponent(archive, ssp, component_a)
-        permission_set = getUtility(IArchivePermissionSet)
         component_b = self.factory.makeComponent()
-        removeSecurityProxy(permission_set).newComponentUploader(
-            archive, person, component_b)
+        self.permission_set.newComponentUploader(archive, person, component_b)
         self.assertCanUpload(person, ssp, archive, strict_component=False)
 
 
