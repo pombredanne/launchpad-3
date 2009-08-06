@@ -15,7 +15,7 @@
   </div>
 
   <div metal:fill-slot="main">
-      <div tal:replace="structure context/@@+builds-list"/>
+      <div class="top-portlet" tal:replace="structure context/@@+builds-list"/>
   </div>
 </body>
 </html>
