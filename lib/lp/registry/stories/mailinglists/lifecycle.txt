@@ -580,7 +580,7 @@ of it appears.
     >>> admin_browser.getControl(name='field.aardvarks').value = ['approve']
     >>> admin_browser.getControl('Submit').click()
     >>> act()
-    >>> browser.reload()
+    >>> browser.open(browser.url) # A `reload` would resubmit.
     >>> browser.getLink('Mailing list archive')
     <Link text='Mailing list archive'
           url='http://lists.launchpad.dev/aardvarks'>
@@ -618,7 +618,7 @@ And of course, a mailing list for the newly renamed team can be created.
     >>> admin_browser.getControl(name='field.antelopes').value = ['approve']
     >>> admin_browser.getControl('Submit').click()
     >>> act()
-    >>> user_browser.reload()
+    >>> user_browser.open(user_browser.url) # A `reload` would resubmit.
     >>> user_browser.getLink('Mailing list archive')
     <Link text='Mailing list archive'
           url='http://lists.launchpad.dev/antelopes'>
