@@ -619,7 +619,7 @@ def maybe_record_user_requested_oops():
         not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
         return None
     globalErrorUtility.raising(
-        (UserRequestOops, UserRequestOops(request), None), request)
+        (UserRequestOops, UserRequestOops(), None), request)
     return request.oopsid
 
 
