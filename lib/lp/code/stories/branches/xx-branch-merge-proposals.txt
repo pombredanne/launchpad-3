@@ -294,7 +294,7 @@ People who are logged in can perform reviews.
     Reviewer                         Review Type  Date Requested Status
     No Privileges Person (community)                             Disapprove ...
 
-People can claim review for teams of which they are a member.
+People can claim reviews for teams of which they are a member.
 
     >>> sample_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
     ...     '/klingon/+merge/1')
@@ -311,10 +311,8 @@ People can claim review for teams of which they are a member.
     >>> foobar_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
     ...     '/klingon/+merge/1')
     >>> foobar_browser.getControl('Claim review').click()
-    >>> sample_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
     >>> pending = find_tag_by_id(
-    ...     sample_browser.contents, 'code-review-votes')
+    ...     foobar_browser.contents, 'code-review-votes')
 
 After claiming a review, the claimant is listed instead of their team.
 

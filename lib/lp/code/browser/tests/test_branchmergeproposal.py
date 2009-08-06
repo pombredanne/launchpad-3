@@ -160,7 +160,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.assertFalse(view.requested_reviews[0].user_can_claim)
 
     def test_user_can_claim_member(self):
-        """Someone can claim a review already assigned their team."""
+        """Someone can claim a review already assigned to their team."""
         albert = self.factory.makePerson()
         review_team = self.factory.makeTeam()
         albert.join(review_team)
