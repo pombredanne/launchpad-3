@@ -485,6 +485,14 @@ class NascentUpload:
         or the explicit source package, or in the case of a PPA must own
         it or be in the owning team.
         """
+        # Binary uploads are never checked (they come in via the security
+        # policy or from the buildds) so they don't need any ACL checks.
+        # The only uploaded file that matters is the DSC file for sources
+        # because it is the only object that is overridden and created in
+        # the database.
+        if self.binaryful:
+            return
+
         # Set up some convenient shortcut variables.
         signer = self.changes.signer
         archive = self.policy.archive
@@ -499,14 +507,6 @@ class NascentUpload:
             self.logger.debug("Don't verify signer ACL for PPA")
             if not archive.canUpload(signer):
                 self.reject("Signer has no upload rights to this PPA.")
-            return
-
-        # Binary uploads are never checked (they come in via the security
-        # policy or from the buildds) so they don't need any ACL checks.
-        # The only uploaded file that matters is the DSC file for sources
-        # because it is the only object that is overridden and created in
-        # the database.
-        if self.binaryful:
             return
 
         # Sometimes an uploader may upload a new package to a component
