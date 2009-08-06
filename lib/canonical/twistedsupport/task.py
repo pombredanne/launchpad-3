@@ -40,6 +40,9 @@ class ITaskSource(Interface):
 
         :return: A Deferred that will fire when the source is stopped.  It is
             possible that tasks may be produced until this deferred fires.
+            The deferred will fire with a boolean; True if the source is still
+            stopped, False if the source has been restarted since stop() was
+            called.
         """
 
 
@@ -141,6 +144,7 @@ class PollingTaskSource:
         if self._looping_call is not None:
             self._looping_call.stop()
             self._looping_call = None
+        self._started = False
         def _return_still_stopped():
             return not self._started
         return self._polling_lock.run(_return_still_stopped)
@@ -180,8 +184,8 @@ class ParallelLimitedTaskConsumer:
         self._stopping_lock = defer.DeferredLock()
 
     def _stop(self):
-        def _release_or_stop(ignored):
-            if self._worker_count == 0:
+        def _release_or_stop(still_stopped):
+            if still_stopped and self._worker_count == 0:
                 self._terminationDeferred.callback(None)
             else:
                 self._stopping_lock.release()

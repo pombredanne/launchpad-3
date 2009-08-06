@@ -49,15 +49,19 @@ class LoggingSource:
 
     implements(ITaskSource)
 
-    def __init__(self, log):
+    def __init__(self, log, stop_deferred=None):
         self._log = log
+        if stop_deferred is None:
+            self.stop_deferred = succeed(True)
+        else:
+            self.stop_deferred = stop_deferred
 
     def start(self, consumer):
         self._log.append(('start', consumer))
 
     def stop(self):
         self._log.append('stop')
-        return succeed(None)
+        return self.stop_deferred
 
 
 class TestPollingTaskSource(TestCase):
@@ -386,7 +390,7 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.consume(source)
         self.assertRaises(AlreadyRunningError, consumer.consume, source)
 
-    def test_consume_returns_deferred_doesnt_fire_until_tasks(self):
+    def test_consumer_doesnt_finish_until_tasks_finish(self):
         # `consume` returns a Deferred that fires when no more tasks are
         # running, but only after we've actually done something.
         consumer = self.makeConsumer()
@@ -395,7 +399,7 @@ class TestParallelLimitedTaskConsumer(TestCase):
         d.addCallback(log.append)
         self.assertEqual([], log)
 
-    def test_consume_returns_deferred_fires_when_tasks_done(self):
+    def test_consumer_finishes_when_tasks_done(self):
         # `consume` returns a Deferred that fires when no more tasks are
         # running.
         consumer = self.makeConsumer()
@@ -405,27 +409,32 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.taskStarted(lambda: None)
         self.assertEqual([None], task_log)
 
-    def test_consume_deferred_does_not_fire_until_stop_deferred_fires(self):
+    def test_consumer_doesnt_finish_until_stop_deferred_fires(self):
         # XXX
-        class Source(LoggingSource):
-            def __init__(self, log):
-                super(Source, self).__init__(log)
-                self.stop_deferreds = []
-            def stop(self):
-                super(Source, self).stop()
-                d = Deferred()
-                self.stop_deferreds.append(d)
-                return d
         consumer = self.makeConsumer()
         consume_log = []
-        source = Source([])
+        stop_deferred = Deferred()
+        source = LoggingSource([], stop_deferred)
         d = consumer.consume(source)
         d.addCallback(consume_log.append)
-        consumer.taskStarted(lambda: None)
+        consumer.noTasksFound()
         self.assertEqual([], consume_log)
-        source.stop_deferreds[0].callback(None)
+        stop_deferred.callback(True)
         self.assertEqual([None], consume_log)
 
+    def test_consumer_doesnt_finish_if_restarted_while_stopping(self):
+        # XXX
+        consumer = self.makeConsumer()
+        consume_log = []
+        stop_deferred = Deferred()
+        source = LoggingSource([], stop_deferred)
+        d = consumer.consume(source)
+        d.addCallback(consume_log.append)
+        source.stop()
+        source.start(consumer)
+        self.assertEqual([], consume_log)
+        stop_deferred.callback(None)
+        self.assertEqual([], consume_log)
 
     def test_consume_deferred_fires_if_no_tasks_found(self):
         # `consume` returns a Deferred that fires if no tasks are found when
