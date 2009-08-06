@@ -486,10 +486,10 @@ class NascentUpload:
         it or be in the owning team.
         """
         # Binary uploads are never checked (they come in via the security
-        # policy or from the buildds) so they don't need any ACL checks.
-        # The only uploaded file that matters is the DSC file for sources
-        # because it is the only object that is overridden and created in
-        # the database.
+        # policy or from the buildds) so they don't need any ACL checks --
+        # this goes for PPAs as well as other archives. The only uploaded file
+        # that matters is the DSC file for sources because it is the only
+        # object that is overridden and created in the database.
         if self.binaryful:
             return
 
