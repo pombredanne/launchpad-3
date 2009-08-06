@@ -1365,6 +1365,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         if purpose is None:
             purpose = ArchivePurpose.PPA
 
+        # Making a distribution makes an archive, and there can be only one
+        # per distribution.
+        if purpose == ArchivePurpose.PRIMARY:
+            return distribution.main_archive
+
         return getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
             distribution=distribution, name=name)
