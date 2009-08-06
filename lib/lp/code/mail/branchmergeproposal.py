@@ -228,7 +228,7 @@ class BMPMailer(BranchMailer):
         Related bugs are defined as those linked to the source branch.
         """
         bug_chunks = []
-        for bug in self.merge_proposal.source_branch.linked_bugs:
+        for bug in self.merge_proposal.related_bugs:
             bug_chunks.append('  #%d %s\n' % (bug.id, bug.title))
             bug_chunks.append('  %s\n' % canonical_url(bug))
         if len(bug_chunks) == 0:
