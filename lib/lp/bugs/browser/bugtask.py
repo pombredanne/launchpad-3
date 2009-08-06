@@ -2915,13 +2915,15 @@ class BugTasksAndNominationsView(LaunchpadView):
         return self.context.isUserAffected(self.user)
 
     @property
-    def affects_form_value(self):
-        """The value to use in the inline me too form."""
-        affected = self.context.isUserAffected(self.user)
-        if affected is None or affected == False:
-            return 'YES'
+    def current_user_affected_js_status(self):
+        """A javascript literal indicating if the user is affected."""
+        affected = self.current_user_affected_status
+        if affected is None:
+            return 'null'
+        elif affected:
+            return 'true'
         else:
-            return 'NO'
+            return 'false'
 
 
 class BugTaskTableRowView(LaunchpadView):
