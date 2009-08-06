@@ -249,7 +249,6 @@ class UnreferencedLibraryFileContentPruner:
         # Find all relevant LibraryFileAlias references and fill in
         # ReferencedLibraryFileContent
         for table, column in references:
-            log.debug("Getting references from %s.%s." % (table, column))
             cur.execute("""
                 INSERT INTO ReferencedLibraryFileContent
                 SELECT LibraryFileAlias.content
@@ -258,6 +257,8 @@ class UnreferencedLibraryFileContentPruner:
                 """ % {
                     'table': quoteIdentifier(table),
                     'column': quoteIdentifier(column)})
+            log.debug("%s.%s references %d LibraryFileContent rows." % (
+                table, column, cur.rowcount))
             con.commit()
 
         log.debug("Calculating expired unreferenced LibraryFileContent set.")
@@ -267,9 +268,15 @@ class UnreferencedLibraryFileContentPruner:
                 id serial PRIMARY KEY,
                 content integer UNIQUE)
             """)
+        # We filter out recently created LibraryFileContent records here
+        # again to cope with new records being created since the
+        # ReferencedLibraryFileContent temporary table was seeded.
         cur.execute("""
             INSERT INTO UnreferencedLibraryFileContent (content)
-            SELECT id AS content FROM LibraryFileContent
+            SELECT id AS content
+            FROM LibraryFileContent
+            WHERE datecreated <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 week'
             EXCEPT
             SELECT content FROM ReferencedLibraryFileContent
             """)

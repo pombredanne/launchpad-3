@@ -96,7 +96,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Connect to the database as a user with file upload privileges,
         # in this case the PostgreSQL default user who happens to be an
         # administrator on launchpad development boxes.
-        self.layer.switchDbUser(dbuser='launchpad')
+        self.layer.switchDbUser(dbuser='testadmin')
         ztm = self.layer.txn
 
         ztm.begin()
@@ -106,10 +106,12 @@ class TestLibrarianGarbageCollection(TestCase):
                 'foo.txt', len(content), StringIO(content), 'text/plain',
                 )
         f1 = LibraryFileAlias.get(f1_id)
+        f1.content.datecreated -= timedelta(days=14)
         f2_id = self.client.addFile(
                 'foo.txt', len(content), StringIO(content), 'text/plain',
                 )
         f2 = LibraryFileAlias.get(f2_id)
+        f2.content.datecreated -= timedelta(days=14)
 
         # Make sure the duplicates really are distinct
         self.failIfEqual(f1_id, f2_id)
