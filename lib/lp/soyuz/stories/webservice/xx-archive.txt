@@ -977,6 +977,8 @@ Now our unprivileged user can't get a list of the dependencies.
     ...     '/~cprov/+archive/ppa/dependencies')
     HTTP/1.1 401 Unauthorized
     ...
+    Unauthorized: (<Archive at ...>, 'dependencies', 'launchpad.View')
+    <BLANKLINE>
 
 Nor can said user craft a URL to a dependency.
 
@@ -984,6 +986,8 @@ Nor can said user craft a URL to a dependency.
     ...     '/~cprov/+archive/ppa/+dependency/1')
     HTTP/1.1 401 Unauthorized
     ...
+    Unauthorized: (<Archive at ...>, 'getArchiveDependency', 'launchpad.View')
+    <BLANKLINE>
 
 Celso can still see them if we grant private permissions, of course.
 
