@@ -32,8 +32,14 @@ class BaseRunnableJob:
     """
     delegates(IJob, 'job')
 
+    user_error_types = ()
+
     def getOopsRecipients(self):
         """Return a list of email-ids to notify about oopses."""
+        return self.getErrorRecipients()
+
+    def getErrorRecipients(self):
+        """Return a list of email-ids to notify about user errors."""
         return []
 
     def getOopsMailController(self, oops_id):
@@ -44,16 +50,39 @@ class BaseRunnableJob:
         recipients = self.getOopsRecipients()
         if len(recipients) == 0:
             return None
+        subject = 'Launchpad internal error'
         body = (
             'Launchpad encountered an internal error during the following'
             ' operation: %s.  It was logged with id %s.  Sorry for the'
             ' inconvenience.' % (self.getOperationDescription(), oops_id))
         from_addr = config.canonical.noreply_from_address
-        return MailController(from_addr, recipients, 'NullJob failed.', body)
+        return MailController(from_addr, recipients, subject, body)
+
+    def getUserErrorMailController(self, e):
+        """Return a MailController for notifying about user errors.
+
+        Return None if there is no-one to notify.
+        """
+        recipients = self.getErrorRecipients()
+        if len(recipients) == 0:
+            return None
+        subject = 'Launchpad error while %s' % self.getOperationDescription()
+        body = (
+            'Launchpad encountered an error during the following'
+            ' operation: %s.  %s' % (self.getOperationDescription(), str(e)))
+        from_addr = config.canonical.noreply_from_address
+        return MailController(from_addr, recipients, subject, body)
 
     def notifyOops(self, oops):
         """Report this oops."""
         ctrl = self.getOopsMailController(oops.id)
+        if ctrl is None:
+            return
+        ctrl.send()
+
+    def notifyUserError(self, e):
+        """See `IRunnableJob`."""
+        ctrl = self.getUserErrorMailController(e)
         if ctrl is None:
             return
         ctrl.send()
@@ -103,6 +132,8 @@ class JobRunner(object):
                 self.runJob(job)
             except LeaseHeld:
                 self.incomplete_jobs.append(job)
+            except job.user_error_types, e:
+                job.notifyUserError(e)
             except Exception:
                 info = sys.exc_info()
                 errorlog.globalErrorUtility.raising(info)
