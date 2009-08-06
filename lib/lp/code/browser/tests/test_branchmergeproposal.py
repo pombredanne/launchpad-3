@@ -393,6 +393,13 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertEqual(text.decode('windows-1252', 'replace'),
                          self._createView().review_diff)
 
+    def test_linked_bugs_excludes_mutual_bugs(self):
+        """List bugs that are linked to the source only."""
+        bug = self.factory.makeBug()
+        self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
+        self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
+        self.assertEqual([], self._createView().linked_bugs)
+
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
     """Test the status vocabulary generated for then +edit-status view."""
