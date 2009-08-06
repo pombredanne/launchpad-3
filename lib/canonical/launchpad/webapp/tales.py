@@ -415,8 +415,12 @@ class ObjectFormatterAPI:
     # frozenset (http://code.activestate.com/recipes/414283/) here, though.
     # The names which can be traversed further (e.g context/fmt:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
+
     # Names which are allowed but can't be traversed further.
-    final_traversable_names = {'public-private-css': 'public_private_css',}
+    final_traversable_names = {
+        'public-private-css': 'public_private_css',
+        'location_heading': 'location_heading',
+        }
 
     def __init__(self, context):
         self._context = context
@@ -482,6 +486,24 @@ class ObjectFormatterAPI:
         else:
             return 'public'
 
+    def location_heading(self):
+        """Return a heading for the nearest object supporting a logo."""
+        context = self._context
+        if not IHasLogo.providedBy(context):
+            context = nearest(context, IHasLogo)
+            heading = 'h2'
+        else:
+            heading = 'h1'
+
+        if context is None:
+            title = 'Launchpad.net'
+        else:
+            title = context.title
+
+        return "<%(heading)s>%(title)s</%(heading)s>" % {
+            'heading': heading,
+            'title': title
+            }
 
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects
