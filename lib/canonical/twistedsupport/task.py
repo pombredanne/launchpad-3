@@ -132,7 +132,6 @@ class PollingTaskSource:
             # don't let any deferred it returns delay subsequent polls.
             task_consumer.taskProductionFailed(reason)
         def poll():
-            # XXX this line is untested.
             if self._started:
                 d = defer.maybeDeferred(self._task_producer)
                 return d.addCallbacks(got_task, task_failed)

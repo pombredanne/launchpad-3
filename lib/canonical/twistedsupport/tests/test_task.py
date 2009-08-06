@@ -302,6 +302,28 @@ class TestPollingTaskSource(TestCase):
         produced_deferred.callback(None)
         self.assertEqual([False], stop_called)
 
+    def test_stop_start_stop_when_polling_doesnt_poll_again(self):
+        # XXX
+        produced_deferreds = []
+        def producer():
+            d = Deferred()
+            produced_deferreds.append(d)
+            return d
+        task_source = self.makeTaskSource(task_producer=producer)
+        # Start the source.  This calls the producer.
+        task_source.start(NoopTaskConsumer())
+        self.assertEqual(1, len(produced_deferreds))
+        task_source.stop()
+        # If we start it again, this does not call the producer because
+        # the above call is still in process.
+        task_source.start(NoopTaskConsumer())
+        self.assertEqual(1, len(produced_deferreds))
+        # If we now stop the source and the initial poll for a task completes,
+        # we don't poll again.
+        task_source.stop()
+        produced_deferreds[0].callback(None)
+        self.assertEqual(1, len(produced_deferreds))
+
     def test_taskStarted_deferred_doesnt_delay_polling(self):
         # If taskStarted returns a deferred, we don't wait for it to fire
         # before polling again.
