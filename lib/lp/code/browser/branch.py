@@ -65,6 +65,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
+from canonical.lazr.utils import smartquote
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
@@ -582,6 +583,7 @@ class BranchEditSchema(Interface):
         'whiteboard',
         ])
     private = copy_field(IBranch['private'], readonly=False)
+    reviewer = copy_field(IBranch['reviewer'], required=True)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -589,6 +591,12 @@ class BranchEditFormView(LaunchpadEditFormView):
 
     schema = BranchEditSchema
     field_names = None
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return smartquote(
+            'Change "%s" branch details' % self.context.displayname)
 
     @property
     def adapters(self):
@@ -875,21 +883,10 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             pass
 
 
-class BranchReviewerEditSchema(Interface):
-    """The schema to edit the branch reviewer."""
-
-    reviewer = copy_field(IBranch['reviewer'], required=True)
-
-
-class BranchReviewerEditView(LaunchpadEditFormView):
+class BranchReviewerEditView(BranchEditFormView):
     """The view to set the review team."""
 
-    schema = BranchReviewerEditSchema
-
-    @property
-    def adapters(self):
-        """See `LaunchpadFormView`"""
-        return {BranchReviewerEditSchema: self.context}
+    field_names = ['reviewer']
 
     @property
     def initial_values(self):
@@ -910,12 +907,6 @@ class BranchReviewerEditView(LaunchpadEditFormView):
             self.context.reviewer = reviewer
 
         self.context.date_last_modified = UTC_NOW
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    cancel_url = next_url
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
