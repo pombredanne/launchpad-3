@@ -98,10 +98,9 @@ class TestPermission(TestCaseWithFactory):
         # Arbitrary people cannot upload to a PPA.
         person = self.factory.makePerson()
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        ssp = self.factory.makeSuiteSourcePackage()
+        spn = self.factory.makeSourcePackageName()
         self.assertRaises(
-            CannotUploadToArchive,
-            verify_upload, person, ssp.sourcepackagename, ppa, None)
+            CannotUploadToArchive, verify_upload, person, spn, ppa, None)
 
     def test_owner_can_upload_to_ppa(self):
         # If the archive is a PPA, and you own it, then you can upload pretty
@@ -116,11 +115,10 @@ class TestPermission(TestCaseWithFactory):
     def test_arbitrary_person_cannot_upload_to_primary_archive(self):
         # By default, you can't upload to the primary archive.
         person = self.factory.makePerson()
-        ssp = self.factory.makeSuiteSourcePackage()
-        archive = ssp.distribution.main_archive
+        archive = self.factory.makeArchive()
+        spn = self.factory.makeSourcePackageName()
         self.assertRaises(
-            CannotUploadToArchive,
-            verify_upload, person, ssp.sourcepackagename, archive, None)
+            CannotUploadToArchive, verify_upload, person, spn, archive, None)
 
     def test_package_specific_rights(self):
         # A person can be granted specific rights for uploading a package,
