@@ -741,7 +741,7 @@
                 modify
                 retarget
                 retract
-                set_publication_date
+                setPublicationDate
                 destroySelf"/>
     </class>
 
