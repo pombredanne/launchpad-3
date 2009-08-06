@@ -152,7 +152,8 @@ class SoyuzTestPublisher:
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
-                     maintainer=None, creator=None, date_uploaded=UTC_NOW):
+                     maintainer=None, creator=None, date_uploaded=UTC_NOW,
+                     do_upload=True):
         """Return a mock source publishing record."""
         if sourcename is None:
             sourcename = self.default_package_name
@@ -194,17 +195,18 @@ class SoyuzTestPublisher:
             archive=archive, dateuploaded=date_uploaded)
 
         changes_file_name = "%s_%s_source.changes" % (sourcename, version)
-        package_upload = self.addPackageUpload(
-            archive, distroseries, pocket,
-            changes_file_name=changes_file_name,
-            changes_file_content=changes_file_content)
-        package_upload.addSource(spr)
+        if do_upload:
+            package_upload = self.addPackageUpload(
+                archive, distroseries, pocket,
+                changes_file_name=changes_file_name,
+                changes_file_content=changes_file_content)
+            package_upload.addSource(spr)
 
-        if filename is None:
-            filename = "%s_%s.dsc" % (sourcename, version)
-        alias = self.addMockFile(
-            filename, filecontent, restricted=archive.private)
-        spr.addFile(alias)
+            if filename is None:
+                filename = "%s_%s.dsc" % (sourcename, version)
+            alias = self.addMockFile(
+                filename, filecontent, restricted=archive.private)
+            spr.addFile(alias)
 
         sspph = SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
