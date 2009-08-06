@@ -725,6 +725,8 @@ class Bug(SQLBase):
                    content=None, parent=None, bugwatch=None,
                    remote_comment_id=None):
         """Create a new Message and link it to this bug."""
+        if subject is None:
+            subject = self.followup_subject()
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
