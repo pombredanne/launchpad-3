@@ -14,8 +14,11 @@ from canonical.testing import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import (
     CannotUploadToArchive, components_valid_for, verify_upload)
+from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
@@ -50,6 +53,38 @@ class TestPermission(TestCaseWithFactory):
         """Assert that 'person' can upload 'ssp' to 'archive'."""
         # For now, just check that doesn't raise an exception.
         verify_upload(person, ssp, archive)
+
+    def makeGPGKey(self, owner):
+        """Give 'owner' a crappy GPG key for the purposes of testing."""
+        return getUtility(IGPGKeySet).new(
+            owner.id,
+            keyid='DEADBEEF',
+            fingerprint='A' * 40,
+            keysize=self.factory.getUniqueInteger(),
+            algorithm=GPGKeyAlgorithm.R,
+            active=True,
+            can_encrypt=False)
+
+    def setComponent(self, archive, suite_sourcepackage, component):
+        """Set the component of `suite_sourcepackage` to `component`.
+
+        :param archive: The `IArchive` that the package is being uploaded to.
+        :param suite_sourcepackage: An `ISuiteSourcePackage` that the
+            component is being set on.
+        :param component: An `IComponent` to upload the package to, thus
+            setting the latest component.
+        """
+        stp = SoyuzTestPublisher()
+        stp.factory = self.factory
+        stp.person = self.factory.makePerson()
+        self.makeGPGKey(stp.person)
+        return stp.getPubSource(
+            sourcename=suite_sourcepackage.sourcepackagename.name,
+            component=component.name,
+            distroseries=suite_sourcepackage.distroseries,
+            archive=archive,
+            status=PackagePublishingStatus.PUBLISHED,
+            do_upload=False)
 
     def test_random_person_cannot_upload_to_ppa(self):
         # Arbitrary people cannot upload to a PPA.
@@ -103,6 +138,19 @@ class TestPermission(TestCaseWithFactory):
         permission_set = getUtility(IArchivePermissionSet)
         removeSecurityProxy(permission_set).newPackagesetUploader(
             archive, person, package_set)
+        self.assertCanUpload(person, ssp, archive)
+
+    def test_component_rights(self):
+        # A person allowed to upload to a particular component of an archive
+        # can upload basically whatever they want to that component.
+        person = self.factory.makePerson()
+        ssp = self.factory.makeSuiteSourcePackage()
+        archive = ssp.distribution.main_archive
+        component = self.factory.makeComponent()
+        self.setComponent(archive, ssp, component)
+        permission_set = getUtility(IArchivePermissionSet)
+        removeSecurityProxy(permission_set).newComponentUploader(
+            archive, person, component)
         self.assertCanUpload(person, ssp, archive)
 
 

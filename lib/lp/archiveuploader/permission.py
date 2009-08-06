@@ -46,7 +46,13 @@ def verify_upload(person, suite_sourcepackage, archive):
     # For any other archive...
     spn = suite_sourcepackage.sourcepackagename
     ap_set = getUtility(IArchivePermissionSet)
-    if not (
-        archive.canUpload(person, spn)
+    if (archive.canUpload(person, spn)
         or ap_set.isSourceUploadAllowed(archive, spn, person)):
-        raise CannotUploadToArchive(person, archive)
+        return
+
+    component = suite_sourcepackage.sourcepackage.latest_published_component
+    if (component is not None
+        and archive.canUpload(person, component)):
+        return
+
+    raise CannotUploadToArchive(person, archive)
