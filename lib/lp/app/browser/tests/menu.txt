@@ -43,6 +43,10 @@ are usually bound to a view.
     >>> provideAdapter(
     ...     EditMenu, [IEditMenuMarker], INavigationMenu, name="overview")
 
+
+Related pages
+-------------
+
 The related pages portlet is rendered using a TALES call passing the view
 to the named adapter: <tal:menu replace="structure view/@@+related-pages" />
 
@@ -113,3 +117,45 @@ False). The page will not render a link to itself.
     </div>
 
 
+Action menus
+------------
+
+A navigation menu can be presented as an action menu is the side portlets.
+The action menu uses the view's enabled_links property to get the list of
+links.
+
+    >>> menu_view = create_initialized_view(
+    ...     view, '+global-actions', principal=user)
+    >>> for link in menu_view.enabled_links:
+    ...     print link.enabled, link.linked, link.url
+    True  False  http://launchpad.dev/~beaker/+edit
+    True  True   http://launchpad.dev/~beaker/+edit-people
+
+The generated markup is for a portlet with the global-actions id.
+
+    >>> print menu_view.render()
+    <div id="global-actions" class="portlet">
+      <ul>
+        <li>
+          <a href="..."
+            class="menu-link-edit_thing sprite modify edit">Edit thing</a>
+        </li>
+        <li>
+          <a style="..." href="..."
+            class="menu-link-edit_people">Edit people related to thing</a>
+        </li>
+      </ul>
+    </div>
+
+If there are no enabled links, no markup is rendered. For example, a menu
+may contain links that require special privileges to access.
+
+    >>> EditMenu.links = ('admin',)
+
+    >>> menu_view = create_initialized_view(
+    ...     view, '+global-actions', principal=user)
+    >>> menu_view.enabled_links
+    []
+
+    >>> print menu_view.render()
+    <BLANKLINE>
