@@ -54,13 +54,11 @@ class TestPermission(TestCaseWithFactory):
         permission_set = getUtility(IArchivePermissionSet)
         self.permission_set = removeSecurityProxy(permission_set)
 
-    def assertCanUpload(self, person, ssp, archive, strict_component=True):
+    def assertCanUpload(self, person, spn, archive, component,
+                        strict_component=True):
         """Assert that 'person' can upload 'ssp' to 'archive'."""
         # For now, just check that doesn't raise an exception.
-        component = ssp.sourcepackage.latest_published_component
-        verify_upload(
-            person, ssp.sourcepackagename, archive, component,
-            strict_component)
+        verify_upload(person, spn, archive, component, strict_component)
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
@@ -109,13 +107,13 @@ class TestPermission(TestCaseWithFactory):
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA, owner=team)
         person = self.factory.makePerson()
         removeSecurityProxy(team).addMember(person, team.teamowner)
-        ssp = self.factory.makeSuiteSourcePackage()
-        self.assertCanUpload(person, ssp, ppa)
+        spn = self.factory.makeSourcePackageName()
+        self.assertCanUpload(person, spn, ppa, None)
 
     def test_arbitrary_person_cannot_upload_to_primary_archive(self):
         # By default, you can't upload to the primary archive.
         person = self.factory.makePerson()
-        archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         spn = self.factory.makeSourcePackageName()
         self.assertRaises(
             CannotUploadToArchive, verify_upload, person, spn, archive, None)
@@ -125,49 +123,48 @@ class TestPermission(TestCaseWithFactory):
         # based only on the source package name. If they have these rights,
         # they can upload to the package.
         person = self.factory.makePerson()
-        ssp = self.factory.makeSuiteSourcePackage()
+        spn = self.factory.makeSourcePackageName()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         # We can't use a PPA, because they have a different logic for
         # permissions. We can't create an arbitrary archive, because there's
         # only one primary archive per distro.
-        archive = ssp.distribution.main_archive
-        self.permission_set.newPackageUploader(
-            archive, person, ssp.sourcepackagename)
-        self.assertCanUpload(person, ssp, archive)
+        self.permission_set.newPackageUploader(archive, person, spn)
+        self.assertCanUpload(person, spn, archive, None)
 
     def test_packageset_specific_rights(self):
         # A person with rights to upload to the package set can upload the
         # package set to the archive.
         person = self.factory.makePerson()
-        ssp = self.factory.makeSuiteSourcePackage()
-        archive = ssp.distribution.main_archive
-        package_set = self.factory.makePackageSet(
-            packages=[ssp.sourcepackagename])
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        spn = self.factory.makeSourcePackageName()
+        package_set = self.factory.makePackageSet(packages=[spn])
         self.permission_set.newPackagesetUploader(
             archive, person, package_set)
-        self.assertCanUpload(person, ssp, archive)
+        self.assertCanUpload(person, spn, archive, None)
 
     def test_component_rights(self):
         # A person allowed to upload to a particular component of an archive
         # can upload basically whatever they want to that component.
         person = self.factory.makePerson()
-        ssp = self.factory.makeSuiteSourcePackage()
-        archive = ssp.distribution.main_archive
+        spn = self.factory.makeSourcePackageName()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         component = self.factory.makeComponent()
-        self.setComponent(archive, ssp, component)
+        #self.setComponent(archive, ssp, component)
         self.permission_set.newComponentUploader(archive, person, component)
-        self.assertCanUpload(person, ssp, archive)
+        self.assertCanUpload(person, spn, archive, component)
 
     def test_non_strict_component_rights(self):
         # If we aren't testing strict component access, then we only need to
         # have access to an arbitrary component.
         person = self.factory.makePerson()
-        ssp = self.factory.makeSuiteSourcePackage()
-        archive = ssp.distribution.main_archive
+        spn = self.factory.makeSourcePackageName()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         component_a = self.factory.makeComponent()
-        self.setComponent(archive, ssp, component_a)
+        #self.setComponent(archive, ssp, component_a)
         component_b = self.factory.makeComponent()
         self.permission_set.newComponentUploader(archive, person, component_b)
-        self.assertCanUpload(person, ssp, archive, strict_component=False)
+        self.assertCanUpload(
+            person, spn, archive, component_a, strict_component=False)
 
 
 def test_suite():
