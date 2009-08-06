@@ -409,6 +409,16 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.taskStarted(lambda: None)
         self.assertEqual([None], task_log)
 
+    def test_consumer_finishes_if_no_tasks_found(self):
+        # `consume` returns a Deferred that fires if no tasks are found when
+        # no tasks are running.
+        consumer = self.makeConsumer()
+        task_log = []
+        d = consumer.consume(LoggingSource([]))
+        d.addCallback(task_log.append)
+        consumer.noTasksFound()
+        self.assertEqual([None], task_log)
+
     def test_consumer_doesnt_finish_until_stop_deferred_fires(self):
         # XXX
         consumer = self.makeConsumer()
@@ -430,31 +440,12 @@ class TestParallelLimitedTaskConsumer(TestCase):
         source = LoggingSource([], stop_deferred)
         d = consumer.consume(source)
         d.addCallback(consume_log.append)
-        source.stop()
+        consumer.noTasksFound()
         self.assertEqual([], consume_log)
         stop_deferred.callback(False)
         self.assertEqual([], consume_log)
 
-    def test_consume_deferred_fires_if_no_tasks_found(self):
-        # `consume` returns a Deferred that fires if no tasks are found when
-        # no tasks are running.
-        consumer = self.makeConsumer()
-        task_log = []
-        d = consumer.consume(LoggingSource([]))
-        d.addCallback(task_log.append)
-        consumer.noTasksFound()
-        self.assertEqual([None], task_log)
-
-    def test_consume_deferred_fires_no_tasks_found_when_stop_finishes(self):
-        # XXX.
-        consumer = self.makeConsumer()
-        task_log = []
-        d = consumer.consume(LoggingSource([]))
-        d.addCallback(task_log.append)
-        consumer.noTasksFound()
-        self.assertEqual([None], task_log)
-
-    def test_consume_deferred_no_fire_if_no_tasks_found_and_job_running(self):
+    def test_consumer_doesnt_finish_if_no_tasks_found_and_job_running(self):
         # If no tasks are found while a job is running, the Deferred returned
         # by `consume` is not fired.
         consumer = self.makeConsumer()
@@ -464,6 +455,16 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.taskStarted(self._neverEndingTask)
         consumer.noTasksFound()
         self.assertEqual([], task_log)
+
+    def test_consumer_stopping_twice_fires_once(self):
+        # XXX.
+        consumer = self.makeConsumer()
+        task_log = []
+        d = consumer.consume(LoggingSource([]))
+        d.addCallback(task_log.append)
+        consumer.noTasksFound()
+        consumer.noTasksFound()
+        self.assertEqual([None], task_log)
 
     def test_source_stopped_when_tasks_done(self):
         # When no more tasks are running, we stop the task source.
