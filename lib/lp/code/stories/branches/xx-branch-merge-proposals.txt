@@ -322,6 +322,23 @@ After claiming a review, the claimant is listed instead of their team.
     Reviewer                         Review Type  Date Requested Status...
     Foo Bar                          claimable    ... ago        Pending ...
 
+The claimant can reassign the review to someone else.
+
+    >>> foobar_browser.getLink('Reassign').click()
+    >>> foobar_browser.getControl('Reviewer').value = 'hwdb-team'
+    >>> foobar_browser.getControl('Reassign').click()
+    >>> foobar_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
+    ...     '/klingon/+merge/1')
+    >>> pending = find_tag_by_id(
+    ...     foobar_browser.contents, 'code-review-votes')
+
+The review is now reassigned to the HWDB team.
+
+    >>> print extract_text(pending)
+    Reviewer                         Review Type  Date Requested Status...
+    HWDB Team                        claimable    ... ago        Pending ...
+
+
 == Marking as merged ==
 
 When a branch has been merged into the target branch, the proposal should
