@@ -9,6 +9,8 @@ import cgi
 import urllib
 from datetime import datetime, timedelta
 
+from BeautifulSoup import UnicodeDammit
+
 from zope.component import getUtility
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.event import notify
@@ -376,11 +378,12 @@ class LoginOrRegister:
     def preserve_query(self):
         """Return zero or more hidden inputs that preserve the URL's query."""
         L = []
+        html = u'<input type="hidden" name="%s" value="%s" />'
         for name, value in self.iter_form_items():
-            L.append('<input type="hidden" name="%s" value="%s" />' % (
-                name, cgi.escape(value, quote=True)
-                ))
-
+            # Thanks to apport (https://launchpad.net/bugs/61171), we need to
+            # do this here.
+            value = UnicodeDammit(value).markup
+            L.append(html % (name, cgi.escape(value, quote=True)))
         return '\n'.join(L)
 
 
