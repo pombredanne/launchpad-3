@@ -181,6 +181,7 @@
                     votes
                     root_comment
                     all_comments
+                    related_bugs
                     isPersonValidReviewer
                     isMergable
                     getComment
