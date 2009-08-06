@@ -8,12 +8,13 @@ __metaclass__ = type
 from unittest import TestLoader
 from zope.component import getUtility
 
+from canonical.launchpad.validators.name import valid_name
+from canonical.testing import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from lp.testing import TestCaseWithFactory
 from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
-from canonical.testing import LaunchpadZopelessLayer
 
 class TestTranslationBranchApprover(TestCaseWithFactory):
 
@@ -93,14 +94,15 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
             translation_domain, entry.potemplate.translation_domain)
 
     def test_template_name(self):
-        # The name should not contain underscores any more.
-        translation_domain = ('translation_domain_with_underscores')
-        template_name = translation_domain.replace('_', '-')
+        # The name is derived from the file name and must be a valid name.
+        translation_domain = ('Invalid-Name_with illlegal#Characters')
         template_path = translation_domain + u'.pot'
         entry = self._upload_file(template_path)
         approver = self._create_approver(template_path)
         approver.approve(entry)
-        self.assertEqual(template_name, entry.potemplate.name)
+        self.assertTrue(valid_name(entry.potemplate.name))
+        self.assertEqual('invalid-name-withillegalcharacters',
+                         entry.potemplate.name)
 
     def test_replace_existing_approved(self):
         # Template files that replace existing entries are approved.
