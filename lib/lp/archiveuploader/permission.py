@@ -41,7 +41,7 @@ def components_valid_for(archive, person):
     return set(permission.component for permission in permissions)
 
 
-def verify_upload(person, suite_sourcepackage, archive,
+def verify_upload(person, sourcepackagename, suite_sourcepackage, archive,
                   strict_component=True):
     """Can 'person' upload 'suite_sourcepackage' to 'archive'?
 
@@ -62,10 +62,9 @@ def verify_upload(person, suite_sourcepackage, archive,
             return True
 
     # For any other archive...
-    spn = suite_sourcepackage.sourcepackagename
     ap_set = getUtility(IArchivePermissionSet)
-    if (archive.canUpload(person, spn)
-        or ap_set.isSourceUploadAllowed(archive, spn, person)):
+    if (archive.canUpload(person, sourcepackagename)
+        or ap_set.isSourceUploadAllowed(archive, sourcepackagename, person)):
         return
 
     component = suite_sourcepackage.sourcepackage.latest_published_component
