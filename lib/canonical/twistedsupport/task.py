@@ -111,8 +111,6 @@ class PollingTaskSource:
 
     def start(self, task_consumer):
         """See `ITaskSource`."""
-        # Probably calling stop here then immediately overwriting the
-        # LoopingCall isn't the right thing to do.
         self.stop()
         self._started = True
         self._looping_call = LoopingCall(self._poll, task_consumer)
@@ -134,6 +132,7 @@ class PollingTaskSource:
             # don't let any deferred it returns delay subsequent polls.
             task_consumer.taskProductionFailed(reason)
         def poll():
+            # XXX this line is untested.
             if self._started:
                 d = defer.maybeDeferred(self._task_producer)
                 return d.addCallbacks(got_task, task_failed)
