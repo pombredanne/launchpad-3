@@ -156,7 +156,7 @@ class TestPollingTaskSource(TestCase):
         stop_deferred = task_source.stop()
         stop_calls = []
         stop_deferred.addCallback(stop_calls.append)
-        self.assertEqual(1, len(stop_calls))
+        self.assertEqual([True], stop_calls)
 
     def test_start_multiple_times_polls_immediately(self):
         # Starting a task source multiple times polls immediately.
@@ -257,25 +257,42 @@ class TestPollingTaskSource(TestCase):
 
     def test_stop_deferred_doesnt_fire_until_polling_finished(self):
         # XXX
-        produced_deferreds = []
+        produced_deferred = Deferred()
         def producer():
-            deferred = Deferred()
-            produced_deferreds.append(deferred)
-            return deferred
+            return produced_deferred
         task_source = self.makeTaskSource(task_producer=producer)
         task_source.start(NoopTaskConsumer())
-        # The call to start calls producer.  It returns a deferred which has
-        # not been fired.
-        self.assertEqual(len(produced_deferreds), 1)
-        # Stop returns a deferred that has not been fired.
+        # The call to start calls producer.  It returns a produced_deferred
+        # which has not been fired, so stop returns a deferred that has not
+        # been fired.
         stop_deferred = task_source.stop()
         stop_called = []
         stop_deferred.addCallback(stop_called.append)
-        self.assertEqual(0, len(stop_called))
-        # When the task producing deferred fires, the stop deferred also
-        # fires.
-        produced_deferreds[0].callback(None)
-        self.assertEqual(1, len(stop_called))
+        self.assertEqual([], stop_called)
+        # When the task producing deferred fires, the stop deferred fires with
+        # 'True' to indicate that the source is still stopped.
+        produced_deferred.callback(None)
+        self.assertEqual([True], stop_called)
+
+    def test_stop_deferred_fires_with_false_if_source_restarted(self):
+        # XXX
+        produced_deferred = Deferred()
+        def producer():
+            return produced_deferred
+        task_source = self.makeTaskSource(task_producer=producer)
+        task_source.start(NoopTaskConsumer())
+        # The call to start calls producer.  It returns a deferred which has
+        # not been fired so stop returns a deferred that has not been fired.
+        stop_deferred = task_source.stop()
+        stop_called = []
+        stop_deferred.addCallback(stop_called.append)
+        # Now we restart the source.
+        task_source.start(NoopTaskConsumer())
+        self.assertEqual([], stop_called)
+        # When the task producing deferred fires, the stop deferred fires with
+        # 'False' to indicate that the source has been restarted.
+        produced_deferred.callback(None)
+        self.assertEqual([False], stop_called)
 
     def test_taskStarted_deferred_doesnt_delay_polling(self):
         # If taskStarted returns a deferred, we don't wait for it to fire
