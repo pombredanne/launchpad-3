@@ -1,7 +1,8 @@
 #!/usr/bin/env python2.6
+# -*- mode: python -*-
 
 from base64 import standard_b64encode
-from sys import stdin, stdout, stderr
+from sys import argv, stdin, stdout, stderr
 from lxml import etree
 
 
@@ -33,6 +34,9 @@ if __name__ == '__main__':
     tree = etree.parse(stdin)
     root = tree.getroot()
 
+    # Only one argument is expected.
+    project_name = argv[1]
+
     # Scan the tree, fixing up issues.
     for bug in root.findall('{%s}bug' % NS):
         # Get or create the tags element.
@@ -49,7 +53,7 @@ if __name__ == '__main__':
             etree.SubElement(tags, '{%s}tag' % NS).text = nickname.text
 
         # Change the nickname.
-        nickname.text = u"openfiler-%s" % bug.get('id')
+        nickname.text = u"%s-%s" % (project_name, bug.get('id'))
 
         # Get the first comment and its text. We'll need these later.
         first_comment = bug.find('{%s}comment' % NS)
@@ -118,7 +122,8 @@ if __name__ == '__main__':
                 attachment = etree.SubElement(
                     first_comment, '{%s}attachment' % NS)
                 etree.SubElement(attachment, '{%s}filename' % NS).text = (
-                    u"openfiler-bug-%s-full-description.txt" % bug.get('id'))
+                    u"%s-bug-%s-full-description.txt" % (
+                        project_name, bug.get('id')))
                 etree.SubElement(attachment, '{%s}title' % NS).text = (
                     u"Full description (text/plain, utf-8)")
                 etree.SubElement(attachment, '{%s}mimetype' % NS).text = (
