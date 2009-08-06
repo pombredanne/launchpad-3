@@ -35,7 +35,8 @@ def components_valid_for(archive, person):
     return set(permission.component for permission in permissions)
 
 
-def verify_upload(person, suite_sourcepackage, archive):
+def verify_upload(person, suite_sourcepackage, archive,
+                  strict_component=True):
     # For PPAs...
     if archive.purpose == ArchivePurpose.PPA:
         if not archive.canUpload(person):
@@ -51,8 +52,11 @@ def verify_upload(person, suite_sourcepackage, archive):
         return
 
     component = suite_sourcepackage.sourcepackage.latest_published_component
-    if (component is not None
-        and archive.canUpload(person, component)):
-        return
-
+    if component is not None:
+        if strict_component:
+            if archive.canUpload(person, component):
+                return
+        else:
+            if len(components_valid_for(archive, person)) != 0:
+                return
     raise CannotUploadToArchive(person, archive)

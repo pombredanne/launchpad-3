@@ -49,10 +49,10 @@ class TestPermission(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def assertCanUpload(self, person, ssp, archive):
+    def assertCanUpload(self, person, ssp, archive, strict_component=True):
         """Assert that 'person' can upload 'ssp' to 'archive'."""
         # For now, just check that doesn't raise an exception.
-        verify_upload(person, ssp, archive)
+        verify_upload(person, ssp, archive, strict_component)
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
@@ -152,6 +152,18 @@ class TestPermission(TestCaseWithFactory):
         removeSecurityProxy(permission_set).newComponentUploader(
             archive, person, component)
         self.assertCanUpload(person, ssp, archive)
+
+    def test_non_strict_component_rights(self):
+        person = self.factory.makePerson()
+        ssp = self.factory.makeSuiteSourcePackage()
+        archive = ssp.distribution.main_archive
+        component_a = self.factory.makeComponent()
+        self.setComponent(archive, ssp, component_a)
+        permission_set = getUtility(IArchivePermissionSet)
+        component_b = self.factory.makeComponent()
+        removeSecurityProxy(permission_set).newComponentUploader(
+            archive, person, component_b)
+        self.assertCanUpload(person, ssp, archive, strict_component=False)
 
 
 def test_suite():
