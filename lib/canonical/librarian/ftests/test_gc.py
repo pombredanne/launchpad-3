@@ -106,12 +106,10 @@ class TestLibrarianGarbageCollection(TestCase):
                 'foo.txt', len(content), StringIO(content), 'text/plain',
                 )
         f1 = LibraryFileAlias.get(f1_id)
-        f1.content.datecreated -= timedelta(days=14)
         f2_id = self.client.addFile(
                 'foo.txt', len(content), StringIO(content), 'text/plain',
                 )
         f2 = LibraryFileAlias.get(f2_id)
-        f2.content.datecreated -= timedelta(days=14)
 
         # Make sure the duplicates really are distinct
         self.failIfEqual(f1_id, f2_id)
@@ -125,6 +123,8 @@ class TestLibrarianGarbageCollection(TestCase):
         f2.last_accessed = past
         f1.date_created = past
         f2.date_created = past
+        f1.content.datecreated = past
+        f2.content.datecreated = past
 
         del f1, f2
 
