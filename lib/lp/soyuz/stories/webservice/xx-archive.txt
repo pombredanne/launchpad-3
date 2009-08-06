@@ -945,3 +945,60 @@ A 404 also occurs if we ask for an archive that doesn't exist.
     ...     '/~cprov/+archive/ppa/+dependency/123456')
     HTTP/1.1 404 Not Found
     ...
+
+== Security ==
+
+Any user can retrieve a public PPA's dependencies.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_ppa_db.private = False
+    >>> logout()
+
+    >>> print user_webservice.get(
+    ...     '/~cprov/+archive/ppa/dependencies')
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print user_webservice.get(
+    ...     '/~cprov/+archive/ppa/+dependency/1')
+    HTTP/1.1 200 Ok
+    ...
+
+The dependencies of a private archive are private. Let's make
+Celso's PPA private.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_ppa_db.private = True
+    >>> logout()
+
+Now our unprivileged user can't get a list of the dependencies.
+
+    >>> print user_webservice.get(
+    ...     '/~cprov/+archive/ppa/dependencies')
+    HTTP/1.1 401 Unauthorized
+    ...
+
+Nor can said user craft a URL to a dependency.
+
+    >>> print user_webservice.get(
+    ...     '/~cprov/+archive/ppa/+dependency/1')
+    HTTP/1.1 401 Unauthorized
+    ...
+
+Celso can still see them if we grant private permissions, of course.
+
+    >>> cprov_webservice = webservice_for_person(
+    ...     cprov, permission=OAuthPermission.WRITE_PRIVATE)
+    >>> print cprov_webservice.get(
+    ...     '/~cprov/+archive/ppa/dependencies')
+    HTTP/1.1 200 Ok
+    ...
+    >>> print cprov_webservice.get(
+    ...     '/~cprov/+archive/ppa/+dependency/1')
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_ppa_db.private = False
+    >>> logout()
+
