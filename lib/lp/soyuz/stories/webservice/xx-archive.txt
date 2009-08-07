@@ -946,6 +946,13 @@ A 404 also occurs if we ask for an archive that doesn't exist.
     HTTP/1.1 404 Not Found
     ...
 
+And even if we ask for a non-integral archive ID.
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+dependency/foo')
+    HTTP/1.1 404 Not Found
+    ...
+
 == Security ==
 
 Any user can retrieve a public PPA's dependencies.
