@@ -1186,12 +1186,11 @@ class BugTaskEditView(LaunchpadEditFormView):
                 # The user has to be able to see the current value.
                 status_noshow.remove(self.context.status)
 
-            # XXX: salgado, 2009-08-07:
             # We shouldn't have to build our vocabulary out of (item.title,
             # item) tuples -- iterating over an EnumeratedType gives us
             # ITokenizedTerms that we could use. However, the terms generated
-            # by EnumeratedType have their name as the token and there are
-            # plenty of tests that expect the title as the token.
+            # by EnumeratedType have their name as the token and here we need
+            # the title as the token for backwards compatibility.
             status_items = [
                 (item.title, item) for item in BugTaskStatus.items
                 if item not in status_noshow]
@@ -3018,12 +3017,11 @@ class BugTaskTableRowView(LaunchpadView):
     def status_widget_items(self):
         """The available status items as JSON."""
         if self.user is not None:
-            # XXX: salgado, 2009-08-07:
             # We shouldn't have to build our vocabulary out of (item.title,
             # item) tuples -- iterating over an EnumeratedType gives us
             # ITokenizedTerms that we could use. However, the terms generated
-            # by EnumeratedType have their name as the token and there are
-            # plenty of tests that expect the title as the token.
+            # by EnumeratedType have their name as the token and here we need
+            # the title as the token for backwards compatibility.
             status_items = [
                 (item.title, item) for item in BugTaskStatus.items
                 if item != BugTaskStatus.UNKNOWN]
@@ -3044,12 +3042,11 @@ class BugTaskTableRowView(LaunchpadView):
     def importance_widget_items(self):
         """The available status items as JSON."""
         if self.user is not None:
-            # XXX: salgado, 2009-08-07:
             # We shouldn't have to build our vocabulary out of (item.title,
             # item) tuples -- iterating over an EnumeratedType gives us
             # ITokenizedTerms that we could use. However, the terms generated
-            # by EnumeratedType have their name as the token and there are
-            # plenty of tests that expect the title as the token.
+            # by EnumeratedType have their name as the token and here we need
+            # the title as the token for backwards compatibility.
             importance_items = [
                 (item.title, item) for item in BugTaskImportance.items
                 if item != BugTaskImportance.UNKNOWN]
