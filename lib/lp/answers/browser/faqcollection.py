@@ -12,14 +12,18 @@ __all__ = [
 
 from urllib import urlencode
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    IFAQCollection, ISearchFAQsForm, QUESTION_STATUS_DEFAULT_SEARCH,
-    QuestionSort)
+from lp.answers.interfaces.faqcollection import (
+    IFAQCollection, ISearchFAQsForm, FAQSort)
+from lp.answers.interfaces.questionenums import QuestionSort
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, LaunchpadFormView, Link,
     safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import enabled_with_permission
 
 
 class FAQCollectionMenu(ApplicationMenu):
@@ -27,7 +31,7 @@ class FAQCollectionMenu(ApplicationMenu):
 
     usedfor = IFAQCollection
     facet = 'answers'
-    links = ['list_all']
+    links = ['list_all', 'create_faq']
 
     def list_all(self):
         """Return a Link to list all FAQs."""
@@ -36,7 +40,14 @@ class FAQCollectionMenu(ApplicationMenu):
         # which an adapter exists that gives the proper context.
         collection = IFAQCollection(self.context)
         url = canonical_url(collection, rootsite='answers') + '/+faqs'
-        return Link(url, 'List all FAQs')
+        return Link(url, 'List all FAQs', icon='info')
+
+    @enabled_with_permission('launchpad.Moderate')
+    def create_faq(self):
+        """Return a Link to create a new FAQ."""
+        collection = IFAQCollection(self.context)
+        url = canonical_url(collection, rootsite='answers') + '/+createfaq'
+        return Link(url, 'Create a new FAQ', icon='add')
 
 
 class SearchFAQsView(LaunchpadFormView):
@@ -80,6 +91,17 @@ class SearchFAQsView(LaunchpadFormView):
         """Return a BatchNavigator of the matching FAQs."""
         faqs = self.context.searchFAQs(search_text=self.search_text)
         return BatchNavigator(faqs, self.request)
+
+    @cachedproperty
+    def latest_faqs(self):
+        """Return the latest faqs created for this target.
+
+        This is used by the +portlet-listfaqs view.
+        """
+        quantity = 5
+        faqs = self.context.searchFAQs(
+            search_text=self.search_text, sort=FAQSort.NEWEST_FIRST)
+        return faqs[:quantity]
 
     @safe_action
     @action(_('Search'), name='search')
