@@ -17,7 +17,7 @@
     <tal:name replace="context/displayname" /> has no announcements.
   </p>
 
-  <tal:annoucements condition="has_announcements">
+  <tal:announcements condition="has_announcements">
     <ul>
       <li tal:repeat="announcement announcements">
         <div class="latest-announcement"
@@ -37,7 +37,7 @@
 
     <div class="see-all"
       tal:content="structure overview_menu/announcements/render" />
-  </tal:annoucements>
+  </tal:announcements>
 
   <div class="actions"
     tal:content="structure overview_menu/announce/render" />
