@@ -26,3 +26,13 @@ To create a specification message, use ISpecificationMessageSet.createMessage:
     ...     spec=spec)
     >>> test_message.message.subject
     u'test message subject'
+
+== Retrieving specification messages ==
+
+ISpecificationMessageSet represents the set of all ISpecificationMessages in
+the system. An individual ISpecificationMessage can be retrieved with
+ISpecificationMessageSet.get:
+
+    >>> specmessage_one = specmessageset.get(1)
+    >>> specmessage_one.message.subject
+    u'test message subject'
