@@ -752,7 +752,7 @@ class IArchiveView(IHasBuildRecords):
     dependencies = exported(
         CollectionField(
             title=_("Archive dependencies recorded for this archive."),
-            value_type=Reference(schema=Interface), # Really IArchiveDependency
+            value_type=Reference(schema=Interface), #Really IArchiveDependency
             readonly=True))
 
     description = exported(
