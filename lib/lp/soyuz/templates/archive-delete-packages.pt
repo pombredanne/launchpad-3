@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
   >
 <body>
@@ -21,12 +18,14 @@
   </tal:devmode>
 </metal:block>
 
-<div metal:fill-slot="main">
-
+<div metal:fill-slot="heading">
   <h1 tal:content="CONTEXTS/fmt:pagetitle">
     Delete packages from Blah PPA
   </h1>
+</div>
 
+<div metal:fill-slot="main">
+<div class="top-portlet">
     <tal:inactive_ppa_header condition="not: view/has_sources">
       <p>This PPA does not contain any source packages published.</p>
     </tal:inactive_ppa_header>
@@ -85,6 +84,7 @@
 
   </div> <!-- launchpad_form -->
 
+</div> <!--top-portlet -->
 </div> <!--main -->
 
 </body>

@@ -3,20 +3,19 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
   >
 <body>
 
-<div metal:fill-slot="main">
-
+<div metal:fill-slot="heading">
   <h1 tal:content="CONTEXTS/fmt:pagetitle">
     Edit dependencies for Blah PPA
   </h1>
+</div>
 
+<div metal:fill-slot="main">
+<div class="top-portlet">
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div class="form" metal:fill-slot="widgets">
@@ -129,6 +128,7 @@
 </script>
 
 
+</div> <!--top-portlet -->
 </div> <!--main -->
 
 </body>
