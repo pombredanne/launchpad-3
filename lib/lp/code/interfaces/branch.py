@@ -448,7 +448,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
 
     reviewer = exported(
         PublicPersonChoice(
-            title=_('Default Review Team'),
+            title=_('Review Team'),
             required=False,
             vocabulary='ValidPersonOrTeam',
             description=_("The reviewer of a branch is the person or team "
