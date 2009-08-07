@@ -467,8 +467,11 @@ class LaunchpadStatementTracer:
             connection, raw_cursor, statement, params)
 
 
-install_tracer(LaunchpadTimeoutTracer())
+# The LaunchpadTimeoutTracer needs to be installed last, as it raises
+# TimeoutError exceptions. When this happens, tracers installed later
+# are not invoked.
 install_tracer(LaunchpadStatementTracer())
+install_tracer(LaunchpadTimeoutTracer())
 
 
 class StoreSelector:
