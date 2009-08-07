@@ -2,7 +2,9 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
+  omit-tag=""
+  define="packages context/sourcepackages"
+  condition="packages">
 
 <div class="portlet" id="portlet-packages">
   <h2>
@@ -11,12 +13,8 @@
     Packages in distributions
   </h2>
 
-  <p tal:condition="not: context/sourcepackages">
-    <tal:name replace="context/displayname" /> has no packages.
-  </p>
-
-  <dl tal:condition="context/sourcepackages">
-    <tal:pair tal:repeat="package context/sourcepackages">
+  <dl>
+    <tal:pair tal:repeat="package packages">
       <dt>
         <a class="sprite package-source"
           tal:attributes="href package/fmt:url"
