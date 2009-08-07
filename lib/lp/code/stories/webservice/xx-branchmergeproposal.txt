@@ -51,7 +51,7 @@ We use the webservice as an unrelated, unprivileged user.
     queue_status: u'Work in progress'
     queued_revno: None
     queuer_link: None
-    registrant_link: u'http://.../~person-name13'
+    registrant_link: u'http://.../~person-name...'
     resource_type_link: u'http://.../#branch_merge_proposal'
     reviewed_revno: None
     reviewer_link: None

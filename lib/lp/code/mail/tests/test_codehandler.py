@@ -293,8 +293,9 @@ class TestCodeHandler(TestCaseWithFactory):
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
-        notification = pop_notifications(
-            sort_key=lambda m: m['X-Envelope-To'])[0]
+        notification = [
+            msg for msg in pop_notifications() if
+            msg['X-Launchpad-message-rationale'] == 'Owner'][0]
         self.assertEqual('subject', notification['Subject'])
         expected_body = ('Review: Abstain ebailiwick\n'
                          ' vote Abstain EBAILIWICK\n'
