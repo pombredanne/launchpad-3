@@ -92,6 +92,12 @@ class SearchFAQsView(LaunchpadFormView):
         faqs = self.context.searchFAQs(search_text=self.search_text)
         return BatchNavigator(faqs, self.request)
 
+    @property
+    def portlet_action(self):
+        """The action URL of the portlet form."""
+        return canonical_url(
+            self.context, view_name='+faqs', rootsite='answers')
+
     @cachedproperty
     def latest_faqs(self):
         """Return the latest faqs created for this target.

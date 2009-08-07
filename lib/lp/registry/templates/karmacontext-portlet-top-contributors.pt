@@ -21,4 +21,10 @@
       </dt>
     </tal:contributor>
   </dl>
+
+  <tal:comment condition="nothing">
+    # XXX sinzui 2009-08-07 bug=410491: Remove this link and enable the
+    # see all link when the distribution index page is 3.0.
+  </tal:comment>
+  <a tal:replace="structure context/menu:overview/top_contributors/fmt:link" />
 </div>

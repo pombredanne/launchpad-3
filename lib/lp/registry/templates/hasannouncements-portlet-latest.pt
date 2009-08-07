@@ -4,34 +4,40 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 <tal:news define="announcements view/latest_announcements;
+                  has_announcements announcements/count;
                   overview_menu context/menu:overview">
-<div id="portlet-latest-announcements" class="portlet announcements"
-  tal:condition="announcements">
+<div id="portlet-latest-announcements" class="portlet announcements">
   <h2>
     <span style="float: right;"><a title="Atom 1.0 feed"
       tal:attributes="href view/feed_url"><img src="/@@/rss.png"/></a></span>
     Announcements
   </h2>
 
-  <ul>
-    <li tal:repeat="announcement announcements">
-      <div class="latest-announcement"
-        tal:omit-tag="not: repeat/announcement/start">
-        <img src="/@@/warning" alt="[Not published]"
-             title="This is not yet a public announcement"
-             tal:condition="not: announcement/published" />
-        <a tal:attributes="href announcement/fmt:url"
-          tal:content="announcement/title" />
-        <strong
-          tal:condition="announcement/date_announced"
-          tal:content="announcement/date_announced/fmt:displaydate" />
-        <br /> <tal:extract replace="announcement/summary/fmt:shorten/80" />
-      </div>
-    </li>
-  </ul>
+  <p tal:condition="not: has_announcements">
+    <tal:name replace="context/displayname" /> has no announcements.
+  </p>
 
-  <div class="see-all"
-    tal:content="structure overview_menu/announcements/render" />
+  <tal:announcements condition="has_announcements">
+    <ul>
+      <li tal:repeat="announcement announcements">
+        <div class="latest-announcement"
+          tal:omit-tag="not: repeat/announcement/start">
+          <img src="/@@/warning" alt="[Not published]"
+               title="This is not yet a public announcement"
+               tal:condition="not: announcement/published" />
+          <a tal:attributes="href announcement/fmt:url"
+            tal:content="announcement/title" />
+          <strong
+            tal:condition="announcement/date_announced"
+            tal:content="announcement/date_announced/fmt:displaydate" />
+          <br /> <tal:extract replace="announcement/summary/fmt:shorten/80" />
+        </div>
+      </li>
+    </ul>
+
+    <div class="see-all"
+      tal:content="structure overview_menu/announcements/render" />
+  </tal:announcements>
 
   <div class="actions"
     tal:content="structure overview_menu/announce/render" />
