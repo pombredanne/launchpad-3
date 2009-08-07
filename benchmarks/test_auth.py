@@ -30,6 +30,7 @@ class Auth(FunkLoadTestCase):
             self.fail('Form contained error: %s' % match.group(1))
 
     def assertIsNotLoggedIn(self, response):
+        # Not sure if this checking is needed.
         self.assertEquals(response.code, 200)
         match = response.body.find('If this is not you, please'
             '<a href="/+logout">log out now</a>')
@@ -48,8 +49,8 @@ class Auth(FunkLoadTestCase):
         self.assertIsNotLoggedIn(response)
 
         # The credentials of foo user, the loginator
-        email = 'foo@mailinator.com'
-        password = 'test'
+        email = self.conf_get('main', 'login')
+        password = self.conf_get('main', 'password')
 
         # Get only the first form of the page, the login one,
         # and fill it
