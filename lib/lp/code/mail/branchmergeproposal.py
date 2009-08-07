@@ -225,7 +225,7 @@ class BMPMailer(BranchMailer):
     def _getRelatedBugs(self):
         """Return a string describing related bugs, if any.
 
-        Related bugs are defined as those linked to the source branch.
+        Related bugs are provided by `IBranchMergeProposal.related_bugs`
         """
         bug_chunks = []
         for bug in self.merge_proposal.related_bugs:

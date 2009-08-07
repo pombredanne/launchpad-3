@@ -153,9 +153,8 @@ class BranchMergeProposal(SQLBase):
 
         Implies that these bugs would be fixed, in the target, by the merge.
         """
-        exclude = set(self.target_branch.linked_bugs)
         return (bug for bug in self.source_branch.linked_bugs
-                if bug not in exclude)
+                if bug not in self.target_branch.linked_bugs)
 
     @property
     def address(self):

@@ -109,7 +109,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             'Related bugs:\n'
             '  #%d I am a bug\n'
             '  %s\n' % (bug.id, canonical_url(bug))
-        )
+            )
         self.assertIn(expected, ctrl.body)
 
     def test_forCreation_without_bugs(self):

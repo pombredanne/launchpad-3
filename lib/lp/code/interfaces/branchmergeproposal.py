@@ -243,8 +243,8 @@ class IBranchMergeProposal(Interface):
             readonly=True))
 
     related_bugs = CollectionField(
-            title=_("Bugs related to this merge proposal."),
-            value_type=Reference(schema=IBug), readonly=True)
+        title=_("Bugs related to this merge proposal."),
+        value_type=Reference(schema=IBug), readonly=True)
 
     address = exported(
         TextLine(
