@@ -35,29 +35,29 @@ class IArchiveDependency(Interface):
 
     archive = exported(
         Reference(
+            schema=IArchive, required=True, readonly=True,
             title=_('Target archive'),
-            required=True,
-            schema=IArchive,
             description=_("The archive affected by this dependecy.")))
 
     dependency = exported(
         Reference(
-            schema=IArchive,
-            title=_("The archive set as a dependency."),
-            required=False))
+            schema=IArchive, required=False, readonly=True,
+            title=_("The archive set as a dependency.")))
 
     pocket = exported(
         Choice(
-            title=_("Pocket"), required=True,
+            title=_("Pocket"), required=True, readonly=True,
             vocabulary=PackagePublishingPocket))
 
     component = Choice(
-        title=_("Component"), required=True, vocabulary='Component')
+        title=_("Component"), required=True, readonly=True,
+        vocabulary='Component')
 
     # We don't want to export IComponent, so the name is exported specially.
     component_name = exported(
         TextLine(
             title=_("Component name"),
-            required=True))
+            required=True, readonly=True))
 
-    title = exported(TextLine(title=_("Archive dependency title.")))
+    title = exported(
+        TextLine(title=_("Archive dependency title."), readonly=True))

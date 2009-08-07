@@ -92,23 +92,23 @@ But even he can't write to a dependency.
     >>> print cprov_webservice.patch(
     ...     '/~cprov/+archive/ppa/+dependency/1', 'application/json',
     ...     simplejson.dumps({'archive_link': sabdfl_ppa['self_link']}))
-    HTTP/1.1 ...
+    HTTP/1.1 400 Bad Request
     ...
-    ForbiddenAttribute: ('archive', <ArchiveDependency at ...>)
+    archive_link: You tried to modify a read-only attribute.
     <BLANKLINE>
 
     >>> print cprov_webservice.patch(
     ...     '/~cprov/+archive/ppa/+dependency/1', 'application/json',
     ...     simplejson.dumps({'dependency_link': sabdfl_ppa['self_link']}))
-    HTTP/1.1 ...
+    HTTP/1.1 400 Bad Request
     ...
-    ForbiddenAttribute: ('dependency', <ArchiveDependency at ...>)
+    dependency_link: You tried to modify a read-only attribute.
     <BLANKLINE>
 
     >>> print cprov_webservice.patch(
     ...     '/~cprov/+archive/ppa/+dependency/1', 'application/json',
     ...     simplejson.dumps({'pocket': 'Security'}))
-    HTTP/1.1 ...
+    HTTP/1.1 400 Bad Request
     ...
-    ForbiddenAttribute: ('pocket', <ArchiveDependency at ...>)
+    pocket: You tried to modify a read-only attribute.
     <BLANKLINE>
