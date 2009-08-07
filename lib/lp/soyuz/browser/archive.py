@@ -289,6 +289,12 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
     @stepthrough('+dependency')
     def traverse_dependency(self, id):
+        """Traverse to an archive dependency by archive ID.
+
+        We use IArchive.getArchiveDependency here, which is protected by
+        launchpad.View, so you cannot get to a dependency of a private
+        archive that you can't see.
+        """
         try:
             id = int(id)
         except ValueError:
