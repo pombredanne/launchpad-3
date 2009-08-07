@@ -3,27 +3,21 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
 <body>
 
-<div metal:fill-slot="main">
+  <div metal:fill-slot="heading">
+    <h1 tal:content="CONTEXTS/fmt:pagetitle">Rescore i386 build of
+    alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE</h1>
+  </div> <!-- heading -->
 
-  <h1>Rescore <span tal:replace="context/title"/></h1>
+  <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_form/form">
-  </div>
+    <div metal:use-macro="context/@@launchpad_form/form" />
 
-</div>
+  </div><!-- main -->
 
 </body>
 </html>

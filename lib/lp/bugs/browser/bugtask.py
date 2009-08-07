@@ -45,6 +45,7 @@ import pytz
 import re
 from simplejson import dumps
 import urllib
+from urlparse import urlparse, urlunparse
 from operator import attrgetter, itemgetter
 
 from zope import component
@@ -3043,6 +3044,28 @@ class BugTaskTableRowView(LaunchpadView):
 
         return items
 
+    @property
+    def milestone_widget_items(self):
+        """The available milestone items as JSON."""
+        if self.user is not None:
+            items = vocabulary_to_choice_edit_items(
+                MilestoneVocabulary(self.context),
+                value_fn=lambda item: canonical_url(
+                    item, request=IWebServiceClientRequest(self.request)))
+            items.append({
+                "name": "Remove milestone",
+                "disabled": False,
+                "value": None})
+        else:
+            items = '[]'
+
+        return items
+
+    @property
+    def target_has_milestones(self):
+        """Are there any milestones we can target?"""
+        return list(MilestoneVocabulary(self.context)) != []
+
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)
@@ -3087,6 +3110,13 @@ class BugTaskTableRowView(LaunchpadView):
             'status_value': self.context.status.title,
             'importance_widget_items': self.importance_widget_items,
             'importance_value': self.context.importance.title,
+            'milestone_widget_items': self.milestone_widget_items,
+            'milestone_value': (self.context.milestone and
+                                canonical_url(
+                                    self.context.milestone,
+                                    request=IWebServiceClientRequest(
+                                        self.request)) or
+                                None),
             'user_can_edit_importance': self.user_can_edit_importance})
 
 

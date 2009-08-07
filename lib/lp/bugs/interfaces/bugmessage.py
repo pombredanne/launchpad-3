@@ -21,8 +21,8 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.bugattachment import (
-    bug_attachment_size_constraint)
+from canonical.launchpad.validators.attachment import (
+    attachment_size_constraint)
 
 
 class IBugMessage(IHasBug):
@@ -80,7 +80,7 @@ class IBugMessageAddForm(Interface):
     comment = Text(title=u"Comment", required=False)
     filecontent = Bytes(
         title=u"Attachment", required=False,
-        constraint=bug_attachment_size_constraint)
+        constraint=attachment_size_constraint)
     patch = Bool(title=u"This attachment is a patch", required=False,
         default=False)
     attachment_description = Title(title=u'Description', required=False)

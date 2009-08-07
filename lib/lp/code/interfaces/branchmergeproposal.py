@@ -400,21 +400,6 @@ class IBranchMergeProposal(Interface):
         user-entered data like the whiteboard.
         """
 
-    @operation_parameters(
-        reviewer=Reference(
-            title=_("A person for which the reviewer status is in question."),
-            schema=IPerson))
-    @export_read_operation()
-    def isPersonValidReviewer(reviewer):
-        """Return true if the `reviewer` is able to review the proposal.
-
-        There is an attribute on branches called `reviewer` which allows
-        a specific person or team to be set for a branch as an authorised
-        person to approve merges for a branch.  If a reviewer is not set
-        on the target branch, then the owner of the target branch is used
-        as the authorised user.
-        """
-
     def isMergable():
         """Is the proposal in a state that allows it to being merged?
 

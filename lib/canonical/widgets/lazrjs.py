@@ -154,6 +154,7 @@ class TextLineEditorWidget:
             params['activation_script'] = self.ACTIVATION_TEMPLATE % params
         return self.WIDGET_TEMPLATE % params 
 
+
 class InlineEditPickerWidget:
     """Wrapper for the lazr-js picker widget.
 
@@ -245,18 +246,30 @@ class InlineEditPickerWidget:
 
 
 def vocabulary_to_choice_edit_items(
-    vocab, css_class_prefix=None, disabled_items=[], as_json=False):
+    vocab, css_class_prefix=None, disabled_items=[], as_json=False,
+    name_fn=None, value_fn=None):
     """Convert an enumerable to JSON for a ChoiceEdit.
     
     :vocab: The enumeration to iterate over.
     :css_class_prefix: If present, append this to an item's value to create
         the css_class property for it.
     :disabled_items: A list of items that should be displayed, but disabled.
+    :name_fn: A function receiving an item and returning its name.
+    :value_fn: A function receiving an item and returning its value.
     """
     items = []
     for item in vocab:
-        new_item = {'name': item.value.title,
-            'value': item.value.title,
+        if name_fn is not None:
+            name = name_fn(item.value)
+        else:
+            name = item.value.title
+        if value_fn is not None:
+            value = value_fn(item.value)
+        else:
+            value = item.value.title
+        new_item = {
+            'name': name,
+            'value': value,
             'style': '', 'help': '', 'disabled': False}
         for disabled_item in disabled_items:
             if disabled_item == item.value:

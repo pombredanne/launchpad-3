@@ -607,17 +607,16 @@ in the source branch.
     ...     else:
     ...         print extract_text(links)
 
-    >>> nopriv_browser.open(
-    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
-    >>> nopriv_browser.getLink('Propose for merging').click()
-    >>> nopriv_browser.getControl(
-    ...     name='field.target_branch.target_branch').value = (
-    ...         '~sabdfl/firefox/main')
-    >>> nopriv_browser.getControl('Propose Merge').click()
+    >>> login('admin@canonical.com')
+    >>> bmp = factory.makeBranchMergeProposal()
+    >>> bug = factory.makeBug(title="Bug for linking")
+    >>> link = bmp.source_branch.linkBug(bug, bmp.source_branch.owner)
+    >>> bmp_url = canonical_url(bmp)
+    >>> logout()
+    >>> nopriv_browser.open(bmp_url)
     >>> print_bugs_and_specs(nopriv_browser)
     Linked bug reports and blueprints
-    Bug #4: Reflow problems with complex page layouts
-    ...
+    Bug #...: Bug for linking (Undecided &ndash; New)
 
 There shouldn't be a 'Linked bug reports and blueprints' section if there are
 none

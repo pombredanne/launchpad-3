@@ -182,7 +182,6 @@
                     root_comment
                     all_comments
                     related_bugs
-                    isPersonValidReviewer
                     isMergable
                     getComment
                     getNotificationRecipients
@@ -349,6 +348,7 @@
                     author
                     reviewer
                     code_reviewer
+                    isPersonTrustedReviewer
                     product
                     unique_name
                     displayname

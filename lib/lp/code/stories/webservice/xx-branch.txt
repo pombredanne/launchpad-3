@@ -165,6 +165,14 @@ in its landing_targets.
     ...     print target['target_branch_link']
     http://.../~eric/fooix/trunk
 
+The isPersonTrustedReviewer method is exposed, and takes a person link.
+
+    >>> trusted = webservice.named_get(
+    ...     feature_branch['self_link'], 'isPersonTrustedReviewer',
+    ...     reviewer=feature_branch['owner_link']).jsonBody()
+    >>> print trusted
+    True
+
 
 Project branches
 ================
