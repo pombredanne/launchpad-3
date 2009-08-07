@@ -66,7 +66,8 @@ from lp.translations.utilities.translation_common_format import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 
-from storm.expr import SQL
+from storm.expr import And, Join, LeftJoin, Or, SQL
+from storm.info import ClassAlias
 from storm.store import Store
 
 
@@ -1501,15 +1502,6 @@ class DummyPOFile(POFileMixIn):
 class POFileSet:
     implements(IPOFileSet)
 
-    def getPOFilesPendingImport(self):
-        """See `IPOFileSet`."""
-        results = POFile.selectBy(
-            rawimportstatus=RosettaImportStatus.PENDING,
-            orderBy='-daterawimport')
-
-        for pofile in results:
-            yield pofile
-
     def getDummy(self, potemplate, language):
         return DummyPOFile(potemplate, language)
 
@@ -1564,6 +1556,78 @@ class POFileSet:
         """See `IPOFileSet`."""
         return POFile.select(
             "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
+
+    def getPOFilesTouchedSince(self, date):
+        """See `IPOFileSet`."""
+        # Avoid circular imports.
+        from lp.translations.model.potemplate import POTemplate
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.productseries import ProductSeries
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        # Find a matching POTemplate and its ProductSeries
+        # and DistroSeries, if they are defined.
+        MatchingPOT = ClassAlias(POTemplate)
+        MatchingPOTJoin = Join(
+            MatchingPOT, POFile.potemplate == MatchingPOT.id)
+        MatchingProductSeries = ClassAlias(ProductSeries)
+        MatchingProductSeriesJoin = LeftJoin(
+            MatchingProductSeries,
+            MatchingPOT.productseriesID == MatchingProductSeries.id)
+        MatchingDistroSeries = ClassAlias(DistroSeries)
+        MatchingDistroSeriesJoin = LeftJoin(
+            MatchingDistroSeries,
+            MatchingPOT.distroseriesID == MatchingDistroSeries.id)
+
+        # Find any sharing POTemplate corresponding to MatchingPOT
+        # and its ProductSeries and DistroSeries, if they are defined.
+        OtherPOT = ClassAlias(POTemplate)
+        OtherPOTJoin = Join(
+            OtherPOT, And(OtherPOT.name == MatchingPOT.name,
+                          OtherPOT.id >= MatchingPOT.id))
+        OtherProductSeries = ClassAlias(ProductSeries)
+        OtherProductSeriesJoin = LeftJoin(
+            OtherProductSeries,
+            OtherPOT.productseriesID == OtherProductSeries.id)
+        OtherDistroSeries = ClassAlias(DistroSeries)
+        OtherDistroSeriesJoin = LeftJoin(
+            OtherDistroSeries,
+            OtherPOT.distroseriesID == OtherDistroSeries.id)
+
+        # And find a sharing POFile corresponding to a sharing POTemplate,
+        # i.e. OtherPOT.
+        OtherPOFile = ClassAlias(POFile)
+        OtherPOFileJoin = Join(
+            OtherPOFile,
+            And(OtherPOFile.languageID == POFile.languageID,
+                OtherPOFile.potemplateID == OtherPOT.id))
+
+        source = store.using(
+            POFile, MatchingPOTJoin, MatchingProductSeriesJoin,
+            MatchingDistroSeriesJoin, OtherPOTJoin,
+            OtherProductSeriesJoin, OtherDistroSeriesJoin, OtherPOFileJoin)
+
+        results = source.find(
+            OtherPOFile.id,
+            And(POFile.date_changed >= date,
+                Or(
+                    # OtherPOT is a sharing template with MatchingPOT
+                    # in the same distribution and sourcepackagename.
+                    And(MatchingPOT.distroseriesID is not None,
+                        OtherPOT.distroseriesID is not None,
+                        (MatchingDistroSeries.distributionID ==
+                         OtherDistroSeries.distributionID),
+                        (MatchingPOT.sourcepackagenameID ==
+                         OtherPOT.sourcepackagenameID)),
+                    # OtherPOT is a sharing template with MatchingPOT
+                    # in the same product.
+                    And(MatchingPOT.productseriesID is not None,
+                        OtherPOT.productseriesID is not None,
+                        (MatchingProductSeries.productID ==
+                         OtherProductSeries.productID)) )))
+        results.config(distinct=True)
+        return results
 
 
 class POFileToTranslationFileDataAdapter:
