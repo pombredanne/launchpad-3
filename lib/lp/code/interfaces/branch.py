@@ -482,6 +482,19 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget):
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A person for which the reviewer status is in question."),
+            schema=IPerson))
+    @export_read_operation()
+    def isPersonTrustedReviewer(reviewer):
+        """Return true if the `reviewer` is a trusted reviewer.
+
+        The reviewer is trusted if they are either own the branch, or are in
+        the team that owns the branch, or they are in the review team for the
+        branch.
+        """
+
     namespace = Attribute(
         "The namespace of this branch, as an `IBranchNamespace`.")
 

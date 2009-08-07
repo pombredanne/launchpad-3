@@ -181,7 +181,6 @@
                     votes
                     root_comment
                     all_comments
-                    isPersonValidReviewer
                     isMergable
                     getComment
                     getNotificationRecipients
@@ -348,6 +347,7 @@
                     author
                     reviewer
                     code_reviewer
+                    isPersonTrustedReviewer
                     product
                     unique_name
                     displayname
