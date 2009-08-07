@@ -23,6 +23,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobType,
     CreateMergeProposalJob, MergeProposalCreatedJob)
@@ -33,7 +34,7 @@ from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
 from canonical.launchpad.ftests import (
-    ANONYMOUS, import_secret_test_key, login, logout, syncUpdate)
+    ANONYMOUS, import_secret_test_key, login, syncUpdate)
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
     BranchType, CodeReviewNotificationLevel, CodeReviewVote)
@@ -394,36 +395,6 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         proposal.requestReview()
         self.assertEqual(
             proposal.date_created, proposal.date_review_requested)
-
-
-class TestBranchMergeProposalCanReview(TestCase):
-    """Test the different cases that makes a branch deletable or not."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        login('test@canonical.com')
-
-        factory = LaunchpadObjectFactory()
-        self.source_branch = factory.makeProductBranch()
-        self.target_branch = factory.makeProductBranch(
-            product=self.source_branch.product)
-        registrant = factory.makePerson()
-        self.proposal = self.source_branch.addLandingTarget(
-            registrant, self.target_branch)
-
-    def tearDown(self):
-        logout()
-
-    def test_validReviewer(self):
-        """A newly created branch can be deleted without any problems."""
-        self.assertEqual(self.proposal.isPersonValidReviewer(None),
-                         False, "No user cannot review code")
-        # The owner of the target branch is a valid reviewer.
-        self.assertEqual(
-            self.proposal.isPersonValidReviewer(
-                self.target_branch.owner),
-            True, "No user cannot review code")
 
 
 class TestBranchMergeProposalQueueing(TestCase):

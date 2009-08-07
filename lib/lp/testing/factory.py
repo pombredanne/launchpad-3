@@ -575,7 +575,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
                    private=False, stacked_on=None, sourcepackage=None,
-                   **optional_branch_args):
+                   reviewer=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for `IBranchNamespace.createBranch` can be specified to
@@ -625,6 +625,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
+        if reviewer is not None:
+            removeSecurityProxy(branch).reviewer = reviewer
         return branch
 
     def makePackageBranch(self, sourcepackage=None, distroseries=None,

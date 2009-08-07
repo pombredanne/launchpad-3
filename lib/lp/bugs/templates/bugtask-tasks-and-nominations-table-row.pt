@@ -56,7 +56,7 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:is_conjoined_slave">
-    <td style="width: 15em; vertical-align: middle">
+    <td style="width: 20%; vertical-align: middle">
       <div class="status-content"
            style="width: 100%; float: left">
         <a href="+editstatus"
@@ -64,13 +64,13 @@
            style="float: left"
            tal:content="context/status/title" />
         <a href="+editstatus" style="margin-left: 3px">
-          <img class="editicon" src="/@@/edit-transparent" />
+          <img class="editicon" src="/@@/edit" />
         </a>
       </div>
     </td>
 
     <td tal:condition="view/user_can_edit_importance"
-        style="width: 15em; vertical-align: middle">
+        style="width: 20%; vertical-align: middle">
       <div class="importance-content"
            style="width: 100%; float: left">
         <a href="+editstatus"
@@ -78,7 +78,7 @@
            style="float: left"
            tal:content="context/importance/title" />
         <a href="+editstatus" style="margin-left: 3px">
-          <img class="editicon" src="/@@/edit-transparent" />
+          <img class="editicon" src="/@@/edit" />
         </a>
       </div>
     </td>
@@ -129,17 +129,41 @@
       </tal:has_no_watch>
     </td>
 
-    <tal:milestoned condition="context/milestone">
-      <td class="icon left right">
-        <metal:expander metal:use-macro="template/macros/expander" />
-      <a tal:attributes="href context/milestone/fmt:url"
-         tal:content="context/milestone/name">1.0</a>
-      </td>
-      </tal:milestoned>
-      <td tal:condition="not:context/milestone"></td>
+    <td style="width: 20%; vertical-align: middle">
+      <div class="milestone-content"
+           tal:condition="view/target_has_milestones"
+           style="width: 100%; float: left">
+        <tal:not-milestoned condition="not: context/milestone">
+          <a href="+editstatus"> 
+            <img class="addicon" src="/@@/add">
+          </a>
+          <a href="+editstatus" class="nulltext js-action">Target to milestone</a>
+          <a href="+editstatus" class="value" style="display:none" />
+          <a href="+editstatus">
+            <img class="editicon" style="display:none" src="/@@/edit">
+          </a>
+        </tal:not-milestoned>
+        <tal:milestoned condition="context/milestone">
+          <a href="+editstatus">
+            <img class="addicon" style="display:none" src="/@@/add">
+          </a>
+          <a href="+editstatus" style="display:none" class="nulltext js-sction">
+            Target to milestone
+          </a>
+          <a href="+editstatus" class="value"
+              tal:content="context/milestone/title" />
+          <a href="+editstatus">
+            <img class="editicon" src="/@@/edit">
+          </a>
+        </tal:milestoned>
+      </div>
+    </td>
+
     </tal:not-conjoined-task>
   </tr>
-  <script type="text/javascript" tal:content="string:
+  <script type="text/javascript"
+    tal:define="milestone_value python: context.milestone and context.milestone.name or ''"
+    tal:content="string:
     YUI().use('event', 'bugs.bugtask_index', function(Y) {
         Y.on('load',
              function(e) {
