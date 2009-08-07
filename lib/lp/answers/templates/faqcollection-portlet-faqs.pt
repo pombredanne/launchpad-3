@@ -9,8 +9,8 @@
     FAQs for <tal:name replace="context/displayname" />
   </h2>
 
-  <form method="get" id="question-search-form" accept-charset="UTF-8"
-    tal:attributes="action view/action_url">
+  <form id="question-search-form" method="get" accept-charset="UTF-8"
+    tal:attributes="action view/portlet_action">
     <p>
       <tal:searchbox replace="structure view/widgets/search_text" />
       <input tal:replace="structure view/search_action/render" />
