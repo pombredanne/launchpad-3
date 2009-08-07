@@ -43,8 +43,7 @@ class SpecificationMessageSet:
     def createMessage(self, subject, spec, owner, content=None):
         """See ISpecificationMessageSet."""
         msg = Message(
-            parent=spec.initial_message, owner=owner,
-            rfc822msgid=make_msgid('blueprint'), subject=subject)
+            owner=owner, rfc822msgid=make_msgid('blueprint'), subject=subject)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
         specmsg = SpecificationMessage(specification=spec, message=msg)
 
