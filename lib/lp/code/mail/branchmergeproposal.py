@@ -35,14 +35,11 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
     if event.user is None:
         return
     if isinstance(event.user, UnauthenticatedPrincipal):
-        from_address = config.canonical.noreply_from_address
         from_person = None
     else:
         from_person = IPerson(event.user)
-        from_address = None
     mailer = BMPMailer.forModification(
-        event.object_before_modification, merge_proposal, from_person,
-        from_address)
+        event.object_before_modification, merge_proposal, from_person)
     if mailer is not None:
         mailer.sendAll()
 
@@ -114,22 +111,21 @@ class BMPMailer(BranchMailer):
 
     @classmethod
     def forModification(cls, old_merge_proposal, merge_proposal,
-                        from_user=None, from_address=None):
+                        from_user=None):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
         :param from_user: The user that the creation notification should
-            come from.  Must be supplied if from_address not specified.
-        :param from_address: The from address to use.  Must be supplied
-            if from_user is not specified.
+            come from.  Optional.
         """
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
-        if from_address is None:
-            assert from_user is not None
+        if from_user is not None:
             assert from_user.preferredemail is not None, (
                 'The sender must have an email address.')
             from_address = cls._format_user_address(from_user)
+        else:
+            from_address = config.canonical.noreply_from_address
         delta = BranchMergeProposalDelta.construct(
                 old_merge_proposal, merge_proposal)
         if delta is None:
