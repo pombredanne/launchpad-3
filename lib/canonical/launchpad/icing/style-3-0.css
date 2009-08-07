@@ -309,7 +309,7 @@ span.see-all {
     }
 .see-all a {
     padding-left: 8px;
-    background: url(/@@/link-grey-arrow.gif) left center no-repeat;
+    background: url(/@@/link-grey-arrow.png) left center no-repeat;
     font-size: 72%;
     color: #484848;
     text-decoration: underline;
@@ -450,9 +450,9 @@ div.location-portlet h1 {
     width: 90%;
     margin: 0 auto 1em;
     border: 1px solid #dedede;
-    -moz-border-radius: 3%;
-    -webkit-border-radius: 3%;
-    border-radius: 3%;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
     padding: 0.5em;
     color: #484848;
     background: #fbfbfb;
@@ -474,9 +474,9 @@ div.location-portlet h1 {
     display: block;
     margin: 0;
     border: 1px solid #4f843c;
-    -moz-border-radius: 1.5%;
-    -webkit-border-radius: 1.5%;
-    border-radius: 1.5%;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
     background: #4f843c url(/@@/bg-project-downloads.png) center right no-repeat;
     padding: 6%;
     padding-right: 50px;
@@ -490,9 +490,9 @@ div.location-portlet h1 {
     text-align: right;
     }
 .downloads .released span {
-    -moz-border-radius: 0 0 3% 3%;
-    -webkit-border-radius: 0 0 5% 5%;
-    border-radius: 0 0 3% 3%;
+    -moz-border-radius: 0 0 5px 5px;
+    -webkit-border-radius: 0 0 5px 5px;
+    border-radius: 0 0 5px 5px;
     background: #d3e3c7;
     padding: 0.2em 1em;
     }

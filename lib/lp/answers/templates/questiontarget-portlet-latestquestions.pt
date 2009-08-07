@@ -5,7 +5,7 @@
   tal:condition="questions">
   <h2>
     <span class="see-all"><a
-      tal:replace="structure view/latest_questions_link/fmt:link"/></span>
+      tal:attributes="href view/latest_questions_url">Show questions</a></span>
     Latest questions
   </h2>
 

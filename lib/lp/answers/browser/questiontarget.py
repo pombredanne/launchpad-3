@@ -108,10 +108,9 @@ class QuestionCollectionLatestQuestionsView:
     """View used to display the latest questions on a question target."""
 
     @cachedproperty
-    def latest_questions_link(self):
+    def latest_questions_url(self):
         """The link to the latest questions."""
-        url = canonical_url(self.context, rootsite='answers')
-        return Link(url, 'Latest questions')
+        return canonical_url(self.context, rootsite='answers')
 
     @cachedproperty
     def getLatestQuestions(self, quantity=5):
