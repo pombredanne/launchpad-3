@@ -17,7 +17,7 @@ from zope.schema import Choice, Datetime, Int, TextLine
 from canonical.launchpad import _
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from lazr.restful.fields import Reference, ReferenceChoice
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
@@ -34,12 +34,11 @@ class IArchiveDependency(Interface):
             required=False, readonly=True))
 
     archive = exported(
-        ReferenceChoice(
+        Reference(
             title=_('Target archive'),
             required=True,
-            vocabulary='PPA',
             schema=IArchive,
-            description=_("The PPA affected by this dependecy.")))
+            description=_("The archive affected by this dependecy.")))
 
     dependency = exported(
         Reference(
