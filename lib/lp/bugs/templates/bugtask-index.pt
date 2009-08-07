@@ -32,111 +32,12 @@
             Y.bugs.setup_bugtask_index();
         });
       </script>
-
-      <style type="text/css"
-        tal:define ="editor_skin string:${icingroot}/lazr/build/inlineedit/assets/skins/sam"
-        tal:content="string:
-
-        .edit-controls {
-            background-position: right top;
-            background-image: url('${editor_skin}/label-top-white.png');
-            background-repeat: no-repeat;
-            float:right;
-            position: relative;
-            top: 1px;
-            height: 29px;
-            width: 81px;
-            line-height: 29px;
-            text-align:right;
-            padding-right: 8px;
-        }
-
-        .edit-controls-hover {
-            background-position: right top;
-            background-image: url('${editor_skin}/label-top.png');
-            background-repeat: no-repeat;
-        }
-
-        #edit-description .bg-top-label {
-            margin-right: -5px;
-        }
-
-        #nonportlets .report {
-            margin-bottom: 29px;
-        }
-
-        #edit-description {
-            font-family: inherit;
-            font-size: 12px;
-            margin-bottom: 25px;
-            margin-top: -10px;
-            width: 600px;
-        }
-
-        #edit-description h2 {
-            font-family: sans-serif;
-            font-size: 12px;
-            font-weight: bold;
-            color: #717171;
-            margin-left: 1.5em;
-            margin-bottom: 0;
-            padding-top: 8px;
-        }
-
-        #edit-description .yui-editable_text-text {
-            border-top: 1px solid #d6d6d6;
-            padding:1px 20px 1px 20px;
-        }
-
-        #edit-description .yui-editable_text-text-hover {
-            padding:1px 19px 0 19px;
-            background-color: #fafafa !important;
-            border: 1px solid #d6d6d6;
-        }
-
-        #edit-description .yui-ieditor-input {
-            background: transparent;
-            padding:11px 3px 0 18px;
-            border:0;
-            border: 1px solid #d6d6d6;
-            border-left: 2px groove #D6D6D6;
-            border-top: 2px groove #D6D6D6;
-            width: 96%;
-            position: relative;
-            left: 5px;
-        }
-
-        #edit-description .yui-ieditor-multiline {
-            background-color: #fafafa;
-            border-top: 1px solid #d6d6d6;
-        }
-
-        #edit-description .yui-ieditor-content {
-            top: -29px;
-            left: -5px;
-            width:600px;
-        }
-
-        #edit-description .yui-ieditor-submit_button {
-            position: relative;
-            left: -4px;
-        }
-
-        #edit-description .yui-ieditor-cancel_button {
-            position: relative;
-            left: 16px;
-            margin-right: 8px;
-        }
-
-        #edit-description .update-in-progress-message {
-            margin-right: 5px;
-        }
-
+      <style type="text/css">
         /* Align the 'add comment' link to the right of the comment box. */
         #add-comment-form textarea { width: 100%; max-width=60em;}
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
-        "/>
+      </style>
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
