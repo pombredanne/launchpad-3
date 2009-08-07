@@ -90,8 +90,8 @@ script.
     >>> print latest_news(priv_browser.contents).encode(
     ...     'ascii', 'backslashreplace')
     Announcements
-    20...: Apache announcement headline
-    ...More announcements
+    Apache announcement headline...
+    More announcements
     Make announcement
 
 Add another one, this time specifying a date in the past, which should
@@ -115,9 +115,9 @@ And check out the results:
     >>> print latest_news(priv_browser.contents).encode(
     ...     'ascii', 'backslashreplace')
     Announcements
-    20...: Apache announcement headline
-    2007-11-24: Tomcat announcement headline
-    ...More announcements
+    Apache announcement headline ...
+    Tomcat announcement headline on 2007-11-24 ...
+    More announcements
     Make announcement
 
 Let's make sure that the announcement is presented as a link.
