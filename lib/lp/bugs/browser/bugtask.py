@@ -133,7 +133,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
-from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -1187,12 +1186,18 @@ class BugTaskEditView(LaunchpadEditFormView):
                 # The user has to be able to see the current value.
                 status_noshow.remove(self.context.status)
 
-            status_vocab_factory = vocab_factory(
-                BugTaskStatus, noshow=status_noshow)
+            # XXX: salgado, 2009-08-07:
+            # We shouldn't have to build our vocabulary out of (item.title,
+            # item) tuples -- iterating over an EnumeratedType gives us
+            # ITokenizedTerms that we could use. However, the terms generated
+            # by EnumeratedType have their name as the token and there are
+            # plenty of tests that expect the title as the token.
+            status_items = [
+                (item.title, item) for item in BugTaskStatus.items
+                if item not in status_noshow]
             status_field = Choice(
-                __name__='status',
-                title=self.schema['status'].title,
-                vocabulary=status_vocab_factory(self.context))
+                __name__='status', title=self.schema['status'].title,
+                vocabulary=SimpleVocabulary.fromItems(status_items))
 
             self.form_fields = self.form_fields.omit('status')
             self.form_fields += formlib.form.Fields(status_field)
@@ -3013,14 +3018,21 @@ class BugTaskTableRowView(LaunchpadView):
     def status_widget_items(self):
         """The available status items as JSON."""
         if self.user is not None:
-            status_vocab_factory = vocab_factory(
-                BugTaskStatus, noshow=[BugTaskStatus.UNKNOWN])
+            # XXX: salgado, 2009-08-07:
+            # We shouldn't have to build our vocabulary out of (item.title,
+            # item) tuples -- iterating over an EnumeratedType gives us
+            # ITokenizedTerms that we could use. However, the terms generated
+            # by EnumeratedType have their name as the token and there are
+            # plenty of tests that expect the title as the token.
+            status_items = [
+                (item.title, item) for item in BugTaskStatus.items
+                if item != BugTaskStatus.UNKNOWN]
 
             disabled_items = [status for status in BugTaskStatus.items
                 if not self.context.canTransitionToStatus(status, self.user)]
 
             items = vocabulary_to_choice_edit_items(
-                status_vocab_factory(self.context),
+                SimpleVocabulary.fromItems(status_items),
                 css_class_prefix='status',
                 disabled_items=disabled_items)
         else:
@@ -3032,11 +3044,18 @@ class BugTaskTableRowView(LaunchpadView):
     def importance_widget_items(self):
         """The available status items as JSON."""
         if self.user is not None:
-            importance_vocab_factory = vocab_factory(
-                BugTaskImportance, noshow=[BugTaskImportance.UNKNOWN])
+            # XXX: salgado, 2009-08-07:
+            # We shouldn't have to build our vocabulary out of (item.title,
+            # item) tuples -- iterating over an EnumeratedType gives us
+            # ITokenizedTerms that we could use. However, the terms generated
+            # by EnumeratedType have their name as the token and there are
+            # plenty of tests that expect the title as the token.
+            importance_items = [
+                (item.title, item) for item in BugTaskImportance.items
+                if item != BugTaskImportance.UNKNOWN]
 
             items = vocabulary_to_choice_edit_items(
-                importance_vocab_factory(self.context),
+                SimpleVocabulary.fromItems(importance_items),
                 css_class_prefix='importance')
         else:
             items = '[]'
