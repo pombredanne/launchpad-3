@@ -210,7 +210,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     def announcements(self):
         text = 'More announcements'
-        enabled = bool(self.context.announcements())
+        enabled = bool(self.context.getAnnouncements())
         return Link('+announcements', text, enabled=enabled)
 
     def rdf(self):

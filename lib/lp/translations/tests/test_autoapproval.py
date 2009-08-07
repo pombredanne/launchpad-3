@@ -24,6 +24,7 @@ from lp.translations.model.translationimportqueue import (
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
+from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
@@ -470,6 +471,50 @@ class TestKdePOFileGuess(unittest.TestCase):
         pofile = entry.getGuessedPOFile()
         self.assertEqual(pofile, self.pofile_nl)
 
+
+class TestGetPOFileFromLanguage(TestCaseWithFactory):
+    """Test `TranslationImportQueueEntry._get_pofile_from_language`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGetPOFileFromLanguage, self).setUp()
+        self.queue = TranslationImportQueue()
+
+    def test_get_pofile_from_language_feeds_enabled_template(self):
+        # _get_pofile_from_language will find an enabled template, and
+        # return either an existing POFile for the given language, or a
+        # newly created one.
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        trunk = product.getSeries('trunk')
+        template = self.factory.makePOTemplate(
+            productseries=trunk, translation_domain='domain')
+        template.iscurrent = True
+        
+        entry = self.queue.addOrUpdateEntry(
+            'nl.po', '# ...', False, template.owner, productseries=trunk)
+
+        pofile = entry._get_pofile_from_language('nl', 'domain')
+        self.assertNotEqual(None, pofile)
+
+    def test_get_pofile_from_language_starves_disabled_template(self):
+        # _get_pofile_from_language will not consider a disabled
+        # template as an auto-approval target, and so will not return a
+        # POFile for it.
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        trunk = product.getSeries('trunk')
+        template = self.factory.makePOTemplate(
+            productseries=trunk, translation_domain='domain')
+        template.iscurrent = False
+        
+        entry = self.queue.addOrUpdateEntry(
+            'nl.po', '# ...', False, template.owner, productseries=trunk)
+
+        pofile = entry._get_pofile_from_language('nl', 'domain')
+        self.assertEqual(None, pofile)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

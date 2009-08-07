@@ -19,7 +19,8 @@ from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.utilities.looptuner import DBLoopTuner
+
 
 class Verifier:
     """`ITunableLoop` that recomputes & checks all `POFile`s' statistics."""
@@ -109,7 +110,7 @@ class VerifyPOFileStatsProcess:
         # acquired only at the very end of the iteration, we can afford to
         # make relatively long, low-overhead iterations without disrupting
         # application response times.
-        LoopTuner(loop, 4).run()
+        DBLoopTuner(loop, 4).run()
 
         if loop.total_incorrect > 0 or loop.total_exceptions > 0:
             # Not all statistics were correct, or there were failures while
