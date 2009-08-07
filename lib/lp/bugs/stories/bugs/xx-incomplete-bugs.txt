@@ -49,7 +49,7 @@ comment for the bug.
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/11')
     >>> user_browser.getControl(name='field.comment').value = (
     ...     'More information here.')
-    >>> user_browser.getControl('Save Changes', index=1).click()
+    >>> user_browser.getControl('Post comment').click()
 
     >>> import transaction
     >>> transaction.commit()
@@ -188,7 +188,7 @@ pushed to the bottom of the list.
 
     >>> user_browser.getLink('Make Jokosher use autoaudiosink').click()
     >>> user_browser.getControl(name='field.comment').value = "bump"
-    >>> user_browser.getControl('Save Changes', index=1).click()
+    >>> user_browser.getControl('Post comment').click()
     >>> user_browser.getLink('Bugs').click()
     >>> user_browser.getLink('incomplete bugs can expire').click()
     >>> contents = find_main_content(user_browser.contents)

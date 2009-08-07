@@ -123,15 +123,13 @@ fixed by running the verifier directly.
     >>> pofile.sync()
     >>> transaction.commit() # Ensure other process can see latest changes
 
-    >>> import subprocess
-    >>> import sys
-    >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-pofile-stats.py'],
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.STDOUT)
-    >>> (output, empty) = process.communicate()
-    >>> print output
+    >>> from canonical.launchpad.ftests.script import run_script
+    >>> (returncode, out, err) = run_script(
+    ...     'cronscripts/rosetta-pofile-stats.py', ['--start-id=99'])
+    >>> print returncode
+    0
+    >>> print err
     INFO    creating lockfile
-    INFO    Starting verification of POFile stats at id 0
+    INFO    Starting verification of POFile stats at id 99
     INFO    Done.
 

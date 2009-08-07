@@ -243,10 +243,6 @@ The page doesn't present the form anymore, since there are no sources
 available for deletion.
 
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Source and binaries deleted by Foo Bar request:
-    iceweasel 1.0 in warty
-    pmount 0.1-1 in warty
-    Deletion comment: DO IT AGAIN !
     Delete packages from PPA for Celso Providelo
     This PPA does not contain any source packages published.
 

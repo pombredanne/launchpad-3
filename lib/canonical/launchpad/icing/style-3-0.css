@@ -391,6 +391,10 @@ span.see-all {
     }
 
 /* == Location portlet heading styles */
+div.location-portlet {
+    padding-bottom:1em;
+    border-bottom: 1px solid #d6d6d6;
+}
 div.location-portlet img {
     float: left;
     margin: 0 1.5em 0 0;

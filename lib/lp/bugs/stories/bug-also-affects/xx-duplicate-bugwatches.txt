@@ -50,9 +50,9 @@ same bug watch.
 
     >>> from lp.bugs.tests.bug import print_bug_affects_table
     >>> print_bug_affects_table(user_browser.contents)
-    alsa-utils (Debian)   Unknown Unknown   debbugs #42
+    alsa-utils (Debian)   Unknown Unknown   debbugs #42 ...
     ...
-    pmount (Debian) Unknown Unknown   debbugs #42
+    pmount (Debian) Unknown Unknown   debbugs #42 ...
 
 
 == Adding the same bug watch to two different bugs ==

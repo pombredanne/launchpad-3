@@ -10,7 +10,7 @@ deleted again from the bug attachment edit page.
     >>> user_browser.getControl('Attachment').add_file(
     ...   foo_file, 'text/plain', 'foo.txt')
     >>> user_browser.getControl('Description').value = 'Great deal'
-    >>> user_browser.getControl('Save Changes').click()
+    >>> user_browser.getControl('Post comment').click()
 
 The attachment is now visible on the bug page.
 
