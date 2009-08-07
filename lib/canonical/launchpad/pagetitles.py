@@ -922,10 +922,6 @@ person_answer_contact_for = ContextDisplayName(
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
-def person_branches(context, view):
-    """Return the view's heading."""
-    return view.heading
-
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'

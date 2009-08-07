@@ -3,14 +3,15 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
+
+
+<h1 metal:fill-slot="heading"
+    tal:content="view/heading">Bazaar branches</h1>
 
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
@@ -22,21 +23,21 @@
          tal:content="structure link/render" />
   </div>
 
-  <h1 tal:content="view/heading">Bazaar branches</h1>
+  <div class="top-portlet yui-u">
+    <div id="no-branch-message" tal:condition="not: view/has_branches">
+      <p tal:content="view/no_branch_message">
+        There are no branches related to Eric the Viking today.
+      </p>
+    </div>
 
-  <div id="no-branch-message" tal:condition="not: view/has_branches">
-    <p tal:content="view/no_branch_message">
-      There are no branches related to Eric the Viking today.
-    </p>
+    <tal:summary replace="structure context/@@+codesummary"/>
+
+    <tal:has-branches condition="view/has_branches">
+
+      <tal:branchlisting
+          content="structure branches/@@+branch-listing" />
+    </tal:has-branches>
   </div>
-
-  <tal:summary replace="structure context/@@+codesummary"/>
-
-  <tal:has-branches condition="view/has_branches">
-
-    <tal:branchlisting
-        content="structure branches/@@+branch-listing" />
-  </tal:has-branches>
 
   <div tal:replace="structure context/@@+portlet-teambranches" />
 </div>

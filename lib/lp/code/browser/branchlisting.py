@@ -577,6 +577,11 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             'displayname': self.context.displayname}
 
     @property
+    def page_title(self):
+        # The page title uses the view heading.
+        return self.heading
+
+    @property
     def initial_values(self):
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
