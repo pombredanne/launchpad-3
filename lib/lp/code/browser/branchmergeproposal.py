@@ -413,7 +413,7 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     @cachedproperty
     def linked_bugs(self):
         """Return DecoratedBugs linked to the source branch."""
-        return [DecoratedBug(bug, branch) for bug
+        return [DecoratedBug(bug, self.context.source_branch) for bug
                 in self.context.related_bugs]
 
 
