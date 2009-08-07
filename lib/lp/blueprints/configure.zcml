@@ -219,6 +219,28 @@
             <allow
                 interface="lp.blueprints.interfaces.specification.ISpecificationDelta"/>
         </class>
+
+        <!-- SpecificationMessage -->
+
+        <class
+            class="lp.blueprints.model.specificationmessage.SpecificationMessage">
+            <allow
+                interface="lp.blueprints.interfaces.specificationmessage.ISpecificationMessage"/>
+        </class>
+
+        <!-- SpecificationMessageSet -->
+
+        <class
+            class="lp.blueprints.model.specificationmessage.SpecificationMessageSet">
+            <allow
+                interface="lp.blueprints.interfaces.specificationmessage.ISpecificationMessageSet"/>
+        </class>
+        <securedutility
+            class="lp.blueprints.model.specificationmessage.SpecificationMessageSet"
+            provides="lp.blueprints.interfaces.specificationmessage.ISpecificationMessageSet">
+            <allow
+                interface="lp.blueprints.interfaces.specificationmessage.ISpecificationMessageSet"/>
+        </securedutility>
     </facet>
     <subscriber
         for="lp.blueprints.interfaces.specification.ISpecification                                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
