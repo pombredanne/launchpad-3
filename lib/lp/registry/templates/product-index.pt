@@ -31,7 +31,7 @@
           tal:content="structure context/description/fmt:text-to-html"
           tal:condition="context/description">
           $Product.description goes here. This should be a longer piece of
-          text, up to three paragraphs in length, which gives much more
+          text, up to three paragraphs in length, which gives much morehttps://launchpad.dev/firefox/+rdf
           detailed information about the open source project in question.
         </div>
 
@@ -115,13 +115,15 @@
                   <tal:expiry content="context/commercial_subscription/date_expires/fmt:date" />
                 </dd>
               </dl>
+            </div>
 
-              <p id="project-admin-whiteboard" class="whiteboard"
-                tal:condition="context/required:launchpad.ProjectReview">
-                <tal:whiteboard content="context/reviewer_whiteboard" />
-                (whiteboard)
+            <div id="project-admin-whiteboard" class="whiteboard"
+              tal:condition="context/required:launchpad.ProjectReview">
+              <div>
+                <strong>whiteboard</strong>
                 <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
-              </p>
+              </div>
+              <tal:whiteboard replace="structure context/reviewer_whiteboard/fmt:text-to-html" />
             </div>
           </div>
         </div>

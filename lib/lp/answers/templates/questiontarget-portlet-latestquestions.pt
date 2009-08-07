@@ -5,12 +5,10 @@
   tal:condition="questions">
   <h2>
     <span class="see-all"><a
-      tal:define="link view/menu:answers/need_attention"
-      tal:attributes="href link/url">All open questions</a></span>
+      tal:replace="structure view/latest_questions_link/fmt:link"/></span>
     Latest questions
   </h2>
 
-  <div class="portletBody portletContent">
   <ul tal:condition="questions">
     <li tal:repeat="question questions">
       <a
@@ -24,5 +22,4 @@
   <p tal:condition="not: questions">
     <tal:name replace="context/displayname" /> has no questions.
   </p>
-  </div>
 </div>
