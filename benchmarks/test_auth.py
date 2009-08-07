@@ -29,14 +29,23 @@ class Auth(FunkLoadTestCase):
         if match is not None:
             self.fail('Form contained error: %s' % match.group(1))
 
+    def assertIsNotLoggedIn(self, response):
+        self.assertEquals(response.code, 200)
+        match = response.body.find('If this is not you, please'
+            '<a href="/+logout">log out now</a>')
+        if match != -1:
+            self.fail('Test failed: this user is already logged in.')
+
     def test_auth(self):
         """Runs the steps of a simple Launchpad login."""
+        self.logd("test_auth")
 
         server_url = self.server_url
 
         # Get the login page
         response = self.get(server_url + "/+login", description="GET /+login")
         self.assertNoFormErrors(response)
+        self.assertIsNotLoggedIn(response)
 
         # The credentials of foo user, the loginator
         email = 'foo@mailinator.com'
@@ -53,6 +62,8 @@ class Auth(FunkLoadTestCase):
             self.absolute_url(response, '/+login'),
             fields, "POST /+login")
         self.assertNoFormErrors(response)
+        self.assertIsNotLoggedIn(response)
+        self.logd("logged in sucessfully")
 
     def absolute_url(self, response, path):
         """Calculate an absolute URL using the response and the path."""
