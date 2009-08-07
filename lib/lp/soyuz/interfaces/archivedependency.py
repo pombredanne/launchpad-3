@@ -11,8 +11,8 @@ __all__ = [
     'IArchiveDependency',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, Object, TextLine
+from zope.interface import Interface
+from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from lp.soyuz.interfaces.archive import IArchive
