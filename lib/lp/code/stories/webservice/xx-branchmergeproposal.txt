@@ -122,6 +122,7 @@ A review can be requested of the person 'target'.
     >>> reviewer_webservice = webservice_for_person(
     ...     target_owner, permission=OAuthPermission.WRITE_PUBLIC)
 
+    >>> person = webservice.get('/~target').jsonBody()
     >>> reviewer = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'nominateReviewer',
     ...     reviewer=person['self_link'], review_type='code')
