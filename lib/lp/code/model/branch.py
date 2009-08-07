@@ -36,6 +36,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
 from lp.services.job.model.job import Job
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
@@ -439,6 +440,20 @@ class Branch(SQLBase):
             return self.reviewer
         else:
             return self.owner
+
+    def isPersonTrustedReviewer(self, reviewer):
+        """See `IBranch`."""
+        if reviewer is None:
+            return False
+        # We trust Launchpad admins.
+        lp_admins = getUtility(ILaunchpadCelebrities).admin
+        # Both the branch owner and the review team are checked.
+        owner = self.owner
+        review_team = self.code_reviewer
+        return (
+            reviewer.inTeam(owner) or
+            reviewer.inTeam(review_team) or
+            reviewer.inTeam(lp_admins))
 
     def latest_revisions(self, quantity=10):
         """See `IBranch`."""

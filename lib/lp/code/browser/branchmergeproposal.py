@@ -433,13 +433,11 @@ class DecoratedCodeReviewVoteReference:
 
     def __init__(self, context, user, users_vote):
         self.context = context
-        is_mergable = self.context.branch_merge_proposal.isMergable()
+        proposal = self.context.branch_merge_proposal
+        is_mergable = proposal.isMergable()
         self.can_change_review = (user == context.reviewer) and is_mergable
-        branch = context.branch_merge_proposal.source_branch
-        review_team = context.branch_merge_proposal.target_branch.reviewer
-        reviewer = context.reviewer
-        self.trusted = (reviewer is not None and reviewer.inTeam(
-                        review_team))
+        self.trusted = proposal.target_branch.isPersonTrustedReviewer(
+            context.reviewer)
         if user is None:
             self.user_can_review = False
         else:
@@ -802,7 +800,7 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
     def initial_values(self):
         # If the user is a valid reviewer, then default the revision
         # number to be the tip.
-        if self.context.isPersonValidReviewer(self.user):
+        if self.context.target_branch.isPersonTrustedReviewer(self.user):
             revision_number = self.context.source_branch.revision_count
         else:
             revision_number = self._getRevisionNumberForRevisionId(
@@ -820,14 +818,14 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
         # If the user is not a valid reviewer for the target branch,
         # then the revision number should be read only, so an
         # untrusted user cannot land changes that have not bee reviewed.
-        if not self.context.isPersonValidReviewer(self.user):
+        if not self.context.target_branch.isPersonTrustedReviewer(self.user):
             self.form_fields['revision_number'].for_display = True
 
     @action('Enqueue', name='enqueue')
     @update_and_notify
     def enqueue_action(self, action, data):
         """Update the whiteboard and enqueue the merge proposal."""
-        if self.context.isPersonValidReviewer(self.user):
+        if self.context.target_branch.isPersonTrustedReviewer(self.user):
             revision_id = self._getRevisionId(data)
         else:
             revision_id = self.context.reviewed_revision_id
