@@ -9,12 +9,15 @@ __metaclass__ = type
 __all__ = ['VerifyPOFileStatsProcess']
 
 
+from datetime import datetime, timedelta
 import logging
+import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
+from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.services.mail.sendmail import simple_sendmail
@@ -43,13 +46,18 @@ class Verifier:
         # numerical value.
         return self.start_id is None
 
+    def getPOFilesBatch(self, chunk_size):
+        """Return a batch of POFiles to work with."""
+        pofiles = self.pofileset.getBatch(self.start_id, int(chunk_size))
+        return pofiles
+
     def __call__(self, chunk_size):
         """See `ITunableLoop`.
 
         Retrieve a batch of `POFile`s in ascending id order, and verify and
         refresh their cached statistics.
         """
-        pofiles = self.pofileset.getBatch(self.start_id, int(chunk_size))
+        pofiles = self.getPOFilesBatch(chunk_size)
 
         self.start_id = None
         for pofile in pofiles:
@@ -78,7 +86,7 @@ class Verifier:
         """Re-compute statistics for pofile, and compare to cached stats.
 
         Logs a warning if the recomputed stats do not match the ones stored in
-        the database.  The stored statistics are replaced with the fresly
+        the database.  The stored statistics are replaced with the freshly
         computed ones.
         """
         old_stats = pofile.getStatistics()
@@ -88,6 +96,23 @@ class Verifier:
             self.logger.warning(
                 "POFile %d: cached stats were %s, recomputed as %s"
                 % (pofile.id, str(old_stats), str(new_stats)))
+
+
+class QuickVerifier(Verifier):
+    """`ITunableLoop` to verify statistics on POFiles touched recently."""
+
+    def __init__(self, transaction, logger, start_at_id=0):
+        super(QuickVerifier, self).__init__(transaction, logger, start_at_id)
+        week_ago = datetime.now(pytz.UTC) - timedelta(7)
+        self.touched_pofiles = self.pofileset.getPOFilesTouchedSince(week_ago)
+        self.logger.info(
+            "Verifying a total of %d POFiles" % self.touched_pofiles.count())
+
+    def getPOFilesBatch(self, chunk_size):
+        """Return a batch of POFiles to work with."""
+        pofiles = self.touched_pofiles[
+            self.total_checked : self.total_checked+int(chunk_size)]
+        return pofiles
 
 
 class VerifyPOFileStatsProcess:
@@ -130,6 +155,40 @@ class VerifyPOFileStatsProcess:
                 from_addr=config.rosetta.admin_email,
                 to_addrs=[config.rosetta.admin_email],
                 subject="POFile statistics errors",
+                body=MailWrapper().format(message))
+            self.transaction.commit()
+
+        self.logger.info("Done.")
+
+
+class VerifyRecentPOFileStatsProcess:
+    """Recompute & verify `POFile` translation statistics."""
+
+    def __init__(self, transaction, logger=None):
+        self.transaction = transaction
+        self.logger = logger
+        if logger is None:
+            self.logger = logging.getLogger("pofile-stats-daily")
+
+    def run(self):
+        self.logger.info("Starting quick verification of POFile stats for "
+                         "files updated in the last week.")
+        loop = QuickVerifier(self.transaction, self.logger)
+        DBLoopTuner(loop, 4).run()
+
+        if loop.total_incorrect > 0 or loop.total_exceptions > 0:
+            # Not all statistics were correct, or there were failures while
+            # checking them.  Email the admins.
+            template = helpers.get_email_template(
+                'pofile-stats.txt', 'translations')
+            message = template % {
+                'exceptions' : loop.total_exceptions,
+                'errors' : loop.total_incorrect,
+                'total' : loop.total_checked}
+            simple_sendmail(
+                from_addr=config.rosetta.admin_email,
+                to_addrs=[config.rosetta.admin_email],
+                subject="POFile statistics errors (daily)",
                 body=MailWrapper().format(message))
             self.transaction.commit()
 

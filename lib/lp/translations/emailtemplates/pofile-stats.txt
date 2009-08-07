@@ -1,0 +1,8 @@
+The daily POFile statistics verifier encountered errors
+while checking cached statistics in the database:
+
+Exceptions: %(exceptions)d
+POFiles with incorrect statistics: %(errors)d
+Total POFiles checked: %(total)d
+
+See the pofile-stats-daily log for detailed information.

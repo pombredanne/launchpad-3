@@ -1143,18 +1143,18 @@ class TestPOFileSet(TestCaseWithFactory):
         new_pofile = self.factory.makePOFile('sr')
         new_pofile.date_changed = now
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
-        self.assertContentEqual([new_pofile.id], pofiles)
+        self.assertContentEqual([new_pofile], pofiles)
 
         # An older file means is not returned.
         week_ago = now - timedelta(7)
         old_pofile = self.factory.makePOFile('sr')
         old_pofile.date_changed = week_ago
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
-        self.assertContentEqual([new_pofile.id], pofiles)
+        self.assertContentEqual([new_pofile], pofiles)
 
         # Unless we extend the time period we ask for.
         pofiles = self.pofileset.getPOFilesTouchedSince(week_ago)
-        self.assertContentEqual([new_pofile.id, old_pofile.id], pofiles)
+        self.assertContentEqual([new_pofile, old_pofile], pofiles)
 
     def test_POFileSet_getPOFilesTouchedSince_shared_in_product(self):
         # Make sure actual touched POFiles and POFiles that are sharing
@@ -1180,19 +1180,19 @@ class TestPOFileSet(TestCaseWithFactory):
         now = datetime.now(pytz.UTC)
         yesterday = now - timedelta(1)
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
-        self.assertContentEqual([pofile1.id, pofile2.id], pofiles)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
 
         # Even if one of the sharing POFiles is older, it's still returned.
         week_ago = now - timedelta(7)
         pofile2.date_changed = week_ago
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
-        self.assertContentEqual([pofile1.id, pofile2.id], pofiles)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
 
         # A POFile in a different language is not returned.
         pofile3 = self.factory.makePOFile('de', potemplate=potemplate2)
         pofile3.date_changed = week_ago
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
-        self.assertContentEqual([pofile1.id, pofile2.id], pofiles)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
 
     def test_POFileSet_getPOFilesTouchedSince_shared_in_distribution(self):
         # Make sure actual touched POFiles and POFiles that are sharing
@@ -1224,19 +1224,19 @@ class TestPOFileSet(TestCaseWithFactory):
         now = datetime.now(pytz.UTC)
         yesterday = now - timedelta(1)
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
-        self.assertContentEqual([pofile1.id, pofile2.id], pofiles)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
 
         # Even if one of the sharing POFiles is older, it's still returned.
         week_ago = now - timedelta(7)
         pofile2.date_changed = week_ago
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
-        self.assertContentEqual([pofile1.id, pofile2.id], pofiles)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
 
         # A POFile in a different language is not returned.
         pofile3 = self.factory.makePOFile('de', potemplate=potemplate2)
         pofile3.date_changed = week_ago
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
-        self.assertContentEqual([pofile1.id, pofile2.id], pofiles)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
 
     def test_POFileSet_getPOFilesTouchedSince_external_pofiles(self):
         # Make sure POFiles which are in different products
@@ -1265,7 +1265,7 @@ class TestPOFileSet(TestCaseWithFactory):
         # name is the same.  It's not returned.
         pofile2.date_changed = week_ago
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
-        self.assertContentEqual([pofile1.id], pofiles)
+        self.assertContentEqual([pofile1], pofiles)
 
 
 class TestPOFileStatistics(TestCaseWithFactory):

@@ -1609,7 +1609,7 @@ class POFileSet:
             OtherProductSeriesJoin, OtherDistroSeriesJoin, OtherPOFileJoin)
 
         results = source.find(
-            OtherPOFile.id,
+            OtherPOFile,
             And(POFile.date_changed >= date,
                 Or(
                     # OtherPOT is a sharing template with MatchingPOT
