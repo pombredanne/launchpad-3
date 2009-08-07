@@ -97,8 +97,10 @@ class TestPermission(TestCaseWithFactory):
         person = self.factory.makePerson()
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         spn = self.factory.makeSourcePackageName()
-        self.assertRaises(
+        exception = self.assertRaises(
             CannotUploadToArchive, verify_upload, person, spn, ppa, None)
+        self.assertEqual(
+            'Signer has no upload rights to this PPA.', str(exception))
 
     def test_owner_can_upload_to_ppa(self):
         # If the archive is a PPA, and you own it, then you can upload pretty

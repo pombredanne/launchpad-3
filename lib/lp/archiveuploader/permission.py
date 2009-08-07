@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'CannotUploadToArchive',
+    'CannotUploadToPPA',
     'components_valid_for',
     'verify_upload',
     ]
@@ -19,6 +20,8 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 class CannotUploadToArchive(Exception):
     """Raised when a person cannot upload to archive."""
 
+    _fmt = '%(person)s has no upload rights to %(archive)s.'
+
     def __init__(self, person, archive):
         """Construct a `CannotUploadToArchive`.
 
@@ -26,7 +29,13 @@ class CannotUploadToArchive(Exception):
         :param archive: The archive.
         """
         Exception.__init__(
-            self, '%s has no upload rights to %s' % (person, archive))
+            self, self._fmt % {'person': person, 'archive': archive})
+
+
+class CannotUploadToPPA(CannotUploadToArchive):
+    """Raised when a person cannot upload to a PPA."""
+
+    _fmt = 'Signer has no upload rights to this PPA.'
 
 
 def components_valid_for(archive, person):
@@ -56,7 +65,7 @@ def verify_upload(person, sourcepackagename, archive, component,
     # For PPAs...
     if archive.purpose == ArchivePurpose.PPA:
         if not archive.canUpload(person):
-            raise CannotUploadToArchive(person, archive)
+            raise CannotUploadToPPA(person, archive)
         else:
             return True
 
