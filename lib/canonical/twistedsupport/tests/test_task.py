@@ -509,6 +509,16 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.noTasksFound()
         self.assertEqual([], task_log)
 
+    def test_source_not_stopped_if_no_tasks_found_and_job_running(self):
+        # If no tasks are found while a job is running, we do not stop the
+        # source.
+        consumer = self.makeConsumer()
+        log = []
+        consumer.consume(LoggingSource(log))
+        consumer.taskStarted(self._neverEndingTask)
+        consumer.noTasksFound()
+        self.assertEqual(0, log.count('stop'))
+
     def test_source_stopped_when_tasks_done(self):
         # When no more tasks are running, we stop the task source.
         consumer = self.makeConsumer()
