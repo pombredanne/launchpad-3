@@ -556,6 +556,13 @@
         name="+listing-simple"
         permission="zope.Public"
         template="../templates/pillar-listing-simple.pt"/>
+    <browser:page
+        name="+get-involved"
+        for="lp.registry.interfaces.pillar.IPillar"
+        class="lp.registry.browser.pillar.PillarView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/pillar-involvement-portlet.pt"/>
     <facet
         facet="overview">
         <browser:url

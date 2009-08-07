@@ -90,6 +90,16 @@
         <tal:hierarchy replace="structure context/@@+hierarchy" />
       </div><!--id="locationbar"-->
 
+      <div class="location-portlet top-portlet"
+           tal:condition="view/macro:pagehas/applicationtabs">
+        <span tal:replace="structure context/image:logo"></span>
+        <h2 tal:replace="structure context/fmt:location_heading">
+          Celso Providelo
+        </h2>
+        <metal:heading_nav
+          use-macro="context/@@+base-layout-macros/location-tabs"/>
+      </div>
+
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <tal:notifications
         define="notifications request/notifications"
@@ -106,17 +116,7 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <div class="location-portlet top-portlet"
-                 tal:condition="view/macro:pagehas/applicationtabs">
-              <span tal:replace="structure context/image:logo"></span>
-              <h2 tal:replace="structure context/fmt:location_heading">
-                Celso Providelo
-              </h2>
-              <metal:heading_nav
-                use-macro="context/@@+base-layout-macros/location-tabs"/>
-            </div>
-            <div tal:condition="view/macro:pagehas/applicationtabs"
-                 class="portlet">
+            <div tal:condition="view/macro:pagehas/applicationtabs">
               <h2
                 tal:condition="context/title|nothing"
                 tal:content="context/title"

@@ -183,7 +183,7 @@ div.columns div.right div.portlet {
 
 /* Page layout */
 .yui-d0 {
-    margin: 10px 20px; /* 20px sides are 2.0 backward compatability */
+    margin: 10px 20px;
     }
 .yui-t4 .yui-b {
     width: 21%;
@@ -199,6 +199,7 @@ div.columns div.right div.portlet {
     padding-top: 0.5em;
     }
 .portlet, .aside {
+    clear: both;
     border-top: 1px solid #d6d6d6;
     padding: 0.5em 0;
     }
@@ -236,7 +237,8 @@ Pixels  Percent
 /* Default text presentation */
 html, body {
     font-family: bitstream vera sans, arial, helvetica, clean, sans-serif;
-    font-size: 97%; /* 2.0 backward compatability */
+    font-family: sans-serif;
+    font-size: 93%;
     }
 body.private {
     /* It must be obvious to the user that the context is private */
@@ -246,7 +248,6 @@ h1 {
     clear: none;
     padding-top: 6px; /* An offset from the logo. */
     font-size: 197%;
-    margin-bottom: 0.5em; /* 2.0 backward compatability */
     }
 h2 {
     margin-bottom: 0.3em;
@@ -270,7 +271,10 @@ ol li {
 	list-style: decimal outside;
 	}
 li {
-    padding-bottom: .2em;
+    padding-bottom: .3em;
+    }
+dt {
+    margin-bottom: .1em;
     }
 dd {
     margin-bottom: .8em;
@@ -305,13 +309,13 @@ span.see-all {
     }
 .see-all a {
     padding-left: 8px;
-    background: url(../images/link-grey-arrow.gif) left center no-repeat;
+    background: url(/@@/link-grey-arrow.png) left center no-repeat;
     font-size: 72%;
     color: #484848;
     text-decoration: underline;
     }
 .rss-right {
-    background: url(https://launchpad.net/@@/rss.png) right center no-repeat;
+    background: url(/@@/rss.png) right center no-repeat;
     }
 .logo {
     float: left;
@@ -321,7 +325,6 @@ span.see-all {
     margin: 0 5px 0 0;
     }
 .registered {
-    margin-top: -0.5em; /* 2.0 backward compatability */
     font-size: 85%;
     color: #666;
     font-style: italic;
@@ -330,14 +333,22 @@ span.see-all {
     clear: both;
     font-size: 100%;
     }
+.summary {
+    margin: 0 0 1em 0;
+    font-size: 138.5%;
+    }
+
 
 /* Common list presentations. */
 .bulleted {
     margin-bottom: 0.5em;
     }
 .bulleted li {
-    margin: auto auto 0.2em 2em;
+    margin: 0 0 0 2em;
     list-style-type: disc;
+    }
+.horizontal {
+    margin: 1em 0 0 0;
     }
 .horizontal li {
     display: inline;
@@ -353,6 +364,13 @@ span.see-all {
     display: inline;
     margin: 0 0.25em 0.75em 0;
     }
+.two-column-list:after {
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+}
 .portlet dt {
     font-weight: bold;
     }
@@ -373,6 +391,10 @@ span.see-all {
     }
 
 /* == Location portlet heading styles */
+div.location-portlet {
+    padding-bottom:1em;
+    border-bottom: 1px solid #d6d6d6;
+}
 div.location-portlet img {
     float: left;
     margin: 0 1.5em 0 0;
@@ -432,9 +454,9 @@ div.location-portlet h1 {
     width: 90%;
     margin: 0 auto 1em;
     border: 1px solid #dedede;
-    -moz-border-radius: 3%;
-    -webkit-border-radius: 3%;
-    border-radius: 3%;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
     padding: 0.5em;
     color: #484848;
     background: #fbfbfb;
@@ -444,35 +466,41 @@ div.location-portlet h1 {
     background: #fbfbfb;
     }
 
-.downloads {
-    font-weight: bold;
-    }
 .downloads a {
     color: #4f843c;
     }
 .downloads li {
     margin: 0;
     padding: 2px 0 0;
+    font-weight: bold;
     }
 .downloads li a {
     display: block;
     margin: 0;
     border: 1px solid #4f843c;
-    -moz-border-radius: 1.5%;
-    -webkit-border-radius: 1.5%;
-    border-radius: 1.5%;
-    background: #4f843c url(../images/bg-project-downloads.gif) center right no-repeat;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    background: #4f843c url(/@@/bg-project-downloads.png) center right no-repeat;
     padding: 6%;
+    padding-right: 50px;
     color: #fff;
     font-size: 108%;
     text-decoration: underline;
     }
 .downloads .released {
-    margin: 0 0 0.5em 0;
-    background: #f3f3f3 url(../images/bg-project-released.gif) right bottom no-repeat;
-    padding: 0.4em 0.2em;
-    font-size: 85%;
-    font-weight: normal;
+    margin: .3em 0 1em 0;
+    padding: 0 .2em 0 0;
+    text-align: right;
+    }
+.downloads .released span {
+    -moz-border-radius: 0 0 5px 5px;
+    -webkit-border-radius: 0 0 5px 5px;
+    border-radius: 0 0 5px 5px;
+    background: #d3e3c7;
+    padding: 0.2em 1em;
+    }
+.downloads .alternate {
     text-align: right;
     }
 
@@ -491,27 +519,26 @@ div.location-portlet h1 {
     }
 .involvement a.bugs {
     color: #b9413e;
-    background: url(../images/red-arrow.gif) right center no-repeat;
+    background: url(/@@/bugs-arrow-right.png) right center no-repeat;
     }
 .involvement a.question {
     color: #5265b2;
-    background: url(../images/blue-arrow.gif) right center no-repeat;
+    background: url(/@@/answers-arrow-right.png) right center no-repeat;
     }
 .involvement a.translate {
     color: #c5458e;
-    background: url(../images/pink-arrow.gif) right center no-repeat;
+    background: url(/@@/translations-arrow-right.png) right center no-repeat;
     }
 .involvement a.code {
     color: #d39f57;
-    background: url(../images/yellow-arrow.gif) right center no-repeat;
+    background: url(/@@/images/code-arrow-right.png) right center no-repeat;
     }
 .involvement a.blueprint {
     color: #5ba4c6;
-    background: url(../images/lightblue-arrow.gif) right center no-repeat;
+    background: url(/@@/images/blueprints-arrow-right.png) right center no-repeat;
     }
 
 .announcements li {
-    font-size: 85%;
     margin-bottom: 0.5em;
     }
 .announcements li strong,
@@ -525,14 +552,6 @@ div.location-portlet h1 {
     border-bottom: 1px solid #d0d0d0;
     }
 
-
-/* Should not be needed with real data */
-.timeline {
-    width: 100%;
-    color: #484848;
-    background: #f7f7f7;
-    }
-
 /* From nice_pre in tales.py */
 pre.wrap {
   white-space: -moz-pre-wrap;
@@ -540,3 +559,4 @@ pre.wrap {
   white-space: pre-wrap;
   word-wrap: break-word;
 }
+

@@ -1190,7 +1190,7 @@ class SourcePackageFormatterAPI(CustomizableFormatter):
 class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IProductReleaseFile` objects to a formatted string."""
 
-    traversable_names = {'link': 'link'}
+    traversable_names = {'link': 'link', 'url': 'url'}
 
     def link(self, view_name):
         """A hyperlinked ProductReleaseFile.
@@ -1225,6 +1225,10 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         else:
             html += ')'
         return html % replacements
+
+    def url(self, view_name):
+        """Return the URL to download the file."""
+        return self._getDownloadURL(self._context.libraryfile)
 
     @property
     def _release(self):
@@ -2371,6 +2375,19 @@ class FormattersAPI:
                 cgi.escape(url, quote=True),
                 cgi.escape(lp_url),
                 cgi.escape(trailers))
+        elif match.group("clbug") is not None:
+            # 'clbug' matches Ubuntu changelog format bugs. 'bugnumbers' is
+            # all of the bug numbers, that look something like "#1234, #434".
+            # 'leader' is the 'LP: ' bit at the beginning.
+            bug_parts = []
+            # Split the bug numbers into multiple bugs.
+            splitted = re.split("(,(?:\s|<br\s*/>)+)",
+                    match.group("bugnumbers")) + [""]
+            for bug_id, spacer in zip(splitted[::2], splitted[1::2]):
+                bug_parts.append(FormattersAPI._linkify_bug_number(
+                    bug_id, bug_id.lstrip("#")))
+                bug_parts.append(spacer)
+            return match.group("leader") + "".join(bug_parts)
         else:
             raise AssertionError("Unknown pattern matched.")
 
@@ -2476,6 +2493,11 @@ class FormattersAPI:
           \#
           [%(unreserved)s:@/\?]*
         )?
+      ) |
+      (?P<clbug>
+        \b(?P<leader>lp:(\s|<br\s*/>)+)
+        (?P<bugnumbers>\#\d+(,(\s|<br\s*/>)+\#\d+)*
+         )
       ) |
       (?P<bug>
         \bbug(?:[\s=-]|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
