@@ -1006,3 +1006,30 @@ Celso can still see them if we grant private permissions, of course.
     >>> cprov_ppa_db.private = False
     >>> logout()
 
+But even he can't write to a dependency.
+
+    >>> sabdfl_ppa = cprov_webservice.get(
+    ...     '/~sabdfl/+archive/ppa').jsonBody()
+    >>> print cprov_webservice.patch(
+    ...     '/~cprov/+archive/ppa/+dependency/1', 'application/json',
+    ...     simplejson.dumps({'archive_link': sabdfl_ppa['self_link']}))
+    HTTP/1.1 ...
+    ...
+    ForbiddenAttribute: ('archive', <ArchiveDependency at ...>)
+    <BLANKLINE>
+
+    >>> print cprov_webservice.patch(
+    ...     '/~cprov/+archive/ppa/+dependency/1', 'application/json',
+    ...     simplejson.dumps({'dependency_link': sabdfl_ppa['self_link']}))
+    HTTP/1.1 ...
+    ...
+    ForbiddenAttribute: ('dependency', <ArchiveDependency at ...>)
+    <BLANKLINE>
+
+    >>> print cprov_webservice.patch(
+    ...     '/~cprov/+archive/ppa/+dependency/1', 'application/json',
+    ...     simplejson.dumps({'pocket': 'Security'}))
+    HTTP/1.1 ...
+    ...
+    ForbiddenAttribute: ('pocket', <ArchiveDependency at ...>)
+    <BLANKLINE>
