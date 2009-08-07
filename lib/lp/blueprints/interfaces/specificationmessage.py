@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0213
 
 """Specification message interfaces."""
 
@@ -11,14 +11,11 @@ __all__ = [
     'ISpecificationMessageSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Bytes, Int, Object, Text, TextLine
+from zope.interface import Interface
+from zope.schema import Bool, Int, Object
 
-from canonical.launchpad.fields import Title
 from lp.blueprints.interfaces.specification import ISpecification
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.attachment import (
-    attachment_size_constraint)
 
 
 class ISpecificationMessage(Interface):
