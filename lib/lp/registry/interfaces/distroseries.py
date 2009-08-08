@@ -183,16 +183,13 @@ class DistroSeriesVersionField(UniqueField):
             raise LaunchpadValidationError(
                 "%s is not a valid version" % version)
         # Avoid circular import hell.
-        from lp.archivepublisher.debversion import (
-            BadEpochError, BadInputError, BadRevisionError, BadUpstreamError,
-            Version, VersionError)
+        from lp.archivepublisher.debversion import Version, VersionError
         try:
             # XXX sinzui 2009-07-25 bug=404613: DistributionMirror and buildd
             # have stricter version rules than the schema. The version must
             # be a debversion.
             Version(version)
-        except (BadEpochError, BadInputError, BadRevisionError,
-            BadUpstreamError, VersionError), error:
+        except VersionError, error:
             raise LaunchpadValidationError(
                 "'%s': %s" % (version, error[0]))
 
@@ -734,14 +731,19 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Delete any records that are no longer applicable.
 
         Consider all binarypackages marked as REMOVED.
-        'log' is required, it should be a logger object able to print
-        DEBUG level messages.
+
+        Also purges all existing cache records for disabled archives.
+
+        :param archive: target `IArchive`.
+        :param log: the context logger object able to print DEBUG level
+            messages.
         """
 
     def updateCompletePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the binary package cache
 
-        Consider all binary package names published in this distro series.
+        Consider all binary package names published in this distro series
+        and entirely skips updates for disabled archives
 
         :param archive: target `IArchive`;
         :param log: logger object for printing debug level information;

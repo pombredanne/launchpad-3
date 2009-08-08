@@ -131,4 +131,5 @@ class SeriesSourcePackageBranchSet:
             SeriesSourcePackageBranch,
             SeriesSourcePackageBranch.distroseries == distroseries.id,
             SeriesSourcePackageBranch.sourcepackagename ==
-            sourcepackagename.id).remove()
+            sourcepackagename.id,
+            SeriesSourcePackageBranch.pocket == pocket).remove()

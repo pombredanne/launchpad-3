@@ -4,7 +4,14 @@
 """Test helpers for common AJAX widgets."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'FormPickerWidgetTest',
+    'InlineEditorWidgetTest',
+    'InlinePickerWidgetButtonTest',
+    'InlinePickerWidgetSearchTest',
+    'search_and_select_picker_widget',
+    'search_picker_widget',
+    ]
 
 
 from windmill.authoring import WindmillTestClient
@@ -85,9 +92,8 @@ class InlineEditorWidgetTest:
             xpath=widget_base + '/span[1]', validator=self.new_value)
 
 
-def _search_picker_widget(client, search_text, result_index):
-    """Search in picker widget and select an item."""
-    # Search for search_text in picker widget.
+def search_picker_widget(client, search_text):
+    """Search in picker widget."""
     search_box_xpath = (u"//table[contains(@class, 'yui-picker') "
                          "and not(contains(@class, 'yui-picker-hidden'))]"
                          "//input[@class='yui-picker-search']")
@@ -99,6 +105,10 @@ def _search_picker_widget(client, search_text, result_index):
         xpath=u"//table[contains(@class, 'yui-picker') "
                "and not(contains(@class, 'yui-picker-hidden'))]"
                "//div[@class='yui-picker-search-box']/button")
+
+def search_and_select_picker_widget(client, search_text, result_index):
+    """Search in picker widget and select item."""
+    search_picker_widget(client, search_text)
     # Select item at the result_index in the list.
     item_xpath = (u"//table[contains(@class, 'yui-picker') "
                      "and not(contains(@class, 'yui-picker-hidden'))]"
@@ -157,8 +167,8 @@ class InlinePickerWidgetSearchTest:
         client.click(xpath=button_xpath)
 
         # Search picker.
-        _search_picker_widget(client, self.search_text,
-                              self.result_index)
+        search_and_select_picker_widget(
+            client, self.search_text, self.result_index)
 
         # Verify update.
         client.waits.sleep(milliseconds=u'2000')
@@ -297,7 +307,8 @@ class FormPickerWidgetTest:
         client.click(id=self.choose_link_id)
 
         # Search picker.
-        _search_picker_widget(client, self.search_text, self.result_index)
+        search_and_select_picker_widget(
+            client, self.search_text, self.result_index)
 
         # Verify value.
         client.asserts.assertProperty(

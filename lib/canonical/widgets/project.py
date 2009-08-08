@@ -35,7 +35,7 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
         # field since it determines the valid target types.
         # XXX flacoste 2007-02-21 bug=86861: We must
         # use field.vocabularyName instead of the vocabulary parameter
-        # otherwise SinglePopupWidget will fail.
+        # otherwise VocabularyPickerWidget will fail.
         target_field = Choice(
             __name__='target', title=field.title,
             description=field.description, vocabulary=field.vocabularyName,

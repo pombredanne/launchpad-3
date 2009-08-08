@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
-from zope.app.error.interfaces import IErrorReportingUtility
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
@@ -38,6 +37,8 @@ from lp.code.interfaces.codeimportmachine import (
     ICodeImportMachine)
 from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
+from lp.code.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
@@ -72,7 +73,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, PersonVisibility)
+    IPerson, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
@@ -1670,6 +1671,21 @@ class BranchMergeProposalView(AuthorizationBase):
                 AccessBranch(self.obj.target_branch).checkUnauthenticated())
 
 
+class CodeReviewVoteReferenceEdit(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ICodeReviewVoteReference
+
+    def checkAuthenticated(self, user):
+        """Only the affected teams may change the review request.
+
+        The registrant may reassign the request to another entity.
+        A member of the review team may assign it to themselves.
+        A person to whom it is assigned may delegate it to someone else.
+        """
+        return (user.inTeam(self.obj.reviewer) or
+                user.inTeam(self.obj.registrant))
+
+
 class CodeReviewCommentView(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = ICodeReviewComment
@@ -2181,20 +2197,9 @@ class EditArchivePermissionSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if user.inTeam(celebrities.admin):
-            return True
-
-        techboard = getUtility(IPersonSet).getByName("techboard")
-        if techboard is None:
-            # We expect techboard to be present but it's not.  Log an
-            # OOPS.
-            error = AssertionError(
-                "'techboard' team is missing, has it been renamed?")
-            info = (error.__class__, error, None)
-            globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info)
-            return False
-        return user.inTeam(techboard)
+        return (
+            user.inTeam(celebrities.admin)
+            or user.inTeam(celebrities.ubuntu_techboard))
 
 
 class LinkOfficialSourcePackageBranches(AuthorizationBase):
@@ -2242,17 +2247,6 @@ class EditPackagesetSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if user.inTeam(celebrities.admin):
-            return True
-
-        techboard = getUtility(IPersonSet).getByName("techboard")
-        if techboard is None:
-            # We expect techboard to be present but it's not.  Log an
-            # OOPS.
-            error = AssertionError(
-                "'techboard' team is missing, has it been renamed?")
-            info = (error.__class__, error, None)
-            global_error_utility = getUtility(IErrorReportingUtility)
-            global_error_utility.raising(info)
-            return False
-        return user.inTeam(techboard)
+        return (
+            user.inTeam(celebrities.admin)
+            or user.inTeam(celebrities.ubuntu_techboard))

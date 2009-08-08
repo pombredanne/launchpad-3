@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, Text
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -105,6 +105,15 @@ class IRunnableJob(IJob):
         """Notify interested parties that this job produced an OOPS.
 
         :param oops: The oops produced by this Job.
+        """
+
+    user_error_types = Attribute(
+        'A tuple of exception classes which result from user error.')
+
+    def notifyUserError(e):
+        """Notify interested parties that this job encountered a user error.
+
+        :param e: The exception encountered by this job.
         """
 
     def run():

@@ -193,6 +193,7 @@ class BMPMailer(BranchMailer):
             'gap': '',
             'reviews': '',
             'whiteboard': '', # No more whiteboard.
+            'diff_cutoff_warning': '',
             }
 
         requested_reviews = []
@@ -212,6 +213,12 @@ class BMPMailer(BranchMailer):
             params['comment'] = (self.comment.message.text_contents)
             if len(requested_reviews) > 0:
                 params['gap'] = '\n\n'
+
+        if (self.review_diff is not None and
+            self.review_diff.diff.oversized):
+            params['diff_cutoff_warning'] = (
+                "The attached diff has been truncated due to its size.")
+
         return params
 
     def _getTemplateParams(self, email):

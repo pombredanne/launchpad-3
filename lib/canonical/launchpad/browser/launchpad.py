@@ -173,6 +173,7 @@ class NavigationMenuTabs(LaunchpadView):
             menu = queryAdapter(self.context, INavigationMenu, name=facet)
             if menu is not None:
                 self.title = menu.title
+        self.enabled_links = [link for link in self.links if link.enabled]
 
     def render(self):
         if not self.links:
