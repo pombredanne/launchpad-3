@@ -31,8 +31,8 @@ Now we try to edit with a project that exists.
 
 Now we test if we edited it successfully.
 
-    >>> extract_text(find_tag_by_id(browser.contents, 'partof'))
-    u'Part of: GNOME'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'partof'))
+    Part of: GNOME
 
 
 Setting Development Focus
@@ -178,19 +178,15 @@ Administrators can change the owner of a project.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/newproductname3')
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    Details...
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'owner'))
     Maintainer: No Privileges Person
-    ...
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/newproductname3/+admin')
     >>> admin_browser.getControl('Maintainer').value = 'cprov'
     >>> admin_browser.getControl(name='field.actions.change').click()
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    Details...
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'owner'))
     Maintainer: Celso Providelo
-    ...
 
 And the registrant can also be changed, even though this should rarely
 happen. The registrant is a read-only field that is set when the product
@@ -198,19 +194,17 @@ is created but we allow admins to change it to correct data.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/newproductname3')
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    Details...
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'registrant'))
     Registered ... by No Privileges Person
-    ...
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/newproductname3/+admin')
     >>> admin_browser.getControl('Registrant').value = 'cprov'
     >>> admin_browser.getControl(name='field.actions.change').click()
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    Details...
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'registrant'))
     Registered ... by Celso Providelo
-    ...
 
 The registrant really should only be a person, not a team, but that
 constraint has to be relaxed to account for old data where we do have
@@ -219,10 +213,9 @@ teams as registrants.
     >>> admin_browser.open('http://launchpad.dev/newproductname3/+admin')
     >>> admin_browser.getControl('Registrant').value = 'registry'
     >>> admin_browser.getControl('Change').click()
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    Details...
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'registrant'))
     Registered ... by Registry Administrators
-    ...
 
 
 Registry Experts
@@ -315,8 +308,8 @@ A Registry Expert can also see the project whiteboard on the index page.
     >>> registry_browser.open('http://launchpad.dev/firefox')
     >>> contents = find_main_content(registry_browser.contents)
     >>> print extract_text(contents.find(id='project-admin-whiteboard'))
+    Whiteboard ...
     Registered by https://launchpad.net/kurt but orphaned.
-    (edit reviewer whiteboard)
 
 Name1 is the registrant for the Firefox product, but is not a Launchpad
 Admin, and so cannot see the reviewer whiteboard.
@@ -347,13 +340,13 @@ Admins can still see the product, but regular users can't.
     >>> contents = find_main_content(registry_browser.contents)
     >>> print contents.find(id='project-inactive')
     <p...This project is currently inactive...
-    <a...href="+review-license"...
+    <a...href=".../+review-license"...
 
     >>> admin_browser.open('http://launchpad.dev/firefox')
     >>> contents = find_main_content(admin_browser.contents)
     >>> print contents.find(id='project-inactive')
     <p...This project is currently inactive...
-    <a...href="+review-license"...
+    <a...href=".../+review-license"...
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     Traceback (most recent call last):
@@ -362,7 +355,7 @@ Admins can still see the product, but regular users can't.
 
 The product can then be reactivated.
 
-    >>> registry_browser.getLink('(change this)').click()
+    >>> registry_browser.getLink('Review project').click()
     >>> print registry_browser.url
     http://launchpad.dev/firefox/+review-license
 

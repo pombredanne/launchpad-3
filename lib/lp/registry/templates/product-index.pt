@@ -93,11 +93,11 @@
 
               <dl id="product-languages"
                 tal:condition="view/show_programming_languages">
-                <dt>Languages:</dt>
+                <dt>Programming Languages:</dt>
                 <dd tal:content="structure view/languages_edit_widget" />
               </dl>
 
-              <dl>
+              <dl id="licences">
                 <dt>Licenses:</dt>
                 <dd>
                   <tal:licenses repeat="license context/licenses">
@@ -114,13 +114,23 @@
                   Commercial subscription expires
                   <tal:expiry content="context/commercial_subscription/date_expires/fmt:date" />
                 </dd>
+                <dd id="license-status" tal:condition="view/show_license_status">
+                  <strong tal:content="structure context/license_status/description" />
+                </dd>
               </dl>
             </div>
+
+            <p id="registrant">
+              Registered
+              <tal:created replace="context/datecreated/fmt:approximatedate" />
+              by
+              <tal:registrant replace="structure context/registrant/fmt:link" />
+            </p>
 
             <div id="project-admin-whiteboard" class="whiteboard"
               tal:condition="context/required:launchpad.ProjectReview">
               <div>
-                <strong>whiteboard</strong>
+                <strong>Whiteboard</strong>
                 <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
               </div>
               <tal:whiteboard replace="structure context/reviewer_whiteboard/fmt:text-to-html" />
@@ -181,23 +191,24 @@
       <tal:menu replace="structure view/@@+global-actions" />
 
       <div id="downloads" class="top-portlet downloads"
-        tal:define="release view/latest_release_with_download_files"
-        tal:condition="release">
+        tal:define="release view/latest_release_with_download_files">
         <h2>Downloads</h2>
 
-        <ul>
-          <li tal:repeat="file release/files">
-            <a tal:attributes="href file/fmt:url;
-                               title file/description;"
-              tal:content="file/libraryfile/filename" />
-          </li>
-        </ul>
+        <tal:release condition="release">
+          <ul>
+            <li tal:repeat="file release/files">
+              <a tal:attributes="href file/fmt:url;
+                                 title file/description;"
+                tal:content="file/libraryfile/filename" />
+            </li>
+          </ul>
 
-        <div class="released">
-          <span>
-          released <tal:date replace="release/datereleased/fmt:displaydate" />
-          </span>
-        </div>
+          <div class="released">
+            <span>
+            released <tal:date replace="release/datereleased/fmt:displaydate" />
+            </span>
+          </div>
+        </tal:release>
 
         <div class="alternate">
           <a style="text-decoration: underline;"
