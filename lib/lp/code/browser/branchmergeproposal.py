@@ -37,7 +37,6 @@ from zope.formlib import form
 from zope.interface import Interface, implements
 from zope.schema import Choice, Int, Text
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-from zope.security.proxy import removeSecurityProxy
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 
@@ -45,8 +44,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from lp.code.adapters.branch import BranchMergeProposalDelta
-from lp.code.browser.branch import DecoratedBug
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -292,6 +291,18 @@ class BranchMergeProposalNavigation(Navigation):
 
     usedfor = IBranchMergeProposal
 
+    @stepthrough('reviews')
+    def traverse_review(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        try:
+            return self.context.getVoteReference(id)
+        except WrongBranchMergeProposal:
+            return None
+
+
     @stepthrough('comments')
     def traverse_comment(self, id):
         try:
@@ -329,13 +340,28 @@ class CodeReviewConversation:
     def __init__(self, comments):
         self.comments = comments
 
+class ClaimButton(Interface):
+    """A simple interface to populate the form to enqueue a proposal."""
 
-class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
+    review_id = Int(required=True)
+
+
+class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
 
     label = "Proposal to merge branches"
     __used_for__ = IBranchMergeProposal
+    schema = ClaimButton
+
+    @action('Claim', name='claim')
+    def claim_action(self, action, data):
+        """Claim this proposal."""
+        request = self.context.getVoteReference(data['review_id'])
+        if request.reviewer == self.user:
+            return
+        request.reviewer = self.user
+        self.next_url = canonical_url(self.context)
 
     @property
     def comment_location(self):
@@ -413,6 +439,8 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     @cachedproperty
     def linked_bugs(self):
         """Return DecoratedBugs linked to the source branch."""
+        # Avoid import loop
+        from lp.code.browser.branch import DecoratedBug
         branch = self.context.source_branch
         return [DecoratedBug(bug, branch) for bug in branch.linked_bugs]
 
@@ -446,6 +474,14 @@ class DecoratedCodeReviewVoteReference:
             self.user_can_review = (
                 is_mergable and (self.can_change_review or
                  (user.inTeam(context.reviewer) and (users_vote is None))))
+        if context.reviewer == user:
+            self.user_can_claim = False
+        else:
+            self.user_can_claim = self.user_can_review
+        if user in (context.reviewer, context.registrant):
+            self.user_can_reassign = True
+        else:
+            self.user_can_reassign = False
 
     @property
     def show_date_requested(self):
@@ -473,6 +509,22 @@ class DecoratedCodeReviewVoteReference:
     def status_text(self):
         """The text shown in the table of the users vote."""
         return self.status_text_map[self.context.comment.vote]
+
+class ReassignSchema(Interface):
+
+    reviewer = PublicPersonChoice( title=_('Reviewer'), required=True,
+            description=_('A person who you want to review this.'),
+            vocabulary='ValidPersonOrTeam')
+
+
+class CodeReviewVoteReassign(LaunchpadFormView):
+
+    schema = ReassignSchema
+
+    @action('Reassign', name='reassign')
+    def reassign_action(self, action, data):
+        self.context.reviewer = data['reviewer']
+        self.next_url = canonical_url(self.context.branch_merge_proposal)
 
 
 class BranchMergeProposalVoteView(LaunchpadView):
@@ -1131,7 +1183,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
                 # Claim this vote reference, i.e. say that the individual
                 # self. user is doing this review ond behalf of the 'reviewer'
                 # team.
-                removeSecurityProxy(vote_ref).reviewer = self.user
+                vote_ref.reviewer = self.user
 
         comment = self.context.createComment(
             self.user, subject=None, content=data['comment'],
