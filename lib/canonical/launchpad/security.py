@@ -39,7 +39,8 @@ from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
-from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import (
+    IDerivativeDistribution, IDistribution)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -765,6 +766,26 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class DriveDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
+    """Distribution drivers, owners, and admins may plan releases.
+
+    Drivers of `IDerivativeDistribution`s can create series. Owners and
+    admins can create series for all `IDistribution`s.
+    """
+    permission = 'launchpad.Driver'
+    usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        if (IDerivativeDistribution.providedBy(self.obj)
+            and user.inTeam(self.obj.driver)):
+            # Drivers of derivative distributions can create a series that
+            # they will be the release manager for.
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(admins))
+
+
 class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
@@ -803,6 +824,11 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     usedfor = IDistroSeries
 
     def checkAuthenticated(self, user):
+        if (IDerivativeDistribution.providedBy(self.obj.distribution)
+            and user.inTeam(self.obj.driver)):
+            # The series driver (release manager) may edit a series if the
+            # distribution does not not use Soyuz or Translations.
+            return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.owner) or
                 user.inTeam(self.obj.distribution.owner) or

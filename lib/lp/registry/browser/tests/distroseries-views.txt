@@ -179,10 +179,51 @@ A distroseries is created whent the required field are submitted.
     # Save this series to test name and version constraints.
     >>> transaction.commit()
 
+
+Drivers can create distroseries
+-------------------------------
+
+Users who are appointed as drivers of a distribution can create a series.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> youbuntu = factory.makeDistribution(name='youbuntu')
+    >>> yo_driver = factory.makePerson(name='yo-driver')
+    >>> youbuntu.driver = yo_driver
+    >>> login_person(yo_driver)
+    >>> view = create_view(youbuntu, name='+addseries')
+    >>> check_permission('launchpad.Driver', view)
+    True
+
+    >>> yo_form = dict(form)
+    >>> yo_form['field.name'] = 'island'
+    >>> yo_form['field.displayname'] = 'Island'
+    >>> yo_form['field.title'] = 'YouBuntu Island'
+    >>> view = create_initialized_view(
+    ...     youbuntu, name='+addseries', form=yo_form, principal=yo_driver)
+    >>> view.errors
+    []
+
+    >>> yo_series = youbuntu.getSeries('island')
+    >>> print yo_series.displayname
+    Island
+
+Ubuntu is an exception. It's drivers cannot create series.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu.driver = yo_driver
+    >>> login_person(yo_driver)
+    >>> view = create_view(youbuntu, name='+addseries')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
 Distroseries name
 -----------------
 
 The distroseries name is unique.
+
+    >>> login('foo.bar@canonical.com')
 
     >>> form['field.name'] = 'sane'
     >>> form['field.version'] = '2009.07'
