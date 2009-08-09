@@ -822,8 +822,8 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     usedfor = IDistroSeries
 
     def checkAuthenticated(self, user):
-        if (IDerivativeDistribution.providedBy(self.obj.distribution)
-            and user.inTeam(self.obj.driver)):
+        if (user.inTeam(self.obj.driver)
+            and not self.obj.distribution.full_functionality):
             # The series driver (release manager) may edit a series if the
             # distribution does not not use Soyuz or Translations.
             return True
