@@ -804,8 +804,9 @@ Ubuntu is an `IBaseDistribution` which requires special preparation for
 Soyuz and Translations before a series can be created. Ubuntu driver can
 not create series.
 
-    >>> ubuntu_driver = ubuntu.driver.activemembers[0]
-    >>> login_person(ubuntu_driver)
+    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> ubuntu.driver = yo_driver
+    >>> login_person(yo_driver)
     >>> ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
