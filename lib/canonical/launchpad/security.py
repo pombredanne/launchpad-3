@@ -39,8 +39,7 @@ from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
-from lp.registry.interfaces.distribution import (
-    IDerivativeDistribution, IDistribution)
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -776,8 +775,7 @@ class DriveDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
     usedfor = IDistribution
 
     def checkAuthenticated(self, user):
-        if (IDerivativeDistribution.providedBy(self.obj)
-            and user.inTeam(self.obj.driver)):
+        if user.inTeam(self.obj.driver) and not self.obj.full_functionality:
             # Drivers of derivative distributions can create a series that
             # they will be the release manager for.
             return True

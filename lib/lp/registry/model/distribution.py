@@ -190,7 +190,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         SQLBase._init(self, *args, **kw)
         # Add a marker interface to set permissions for this kind
         # of distribution.
-        if self.full_functionality:
+        if self == getUtility(ILaunchpadCelebrities).ubuntu:
             alsoProvides(self, IBaseDistribution)
         else:
             alsoProvides(self, IDerivativeDistribution)
@@ -304,7 +304,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def full_functionality(self):
         """See `IDistribution`."""
-        if self == getUtility(ILaunchpadCelebrities).ubuntu:
+        if IBaseDistribution.providedBy(self):
             return True
         return False
 
