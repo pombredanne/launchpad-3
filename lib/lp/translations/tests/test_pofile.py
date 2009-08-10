@@ -19,6 +19,7 @@ from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.testing import TestCaseWithFactory
 from canonical.testing import ZopelessDatabaseLayer
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):
@@ -875,6 +876,58 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('eo'))
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('de'))
 
+class TestTranslationCredits(TestCaseWithFactory):
+    """
+    Test generation of translation contribution lists. Only covers the magic
+    'translator-credits' message right now.
+    """
+    
+    layer = ZopelessDatabaseLayer
+    
+    def setUp(self):
+        super(TestTranslationCredits, self).setUp()
+        self.pofile = self.factory.makePOFile('sr')
+        self.potemplate = self.pofile.potemplate
+        
+        self.potmsgset = self.factory.makePOTMsgSet(potemplate=self.potemplate, sequence=1)
+        self.credits_potmsgset = self.factory.makePOTMsgSet(
+            singular=u'translator-credits', potemplate=self.potemplate)
+    
+    def test_prepareTranslationCredits_extending(self):
+        person = self.factory.makePerson()
+        
+        upstream_contributor = "Upstream Contributor <name@project.org>"
+        excepted_credits_text = "%s\n\nLaunchpad Contributions:\n  %s %s" % (
+            upstream_contributor, person.displayname, canonical_url(person))
+        
+        # Add the upstream translation contributor to 'translator-credits'.
+        self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.credits_potmsgset,
+            translations=[upstream_contributor],
+            is_imported=True)
+        
+        # `person` updates the translation using Launchpad.
+        self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translator=person)
+        
+        # The first translation credits export.
+        credits_text = self.pofile.prepareTranslationCredits(
+            self.credits_potmsgset)
+        self.assertEquals(excepted_credits_text, credits_text)
+        
+        # Now, re-import this generated message.
+        self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.credits_potmsgset,
+            translations=[credits_text],
+            is_imported=True)
+        
+        credits_text = self.pofile.prepareTranslationCredits(
+            self.credits_potmsgset)
+        self.assertEquals(excepted_credits_text, credits_text)
 
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
     """Test ordering of POTMsgSets as returned by PO file methods."""
