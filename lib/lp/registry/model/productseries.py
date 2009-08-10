@@ -34,7 +34,8 @@ from lp.services.worlddata.model.language import Language
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership, validate_public_person)
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
@@ -101,10 +102,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership,
+        notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        storm_validator=validate_public_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership,
+        notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
     translations_autoimport_mode = EnumCol(
