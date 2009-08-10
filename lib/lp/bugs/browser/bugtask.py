@@ -1001,7 +1001,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         return check_permission('launchpad.Admin', self.context)
 
     @property
-    def bug_description(self):
+    def bug_description_html(self):
         """The bug's description as HTML."""
         formatter = FormattersAPI
         hide_email = formatter(self.context.bug.description).obfuscate_email()
