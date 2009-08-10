@@ -1,4 +1,5 @@
-= DistroSeries view classes =
+DistroSeries view classes
+=========================
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -184,10 +185,14 @@ Drivers can create distroseries
 -------------------------------
 
 Users who are appointed as drivers of a distribution can create a series.
+Most distributions are an `IDerivativeDistribution`.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
 
     >>> youbuntu = factory.makeDistribution(name='youbuntu')
+    >>> youbuntu.full_functionality
+    False
+
     >>> yo_driver = factory.makePerson(name='yo-driver')
     >>> youbuntu.driver = yo_driver
     >>> login_person(yo_driver)
@@ -208,12 +213,56 @@ Users who are appointed as drivers of a distribution can create a series.
     >>> print yo_series.displayname
     Island
 
-Ubuntu is an exception. It's drivers cannot create series.
+Ubuntu is an exception. It's drivers cannot create series because Ubuntu
+is an `IBaseDistribution`.
 
-    >>> login('foo.bar@canonical.com')
+    >>> ubuntu.full_functionality
+    True
+
+    >>> login_person(ubuntu.owner.activemembers[0])
     >>> ubuntu.driver = yo_driver
     >>> login_person(yo_driver)
     >>> view = create_view(youbuntu, name='+addseries')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
+Editing Distroseries
+--------------------
+
+The series driver (release manager) can edit a series if the series belongs
+to a `IDerivativeDistribution`.
+
+    >>> print yo_series.driver.name
+    yo-driver
+
+    >>> login_person(yo_driver)
+    >>> view = create_view(yo_series, name='+edit')
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+    >>> yo_form = dict(form)
+    >>> del yo_form['field.actions.create']
+    >>> yo_form['field.displayname'] = 'Mountain'
+    >>> yo_form['field.title'] = 'YouBuntu Mountain'
+    >>> yo_form['field.summary'] = 'Mountain summary'
+    >>> yo_form['field.description'] = 'Mountain description'
+    >>> yo_form['field.actions.change'] = 'Change'
+    >>> view = create_initialized_view(
+    ...     yo_series, name='+edit', form=yo_form, principal=yo_driver)
+    >>> view.errors
+    []
+
+    >>> print yo_series.displayname
+    Mountain
+
+Drivers of an `IBaseDistribution` such as Ubuntu cannot edit a series.
+
+    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> hoary.driver = yo_driver
+    >>> login_person(yo_driver)
+
+    >>> view = create_view(hoary, name='+edit')
     >>> check_permission('launchpad.Edit', view)
     False
 

@@ -825,7 +825,7 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
         if (user.inTeam(self.obj.driver)
             and not self.obj.distribution.full_functionality):
             # The series driver (release manager) may edit a series if the
-            # distribution does not not use Soyuz or Translations.
+            # distribution is an `IDerivativeDistribution`
             return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.owner) or
