@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BugDescriptionEditorWidget',
+    'TextAreaEditorWidget',
     'InlineEditPickerWidget',
     'vocabulary_to_choice_edit_items',
     'TextLineEditorWidget',
@@ -157,10 +157,10 @@ class TextLineEditorWidget:
 
 
 class TextAreaEditorWidget(TextLineEditorWidget):
-    """ Class doc """
+    """Wrapper for the multine-line lazr-js inlineedit/editor.js widget."""
 
     def __init__(self, *args, **kwds):
-        """ Class initialiser """
+        """Create the widget wrapper."""
         if 'value' in kwds:
             self.value = kwds.get('value', '')
             kwds.pop('value')
@@ -194,33 +194,6 @@ class TextAreaEditorWidget(TextLineEditorWidget):
         </div>
         """)
 
-    def __call__(self):
-        """Return the HTML to include to render the widget."""
-        params = {
-            'activation_script': '',
-            'trigger': '',
-            'edit_url': self.edit_url,
-            'id': self.id,
-            'title': self.title,
-            'value': self.value,
-            'context_url': canonical_url(
-                self.context, path_only_if_possible=True),
-            'attribute': self.attribute,
-            'edit_controls': '',
-            }
-        # Only display the trigger link and the activation script if
-        # the user can write the attribute.
-        if canWrite(self.context, self.attribute):
-            params['trigger'] = self.TRIGGER_TEMPLATE % params
-            params['activation_script'] = self.ACTIVATION_TEMPLATE % params
-            params['edit_controls'] = self.CONTROLS_TEMPLATE % params
-        return self.WIDGET_TEMPLATE % params
-
-
-class BugDescriptionEditorWidget(TextAreaEditorWidget):
-    """ Class doc """
-
-    # Template for the activation script.
     ACTIVATION_TEMPLATE = dedent(u"""\
         <script>
         YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
@@ -259,6 +232,28 @@ class BugDescriptionEditorWidget(TextAreaEditorWidget):
         });
         </script>
         """)
+
+    def __call__(self):
+        """Return the HTML to include to render the widget."""
+        params = {
+            'activation_script': '',
+            'trigger': '',
+            'edit_url': self.edit_url,
+            'id': self.id,
+            'title': self.title,
+            'value': self.value,
+            'context_url': canonical_url(
+                self.context, path_only_if_possible=True),
+            'attribute': self.attribute,
+            'edit_controls': '',
+            }
+        # Only display the trigger link and the activation script if
+        # the user can write the attribute.
+        if canWrite(self.context, self.attribute):
+            params['trigger'] = self.TRIGGER_TEMPLATE % params
+            params['activation_script'] = self.ACTIVATION_TEMPLATE % params
+            params['edit_controls'] = self.CONTROLS_TEMPLATE % params
+        return self.WIDGET_TEMPLATE % params
 
 
 class InlineEditPickerWidget:

@@ -145,7 +145,7 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    BugDescriptionEditorWidget, InlineEditPickerWidget,
+    InlineEditPickerWidget, TextAreaEditorWidget,
     TextLineEditorWidget, vocabulary_to_choice_edit_items)
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -1006,7 +1006,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         formatter = FormattersAPI
         hide_email = formatter(self.context.bug.description).obfuscate_email()
         description = formatter(hide_email).text_to_html()
-        return BugDescriptionEditorWidget(
+        return TextAreaEditorWidget(
             self.context.bug,
             'description',
             canonical_url(self.context, view_name='+edit'),
