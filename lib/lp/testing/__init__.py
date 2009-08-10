@@ -27,6 +27,7 @@ from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
+from canonical.launchpad.webapp import errorlog
 from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
@@ -176,6 +177,14 @@ class TestCase(unittest.TestCase):
                                  ', '.join([repr(event) for event in events]))
         return result
 
+    def assertNoNewOops(self, old_oops):
+        """Assert that no oops has been recorded since old_oops."""
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        if old_oops is None:
+            self.assertIs(None, oops)
+        else:
+            self.assertEqual(oops.id, old_oops.id)
+
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.
 
@@ -224,10 +233,11 @@ class TestCase(unittest.TestCase):
         self.assertTrue(expected is observed,
                         "%r is not %r" % (expected, observed))
 
-    def assertIsNot(self, expected, observed):
+    def assertIsNot(self, expected, observed, msg=None):
         """Assert that `expected` is not the same object as `observed`."""
-        self.assertTrue(expected is not observed,
-                        "%r is %r" % (expected, observed))
+        if msg is None:
+            msg = "%r is %r" % (expected, observed)
+        self.assertTrue(expected is not observed, msg)
 
     def assertIn(self, needle, haystack):
         """Assert that 'needle' is in 'haystack'."""

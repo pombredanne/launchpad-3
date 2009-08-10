@@ -76,7 +76,7 @@ from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.services.worlddata.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.location import (
     IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -474,7 +474,7 @@ class IHasStanding(Interface):
 
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IObjectWithLocation):
+                    IHasLocation, IObjectWithLocation, IPrivacy):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -830,6 +830,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             readonly=True, required=False,
             value_type=Reference(schema=Interface))) # HWSubmission
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. It is a summary of the team's visibility.
     private = exported(Bool(
             title=_("This team is private"),
             readonly=True, required=False,

@@ -14,21 +14,20 @@ lp.codehosting.rewrite.BranchRewriter for the logic of the rewritemap.
 
 import _pythonpath
 
+import os
 import sys
-import xmlrpclib
 
-from lp.codehosting.vfs import BlockingProxy
-from lp.codehosting.rewrite import BranchRewriter
+# XXX, MichaelHudson, 2009-07-22, bug=402845: This pointless import avoids a
+# circular import killing us.
+from canonical.launchpad.database import account
+
+from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
+from lp.codehosting.rewrite import BranchRewriter
 from lp.services.scripts.base import LaunchpadScript
 
 
 class BranchRewriteScript(LaunchpadScript):
-
-    def __init__(self, name):
-        LaunchpadScript.__init__(self, name)
-        proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-        self.rewriter = BranchRewriter(self.logger, BlockingProxy(proxy))
 
     def add_my_options(self):
         """Make the logging go to a file by default.
@@ -40,26 +39,20 @@ class BranchRewriteScript(LaunchpadScript):
         value from the config.
         """
         log_file_location = config.codehosting.rewrite_script_log_file
+        log_file_directory = os.path.dirname(log_file_location)
+        if not os.path.isdir(log_file_directory):
+            os.makedirs(log_file_directory)
         self.parser.defaults['log_file'] = log_file_location
 
-    def run(self, use_web_security=False, implicit_begin=True,
-            isolation=None):
-        """See `LaunchpadScript.run`.
-
-        As this script does not need the component architecture or a
-        connection to the database, we override this method to avoid setting
-        them up.
-        """
-        self.main()
-
     def main(self):
+        rewriter = BranchRewriter(self.logger)
         self.logger.debug("Starting up...")
         while True:
             try:
                 line = sys.stdin.readline()
                 # Mod-rewrite always gives us a newline terminated string.
                 if line:
-                    print self.rewriter.rewriteLine(line.strip())
+                    print rewriter.rewriteLine(line.strip())
                 else:
                     # Standard input has been closed, so die.
                     return
@@ -71,4 +64,5 @@ class BranchRewriteScript(LaunchpadScript):
 
 
 if __name__ == '__main__':
-    BranchRewriteScript("branch-rewrite").run()
+    BranchRewriteScript("branch-rewrite", dbuser='branch-rewrite').run(
+        isolation=ISOLATION_LEVEL_AUTOCOMMIT)

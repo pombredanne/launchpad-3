@@ -1,16 +1,13 @@
 = Template export sets  =
 
-VPOTExportSet is a set of rows that represent a POTemplate content. It's
-used to serialise that template and store it as an exported file.
+POTemplate.getTranslationRows serialises a template's rows for export.
 
-    >>> from lp.translations.interfaces.vpotexport import IVPOTExportSet
     >>> from lp.translations.model.potemplate import POTemplate
 
 We need a template to export, for instance, the one with id = 1.
 
-    >>> vpot_exportset = getUtility(IVPOTExportSet)
     >>> potemplate = POTemplate.get(1)
-    >>> vpot_rows = list(vpot_exportset.get_potemplate_rows(potemplate))
+    >>> vpot_rows = list(potemplate.getTranslationRows())
 
 There are rows.
 

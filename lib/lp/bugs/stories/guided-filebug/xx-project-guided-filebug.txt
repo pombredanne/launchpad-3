@@ -37,27 +37,6 @@ page.
     'Bug #... in Evolution: ...Evolution crashes...'
 
 
-== Advanced filebug page ==
-
-From the Project filebug page it's possible to go to the advanced
-filebug page.
-
-    >>> user_browser.open('http://launchpad.dev/gnome')
-    >>> user_browser.getLink(url='+filebug').click()
-    >>> user_browser.getLink('Advanced reporting options').click()
-    >>> user_browser.url
-    'http://launchpad.dev/gnome/+filebug-advanced'
-
-    >>> user_browser.getControl('Project').value = ['evolution']
-    >>> user_browser.getControl('Summary').value = 'Evolution crashes lots'
-    >>> user_browser.getControl('Further information').value = 'Crash.'
-    >>> user_browser.getControl('Submit Bug Report').click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/evolution/+bug/...'
-    >>> user_browser.title
-    'Bug #... in Evolution: ...Evolution crashes...'
-
-
 == Subscribing to a similar bug ==
 
 If our bug is described by one of the suggested similar bugs, we can
@@ -76,13 +55,11 @@ bugs we filed recently.
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #... Evolution crashes
     New (0 comments) last updated ...
-    #... Evolution crashes lots
-    New (0 comments) last updated ...
 
 This one matches, so we subscribe.
 
     >>> user_browser.getControl(
-    ...     "Yes, this is the bug I'm trying to report", index=1).click()
+    ...     "Yes, this is the bug I'm trying to report").click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/evolution/+bug/...

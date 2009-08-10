@@ -262,6 +262,18 @@ class IPOFile(IRosettaStats):
     def getFullLanguageName():
         """Return full language name, including variant if applicable."""
 
+    def getTranslationRows():
+        """Return exportable rows of translation data.
+        
+        :return: a list of `VPOExport` objects.
+        """
+
+    def getChangedRows():
+        """Return exportable rows that differ from published translations.
+
+        :return: a list of `VPOExport` objects.
+        """
+
 
 class AlternativeLanguageVocabularyFactory:
     """Gets vocab for user's preferred languages, or all languages if not set.

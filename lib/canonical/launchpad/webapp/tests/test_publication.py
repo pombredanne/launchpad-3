@@ -5,17 +5,23 @@
 
 __metaclass__ = type
 
-
+import sys
 import unittest
 
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
 
+from psycopg2.extensions import TransactionRollbackError
+from storm.exceptions import DisconnectionError
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
+from zope.publisher.interfaces import Retry
+from zope.security.management import endInteraction
 
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCase, TestCaseWithFactory
+import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest, WebServicePublication)
@@ -61,6 +67,34 @@ class TestWebServicePublication(TestCaseWithFactory):
         request = self._getRequestForPersonAndAccountWithDifferentIDs()
         principal = WebServicePublication(None).getPrincipal(request)
         self.failIf(principal is None)
+
+    def test_disconnect_logs_oops(self):
+        error_reporting_utility = getUtility(IErrorReportingUtility)
+        last_oops = error_reporting_utility.getLastOopsReport()
+
+        # Ensure that OOPS reports are generated for database
+        # disconnections, as per Bug #373837.
+        for exception in (DisconnectionError, TransactionRollbackError):
+            request = LaunchpadTestRequest()
+            publication = WebServicePublication(None)
+            da.set_request_started()
+            try:
+                raise exception('Fake')
+            except exception:
+                self.assertRaises(
+                    Retry,
+                    publication.handleException,
+                    None, request, sys.exc_info(), True)
+            da.clear_request_started()
+            next_oops = error_reporting_utility.getLastOopsReport()
+
+            # Ensure the OOPS mentions the correct exception
+            self.assertNotEqual(repr(next_oops).find(exception.__name__), -1)
+
+            # Ensure that it is different to the last logged OOPS.
+            self.assertNotEqual(repr(last_oops), repr(next_oops))
+
+            last_oops = next_oops
 
 
 def test_suite():

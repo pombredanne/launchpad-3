@@ -36,4 +36,3 @@ class FormNamespaceView(view):
             raise TraversalError("The URL does not correspond to a form.")
 
         return self.context
-

@@ -8,14 +8,15 @@ __metaclass__ = type
 from unittest import TestLoader
 
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import DatabaseFunctionalLayer
 from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView, BranchMergeProposalListingView, PersonActiveReviewsView,
     ProductActiveReviewsView)
 from lp.code.enums import CodeReviewVote
 from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
 
 _default = object()
 
@@ -201,8 +202,7 @@ class _ActiveReviewGroupsTest:
         self.assertReviewGroupForUser(
             self.bmp.registrant, self._view.OTHER)
         team = self.factory.makeTeam(self.bmp.registrant)
-        login_person(self.bmp.source_branch.owner)
-        self.bmp.source_branch.owner = team
+        removeSecurityProxy(self.bmp.source_branch).owner = team
         self.assertReviewGroupForUser(
             self.bmp.registrant, ActiveReviewsView.MINE)
 

@@ -60,6 +60,22 @@ When the product series has milestones, the class is just 'listing'.
     >>> print view.milestone_table_class
     listing
 
+Obsolete series are less interesting that other series. The ProductSeriesView
+has an is_obsolete property that templates can check when choosing the content
+to display.
+
+    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
+
+    >>> print series.status
+    Active Development
+    >>> view.is_obsolete
+    False
+
+    >>> series.status = DistroSeriesStatus.OBSOLETE
+    >>> view = create_view(series, '+index')
+    >>> view.is_obsolete
+    True
+
 
 == Delete ProductSeries ==
 

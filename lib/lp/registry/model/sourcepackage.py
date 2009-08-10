@@ -426,6 +426,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             self.sourcepackagename, self.distribution.currentseries)
 
     @property
+    def distribution_sourcepackage(self):
+        """See `ISourcePackage`."""
+        return self.distribution.getSourcePackage(self.sourcepackagename)
+
+    @property
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines

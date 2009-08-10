@@ -277,7 +277,7 @@
     <!-- ArchiveDependency -->
 
     <class
-        class="canonical.launchpad.database.ArchiveDependency">
+        class="lp.soyuz.model.archivedependency.ArchiveDependency">
         <allow
             interface="lp.soyuz.interfaces.archivedependency.IArchiveDependency"/>
     </class>
@@ -338,9 +338,8 @@
     </securedutility>
 
     <!-- DistributionSourcePackageCache -->
-
     <class
-        class="canonical.launchpad.database.DistributionSourcePackageCache">
+        class="lp.soyuz.model.distributionsourcepackagecache.DistributionSourcePackageCache">
         <allow
             interface="lp.soyuz.interfaces.distributionsourcepackagecache.IDistributionSourcePackageCache"/>
     </class>

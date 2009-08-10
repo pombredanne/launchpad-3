@@ -56,6 +56,23 @@ Can we access it via the webservice API as well?
     >>> print umbrella['self_link']
     http://api.launchpad.dev/beta/package-sets/umbrella
 
+`PackageSet`s can be looked up by name.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets', 'getByName', {}, name=u'umbrella')
+    >>> print response.jsonBody()['self_link']
+    http://api.launchpad.dev/beta/package-sets/umbrella
+
+When a `PackageSet` cannot be found, an error is returned.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets', 'getByName', {}, name=u'not-found')
+    >>> print response.getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
+    NoSuchPackageSet: No such packageset: 'not-found'.
+    <BLANKLINE>
+
 Populate the 'umbrella' package set with source packages.
 
     >>> from canonical.launchpad.webapp.interfaces import (
@@ -69,6 +86,25 @@ Populate the 'umbrella' package set with source packages.
     >>> print response.getOutput()
     HTTP/1.1 200 Ok
     ...
+
+Note that attempts to add or remove source package names that do not
+exist will not fail. Non-existing source package names are *ignored*.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/umbrella', 'addSources', {},
+    ...     names=[u'does-not-exist'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    null
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/umbrella', 'removeSources', {},
+    ...     names=[u'does-not-exist'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    null
 
 Let's see what we got.
 
@@ -235,6 +271,25 @@ set hierarchy:
     HTTP/1.1 200 Ok
     ...
 
+Similarly to 'addSources' and 'removeSources', adding or removing
+non-existing package sets will not fail.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/thunderbird', 'addSubsets', {},
+    ...     names=[u'does-not-exist'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    null
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/thunderbird', 'removeSubsets', {},
+    ...     names=[u'does-not-exist'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    null
+
 The 'umbrella' package set should have plenty of subsets now.
 
     >>> response = webservice.named_get(
@@ -344,6 +399,17 @@ Which package sets include the 'mozilla-firefox' source package *directly*?
     >>> print_payload(response)
     http://api.launchpad.dev/beta/package-sets/firefox
     http://api.launchpad.dev/beta/package-sets/umbrella
+
+If a non-existing source package name is passed it returns an error.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/', 'setsIncludingSource', {},
+    ...     sourcepackagename=u'does-not-exist')
+    >>> print response.getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
+    No such source package: 'does-not-exist'.
+    ...
 
 What source packages are shared by the 'firefox' and the 'thunderbird'
 package sets?

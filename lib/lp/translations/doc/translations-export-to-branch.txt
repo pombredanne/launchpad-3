@@ -186,7 +186,7 @@ refuse to commit to the branch.
     msgstr "gazmod msgstr"
     <BLANKLINE>
     INFO Unlock.
-    WARNING Failure: Simulated race condition.
+    ERROR Failure: Simulated race condition.
     INFO Processed 1 item(s); 1 failure(s).
 
 
@@ -205,7 +205,7 @@ pending translations BranchJobs on the branch.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
-    WARNING Failure: Translations branch for Gazblachko trunk series
+    ERROR Failure: Translations branch for Gazblachko trunk series
     has pending translations changes.  Not committing.
     INFO Processed 1 item(s); 1 failure(s).
 

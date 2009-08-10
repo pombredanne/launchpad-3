@@ -37,15 +37,15 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.launchpad import  IPrivacy, NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.bugattachment import (
-    bug_attachment_size_constraint)
+from canonical.launchpad.validators.attachment import (
+    attachment_size_constraint)
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
@@ -147,7 +147,14 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
-class IBug(ICanBeMentored, IHasLinkedBranches):
+def optional_message_subject_field():
+    """A modified message subject field allowing None as a value."""
+    subject_field = copy_field(IMessage['subject'])
+    subject_field.required = False
+    return subject_field
+
+
+class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
 
@@ -180,6 +187,8 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
     readonly_duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is guarded by setPrivate().
     private = exported(
         Bool(title=_("This bug report should be private"), required=False,
              description=_("Private bug reports are visible only to "
@@ -311,7 +320,7 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
     followup_subject = Attribute("The likely subject of the next message.")
 
     @operation_parameters(
-        subject=copy_field(IMessage['subject']),
+        subject=optional_message_subject_field(),
         content=copy_field(IMessage['content']))
     @call_with(owner=REQUEST_USER)
     @export_factory_operation(IMessage, [])
@@ -454,7 +463,7 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
 
     @call_with(owner=REQUEST_USER)
     @operation_parameters(
-        data=Bytes(constraint=bug_attachment_size_constraint),
+        data=Bytes(constraint=attachment_size_constraint),
         comment=Text(), filename=TextLine(), is_patch=Bool(),
         content_type=TextLine(), description=Text())
     @export_factory_operation(IBugAttachment, [])
@@ -605,7 +614,7 @@ class IBug(ICanBeMentored, IHasLinkedBranches):
             :status: The status the bugtask should be set to.
             :user: The `IPerson` doing the change.
 
-        If a bug task was edited, emit a 
+        If a bug task was edited, emit a
         `lazr.lifecycle.interfaces.IObjectModifiedEvent` and
         return the edited bugtask.
 
@@ -794,7 +803,7 @@ class IBugAddForm(IBug):
         vocabulary="Bug")
     filecontent = Bytes(
         title=u"Attachment", required=False,
-        constraint=bug_attachment_size_constraint)
+        constraint=attachment_size_constraint)
     patch = Bool(title=u"This attachment is a patch", required=False,
         default=False)
     attachment_description = Title(title=u'Description', required=False)

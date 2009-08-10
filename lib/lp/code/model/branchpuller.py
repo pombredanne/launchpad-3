@@ -55,7 +55,8 @@ class BranchPuller:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch = store.find(
             Branch,
-            Branch.next_mirror_time <= UTC_NOW).order_by(
+            Branch.next_mirror_time <= UTC_NOW,
+            Branch.branch_type != BranchType.REMOTE).order_by(
                 Branch.next_mirror_time).first()
         if branch is not None:
             branch.startMirroring()

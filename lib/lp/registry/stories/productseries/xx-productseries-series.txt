@@ -54,12 +54,12 @@ highlighted.
     >>> print series_1_0['class']
     unhighlighted series
 
-Any user can see that obsolete series are dimmed.
+Any user can see that obsolete series are dimmed. Obsolete series do not
+show bug status counts because it is expensive to retrieve the information.
 
     >>> series_xxx = find_tag_by_id(content, 'series-xxx')
     >>> print extract_text(series_xxx)
     xxx series Obsolete
-    Bugs targeted: None
     Blueprints targeted: None
     Use true GTK UI.
 

@@ -1,0 +1,45 @@
+Pillar views
+============
+
+Pillar views are used to display IPillar objects link distributions and
+products in a consistent fashion.
+
+The +get-involved presentation creates a portlet of links to encourage
+project involvement. Only links to official applications are rendered.
+
+
+    >>> distribution = factory.makeDistribution(name='umbra')
+    >>> login_person(distribution.owner)
+    >>> view = create_view(
+    ...     distribution, '+get-involved', principal=distribution.owner)
+
+The has_involvement property is used to determine if the portlet should
+be rendered. The newly created pillar does not use any launchpad applications.
+
+    >>> view.has_involvement
+    False
+
+    >>> print view.render()
+    <BLANKLINE>
+
+Pillars that do use launchpad applications have an involvement menu.
+
+    >>> distribution.official_answers = True
+    >>> distribution.official_malone = True
+    >>> view = create_view(
+    ...     distribution, '+get-involved', principal=distribution.owner)
+    >>> view.has_involvement
+    True
+
+    >>> print view.render()
+    <div id="involvement" class="portlet involvement">
+      <h2>Get Involved</h2>
+      <ul>
+        <li>
+          <a class="bugs" href="...">Report a Bug</a>
+        </li>
+        <li>
+          <a class="question" href="...">Ask a question</a>
+        </li>
+      </ul>
+    </div>

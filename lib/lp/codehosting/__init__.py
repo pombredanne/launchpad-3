@@ -36,9 +36,15 @@ def iter_list_chunks(a_list, size):
 
 def get_bzr_path():
     """Find the path to the copy of Bazaar for this rocketfuel instance"""
-    return os.path.join(
+    bzr_in_egg_path = os.path.join(
         os.path.dirname(os.path.dirname(bzrlib.__file__)),
         'EGG-INFO/scripts/bzr')
+    if os.path.exists(bzr_in_egg_path):
+        return bzr_in_egg_path
+    else:
+        return os.path.join(
+            os.path.dirname(os.path.dirname(bzrlib.__file__)),
+            'bzr')
 
 
 def get_bzr_plugins_path():

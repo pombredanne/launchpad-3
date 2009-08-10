@@ -13,6 +13,7 @@ __all__ = [
     'HWSubClass',
     'HWSubmissionFormat',
     'HWSubmissionKeyNotUnique',
+    'HWSubmissionMissingFields',
     'HWSubmissionProcessingStatus',
     'IHWDBApplication',
     'IHWDevice',
@@ -56,6 +57,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
@@ -95,6 +97,10 @@ class HWSubmissionKeyNotUnique(Exception):
     """Prevent two or more submission with identical submission_key."""
 
 
+class HWSubmissionMissingFields(Exception):
+    """Indicate that the HWDB client sent incomplete data."""
+
+
 class HWSubmissionProcessingStatus(DBEnumeratedType):
     """The status of a submission to the hardware database."""
 
@@ -122,7 +128,7 @@ class HWSubmissionFormat(DBEnumeratedType):
     VERSION_1 = DBItem(1, "Version 1")
 
 
-class IHWSubmission(Interface):
+class IHWSubmission(Interface, IPrivacy):
     """Raw submission data for the hardware database.
 
     See doc/hwdb.txt for details about the attributes.
@@ -143,6 +149,8 @@ class IHWSubmission(Interface):
         Choice(
             title=_(u'Submission Status'), required=True,
             vocabulary=HWSubmissionProcessingStatus, readonly=True))
+    # This is redefined from IPrivacy.private because the attribute is
+    # is required.
     private = exported(
         Bool(
             title=_(u'Private Submission'), required=True))

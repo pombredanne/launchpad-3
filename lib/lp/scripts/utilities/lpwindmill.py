@@ -26,7 +26,7 @@ from canonical.testing.layers import (
 import windmill.bin.windmill_bin
 
 
-def setUpLaunchpad():
+def runLaunchpad():
     """Set-up the Launchpad app-server against which windmill tests are run.
     """
     config.setInstance('testrunner-appserver')
@@ -50,7 +50,7 @@ def runWindmill():
 
     This function exits once windmill has terminated.
     """
-    # The windmill main function will interpret the command-line arguments 
+    # The windmill main function will interpret the command-line arguments
     # for us.
     windmill.bin.windmill_bin.main()
 
@@ -66,7 +66,7 @@ def waitForInterrupt():
 
 
 def main():
-    setUpLaunchpad()
+    runLaunchpad()
     if sys.argv[1] == '--server-only':
         waitForInterrupt()
     else:

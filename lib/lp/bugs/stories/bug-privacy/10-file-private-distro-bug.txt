@@ -1,12 +1,14 @@
 Foo Bar files a security (private) bug on Ubuntu Linux. He gets
-redirected to the bug page. (Note that only the advanced bug
-filing page, not the simple one, supports filing security bugs.)
+redirected to the bug page.
 
     >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
-    >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
+    >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
 
 Ubuntu has no security contact, so the Ubuntu maintainer, Ubuntu Team,
 will be subscribed instead.
+
+    >>> browser.getControl(name="field.title").value = "a private bug"
+    >>> browser.getControl('Continue').click()
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -15,7 +17,6 @@ will be subscribed instead.
 
     >>> browser.getControl(name="packagename_option").value = ["choose"]
     >>> browser.getControl(name="field.packagename").value = "evolution"
-    >>> browser.getControl(name="field.title").value = "a private bug"
     >>> browser.getControl(name="field.comment").value = "secret info"
     >>> browser.getControl(
     ...     "This bug is a security vulnerability").selected = True
@@ -60,7 +61,10 @@ subscriptions differ.
     >>> browser.getControl("Security Contact").value = "name12"
     >>> browser.getControl("Change").click()
 
-    >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
+    >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
+
+    >>> browser.getControl(name="field.title").value = "a private bug"
+    >>> browser.getControl('Continue').click()
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -69,7 +73,6 @@ subscriptions differ.
 
     >>> browser.getControl(name="packagename_option").value = ["choose"]
     >>> browser.getControl(name="field.packagename").value = "evolution"
-    >>> browser.getControl(name="field.title").value = "a private bug"
     >>> browser.getControl(name="field.comment").value = "secret info"
     >>> browser.getControl(
     ...     "This bug is a security vulnerability").selected = True

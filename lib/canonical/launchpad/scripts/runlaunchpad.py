@@ -19,11 +19,12 @@ from zope.app.server.main import main
 from canonical.launchpad.mailman import runmailman
 from canonical.launchpad.testing import googletestservice
 
-TWISTD_SCRIPT = None
-
 
 def make_abspath(path):
     return os.path.abspath(os.path.join(config.root, *path.split('/')))
+
+
+TWISTD_SCRIPT = make_abspath('bin/twistd')
 
 
 class Service(object):
@@ -84,7 +85,6 @@ class TacFile(Service):
         tacfile = make_abspath(self.tac_filename)
 
         args = [
-            sys.executable,
             TWISTD_SCRIPT,
             "--no_save",
             "--nodaemon",
@@ -94,12 +94,6 @@ class TacFile(Service):
             "--logfile", logfile,
             ]
 
-        # We want to make sure that the Launchpad process will have the 
-        # benefit # of all of the dependency paths inserted by the buildout 
-        # bin/run script. We pass them via PYTHONPATH.
-        env = dict(os.environ)
-        env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
-
         if config[self.section_name].spew:
             args.append("--spew")
 
@@ -108,7 +102,7 @@ class TacFile(Service):
         # log to stdout and redirect it ourselves because we then lose the
         # ability to cycle the log files by sending a signal to the twisted
         # process.
-        process = subprocess.Popen(args, stdin=subprocess.PIPE, env=env)
+        process = subprocess.Popen(args, stdin=subprocess.PIPE)
         process.stdin.close()
         # I've left this off - we still check at termination and we can
         # avoid the startup delay. -- StuartBishop 20050525
@@ -254,9 +248,6 @@ def process_config_arguments(args):
 
 
 def start_launchpad(argv=list(sys.argv)):
-    global TWISTD_SCRIPT
-    TWISTD_SCRIPT = make_abspath('bin/twistd')
-
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
@@ -275,3 +266,19 @@ def start_launchpad(argv=list(sys.argv)):
     config.generate_overrides()
 
     main(argv)
+
+def start_librarian():
+    """Start the Librarian in the background."""
+    # Create the ZCML override file based on the instance.
+    config.generate_overrides()
+    # Create the Librarian storage directory if it doesn't already exist.
+    prepare_for_librarian()
+    pidfile = pidfile_path('librarian')
+    cmd = [
+        TWISTD_SCRIPT,
+        "--python", 'daemons/librarian.tac',
+        "--pidfile", pidfile,
+        "--prefix", 'Librarian',
+        "--logfile", config.librarian_server.logfile,
+        ]
+    return subprocess.call(cmd)
