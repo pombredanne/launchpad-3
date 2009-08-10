@@ -5447,11 +5447,8 @@ class TeamActionMenu(NavigationMenu, TeamOverviewMenu):
     usedfor = ITeam
     facet = 'overview'
     title = 'Action object'
-    links = ('edit', 'branding', 'common_edithomepage',
-            'editemailaddresses', 'editlanguages', 'editwikinames',
-            'editircnicknames', 'editjabberids', 'editpassword',
-            'editsshkeys', 'editpgpkeys', 'editlocation',
-            'reassign', 'review', 'administer')
+    links = ('branding', 'common_edithomepage',
+             'editlanguages', 'reassign', 'editemail')
 
 
 classImplements(TeamEditView, ITeamEditMenu)
