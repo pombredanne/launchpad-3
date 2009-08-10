@@ -59,7 +59,7 @@
       </div>
 
       <tal:has-external-links condition="view/has_external_links">
-        <ul>
+        <ul id="external-links">
           <li tal:condition="view/should_display_homepage">
             <a id="homepageurl-link"
                class="sprite external-link"
