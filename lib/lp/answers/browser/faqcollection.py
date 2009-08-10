@@ -46,7 +46,8 @@ class FAQCollectionMenu(ApplicationMenu):
     def create_faq(self):
         """Return a Link to create a new FAQ."""
         collection = IFAQCollection(self.context)
-        url = canonical_url(collection, rootsite='answers') + '/+createfaq'
+        url = canonical_url(
+            collection, view_name='+createfaq', rootsite='answers')
         return Link(url, 'Create a new FAQ', icon='add')
 
 
