@@ -292,3 +292,133 @@ Private membership teams cannot.
     PrivatePersonLinkageError: Cannot link person
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <...StructuralSubscription at...
+
+
+Project Roles
+=============
+
+Registrant
+----------
+
+Only a person can register a project, not a team, so no team, public
+or private, can be the project registrant.
+
+    >>> login_person(admin_user)
+    >>> public_team = factory.makeTeam(name='public-team',
+    ...     owner=team_owner,
+    ...     visibility=PersonVisibility.PUBLIC)
+    >>> product = factory.makeProduct(registrant=team_owner)
+    >>> product = factory.makeProduct(registrant=public_team)
+    >>> product = factory.makeProduct(registrant=priv_team)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-team, visibility=PRIVATE) to
+    <Product at...
+
+    >>> product = factory.makeProduct(registrant=pm_team)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <Product at...
+
+Maintainer/Owner
+----------------
+
+A public team can be a project owner but neither flavor of private team may.
+
+    >>> product = factory.makeProduct(owner=public_team)
+    >>> product = factory.makeProduct(owner=priv_team)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-team, visibility=PRIVATE) to
+    <Product at...
+
+    >>> product = factory.makeProduct(owner=pm_team)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <Product at...
+
+
+Driver
+------
+
+A public team can be a project driver but neither flavor of private team may.
+
+    >>> product = factory.makeProduct()
+    >>> product.driver = priv_team
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-team, visibility=PRIVATE) to
+    <Product at...
+
+    >>> product.driver = pm_team
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <Product at...
+
+
+Bug Supervisor
+--------------
+
+Public and private teams may be a project's bug supervisor but a
+private membership team may not.
+
+    >>> product = factory.makeProduct()
+    >>> product.setBugSupervisor(public_team, admin_user)
+    >>> product.setBugSupervisor(priv_team, admin_user)
+    >>> product.setBugSupervisor(pm_team, admin_user)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <Product at...
+
+
+Team Membership
+===============
+
+Mixing public and private teams can create interesting situations.
+Not every type of team can become a member of other types.
+
+    >>> from lp.registry.interfaces.person import PrivatePersonLinkageError
+    >>> reviewer = factory.makePerson()
+    >>> def join_team(joined_type, joiner_type):
+    ...     joined = factory.makeTeam(owner=team_owner, visibility=joined_type)
+    ...     joiner = factory.makeTeam(owner=team_owner, visibility=joiner_type)
+    ...     print "%s <- %s: " % (joined_type, joiner_type),
+    ...     try:
+    ...         joined.addMember(joiner, reviewer=reviewer)
+    ...     except PrivatePersonLinkageError:
+    ...         print "Not Allowed"
+    ...     else:
+    ...         print "Allowed"
+
+    >>> public = PersonVisibility.PUBLIC
+    >>> private = PersonVisibility.PRIVATE
+    >>> private_membership = PersonVisibility.PRIVATE_MEMBERSHIP
+
+    >>> visibility_list = [public, private, private_membership]
+    >>> for joined in PersonVisibility.items:
+    ...     for joiner in PersonVisibility.items:
+    ...         join_team(joined, joiner)
+    ...     print "---"
+    Public <- Public:  Allowed
+    Public <- Private Membership:  Not Allowed
+    Public <- Private:  Not Allowed
+    ---
+    Private Membership <- Public:  Allowed
+    Private Membership <- Private Membership:  Not Allowed
+    Private Membership <- Private:  Not Allowed
+    ---
+    Private <- Public:  Allowed
+    Private <- Private Membership:  Not Allowed
+    Private <- Private:  Not Allowed
+    ---
