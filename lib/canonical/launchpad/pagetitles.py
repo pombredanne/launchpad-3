@@ -1146,8 +1146,6 @@ productseries_index = ContextTitle('%s')
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 
-productseries_review = ContextTitle('Review %s')
-
 productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_upload = 'Request new translations upload'

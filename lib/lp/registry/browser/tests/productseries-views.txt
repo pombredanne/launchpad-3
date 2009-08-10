@@ -98,6 +98,43 @@ The view provides a cancel_url and a next_url.
     http://launchpad.dev/app/simple
 
 
+Administer Productseries
+------------------------
+
+The productseries +review view allows an admin to administer the name and
+parent project.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login('admin@canonical.com')
+    >>> view = create_initialized_view(series, '+review')
+    >>> check_permission('launchpad.Admin', view)
+    True
+
+    >>> view.field_names
+    ['product', 'name']
+
+The view provides a label and page_title.
+
+    >>> print view.label
+    Administer App series simple
+
+    >>> print view.page_title
+    Administer App series simple
+
+The view provides a cancel_url and a next_url.
+
+    >>> print view.cancel_url
+    http://launchpad.dev/app/simple
+
+Users without edit permission cannot access the view.
+
+    >>> login_person(a_user)
+    >>> view = create_view(series, name='+review')
+    >>> check_permission('launchpad.Admin', view)
+    False
+
+
 Delete ProductSeries
 --------------------
 
