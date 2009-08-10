@@ -111,13 +111,13 @@ The Translations administrators also receive an email about the error.
     POFiles with incorrect statistics: 1
     Total POFiles checked: ...
     <BLANKLINE>
-    See the pofile-stats log for detailed information.
+    See the log file for detailed information.
 
 == Verify recently touched POFiles runs ==
 
 A separate script is used to verify statistics on POFiles that have
 been modified in the last week (or whatever number of days is configured
-in rosetta_pofile_stats_daily.days_considered_recent parameter).
+in rosetta_pofile_stats.days_considered_recent parameter).
 
     >>> from lp.translations.scripts.verify_pofile_stats import (
     ...     VerifyRecentPOFileStatsProcess)
@@ -130,7 +130,7 @@ In default configuration, we are looking for files modified in the last
 
     >>> from canonical.config import config
     >>> pofile_age = int(
-    ...     config.rosetta_pofile_stats_daily.days_considered_recent)
+    ...     config.rosetta_pofile_stats.days_considered_recent)
     >>> pofile_age
     7
 

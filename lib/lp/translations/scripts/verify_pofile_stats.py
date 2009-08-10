@@ -104,7 +104,7 @@ class QuickVerifier(Verifier):
     def __init__(self, transaction, logger, start_at_id=0):
         super(QuickVerifier, self).__init__(transaction, logger, start_at_id)
         days_considered_recent = int(
-            config.rosetta_pofile_stats_daily.days_considered_recent)
+            config.rosetta_pofile_stats.days_considered_recent)
         cutoff_time = (
             datetime.now(pytz.UTC) - timedelta(days_considered_recent))
         self.touched_pofiles = self.pofileset.getPOFilesTouchedSince(
@@ -139,22 +139,19 @@ class VerifyPOFileStatsProcess:
         # acquired only at the very end of the iteration, we can afford to
         # make relatively long, low-overhead iterations without disrupting
         # application response times.
-        DBLoopTuner(loop, 4).run()
+        iteration_duration = (
+            config.rosetta_pofile_stats.looptuner_iteration_duration)
+        DBLoopTuner(loop, iteration_duration).run()
 
         if loop.total_incorrect > 0 or loop.total_exceptions > 0:
             # Not all statistics were correct, or there were failures while
             # checking them.  Email the admins.
-            message = (
-                "The POFile statistics verifier encountered errors while "
-                "checking cached statistics in the database:\n"
-                "\n"
-                "Exceptions: %d\n"
-                "POFiles with incorrect statistics: %d\n"
-                "Total POFiles checked: %d\n"
-                "\n"
-                "See the pofile-stats log for detailed information.\n"
-                % (loop.total_exceptions, loop.total_incorrect,
-                    loop.total_checked))
+            template = helpers.get_email_template(
+                'pofile-stats.txt', 'translations')
+            message = template % {
+                'exceptions' : loop.total_exceptions,
+                'errors' : loop.total_incorrect,
+                'total' : loop.total_checked}
             simple_sendmail(
                 from_addr=config.rosetta.admin_email,
                 to_addrs=[config.rosetta.admin_email],
@@ -177,9 +174,11 @@ class VerifyRecentPOFileStatsProcess:
     def run(self):
         self.logger.info(
             "Verifying stats of POFiles updated in the last %s days." % (
-                config.rosetta_pofile_stats_daily.days_considered_recent))
+                config.rosetta_pofile_stats.days_considered_recent))
         loop = QuickVerifier(self.transaction, self.logger)
-        DBLoopTuner(loop, 4).run()
+        iteration_duration = (
+            config.rosetta_pofile_stats.looptuner_iteration_duration)
+        DBLoopTuner(loop, iteration_duration).run()
 
         if loop.total_incorrect > 0 or loop.total_exceptions > 0:
             # Not all statistics were correct, or there were failures while
