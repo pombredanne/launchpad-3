@@ -53,6 +53,9 @@ python2.4 foaf-update-karma-cache.py -q
 echo == Updating cached statistics `date` ==
 python2.4 update-stats.py -q
 
+echo == Updating cached POFile statistics `date` ==
+python2.4 rosetta-pofile-stats-daily.py -q
+
 echo == Expiring questions `date` ==
 python2.4 expire-questions.py
 

@@ -93,7 +93,7 @@ class Verifier:
         new_stats = pofile.updateStatistics()
         if new_stats != old_stats:
             self.total_incorrect += 1
-            self.logger.warning(
+            self.logger.info(
                 "POFile %d: cached stats were %s, recomputed as %s"
                 % (pofile.id, str(old_stats), str(new_stats)))
 
