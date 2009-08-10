@@ -103,8 +103,12 @@ class QuickVerifier(Verifier):
 
     def __init__(self, transaction, logger, start_at_id=0):
         super(QuickVerifier, self).__init__(transaction, logger, start_at_id)
-        week_ago = datetime.now(pytz.UTC) - timedelta(7)
-        self.touched_pofiles = self.pofileset.getPOFilesTouchedSince(week_ago)
+        days_considered_recent = int(
+            config.rosetta_pofile_stats_daily.days_considered_recent)
+        cutoff_time = (
+            datetime.now(pytz.UTC) - timedelta(days_considered_recent))
+        self.touched_pofiles = self.pofileset.getPOFilesTouchedSince(
+            cutoff_time)
         self.logger.info(
             "Verifying a total of %d POFiles." % self.touched_pofiles.count())
 
@@ -172,7 +176,8 @@ class VerifyRecentPOFileStatsProcess:
 
     def run(self):
         self.logger.info(
-            "Verifying stats of POFiles updated in the last week.")
+            "Verifying stats of POFiles updated in the last %s days." % (
+                config.rosetta_pofile_stats_daily.days_considered_recent))
         loop = QuickVerifier(self.transaction, self.logger)
         DBLoopTuner(loop, 4).run()
 

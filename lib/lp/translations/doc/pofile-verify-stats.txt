@@ -116,7 +116,8 @@ The Translations administrators also receive an email about the error.
 == Verify recently touched POFiles runs ==
 
 A separate script is used to verify statistics on POFiles that have
-been modified in the last week.
+been modified in the last week (or whatever number of days is configured
+in rosetta_pofile_stats_daily.days_considered_recent parameter).
 
     >>> from lp.translations.scripts.verify_pofile_stats import (
     ...     VerifyRecentPOFileStatsProcess)
@@ -124,11 +125,20 @@ been modified in the last week.
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
 
+In default configuration, we are looking for files modified in the last
+7 days.
+
+    >>> from canonical.config import config
+    >>> pofile_age = int(
+    ...     config.rosetta_pofile_stats_daily.days_considered_recent)
+    >>> pofile_age
+    7
+
 We add two POFiles with incorrect statistics, with one of them last
 modified 8 days ago, and another recently modified.
 
     >>> now = datetime.now(pytz.UTC)
-    >>> more_than_a_week_ago = now - timedelta(8)
+    >>> more_than_a_week_ago = now - timedelta(pofile_age + 1)
     >>> pofile_recent = removeSecurityProxy(factory.makePOFile('sr'))
     >>> pofile_recent.rosettacount = 9
     >>> pofile_old = removeSecurityProxy(factory.makePOFile('sr'))
@@ -140,7 +150,7 @@ which was modified in the last week.
 
     >>> verifier = VerifyRecentPOFileStatsProcess(transaction, logger)
     >>> verifier.run()
-    INFO Verifying stats of POFiles updated in the last week.
+    INFO Verifying stats of POFiles updated in the last 7 days.
     INFO Verifying a total of 1 POFiles.
     INFO POFile ...:
     cached stats were (0, 0, 9, 0), recomputed as (0, 0, 0, 0)
@@ -167,7 +177,7 @@ all fixed already.
     0
     >>> print err
     INFO    creating lockfile
-    INFO    Verifying stats of POFiles updated in the last week.
+    INFO    Verifying stats of POFiles updated in the last ... days.
     INFO    Verifying a total of 1 POFiles.
     INFO    Done.
 
