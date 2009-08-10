@@ -810,7 +810,7 @@ not create series.
     >>> ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
-    ...     parent_series=warty, owner=ubuntu_driver)
+    ...     parent_series=warty, owner=ubuntu.driver)
     Traceback (most recent call last):
      ...
     Unauthorized: ...
