@@ -1143,8 +1143,6 @@ productseries_link_translations_branch = ContextTitle(
 
 productseries_index = ContextTitle('%s')
 
-productseries_delete = ContextTitle('Delete %s')
-
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 

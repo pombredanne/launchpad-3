@@ -509,6 +509,11 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         return 'Delete %s series %s' % (
             self.context.product.displayname, self.context.name)
 
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
     @cachedproperty
     def milestones(self):
         """A list of all the series `IMilestone`s."""

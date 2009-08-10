@@ -110,9 +110,12 @@ The project owner can access the view.
     >>> check_permission('launchpad.Edit', view)
     True
 
-The delete view has a label to explain what it does.
+The delete view has a label and page_title to explain what it does.
 
     >>> print view.label
+    Delete Field series rabbit
+
+    >>> print view.page_title
     Delete Field series rabbit
 
 The view has a a next_url to the product used when the delete is successful,
