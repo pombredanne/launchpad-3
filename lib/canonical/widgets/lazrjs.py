@@ -215,6 +215,7 @@ class TextAreaEditorWidget(TextLineEditorWidget):
                       for (i=0; i<dl_nodes.length; i++) {
                           var child = dl_nodes[i];
                           // Ignore text nodes when looking for the attribute.
+                          // 3 is the text nodeType.
                           if (child.nodeType != 3 &&
                               child.firstChild.textContent == attribute) {
                               var ptags = dl_nodes[i+2].childNodes;
