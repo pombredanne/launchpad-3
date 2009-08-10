@@ -1270,6 +1270,17 @@ class ProductAddSeriesView(LaunchpadFormView):
 
     series = None
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Register a new %s release series' % (
+            self.context.displayname)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
     def validate(self, data):
         """See `LaunchpadFormView`."""
         branch = data.get('branch')
