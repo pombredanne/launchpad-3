@@ -12,7 +12,7 @@ evolution.
     ... """)
     HTTP/1.1 200 Ok
     ...
-    <h1>Ubuntu packaging</h1>
+    <h1>Ubuntu source packaging</h1>
     ...
     <form method="POST"
     action="http://localhost/evolution/trunk/+ubuntupkg">
@@ -122,7 +122,7 @@ executable script into the page using an invalid source package name.
     >>> user_browser.open('http://launchpad.dev/bzr/trunk/')
     >>> user_browser.getLink('Link to Ubuntu package').click()
     >>> user_browser.title
-    'Ubuntu source package'
+    'Ubuntu source packaging'
 
     >>> user_browser.getControl(name='ubuntupkg').value = (
     ...     "bzr<script>window.alert('XSS')</script>")

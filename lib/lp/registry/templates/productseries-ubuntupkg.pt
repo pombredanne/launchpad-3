@@ -3,28 +3,15 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:rightportlets fill-slot="portlets_one">
-</metal:rightportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-packages" />
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1>Ubuntu packaging</h1>
-</metal:heading>
-
-
 <div metal:fill-slot="main">
+    <div class="top-portlet">
+    <h1 tal:content="view/page_title">Ubuntu packaging</h1>
 
     <p>
       This page is a quick way for you to link the
@@ -40,7 +27,9 @@
        You must log in to change the mapping from this project branch to its
        Ubuntu package.
     </p>
+    </div>
 
+    <div class="portlet">
       <form method="POST"
           tal:condition="request/lp:person"
           tal:attributes="action request/getURL">
@@ -61,22 +50,23 @@
           <div>
             <input type="text" name="ubuntupkg" size="30"
                  value="" tal:attributes="value view/curr_ubuntu_pkgname" />
+            <input type="submit" name="set_ubuntu_pkg" value="Update" />
           </div>
 
-            <div class="formHelp">
+            <p class="formHelp">
               Ensure both the series ("<span tal:replace="context/name">
               1.0</span>") and the Ubuntu package are exactly correct,
               so that bugs, patches and translations are correctly shared.
               Don&rsquo;t link "HEAD", "MAIN", or "TRUNK" to an Ubuntu
               package unless you are absolutely certain that the package is
               really based on the trunk of development.
-            </div>
-
-          <input type="submit" name="set_ubuntu_pkg" value="Update" />
+            </p>
         </div>
-    </form>
+      </form>
+    </div>
 
-    <tal:block condition="view/ubuntu_history">
+    <div class="portlet"
+      tal:condition="view/ubuntu_history">
       <h2>History of Ubuntu packages for this branch</h2>
 
       <table class="listing">
@@ -106,7 +96,7 @@
         </tbody>
       </table>
 
-    </tal:block>
+    </div>
 
 </div>
 

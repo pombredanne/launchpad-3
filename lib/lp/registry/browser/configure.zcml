@@ -1688,14 +1688,17 @@
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"/>
     </browser:pages>
+    <browser:page
+        name="+ubuntupkg"
+        facet="overview"
+        template="../templates/productseries-ubuntupkg.pt"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesUbuntuPackagingView"
+        permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
         permission="zope.Public">
-        <browser:page
-            name="+ubuntupkg"
-            facet="overview"
-            template="../templates/productseries-ubuntupkg.pt"/>
         <browser:page
             name="+status"
             facet="overview"

@@ -23,6 +23,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
+    'ProductSeriesUbuntuPackagingView',
     'ProductSeriesView',
     ]
 
@@ -469,6 +470,15 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         return (
             '%s/+milestone/{name}/+productseries-table-row' %
             canonical_url(self.context.product, path_only_if_possible=True))
+
+
+class ProductSeriesUbuntuPackagingView(ProductSeriesView):
+    """A view to show series package in Ubuntu."""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Ubuntu source packaging'
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
