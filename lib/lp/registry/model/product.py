@@ -899,7 +899,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # loops in ProductSet.createProduct()
         series = ProductSeries(productID=self.id, owner=owner, name=name,
                              summary=summary, branch=branch)
-        if owner != self.owner and owner in self.drivers:
+        if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
             # The user is a product driver, and should be the driver of this
             # series to make him the release manager.
             series.driver = owner
