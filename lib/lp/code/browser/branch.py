@@ -613,12 +613,14 @@ class BranchEditFormView(LaunchpadEditFormView):
         # changes to the owner and private, and we notify the listeners
         # explicitly below rather than the notification that would normally be
         # sent in updateContextFromData.
+        changed = False
         branch_before_modification = Snapshot(
             self.context, providing=providedBy(self.context))
         if 'owner' in data:
             new_owner = data.pop('owner')
             if new_owner != self.context.owner:
                 self.context.setOwner(new_owner, self.user)
+                changed = True
                 self.request.response.addNotification(
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
@@ -627,6 +629,7 @@ class BranchEditFormView(LaunchpadEditFormView):
             if private != self.context.private:
                 # We only want to show notifications if it actually changed.
                 self.context.setPrivate(private)
+                changed = True
                 if private:
                     self.request.response.addNotification(
                         "The branch is now private, and only visible to the "
@@ -634,7 +637,20 @@ class BranchEditFormView(LaunchpadEditFormView):
                 else:
                     self.request.response.addNotification(
                         "The branch is now publicly accessible.")
+        if 'reviewer' in data:
+            reviewer = data['reviewer']
+            if reviewer != self.context.code_reviewer:
+                if reviewer == self.context.owner:
+                    # Clear the reviewer if set to the same as the owner.
+                    self.context.reviewer = None
+                else:
+                    self.context.reviewer = reviewer
+                changed = True
+
         if self.updateContextFromData(data, notify_modified=False):
+            changed = True
+
+        if changed:
             # Notify the object has changed with the snapshot that was taken
             # earler.
             field_names = [
@@ -907,22 +923,6 @@ class BranchReviewerEditView(BranchEditFormView):
     @property
     def initial_values(self):
         return {'reviewer': self.context.code_reviewer}
-
-    @action('Save', name='save')
-    def save_action(self, action, data):
-        """Save the values."""
-        reviewer = data['reviewer']
-        if reviewer == self.context.code_reviewer:
-            # No change, so don't update last modified.
-            return
-
-        if reviewer == self.context.owner:
-            # Clear the reviewer if set to the same as the owner.
-            self.context.reviewer = None
-        else:
-            self.context.reviewer = reviewer
-
-        self.context.date_last_modified = UTC_NOW
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
