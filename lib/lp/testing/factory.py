@@ -752,16 +752,19 @@ class LaunchpadObjectFactory(ObjectFactory):
                                 product=None, review_diff=None,
                                 initial_comment=None, source_branch=None):
         """Create a proposal to merge based on anonymous branches."""
-        if product is not None:
-            target = IBranchTarget(product)
-        elif target_branch is not None:
+        if target_branch is not None:
             target = target_branch.target
         elif source_branch is not None:
             target = source_branch.target
         elif dependent_branch is not None:
             target = dependent_branch.target
         else:
-            target = IBranchTarget(self.makeProduct())
+            # Create a target product branch, and use that target.  This is
+            # needed to make sure we get a branch target that has the needed
+            # security proxy.
+            target_branch = self.makeProductBranch(product)
+            target = target_branch.target
+
         if target_branch is None:
             target_branch = self.makeBranchTargetBranch(target)
         if source_branch is None:
