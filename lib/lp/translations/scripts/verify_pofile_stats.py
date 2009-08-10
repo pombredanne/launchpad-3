@@ -106,7 +106,7 @@ class QuickVerifier(Verifier):
         week_ago = datetime.now(pytz.UTC) - timedelta(7)
         self.touched_pofiles = self.pofileset.getPOFilesTouchedSince(week_ago)
         self.logger.info(
-            "Verifying a total of %d POFiles" % self.touched_pofiles.count())
+            "Verifying a total of %d POFiles." % self.touched_pofiles.count())
 
     def getPOFilesBatch(self, chunk_size):
         """Return a batch of POFiles to work with."""
@@ -171,8 +171,8 @@ class VerifyRecentPOFileStatsProcess:
             self.logger = logging.getLogger("pofile-stats-daily")
 
     def run(self):
-        self.logger.info("Starting quick verification of POFile stats for "
-                         "files updated in the last week.")
+        self.logger.info(
+            "Verifying stats of POFiles updated in the last week.")
         loop = QuickVerifier(self.transaction, self.logger)
         DBLoopTuner(loop, 4).run()
 
