@@ -167,7 +167,6 @@
         </ul>
       </div>
       <tal:portlet tal:replace="structure context/@@+portlet-latestannouncements" />
-      <tal:portlet tal:replace="structure context/@@+portlet-milestones" />
     </tal:side>
 
   </body>

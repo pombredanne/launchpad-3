@@ -178,12 +178,13 @@ class ProjectOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change maintainer'
-        return Link('+reassign', text, icon='edit')
+        summary = 'Change the maintainer of this project group'
+        return Link('+reassign', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
-        summary = 'Someone with permission to set goals for all projects'
+        summary = 'Appoint the driver of this project group'
         return Link('+driver', text, summary, icon='edit')
 
     def top_contributors(self):
