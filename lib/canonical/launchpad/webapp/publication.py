@@ -1,4 +1,5 @@
-# (c) Canonical Ltd. 2004-2006, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -474,6 +475,14 @@ class LaunchpadBrowserPublication(
             # the publication, so there's nothing we need to do here.
             pass
 
+        # Log a soft OOPS for DisconnectionErrors and
+        # TransactionRollbackErrors, as per Bug #373837. We need to do
+        # this before we re-raise the excaptionsas a Retry.
+        if isinstance(
+            exc_info[1],
+            (DisconnectionError, TransactionRollbackError)):
+            getUtility(IErrorReportingUtility).raising(exc_info, request)
+
         def should_retry(exc_info):
             if not retry_allowed:
                 return False
@@ -508,7 +517,7 @@ class LaunchpadBrowserPublication(
 
             return False
 
-        # Reraise Retry exceptions ourselves rather than invoke
+        # Re-raise Retry exceptions ourselves rather than invoke
         # our superclass handleException method, as it will log OOPS
         # reports etc. This would be incorrect, as transaction retry
         # is a normal part of operation.

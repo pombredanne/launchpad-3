@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -168,6 +169,8 @@ branch_add = 'Register a branch'
 
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
+
+branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
 branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
 
@@ -1545,6 +1548,8 @@ translationgroup_edit = ContextTitle(smartquote(
 
 translationgroup_reassignment = ContextTitle(smartquote(
     'Change the owner of "%s" translation group'))
+
+reviewrequest_reassign = 'Reassign review request'
 
 translationgroups_index = 'Launchpad translation groups'
 

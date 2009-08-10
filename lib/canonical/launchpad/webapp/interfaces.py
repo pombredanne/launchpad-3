@@ -1,4 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -290,54 +292,6 @@ class NoCanonicalUrl(TypeError):
         TypeError.__init__(self, 'No url for %r because %r broke the chain.' %
             (object_url_requested_for, broken_link_in_chain)
             )
-
-#
-# DBSchema
-#
-
-
-# XXX kiko 2007-02-08: this is currently unused. We need somebody to come
-# in and set up interfaces for the enums.
-class IDBSchema(Interface):
-    """A DBSchema enumeration."""
-
-    name = Attribute("Lower-cased-spaces-inserted class name of this schema.")
-
-    title = Attribute("Title of this schema.")
-
-    description = Attribute("Description of this schema.")
-
-    items = Attribute("A mapping of [name or value] -> dbschema item.")
-
-
-class IDBSchemaItem(Interface):
-    """An Item in a DBSchema enumeration."""
-
-    value = Attribute("Integer value of this enum item.")
-
-    name = Attribute("Symbolic name of this item.")
-
-    title = Attribute("Title text of this item.")
-
-    description = Attribute("Description text of this item.")
-
-    def __sqlrepr__(dbname):
-        """Return an SQL representation of this item.
-
-        The dbname attribute is required as part of the sqlobject
-        interface, but it not used in this case.
-        """
-
-    def __eq__(other):
-        """An item is equal if it is from the same DBSchema and has the same
-        value.
-        """
-
-    def __ne__(other):
-        """not __eq__"""
-
-    def __hash__():
-        """Returns a hash value."""
 
 # XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
 # generic thing. The problem lies in the fact that half of this (user, login,

@@ -1,6 +1,10 @@
 #!/usr/bin/python2.4
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
+
 """Archive Cruft checker.
 
 A kind of archive garbage collector, supersede NBS binaries (not build

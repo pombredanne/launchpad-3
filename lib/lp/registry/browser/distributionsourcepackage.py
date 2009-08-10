@@ -1,4 +1,5 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -31,9 +32,8 @@ from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.answers.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, Link, StandardLaunchpadFacets, action, canonical_url,
-    redirection)
+    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, Link,
+    Navigation, StandardLaunchpadFacets, action, canonical_url, redirection)
 from canonical.launchpad.webapp.menu import enabled_with_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
@@ -88,12 +88,15 @@ class DistributionSourcePackageBugsMenu(
         return Link('+filebug', text, icon='bug')
 
 
-class DistributionSourcePackageNavigation(GetitemNavigation,
+class DistributionSourcePackageNavigation(Navigation,
     BugTargetTraversalMixin, QuestionTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage
 
     redirection("+editbugcontact", "+subscribe")
+
+    def traverse(self, name):
+        return self.context.getVersion(name)
 
 
 class DecoratedDistributionSourcePackageRelease:

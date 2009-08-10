@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
 
@@ -12,9 +13,11 @@ from storm.expr import Asc, Desc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.systemdocs import create_initialized_view
 from lp.code.browser.branchlisting import (
-    BranchListingSort, BranchListingView,
-    GroupedDistributionSourcePackageBranchesView, SourcePackageBranchesView)
+    BranchListingBatchNavigator, BranchListingSort, BranchListingView,
+    GroupedDistributionSourcePackageBranchesView, PersonOwnedBranchesView,
+    SourcePackageBranchesView)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.code.model.branch import Branch
@@ -83,6 +86,83 @@ class TestListingToSortOrder(TestCase):
         self.assertSortsEqual(
             [Asc(Branch.date_created)] + self.DEFAULT_BRANCH_LISTING_SORT,
             registrant_order)
+
+
+class TestPersonOwnedBranchesView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.barney = self.factory.makePerson(name='barney')
+        self.bambam = self.factory.makeProduct(name='bambam')
+
+        time_gen = time_counter(delta=timedelta(days=-1))
+        self.branches = [
+            self.factory.makeProductBranch(
+                product=self.bambam, owner=self.barney,
+                date_created=time_gen.next())
+            for i in range(5)]
+        self.bug = self.factory.makeBug()
+        self.bug.linkBranch(self.branches[0], self.barney)
+        self.spec = self.factory.makeSpecification()
+        self.spec.linkBranch(self.branches[1], self.barney)
+
+    def test_branch_sparks(self):
+        # branch_sparks should return a simplejson list for the branches with
+        # the value being [id, url]
+        branch_sparks = ('['
+        '["b-1", "http://code.launchpad.dev/~barney/bambam/branch9/+spark"], '
+        '["b-2", "http://code.launchpad.dev/~barney/bambam/branch10/+spark"], '
+        '["b-3", "http://code.launchpad.dev/~barney/bambam/branch11/+spark"], '
+        '["b-4", "http://code.launchpad.dev/~barney/bambam/branch12/+spark"], '
+        '["b-5", "http://code.launchpad.dev/~barney/bambam/branch13/+spark"]'
+        ']')
+
+        view = create_initialized_view(self.barney, name="+branches")
+        self.assertEqual(view.branches().branch_sparks, branch_sparks)
+
+    def test_branch_ids_with_bug_links(self):
+        # _branches_for_current_batch should return a list of all branches in
+        # the current batch.
+        branch_ids = set([self.branches[0].id])
+
+        view = create_initialized_view(self.barney, name="+branches")
+        self.assertEqual(
+            view.branches().branch_ids_with_bug_links,
+            branch_ids)
+
+    def test_branch_ids_with_spec_links(self):
+        # _branches_for_current_batch should return a list of all branches in
+        # the current batch.
+        branch_ids = set([self.branches[1].id])
+
+        view = create_initialized_view(self.barney, name="+branches")
+        self.assertEqual(
+            view.branches().branch_ids_with_spec_links,
+            branch_ids)
+
+    def test_branch_ids_with_merge_propoasls(self):
+        # _branches_for_current_batch should return a list of all branches in
+        # the current batch.
+        branch_ids = set([])
+        view = create_initialized_view(self.barney, name="+branches")
+        self.assertEqual(
+            view.branches().branch_ids_with_merge_proposals,
+            branch_ids)
+
+    def test_tip_revisions(self):
+        # _branches_for_current_batch should return a list of all branches in
+        # the current batch.
+        branch_ids = [branch.id for branch in self.branches]
+        tip_revisions = {}
+        for branch_id in branch_ids:
+            tip_revisions[branch_id] = None
+
+        view = create_initialized_view(self.barney, name="+branches")
+        self.assertEqual(
+            view.branches().tip_revisions,
+            tip_revisions)
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):

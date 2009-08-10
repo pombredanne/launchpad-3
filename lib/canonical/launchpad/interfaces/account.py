@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 """Account interfaces."""
 
@@ -17,7 +19,7 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
@@ -220,13 +222,6 @@ class IAccountPublic(Interface):
         readonly=True, required=False,
         value_type=Reference(schema=Interface))
 
-    def getUnvalidatedEmails():
-        """Get a list of the unvalidated email addresses for this account.
-
-        An unvalidated email address is one which the user has tried
-        to add to their account but has not yet replied to the
-        corresponding confirmation email."""
-
     def setPreferredEmail(email):
         """Set the given email address as this account's preferred one.
 
@@ -273,14 +268,6 @@ class IAccountPrivate(Interface):
 
     password = PasswordField(
         title=_("Password."), readonly=False, required=True)
-
-    recently_authenticated_rps = List(
-        title=_("Most recently authenticated relying parties."),
-        description=_(
-            "A list of up to 10 `IOpenIDRPSummary` objects representing the "
-            "OpenID Relying Parties in which this account authenticated "
-            "most recently."),
-        readonly=False, required=True)
 
     def createPerson(self, rationale):
         """Create and return a new `IPerson` associated with this account."""

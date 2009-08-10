@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -10,6 +11,7 @@ import os.path
 
 from zope.component import getUtility
 
+from canonical.launchpad.validators.name import sanitize_name
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
@@ -118,7 +120,7 @@ class TranslationBranchApprover(object):
     @staticmethod
     def makeName(domain):
         """Make a template name from a translation domain."""
-        return domain.replace('_', '-')
+        return sanitize_name(domain.replace('_', '-').lower())
 
     @staticmethod
     def makeNameFromPath(path):

@@ -14,9 +14,10 @@
       <h1>Ubuntu Codes of Conduct</h1>
     </metal:heading>
 
-<div metal:fill-slot="main" tal:define="user request/lp:person;
-                                        is_ubuntero user/is_ubuntero|nothing;
-                                        gpgkeys user/gpgkeys|nothing">
+<div metal:fill-slot="main"
+     tal:define="user request/lp:person;
+                 is_ubuntu_coc_signer user/is_ubuntu_coc_signer|nothing;
+                 gpgkeys user/gpgkeys|nothing">
 
       <ul>
         <li>Current version: <a tal:attributes="href
@@ -26,14 +27,12 @@
           tal:replace="context/current_code_of_conduct/datereleased" /></li>
       </ul>
 
-      <div tal:condition="not: is_ubuntero">
+      <div tal:condition="not: is_ubuntu_coc_signer">
 
-        <h2>Become an Ubuntero</h2>
+        <h2>Sign the Ubuntu Code of Conduct</h2>
 
-        An Ubuntero is a person in the Ubuntu community who has
-        committed to observe the Ubuntu Code of Conduct.  Ubunteros are
-        self nominated, and you can become one by signing the code of
-        conduct online:
+        Ubuntu community members may commit to observing the Ubuntu Code of
+        Conduct by signing it online:
 
         <ol style="margin-left: 4em">
             <li>
@@ -67,8 +66,8 @@
         </ol>
       </div>
 
-      <div tal:condition="is_ubuntero">
-        Congratulations; you are already an Ubuntero, having <a tal:attributes="href
+      <div tal:condition="is_ubuntu_coc_signer">
+        Congratulations; you have already <a tal:attributes="href
         string:${user/fmt:url}/+codesofconduct">signed</a> the Ubuntu Code
         of Conduct.
 

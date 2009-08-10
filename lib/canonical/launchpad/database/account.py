@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for Account and associates."""
 
@@ -9,7 +10,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements
 
-from storm.expr import Desc
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -18,13 +18,10 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.signon.model.authtoken import AuthToken
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.signon.model.openidserver import OpenIDRPSummary
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddress, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
@@ -71,13 +68,6 @@ class Account(SQLBase):
     def guessed_emails(self):
         """See `IAccount`."""
         return self._getEmails(EmailAddressStatus.NEW)
-
-    def getUnvalidatedEmails(self):
-        """See `IAccount`."""
-        result = IMasterStore(AuthToken).find(
-            AuthToken, requester_account=self,
-            tokentype=LoginTokenType.VALIDATEEMAIL, date_consumed=None)
-        return sorted(set(result.values(AuthToken.email)))
 
     def setPreferredEmail(self, email):
         """See `IAccount`."""
@@ -136,13 +126,6 @@ class Account(SQLBase):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
-
-    @property
-    def recently_authenticated_rps(self):
-        """See `IAccount`."""
-        result = Store.of(self).find(OpenIDRPSummary, account=self)
-        result.order_by(Desc(OpenIDRPSummary.date_last_used))
-        return result.config(limit=10)
 
     def activate(self, comment, password, preferred_email):
         """See `IAccountSpecialRestricted`."""

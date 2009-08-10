@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """`SQLObject` implementation of `IPOTemplate` interface."""
@@ -22,7 +24,8 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, And, SQL
+from storm.expr import Alias, And, LeftJoin, SQL
+from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getAdapter, getUtility
 from zope.interface import implements
@@ -43,6 +46,9 @@ from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationimportqueue import (
     collect_import_info)
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem)
+from lp.translations.model.vpotexport import VPOTExport
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.translations.interfaces.pofile import IPOFileSet
@@ -65,7 +71,6 @@ from lp.translations.interfaces.translationimporter import (
     TranslationFormatSyntaxError)
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
-from lp.translations.interfaces.vpotexport import IVPOTExportSet
 from lp.translations.interfaces.potmsgset import BrokenTextError
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
@@ -571,7 +576,7 @@ class POTemplate(SQLBase, RosettaStats):
             # current POTemplate be returned first.
             orderBy=['(TranslationTemplateItem.POTemplate<>%s)' % (
                 sqlvalues(self))])[:2]
-        if result and len(list(result)) > 0:
+        if result.count() > 0:
             return result[0]
         else:
             return None
@@ -924,6 +929,28 @@ class POTemplate(SQLBase, RosettaStats):
         template = helpers.get_email_template(template_mail, 'translations')
         message = template % replacements
         return (subject, message)
+
+    def getTranslationRows(self):
+        """See `IPOTemplate`."""
+        Singular = ClassAlias(POMsgID)
+        Plural = ClassAlias(POMsgID)
+
+        SingularJoin = LeftJoin(
+            Singular, Singular.id == POTMsgSet.msgid_singularID)
+        PluralJoin = LeftJoin(Plural, Plural.id == POTMsgSet.msgid_pluralID)
+
+        source = Store.of(self).using(
+            TranslationTemplateItem, POTMsgSet, SingularJoin, PluralJoin)
+
+        rows = source.find(
+            (TranslationTemplateItem, POTMsgSet, Singular, Plural),
+            TranslationTemplateItem.potemplate == self,
+            POTMsgSet.id == TranslationTemplateItem.potmsgsetID)
+
+        rows = rows.order_by(TranslationTemplateItem.sequence)
+
+        for row in rows:
+            yield VPOTExport(self, *row)
 
 
 class POTemplateSubset:
@@ -1380,7 +1407,7 @@ class POTemplateToTranslationFileDataAdapter:
         # Get all rows related to this file. We do this to speed the export
         # process so we have a single DB query to fetch all needed
         # information.
-        rows = getUtility(IVPOTExportSet).get_potemplate_rows(potemplate)
+        rows = potemplate.getTranslationRows()
 
         messages = []
 

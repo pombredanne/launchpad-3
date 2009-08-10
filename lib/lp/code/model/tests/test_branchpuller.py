@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the branch puller model code."""
 
@@ -72,7 +73,6 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         self.assertEqual(
             [branch],
             list(self.branch_puller.getPullQueue(branch.branch_type)))
-        next_mirror_time = branch.next_mirror_time
         branch.mirrorComplete('rev1')
         self.assertEqual(
             [branch],
@@ -254,6 +254,16 @@ class AcquireBranchToPullTests:
         branch = self.factory.makeAnyBranch()
         branch.requestMirror()
         self.assertBranchIsAquired(branch)
+
+    def test_remote_branch_not_acquired(self):
+        # On a few occasions a branch type that is mirrored has been
+        # converted, with non-NULL next_mirror_time, to a remote branch, which
+        # is not mirrored.  These branches should not be returned.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch.requestMirror()
+        removeSecurityProxy(branch).branch_type = BranchType.REMOTE
+        self.assertNoBranchIsAquired()
+
 
     def test_private(self):
         # If there is a private branch that needs mirroring,

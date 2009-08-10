@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Tests for lp.registry.scripts.productreleasefinder.walker."""
 
 import StringIO
@@ -8,8 +11,11 @@ import urlparse
 from canonical.lazr.utils import safe_hasattr
 from canonical.testing import reset_logging
 
+from lp.testing import TestCase
 
-class WalkerBase_Logging(unittest.TestCase):
+
+class WalkerBase_Logging(TestCase):
+
     def testCreatesDefaultLogger(self):
         """WalkerBase creates a default logger."""
         from lp.registry.scripts.productreleasefinder.walker import (
@@ -28,7 +34,8 @@ class WalkerBase_Logging(unittest.TestCase):
         self.assertEquals(w.log.parent, parent)
 
 
-class WalkerBase_Base(unittest.TestCase):
+class WalkerBase_Base(TestCase):
+
     def testSetsBase(self):
         """WalkerBase sets the base property."""
         from lp.registry.scripts.productreleasefinder.walker import (
@@ -165,7 +172,7 @@ class WalkerBase_Base(unittest.TestCase):
             WalkerBase.FRAGMENTS = False
 
 
-class WalkerBase_walk(unittest.TestCase):
+class WalkerBase_walk(TestCase):
     """Test the walk() method."""
 
     def tearDown(self):
@@ -175,6 +182,7 @@ class WalkerBase_walk(unittest.TestCase):
         """Verify that a UnicodeEncodeError is logged."""
         from lp.registry.scripts.productreleasefinder.walker import (
             WalkerBase)
+
         class TestWalker(WalkerBase):
 
             def list(self, sub_dir):
@@ -190,6 +198,7 @@ class WalkerBase_walk(unittest.TestCase):
 
         log_output = StringIO.StringIO()
         logger = logging.getLogger()
+        self.addCleanup(logger.setLevel, logger.level)
         logger.setLevel(logging.DEBUG)
         logger.addHandler(logging.StreamHandler(log_output))
         walker = TestWalker('http://example.org/foo', logger)
@@ -200,7 +209,8 @@ class WalkerBase_walk(unittest.TestCase):
             log_output.getvalue())
 
 
-class FTPWalker_Base(unittest.TestCase):
+class FTPWalker_Base(TestCase):
+
     def testFtpScheme(self):
         """FTPWalker works when initialised with an ftp-scheme URL."""
         from lp.registry.scripts.productreleasefinder.walker import (
@@ -236,7 +246,8 @@ class FTPWalker_Base(unittest.TestCase):
         self.assertEquals(w.passwd, "")
 
 
-class HTTPWalker_Base(unittest.TestCase):
+class HTTPWalker_Base(TestCase):
+
     def testHttpScheme(self):
         """HTTPWalker works when initialised with an http-scheme URL."""
         from lp.registry.scripts.productreleasefinder.walker import (
@@ -265,10 +276,11 @@ class HTTPWalker_Base(unittest.TestCase):
         self.assertRaises(WalkerError, HTTPWalker, "foo://localhost/")
 
 
-class HTTPWalker_url_schemes_and_handlers(unittest.TestCase):
+class HTTPWalker_url_schemes_and_handlers(TestCase):
     """Verify there is a handler for each URL scheme."""
 
     def setUp(self):
+        TestCase.setUp(self)
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker)
         self.walker = HTTPWalker("http://localhost/")
@@ -295,16 +307,18 @@ class HTTPWalker_url_schemes_and_handlers(unittest.TestCase):
         self.verify_url_scheme_and_handler('ftp', urllib2.FTPHandler)
 
 
-class HTTPWalker_ListDir(unittest.TestCase):
+class HTTPWalker_ListDir(TestCase):
 
     def tearDown(self):
         reset_logging()
 
-    def setUpWalker(self, listing_url, listing_content): 
+    def setUpWalker(self, listing_url, listing_content):
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker)
         test = self
+
         class TestHTTPWalker(HTTPWalker):
+
             def request(self, method, path):
                 test.assertEqual(method, 'GET')
                 test.assertEqual(urlparse.urljoin(self.base, path),
@@ -327,12 +341,12 @@ class HTTPWalker_ListDir(unittest.TestCase):
  </head>
  <body>
 <h1>Index of /pub/GNOME/sources/gnome-gpg/0.5</h1>
-<pre><img src="/icons/blank.gif" alt="Icon " width="24" height="24"> <a href="?C=N;O=D">Name</a>                          <a href="?C=M;O=A">Last modified</a>      <a href="?C=S;O=A">Size</a>  <a href="?C=D;O=A">Description</a><hr><a href="/pub/GNOME/sources/gnome-gpg/"><img src="http://www.gnome.org/img/24x24/parent.png" alt="[DIR]" width="24" height="24"></a> <a href="/pub/GNOME/sources/gnome-gpg/">Parent Directory</a>                                   -   
+<pre><img src="/icons/blank.gif" alt="Icon " width="24" height="24"> <a href="?C=N;O=D">Name</a>                          <a href="?C=M;O=A">Last modified</a>      <a href="?C=S;O=A">Size</a>  <a href="?C=D;O=A">Description</a><hr><a href="/pub/GNOME/sources/gnome-gpg/"><img src="http://www.gnome.org/img/24x24/parent.png" alt="[DIR]" width="24" height="24"></a> <a href="/pub/GNOME/sources/gnome-gpg/">Parent Directory</a>                                   -
 
-<a href="LATEST-IS-0.5.0"><img src="http://www.gnome.org/img/24x24/default.png" alt="[   ]" width="24" height="24"></a> <a href="LATEST-IS-0.5.0">LATEST-IS-0.5.0</a>               02-Sep-2006 08:58   81K  
-<a href="gnome-gpg-0.5.0.md5sum"><img src="http://www.gnome.org/img/24x24/default.png" alt="[   ]" width="24" height="24"></a> <a href="gnome-gpg-0.5.0.md5sum">gnome-gpg-0.5.0.md5sum</a>        02-Sep-2006 08:58  115   
-<a href="gnome-gpg-0.5.0.tar.bz2"><img src="http://www.gnome.org/img/24x24/archive.png" alt="[   ]" width="24" height="24"></a> <a href="gnome-gpg-0.5.0.tar.bz2">gnome-gpg-0.5.0.tar.bz2</a>       02-Sep-2006 08:58   68K  
-<a href="gnome-gpg-0.5.0.tar.gz"><img src="http://www.gnome.org/img/24x24/archive.png" alt="[   ]" width="24" height="24"></a> <a href="gnome-gpg-0.5.0.tar.gz">gnome-gpg-0.5.0.tar.gz</a>        02-Sep-2006 08:58   81K  
+<a href="LATEST-IS-0.5.0"><img src="http://www.gnome.org/img/24x24/default.png" alt="[   ]" width="24" height="24"></a> <a href="LATEST-IS-0.5.0">LATEST-IS-0.5.0</a>               02-Sep-2006 08:58   81K
+<a href="gnome-gpg-0.5.0.md5sum"><img src="http://www.gnome.org/img/24x24/default.png" alt="[   ]" width="24" height="24"></a> <a href="gnome-gpg-0.5.0.md5sum">gnome-gpg-0.5.0.md5sum</a>        02-Sep-2006 08:58  115
+<a href="gnome-gpg-0.5.0.tar.bz2"><img src="http://www.gnome.org/img/24x24/archive.png" alt="[   ]" width="24" height="24"></a> <a href="gnome-gpg-0.5.0.tar.bz2">gnome-gpg-0.5.0.tar.bz2</a>       02-Sep-2006 08:58   68K
+<a href="gnome-gpg-0.5.0.tar.gz"><img src="http://www.gnome.org/img/24x24/archive.png" alt="[   ]" width="24" height="24"></a> <a href="gnome-gpg-0.5.0.tar.gz">gnome-gpg-0.5.0.tar.gz</a>        02-Sep-2006 08:58   81K
 <hr></pre>
 
 <address>Apache/2.2.3 (Unix) Server at <a href="mailto:ftp-adm@acc.umu.se">ftp.acc.umu.se</a> Port 80</address>
@@ -361,7 +375,7 @@ FTP Directory: ftp://ftp.gnome.org/pub/GNOME/sources/gnome-gpg/0.5/
 <H2>
 FTP Directory: <A HREF="/">ftp://ftp.gnome.org</A>/<A HREF="/pub/">pub</A>/<A HREF="/pub/GNOME/">GNOME</A>/<A HREF="/pub/GNOME/sources/">sources</A>/<A HREF="/pub/GNOME/sources/gnome-gpg/">gnome-gpg</A>/<A HREF="/pub/GNOME/sources/gnome-gpg/0.5/">0.5</A>/</H2>
 <PRE>
-<A HREF="../"><IMG border="0" SRC="http://squid:3128/squid-internal-static/icons/anthony-dirup.gif" ALT="[DIRUP]"></A> <A HREF="../">Parent Directory</A> 
+<A HREF="../"><IMG border="0" SRC="http://squid:3128/squid-internal-static/icons/anthony-dirup.gif" ALT="[DIRUP]"></A> <A HREF="../">Parent Directory</A>
 <A HREF="LATEST-IS-0.5.0"><IMG border="0" SRC="http://squid:3128/squid-internal-static/icons/anthony-link.gif" ALT="[LINK]"></A> <A HREF="LATEST-IS-0.5.0">LATEST-IS-0.5.0</A>. . . . . . . . . Sep 02 07:07         <A HREF="LATEST-IS-0.5.0;type=a"><IMG border="0" SRC="http://squid:3128/squid-internal-static/icons/anthony-text.gif" ALT="[VIEW]"></A> <A HREF="LATEST-IS-0.5.0;type=i"><IMG border="0" SRC="http://squid:3128/squid-internal-static/icons/anthony-box.gif" ALT="[DOWNLOAD]"></A> -> <A HREF="gnome-gpg-0.5.0.tar.gz">gnome-gpg-0.5.0.tar.gz</A>
 <A HREF="gnome-gpg-0.5.0.md5sum"><IMG border="0" SRC="http://squid:3128/squid-internal-static/icons/anthony-unknown.gif" ALT="[FILE]"></A> <A HREF="gnome-gpg-0.5.0.md5sum">gnome-gpg-0.5.0.md5sum</A> . . . . . Sep 02 06:58    115  <A HREF="gnome-gpg-0.5.0.md5sum;type=a"><IMG border="0" SRC="http://squid:3128/squid-internal-static/icons/anthony-text.gif" ALT="[VIEW]"></A> <A HREF="gnome-gpg-0.5.0.md5sum;type=i"><IMG border="0" SRC="http://squid:3128/squid-internal-static/icons/anthony-box.gif" ALT="[DOWNLOAD]"></A>
 <A HREF="gnome-gpg-0.5.0.tar.bz2"><IMG border="0" SRC="http://squid:3128/squid-internal-static/icons/anthony-compressed.gif" ALT="[FILE]"></A> <A HREF="gnome-gpg-0.5.0.tar.bz2">gnome-gpg-0.5.0.tar.bz2</A>. . . . . Sep 02 06:58     68K <A HREF="gnome-gpg-0.5.0.tar.bz2;type=i"><IMG border="0" SRC="http://squid:3128/squid-internal-static/icons/anthony-box.gif" ALT="[DOWNLOAD]"></A>
@@ -469,8 +483,8 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
         self.assertEqual(filenames, [])
 
 
-class HTTPWalker_IsDirectory(unittest.TestCase):
-    
+class HTTPWalker_IsDirectory(TestCase):
+
     def tearDown(self):
         reset_logging()
 
@@ -480,7 +494,9 @@ class HTTPWalker_IsDirectory(unittest.TestCase):
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker)
         test = self
+
         class TestHTTPWalker(HTTPWalker):
+
             def request(self, method, path):
                 test.fail('%s was requested with method %s' % (path, method))
 
@@ -491,7 +507,8 @@ class HTTPWalker_IsDirectory(unittest.TestCase):
         self.assertEqual(walker.isDirectory('/foo'), False)
 
 
-class Walker_CombineUrl(unittest.TestCase):
+class Walker_CombineUrl(TestCase):
+
     def testConstructsUrl(self):
         """combine_url constructs the URL correctly."""
         from lp.registry.scripts.productreleasefinder.walker import (

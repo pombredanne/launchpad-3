@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 """ArchivePermission interface."""
@@ -213,7 +215,7 @@ class IArchivePermissionSet(Interface):
             'person' is allowed to upload to.
         """
 
-    def packagesetsForSourceUploader(archive, sourcepackagename, person=None):
+    def packagesetsForSourceUploader(archive, sourcepackagename, person):
         """The package set based permissions for a given source and uploader.
 
         Return the `IArchivePermission` records that
@@ -233,6 +235,27 @@ class IArchivePermissionSet(Interface):
         :return: `ArchivePermission` records for the package sets that
             include the given source package name and to which the given
             person may upload.
+        """
+
+    def packagesetsForSource(
+        archive, sourcepackagename, direct_permissions=True):
+        """All package set based permissions for the given archive and source.
+
+        This method is meant to aid the process of "debugging" package set
+        based archive permission since It allows the listing of permissions
+        for the given source package irrespective of a person.
+
+        :param archive: The archive the permission applies to.
+        :param sourcepackagename: the source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param direct_permissions: If set, only package sets that directly
+            include the given source will be considered.
+
+        :raises SourceNotFound: if a source package with the given
+            name could not be found.
+        :return: `ArchivePermission` records for the package sets that
+            include the given source package name and apply to the
+            archive in question.
         """
 
     def isSourceUploadAllowed(archive, sourcepackagename, person):

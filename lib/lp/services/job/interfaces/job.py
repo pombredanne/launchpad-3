@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213,E0211
 
 """Interfaces including and related to IJob."""
@@ -12,7 +14,7 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, Text
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -94,3 +96,25 @@ class IJob(Interface):
 
     def queue():
         """Mark the job as queued for processing."""
+
+
+class IRunnableJob(IJob):
+    """Interface for jobs that can be run via the JobRunner."""
+
+    def notifyOops(oops):
+        """Notify interested parties that this job produced an OOPS.
+
+        :param oops: The oops produced by this Job.
+        """
+
+    user_error_types = Attribute(
+        'A tuple of exception classes which result from user error.')
+
+    def notifyUserError(e):
+        """Notify interested parties that this job encountered a user error.
+
+        :param e: The exception encountered by this job.
+        """
+
+    def run():
+        """Run this job."""

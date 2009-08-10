@@ -56,6 +56,23 @@ Can we access it via the webservice API as well?
     >>> print umbrella['self_link']
     http://api.launchpad.dev/beta/package-sets/umbrella
 
+`PackageSet`s can be looked up by name.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets', 'getByName', {}, name=u'umbrella')
+    >>> print response.jsonBody()['self_link']
+    http://api.launchpad.dev/beta/package-sets/umbrella
+
+When a `PackageSet` cannot be found, an error is returned.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets', 'getByName', {}, name=u'not-found')
+    >>> print response.getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
+    NoSuchPackageSet: No such packageset: 'not-found'.
+    <BLANKLINE>
+
 Populate the 'umbrella' package set with source packages.
 
     >>> from canonical.launchpad.webapp.interfaces import (
@@ -69,6 +86,25 @@ Populate the 'umbrella' package set with source packages.
     >>> print response.getOutput()
     HTTP/1.1 200 Ok
     ...
+
+Note that attempts to add or remove source package names that do not
+exist will not fail. Non-existing source package names are *ignored*.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/umbrella', 'addSources', {},
+    ...     names=[u'does-not-exist'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    null
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/umbrella', 'removeSources', {},
+    ...     names=[u'does-not-exist'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    null
 
 Let's see what we got.
 
@@ -235,6 +271,25 @@ set hierarchy:
     HTTP/1.1 200 Ok
     ...
 
+Similarly to 'addSources' and 'removeSources', adding or removing
+non-existing package sets will not fail.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/thunderbird', 'addSubsets', {},
+    ...     names=[u'does-not-exist'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    null
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/thunderbird', 'removeSubsets', {},
+    ...     names=[u'does-not-exist'])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    null
+
 The 'umbrella' package set should have plenty of subsets now.
 
     >>> response = webservice.named_get(
@@ -345,6 +400,17 @@ Which package sets include the 'mozilla-firefox' source package *directly*?
     http://api.launchpad.dev/beta/package-sets/firefox
     http://api.launchpad.dev/beta/package-sets/umbrella
 
+If a non-existing source package name is passed it returns an error.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/', 'setsIncludingSource', {},
+    ...     sourcepackagename=u'does-not-exist')
+    >>> print response.getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
+    No such source package: 'does-not-exist'.
+    ...
+
 What source packages are shared by the 'firefox' and the 'thunderbird'
 package sets?
 
@@ -376,3 +442,195 @@ How about the complement set i.e. the packages not shared?
     ...
     ["cnews", "thunderbird"]
 
+
+== Archive permissions and package sets ==
+
+Operating on package set based archive permissions is possible via
+the Launchpad API as well.
+
+The newPackagesetUploader() method is a factory function that adds a new
+permission for a person to upload source packages included in a given
+package set.
+
+    >>> distros = webservice.get("/distros").jsonBody()
+    >>> ubuntu = distros['entries'][0]
+
+Grant upload privileges to 'name12' for package set 'firefox' in the Ubuntu
+main archive.
+
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
+    ...     person=name12['self_link'],
+    ...     packageset='firefox')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+Let's see what we've got:
+
+    >>> from lazr.restful.testing.webservice import pprint_entry
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> pprint_entry(new_permission)
+    archive_link: u'http://.../+archive/primary'
+    component_name: None
+    date_created: ...
+    explicit: False
+    package_set_name: u'firefox'
+    permission: u'Archive Upload Rights'
+    person_link: u'http://.../~name12'
+    resource_type_link: ...
+    self_link: u'http://.../+archive/primary/+upload/name12?type=packageset&item=firefox'
+    source_package_name: None
+
+Grant upload privileges to 'name12' for package set 'mozilla' in the Ubuntu
+main archive.
+
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
+    ...     person=name12['self_link'],
+    ...     packageset='mozilla')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+The following query should only find the permission for the 'firefox'
+package set since we're disallowing the use of the package set hierarchy.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForPackageset', {},
+    ...     packageset='firefox')
+    >>> print_payload(response)
+    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
+
+Same query, this time allowing the use of the package set hierarchy, finds
+the permission for the 'mozilla' package set as well.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForPackageset', {},
+    ...     packageset='firefox', direct_permissions=False)
+    >>> print_payload(response)
+    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
+    http://.../+archive/primary/+upload/name12?type=packageset&item=mozilla
+
+Let's delete the upload privilege for the 'mozilla' package set.
+
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'deletePackagesetUploader', {},
+    ...     person=name12['self_link'],
+    ...     packageset='mozilla')
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+Since the privilege for the 'mozilla' package set was deleted the listing
+shows only the remaining permission for the 'firefox' package set.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForPackageset', {},
+    ...     packageset='firefox', direct_permissions=False)
+    >>> print_payload(response)
+    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
+
+Let's grant 'cprov' an upload permission to 'mozilla' and 'thunderbird'.
+
+    >>> cprov = webservice.get("/~cprov").jsonBody()
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
+    ...     person=cprov['self_link'],
+    ...     packageset='mozilla')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
+    ...     person=cprov['self_link'],
+    ...     packageset='thunderbird')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+We can view the package set based permissions granted to 'cprov' as follows:
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getPackagesetsForUploader', {},
+    ...     person=cprov['self_link'])
+    >>> print_payload(response)
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=thunderbird
+
+Let's check what package set based upload permissions 'cprov' has for the
+'mozilla-firefox' package.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getPackagesetsForSourceUploader',
+    ...     {}, sourcepackagename='thunderbird',
+    ...     person=cprov['self_link'])
+    >>> print_payload(response)
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=thunderbird
+
+As we expected 'cprov' may upload either via the 'thunderbird' package set
+that directly contains the source package in question or via the 'mozilla'
+package set that includes the 'thunderbird' set.
+
+How about the 'mozilla-firefox' source package? Is 'cprov' allowed uploads
+to it?
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getPackagesetsForSourceUploader',
+    ...     {}, sourcepackagename='mozilla-firefox',
+    ...     person=cprov['self_link'])
+    >>> print_payload(response)
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla
+
+Yes, and, again via the 'mozilla' package set.
+
+Sometimes we don't care about the details. We just want a yes/no answer to
+the question: "is person X allowed to upload package P?".
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'isSourceUploadAllowed',
+    ...     {}, sourcepackagename='mozilla-firefox',
+    ...     person=cprov['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+    true
+
+'name12' should not be allowed to upload the 'thunderbird' source package.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'isSourceUploadAllowed',
+    ...     {}, sourcepackagename='thunderbird',
+    ...     person=name12['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+    false
+
+Sometimes it's also interesting to see what package set based upload
+permissions apply to a source package irrespective of the principal.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getPackagesetsForSource',
+    ...     {}, sourcepackagename='mozilla-firefox')
+    >>> print_payload(response)
+    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
+
+The listing above only shows the *direct* upload permission granted to
+'name12' via the 'firefox' package set.
+
+We can ask the same question but this time include the indirect upload
+permissions arising from the package set hierarchy as well.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getPackagesetsForSource',
+    ...     {}, sourcepackagename='mozilla-firefox', direct_permissions=False)
+    >>> print_payload(response)
+    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla
+
+Now we see the upload permission granted to 'cprov' via the 'mozilla' package
+set listed as well.

@@ -1,4 +1,5 @@
--- Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- GNU Affero General Public License version 3 (see the file LICENSE).
 
 CREATE OR REPLACE FUNCTION assert_patch_applied(
     major integer, minor integer, patch integer) RETURNS boolean

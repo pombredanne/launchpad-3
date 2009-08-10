@@ -721,8 +721,7 @@ view property `should_show_ppa_section`.
 
 The property checks two things to decide whether to return True or not:
  * Return True if the current user has launchpad.Edit permission
- * Return True if the person has PPAs and the current user has launchpad.View
-   permission on any of them.
+ * Return True if the person has PPAs and at least one of them is public.
 
 Cprov is a user with a PPA:
 
@@ -736,6 +735,21 @@ Anonymous users (i.e. anyone) can see the section.
     True
 
 Cprov himself can see the section:
+
+    >>> login("celso.providelo@canonical.com")
+    >>> view = create_initialized_view(cprov, "+index")
+    >>> view.should_show_ppa_section
+    True
+
+If we disable Cprov's PPA, the section is still presented to anyone.
+
+    >>> login("admin@canonical.com")
+    >>> cprov.archive.enabled = False
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(cprov, "+index")
+    >>> view.should_show_ppa_section
+    True
 
     >>> login("celso.providelo@canonical.com")
     >>> view = create_initialized_view(cprov, "+index")
@@ -759,7 +773,9 @@ If we make the PPA private, only cprov will see the section.
     >>> view.should_show_ppa_section
     False
 
-For a user with no PPAs, nobody will see the section apart from himself.
+For a user with no PPAs, nobody will see the section apart from
+himself. This aspect allows him to access the 'Create a new PPA'
+link.
 
     >>> print sample_person.archive
     None

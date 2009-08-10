@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Packageset interfaces."""
@@ -8,22 +10,30 @@ __metaclass__ = type
 __all__ = [
     'IPackageset',
     'IPackagesetSet',
+    'NoSuchPackageSet',
     ]
 
 from zope.interface import Interface
 from zope.schema import Bool, Datetime, Int, List, TextLine
 
 from canonical.launchpad import _
-from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.validators.name import name_validator
-from lp.registry.interfaces.person import IPerson
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from lazr.restful.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_factory_operation,
     export_read_operation, export_write_operation, exported,
     operation_parameters, operation_returns_collection_of,
-    operation_returns_entry)
+    operation_returns_entry, webservice_error)
 from lazr.restful.fields import Reference
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IHasOwner
+
+
+class NoSuchPackageSet(NameLookupFailed):
+    """Raised when we try to look up an PackageSet that doesn't exist."""
+    webservice_error(400) #Bad request.
+    _message_prefix = "No such packageset"
 
 
 class IPackagesetViewOnly(IHasOwner):
@@ -229,7 +239,8 @@ class IPackagesetEdit(Interface):
 
         This method facilitates the addition of source package names to
         package sets via the LP web services API. It takes string names
-        as opposed to `ISourcePackageName` instances.
+        as opposed to `ISourcePackageName` instances. Non-existing source
+        package names will be ignored.
 
         :param names: an iterable with string source package names
         """

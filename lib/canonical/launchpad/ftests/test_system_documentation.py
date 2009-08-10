@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
@@ -270,6 +272,12 @@ special = {
             setUp=updateRemoteProductSetup,
             tearDown=updateRemoteProductTeardown,
             layer=LaunchpadZopelessLayer
+            ),
+    'canonical_url.txt': LayeredDocFileSuite(
+            '../doc/canonical_url.txt',
+            setUp=setUp,
+            tearDown=tearDown,
+            layer=FunctionalLayer,
             ),
     }
 

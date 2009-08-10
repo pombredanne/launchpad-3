@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
 
@@ -6,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePackageBreadcrumbBuilder',
+    'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
     'SourcePackageNavigation',
     'SourcePackageView',
@@ -27,9 +29,10 @@ from canonical.launchpad.interfaces.packaging import IPackaging
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
-    NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
+    action, ApplicationMenu, GetitemNavigation, LaunchpadEditFormView, Link,
+    redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -108,6 +111,20 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
         return Link('+gethelp', 'Help and support options', icon='info')
 
 
+class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
+    schema = ISourcePackage
+    field_names = ['productseries']
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Change"), name="change")
+    def change(self, action, data):
+        self.context.setPackaging(data['productseries'], self.user)
+        self.status_message = 'Upstream link updated, thank you!'
+        self.next_url = canonical_url(self.context)
+
 class SourcePackageView(BuildRecordsView):
 
     def initialize(self):
@@ -124,6 +141,10 @@ class SourcePackageView(BuildRecordsView):
         self.error_message = None
         self.processForm()
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
     def processForm(self):
         # look for an update to any of the things we track
         form = self.request.form
@@ -133,7 +154,9 @@ class SourcePackageView(BuildRecordsView):
                 # we need to create or update the packaging
                 self.context.setPackaging(new_ps, self.user)
                 self.productseries_widget.setRenderedValue(new_ps)
-                self.status_message = 'Upstream link updated, thank you!'
+                self.request.response.addInfoNotification(
+                    'Upstream link updated, thank you!')
+                self.request.response.redirect(canonical_url(self.context))
             else:
                 self.error_message = structured('Invalid series given.')
 

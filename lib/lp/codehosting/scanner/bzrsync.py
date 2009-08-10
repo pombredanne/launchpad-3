@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Import version control metadata from a Bazaar branch into the database."""
 
@@ -24,8 +26,9 @@ from bzrlib import urlutils
 from lazr.uri import URI
 
 from lp.codehosting import iter_list_chunks
-from lp.codehosting.puller.worker import BranchMirrorer, BranchPolicy
+from lp.codehosting.puller.worker import BranchMirrorer
 from lp.codehosting.scanner import events
+from lp.codehosting.vfs.branchfs import BranchPolicy
 from lp.code.interfaces.branch import (
     BranchFormat, ControlFormat, RepositoryFormat)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource

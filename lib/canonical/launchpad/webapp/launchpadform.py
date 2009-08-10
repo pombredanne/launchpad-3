@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad Form View Classes
 """
@@ -371,7 +372,7 @@ class LaunchpadEditFormView(LaunchpadFormView):
 
     render_context = True
 
-    def updateContextFromData(self, data, context=None):
+    def updateContextFromData(self, data, context=None, notify_modified=True):
         """Update the context object based on form data.
 
         If no context is given, the view's context is used.
@@ -385,12 +386,13 @@ class LaunchpadEditFormView(LaunchpadFormView):
         """
         if context is None:
             context = self.context
-        context_before_modification = Snapshot(
-            context, providing=providedBy(context))
+        if notify_modified:
+            context_before_modification = Snapshot(
+                context, providing=providedBy(context))
 
         was_changed = form.applyChanges(context, self.form_fields,
                                         data, self.adapters)
-        if was_changed:
+        if was_changed and notify_modified:
             field_names = [form_field.__name__
                            for form_field in self.form_fields]
             notify(ObjectModifiedEvent(

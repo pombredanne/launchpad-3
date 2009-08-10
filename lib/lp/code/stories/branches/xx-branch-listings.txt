@@ -196,7 +196,7 @@ first.
     ['most recently changed first']
     >>> filter_control.displayOptions
     ['by project name', 'by status', 'by branch name',
-    'by registrant name', 'most recently changed first',
+    'by owner name', 'most recently changed first',
     'least recently changed first', 'newest first', 'oldest first']
 
 
@@ -298,7 +298,7 @@ options that can be selected.
     by most interesting
     by status
     by branch name
-    by registrant name
+    by owner name
     most recently changed first
     least recently changed first
     newest first

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [ 'MessageSharingMerge' ]
@@ -308,8 +309,8 @@ class MessageSharingMerge(LaunchpadScript):
                     message = removeSecurityProxy(message)
 
                     clashing_current, clashing_imported, twin = (
-                        self._findClashesFromDicts(
-                            existing_tms, current_tms, imported_tms, message))
+                        self._findClashes(
+                            message, representative, message.potemplate))
 
                     if clashing_current or clashing_imported:
                         saved = self._saveByDiverging(

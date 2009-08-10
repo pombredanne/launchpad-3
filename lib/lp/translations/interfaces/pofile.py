@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -259,6 +261,18 @@ class IPOFile(IRosettaStats):
 
     def getFullLanguageName():
         """Return full language name, including variant if applicable."""
+
+    def getTranslationRows():
+        """Return exportable rows of translation data.
+        
+        :return: a list of `VPOExport` objects.
+        """
+
+    def getChangedRows():
+        """Return exportable rows that differ from published translations.
+
+        :return: a list of `VPOExport` objects.
+        """
 
 
 class AlternativeLanguageVocabularyFactory:

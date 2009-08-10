@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database constants."""
 
@@ -14,3 +15,5 @@ DEFAULT = SQL("DEFAULT")
 
 NEVER_EXPIRES = SQL("'3000-01-01'::TIMESTAMP WITHOUT TIME ZONE")
 
+THIRTY_DAYS_AGO = SQL(
+    "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '30 days'")

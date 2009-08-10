@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
 
@@ -60,6 +61,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.person import IPersonSet, PersonVisibility
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
@@ -241,25 +243,45 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         user.item
         where item is a component or a source package name,
         """
-        username, item = name.split(".", 1)
-        user = getUtility(IPersonSet).getByName(username)
+        def get_url_param(param_name):
+            """Return the URL parameter with the given name or None."""
+            param_seq = self.request.query_string_params.get(param_name)
+            if param_seq is None or len(param_seq) == 0:
+                return None
+            else:
+                # Return whatever value was specified last in the URL.
+                return param_seq.pop()
+
+        # Look up the principal first.
+        user = getUtility(IPersonSet).getByName(name)
         if user is None:
             return None
 
-        # See if "item" is a component name.
-        try:
-            component = getUtility(IComponentSet)[item]
-        except NotFoundError:
-            pass
-        else:
-            return getUtility(IArchivePermissionSet).checkAuthenticated(
-                user, self.context, permission_type, component)[0]
+        # Obtain the item type and name from the URL parameters.
+        item_type = get_url_param('type')
+        item = get_url_param('item')
 
-        # See if "item" is a source package name.
-        package = getUtility(ISourcePackageNameSet).queryByName(item)
-        if package is not None:
+        if item_type is None or item is None:
+            return None
+
+        if item_type == 'component':
+            # See if "item" is a component name.
+            try:
+                the_item = getUtility(IComponentSet)[item]
+            except NotFoundError:
+                pass
+        elif item_type == 'packagename':
+            # See if "item" is a source package name.
+            the_item = getUtility(ISourcePackageNameSet).queryByName(item)
+        elif item_type == 'packageset':
+            # See if "item" is a package set.
+            the_item = getUtility(IPackagesetSet).getByName(item)
+        else:
+            the_item = None
+
+        if the_item is not None:
             return getUtility(IArchivePermissionSet).checkAuthenticated(
-                user, self.context, permission_type, package)[0]
+                user, self.context, permission_type, the_item)[0]
         else:
             return None
 
@@ -849,7 +871,10 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     @cachedproperty
     def ppas_for_user(self):
         """Return all PPAs for which the user accessing the page can copy."""
-        return list(getUtility(IArchiveSet).getPPAsForUser(self.user))
+        return list(
+            ppa
+            for ppa in getUtility(IArchiveSet).getPPAsForUser(self.user)
+            if check_permission('launchpad.Append', ppa))
 
     @cachedproperty
     def can_copy(self):
@@ -858,8 +883,15 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
     @cachedproperty
     def can_copy_to_context_ppa(self):
-        """Whether or not the current user can copy to the context PPA."""
-        return self.context.canUpload(self.user)
+        """Whether or not the current user can copy to the context PPA.
+
+        It's always False for non-PPA archives, copies to non-PPA archives
+        are explicitly denied in the UI.
+        """
+        # XXX cprov 2009-07-17 bug=385503: copies cannot be properly traced
+        # that's why we explicitly don't allow them do be done via the UI
+        # in main archives, only PPAs.
+        return self.context.is_ppa and self.context.canUpload(self.user)
 
     def createDestinationArchiveField(self):
         """Create the 'destination_archive' field."""
@@ -1347,6 +1379,10 @@ class ArchiveActivateView(LaunchpadFormView):
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
 
+    @property
+    def ubuntu(self):
+        return getUtility(ILaunchpadCelebrities).ubuntu
+
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
@@ -1379,8 +1415,7 @@ class ArchiveActivateView(LaunchpadFormView):
         # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
         # for Ubuntu distribution. This check should be revisited when we
         # start supporting PPAs for other distribution (debian, mainly).
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if proposed_name is not None and proposed_name == ubuntu.name:
+        if proposed_name is not None and proposed_name == self.ubuntu.name:
             self.setFieldError(
                 'name',
                 "Archives cannot have the same name as its distribution.")

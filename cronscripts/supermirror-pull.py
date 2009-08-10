@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 import _pythonpath
@@ -9,7 +12,6 @@ from twisted.internet import defer, reactor
 from twisted.python import log as tplog
 from twisted.web.xmlrpc import Proxy
 
-from lp.code.enums import BranchType
 from lp.codehosting.puller import mirror, scheduler
 from canonical.config import config
 from canonical.launchpad.scripts import logger_options
@@ -37,26 +39,11 @@ if __name__ == '__main__':
     parser = OptionParser()
     logger_options(parser)
     (options, arguments) = parser.parse_args()
-    which = arguments.pop(0)
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
-
-    branch_type_map = {
-        'upload': BranchType.HOSTED,
-        'mirror': BranchType.MIRRORED,
-        'import': BranchType.IMPORTED
-        }
-
-    try:
-        branch_type = branch_type_map[which]
-    except KeyError:
-        parser.error(
-            'Expected one of %s, but got: %r'
-            % (branch_type_map.keys(), which))
-
-    log = set_up_logging_for_script(options, 'supermirror_%s_puller' % which)
+    log = set_up_logging_for_script(options, 'supermirror_puller')
     manager = scheduler.JobScheduler(
-        Proxy(config.codehosting.branch_puller_endpoint), log, branch_type)
+        Proxy(config.codehosting.branch_puller_endpoint), log)
 
     reactor.callWhenRunning(run_mirror, log, manager)
     reactor.run()

@@ -187,6 +187,7 @@ the user is a member of, or to themselves.
     >>> for option in browser.getControl('Owner').displayOptions:
     ...     print option
     Sample Person (name12)
+    HWDB Team (hwdb-team)
     Landscape Developers (landscape-developers)
     Launchpad Users (launchpad-users)
     Ubuntu Gnome Team (name18)

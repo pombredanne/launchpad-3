@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Classes that implement IBugTask and its related interfaces."""
@@ -1900,8 +1902,9 @@ class BugTaskSet:
                            AutoTables(SQL("1=1"), clauseTables)))
 
         # Build up the joins
-        from canonical.launchpad.database import (
-            Bug, Product, SourcePackageName)
+        from lp.bugs.model.bug import Bug
+        from lp.registry.model.product import Product
+        from lp.registry.model.sourcepackagename import SourcePackageName
         joins = Alias(result._get_select(), "BugTask")
         joins = Join(joins, Bug, BugTask.bug == Bug.id)
         joins = LeftJoin(joins, Product, BugTask.product == Product.id)

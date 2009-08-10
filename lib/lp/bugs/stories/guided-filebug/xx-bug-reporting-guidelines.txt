@@ -40,32 +40,34 @@ page, because that page does not include a bug description field.
     ...     if guidelines is not None:
     ...         print 'Found %s guidelines: %s' % (context_path, guidelines)
 
-But they are displayed on the advanced bug-reporting page, which does
-include a bug description field.
+But they are displayed once you've got to the step of entering a bug
+description.
 
     >>> for context_name, context_path in contexts:
     ...     filebug_url = (
-    ...         'http://launchpad.dev/%s/+filebug-advanced' % (context_path,))
+    ...         'http://launchpad.dev/%s/+filebug' % (context_path,))
     ...     user_browser.open(filebug_url)
+    ...     user_browser.getControl('Summary').value = "It doesn't work"
+    ...     user_browser.getControl('Continue').click()
     ...     print_guidelines(context_name, user_browser)
     *
     Ubuntu
-      <http://launchpad.dev/ubuntu/+filebug-advanced>
+      <http://launchpad.dev/ubuntu/+filebug>
     Ubuntu guidelines:
     The version of Ubuntu you're using.
     *
     Mozilla
-      <http://launchpad.dev/mozilla/+filebug-advanced>
+      <http://launchpad.dev/mozilla/+filebug>
     The Mozilla Project guidelines:
     The version of Mozilla you're using.
     *
     Firefox
-      <http://launchpad.dev/firefox/+filebug-advanced>
+      <http://launchpad.dev/firefox/+filebug>
     Mozilla Firefox guidelines:
     The version of Firefox you're using.
     *
     alsa-utils in Ubuntu
-      <http://launchpad.dev/ubuntu/+source/alsa-utils/+filebug-advanced>
+      <http://launchpad.dev/ubuntu/+source/alsa-utils/+filebug>
     alsa-utils (Ubuntu) guidelines:
     The version of alsa-utils in Ubuntu you're using.
     Ubuntu guidelines:
@@ -73,17 +75,6 @@ include a bug description field.
 
 Note how the alsa-utils in Ubuntu specific guidelines were displayed
 followed by the general Ubuntu guidelines.
-
-The guidelines are also displayed on the basic bug-reporting page,
-once you've got to the step of entering a bug description.
-
-    >>> user_browser.open('http://launchpad.dev/firefox/+filebug')
-    >>> user_browser.getControl('Summary').value = "It doesn't work"
-    >>> user_browser.getControl('Continue').click()
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Mozilla Firefox guidelines:
-    The version of Firefox you're using.
 
 Bugs can also be reported directly against a distribution series, for
 which the guidelines are taken from the respective distribution.
@@ -139,13 +130,9 @@ it's not always possible to know what the current context is. The
 following pages are known to be affected:
 
     /bugs/+filebug
-    /bugs/+filebug-advanced
     /<distro>/+filebug
-    /<distro>/+filebug-advanced
     /<distro>/<distroseries>/+filebug
-    /<distro>/<distroseries>/+filebug-advanced
     /<project-group>/+filebug
-    /<project-group>/+filebug-advanced
 
 In all cases, the problem is that the user can change the context
 (i.e. distro, package, project) without having to advance a page. This
@@ -153,7 +140,9 @@ may mean that no guidelines are shown or the wrong guidelines are
 shown.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+filebug-advanced')
+    ...     'http://launchpad.dev/ubuntu/+filebug')
+    >>> user_browser.getControl('Summary').value = "It doesn't work"
+    >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
     Ubuntu guidelines:

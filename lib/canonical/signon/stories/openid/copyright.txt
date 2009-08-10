@@ -1,6 +1,0 @@
-The login page for the OpenID workflow contains a copyright statement.
-
-  >>> browser.open('http://openid.launchpad.dev/')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  &copy; 2004-2009 Canonical Ltd.
-

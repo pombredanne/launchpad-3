@@ -18,7 +18,7 @@
     Code review comment for <tal:source content="branch/bzr_identity"/>
   </h1>
   <tal:previous tal:condition="view/is_reply">
-      <tal:content replace="structure context/@@+fragment"/>
+    <tal:content replace="structure view/reply_to/@@+render"/>
   </tal:previous>
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info" style="clear: both" />

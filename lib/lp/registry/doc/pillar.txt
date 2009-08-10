@@ -229,7 +229,7 @@ by that pillar name
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProjectSet)
-    >>> from canonical.launchpad.database import PillarName
+    >>> from lp.registry.model.pillar import PillarName
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> gnome = getUtility(IProjectSet).getByName('gnome')

@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0401,C0301
 
 __metaclass__ = type
@@ -12,6 +14,7 @@ import subprocess
 import tempfile
 import unittest
 
+from bzrlib.branch import Branch as BzrBranch
 from bzrlib.transport import get_transport
 
 import pytz
@@ -24,6 +27,7 @@ from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
+from canonical.launchpad.webapp import errorlog
 from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
@@ -173,6 +177,14 @@ class TestCase(unittest.TestCase):
                                  ', '.join([repr(event) for event in events]))
         return result
 
+    def assertNoNewOops(self, old_oops):
+        """Assert that no oops has been recorded since old_oops."""
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        if old_oops is None:
+            self.assertIs(None, oops)
+        else:
+            self.assertEqual(oops.id, old_oops.id)
+
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.
 
@@ -221,10 +233,11 @@ class TestCase(unittest.TestCase):
         self.assertTrue(expected is observed,
                         "%r is not %r" % (expected, observed))
 
-    def assertIsNot(self, expected, observed):
+    def assertIsNot(self, expected, observed, msg=None):
         """Assert that `expected` is not the same object as `observed`."""
-        self.assertTrue(expected is not observed,
-                        "%r is %r" % (expected, observed))
+        if msg is None:
+            msg = "%r is %r" % (expected, observed)
+        self.assertTrue(expected is not observed, msg)
 
     def assertIn(self, needle, haystack):
         """Assert that 'needle' is in 'haystack'."""
@@ -614,3 +627,28 @@ def normalize_whitespace(string):
     # regex (for the expression \s+), and 4 times faster than a
     # compiled regex.
     return " ".join(string.split())
+
+
+def map_branch_contents(branch_url):
+    """Return all files in branch at `branch_url`.
+
+    :param branch_url: the URL for an accessible branch.
+    :return: a dict mapping file paths to file contents.  Only regular
+        files are included.
+    """
+    contents = {}
+    branch = BzrBranch.open(branch_url)
+    tree = branch.basis_tree()
+    tree.lock_read()
+    try:
+        for dir, entries in tree.walkdirs():
+            dirname, id = dir
+            for entry in entries:
+                file_path, file_name, file_type = entry[:3]
+                if file_type == 'file':
+                    stored_file = tree.get_file_by_path(file_path)
+                    contents[file_path] = stored_file.read()
+    finally:
+        tree.unlock()
+
+    return contents

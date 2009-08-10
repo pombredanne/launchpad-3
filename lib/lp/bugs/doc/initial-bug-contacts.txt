@@ -399,12 +399,13 @@ only contain those teams of which the user is an administrator.
     >>> request = LaunchpadTestRequest()
     >>> view = getMultiAdapter((package, request), name='+subscribe')
 
-Sample Person is a member of three teams:
+Sample Person is a member of four teams:
 
     >>> sample_person = view.user
     >>> ["%s: %s" % (membership.team.displayname, membership.status.name)
     ...  for membership in sample_person.myactivememberships]
-    [u'Landscape Developers: ADMIN',
+    [u'HWDB Team: APPROVED',
+     u'Landscape Developers: ADMIN',
      u'Launchpad Users: ADMIN',
      u'Warty Security Team: APPROVED']
 
