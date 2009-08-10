@@ -541,10 +541,6 @@
         <allow
             interface="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"/>
     </class>
-    <utility
-        name="SourcePackageName"
-        component="lp.registry.model.sourcepackagename.SourcePackageNameVocabulary"
-        provides="zope.schema.interfaces.IVocabularyFactory"/>
     <facet
         facet="overview">
 
@@ -745,7 +741,7 @@
                 modify
                 retarget
                 retract
-                set_publication_date
+                setPublicationDate
                 destroySelf"/>
     </class>
 

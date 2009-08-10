@@ -15,15 +15,10 @@
       <div
         tal:condition="direct_subscriptions"
         tal:repeat="subscription direct_subscriptions"
-        tal:attributes="class string:subscriber-${subscription/person/name}"
+        tal:attributes="class subscription/css_name"
       >
         <metal:subscriber  metal:define-macro="subscriber-row">
 
-            <tal:XXX condition="nothing">
-              # XXX: deryck 2009-06-17 bug=388394
-              # The float here breaks the green flash
-              # and really should be removed.
-            </tal:XXX>
             <a
                tal:condition="subscription/person/name|nothing"
                tal:attributes="
@@ -35,21 +30,17 @@
               <tal:block replace="structure subscription/person/fmt:icon" />
               <tal:block replace="subscription/person/fmt:displayname/fmt:shorten/20" />
             </a>
-            <tal:XXX condition="nothing">
-              # XXX: deryck 2009-06-17 bug=388394
-              # The float here breaks the green flash
-              # and really should be removed.
-            </tal:XXX>
+
             <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
                href="+subscribe"
                tal:attributes="
                  title string:Unsubscribe ${subscription/person/fmt:displayname};
-                 id string:unsubscribe-${subscription/person/name};
+                 id string:unsubscribe-${subscription/css_name};
                  class python: view.subscription_class(subscription.person)
                "
             >
               <img class="unsub-icon" src="/@@/remove"
-                tal:attributes="id string:unsubscribe-icon-${subscription/person/name}" />
+                tal:attributes="id string:unsubscribe-icon-${subscription/css_name}" />
             </a>
 
         </metal:subscriber>
@@ -67,8 +58,8 @@
     <div
       tal:repeat="subscription from_dupes_subscriptions"
       tal:attributes="
-        class string:subscriber-${subscription/person/name};
-        id string:dupe-subscriber-${subscription/person/name};
+        class subscription/css_name;
+        id string:dupe-${subscription/css_name};
       "
     >
       <metal:subscriber metal:use-macro="template/macros/subscriber-row" />

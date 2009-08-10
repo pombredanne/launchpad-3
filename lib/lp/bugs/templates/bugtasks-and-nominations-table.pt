@@ -38,11 +38,9 @@
 
 </table>
 
-<div
-  class="actions"
-  tal:define="current_bugtask view/current_bugtask"
-
-        tal:condition="view/displayAlsoAffectsLinks">
+<div class="actions"
+     tal:define="current_bugtask view/current_bugtask"
+     tal:condition="view/displayAlsoAffectsLinks">
     <tal:also-affects-links define="context_menu context/menu:context">
       <tal:addupstream
         define="link context_menu/addupstream"
@@ -56,56 +54,50 @@
         define="link context_menu/nominate"
         condition="link/enabled"
         replace="structure link/render" />
-      <form
-        id="affectsmetooform"
-        name="affectsmetooform"
-        method="post"
-        enctype="multipart/form-data"
-        accept-charset="UTF-8"
-        tal:define="link context_menu/affectsmetoo"
-        tal:condition="link/enabled"
-        tal:attributes="action link/url"
-        style="display: inline">
-        <input
-          name="field.affects"
-          type="hidden"
-          tal:attributes="value view/affects_form_value" />
-        <input
-          type="hidden"
-          name="field.actions.change"
-          value="" />
-        <tal:affected condition="view/current_user_affected_status">
-          <img width="14" height="14" src="/@@/flame-icon" alt="" />
-          This bug affects me too
-        </tal:affected>
-        <tal:affected condition="not: view/current_user_affected_status">
-          This bug doesn't affect me
-        </tal:affected>
-        (<tal:affectsmetoo
-        define="link context_menu/affectsmetoo"
-        condition="link/enabled"
-        replace="structure link/render" />)
-        <tal:nothing condition="nothing">
-          The following is a trick to allow users to mark
-          themselves as affected by a bug with only one click.
-          If Javascript is available, we submit the form and
-          immediately go back to the same page, saving them the
-          need to go to a new page.
-        </tal:nothing>
-        <script type="text/javascript">
-            function sendMeTooForm(e) {
-                $('affectsmetooform').submit();
-                e.preventDefault();
-            }
-            function connectMeTooLink() {
-                var me_too_link = getFirstElementByTagAndClassName(
-                'a', 'menu-link-affectsmetoo');
-                connect(me_too_link, 'onclick', sendMeTooForm);
-            }
-            registerLaunchpadFunction(connectMeTooLink);
-        </script>
-      </form>
-    </tal:also-affects-links>
+      <span id="affectsmetoo" style="display: inline"
+            tal:condition="link/enabled"
+            tal:define="link context_menu/affectsmetoo;
+                        affected view/current_user_affected_status">
 
+        <tal:comment condition="nothing">
+          This .static section is shown in browsers with javascript
+          enabled, and before setup_me_too is run.
+        </tal:comment>
+        <span class="static">
+          <tal:affected condition="affected">
+            <img width="14" height="14" src="/@@/flame-icon" alt="" />
+            This bug affects me too
+          </tal:affected>
+          <tal:not-affected condition="not:affected">
+            This bug doesn't affect me
+          </tal:not-affected>
+          <a href="+affectsmetoo">
+            <img class="editicon" src="/@@/edit" alt="Edit" />
+          </a>
+        </span>
+
+        <tal:comment condition="nothing">
+          This .dynamic section is used by setup_me_too to display
+          controls and information in the correct places.
+        </tal:comment>
+        <span class="dynamic unseen">
+          <img src="/@@/flame-icon" alt=""/>
+          <a href="+affectsmetoo" class="js-action"
+             ><span class="value">Does this bug affect you?</span></a>
+          <img class="editicon" src="/@@/edit" alt="Edit" />
+        </span>
+
+        <script type="text/javascript" tal:content="string:
+          YUI().use('event', 'bugs.bugtask_index', function(Y) {
+              Y.on('load', function(e) {
+                  Y.bugs.setup_me_too(${view/current_user_affected_js_status});
+              }, window);
+          });
+          ">
+        </script>
+
+      </span>
+    </tal:also-affects-links>
 </div>
+
 </tal:root>

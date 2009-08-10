@@ -94,7 +94,7 @@ The Debian task is linked to the newly created bug watch.
 
     >>> from lp.bugs.tests.bug import print_bug_affects_table
     >>> print_bug_affects_table(browser.contents, highlighted_only=True)
-    mozilla-firefox (Debian) ... debbugs #1
+    mozilla-firefox (Debian) ... debbugs #1 ...
 
 
 If we try to add an already existing bug watch, a new one won't be

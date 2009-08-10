@@ -45,6 +45,7 @@ import pytz
 import re
 from simplejson import dumps
 import urllib
+from urlparse import urlparse, urlunparse
 from operator import attrgetter, itemgetter
 
 from zope import component
@@ -122,7 +123,7 @@ from canonical.launchpad.searchbuilder import all, any, NULL
 
 from canonical.launchpad import helpers
 
-from lp.bugs.browser.bug import BugContextMenu, BugTextView
+from lp.bugs.browser.bug import BugContextMenu, BugViewMixin, BugTextView
 from lp.bugs.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
@@ -133,7 +134,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import PersonFormatterAPI, FormattersAPI
-from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -462,7 +462,7 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
+class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     def __init__(self, context, request):
@@ -1201,12 +1201,17 @@ class BugTaskEditView(LaunchpadEditFormView):
                 # The user has to be able to see the current value.
                 status_noshow.remove(self.context.status)
 
-            status_vocab_factory = vocab_factory(
-                BugTaskStatus, noshow=status_noshow)
+            # We shouldn't have to build our vocabulary out of (item.title,
+            # item) tuples -- iterating over an EnumeratedType gives us
+            # ITokenizedTerms that we could use. However, the terms generated
+            # by EnumeratedType have their name as the token and here we need
+            # the title as the token for backwards compatibility.
+            status_items = [
+                (item.title, item) for item in BugTaskStatus.items
+                if item not in status_noshow]
             status_field = Choice(
-                __name__='status',
-                title=self.schema['status'].title,
-                vocabulary=status_vocab_factory(self.context))
+                __name__='status', title=self.schema['status'].title,
+                vocabulary=SimpleVocabulary.fromItems(status_items))
 
             self.form_fields = self.form_fields.omit('status')
             self.form_fields += formlib.form.Fields(status_field)
@@ -2929,13 +2934,15 @@ class BugTasksAndNominationsView(LaunchpadView):
         return self.context.isUserAffected(self.user)
 
     @property
-    def affects_form_value(self):
-        """The value to use in the inline me too form."""
-        affected = self.context.isUserAffected(self.user)
-        if affected is None or affected == False:
-            return 'YES'
+    def current_user_affected_js_status(self):
+        """A javascript literal indicating if the user is affected."""
+        affected = self.current_user_affected_status
+        if affected is None:
+            return 'null'
+        elif affected:
+            return 'true'
         else:
-            return 'NO'
+            return 'false'
 
 
 class BugTaskTableRowView(LaunchpadView):
@@ -3025,14 +3032,20 @@ class BugTaskTableRowView(LaunchpadView):
     def status_widget_items(self):
         """The available status items as JSON."""
         if self.user is not None:
-            status_vocab_factory = vocab_factory(
-                BugTaskStatus, noshow=[BugTaskStatus.UNKNOWN])
+            # We shouldn't have to build our vocabulary out of (item.title,
+            # item) tuples -- iterating over an EnumeratedType gives us
+            # ITokenizedTerms that we could use. However, the terms generated
+            # by EnumeratedType have their name as the token and here we need
+            # the title as the token for backwards compatibility.
+            status_items = [
+                (item.title, item) for item in BugTaskStatus.items
+                if item != BugTaskStatus.UNKNOWN]
 
             disabled_items = [status for status in BugTaskStatus.items
                 if not self.context.canTransitionToStatus(status, self.user)]
 
             items = vocabulary_to_choice_edit_items(
-                status_vocab_factory(self.context),
+                SimpleVocabulary.fromItems(status_items),
                 css_class_prefix='status',
                 disabled_items=disabled_items)
         else:
@@ -3044,16 +3057,44 @@ class BugTaskTableRowView(LaunchpadView):
     def importance_widget_items(self):
         """The available status items as JSON."""
         if self.user is not None:
-            importance_vocab_factory = vocab_factory(
-                BugTaskImportance, noshow=[BugTaskImportance.UNKNOWN])
+            # We shouldn't have to build our vocabulary out of (item.title,
+            # item) tuples -- iterating over an EnumeratedType gives us
+            # ITokenizedTerms that we could use. However, the terms generated
+            # by EnumeratedType have their name as the token and here we need
+            # the title as the token for backwards compatibility.
+            importance_items = [
+                (item.title, item) for item in BugTaskImportance.items
+                if item != BugTaskImportance.UNKNOWN]
 
             items = vocabulary_to_choice_edit_items(
-                importance_vocab_factory(self.context),
+                SimpleVocabulary.fromItems(importance_items),
                 css_class_prefix='importance')
         else:
             items = '[]'
 
         return items
+
+    @property
+    def milestone_widget_items(self):
+        """The available milestone items as JSON."""
+        if self.user is not None:
+            items = vocabulary_to_choice_edit_items(
+                MilestoneVocabulary(self.context),
+                value_fn=lambda item: canonical_url(
+                    item, request=IWebServiceClientRequest(self.request)))
+            items.append({
+                "name": "Remove milestone",
+                "disabled": False,
+                "value": None})
+        else:
+            items = '[]'
+
+        return items
+
+    @property
+    def target_has_milestones(self):
+        """Are there any milestones we can target?"""
+        return list(MilestoneVocabulary(self.context)) != []
 
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
@@ -3099,6 +3140,13 @@ class BugTaskTableRowView(LaunchpadView):
             'status_value': self.context.status.title,
             'importance_widget_items': self.importance_widget_items,
             'importance_value': self.context.importance.title,
+            'milestone_widget_items': self.milestone_widget_items,
+            'milestone_value': (self.context.milestone and
+                                canonical_url(
+                                    self.context.milestone,
+                                    request=IWebServiceClientRequest(
+                                        self.request)) or
+                                None),
             'user_can_edit_importance': self.user_can_edit_importance})
 
 

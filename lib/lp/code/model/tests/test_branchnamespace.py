@@ -1871,5 +1871,70 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
             BranchCreatorNotOwner, self.albert, self.doug)
 
 
+class TestBranchNamespaceMoveBranch(TestCaseWithFactory):
+    """Test the IBranchNamespace.moveBranch method.
+
+    The edge cases of the validateMove are tested in the NamespaceMixin for
+    each of the namespaces.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def assertNamespacesEqual(self, expected, result):
+        """Assert that the namespaces refer to the same thing.
+
+        The name of the namespace contains the user name and the context
+        parts, so is the easiest thing to check.
+        """
+        self.assertEqual(expected.name, result.name)
+
+    def test_move_to_same_namespace(self):
+        # Moving to the same namespace is effectively a no-op.  No exceptions
+        # about matching branch names should be raised.
+        branch = self.factory.makeAnyBranch()
+        namespace = branch.namespace
+        namespace.moveBranch(branch, branch.owner)
+        self.assertNamespacesEqual(namespace, branch.namespace)
+
+    def test_name_clash_raises(self):
+        # A name clash will raise an exception.
+        branch = self.factory.makeAnyBranch(name="test")
+        another = self.factory.makeAnyBranch(owner=branch.owner, name="test")
+        namespace = another.namespace
+        self.assertRaises(
+            BranchExists, namespace.moveBranch, branch, branch.owner)
+
+    def test_move_with_rename(self):
+        # A name clash with 'rename_if_necessary' set to True will cause the
+        # branch to be renamed instead of raising an error.
+        branch = self.factory.makeAnyBranch(name="test")
+        another = self.factory.makeAnyBranch(owner=branch.owner, name="test")
+        namespace = another.namespace
+        namespace.moveBranch(branch, branch.owner, rename_if_necessary=True)
+        self.assertEqual("test-1", branch.name)
+        self.assertNamespacesEqual(namespace, branch.namespace)
+
+    def test_move_with_new_name(self):
+        # A new name for the branch can be specified as part of the move.
+        branch = self.factory.makeAnyBranch(name="test")
+        another = self.factory.makeAnyBranch(owner=branch.owner, name="test")
+        namespace = another.namespace
+        namespace.moveBranch(branch, branch.owner, new_name="foo")
+        self.assertEqual("foo", branch.name)
+        self.assertNamespacesEqual(namespace, branch.namespace)
+
+    def test_sets_branch_owner(self):
+        # Moving to a new namespace may change the owner of the branch if the
+        # owner of the namespace is different.
+        branch = self.factory.makeAnyBranch(name="test")
+        team = self.factory.makeTeam(branch.owner)
+        product = self.factory.makeProduct()
+        namespace = ProductNamespace(team, product)
+        namespace.moveBranch(branch, branch.owner)
+        self.assertEqual(team, branch.owner)
+        # And for paranoia.
+        self.assertNamespacesEqual(namespace, branch.namespace)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -16,6 +16,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
@@ -159,6 +160,25 @@ class _BaseNamespace:
             name = branch.name
         self.validateBranchName(name)
         self.validateRegistrant(mover)
+
+    def moveBranch(self, branch, mover, new_name=None,
+                   rename_if_necessary=False):
+        """See `IBranchNamespace`."""
+        # Check to see if the branch is already in this namespace.
+        old_namespace = branch.namespace
+        if self.name == old_namespace.name:
+            return
+        if new_name is None:
+            new_name = branch.name
+        if rename_if_necessary:
+            new_name = self.findUnusedName(new_name)
+        self.validateMove(branch, mover, new_name)
+        # Remove the security proxy of the branch as the owner and target
+        # attributes are readonly through the interface.
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.owner = self.owner
+        self.target._retargetBranch(naked_branch)
+        naked_branch.name = new_name
 
     def createBranchWithPrefix(self, branch_type, prefix, registrant,
                                url=None):

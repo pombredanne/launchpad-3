@@ -816,15 +816,20 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            Archive.id = %s AND
+            SourcePackagePublishingHistory.archive = Archive.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL
+            SourcePackagePublishingHistory.dateremoved is NULL AND
+            Archive.enabled = TRUE
             """ % sqlvalues(self, archive),
             distinct=True,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
+            clauseTables=[
+                'Archive',
+                'DistroSeries',
+                'SourcePackagePublishingHistory',
                 'SourcePackageRelease']))
 
         # Remove the cache entries for packages we no longer publish.
@@ -838,6 +843,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def updateCompleteSourcePackageCache(self, archive, log, ztm,
                                          commit_chunk=500):
         """See `IDistribution`."""
+        # Do not create cache entries for disabled archives.
+        if not archive.enabled:
+            return
+
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
             SourcePackagePublishingHistory.distroseries =
