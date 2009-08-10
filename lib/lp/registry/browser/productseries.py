@@ -479,6 +479,17 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s series %s' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
     def validate(self, data):
         """See `LaunchpadFormView`."""
         branch = data.get('branch')
@@ -494,6 +505,11 @@ class ProductSeriesEditView(LaunchpadEditFormView):
 
     @property
     def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 

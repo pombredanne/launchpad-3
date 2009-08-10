@@ -77,7 +77,29 @@ to display.
     True
 
 
-== Delete ProductSeries ==
+Edit ProductSeries
+------------------
+
+The productseries +edit view provides a label and page_title for the page.
+
+    >>> view = create_initialized_view(series, '+edit')
+    >>> print view.label
+    Edit App series simple
+
+    >>> print view.page_title
+    Edit App series simple
+
+The view provides a cancel_url and a next_url.
+
+    >>> print view.cancel_url
+    http://launchpad.dev/app/simple
+
+    >>> print view.next_url
+    http://launchpad.dev/app/simple
+
+
+Delete ProductSeries
+--------------------
 
 Users with edit permission may delete a project's series. This person is
 often the project's owner or series driver who has setup the series by
