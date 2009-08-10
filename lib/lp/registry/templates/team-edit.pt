@@ -6,25 +6,21 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
-  <div metal:fill-slot="main"
-    tal:define="overview_menu context/menu:overview">
+  <div metal:fill-slot="side"
+       tal:define="overview_menu context/menu:overview">
+    Global Actions:
+    <tal:menu replace="structure context/@@+global-actions" />
+    <div style="border-bottom: 1px solid black">
+    Related Pages:
+    <tal:menu replace="structure view/@@+related-pages" />
+    </div>
 
-    <h1>
-      Edit &#8220;<span tal:replace="context/displayname">
-      Foo</span>&#8221; team
-    </h1>
-
-    <div metal:use-macro="context/@@launchpad_form/form" />
-
-    <metal:js use-macro="context/@@+person-macros/private-team-js" />
-
-    <h2 style="margin-top: 2em;">Other actions</h2>
-
+    Links hardcoded into template:
     <ul style="list-style-type:none; padding-left:1.5em;">
       <li
         tal:content="structure overview_menu/branding/fmt:link-icon">
@@ -47,6 +43,20 @@
         Change contact address
       </li>
     </ul>
+  </div>
+
+  <div metal:fill-slot="main"
+       tal:define="overview_menu context/menu:overview">
+
+    <h1>
+      Edit &#8220;<span tal:replace="context/displayname">
+      Foo</span>&#8221; team
+    </h1>
+
+    <div metal:use-macro="context/@@launchpad_form/form" />
+
+    <metal:js use-macro="context/@@+person-macros/private-team-js" />
+
   </div>
 </body>
 </html>

@@ -94,10 +94,10 @@ from textwrap import dedent
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.formlib.form import FormFields
-from zope.interface import implements, Interface
+from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import getUtility
+from zope.component import getUtility, provideAdapter
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
@@ -124,6 +124,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import helpers
+from lp.registry.browser.team import TeamEditView
 from lp.soyuz.browser.archive import traverse_named_ppa
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
@@ -147,7 +148,8 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
+    ILaunchBag, INavigationMenu, IOpenLaunchBag, NotFoundError,
+    UnexpectedFormData)
 from lp.answers.interfaces.questionenums import QuestionParticipation
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -5420,3 +5422,42 @@ class EmailToPersonView(LaunchpadFormView):
             return 'Contact yourself'
         else:
             return 'Contact this user'
+
+
+class TeamLinksMixin:
+   """A mixin class that provides links used by more than on menu."""
+
+
+class ITeamEditMenu(Interface):
+   """A marker interface for the edit navigation menu."""
+
+
+class TeamEditMenu(NavigationMenu, TeamOverviewMenu):
+    """A menu for different aspects of editing a team."""
+
+    usedfor = ITeamEditMenu
+    facet = 'overview'
+    title = 'Change team'
+    links = ('branding',)
+
+
+class TeamActionMenu(NavigationMenu, TeamOverviewMenu):
+    """An action menu to modify the object."""
+
+    usedfor = ITeam
+    facet = 'overview'
+    title = 'Action object'
+    links = ('edit', 'branding', 'common_edithomepage',
+            'editemailaddresses', 'editlanguages', 'editwikinames',
+            'editircnicknames', 'editjabberids', 'editpassword',
+            'editsshkeys', 'editpgpkeys', 'editlocation',
+            'reassign', 'review', 'administer')
+
+
+classImplements(TeamEditView, ITeamEditMenu)
+# Menus are normally registered using the menu ZCML directive. They can
+# be registered in Python.
+provideAdapter(
+   TeamEditMenu, [ITeamEditMenu], INavigationMenu, name="overview")
+provideAdapter(
+   TeamActionMenu, [ITeam], INavigationMenu, name="overview")
