@@ -219,7 +219,7 @@ is an `IBaseDistribution`.
     >>> ubuntu.full_functionality
     True
 
-    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> login_person(ubuntu.owner.teamowner)
     >>> ubuntu.driver = yo_driver
     >>> login_person(yo_driver)
     >>> view = create_view(youbuntu, name='+addseries')
@@ -258,7 +258,7 @@ to a `IDerivativeDistribution`.
 
 Drivers of an `IBaseDistribution` such as Ubuntu cannot edit a series.
 
-    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> login_person(ubuntu.owner.teamowner)
     >>> hoary.driver = yo_driver
     >>> login_person(yo_driver)
 

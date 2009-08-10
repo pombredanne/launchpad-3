@@ -361,11 +361,58 @@ An empty code_name or summary (submitted via AJAX) is converted to None.
     1.1 None None
 
 
-== Deleting milestones ==
+Distroseries driver and milestones
+----------------------------------
+
+The driver of a series that belongs to an `IDerivativeDistribution` is a
+release manager and can create milestones.
+
+    >>> distroseries = factory.makeDistroRelease(name='pumpkin')
+    >>> driver = factory.makePerson(name='a-driver')
+    >>> distroseries.driver = driver
+    >>> login_person(driver)
+
+    >>> form = {
+    ...     'field.name': 'pie',
+    ...     'field.actions.register': 'Register Milestone',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     distroseries, '+addmilestone', form=form)
+    >>> milestone = distroseries.milestones[0]
+    >>> print milestone.name
+    pie
+
+The driver has access to the milestone.
+
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+The driver of an `IBaseDistribution` such as Ubuntu cannot create a milestone.
+
+    >>> login_person(ubuntu_distro.owner.teamowner)
+    >>> hoary_series.driver = driver
+    >>> login_person(driver)
+
+    >>> view = create_initialized_view(hoary_series, '+addmilestone')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+Nor can the driver edit it.
+
+    >>> milestone = factory.makeMilestone(distribution=ubuntu_distro)
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
+Deleting milestones
+-------------------
 
 The DeleteMilestoneView allows users to edit permissions to delete Milestones.
 The view is restricted to owners of the project and drivers of the series.
 
+    >>> login_person(owner)
     >>> milestone = firefox_1_0.newMilestone('1.0.10')
     >>> print milestone.name
     1.0.10
