@@ -1223,13 +1223,6 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-def productseries_edit(context, view):
-    """Return the page title for changing a product series details."""
-    return 'Change %s %s details' % (
-        context.product.displayname, context.name)
-
-productseries_new = ContextDisplayName('Register a new %s release series')
-
 def question_add(context, view):
     """Return the page title to add a question."""
     return view.pagetitle
