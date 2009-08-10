@@ -165,7 +165,7 @@
       >
         <p id="commercial_subscription"
            tal:condition="context/commercial_subscription">
-          <strong>Commercial subscription expires:</strong>
+          <strong>Commercial subscription expires</strong>
           <tal:expiry content="context/commercial_subscription/date_expires/fmt:date" />
         </p>
       </tal:subscription_info>
