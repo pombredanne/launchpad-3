@@ -138,10 +138,43 @@ initial value remains.
     True
 
 
+Editing distroseries
+--------------------
+
+The distroseries edit view allows the editor to change series. The form
+uses the displayname, title, and description fields.
+
+    >>> view = create_initialized_view(hoary, '+edit')
+    >>> print view.label
+    Change The Hoary Hedgehog Release details
+
+    >>> [field.__name__ for field in view.form_fields]
+    ['displayname', 'title', 'summary', 'description']
+
+Series that belong to derivative distributions also contain the status field.
+
+    >>> youbuntu = factory.makeDistribution(name='youbuntu')
+    >>> yo_series = factory.makeDistroRelease(name='melon')
+    >>> youbuntu.full_functionality
+    False
+
+    >>> yo_driver = factory.makePerson(name='yo-driver')
+    >>> youbuntu.driver = yo_driver
+    >>> login_person(yo_driver)
+    >>> view = create_initialized_view(yo_series, '+edit')
+    >>> print view.label
+    Change ... details
+
+    >>> [field.__name__ for field in view.form_fields]
+    ['displayname', 'title', 'summary', 'description', 'status']
+
+
 Creating distroseries
 ---------------------
 
 A distroseries is created using the distroseries view.
+
+    >>> login('foo.bar@canonical.com')
 
     >>> view = create_view(ubuntu, '+addseries')
     >>> print view.page_title
@@ -189,12 +222,6 @@ Most distributions are an `IDerivativeDistribution`.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
 
-    >>> youbuntu = factory.makeDistribution(name='youbuntu')
-    >>> youbuntu.full_functionality
-    False
-
-    >>> yo_driver = factory.makePerson(name='yo-driver')
-    >>> youbuntu.driver = yo_driver
     >>> login_person(yo_driver)
     >>> view = create_view(youbuntu, name='+addseries')
     >>> check_permission('launchpad.Driver', view)
