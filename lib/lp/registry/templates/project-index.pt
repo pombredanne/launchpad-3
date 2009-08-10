@@ -129,24 +129,7 @@
     <tal:side metal:fill-slot="side"
               define="overview_menu context/menu:overview">
       <div id="object-actions" class="top-portlet">
-        <ul>
-          <li>
-            <tal:edit
-              content="structure overview_menu/subscribe/fmt:link-icon" />
-          </li>
-          <li>
-            <tal:edit
-              content="structure overview_menu/edit/fmt:link-icon" />
-          </li>
-          <li>
-            <tal:edit
-              content="structure overview_menu/administer/fmt:link-icon" />
-          </li>
-          <li>
-            <tal:edit
-              content="structure overview_menu/branch_visibility/fmt:link-icon" />
-          </li>
-        </ul>
+        <tal:menu replace="structure view/@@+global-actions" /> 
       </div>
       <div id="involvement" class="portlet involvement"
            tal:condition="context/products">

@@ -20,6 +20,7 @@ __all__ = [
     'ProjectNavigation',
     'ProjectRdfView',
     'ProjectReviewView',
+    'ProjectActionMenu',
     'ProjectOverviewMenu',
     'ProjectSeriesSpecificationsMenu',
     'ProjectSetBreadcrumbBuilder',
@@ -35,6 +36,7 @@ from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.interface import implements, Interface
 from zope.schema import Choice
 
 from z3c.ptcompat import ViewPageTemplateFile
@@ -42,6 +44,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
@@ -161,14 +164,8 @@ class ProjectOverviewMenu(ApplicationMenu):
     usedfor = IProject
     facet = 'overview'
     links = [
-        'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'announce', 'announcements', 'administer',
-        'branch_visibility', 'rdf', 'subscribe']
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
+        'branding', 'driver', 'reassign', 'top_contributors', 'mentorship',
+        'announce', 'announcements', 'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -218,18 +215,38 @@ class ProjectOverviewMenu(ApplicationMenu):
         return Link('+rdf', text, icon='download')
 
     @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+review', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit', site='mainsite')
 
+
+class IProjectActionMenu(Interface):
+    """Marker interface for views that use ProjectActionMenu."""
+
+
+class ProjectActionMenu(NavigationMenu):
+
+    usedfor = IProjectActionMenu
+    facet = 'overview'
+    title = 'Action menu'
+    links = ('subscribe', 'edit', 'administer')
+
+    # XXX: salgado, 2009-08-10: This should be shown in the +index page of the
+    # project's bugs facet, but that would require too much work and I just
+    # want to convert this page to 3.0, so I'll leave it here for now.
     def subscribe(self):
         text = 'Subscribe to bug mail'
         return Link('+subscribe', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -296,7 +313,7 @@ class ProjectBugsMenu(ApplicationMenu):
 
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
-    pass
+    implements(IProjectActionMenu)
 
 
 class ProjectEditView(LaunchpadEditFormView):

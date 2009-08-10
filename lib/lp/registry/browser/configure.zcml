@@ -480,6 +480,7 @@
     <browser:menus
         classes="
             ProjectFacets
+            ProjectActionMenu
             ProjectOverviewMenu
             ProjectBountiesMenu
             ProjectBugsMenu
