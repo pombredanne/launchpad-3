@@ -5,7 +5,7 @@
   omit-tag="">
 
 <div id="portlet-details">
-  <table class="summary">
+  <table class="summary" tal:define="overview_menu context/menu:overview">
     <tbody>
       <tr tal:condition="context/required:launchpad.Admin">
         <th>Status:</th>
@@ -21,20 +21,22 @@
       <tr>
         <th>Maintainer:</th>
         <td>
-          <a
-            tal:content="context/owner/displayname"
-            tal:attributes="href context/owner/fmt:url"
-          >ownername</a>
+          <a tal:replace="structure context/owner/fmt:link" />
+          <tal:edit-maintainer
+            content="structure overview_menu/reassign/fmt:icon" />
         </td>
       </tr>
       <tr>
         <th>Driver:</th>
-        <td tal:condition="not:context/driver">Not yet appointed</td>
-        <td tal:condition="context/driver">
-          <a
-            tal:content="context/driver/displayname"
-            tal:attributes="href context/driver/fmt:url"
-          >Carlos Perello</a>
+        <td>
+          <tal:no-driver condition="not:context/driver">
+            Not yet appointed
+          </tal:no-driver>
+          <tal:has-driver condition="context/driver">
+            <a tal:replace="structure context/driver/fmt:link">Driver</a>
+          </tal:has-driver>
+          <tal:edit-maintainer
+            content="structure overview_menu/driver/fmt:icon" />
         </td>
       </tr>
       <tr>
