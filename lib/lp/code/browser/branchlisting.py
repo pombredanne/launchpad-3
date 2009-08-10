@@ -246,10 +246,10 @@ class BranchListingSort(EnumeratedType):
         Sort branches by the display name of the registrant.
         """)
 
-    REGISTRANT = Item("""
-        by registrant name
+    OWNER = Item("""
+        by owner name
 
-        Sort branches by the display name of the registrant.
+        Sort branches by the display name of the owner.
         """)
 
     MOST_RECENTLY_CHANGED_FIRST = Item("""
@@ -727,7 +727,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         DEFAULT_BRANCH_LISTING_SORT = [
             BranchListingSort.PRODUCT,
             BranchListingSort.LIFECYCLE,
-            BranchListingSort.REGISTRANT,
+            BranchListingSort.OWNER,
             BranchListingSort.NAME,
             ]
 
@@ -735,7 +735,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             BranchListingSort.PRODUCT: (Asc, Branch.target_suffix),
             BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
             BranchListingSort.NAME: (Asc, Branch.name),
-            BranchListingSort.REGISTRANT: (Asc, Branch.owner_name),
+            BranchListingSort.OWNER: (Asc, Branch.owner_name),
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
                 Desc, Branch.date_last_modified),
             BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
@@ -1026,7 +1026,7 @@ class PersonRegisteredBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     def _getCollection(self):
         return getUtility(IAllBranches).registeredBy(self.context)
@@ -1036,7 +1036,7 @@ class PersonOwnedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     def _getCollection(self):
         return getUtility(IAllBranches).ownedBy(self.context)
@@ -1687,7 +1687,7 @@ class PersonProductOwnedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's owned branches."""
 
     no_sort_by = (BranchListingSort.DEFAULT,
-                  BranchListingSort.REGISTRANT,
+                  BranchListingSort.OWNER,
                   BranchListingSort.PRODUCT)
 
     def _getCountCollection(self):

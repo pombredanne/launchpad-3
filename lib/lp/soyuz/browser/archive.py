@@ -1379,6 +1379,10 @@ class ArchiveActivateView(LaunchpadFormView):
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
 
+    @property
+    def ubuntu(self):
+        return getUtility(ILaunchpadCelebrities).ubuntu
+
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
@@ -1411,8 +1415,7 @@ class ArchiveActivateView(LaunchpadFormView):
         # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
         # for Ubuntu distribution. This check should be revisited when we
         # start supporting PPAs for other distribution (debian, mainly).
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if proposed_name is not None and proposed_name == ubuntu.name:
+        if proposed_name is not None and proposed_name == self.ubuntu.name:
             self.setFieldError(
                 'name',
                 "Archives cannot have the same name as its distribution.")

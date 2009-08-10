@@ -1,11 +1,11 @@
 <div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   class="portlet" id="portlet-latest-questions"
-  tal:define="questions view/getLatestQuestions">
+  tal:define="questions view/getLatestQuestions"
+  tal:condition="questions">
   <h2>
-    <span class="see-all"><a
-      tal:define="link view/menu:answers/open"
-      tal:attributes="href link/url">All open questions</a></span>
+    <span class="see-all" tal:condition="nothing"><a
+      tal:attributes="href view/latest_questions_url">All questions</a></span>
     Latest questions
   </h2>
 
@@ -19,7 +19,9 @@
     </li>
   </ul>
 
-  <p tal:condition="not: questions">
-    <tal:name replace="context/displayname" /> has no questions.
-  </p>
+  <tal:comment condition="nothing">
+    # XXX sinzui 2009-08-07 bug=410501: Remove this link and enable the
+    # see all link when the distribution source package index page is 3.0.
+  </tal:comment>
+  <a tal:attributes="href view/latest_questions_url">All questions</a>
 </div>

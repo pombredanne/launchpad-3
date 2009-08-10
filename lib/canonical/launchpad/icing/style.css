@@ -798,6 +798,8 @@ hierarchy, and the application tabs. */
 }
 
 /* === Location application tabs === */
+/* NOTE: This whole section (everything for #lp-apps) can be removed once
+ * pages have updated to the 3.0 templates */
 /* In most pages, the location bar includes six centered application tabs: */
 #lp-apps {
   position: relative;
@@ -1730,6 +1732,7 @@ beside the mugshot. */
 #sources-list-entries {
   border: 1px solid gray;
   padding: 0.3em;
+  margin: 1em 0 1em 0;
   float: left; /* So the border doesn't use 100% of the page */
 }
 

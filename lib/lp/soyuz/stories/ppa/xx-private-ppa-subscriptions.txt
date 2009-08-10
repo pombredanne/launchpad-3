@@ -50,6 +50,7 @@ The page includes the required dependencies for the yui2-based date
 picker:
 
     >>> print extract_all_script_and_style_links(cprov_browser.contents)
+    /...
     ...
     http://launchpad.dev/+icing/.../build/lp/calendar.js
     http://launchpad.dev/+icing/.../yui_2.7.0b/build/calendar/assets/skins/sam/calendar.css
@@ -105,9 +106,9 @@ The title of a persons archive subscriptions is displayed as the main
 heading:
 
     >>> cprov_browser.open("/~cprov/+archivesubscriptions")
-    >>> h1_heading = find_main_content(cprov_browser.contents).find('h1')
-    >>> print extract_text(h1_heading)
-    Private PPA access
+    >>> print find_main_content(cprov_browser.contents)
+    <div...
+    <h1>Private PPA access</h1>...
 
 A person who is not subscribed to any archives will see an appropriate
 explanation if they try to view their archive subscriptions:

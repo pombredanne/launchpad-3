@@ -415,8 +415,12 @@ class ObjectFormatterAPI:
     # frozenset (http://code.activestate.com/recipes/414283/) here, though.
     # The names which can be traversed further (e.g context/fmt:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
+
     # Names which are allowed but can't be traversed further.
-    final_traversable_names = {'public-private-css': 'public_private_css',}
+    final_traversable_names = {
+        'public-private-css': 'public_private_css',
+        'location_heading': 'location_heading',
+        }
 
     def __init__(self, context):
         self._context = context
@@ -482,6 +486,24 @@ class ObjectFormatterAPI:
         else:
             return 'public'
 
+    def location_heading(self):
+        """Return a heading for the nearest object supporting a logo."""
+        context = self._context
+        if not IHasLogo.providedBy(context):
+            context = nearest(context, IHasLogo)
+            heading = 'h2'
+        else:
+            heading = 'h1'
+
+        if context is None:
+            title = 'Launchpad.net'
+        else:
+            title = context.title
+
+        return "<%(heading)s>%(title)s</%(heading)s>" % {
+            'heading': heading,
+            'title': title
+            }
 
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects
@@ -2353,6 +2375,19 @@ class FormattersAPI:
                 cgi.escape(url, quote=True),
                 cgi.escape(lp_url),
                 cgi.escape(trailers))
+        elif match.group("clbug") is not None:
+            # 'clbug' matches Ubuntu changelog format bugs. 'bugnumbers' is
+            # all of the bug numbers, that look something like "#1234, #434".
+            # 'leader' is the 'LP: ' bit at the beginning.
+            bug_parts = []
+            # Split the bug numbers into multiple bugs.
+            splitted = re.split("(,(?:\s|<br\s*/>)+)",
+                    match.group("bugnumbers")) + [""]
+            for bug_id, spacer in zip(splitted[::2], splitted[1::2]):
+                bug_parts.append(FormattersAPI._linkify_bug_number(
+                    bug_id, bug_id.lstrip("#")))
+                bug_parts.append(spacer)
+            return match.group("leader") + "".join(bug_parts)
         else:
             raise AssertionError("Unknown pattern matched.")
 
@@ -2458,6 +2493,11 @@ class FormattersAPI:
           \#
           [%(unreserved)s:@/\?]*
         )?
+      ) |
+      (?P<clbug>
+        \b(?P<leader>lp:(\s|<br\s*/>)+)
+        (?P<bugnumbers>\#\d+(,(\s|<br\s*/>)+\#\d+)*
+         )
       ) |
       (?P<bug>
         \bbug(?:[\s=-]|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
@@ -2761,7 +2801,8 @@ class FormattersAPI:
             return text
         result = ['<table class="diff">']
 
-        for row, line in enumerate(text.split('\n')):
+        max_format_lines = config.diff.max_format_lines
+        for row, line in enumerate(text.splitlines()[:max_format_lines]):
             result.append('<tr>')
             result.append('<td class="line-no">%s</td>' % (row+1))
             if line.startswith('==='):

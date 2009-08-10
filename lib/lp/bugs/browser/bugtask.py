@@ -45,6 +45,7 @@ import pytz
 import re
 from simplejson import dumps
 import urllib
+from urlparse import urlparse, urlunparse
 from operator import attrgetter, itemgetter
 
 from zope import component
@@ -2915,13 +2916,15 @@ class BugTasksAndNominationsView(LaunchpadView):
         return self.context.isUserAffected(self.user)
 
     @property
-    def affects_form_value(self):
-        """The value to use in the inline me too form."""
-        affected = self.context.isUserAffected(self.user)
-        if affected is None or affected == False:
-            return 'YES'
+    def current_user_affected_js_status(self):
+        """A javascript literal indicating if the user is affected."""
+        affected = self.current_user_affected_status
+        if affected is None:
+            return 'null'
+        elif affected:
+            return 'true'
         else:
-            return 'NO'
+            return 'false'
 
 
 class BugTaskTableRowView(LaunchpadView):
@@ -3041,6 +3044,28 @@ class BugTaskTableRowView(LaunchpadView):
 
         return items
 
+    @property
+    def milestone_widget_items(self):
+        """The available milestone items as JSON."""
+        if self.user is not None:
+            items = vocabulary_to_choice_edit_items(
+                MilestoneVocabulary(self.context),
+                value_fn=lambda item: canonical_url(
+                    item, request=IWebServiceClientRequest(self.request)))
+            items.append({
+                "name": "Remove milestone",
+                "disabled": False,
+                "value": None})
+        else:
+            items = '[]'
+
+        return items
+
+    @property
+    def target_has_milestones(self):
+        """Are there any milestones we can target?"""
+        return list(MilestoneVocabulary(self.context)) != []
+
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)
@@ -3085,6 +3110,13 @@ class BugTaskTableRowView(LaunchpadView):
             'status_value': self.context.status.title,
             'importance_widget_items': self.importance_widget_items,
             'importance_value': self.context.importance.title,
+            'milestone_widget_items': self.milestone_widget_items,
+            'milestone_value': (self.context.milestone and
+                                canonical_url(
+                                    self.context.milestone,
+                                    request=IWebServiceClientRequest(
+                                        self.request)) or
+                                None),
             'user_can_edit_importance': self.user_can_edit_importance})
 
 

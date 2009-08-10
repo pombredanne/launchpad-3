@@ -8,9 +8,6 @@
 >
   <body>
     <tal:heading metal:fill-slot="heading">
-      <div style="float:left">
-        <tal:mugshot replace="structure context/image:logo" />
-      </div>
       <h1 tal:replace="structure view/title_edit_widget">project title</h1>
       <br style="clear:both"/>
     </tal:heading>
@@ -18,20 +15,13 @@
     <tal:main metal:fill-slot="main"
       define="overview_menu context/menu:overview">
       <div class="top-portlet">
-        <p id="project-admin-whiteboard" class="whiteboard"
-          tal:condition="context/required:launchpad.ProjectReview">
-          <tal:whiteboard content="context/reviewer_whiteboard" />
-          (whiteboard)
-          <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
-        </p>
-
         <p id="project-inactive" class="warning message"
           tal:condition="not: context/active">
           This project is currently inactive
           <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
         </p>
 
-        <div class="description" tal:content="context/summary">
+        <div class="summary" tal:content="context/summary">
           $Product.summary goes here. This should be quite short,
           just a single paragraph of text really, giving the project
           highlights.
@@ -41,7 +31,7 @@
           tal:content="structure context/description/fmt:text-to-html"
           tal:condition="context/description">
           $Product.description goes here. This should be a longer piece of
-          text, up to three paragraphs in length, which gives much more
+          text, up to three paragraphs in length, which gives much morehttps://launchpad.dev/firefox/+rdf
           detailed information about the open source project in question.
         </div>
 
@@ -59,149 +49,152 @@
       </div>
 
       <div class="yui-g">
-        <div id="project-info" class="yui-u first portlet">
-          <h2>Project information</h2>
+        <div class="yui-u first">
+          <div id="project-info" class="portlet">
+            <h2>Project information</h2>
 
-          <div class="two-column-list">
-            <dl id="partof" tal:condition="context/project">
-              <dt>Part of:</dt>
-              <dd><a tal:replace="structure context/project/fmt:link" /></dd>
-            </dl>
+            <div class="two-column-list">
+              <dl id="partof" tal:condition="context/project">
+                <dt>Part of:</dt>
+                <dd><a tal:replace="structure context/project/fmt:link" /></dd>
+              </dl>
 
-            <dl id="owner" tal:condition="context/owner">
-              <dt>Maintainer:</dt>
-              <dd><a tal:replace="structure context/owner/fmt:link" /></dd>
-            </dl>
+              <dl id="owner" tal:condition="context/owner">
+                <dt>Maintainer:</dt>
+                <dd><a tal:replace="structure context/owner/fmt:link" /></dd>
+              </dl>
 
-            <dl id="aliases" tal:condition="context/aliases">
-              <dt>Also known as:</dt>
-              <dd><tal:aliases repeat="alias context/aliases">
-                <tal:alias replace="alias">something</tal:alias
-                  ><tal:comma condition="not:repeat/alias/end">,</tal:comma>
-              </tal:aliases></dd>
-            </dl>
+              <dl id="aliases" tal:condition="context/aliases">
+                <dt>Also known as:</dt>
+                <dd><tal:aliases repeat="alias context/aliases">
+                  <tal:alias replace="alias">something</tal:alias
+                    ><tal:comma condition="not:repeat/alias/end">,</tal:comma>
+                </tal:aliases></dd>
+              </dl>
 
-            <dl id="driver">
-              <dt>Driver:</dt>
-              <dd tal:condition="view/effective_driver">
-                <a tal:replace="structure view/effective_driver/fmt:link" /></dd>
-              <dd tal:condition="not: view/effective_driver">
-                Not yet appointed.</dd>
-            </dl>
+              <dl id="driver">
+                <dt>Driver:</dt>
+                <dd tal:condition="view/effective_driver">
+                  <a tal:replace="structure view/effective_driver/fmt:link" /></dd>
+                <dd tal:condition="not: view/effective_driver">
+                  Not yet appointed.</dd>
+              </dl>
 
-            <dl id="uses" tal:define="uses_launchpad view/uses_launchpad_for">
-              <tal:uses_launchpad condition="uses_launchpad">
-                <dt>Uses Launchpad for:</dt>
-                <dd><tal:uses content="structure uses_launchpad" />.</dd>
-              </tal:uses_launchpad>
-              <tal:no_launchpad condition="not: uses_launchpad">
-                <dt>Does not use Launchpad for development.</dt>
-                <dd></dd>
-              </tal:no_launchpad>
-            </dl>
+              <dl id="uses" tal:define="uses_launchpad view/uses_launchpad_for">
+                <tal:uses_launchpad condition="uses_launchpad">
+                  <dt>Uses Launchpad for:</dt>
+                  <dd><tal:uses content="structure uses_launchpad" />.</dd>
+                </tal:uses_launchpad>
+                <tal:no_launchpad condition="not: uses_launchpad">
+                  <dt>Does not use Launchpad for development.</dt>
+                  <dd></dd>
+                </tal:no_launchpad>
+              </dl>
 
-            <dl id="product-languages"
-              tal:condition="view/show_programming_languages">
-              <dt>Languages:</dt>
-              <dd tal:content="structure view/languages_edit_widget" />
-            </dl>
+              <dl id="product-languages"
+                tal:condition="view/show_programming_languages">
+                <dt>Programming Languages:</dt>
+                <dd tal:content="structure view/languages_edit_widget" />
+              </dl>
 
-            <dl>
-              <dt>Licenses:</dt>
-              <dd>
-                <tal:licenses repeat="license context/licenses">
-                  <tal:license replace="license/title">GPL</tal:license><tal:comma
-                      condition="not:repeat/license/end">,</tal:comma>
-                </tal:licenses>
-                <tal:none condition="not:context/licenses">None specified</tal:none>
-                <tal:has_description condition="context/license_info">
-                  (<tal:description replace="context/license_info" />)
-                </tal:has_description>
-              </dd>
-              <dd id="commercial_subscription"
-                tal:condition="context/commercial_subscription">
-                Commercial subscription expires
-                <tal:expiry content="context/commercial_subscription/date_expires/fmt:date" />
-              </dd>
-            </dl>
+              <dl id="licences">
+                <dt>Licenses:</dt>
+                <dd>
+                  <tal:licenses repeat="license context/licenses">
+                    <tal:license replace="license/title">GPL</tal:license><tal:comma
+                        condition="not:repeat/license/end">,</tal:comma>
+                  </tal:licenses>
+                  <tal:none condition="not:context/licenses">None specified</tal:none>
+                  <tal:has_description condition="context/license_info">
+                    (<tal:description replace="context/license_info" />)
+                  </tal:has_description>
+                </dd>
+                <dd id="commercial_subscription"
+                  tal:condition="context/commercial_subscription">
+                  Commercial subscription expires
+                  <tal:expiry content="context/commercial_subscription/date_expires/fmt:date" />
+                </dd>
+                <dd id="license-status" tal:condition="view/show_license_status">
+                  <strong tal:content="structure context/license_status/description" />
+                </dd>
+              </dl>
+            </div>
+
+            <p id="registrant">
+              Registered
+              <tal:created replace="context/datecreated/fmt:approximatedate" />
+              by
+              <tal:registrant replace="structure context/registrant/fmt:link" />
+            </p>
+
+            <div id="project-admin-whiteboard" class="whiteboard"
+              tal:condition="context/required:launchpad.ProjectReview">
+              <div>
+                <strong>Whiteboard</strong>
+                <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
+              </div>
+              <tal:whiteboard replace="structure context/reviewer_whiteboard/fmt:text-to-html" />
+            </div>
           </div>
         </div>
 
-        <div class="yui-u portlet">
-          <h2>
-            <span class="see-all"><a
-              tal:replace="structure overview_menu/series/fmt:link" /></span>
-            Series and milestones
-          </h2>
+        <div class="yui-u">
+          <div class="portlet">
+            <h2>
+              <span class="see-all"><a
+                tal:replace="structure overview_menu/series/fmt:link" /></span>
+              Series and milestones
+            </h2>
 
-          <iframe style="width: 90%"
-            metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
+            <iframe style="width: 90%"
+              metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
 
-          <ul class="horizontal"
-            tal:condition="overview_menu/series_add/enabled">
-            <li><a tal:replace="structure overview_menu/series_add/fmt:link" /></li>
-          </ul>
+            <ul class="horizontal"
+              tal:condition="overview_menu/series_add/enabled">
+              <li>
+                <a tal:replace="structure overview_menu/series_add/fmt:link" />
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
       <tal:warning-for-owner
         condition="view/show_commercial_subscription_info">
-        <div class="yui-g">
-          <div
-            tal:condition="view/requires_commercial_subscription"
-            tal:content="structure context/@@+portlet-requires-subscription"/>
-          <div
-            tal:condition="not: context/licenses"
-            tal:content="structure context/@@+portlet-license-missing" />
-        </div>
+        <div
+          tal:condition="view/requires_commercial_subscription"
+          tal:content="structure context/@@+portlet-requires-subscription"/>
+        <div
+          tal:condition="not: context/licenses"
+          tal:content="structure context/@@+portlet-license-missing" />
       </tal:warning-for-owner>
 
       <div class="yui-g">
-        <div class="first yui-u"
-          tal:content="structure context/@@+portlet-listfaqs" />
+        <div class="yui-u first">
+          <div tal:content="structure context/@@+portlet-listfaqs" />
 
-        <div class="yui-u"
-          tal:content="structure context/@@+portlet-latestquestions" />
-      </div>
+          <div tal:content="structure context/@@+portlet-top-contributors" />
 
-      <div class="yui-g">
-        <div class="first yui-u"
-          tal:content="structure context/@@+portlet-top-contributors" />
+          <div tal:content="structure context/@@+portlet-coming-sprints" />
+        </div>
 
-        <div class="yui-u"
-          tal:content="structure context/@@+portlet-packages" />
-      </div>
+        <div class="yui-u">
+          <div tal:content="structure context/@@+portlet-latestquestions" />
 
-      <div class="yui-g">
-        <div class="first yui-u"
-          tal:content="structure context/@@+portlet-coming-sprints" />
+          <div tal:content="structure context/@@+portlet-packages" />
+        </div>
       </div>
     </tal:main>
 
     <tal:side metal:fill-slot="side"
       define="overview_menu context/menu:overview">
-      <div id="object-actions" class="top-portlet">
-        <ul>
-          <li>
-            <tal:edit
-              content="structure overview_menu/edit/fmt:link-icon" />
-          </li>
-          <li>
-            <tal:review
-              content="structure overview_menu/review_license/fmt:link-icon" />
-          </li>
-          <li>
-            <tal:admin
-              content="structure overview_menu/administer/fmt:link-icon" />
-          </li>
-        </ul>
-      </div>
+      <tal:menu replace="structure view/@@+global-actions" />
 
-        <div id="downloads" class="top-portlet downloads"
-          tal:define="release view/latest_release_with_download_files"
-          tal:condition="release">
-          <h2>Downloads</h2>
+      <div id="downloads" class="top-portlet downloads"
+        tal:define="release view/latest_release_with_download_files">
+        <h2>Downloads</h2>
 
+        <tal:release condition="release">
           <ul>
             <li tal:repeat="file release/files">
               <a tal:attributes="href file/fmt:url;
@@ -211,50 +204,27 @@
           </ul>
 
           <div class="released">
-            Released <tal:date replace="release/datereleased/fmt:displaydate" />
+            <span>
+            released <tal:date replace="release/datereleased/fmt:displaydate" />
+            </span>
           </div>
+        </tal:release>
 
-          <div class="alternate">
-            <a style="text-decoration: underline;"
-              tal:define="link overview_menu/downloads"
-              tal:attributes="href link/fmt:url;
-                              title link/summary"
-              tal:content="structure link/escapedtext" /> |
-            <a style="text-decoration: underline;"
-              tal:define="link overview_menu/rdf"
-              tal:attributes="href link/fmt:url;
-                              title link/summary"
-              tal:content="structure link/escapedtext" />
-          </div>
+        <div class="alternate">
+          <a style="text-decoration: underline;"
+            tal:define="link overview_menu/downloads"
+            tal:attributes="href link/fmt:url;
+                            title link/summary"
+            tal:content="structure link/escapedtext" /> |
+          <a style="text-decoration: underline;"
+            tal:define="link overview_menu/rdf"
+            tal:attributes="href link/fmt:url;
+                            title link/summary"
+            tal:content="structure link/escapedtext" />
         </div>
-
-
-      <div id="involvement" class="portlet involvement">
-        <h2>Get Involved</h2>
-
-        <ul>
-          <li tal:condition="context/official_malone">
-            <a class="bugs"
-              tal:attributes="href context/menu:bugs/filebug/url">Report a Bug</a>
-          </li>
-          <li tal:condition="context/official_answers">
-            <a class="question"
-              tal:attributes="href context/menu:answers/new/url">Ask a question</a>
-          </li>
-          <li tal:condition="context/official_rosetta">
-            <a class="translate"
-              tal:attributes="href context/menu:translations/overview/url">Help translate</a>
-          </li>
-          <li tal:condition="context/official_codehosting">
-            <a class="code"
-              tal:attributes="href context/menu:branches/branch_add/url">Submit code</a>
-          </li>
-          <li tal:condition="context/official_blueprints">
-            <a class="blueprint"
-              tal:attributes="href context/menu:specications/new/url">Register a Blueprint</a>
-          </li>
-        </ul>
       </div>
+
+      <div tal:replace="structure context/@@+get-involved" />
 
       <div tal:replace="structure context/@@+portlet-latestannouncements" />
     </tal:side>

@@ -58,11 +58,12 @@ PPA in order to be able to copy packages.
     Copy packages from PPA for Celso Providelo
     To be able to copy packages you have to participate in at least one
     PPA. Activate your own PPA or join a team with an active PPA.
+    Create a new PPA
 
 James will follow the advice and activate his PPA by clicking in the
 provided link.
 
-    >>> jblack_browser.getLink('Activate your own PPA').click()
+    >>> jblack_browser.getLink('Create a new PPA').click()
     >>> print jblack_browser.title
     Activate Personal Package Archive
 

@@ -48,7 +48,7 @@ page.
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+addcomment')
     >>> user_browser.getControl(name='field.comment').value = (
     ...     "Here's a comment for testing, like.")
-    >>> user_browser.getControl('Save Changes').click()
+    >>> user_browser.getControl('Post comment').click()
     >>> print_comments(user_browser.contents)
     Bug Watch Updater
     on 2007-12-18
