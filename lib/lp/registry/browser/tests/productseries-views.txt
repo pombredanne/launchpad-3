@@ -135,6 +135,25 @@ Users without edit permission cannot access the view.
     False
 
 
+Link branch
+-----------
+
+The +linkbranch view allows a user to associate a series with a branch. It
+provides a label and a page_title.
+
+    >>> view = create_initialized_view(series, '+linkbranch')
+    >>> print view.label
+    Link an existing branch to App series simple
+
+    >>> print view.page_title
+    Link an existing branch to App series simple
+
+There is a cancel_url property too.
+
+    >>> print view.cancel_url
+    http://launchpad.dev/app/simple
+
+
 Delete ProductSeries
 --------------------
 

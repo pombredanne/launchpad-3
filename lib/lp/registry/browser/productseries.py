@@ -596,6 +596,17 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     field_names = ['branch']
 
     @property
+    def label(self):
+        """The form label."""
+        return 'Link an existing branch to %s series %s' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
@@ -613,9 +624,10 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the product series page."""
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):
