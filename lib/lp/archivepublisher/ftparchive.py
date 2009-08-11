@@ -9,14 +9,17 @@ from StringIO import StringIO
 from storm.expr import Desc, In, Join
 from zope.component import getUtility
 
-from lp.archivepublisher.utils import process_in_batches
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces import (
-    PackagePublishingStatus, PackagePublishingPocket, pocketsuffix)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from lp.archivepublisher.utils import process_in_batches
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingStatus, PackagePublishingPocket, pocketsuffix)
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.section import Section
+
 
 
 def package_name(filename):
@@ -258,12 +261,19 @@ class FTPArchiveHandler:
     #
 
     def getSourcesForOverrides(self, distroseries, pocket):
-        """Return SelectResults containing SourcePackagePublishingHistory."""
+        """Fetch override information about all published sources.
+
+        The override information consists of tuples with 'sourcename',
+        'component' and 'section' strings, in this order.
+
+        :param distroseries: target `IDistroSeries`
+        :param pocket: target `PackagePublishingPocket`
+
+        :return: a `DecoratedResultSet` with the source override information
+            tuples
+        """
         # Avoid cicular imports.
-        from lp.registry.model.sourcepackagename import SourcePackageName
-        from lp.soyuz.model.component import Component
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-        from lp.soyuz.model.section import Section
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -299,13 +309,21 @@ class FTPArchiveHandler:
         return DecoratedResultSet(result_set, add_suite)
 
     def getBinariesForOverrides(self, distroseries, pocket):
-        """Return SelectResults containing BinaryPackagePublishingHistory."""
+        """Fetch override information about all published binaries.
+
+        The override information consists of tuples with 'binaryname',
+        'component', 'section' and 'priority' strings, in this order.
+
+        :param distroseries: target `IDistroSeries`
+        :param pocket: target `PackagePublishingPocket`
+
+        :return: a `DecoratedResultSet` with the binary override information
+            tuples
+        """
         # Avoid cicular imports.
         from lp.soyuz.model.binarypackagename import BinaryPackageName
         from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-        from lp.soyuz.model.component import Component
         from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-        from lp.soyuz.model.section import Section
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origins = (
@@ -421,11 +439,15 @@ class FTPArchiveHandler:
             else:
                 suboverride['src'].add((packagename, section))
 
-        for pub_details in source_publications:
-            updateOverride(*pub_details)
-
-        # Process this huge iteration (200k records) in batches.
+        # Process huge iterations (more than 200k records) in batches.
         # See `PublishingTunableLoop`.
+        self.log.info("Calculating source overrides")
+        def update_source_override(pub_details):
+            updateOverride(*pub_details)
+        process_in_batches(
+            source_publications, update_source_override, self.log)
+
+        self.log.info("Calculating binary overrides")
         def update_binary_override(pub_details):
             updateOverride(*pub_details)
         process_in_batches(
@@ -526,12 +548,83 @@ class FTPArchiveHandler:
     # File List Generation
     #
 
+    def getSourceFiles(self, distroseries, pocket):
+        """Fetch publishing information about all published source files.
+
+        The publishing information consists of tuples with 'sourcename',
+        'filename' and 'component' strings, in this order.
+
+        :param distroseries: target `IDistroSeries`
+        :param pocket: target `PackagePublishingPocket`
+
+        :return: a `DecoratedResultSet` with the source files information
+            tuples.
+        """
+
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import SourcePackageFilePublishing
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.using(SourcePackageFilePublishing).find(
+            (SourcePackageFilePublishing.sourcepackagename,
+             SourcePackageFilePublishing.libraryfilealiasfilename,
+             SourcePackageFilePublishing.componentname),
+            SourcePackageFilePublishing.distribution == self.distro,
+            SourcePackageFilePublishing.archive == self.publisher.archive,
+            SourcePackageFilePublishing.distroseriesname == distroseries.name,
+            SourcePackageFilePublishing.pocket == pocket,
+            SourcePackageFilePublishing.publishingstatus ==
+                PackagePublishingStatus.PUBLISHED)
+
+        suite = distroseries.name + pocketsuffix[pocket]
+        def add_suite(result):
+            name, filename, component = result
+            return (name, suite, filename, component)
+
+        result_set.order_by(
+            Desc(SourcePackageFilePublishing.id))
+        return DecoratedResultSet(result_set, add_suite)
+
+    def getBinaryFiles(self, distroseries, pocket):
+        """Fetch publishing information about all published binary files.
+
+        The publishing information consists of tuples with 'sourcename',
+        'filename', 'component' and 'architecture' strings, in this order.
+
+        :param distroseries: target `IDistroSeries`
+        :param pocket: target `PackagePublishingPocket`
+
+        :return: a `DecoratedResultSet` with the binary files information
+            tuples.
+        """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import BinaryPackageFilePublishing
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.using(BinaryPackageFilePublishing).find(
+            (BinaryPackageFilePublishing.sourcepackagename,
+             BinaryPackageFilePublishing.libraryfilealiasfilename,
+             BinaryPackageFilePublishing.componentname,
+             BinaryPackageFilePublishing.architecturetag),
+            BinaryPackageFilePublishing.distribution == self.distro,
+            BinaryPackageFilePublishing.archive == self.publisher.archive,
+            BinaryPackageFilePublishing.distroseriesname == distroseries.name,
+            BinaryPackageFilePublishing.pocket == pocket,
+            BinaryPackageFilePublishing.publishingstatus ==
+                PackagePublishingStatus.PUBLISHED)
+
+        suite = distroseries.name + pocketsuffix[pocket]
+        def add_suite(result):
+            name, filename, component, architecturetag = result
+            architecture = 'binary-' + architecturetag
+            return (name, suite, filename, component, architecture)
+
+        result_set.order_by(
+            Desc(BinaryPackageFilePublishing.id))
+        return DecoratedResultSet(result_set, add_suite)
+
     def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write filelists."""
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import (
-            BinaryPackageFilePublishing, SourcePackageFilePublishing)
-
         for distroseries in self.distro.serieses:
             for pocket in pocketsuffix:
                 if not fullpublish:
@@ -540,35 +633,8 @@ class FTPArchiveHandler:
                 else:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
-
-                spps = SourcePackageFilePublishing.select(
-                    """
-                    distribution = %s AND
-                    archive = %s AND
-                    publishingstatus = %s AND
-                    pocket = %s AND
-                    distroseriesname = %s
-                    """ % sqlvalues(self.distro,
-                                    self.publisher.archive,
-                                    PackagePublishingStatus.PUBLISHED,
-                                    pocket,
-                                    distroseries.name),
-                    orderBy="id")
-
-                pps = BinaryPackageFilePublishing.select(
-                    """
-                    distribution = %s AND
-                    archive = %s AND
-                    publishingstatus = %s AND
-                    pocket = %s AND
-                    distroseriesname = %s
-                    """ % sqlvalues(self.distro,
-                                    self.publisher.archive,
-                                    PackagePublishingStatus.PUBLISHED,
-                                    pocket,
-                                    distroseries.name),
-                    orderBy="id")
-
+                spps = self.getSourceFiles(distroseries, pocket)
+                pps = self.getBinaryFiles(distroseries, pocket)
                 self.publishFileLists(spps, pps)
 
     def publishFileLists(self, sourcefiles, binaryfiles):
@@ -580,16 +646,11 @@ class FTPArchiveHandler:
         """
         filelist = {}
 
-        def updateFileList(fp, architecturetag=None):
-            distroseriesname = fp.distroseriesname
-            dr_pocketed = distroseriesname + pocketsuffix[fp.pocket]
-            component = fp.componentname
-            filename = fp.libraryfilealiasfilename
-            sourcepackagename = fp.sourcepackagename
+        def updateFileList(sourcepackagename, suite, filename, component,
+                           architecturetag=None):
             ondiskname = self._diskpool.pathFor(
                             component, sourcepackagename, filename)
-
-            this_file = filelist.setdefault(dr_pocketed, {})
+            this_file = filelist.setdefault(suite, {})
             this_file.setdefault(component, {})
             if architecturetag:
                 this_file[component].setdefault(architecturetag, [])
@@ -598,28 +659,26 @@ class FTPArchiveHandler:
                 this_file[component].setdefault('source', [])
                 this_file[component]['source'].append(ondiskname)
 
-        self.log.debug(
-            "Collating lists of %d source files..." % sourcefiles.count())
-        for file_publishing in sourcefiles:
-            updateFileList(file_publishing)
-
-        self.log.debug(
-            "Collating lists of %d binary files..." % binaryfiles.count())
-        # Process this huge iteration (180 records) in batches.
+        # Process huge iterations (more than 200K records) in batches.
         # See `PublishingTunableLoop`.
-        def update_binary_filelist(file_publishing):
-            architecturetag = (
-                "binary-%s" % file_publishing.architecturetag)
-            updateFileList(file_publishing, architecturetag)
+        self.log.info("Calculating source filelist.")
+        def update_source_filelist(file_details):
+            updateFileList(*file_details)
+        process_in_batches(
+            sourcefiles, update_source_filelist, self.log)
+
+        self.log.info("Calculating binary filelist.")
+        def update_binary_filelist(file_details):
+            updateFileList(*file_details)
         process_in_batches(
             binaryfiles, update_binary_filelist, self.log)
 
-        for dr_pocketed, components in filelist.items():
-            self.log.debug("Writing file lists for %s" % dr_pocketed)
+        for suite, components in filelist.items():
+            self.log.info("Writing file lists for %s" % suite)
             for component, architectures in components.items():
                 for architecture, file_names in architectures.items():
                     self.writeFileList(architecture, file_names,
-                                             dr_pocketed, component)
+                                       suite, component)
 
     def writeFileList(self, arch, file_names, dr_pocketed, component):
         """Outputs a file list for a series and architecture.
@@ -701,7 +760,7 @@ class FTPArchiveHandler:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
 
-                subtext = self.generateConfigForPocket(
+                self.generateConfigForPocket(
                     apt_config, distroseries, distroseries_name, pocket)
 
         # And now return that string.
