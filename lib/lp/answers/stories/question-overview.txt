@@ -165,14 +165,15 @@ Project also have the 'Latest questions' portlet and the
 
     >>> user_browser.open('http://launchpad.dev/mozilla')
 
-    >>> questions = find_portlet(user_browser.contents, 'Latest questions')
-    >>> print extract_text(
-    ...     questions.find('div')).encode('ASCII', 'backslashreplace')
-    [Open] Problemas de Impress\xe3o no Firefox
-    [Answered] Newly installed plug-in doesn't seem to be used
-    [Open] Firefox loses focus and gets stuck
-    [Open] Problem showing the SVG demo on W3C site
-    [Open] Firefox cannot render Bank Site
+    >>> questions = find_tag_by_id(
+    ...     user_browser.contents, 'portlet-latest-questions')
+    >>> print extract_text(questions).encode('ASCII', 'backslashreplace')
+    Latest questions
+    Problemas de Impress\xe3o no Firefox ...
+    Newly installed plug-in doesn't seem to be used ...
+    Firefox loses focus and gets stuck ...
+    Problem showing the SVG demo on W3C site ...
+    Firefox cannot render Bank Site ...
 
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
