@@ -389,10 +389,6 @@ build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
-builder_admin = ContextTitle('Administer %s builder')
-
-builder_cancel = ContextTitle('Cancel job for %s')
-
 builder_edit = ContextTitle(smartquote('Change details for builder "%s"'))
 
 builder_history = ContextTitle('Build history for %s')
