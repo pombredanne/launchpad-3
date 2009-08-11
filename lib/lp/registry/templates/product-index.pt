@@ -27,19 +27,13 @@
         </h1>
         <p id="project-admin-whiteboard" class="whiteboard"
            tal:condition="context/required:launchpad.ProjectReview">
+          <a href="+review-license">Whiteboard</a>
           <span tal:content="context/reviewer_whiteboard" />
-          (<a href="+review-license">edit reviewer whiteboard</a>)
         </p>
         <p tal:condition="not: context/active"
            class="warning message"
            id="project-inactive" >
           This project is currently inactive
-          <tal:comment condition="nothing">
-            This page links to the +review-license form to reactivate
-            the product since both the admins and commercial-admins
-            have access to this form unlike the product/+admin form.
-          </tal:comment>
-          <a href="+review-license">(change this)</a>
         </p>
 
         <p id="license-status" tal:condition="view/show_license_status">
@@ -65,7 +59,7 @@
       </div>
 
       <tal:has-external-links condition="view/has_external_links">
-        <ul>
+        <ul id="external-links">
           <li tal:condition="view/should_display_homepage">
             <a id="homepageurl-link"
                class="sprite external-link"
@@ -171,7 +165,7 @@
       >
         <p id="commercial_subscription"
            tal:condition="context/commercial_subscription">
-          <strong>Commercial subscription expires:</strong>
+          <strong>Commercial subscription expires</strong>
           <tal:expiry content="context/commercial_subscription/date_expires/fmt:date" />
         </p>
       </tal:subscription_info>
@@ -257,13 +251,12 @@
       <tal:contrib replace="structure context/@@+portlet-top-contributors" />
       <tal:packages replace="structure context/@@+portlet-packages" />
 
-      <div class="section">
+      <div id="registrant" class="section">
         <h2>Registered</h2>
         <tal:created replace="context/datecreated/fmt:approximatedate" /> by
         <tal:registrant replace="structure context/registrant/fmt:link" />
-        <p />
-        <div tal:content="structure overview_menu/rdf/render" />
       </div>
+      <div tal:content="structure overview_menu/rdf/render" />
     </div>
   </body>
 </html>
