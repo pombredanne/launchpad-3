@@ -1,6 +1,8 @@
-= Adding and editing product series =
+Adding and editing product series
+=================================
 
-== Adding a series ==
+Adding a series
+---------------
 
 Only product owners  and drivers can add a series to product. This means that
 only Sample Person can add series in the Firefox product. No Privileges
@@ -50,7 +52,8 @@ Now we are redirected to the Overview page of the product series we just added
     <a class="sprite branch" href="http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2">lp://dev/firefox/stable</a>
 
 
-== Editing a series ==
+Editing a series
+----------------
 
 Now we test if we can edit the new added series. First we check if we
 can reach the +edit page.
@@ -122,7 +125,8 @@ should get a nice error message.
     unstable is already in use by another series.
 
 
-== Product series bug subscriptions ==
+Product series bug subscriptions
+--------------------------------
 
 To receive email notifications about bugs pertaining to a product series,
 we can create structural bug subscriptions.

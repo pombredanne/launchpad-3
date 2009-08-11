@@ -1,3 +1,6 @@
+Ubuntu packaging
+================
+
 We want to be able to edit the ubuntu packaging for a product series,
 and we also want to be able to create it where there was none
 previously.
