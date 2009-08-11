@@ -1,21 +1,17 @@
-= Set Up =
+ProductSeries Views
+===================
 
-We will have to check for a BranchJob being created for a branch, so
-let's put this check in a convenient function.
 
-    >>> from zope.component import getUtility
-
-For these tasks we need to log in.
-
-    >>> login('foo.bar@canonical.com')
-
-== ProductSeries view ==
+ProductSeries view
+------------------
 
 The default view for the productseries includes a script that augments the
 'Create milestone' link to show a formoverlay to create a milestone and
 update the milestones and releases table.
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> login('foo.bar@canonical.com')
 
     >>> product = factory.makeProduct(name='app')
     >>> series = factory.makeSeries(name='simple', product=product)
@@ -84,10 +80,10 @@ The productseries +edit view provides a label and page_title for the page.
 
     >>> view = create_initialized_view(series, '+edit')
     >>> print view.label
-    Edit App series simple
+    Edit App simple series
 
     >>> print view.page_title
-    Edit App series simple
+    Edit App simple series
 
 The view provides a cancel_url and a next_url.
 
@@ -117,10 +113,10 @@ parent project.
 The view provides a label and page_title.
 
     >>> print view.label
-    Administer App series simple
+    Administer App simple series
 
     >>> print view.page_title
-    Administer App series simple
+    Administer App simple series
 
 The view provides a cancel_url and a next_url.
 
@@ -143,10 +139,10 @@ provides a label and a page_title.
 
     >>> view = create_initialized_view(series, '+linkbranch')
     >>> print view.label
-    Link an existing branch to App series simple
+    Link an existing branch to App simple series
 
     >>> print view.page_title
-    Link an existing branch to App series simple
+    Link an existing branch to App simple series
 
 There is a cancel_url property too.
 
@@ -191,10 +187,10 @@ The project owner can access the view.
 The delete view has a label and page_title to explain what it does.
 
     >>> print view.label
-    Delete Field series rabbit
+    Delete Field rabbit series
 
     >>> print view.page_title
-    Delete Field series rabbit
+    Delete Field rabbit series
 
 The view has a a next_url to the product used when the delete is successful,
 though it is None by default. There is a cancel_url that links to the series.
@@ -303,6 +299,7 @@ like translations. The series are assigned to the Obsolete Junk project.
 The series name is changed to 'product_name-series_name-date_created' to
 avoid conflicts.
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
 

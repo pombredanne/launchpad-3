@@ -492,7 +492,7 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Edit %s series %s' % (
+        return 'Edit %s %s series' % (
             self.context.product.displayname, self.context.name)
 
     @property
@@ -532,7 +532,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Delete %s series %s' % (
+        return 'Delete %s %s series' % (
             self.context.product.displayname, self.context.name)
 
     @property
@@ -608,7 +608,7 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Link an existing branch to %s series %s' % (
+        return 'Link an existing branch to %s %s series' % (
             self.context.product.displayname, self.context.name)
 
     @property
@@ -679,7 +679,7 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Administer %s series %s' % (
+        return 'Administer %s %s series' % (
             self.context.product.displayname, self.context.name)
 
     @property

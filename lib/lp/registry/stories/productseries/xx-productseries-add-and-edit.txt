@@ -25,7 +25,7 @@ But Sample Person will and be able to add a series.
     http://launchpad.dev/firefox/+addseries
 
     >>> print find_main_content(browser.contents).find('h1').renderContents()
-    Register another series
+    Register a new Mozilla Firefox release series
 
 After checking that the page +addseries is there, we try to add a new series.
 
