@@ -297,6 +297,7 @@ Private membership teams cannot.
 Project Roles
 =============
 
+
 Registrant
 ----------
 
@@ -323,10 +324,12 @@ or private, can be the project registrant.
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <Product at...
 
+
 Maintainer/Owner
 ----------------
 
-A public team and a private team can be a project owner but a private membership team cannot.
+A public team and a private team can be a project owner but a private
+membership team cannot.
 
     >>> # The registrant must be specified or it will default to the owner.
     >>> product = factory.makeProduct(registrant=admin_user, owner=public_team)
@@ -343,7 +346,8 @@ A public team and a private team can be a project owner but a private membership
 Driver
 ------
 
-A public team and a private team can be a project driver but a private membership team cannot.
+A public team and a private team can be a project driver but a private
+membership team cannot.
 
     >>> product = factory.makeProduct()
     >>> product.driver = priv_team
@@ -372,8 +376,10 @@ private membership team cannot.
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <Product at...
 
+
 Product Series Roles
 ====================
+
 
 Owner
 -----
@@ -381,7 +387,8 @@ Owner
 A public team and a private team can be a product series owner but a
 private membership team cannot.
 
-    >>> product = factory.makeProduct(registrant=admin_user, owner=public_team)
+    >>> product = factory.makeProduct(registrant=admin_user,
+    ...                               owner=public_team)
     >>> product_series = factory.makeProductSeries(product, owner=public_team)
     >>> product_series = factory.makeProductSeries(product, owner=priv_team)
 
@@ -399,7 +406,8 @@ Driver
 A public team and a private team can be a product series driver but a
 private membership team cannot.
 
-    >>> product = factory.makeProduct(registrant=admin_user, owner=public_team)
+    >>> product = factory.makeProduct(registrant=admin_user,
+    ...                               owner=public_team)
     >>> product_series = factory.makeProductSeries(product, owner=public_team)
     >>> product_series.driver = public_team
     >>> product_series.driver = priv_team
@@ -420,8 +428,10 @@ Not every type of team can become a member of other types.
     >>> from lp.registry.interfaces.person import PrivatePersonLinkageError
     >>> reviewer = factory.makePerson()
     >>> def join_team(joined_type, joiner_type):
-    ...     joined = factory.makeTeam(owner=team_owner, visibility=joined_type)
-    ...     joiner = factory.makeTeam(owner=team_owner, visibility=joiner_type)
+    ...     joined = factory.makeTeam(owner=team_owner,
+    ...                               visibility=joined_type)
+    ...     joiner = factory.makeTeam(owner=team_owner,
+    ...                               visibility=joiner_type)
     ...     print "%s <- %s: " % (joined_type, joiner_type),
     ...     try:
     ...         joined.addMember(joiner, reviewer=reviewer)
