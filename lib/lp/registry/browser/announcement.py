@@ -236,7 +236,7 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
     @action(_('Publish'), name='publish')
     def publish_action(self, action, data):
         publication_date = data['publication_date']
-        self.context.set_publication_date(publication_date)
+        self.context.setPublicationDate(publication_date)
         self.next_url = canonical_url(self.context.target)+'/+announcements'
 
 
@@ -281,13 +281,13 @@ class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def announcements(self):
         published_only = not check_permission('launchpad.Edit', self.context)
-        return self.context.announcements(
+        return self.context.getAnnouncements(
                     limit=None, published_only=published_only)
 
     @cachedproperty
     def latest_announcements(self):
         published_only = not check_permission('launchpad.Edit', self.context)
-        return self.context.announcements(
+        return self.context.getAnnouncements(
                     limit=5, published_only=published_only)
 
     @cachedproperty

@@ -265,21 +265,16 @@ revision id.
     >>> proposal.reviewed_revision_id == tip.revision_id
     True
 
-If the target branch has specified a specific reviewer, then only
-a user in the reviewer team can approve or reject the branch.
+If the target branch has specified a specific reviewer, then either the owner
+of the target branch or the reviewer is able to approve or reject the
+proposal.
 
     >>> eric_the_reviewer = factory.makePerson(name="eric-reviewer")
     >>> target_branch = proposal.target_branch
     >>> target_branch.reviewer = eric_the_reviewer
     >>> proposal.rejectBranch(sample_person, tip.revision_id)
-    Traceback (most recent call last):
-    ...
-    UserNotBranchReviewer
-    >>> proposal.approveBranch(sample_person, tip.revision_id)
-    Traceback (most recent call last):
-    ...
-    UserNotBranchReviewer
-
+    >>> print proposal.queue_status.title
+    Rejected
     >>> proposal.approveBranch(eric_the_reviewer, tip.revision_id)
     >>> print proposal.queue_status.title
     Approved
@@ -336,7 +331,8 @@ queueing the branch is not a reviewer, an exception is raised.
     >>> print proposal.queue_status.title
     Needs review
 
-    >>> proposal.enqueue(sample_person, tip.revision_id)
+    >>> random_user = factory.makePerson()
+    >>> proposal.enqueue(random_user, tip.revision_id)
     Traceback (most recent call last):
     UserNotBranchReviewer
 

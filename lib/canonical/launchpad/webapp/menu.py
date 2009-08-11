@@ -185,6 +185,11 @@ class MenuLink:
         return getMultiAdapter(
             (self, get_current_browser_request()), name="+inline")()
 
+    @property
+    def path(self):
+        """See `ILink`."""
+        return self.url.path
+
 
 class FacetLink(MenuLink):
     """Adapter from ILinkData to IFacetLink."""

@@ -75,9 +75,6 @@ python2.4 update-cve.py -q
 echo == Updating package cache `date` ==
 python2.4 update-pkgcache.py -q
 
-echo == POFile stats `date` ==
-python2.4 rosetta-pofile-stats.py
-
 echo == Product Release Finder `date` ==
 python2.4 product-release-finder.py -q
 

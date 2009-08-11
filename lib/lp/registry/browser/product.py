@@ -410,7 +410,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
 
     def announcements(self):
         text = u'\u00BB More announcements'
-        enabled = bool(self.context.announcements())
+        enabled = bool(self.context.getAnnouncements())
         return Link('+announcements', text, enabled=enabled)
 
     def rdf(self):
