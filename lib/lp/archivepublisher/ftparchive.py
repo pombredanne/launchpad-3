@@ -6,10 +6,17 @@ from select import select
 import subprocess
 from StringIO import StringIO
 
+from storm.expr import Desc, In, Join
+from zope.component import getUtility
+
 from lp.archivepublisher.utils import process_in_batches
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces import (
     PackagePublishingStatus, PackagePublishingPocket, pocketsuffix)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 
 
 def package_name(filename):
@@ -252,40 +259,88 @@ class FTPArchiveHandler:
 
     def getSourcesForOverrides(self, distroseries, pocket):
         """Return SelectResults containing SourcePackagePublishingHistory."""
-        # Avoid circular imports.
+        # Avoid cicular imports.
+        from lp.registry.model.sourcepackagename import SourcePackageName
+        from lp.soyuz.model.component import Component
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-        return SourcePackagePublishingHistory.select(
-            """
-            SourcePackagePublishingHistory.distroseries = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.pocket = %s AND
-            SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(distroseries,
-                            self.publisher.archive,
-                            pocket,
-                            PackagePublishingStatus.PUBLISHED),
-            prejoins=["sourcepackagerelease.sourcepackagename"],
-            orderBy="id")
+        from lp.soyuz.model.section import Section
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origins = (
+            SourcePackagePublishingHistory,
+            Join(Component,
+                 Component.id == SourcePackagePublishingHistory.componentID),
+            Join(Section,
+                 Section.id == SourcePackagePublishingHistory.sectionID),
+            Join(SourcePackageRelease,
+                 SourcePackageRelease.id ==
+                     SourcePackagePublishingHistory.sourcepackagereleaseID),
+            Join(SourcePackageName,
+                 SourcePackageName.id ==
+                     SourcePackageRelease.sourcepackagenameID),
+            )
+
+        result_set = store.using(*origins).find(
+            (SourcePackageName.name, Component.name, Section.name),
+            SourcePackagePublishingHistory.archive == self.publisher.archive,
+            SourcePackagePublishingHistory.distroseries == distroseries,
+            SourcePackagePublishingHistory.pocket == pocket,
+            SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED)
+
+        suite = distroseries.name + pocketsuffix[pocket]
+        def add_suite(result):
+            name, component, section = result
+            return (name, suite, component, section)
+
+        result_set.order_by(
+            Desc(SourcePackagePublishingHistory.id))
+        return DecoratedResultSet(result_set, add_suite)
 
     def getBinariesForOverrides(self, distroseries, pocket):
         """Return SelectResults containing BinaryPackagePublishingHistory."""
-        # Avoid circular imports.
+        # Avoid cicular imports.
+        from lp.soyuz.model.binarypackagename import BinaryPackageName
+        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+        from lp.soyuz.model.component import Component
         from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+        from lp.soyuz.model.section import Section
 
-        return BinaryPackagePublishingHistory.select(
-            """
-            BinaryPackagePublishingHistory.distroarchseries =
-            DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.pocket = %s AND
-            BinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(distroseries,
-                            self.publisher.archive,
-                            pocket,
-                            PackagePublishingStatus.PUBLISHED),
-            prejoins=["binarypackagerelease.binarypackagename"],
-            orderBy="id", clauseTables=["DistroArchSeries"])
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origins = (
+            BinaryPackagePublishingHistory,
+            Join(Component,
+                 Component.id == BinaryPackagePublishingHistory.componentID),
+            Join(Section,
+                 Section.id == BinaryPackagePublishingHistory.sectionID),
+            Join(BinaryPackageRelease,
+                 BinaryPackageRelease.id ==
+                     BinaryPackagePublishingHistory.binarypackagereleaseID),
+            Join(BinaryPackageName,
+                 BinaryPackageName.id ==
+                     BinaryPackageRelease.binarypackagenameID),
+            )
+
+        architectures_ids = [arch.id for arch in distroseries.architectures]
+        result_set = store.using(*origins).find(
+            (BinaryPackageName.name, Component.name, Section.name,
+             BinaryPackagePublishingHistory.priority),
+            BinaryPackagePublishingHistory.archive == self.publisher.archive,
+            In(BinaryPackagePublishingHistory.distroarchseriesID,
+               architectures_ids),
+            BinaryPackagePublishingHistory.pocket == pocket,
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED)
+
+        suite = distroseries.name + pocketsuffix[pocket]
+        def add_suite(result):
+            name, component, section, priority = result
+            return (name, suite, component, section, priority.title.lower())
+
+        result_set.order_by(
+            Desc(BinaryPackagePublishingHistory.id))
+        return DecoratedResultSet(result_set, add_suite)
 
     def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides, and generate them."""
@@ -325,7 +380,7 @@ class FTPArchiveHandler:
         # overrides[distroseries][component][src/bin] = sets of tuples
         overrides = {}
 
-        def updateOverride(publication, packagename, distroseriesname,
+        def updateOverride(packagename, suite, component, section,
                            priority=None):
             """Generates and packs tuples of data required for overriding.
 
@@ -338,13 +393,10 @@ class FTPArchiveHandler:
             and why we get the string names of the publication's foreign
             keys to component, section, etc.
             """
-            distroseriesname += pocketsuffix[publication.pocket]
-            component = publication.component.name
-            section = publication.section.name
             if component != DEFAULT_COMPONENT:
                 section = "%s/%s" % (component, section)
 
-            override = overrides.setdefault(distroseriesname, {})
+            override = overrides.setdefault(suite, {})
             suboverride = override.setdefault(component, {})
             # We use sets in this structure to avoid generating
             # duplicated overrides. This issue is an outcome of the fact
@@ -355,7 +407,6 @@ class FTPArchiveHandler:
             suboverride.setdefault('bin', set())
             suboverride.setdefault('d-i', set())
             if priority:
-                priority_displayed = priority.title.lower()
                 # We pick up debian-installer packages here
                 if section.endswith("debian-installer"):
                     # XXX: kiko 2006-08-24: This is actually redundant with
@@ -363,31 +414,20 @@ class FTPArchiveHandler:
                     # this code does make it possible to unit test this
                     # method, so I'm sure if it should be removed.
                     self._di_release_components.setdefault(
-                        distroseriesname, set()).add(component)
-                    suboverride['d-i'].add((packagename, priority_displayed,
-                                            section))
+                        suite, set()).add(component)
+                    suboverride['d-i'].add((packagename, priority, section))
                 else:
-                    suboverride['bin'].add((packagename, priority_displayed,
-                                            section))
+                    suboverride['bin'].add((packagename, priority, section))
             else:
                 suboverride['src'].add((packagename, section))
 
-        number_of_sources = source_publications.count()
-        self.log.debug(
-            "Updating overrides for %d sources" % number_of_sources)
-        for pub in source_publications:
-            updateOverride(pub, pub.sourcepackagerelease.name,
-                           pub.distroseries.name)
+        for pub_details in source_publications:
+            updateOverride(*pub_details)
 
-        number_of_binaries = binary_publications.count()
-        self.log.debug(
-            "Updating overrides for %d binaries" % number_of_binaries)
-        # Process this huge iteration (180 records) in batches.
+        # Process this huge iteration (200k records) in batches.
         # See `PublishingTunableLoop`.
-        def update_binary_override(pub):
-            updateOverride(
-                pub, pub.binarypackagerelease.name,
-                pub.distroarchseries.distroseries.name, pub.priority)
+        def update_binary_override(pub_details):
+            updateOverride(*pub_details)
         process_in_batches(
             binary_publications, update_binary_override, self.log)
 

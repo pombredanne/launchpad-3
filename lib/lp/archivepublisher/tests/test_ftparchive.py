@@ -189,20 +189,16 @@ class TestFTPArchive(unittest.TestCase):
         # For the above query, we are depending on the sample data to
         # contain seven rows of SourcePackagePublishghistory data.
         expectedSources = [
-            ('evolution', '1.0'),
-            ('netapplet', '1.0-1'),
-            ('pmount', '0.1-2'),
-            ('alsa-utils', '1.0.9a-4ubuntu1'),
-            ('cnews', 'cr.g7-37'),
-            ('libstdc++', 'b8p'),
-            ('linux-source-2.6.15', '2.6.15.3')
+            ('linux-source-2.6.15', 'hoary', 'main', 'base'),
+            ('libstdc++', 'hoary', 'main', 'base'),
+            ('cnews', 'hoary', 'universe', 'base'),
+            ('alsa-utils', 'hoary', 'main', 'base'),
+            ('pmount', 'hoary', 'main', 'editors'),
+            ('netapplet', 'hoary', 'main', 'web'),
+            ('evolution', 'hoary', 'main', 'editors'),
             ]
-        actualSources = [
-            (spph.sourcepackagerelease.name,
-             spph.sourcepackagerelease.version)
-            for spph in published_sources]
 
-        self.assertEqual(expectedSources, actualSources)
+        self.assertEqual(expectedSources, list(published_sources))
 
     def testGetSourcesForOverridesForPartner(self):
         """Ensure Publisher.getSourcesForOverrides works for PARTNER archive.
@@ -223,14 +219,10 @@ class TestFTPArchive(unittest.TestCase):
             breezy_autotest, PackagePublishingPocket.RELEASE)
 
         expectedSources = [
-            ('commercialpackage', '1.0-1')
+            ('commercialpackage', 'breezy-autotest', 'partner', 'devel'),
             ]
-        actualSources = [
-            (spph.sourcepackagerelease.name,
-             spph.sourcepackagerelease.version)
-            for spph in published_sources]
 
-        self.assertEqual(expectedSources, actualSources)
+        self.assertEqual(expectedSources, list(published_sources))
 
     def testGetBinariesForOverridesForPrimary(self):
         """Ensure Publisher.getBinariesForOverrides works for PRIMARY archive.
@@ -251,15 +243,10 @@ class TestFTPArchive(unittest.TestCase):
         # The above query depends on the sample data containing two rows
         # of BinaryPackagePublishingHistory with these IDs:
         expectedBinaries = [
-            ('pmount', '0.1-1'),
-            ('pmount', '2:1.9-1'),
+            ('pmount', 'hoary', 'main', 'base', 'extra'),
+            ('pmount', 'hoary', 'universe', 'editors', 'important')
             ]
-        actualBinaries = [
-            (bpph.binarypackagerelease.name,
-             bpph.binarypackagerelease.version)
-            for bpph in published_binaries]
-
-        self.assertEqual(expectedBinaries, actualBinaries)
+        self.assertEqual(expectedBinaries, list(published_binaries))
 
     def testGetBinariesForOverridesForPartner(self):
         """Ensure Publisher.getBinariesForOverrides works for PARTNER archive.
@@ -282,27 +269,21 @@ class TestFTPArchive(unittest.TestCase):
         # The above query depends on the sample data containing two rows
         # of BinaryPackagePublishingHistory with these IDs:
         expectedBinaries = [
-            (u'commercialpackage', u'1.0-1')
+            ('commercialpackage', 'breezy-autotest', 'partner', 'devel',
+             'optional')
             ]
-        actualBinaries = [
-            (bpph.binarypackagerelease.name,
-             bpph.binarypackagerelease.version)
-            for bpph in published_binaries]
 
-        self.assertEqual(expectedBinaries, actualBinaries)
+        self.assertEqual(expectedBinaries, list(published_binaries))
 
     def testPublishOverrides(self):
         """Verify FtpArchive.publishOverrides working on disk."""
         fa = self._setUpFTPArchiveHandler()
         src_result = [
-            self._getFakePubSource(
-                "foo", "main", "foo.dsc", "misc", "hoary-test"),
+            ('foo', 'hoary-test', 'main', 'misc'),
             ]
         src = FakeSelectResult(src_result)
         bin_result = [
-            self._getFakePubBinary(
-                "foo", "foo", "main", "foo.deb", "misc", "hoary-test",
-                PackagePublishingPriority.EXTRA, "i386"),
+            ('foo', 'hoary-test', 'main', 'misc', 'extra'),
             ]
         bin = FakeSelectResult(bin_result)
 
@@ -346,20 +327,16 @@ class TestFTPArchive(unittest.TestCase):
                                self._distribution, publisher)
 
         src_result = [
-            self._getFakePubSource(
-                "foo", "main", "foo.dsc", "misc", "hoary-test"),
+            ('foo', 'hoary-test', 'main', 'misc'),
             ]
         src = FakeSelectResult(src_result)
         bin_result = [
-            self._getFakePubBinary(
-                "foo", "foo", "main", "foo.deb", "misc", "hoary-test",
-                PackagePublishingPriority.EXTRA, "i386"),
+            ('foo', 'hoary-test', 'main', 'misc', 'extra'),
             ]
         bin = FakeSelectResult(bin_result)
 
         fa.createEmptyPocketRequests(fullpublish=True)
         fa.publishOverrides(src, bin)
-
 
         src_result = [
             self._getFakePubSourceFile(
