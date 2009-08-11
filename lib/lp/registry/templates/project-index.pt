@@ -15,12 +15,15 @@
     <tal:main metal:fill-slot="main">
 
     <div class="top-portlet">
-      <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
-        This project is currently inactive <a href="+review">(change this)</a>
+      <p id="project-inactive" class="warning message"
+         tal:condition="not: context/active">
+        This project is currently inactive
+        <a tal:attributes="href context/menu:overview/administer/url"
+          >(change this)</a>
       </p>
 
       <tal:block condition="view/required:launchpad.Edit">
-        <p tal:condition="not: context/products" class="warning message"> 
+        <p tal:condition="not: context/products" class="warning message">
           There are no projects registered for
           <span tal:replace="context/displayname">project displayname</span>.
           <br />
@@ -30,7 +33,7 @@
         </p>
       </tal:block>
 
-      <div class="description" tal:content="context/summary">
+      <div class="summary" tal:content="context/summary">
         This is the project group Summary, which should be a single paragraph
         summarising the project group's purpose.
       </div>
@@ -63,68 +66,64 @@
             tal:content="structure context/menu:overview/rdf/fmt:link-icon" />
     </div>
 
-      <div class="yui-g">
-        <div class="yui-u first">
-          <div class="portlet">
-            <h2>Project group information</h2>
-            <tal:details replace="structure context/@@+details" />
-          </div>
-        </div>
-        <div class="yui-u" id="products">
-          <div class="portlet">
-            <h2>Projects</h2>
-            <p tal:condition="not: context/products"> 
-              There are no projects registered for
-              <span tal:replace="context/displayname">project displayname</span>.
-            </p>
-            <div
-              tal:condition="context/products"
+    <div class="yui-g">
+      <div class="yui-u first">
+        <tal:details replace="structure context/@@+details" />
+      </div>
+      <div class="yui-u" id="products">
+        <div class="portlet">
+          <h2>Projects</h2>
+          <p tal:condition="not: context/products">
+            There are no projects registered for
+            <span tal:replace="context/displayname">project displayname</span>.
+          </p>
+          <dl tal:condition="context/products"
               tal:repeat="product context/products">
-              <tal:link replace="structure product/fmt:link" />
-              <div tal:condition="product/releases/count">
-                Releases:
-                <tal:release repeat="release product/releases">
-                  <a
-                    tal:attributes="href release/fmt:url"
-                    tal:content="release/version"
-                  >version</a><tal:comma
-                  condition="not:repeat/release/end">,</tal:comma>
-                </tal:release>
-              </div>
-              <div tal:condition="product/milestones">
-                Milestones:
-                <tal:milestone repeat="milestone product/milestones">
-                  <a
-                    tal:attributes="href milestone/fmt:url"
-                    tal:content="milestone/name"
-                  >name</a><tal:comma
-                  condition="not:repeat/milestone/end">,</tal:comma>
-                </tal:milestone>
-              </div>
-            </div>
-            <tal:block condition="context/required:launchpad.Edit">
-              <a href="+newproduct">&raquo; Register another project that is
-              part of <tal:project replace="context/displayname" /></a>
-            </tal:block>
-          </div>
+            <dt><a tal:replace="structure product/fmt:link">product</a></dt>
+            <dd tal:define="dev_focus product/development_focus">
+              <a tal:attributes="href dev_focus/fmt:url"
+                 tal:content="dev_focus/name">trunk</a>
+              series:
+              <tal:releases repeat="release dev_focus/releases">
+                <strong>
+                  <a tal:attributes="href release/fmt:url"
+                     tal:content="release/version">release
+                </a></strong>,
+              </tal:releases>
+              <tal:releases repeat="milestone dev_focus/milestones">
+                <strong>
+                  <a tal:attributes="href milestone/fmt:url"
+                     tal:content="milestone/name">milestone
+                  </a></strong><tal:comma
+                    condition="not:repeat/milestone/end">,</tal:comma>
+              </tal:releases>
+            </dd>
+          </dl>
+          <ul class="horizontal" style="float: right"
+              tal:condition="context/menu:overview/new_product/enabled">
+            <li>
+              <a tal:replace="structure context/menu:overview/new_product/fmt:link" />
+            </li>
+          </ul>
         </div>
       </div>
-      <div class="yui-g">
-        <div class="yui-u first">
-          <tal:bugs content="structure context/@@+portlet-latestbugs" />
-          <tal:specs content="structure context/@@+portlet-latestspecs" />
-          <tal:sprints content="structure context/@@+portlet-coming-sprints" />
-        </div>
-        <div class="yui-u">
-          <tal:questions content="structure context/@@+portlet-latestquestions" />
-          <tal:contributors content="structure context/@@+portlet-top-contributors" />
-        </div>
+    </div>
+    <div class="yui-g">
+      <div class="yui-u first">
+        <tal:bugs content="structure context/@@+portlet-latestbugs" />
+        <tal:specs content="structure context/@@+portlet-latestspecs" />
+        <tal:sprints content="structure context/@@+portlet-coming-sprints" />
       </div>
+      <div class="yui-u">
+        <tal:questions content="structure context/@@+portlet-latestquestions" />
+        <tal:contributors content="structure context/@@+portlet-top-contributors" />
+      </div>
+    </div>
     </tal:main>
 
     <tal:side metal:fill-slot="side">
       <div id="object-actions" class="top-portlet">
-        <tal:menu replace="structure view/@@+global-actions" /> 
+        <tal:menu replace="structure view/@@+global-actions" />
       </div>
       <div id="involvement" class="portlet involvement"
            tal:condition="context/products">

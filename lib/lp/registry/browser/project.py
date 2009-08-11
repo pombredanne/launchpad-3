@@ -165,7 +165,13 @@ class ProjectOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'branding', 'driver', 'reassign', 'top_contributors', 'mentorship',
-        'announce', 'announcements', 'branch_visibility', 'rdf']
+        'announce', 'announcements', 'branch_visibility', 'rdf',
+        'new_product']
+
+    @enabled_with_permission('launchpad.Edit')
+    def new_product(self):
+        text = 'Register another project in %s' % self.context.displayname
+        return Link('+newproduct', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -231,9 +237,10 @@ class ProjectActionMenu(NavigationMenu):
     title = 'Action menu'
     links = ('subscribe', 'edit', 'administer')
 
-    # XXX: salgado, 2009-08-10: This should be shown in the +index page of the
-    # project's bugs facet, but that would require too much work and I just
-    # want to convert this page to 3.0, so I'll leave it here for now.
+    # XXX: salgado, bug=412178, 2009-08-10: This should be shown in the +index
+    # page of the project's bugs facet, but that would require too much work
+    # and I just want to convert this page to 3.0, so I'll leave it here for
+    # now.
     def subscribe(self):
         text = 'Subscribe to bug mail'
         return Link('+subscribe', text, icon='edit')
