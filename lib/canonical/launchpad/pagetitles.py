@@ -228,11 +228,6 @@ branch_register_merge_proposal = 'Propose branch for merging'
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 
-def branchsubscription_edit(context, view):
-    """Return the page title with the branch name."""
-    return smartquote(
-        'Edit subscription to branch "%s"' % context.branch.displayname)
-
 branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
 
 def branch_visibility_edit(context, view):

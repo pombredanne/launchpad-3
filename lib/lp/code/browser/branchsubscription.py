@@ -17,13 +17,15 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.enums import BranchSubscriptionNotificationLevel
-from lp.code.interfaces.branchsubscription import IBranchSubscription
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
+from canonical.lazr.utils import smartquote
+
+from lp.code.enums import BranchSubscriptionNotificationLevel
+from lp.code.interfaces.branchsubscription import IBranchSubscription
 
 
 class BranchSubscriptionPrimaryContext:
@@ -258,6 +260,17 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
     """
     schema = IBranchSubscription
     field_names = ['notification_level', 'max_diff_lines', 'review_level']
+
+    @property
+    def page_title(self):
+        """Rendered as the title of the page."""
+        return smartquote(
+            'Edit subscription to branch "%s"' % self.branch.displayname)
+
+    @property
+    def label(self):
+        """Rendered as the form heading."""
+        return "Edit subscription to branch for %s" % self.person.displayname
 
     def initialize(self):
         self.branch = self.context.branch
