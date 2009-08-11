@@ -165,6 +165,18 @@ class TestFTPArchive(unittest.TestCase):
             ]
         self.assertEqual(expectedBinaries, list(published_binaries))
 
+    def test_getBinariesForOverrides_with_no_architectures(self):
+        # getBinariesForOverrides() copes with uninitiazed distroseries
+        # (no architectures), returning an empty ResultSet.
+        fa = self._setUpFTPArchiveHandler()
+
+        breezy_autotest = self._distribution.getSeries('breezy-autotest')
+        self.assertEquals([], list(breezy_autotest.architectures))
+
+        published_binaries = fa.getBinariesForOverrides(
+            breezy_autotest, PackagePublishingPocket.RELEASE)
+        self.assertEqual([], list(published_binaries))
+
     def test_publishOverrides(self):
         # publishOverrides write the expected files on disk.
         fa = self._setUpFTPArchiveHandler()

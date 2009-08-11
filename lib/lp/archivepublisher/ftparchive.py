@@ -7,6 +7,7 @@ import subprocess
 from StringIO import StringIO
 
 from storm.expr import Desc, In, Join
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 
 from canonical.launchpad.components.decoratedresultset import (
@@ -341,6 +342,9 @@ class FTPArchiveHandler:
             )
 
         architectures_ids = [arch.id for arch in distroseries.architectures]
+        if len(architectures_ids) == 0:
+            return EmptyResultSet()
+
         result_set = store.using(*origins).find(
             (BinaryPackageName.name, Component.name, Section.name,
              BinaryPackagePublishingHistory.priority),
