@@ -44,8 +44,6 @@ class SpecificationMessageSet:
             owner=owner, rfc822msgid=make_msgid('blueprint'), subject=subject)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
         specmsg = SpecificationMessage(specification=spec, message=msg)
-
-        Store.of(specmsg).flush()
         return specmsg
 
     def get(self, specmessageid):

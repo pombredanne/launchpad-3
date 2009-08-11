@@ -11,8 +11,9 @@ __all__ = [
     'ISpecificationMessageSet',
     ]
 
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Bool, Int, Object
+from zope.schema import Bool, Int
 
 from lp.blueprints.interfaces.specification import ISpecification
 from canonical.launchpad.interfaces.message import IMessage
@@ -21,10 +22,10 @@ from canonical.launchpad.interfaces.message import IMessage
 class ISpecificationMessage(Interface):
     """A link between a specification and a message."""
 
-    specification = Object(schema=ISpecification, title=u"The specification.")
-    messageID = Int(title=u"The message id.", readonly=True)
-    message = Object(schema=IMessage, title=u"The message.")
-    visible = Bool(title=u"This message is visible or not.", required=False,
+    specification = Reference(schema=ISpecification,
+        title=u"The specification.")
+    message = Reference(schema=IMessage, title=u"The message.")
+    visible = Bool(title=u"Is this message visible?", required=False,
         default=True)
 
 
