@@ -3,9 +3,8 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-
 <div class="portlet" id="portlet-requires-subscription"
-     tal:condition="context/commercial_subscription_is_due">
+  tal:condition="context/commercial_subscription_is_due">
   <h2>
     Purchasing a subscription is required
   </h2>

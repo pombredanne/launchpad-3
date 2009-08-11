@@ -4,12 +4,10 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_side"
-  i18n:domain="launchpad"
->
+  i18n:domain="launchpad">
   <body>
     <tal:heading metal:fill-slot="heading">
       <h1 tal:replace="structure view/title_edit_widget">project title</h1>
-      <br style="clear:both"/>
     </tal:heading>
 
     <tal:main metal:fill-slot="main"
@@ -31,7 +29,7 @@
           tal:content="structure context/description/fmt:text-to-html"
           tal:condition="context/description">
           $Product.description goes here. This should be a longer piece of
-          text, up to three paragraphs in length, which gives much morehttps://launchpad.dev/firefox/+rdf
+          text, up to three paragraphs in length, which gives much more
           detailed information about the open source project in question.
         </div>
 

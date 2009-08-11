@@ -900,7 +900,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def external_links(self):
         """The project's external links.
 
-        The home pag link is not included because its link must have the
+        The home page link is not included because its link must have the
         rel=nofollow attribute.
         """
         from canonical.launchpad.webapp.menu import MenuLink

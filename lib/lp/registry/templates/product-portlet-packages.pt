@@ -5,7 +5,6 @@
   omit-tag=""
   define="packages context/sourcepackages"
   condition="packages">
-
 <div class="portlet" id="portlet-packages">
   <h2>
     <span class="see-all"><a

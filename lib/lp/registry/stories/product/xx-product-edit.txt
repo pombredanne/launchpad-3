@@ -1,3 +1,6 @@
+Product Edit and Administer
+===========================
+
 Page to edit a product - does the page load as the product owner?
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
@@ -338,15 +341,13 @@ Admins can still see the product, but regular users can't.
 
     >>> registry_browser.open('http://launchpad.dev/firefox')
     >>> contents = find_main_content(registry_browser.contents)
-    >>> print contents.find(id='project-inactive')
-    <p...This project is currently inactive...
-    <a...href=".../+review-license"...
+    >>> print extract_text(contents.find(id='project-inactive'))
+    This project is currently inactive ...
 
     >>> admin_browser.open('http://launchpad.dev/firefox')
     >>> contents = find_main_content(admin_browser.contents)
-    >>> print contents.find(id='project-inactive')
-    <p...This project is currently inactive...
-    <a...href=".../+review-license"...
+    >>> print extract_text(contents.find(id='project-inactive'))
+    This project is currently inactive ...
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     Traceback (most recent call last):
