@@ -1,4 +1,5 @@
-= Product Launchpad usage =
+Product Launchpad usage
+=======================
 
 The launchpad usage flags (whether the product uses Bugs, Answers or
 Translations officially) are found on the +edit page.
@@ -12,7 +13,8 @@ Translations officially) are found on the +edit page.
     Uses Launchpad for: Answers and Bug Tracking.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'bugtracker'))
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'bugtracker'))
     Bug tracker: Launchpad
 
 Only the product registrant and the admins have access to this page.
@@ -110,7 +112,8 @@ Let's reset it to the way it was before.
     Uses Launchpad for: Answers, Bug Tracking, and Code.
 
 
-== Tracking bugs by email ==
+Tracking bugs by email
+----------------------
 
 Instead if using a web-based bug tracker, projects can specify an
 email address where bug reports should be sent.
@@ -149,7 +152,8 @@ An error message is shown if the email address is not filled in.
     Please enter an email address.
 
 
-== enable_bug_expiration and JavaScript ==
+enable_bug_expiration and JavaScript
+------------------------------------
 
 JavaScript is used to constrain enable_bug_expiration to projects that
 use Launchpad to track bugs. If the form is submitted before the page

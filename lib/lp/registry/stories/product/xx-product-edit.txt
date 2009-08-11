@@ -1,3 +1,6 @@
+Product Edit and Administer
+===========================
+
 Page to edit a product - does the page load as the product owner?
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
