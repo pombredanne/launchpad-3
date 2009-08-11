@@ -183,11 +183,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
     owner = ForeignKey(
-        foreignKey="Person",
-        storm_validator=validate_public_person, dbName="owner", notNull=True)
+        dbName="owner", foreignKey="Person",
+        storm_validator=validate_person_not_private_membership,
+        notNull=True)
     registrant = ForeignKey(
-        foreignKey="Person",
-        storm_validator=validate_public_person, dbName="registrant",
+        dbName="registrant", foreignKey="Person",
+        storm_validator=validate_public_person,
         notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
@@ -200,7 +201,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        storm_validator=validate_public_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership,
+        notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
