@@ -331,9 +331,6 @@ class IPOFileAlternativeLanguage(Interface):
 class IPOFileSet(Interface):
     """A set of POFiles."""
 
-    def getPOFilesPendingImport():
-        """Return a list of PO files that have data to be imported."""
-
     def getDummy(potemplate, language):
         """Return a dummy pofile for the given po template and language."""
 
@@ -356,4 +353,13 @@ class IPOFileSet(Interface):
 
         The number of items in the sequence will only be less than batch_size
         if the end of the table has been reached.
+        """
+
+    def getPOFilesTouchedSince(date):
+        """Return IDs for PO files that might have been updated since `date`.
+
+        :param date: A datetime object to use as the starting date.
+
+        :return: a ResultSet over POFile IDs for directly and indirectly
+            (through sharing POFiles) touched POFiles since `date`.
         """
