@@ -10,7 +10,8 @@
 
   <div class="portletBody portletContent">
 
-    <ul tal:condition="country/languages">
+    <ul tal:condition="country/languages"
+        style="margin-left: 2em">
 
       <li
         class="language"

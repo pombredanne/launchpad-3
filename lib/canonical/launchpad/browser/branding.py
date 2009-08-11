@@ -39,3 +39,4 @@ class BrandingChangeView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    cancel_url = next_url

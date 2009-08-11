@@ -6,18 +6,12 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="rosetta"
 >
 <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-countrylangs" />
-  <div tal:replace="structure context/@@+portlet-browserlangs" />
-</metal:portlets>
-
-<div metal:fill-slot="main" >
-
+<div metal:fill-slot="heading" >
   <h1 tal:condition="not: view/is_current_user">
     <span tal:replace="context/fmt:displayname">Someone</span>'s
     language preferences
@@ -26,7 +20,9 @@
   <h1 tal:condition="view/is_current_user">
     Your language preferences
   </h1>
+</div>
 
+<div metal:fill-slot="main" >
   <p class="documentDescription">
     Your preferred languages are used to configure some Launchpad applications
     to work with the languages you know. Launchpad Translations allows you
@@ -38,7 +34,7 @@
 
   <form action="" method="post">
     <input name="redirection_url" type="hidden"
-           tal:attributes="value view/getRedirectionURL" />
+           tal:attributes="value view/next_url" />
     <div class="listbox">
       <div tal:repeat="language view/visible_checked_languages">
         <label>
@@ -57,26 +53,20 @@
       </div>
     </div>
 
-    <div class="actions" style="text-align: right;">
+    <div class="actions">
       <input type="submit" name="SAVE-LANGS" value="Save" />
+      or
+      <a href="view/cancel_url">Cancel</a>
     </div>
   </form>
 
-</div>
+  <div class="yui-g">
+    <div class="first yui-u"
+         tal:content="structure context/@@+portlet-countrylangs" />
+    <div class="yui-u"
+         tal:content="structure context/@@+portlet-browserlangs" />
+  </div>
 
-<div metal:fill-slot="help">
-  <p>
-    Please select the languages that you speak well.  There are many languages
-    to choose from.  Once you have selected your preferred languages,
-    Launchpad knows which ones you are most interested in and can avoid
-    bothering you with the full list.
-  </p>
-  <ul class="info">
-    <li>
-      <a href="https://help.launchpad.net/RosettaFAQ"
-        >Frequently asked questions</a>
-    </li>
-  </ul>
 </div>
 
 </body>

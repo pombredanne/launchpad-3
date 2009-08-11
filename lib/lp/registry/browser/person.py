@@ -1232,8 +1232,13 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Change contact address'
         summary = (
             'The address Launchpad uses to contact %s' %
-            self.context.displayname)
+            self.team.displayname)
         return Link(target, text, summary, icon='edit')
+
+    @property
+    def team(self):
+        """Allow subclasses that use the view as the context."""
+        return self.context
 
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
@@ -2413,13 +2418,19 @@ class PersonLanguagesView(LaunchpadView):
         return sorted(set(common_languages) - set(person_languages),
                       key=attrgetter('englishname'))
 
-    def getRedirectionURL(self):
-        request = self.request
-        referrer = request.getHeader('referer')
-        if referrer and referrer.startswith(request.getApplicationURL()):
+    @property
+    def next_url(self):
+        redirection_url = self.request.get('redirection_url')
+        if redirection_url:
+            return redirection_url
+
+        referrer = self.request.getHeader('referer')
+        if referrer and referrer.startswith(self.request.getApplicationURL()):
             return referrer
         else:
             return ''
+
+    cancel_url = next_url
 
     @property
     def is_current_user(self):
@@ -2463,9 +2474,8 @@ class PersonLanguagesView(LaunchpadView):
         if len(messages) > 0:
             message = structured('<br />'.join(messages))
             self.request.response.addInfoNotification(message)
-        redirection_url = self.request.get('redirection_url')
-        if redirection_url:
-            self.request.response.redirect(redirection_url)
+        if self.next_url:
+            self.request.response.redirect(self.next_url)
 
 
 class PersonView(LaunchpadView, FeedsMixin):
@@ -3554,7 +3564,12 @@ class BasePersonEditView(LaunchpadEditFormView):
     @action(_("Save"), name="save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class PersonEditHomePageView(BasePersonEditView):
@@ -5424,10 +5439,6 @@ class EmailToPersonView(LaunchpadFormView):
             return 'Contact this user'
 
 
-class TeamLinksMixin:
-   """A mixin class that provides links used by more than on menu."""
-
-
 class ITeamEditMenu(Interface):
    """A marker interface for the edit navigation menu."""
 
@@ -5438,23 +5449,15 @@ class TeamEditMenu(NavigationMenu, TeamOverviewMenu):
     usedfor = ITeamEditMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('branding',)
+    links = ('branding', 'common_edithomepage', 'editlanguages', 'reassign',
+             'editemail')
 
-
-class TeamActionMenu(NavigationMenu, TeamOverviewMenu):
-    """An action menu to modify the object."""
-
-    usedfor = ITeam
-    facet = 'overview'
-    title = 'Action object'
-    links = ('branding', 'common_edithomepage',
-             'editlanguages', 'reassign', 'editemail')
+    @property
+    def team(self):
+        """Override TeamOverviewMenu since the view is the context."""
+        return self.context.context
 
 
 classImplements(TeamEditView, ITeamEditMenu)
-# Menus are normally registered using the menu ZCML directive. They can
-# be registered in Python.
 provideAdapter(
    TeamEditMenu, [ITeamEditMenu], INavigationMenu, name="overview")
-provideAdapter(
-   TeamActionMenu, [ITeam], INavigationMenu, name="overview")
