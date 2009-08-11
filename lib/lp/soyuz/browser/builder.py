@@ -41,6 +41,7 @@ from canonical.launchpad.webapp import (
     stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from lazr.delegates import delegates
 from canonical.widgets import HiddenUserWidget
@@ -356,10 +357,20 @@ class BuilderEditView(LaunchpadEditFormView):
         'active',
         ]
 
-    next_url = 'http://www.example.com'
-
     @action(_('Change'), name='update')
-    def change_action(self, action, data):
+    def change_details(self, action, data):
         """Update the builder with the data from the form."""
-        return updateContextFromData(data)
+        builder_was_modified = self.updateContextFromData(data)
+
+        if builder_was_modified:
+            notification = 'The builder "%s" was updated successfully.' % (
+                self.context.title)
+            self.request.response.addNotification(structured(notification))
+
+        return builder_was_modified
+
+    @property
+    def next_url(self):
+        """Redirect back to the builder-index page."""
+        return canonical_url(self.context)
 

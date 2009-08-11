@@ -120,7 +120,6 @@ Then restores it once he realises his mistake.
     >>> cprov_browser.getControl(
     ...     name="field.title").value = original_title
     >>> cprov_browser.getControl("Change").click()
-    >>> cprov_browser.getLink("Donkey builder").click()
 
 By looking at 'details' portlet, Celso realises the builder is in
 automatic (AUTO) mode.
