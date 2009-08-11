@@ -4,101 +4,96 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only"
-  i18n:domain="launchpad"
->
+  i18n:domain="launchpad">
+  <body>
 
-<body>
+    <div metal:fill-slot="main">
+      <div class="top-portlet">
+        <h1 tal:content="view/page_title">Ubuntu packaging</h1>
 
-<div metal:fill-slot="main">
-    <div class="top-portlet">
-    <h1 tal:content="view/page_title">Ubuntu packaging</h1>
+        <p>
+          This page is a quick way for you to link the
+          <span tal:replace="context/product/displayname">Firefox</span>
+          "<span tal:replace="context/name">1.0</span>" series to a package in
+          the current development series of Ubuntu. We will use this
+          information to improve the flow of bug fixes and translations
+          from Ubuntu to the
+          <span tal:replace="context/product/displayname">Firefox</span> team.
+        </p>
 
-    <p>
-      This page is a quick way for you to link the
-      <span tal:replace="context/product/displayname">Firefox</span>
-      "<span tal:replace="context/name">1.0</span>" series to a package in
-      the current development series of Ubuntu. We will use this
-      information to improve the flow of bug fixes and translations
-      from Ubuntu to the
-      <span tal:replace="context/product/displayname">Firefox</span> team.
-    </p>
+        <p class="informational message" tal:condition="not:request/lp:person">
+           You must log in to change the mapping from this project branch to its
+           Ubuntu package.
+        </p>
+      </div>
 
-    <p class="informational message" tal:condition="not:request/lp:person">
-       You must log in to change the mapping from this project branch to its
-       Ubuntu package.
-    </p>
-    </div>
+      <div class="portlet">
+        <form method="POST"
+            tal:condition="request/lp:person"
+            tal:attributes="action request/getURL">
 
-    <div class="portlet">
-      <form method="POST"
-          tal:condition="request/lp:person"
-          tal:attributes="action request/getURL">
-
-        <h2>
-          Package in 
-          <span tal:replace="view/curr_ubuntu_series/title">
-            The Hoary Hedgehog
-          </span>
-        </h2>
+          <h2>
+            Package in
+            <span tal:replace="view/curr_ubuntu_series/title">
+              The Hoary Hedgehog
+            </span>
+          </h2>
 
 
-        <div class="field">
-          <div>
-            <label>Source package:</label>
-            <span class="fieldRequired">(Required)</span>
+          <div class="field">
+            <div>
+              <label>Source package:</label>
+              <span class="fieldRequired">(Required)</span>
+            </div>
+            <div>
+              <input type="text" name="ubuntupkg" size="30"
+                   value="" tal:attributes="value view/curr_ubuntu_pkgname" />
+              <input type="submit" name="set_ubuntu_pkg" value="Update" />
+            </div>
+
+              <p class="formHelp">
+                Ensure both the series ("<span tal:replace="context/name">
+                1.0</span>") and the Ubuntu package are exactly correct,
+                so that bugs, patches and translations are correctly shared.
+                Don&rsquo;t link "HEAD", "MAIN", or "TRUNK" to an Ubuntu
+                package unless you are absolutely certain that the package is
+                really based on the trunk of development.
+              </p>
           </div>
-          <div>
-            <input type="text" name="ubuntupkg" size="30"
-                 value="" tal:attributes="value view/curr_ubuntu_pkgname" />
-            <input type="submit" name="set_ubuntu_pkg" value="Update" />
-          </div>
+        </form>
+      </div>
 
-            <p class="formHelp">
-              Ensure both the series ("<span tal:replace="context/name">
-              1.0</span>") and the Ubuntu package are exactly correct,
-              so that bugs, patches and translations are correctly shared.
-              Don&rsquo;t link "HEAD", "MAIN", or "TRUNK" to an Ubuntu
-              package unless you are absolutely certain that the package is
-              really based on the trunk of development.
-            </p>
-        </div>
-      </form>
+      <div class="portlet"
+        tal:condition="view/ubuntu_history">
+        <h2>History of Ubuntu packages for this branch</h2>
+
+        <table class="listing">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Ubuntu Series</th>
+              <th>Package</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="packaging view/ubuntu_history">
+              <td>
+                <span
+                  tal:attributes="title packaging/datecreated/fmt:datetime"
+                  tal:content="packaging/datecreated/fmt:approximatedate">
+                  13-05-2004
+                </span>
+              </td>
+              <td tal:content="packaging/distroseries/name">hoary</td>
+              <td tal:content="packaging/sourcepackagename/name">evolution</td>
+              <td><span tal:condition="packaging/owner"
+                        tal:replace="packaging/owner/displayname">sabdfl
+                  </span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-
-    <div class="portlet"
-      tal:condition="view/ubuntu_history">
-      <h2>History of Ubuntu packages for this branch</h2>
-
-      <table class="listing">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Ubuntu Series</th>
-            <th>Package</th>
-            <th>By</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="packaging view/ubuntu_history">
-            <td>
-              <span
-                tal:attributes="title packaging/datecreated/fmt:datetime"
-                tal:content="packaging/datecreated/fmt:approximatedate">
-                13-05-2004
-              </span>
-            </td>
-            <td tal:content="packaging/distroseries/name">hoary</td>
-            <td tal:content="packaging/sourcepackagename/name">evolution</td>
-            <td><span tal:condition="packaging/owner"
-                      tal:replace="packaging/owner/displayname">sabdfl
-                </span></td>
-          </tr>
-        </tbody>
-      </table>
-
-    </div>
-
-</div>
-
-</body>
+  </body>
 </html>
