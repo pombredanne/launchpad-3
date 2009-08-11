@@ -1,7 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""This module is used by the Launchpad webapp to determine titles for pages.
+"""*** PLEASE STOP ADDING TO THIS FILE ***
+
+Use the page_title attribute of the view.
+
+This module is used as a last resort by the Launchpad webapp to determine
+titles for pages.
 
 https://launchpad.canonical.com/LaunchpadTitles
 
@@ -173,8 +178,6 @@ branch_associations = ContextDisplayName(smartquote(
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
 branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
-
-branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
 branch_edit_subscription = ContextDisplayName(smartquote(
     'Edit subscription to branch "%s"'))
