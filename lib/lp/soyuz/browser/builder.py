@@ -110,7 +110,7 @@ class BuilderOverviewMenu(ApplicationMenu):
     """Overview Menu for IBuilder."""
     usedfor = IBuilder
     facet = 'overview'
-    links = ['history', 'edit', 'mode', 'cancel', 'admin']
+    links = ['history', 'edit', 'mode']
 
     def history(self):
         text = 'Show build history'
@@ -125,16 +125,6 @@ class BuilderOverviewMenu(ApplicationMenu):
     def mode(self):
         text = 'Change mode'
         return Link('+mode', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def cancel(self):
-        text = 'Cancel current job'
-        return Link('+cancel', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def admin(self):
-        text = 'Administer builder'
-        return Link('+admin', text, icon='edit')
 
 
 class CommonBuilderView:

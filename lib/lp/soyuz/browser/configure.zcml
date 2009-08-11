@@ -450,21 +450,12 @@
             name="+portlet-details"
             facet="overview"/>
     </browser:pages>
-    <browser:pages
-        for="lp.soyuz.interfaces.builder.IBuilder"
-        permission="launchpad.Edit"
-        class="lp.soyuz.browser.builder.BuilderView">
-        <browser:page
-            template="../templates/builder-cancel.pt"
-            name="+cancel"
-            facet="overview"/>
-    </browser:pages>
     <browser:editform
         name="+edit"
         for="lp.soyuz.interfaces.builder.IBuilder"
         schema="lp.soyuz.interfaces.builder.IBuilder"
         facet="overview"
-        fields="name title description processor url owner"
+        fields="name title description processor url manual owner virtualized builderok failnotes vm_host active"
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt">
                 </browser:editform>
@@ -476,15 +467,6 @@
         fields="manual"
         permission="launchpad.Edit"
         template="../templates/builder-mode.pt"/>
-    <browser:editform
-        name="+admin"
-        for="lp.soyuz.interfaces.builder.IBuilder"
-        schema="lp.soyuz.interfaces.builder.IBuilder"
-        label="Administer builder"
-        facet="overview"
-        fields="name title description processor url manual owner                                                                 virtualized builderok failnotes vm_host active"
-        permission="launchpad.Admin"
-        template="../templates/builder-admin.pt"/>
     <browser:menus
         classes="
             BuilderSetFacets
