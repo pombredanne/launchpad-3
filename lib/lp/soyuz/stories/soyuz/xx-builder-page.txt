@@ -109,7 +109,8 @@ Celso changes the builder title and the change takes effect immediately.
     >>> title.value = 'Donkey builder'
     >>> cprov_browser.getControl("Change").click()
 
-    >>> cprov_browser.getLink("Bob The Builder").click()
+    # Submitting the change details form redirects to the index page
+    # for the builder.
     >>> print cprov_browser.title
     Build machine Donkey builder
 

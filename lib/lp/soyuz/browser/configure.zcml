@@ -450,15 +450,13 @@
             name="+portlet-details"
             facet="overview"/>
     </browser:pages>
-    <browser:editform
+    <browser:page
         name="+edit"
         for="lp.soyuz.interfaces.builder.IBuilder"
-        schema="lp.soyuz.interfaces.builder.IBuilder"
-        facet="overview"
-        fields="name title description processor url manual owner virtualized builderok failnotes vm_host active"
+        class="lp.soyuz.browser.builder.BuilderEditView"
         permission="launchpad.Edit"
-        template="../templates/builder-edit.pt">
-                </browser:editform>
+        template="../templates/builder-edit.pt"
+        facet="overview"/>
     <browser:editform
         name="+mode"
         for="lp.soyuz.interfaces.builder.IBuilder"

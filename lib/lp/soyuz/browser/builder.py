@@ -35,9 +35,10 @@ from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.builder import IBuilderSet, IBuilder
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link, Navigation,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission, stepthrough)
+    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets,
+    action, canonical_url, custom_widget, enabled_with_permission,
+    stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
@@ -342,3 +343,23 @@ class BuilderSetAddView(LaunchpadFormView):
             )
         notify(ObjectCreatedEvent(builder))
         self.next_url = canonical_url(builder)
+
+
+class BuilderEditView(LaunchpadEditFormView):
+    """View class for changing builder details."""
+
+    schema = IBuilder
+
+    field_names = [
+        'name', 'title', 'description', 'processor', 'url', 'manual',
+        'owner', 'virtualized', 'builderok', 'failnotes', 'vm_host',
+        'active',
+        ]
+
+    next_url = 'http://www.example.com'
+
+    @action(_('Change'), name='update')
+    def change_action(self, action, data):
+        """Update the builder with the data from the form."""
+        return updateContextFromData(data)
+
