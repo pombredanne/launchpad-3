@@ -598,8 +598,12 @@ class BranchEditFormView(LaunchpadEditFormView):
     @property
     def page_title(self):
         """The page title."""
-        return smartquote(
-            'Change "%s" branch details' % self.context.displayname)
+        return 'Edit %s' % self.context.displayname
+
+    @property
+    def label(self):
+        """The form takes the label as the <h1> tag."""
+        return self.page_title
 
     @property
     def adapters(self):
