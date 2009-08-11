@@ -185,12 +185,6 @@ branch_index = ContextDisplayName(smartquote(
 def branch_merges(context, view):
     return 'Merges involving "%s" in Launchpad' % context.bzr_identity
 
-branch_link_to_bug = ContextDisplayName(smartquote(
-    'Link branch "%s" to a bug report'))
-
-branch_link_to_spec = ContextDisplayName(smartquote(
-    'Link branch "%s" to a blueprint'))
-
 def branch_listing_cross_product(context, view):
     """Return the view's page_title."""
     return view.page_title

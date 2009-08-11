@@ -474,7 +474,7 @@
         class="lp.blueprints.browser.specificationbranch.BranchLinkToSpecificationView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-link-to-spec.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+addsubscriber"
         for="lp.code.interfaces.branch.IBranch"
