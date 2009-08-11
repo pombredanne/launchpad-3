@@ -13,11 +13,11 @@ from zope.component import getUtility
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from lp.archivepublisher.utils import process_in_batches
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingStatus, PackagePublishingPocket, pocketsuffix)
+    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.section import Section
 
