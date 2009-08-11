@@ -445,13 +445,13 @@ class FTPArchiveHandler:
 
         # Process huge iterations (more than 200k records) in batches.
         # See `PublishingTunableLoop`.
-        self.log.info("Calculating source overrides")
+        self.log.debug("Calculating source overrides")
         def update_source_override(pub_details):
             updateOverride(*pub_details)
         process_in_batches(
             source_publications, update_source_override, self.log)
 
-        self.log.info("Calculating binary overrides")
+        self.log.debug("Calculating binary overrides")
         def update_binary_override(pub_details):
             updateOverride(*pub_details)
         process_in_batches(
@@ -665,20 +665,20 @@ class FTPArchiveHandler:
 
         # Process huge iterations (more than 200K records) in batches.
         # See `PublishingTunableLoop`.
-        self.log.info("Calculating source filelist.")
+        self.log.debug("Calculating source filelist.")
         def update_source_filelist(file_details):
             updateFileList(*file_details)
         process_in_batches(
             sourcefiles, update_source_filelist, self.log)
 
-        self.log.info("Calculating binary filelist.")
+        self.log.debug("Calculating binary filelist.")
         def update_binary_filelist(file_details):
             updateFileList(*file_details)
         process_in_batches(
             binaryfiles, update_binary_filelist, self.log)
 
         for suite, components in filelist.items():
-            self.log.info("Writing file lists for %s" % suite)
+            self.log.debug("Writing file lists for %s" % suite)
             for component, architectures in components.items():
                 for architecture, file_names in architectures.items():
                     self.writeFileList(architecture, file_names,
