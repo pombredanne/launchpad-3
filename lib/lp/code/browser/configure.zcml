@@ -467,7 +467,7 @@
         class="lp.bugs.browser.bugbranch.BranchLinkToBugView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/generic-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+linkblueprint"
         for="lp.code.interfaces.branch.IBranch"
