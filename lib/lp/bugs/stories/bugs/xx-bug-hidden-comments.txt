@@ -9,7 +9,7 @@ All comments are set visible by default.
     ...     '/jokosher/+bug/11')
     >>> user_browser.getControl(name='field.comment').value = (
     ...     'This comment will not visible when the test completes.')
-    >>> user_browser.getControl('Save Changes', index=-1).click()
+    >>> user_browser.getControl('Post comment', index=-1).click()
     >>> main_content = find_main_content(user_browser.contents)
     >>> new_comment = main_content('div', 'boardCommentBody')[-1]
     >>> new_comment_text = extract_text(new_comment.div)
