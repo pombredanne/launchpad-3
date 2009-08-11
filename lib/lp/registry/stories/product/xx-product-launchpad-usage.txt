@@ -7,8 +7,7 @@ Translations officially) are found on the +edit page.
     >>> print anon_browser.title
     Mozilla Firefox in Launchpad
 
-    >>> content = find_main_content(anon_browser.contents)
-    >>> uses = content.find('p', id='uses')
+    >>> uses = find_tag_by_id(anon_browser.contents, id='uses')
     >>> print extract_text(uses)
     Uses Launchpad for: Answers and Bug Tracking.
 
@@ -64,8 +63,7 @@ We'll also set it as officially using codehosting.
 On the product page, we can see that the product doesn't use any bug
 tracker, not even Launchpad.
 
-    >>> content = find_main_content(registrant_browser.contents)
-    >>> uses = content.find('p', id='uses')
+    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
     Uses Launchpad for: Answers and Code.
 
@@ -85,8 +83,7 @@ Now let's go back and choose to use a specific bug tracker.
     ...     name='field.bugtracker.bugtracker').displayValue = [
     ...         'GnomeGBug GTracker']
     >>> registrant_browser.getControl('Change').click()
-    >>> content = find_main_content(registrant_browser.contents)
-    >>> uses = content.find('p', id='uses')
+    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
     Uses Launchpad for: Answers and Code.
 
@@ -108,8 +105,7 @@ Let's reset it to the way it was before.
     ...     'Expire Incomplete bug reports when they '
     ...     'become inactive').selected = False
     >>> registrant_browser.getControl('Change').click()
-    >>> content = find_main_content(registrant_browser.contents)
-    >>> uses = content.find('p', id='uses')
+    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
     Uses Launchpad for: Answers, Bug Tracking, and Code.
 
@@ -185,8 +181,7 @@ support JavaScript so this behaviour is easy to simulate.)
 
 The Status of Launchpad uses shows the bug tracker was changed.
 
-    >>> content = find_main_content(registrant_browser.contents)
-    >>> uses = content.find('p', id='uses')
+    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
     Does not use Launchpad for development.
 
