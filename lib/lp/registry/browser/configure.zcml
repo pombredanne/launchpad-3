@@ -1619,6 +1619,7 @@
             ProductSetFacets
             ProductSetContextMenu
             ProductNavigationMenu
+            ProductActionNavigationMenu
             ProductEditNavigationMenu"
         module="lp.registry.browser.product"/>
     <browser:page
