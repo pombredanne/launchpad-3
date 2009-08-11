@@ -307,8 +307,8 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
             return None
         else:
             UTC = pytz.timezone('UTC')
-            return (
-                datetime.datetime.now(UTC) - self.context.currentjob.buildstart)
+            buildstart = self.context.currentjob.buildstart
+            return datetime.datetime.now(UTC) - buildstart
 
 
 class BuilderSetAddView(LaunchpadFormView):
