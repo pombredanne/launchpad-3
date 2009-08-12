@@ -899,7 +899,8 @@ class Person(
         """
         join_condition = And(
             POFileTranslator.personID == self.id,
-            POFileTranslator.pofileID == POFile.id)
+            POFileTranslator.pofileID == POFile.id,
+            POFile.language != getUtility(ILaunchpadCelebrities).english)
 
         if no_older_than is not None:
             join_condition = And(
@@ -932,7 +933,8 @@ class Person(
             self._composePOFileTranslatorJoin(True, no_older_than))
         tables.append(translator_join)
 
-        conditions = And(POFile.unreviewed_count > 0, translator_condition)
+        conditions = And(
+            POFile.unreviewed_count > 0, translator_condition)
 
         source = Store.of(self).using(*tables)
         query = source.find(POFile, conditions)

@@ -94,7 +94,8 @@ class PersonTranslationView(LaunchpadView):
 
     @property
     def person_is_reviewer(self):
-        return bool(self.translation_groups)
+        """Is this person in a translation group?"""
+        return len(self.translation_groups) != 0
 
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
@@ -134,7 +135,7 @@ class PersonTranslationView(LaunchpadView):
             pofile.potemplate.productseries
             for pofile in pofiles
             if pofile.potemplate.productseries)
-
+        
         first_template = first_pofile.potemplate
         if first_template.sourcepackagename:
             # Multiple POFiles for a source package.  Show its template
@@ -145,9 +146,20 @@ class PersonTranslationView(LaunchpadView):
             return [canonical_url(distroseries.getSourcePackage(packagename))]
 
         if len(productseries) == 1:
-            # All for the same ProductSeries.  Show its template
-            # listing.
-            return [canonical_url(first_template.productseries)]
+            series = first_template.productseries
+            # All for the same ProductSeries.
+            languages = set(pofile.language for pofile in pofiles)
+            if len(languages) == 1:
+                # All for the same language in the same ProductSeries,
+                # but apparently for different templates.  Link to
+                # ProductSeriesLanguage.
+                productserieslanguage = ProductSeriesLanguage(
+                    series, pofiles[0].language)
+                return [canonical_url(productserieslanguage)]
+            else:
+                # Multiple templates and languages in the same product
+                # series.  Show its templates listing.
+                return [canonical_url(series)]
 
         # Different release series of the same product.  Link to each of
         # the individual POFiles.
@@ -206,8 +218,7 @@ class PersonTranslationView(LaunchpadView):
                 count = 0
                 target_pofiles = []
 
-            (imported, changed, rosetta, unreviewed) = pofile.getStatistics()
-            count += unreviewed
+            count += pofile.unreviewedCount()
             target_pofiles.append(pofile)
 
             targets[target] = (count, target_pofiles)
