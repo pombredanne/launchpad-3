@@ -1,3 +1,6 @@
+Product Edit and Administer
+===========================
+
 Page to edit a product - does the page load as the product owner?
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
@@ -308,7 +311,7 @@ A Registry Expert can also see the project whiteboard on the index page.
     >>> registry_browser.open('http://launchpad.dev/firefox')
     >>> contents = find_main_content(registry_browser.contents)
     >>> print extract_text(contents.find(id='project-admin-whiteboard'))
-    Whiteboard
+    Whiteboard ...
     Registered by https://launchpad.net/kurt but orphaned.
 
 Name1 is the registrant for the Firefox product, but is not a Launchpad
@@ -339,12 +342,12 @@ Admins can still see the product, but regular users can't.
     >>> registry_browser.open('http://launchpad.dev/firefox')
     >>> contents = find_main_content(registry_browser.contents)
     >>> print extract_text(contents.find(id='project-inactive'))
-    This project is currently inactive
+    This project is currently inactive ...
 
     >>> admin_browser.open('http://launchpad.dev/firefox')
     >>> contents = find_main_content(admin_browser.contents)
     >>> print extract_text(contents.find(id='project-inactive'))
-    This project is currently inactive
+    This project is currently inactive ...
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     Traceback (most recent call last):
