@@ -2,7 +2,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = [ 'MessageSharingMerge' ]
+__all__ = [
+    'MessageSharingMerge'
+    ]
 
 
 from zope.component import getUtility
@@ -147,7 +149,7 @@ def bequeathe_flags(source_message, target_message, incumbents=None):
 
 class MessageSharingMerge(LaunchpadScript):
 
-    templateset = None
+    template_set = None
 
     def add_my_options(self):
         self.parser.add_option('-d', '--distribution', dest='distribution',
@@ -174,10 +176,10 @@ class MessageSharingMerge(LaunchpadScript):
 
         Calling this again later does nothing.
         """
-        if self.templateset is None:
-            self.templateset = getUtility(IPOTemplateSet)
+        if self.template_set is None:
+            self.template_set = getUtility(IPOTemplateSet)
             self.compare_template_precedence = (
-                self.templateset.compareSharingPrecedence)
+                self.template_set.compareSharingPrecedence)
 
     def main(self):
         actions = (
@@ -229,7 +231,7 @@ class MessageSharingMerge(LaunchpadScript):
 
         self._setUpUtilities()
 
-        subset = self.templateset.getSharingSubset(
+        subset = self.template_set.getSharingSubset(
                 product=product, distribution=distribution,
                 sourcepackagename=sourcepackagename)
         equivalence_classes = subset.groupEquivalentPOTemplates(
@@ -374,7 +376,7 @@ class MessageSharingMerge(LaunchpadScript):
         msgstr_ids = [
             getattr(tm, 'msgstr%dID' % form)
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)
-                ]
+            ]
             
         return (tm.language, tm.variant) + tuple(msgstr_ids)
 
