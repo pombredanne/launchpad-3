@@ -502,7 +502,7 @@ class ObjectFormatterAPI:
 
         return "<%(heading)s>%(title)s</%(heading)s>" % {
             'heading': heading,
-            'title': title
+            'title': cgi.escape(title)
             }
 
 class ObjectImageDisplayAPI:
