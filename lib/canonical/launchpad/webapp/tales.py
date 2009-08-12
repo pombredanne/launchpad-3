@@ -976,11 +976,18 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         return datetime.now(pytz.timezone(time_zone)).strftime('%T %Z')
 
     def url(self, view_name=None, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a person is too the mainsite.
+        """
         return super(PersonFormatterAPI, self).url(view_name, rootsite)
 
     def link(self, view_name, rootsite='mainsite'):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+        """See `ObjectFormatterAPI`.
+
+        Return an HTML link to the person's page containing an icon
+        followed by the person's name. The default URL for a person is too
+        the mainsite.
         """
         person = self._context
         url = self.url(view_name, rootsite)
@@ -1021,7 +1028,11 @@ class TeamFormatterAPI(PersonFormatterAPI):
     hidden = u'<hidden>'
 
     def url(self, view_name=None, rootsite='mainsite'):
-        """See `ObjectFormatterAPI`."""
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a team is too the mainsite. None is returned
+        when the user does not have permission to review the team.
+        """
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
             return None
@@ -1035,7 +1046,11 @@ class TeamFormatterAPI(PersonFormatterAPI):
         return super(TeamFormatterAPI, self).api_url(context)
 
     def link(self, view_name, rootsite='mainsite'):
-        """See `ObjectFormatterAPI`."""
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a team is too the mainsite. None is returned
+        when the user does not have permission to review the team.
+        """
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
@@ -1148,18 +1163,26 @@ class PillarFormatterAPI(CustomizableFormatter):
         displayname = self._context.displayname
         return {'displayname': displayname}
 
-    def link(self, view_name):
+    def url(self, view_name=None, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a pillar is too the mainsite.
+        """
+        return super(PillarFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='mainsite'):
         """The html to show a link to a Product, Project or distribution.
 
         In the case of Products or Project groups we display the custom
-        icon, if one exists."""
+        icon, if one exists. The default URL for a pillar is too the mainsite.
+        """
 
         html = super(PillarFormatterAPI, self).link(view_name)
         context = self._context
         if IProduct.providedBy(context) or IProject.providedBy(context):
             custom_icon = ObjectImageDisplayAPI(
                 context)._get_custom_icon_url()
-            url = canonical_url(context, view_name=view_name)
+            url = self.url(view_name, rootsite)
             summary = self._make_link_summary()
             if custom_icon is None:
                 css_class = ObjectImageDisplayAPI(context).sprite_css()

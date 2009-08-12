@@ -295,6 +295,9 @@ The default behaviour for person and teams is to link to the mainsite.
     >>> print test_tales("team/fmt:url", team=ubuntu_team)
     http://launchpad.dev/~ubuntu-team
 
+    >>> print test_tales("pillar/fmt:url", pillar=ubuntu)
+    http://launchpad.dev/ubuntu
+
     # Undo the custom setup we did above.
     >>> login(ANONYMOUS)
 
