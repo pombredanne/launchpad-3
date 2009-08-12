@@ -3,68 +3,98 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
-  <body>
+<body>
 
-<metal:block fill-slot="head_epilogue">
+  <metal:block fill-slot="head_epilogue">
     <meta http-equiv="refresh" content="300" />
-</metal:block>
+  </metal:block>
 
-<metal:leftportlets fill-slot="portlets">
-    <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+  <metal:heading fill-slot="heading">
+    <h1 tal:content="context/title">Bob the builder</h1>
+  </metal:heading>
 
   <div metal:fill-slot="main" tal:define="job context/currentjob">
-      <h1 tal:content="context/title">Bob the Builder</h1>
-
-      <h2>Current status</h2>
-
-      <div tal:condition="not: job">
-        <p><tal:builder content="context/title" />
-           <tal:builderok condition="context/builderok"
-             >is idle.</tal:builderok>
-           <tal:buildernok condition="not: context/builderok"
-             >is deactivated.</tal:buildernok></p>
-      </div>
-
-      <tal:job condition="job">
-        <table class="listing sortable">
-          <tbody>
-            <tr>
-              <td class="left icon">
-                  <tal:icon replace="structure job/build/image:icon" />
-              </td>
-              <td>
-                <a tal:attributes="href job/build/fmt:url">
-                  <span tal:replace="job/build/title">NAME</span>
-                </a>
-              </td>
-            </tr>
-            <tr class="secondary">
-              <td></td>
-              <td>
-                Started
-                <span
-                  tal:attributes="title job/buildstart/fmt:datetime"
-                  tal:content="view/current_build_duration/fmt:exactduration" />
-                  ago
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div
-          tal:condition="job/logtail"
-          tal:content="structure job/logtail/fmt:text-to-html"
-        >Things are crashing and burning all over the place.</div>
-      </tal:job>
-
-      <p>Last updated <span tal:replace="view/now"/></p>
-
+    <div class="top-portlet">
+      <p><tal:title content="context/title">Bob the builder</tal:title>
+         builds
+         <tal:arch content="context/processor/title">Intel 386</tal:arch>
+         binaries and is owned by
+         <a tal:replace="structure context/owner/fmt:link">OWNER</a>.
+       </p>
     </div>
-  </body>
+    <div class="yui-ge">
+      <div class="first yui-u">
+        <div class="portlet">
+          <h2>
+            <span class="see-all"><a
+              tal:replace="structure view/menu:overview/history/fmt:link" />
+            </span> 
+          Current status</h2>
+
+          <tal:no_job condition="not: job">
+            <p><tal:builder content="context/title" />
+               <tal:builderok condition="context/builderok"
+                 >is idle.</tal:builderok>
+               <tal:buildernok condition="not: context/builderok"
+                 >is deactivated.</tal:buildernok></p>
+          </tal:no_job>
+          <tal:job condition="job">
+            <tal:icon replace="structure job/build/image:icon" />
+            <a tal:attributes="href job/build/fmt:url">
+              <span tal:replace="job/build/title">NAME</span>
+            </a>
+            <p class="sprite">Started
+              <span tal:attributes="title job/buildstart/fmt:datetime"
+                    tal:content="view/current_build_duration/fmt:exactduration"
+                />
+              ago.
+            </p>
+            <tal:logtail condition="job/logtail">
+              <h3>Tail of the builder log at
+                 <span tal:replace="view/now"/></h3>
+              <div tal:content="structure job/logtail/fmt:text-to-html">
+                Things are crashing and burning all over the place.
+              </div>
+
+              <p> Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.</p>
+              <p> Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.</p>
+              <p> Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.</p>
+              <p> Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.</p>
+            </tal:logtail>
+          </tal:job>
+        </div><!-- portlet -->
+      </div><!-- yui-u -->
+      <div class="yui-u">
+        <div class="portlet">
+          <h2>Builder information</h2>
+          <dl>
+            <dt>Architecture:</dt>
+            <dd>
+              <span tal:replace="context/processor/title">Intel 386</span>
+              <tal:virtual condition="context/virtualized">(virtual)
+              </tal:virtual>
+            </dd>
+            <dt>Location:</dt>
+            <dd tal:content="context/url" />
+            <dt>Manual mode:</dt>
+            <dd><span tal:replace="context/manual">False</span>
+                <button value="toggle">Toggle</button>
+            </dd>
+            <dt>Owner</dt>
+            <dd><a tal:replace="structure context/owner/fmt:link">OWNER</a>
+            </dd>
+          </dl>
+          <ul>
+            <li><a
+              tal:replace="structure view/menu:overview/edit/fmt:icon-link" />
+            </li>
+          </ul>
+        </div><!-- portlet -->
+      </div><!-- yui-u -->
+    </div>
+  </div>
+</body>
 </html>

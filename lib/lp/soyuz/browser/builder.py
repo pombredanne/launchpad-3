@@ -25,6 +25,7 @@ import pytz
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import implements, Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget, TextWidget
 
@@ -37,9 +38,9 @@ from lp.soyuz.interfaces.builder import IBuilderSet, IBuilder
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets,
-    action, canonical_url, custom_widget, enabled_with_permission,
-    stepthrough)
+    LaunchpadFormView, Link, Navigation, NavigationMenu,
+    StandardLaunchpadFacets, action, canonical_url, custom_widget,
+    enabled_with_permission, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
@@ -107,6 +108,47 @@ class BuilderSetOverviewMenu(ApplicationMenu):
         text = 'Register a new build machine'
         return Link('+new', text, icon='add')
 
+class IBuilderRelatedPagesMenu(Interface):
+    """A marker interface for the Builder links menu."""
+
+class BuilderRelatedPagesMenu(NavigationMenu):
+    """Related pages and contextual actions for a builder."""
+
+    usedfor = IBuilderRelatedPagesMenu
+    facet = 'overview'
+    links = ('history', 'edit', 'mode', 'cancel', 'admin',)
+
+    def history(self):
+        text = 'View full history'
+        return Link('+history', text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def mode(self):
+        text = 'Change mode'
+        return Link('+mode', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def cancel(self):
+        text = 'Cancel current job'
+        return Link('+cancel', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def admin(self):
+        text = 'Administer builder'
+        return Link('+admin', text, icon='edit')
+
+from canonical.launchpad.webapp.interfaces import INavigationMenu
+from zope.component import provideAdapter
+
+provideAdapter(
+    BuilderRelatedPagesMenu, [IBuilderRelatedPagesMenu], INavigationMenu,
+    name="overview")
+
 
 class BuilderOverviewMenu(ApplicationMenu):
     """Overview Menu for IBuilder."""
@@ -115,7 +157,7 @@ class BuilderOverviewMenu(ApplicationMenu):
     links = ['history', 'edit', 'mode']
 
     def history(self):
-        text = 'Show build history'
+        text = 'View full history'
         return Link('+history', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -271,6 +313,8 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
     Implements useful actions for the page template.
     """
     __used_for__ = IBuilder
+
+    implements(IBuilderRelatedPagesMenu)
 
     def __init__(self, context, request):
         context = self.overrideHiddenBuilder(context)
