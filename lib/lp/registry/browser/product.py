@@ -362,6 +362,19 @@ class ProductEditNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     links = ('edit', 'branding', 'reassign', 'review_license', 'administer')
 
 
+class IProductActionMenu(Interface):
+    """A marker interface for the global action navigation menu."""
+
+
+class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
+    """A sub-menu for acting upon a Product."""
+
+    usedfor = IProductActionMenu
+    facet = 'overview'
+    title = 'Actions'
+    links = ('edit', 'review_license', 'administer')
+
+
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
 
     usedfor = IProduct
@@ -373,17 +386,20 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'mentorship',
         'distributions',
         'packages',
+        'series',
         'series_add',
+        'downloads',
         'announce',
         'announcements',
         'administer',
         'review_license',
+        'branchvisibility',
         'rdf',
         ]
 
     def top_contributors(self):
-        text = u'\u00BB More contributors'
-        return Link('+topcontributors', text)
+        text = 'More contributors'
+        return Link('+topcontributors', text, icon='info')
 
     def distributions(self):
         text = 'Packaging information'
@@ -397,6 +413,10 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
+    def series(self):
+        text = 'View full history'
+        return Link('+series', text, icon='info')
+
     @enabled_with_permission('launchpad.Driver')
     def series_add(self):
         text = 'Register a series'
@@ -409,15 +429,24 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = u'\u00BB More announcements'
-        enabled = bool(self.context.announcements())
-        return Link('+announcements', text, enabled=enabled)
+        text = 'Read all announcements'
+        enabled = bool(self.context.getAnnouncements())
+        return Link('+announcements', text, icon='info', enabled=enabled)
 
     def rdf(self):
         text = structured(
             '<abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
+
+    def downloads(self):
+        text = 'Downloads'
+        return Link('+download', text, icon='info')
+
+    @enabled_with_permission('launchpad.Admin')
+    def branchvisibility(self):
+        text = 'Branch Visibility Policy'
+        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
@@ -810,6 +839,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                   ProductDownloadFileMixin, UsesLaunchpadMixin):
 
     __used_for__ = IProduct
+    implements(IProductActionMenu)
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)
@@ -865,6 +895,30 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 self.context.wikiurl or
                 self.context.screenshotsurl or
                 self.context.downloadurl)
+
+    @property
+    def external_links(self):
+        """The project's external links.
+
+        The home page link is not included because its link must have the
+        rel=nofollow attribute.
+        """
+        from canonical.launchpad.webapp.menu import MenuLink
+        urls = [
+            ('Sourceforge project', self.sourceforge_url),
+            ('Freshmeat record', self.freshmeat_url),
+            ('Wiki', self.context.wikiurl),
+            ('Screenshots', self.context.screenshotsurl),
+            ('External downloads', self.context.downloadurl),
+            ]
+        links = []
+        for (text, url) in urls:
+            if url is not None:
+                menu_link = MenuLink(
+                    Link(url, text, icon='external-link', enabled=True))
+                menu_link.url = url
+                links.append(menu_link)
+        return links
 
     @property
     def should_display_homepage(self):
@@ -1269,6 +1323,17 @@ class ProductAddSeriesView(LaunchpadFormView):
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     series = None
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Register a new %s release series' % (
+            self.context.displayname)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     def validate(self, data):
         """See `LaunchpadFormView`."""

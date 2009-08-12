@@ -173,6 +173,7 @@ class NavigationMenuTabs(LaunchpadView):
             menu = queryAdapter(self.context, INavigationMenu, name=facet)
             if menu is not None:
                 self.title = menu.title
+        self.enabled_links = [link for link in self.links if link.enabled]
 
     def render(self):
         if not self.links:
@@ -664,7 +665,8 @@ class LaunchpadRootNavigation(Navigation):
             if self.request.method == 'POST':
                 raise POSTToNonCanonicalURL
             return self.redirectSubTree(
-                canonical_url(self.context) + canonical_name(name),
+                (canonical_url(self.context, request=self.request) +
+                 canonical_name(name)),
                 status=301)
 
         pillar = getUtility(IPillarNameSet).getByName(

@@ -18,7 +18,7 @@
     </h1>
   </div>
   <div metal:fill-slot="main">
-    <div class="portlet">
+    <div class="top-portlet">
       <p>You can grant access to people or teams to install software
          from your PPA.
       </p>
