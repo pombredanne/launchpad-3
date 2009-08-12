@@ -21,8 +21,7 @@ import lp.testing
 from canonical.config import config
 from canonical.launchpad.scripts.runlaunchpad import (
     SERVICES, get_services_to_run, process_config_arguments,
-    split_out_runlaunchpad_arguments, start_launchpad)
-from canonical.lazr.pidfile import pidfile_path
+    split_out_runlaunchpad_arguments)
 
 
 class CommandLineArgumentProcessing(lp.testing.TestCase):
