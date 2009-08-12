@@ -1138,6 +1138,10 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
     label = _('Is this a FAQ?')
 
     @property
+    def page_title(self):
+        return _('Is question #%s a FAQ?' % self.context.id)
+
+    @property
     def initial_values(self):
         """Sets initial form values."""
         return {
