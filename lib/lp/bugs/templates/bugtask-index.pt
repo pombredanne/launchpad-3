@@ -183,6 +183,11 @@
           tal:content="structure view/bug_description_html"
           />
 
+        <div style="margin:-20px 0 20px 5px" class="clearfix">
+          <span tal:condition="view/wasDescriptionModified" class="discreet"
+          >See <a href="comments/0">original description</a></span>
+        </div>
+
           <div id="bug-tags"
                tal:attributes="class python: ('tags-container ' +
                                               (context.bug.tags and
