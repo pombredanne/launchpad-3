@@ -978,7 +978,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
     def url(self, view_name=None, rootsite='mainsite'):
         """See `ObjectFormatterAPI`.
 
-        The default URL for a person is too the mainsite.
+        The default URL for a person is to the mainsite.
         """
         return super(PersonFormatterAPI, self).url(view_name, rootsite)
 
@@ -986,7 +986,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         """See `ObjectFormatterAPI`.
 
         Return an HTML link to the person's page containing an icon
-        followed by the person's name. The default URL for a person is too
+        followed by the person's name. The default URL for a person is to
         the mainsite.
         """
         person = self._context
@@ -1030,7 +1030,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
     def url(self, view_name=None, rootsite='mainsite'):
         """See `ObjectFormatterAPI`.
 
-        The default URL for a team is too the mainsite. None is returned
+        The default URL for a team is to the mainsite. None is returned
         when the user does not have permission to review the team.
         """
         if not check_permission('launchpad.View', self._context):
@@ -1048,7 +1048,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
     def link(self, view_name, rootsite='mainsite'):
         """See `ObjectFormatterAPI`.
 
-        The default URL for a team is too the mainsite. None is returned
+        The default URL for a team is to the mainsite. None is returned
         when the user does not have permission to review the team.
         """
         person = self._context
@@ -1166,7 +1166,7 @@ class PillarFormatterAPI(CustomizableFormatter):
     def url(self, view_name=None, rootsite='mainsite'):
         """See `ObjectFormatterAPI`.
 
-        The default URL for a pillar is too the mainsite.
+        The default URL for a pillar is to the mainsite.
         """
         return super(PillarFormatterAPI, self).url(view_name, rootsite)
 
@@ -1174,7 +1174,7 @@ class PillarFormatterAPI(CustomizableFormatter):
         """The html to show a link to a Product, Project or distribution.
 
         In the case of Products or Project groups we display the custom
-        icon, if one exists. The default URL for a pillar is too the mainsite.
+        icon, if one exists. The default URL for a pillar is to the mainsite.
         """
 
         html = super(PillarFormatterAPI, self).link(view_name)
