@@ -669,7 +669,8 @@ class LaunchpadRootNavigation(Navigation):
             if self.request.method == 'POST':
                 raise POSTToNonCanonicalURL
             return self.redirectSubTree(
-                canonical_url(self.context) + canonical_name(name),
+                (canonical_url(self.context, request=self.request) +
+                 canonical_name(name)),
                 status=301)
 
         pillar = getUtility(IPillarNameSet).getByName(
