@@ -2421,19 +2421,13 @@ class PersonLanguagesView(LaunchpadView):
         return sorted(set(common_languages) - set(person_languages),
                       key=attrgetter('englishname'))
 
-    @property
-    def next_url(self):
-        redirection_url = self.request.get('redirection_url')
-        if redirection_url:
-            return redirection_url
-
-        referrer = self.request.getHeader('referer')
-        if referrer and referrer.startswith(self.request.getApplicationURL()):
+    def getRedirectionURL(self):
+        request = self.request
+        referrer = request.getHeader('referer')
+        if referrer and referrer.startswith(request.getApplicationURL()):
             return referrer
         else:
             return ''
-
-    cancel_url = next_url
 
     @property
     def is_current_user(self):
@@ -2477,8 +2471,9 @@ class PersonLanguagesView(LaunchpadView):
         if len(messages) > 0:
             message = structured('<br />'.join(messages))
             self.request.response.addInfoNotification(message)
-        if self.next_url:
-            self.request.response.redirect(self.next_url)
+        redirection_url = self.request.get('redirection_url')
+        if redirection_url:
+            self.request.response.redirect(redirection_url)
 
 
 class PersonView(LaunchpadView, FeedsMixin):
