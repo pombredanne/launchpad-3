@@ -942,6 +942,10 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     initial_focus_widget = 'name'
 
     @property
+    def page_title(self):
+        return 'Register a branch'
+
+    @property
     def initial_values(self):
         return {
             'owner': self.default_owner,

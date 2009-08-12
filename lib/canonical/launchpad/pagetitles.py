@@ -170,8 +170,6 @@ bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_add = 'Register a branch'
-
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
 
