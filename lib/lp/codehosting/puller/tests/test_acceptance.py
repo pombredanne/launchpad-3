@@ -1,4 +1,5 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """End-to-end tests for the branch puller."""
 
@@ -9,7 +10,6 @@ __all__ = []
 import os
 import shutil
 from subprocess import PIPE, Popen
-import sys
 import unittest
 from urlparse import urlparse
 
@@ -122,7 +122,7 @@ class TestBranchPuller(PullerBranchTestCase):
         output, error = process.communicate()
         return process.returncode, output, error
 
-    def runPuller(self, branch_type):
+    def runPuller(self):
         """Run the puller script for the given branch type.
 
         :param branch_type: One of 'upload', 'mirror' or 'import'
@@ -132,7 +132,7 @@ class TestBranchPuller(PullerBranchTestCase):
             stdout and stderr respectively.
         """
         command = [
-            '%s/bin/py' % config.root, self._puller_script, '-q', branch_type]
+            '%s/bin/py' % config.root, self._puller_script, '-q']
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 
@@ -213,7 +213,7 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         transaction.commit()
         self.pushBranch(db_branch)
-        command, retcode, output, error = self.runPuller('upload')
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch)
 
@@ -224,7 +224,7 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         pack_tree = self.make_branch_and_tree('pack', format='pack-0.92')
         self.pushBranch(db_branch, tree=pack_tree)
-        command, retcode, output, error = self.runPuller('upload')
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch)
         # Then we upgrade the to a different format and ask for it to be
@@ -233,7 +233,7 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.begin()
         db_branch.requestMirror()
         transaction.commit()
-        command, retcode, output, error = self.runPuller('upload')
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch)
 
@@ -243,7 +243,7 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         loom_tree = self.makeLoomBranchAndTree('loom')
         self.pushBranch(db_branch, tree=loom_tree)
-        command, retcode, output, error = self.runPuller('upload')
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch)
 
@@ -256,7 +256,7 @@ class TestBranchPuller(PullerBranchTestCase):
             branch=db_branch, person=accessing_user)
         transaction.commit()
         self.pushBranch(db_branch)
-        command, retcode, output, error = self.runPuller('upload')
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch, accessing_user=accessing_user)
 
@@ -266,7 +266,7 @@ class TestBranchPuller(PullerBranchTestCase):
             branch_type=BranchType.MIRRORED)
         tree = self.setUpMirroredBranch(db_branch)
         transaction.commit()
-        command, retcode, output, error = self.runPuller('mirror')
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch, source_branch=tree.branch)
 
@@ -291,13 +291,11 @@ class TestBranchPuller(PullerBranchTestCase):
         series.branch = default_branch
         # Arrange for it to be pulled.
         if branch_type == BranchType.HOSTED:
-            puller_type = 'upload'
             transaction.commit()
             # For hosted branches, we just push it into the hosted area via
             # the codehosting vfs.
             self.pushBranch(default_branch)
         elif branch_type == BranchType.MIRRORED:
-            puller_type = 'mirror'
             # For mirrored branches, we serve the branch over HTTP, point the
             # database branch at this HTTP server and call requestMirror()
             self.setUpMirroredBranch(default_branch, format='1.6')
@@ -307,7 +305,7 @@ class TestBranchPuller(PullerBranchTestCase):
                 "don't know how to make a %s default branch"
                 % branch_type.TITLE)
         # Pull it.
-        command, retcode, output, error = self.runPuller(puller_type)
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         return default_branch
 
@@ -319,7 +317,7 @@ class TestBranchPuller(PullerBranchTestCase):
             branch_type=BranchType.MIRRORED, product=default_branch.product)
         tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()
-        command, retcode, output, error = self.runPuller('mirror')
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         mirrored_branch = self.assertMirrored(
             db_branch, source_branch=tree.branch)
@@ -338,7 +336,7 @@ class TestBranchPuller(PullerBranchTestCase):
             branch_type=BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
         self.pushBranch(db_branch, format='1.6')
-        command, retcode, output, error = self.runPuller('upload')
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         mirrored_branch = self.assertMirrored(db_branch)
         self.assertEqual(
@@ -368,7 +366,7 @@ class TestBranchPuller(PullerBranchTestCase):
         branch_config.set_option(
             'stacked_on_location',
             'bzr+ssh://bazaar.launchpad.dev/' + default_branch.unique_name)
-        command, retcode, output, error = self.runPuller('upload')
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         # We clear the stacking information again here so that assertMirrored
         # can open the branch in the hosted area.
@@ -387,7 +385,7 @@ class TestBranchPuller(PullerBranchTestCase):
 
         tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()
-        command, retcode, output, error = self.runPuller('mirror')
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         mirrored_branch = self.assertMirrored(
             db_branch, source_branch=tree.branch)
@@ -422,26 +420,26 @@ class TestBranchPuller(PullerBranchTestCase):
         self.serveOverHTTP(self._getImportMirrorPort())
 
         # Run the puller.
-        command, retcode, output, error = self.runPuller("import")
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
 
         self.assertMirrored(db_branch, source_branch=tree.branch)
 
     def test_mirror_empty(self):
         # Run the puller on an empty pull queue.
-        command, retcode, output, error = self.runPuller("upload")
+        command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
 
     def test_records_script_activity(self):
         # A record gets created in the ScriptActivity table.
         script_activity_set = getUtility(IScriptActivitySet)
         self.assertIs(
-            script_activity_set.getLastActivity("branch-puller-hosted"),
+            script_activity_set.getLastActivity("branch-puller"),
             None)
-        self.runPuller("upload")
+        self.runPuller()
         transaction.abort()
         self.assertIsNot(
-            script_activity_set.getLastActivity("branch-puller-hosted"),
+            script_activity_set.getLastActivity("branch-puller"),
             None)
 
     # Possible tests to add:
@@ -454,4 +452,3 @@ class TestBranchPuller(PullerBranchTestCase):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-    return unittest.TestSuite()

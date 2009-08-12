@@ -672,7 +672,7 @@ You can check a person's direct memberships by using myactivememberships:
 
     >>> [(membership.team.name, membership.status.title)
     ...  for membership in salgado.myactivememberships]
-    [(u'landscape-developers', 'Approved'),
+    [(u'hwdb-team', 'Approved'), (u'landscape-developers', 'Approved'),
      (u'admins', 'Administrator'), (u't4', 'Approved')]
 
 And you can check which direct memberships a team has by using
@@ -774,6 +774,7 @@ member of.
     >>> print '\n'.join(sorted(
     ...     team.name for team in salgado.teams_participated_in))
     admins
+    hwdb-team
     landscape-developers
     mailing-list-experts
     t4
@@ -787,6 +788,7 @@ Adding admins as a member of t1 will make Salgado a member of t1 as well.
     >>> print '\n'.join(sorted(
     ...     team.name for team in salgado.teams_participated_in))
     admins
+    hwdb-team
     landscape-developers
     mailing-list-experts
     t1
@@ -800,6 +802,7 @@ for Salgado.
     >>> print '\n'.join(sorted(
     ...     team.name for team in salgado.teams_participated_in))
     admins
+    hwdb-team
     landscape-developers
     mailing-list-experts
     t1
@@ -814,7 +817,8 @@ Person directly to allow us access to an unproxied object, since
 _inTeam_cache is private, and TeamMembershipSet directly to allow us to
 call TeamMembership.setStatus, which is private).
 
-    >>> from canonical.launchpad.database import Person, TeamMembershipSet
+    >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.teammembership import TeamMembershipSet
     >>> no_priv = Person.selectOneBy(name='no-priv')
     >>> no_priv.inTeam(admins)
     False

@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -13,6 +14,7 @@ __all__ = [
 from textwrap import dedent
 
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
@@ -21,9 +23,9 @@ from z3c.ptcompat import ViewPageTemplateFile
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchBag, NotFoundError
 from canonical.launchpad.interfaces.hwdb import (
-    IHWDBApplication, IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet,
-    IHWSubmissionForm, IHWSubmissionSet, IHWSystemFingerprintSet,
-    IHWVendorIDSet)
+    HWSubmissionMissingFields, IHWDBApplication, IHWDeviceSet, IHWDriverSet,
+    IHWSubmissionDeviceSet, IHWSubmissionForm, IHWSubmissionSet,
+    IHWSystemFingerprintSet, IHWVendorIDSet)
 from canonical.launchpad.webapp import (
     action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -37,6 +39,28 @@ class HWDBUploadView(LaunchpadFormView):
     @action(u'Upload', name='upload')
     def upload_action(self, action, data):
         """Create a record in the HWSubmission table."""
+        # We expect that the data submitted by the client contains
+        # data for all fields defined in the form. The main client
+        # which POSTs data to this URL, checkbox, sometimes omits
+        # some fields (see bug 357316). The absence of required
+        # fields is not caught by Zope's form validation -- it only
+        # checks if required fields are not empty, and does this only
+        # if these fields are present in the form data. Absent fields
+        # are not detected, so let's do that here.
+        expected_fields = set(self.schema.names())
+        submitted_fields = set(data)
+        missing_fields = expected_fields.difference(submitted_fields)
+        if len(missing_fields) > 0:
+            missing_fields = ', '.join(sorted(missing_fields))
+            info = (HWSubmissionMissingFields,
+                    'Missing form fields: %s' % missing_fields, None)
+            errorUtility = getUtility(IErrorReportingUtility)
+            errorUtility.raising(info, self.request)
+            self.addCustomHeader(
+                'Error: Required fields not contained in POST data: '
+                + missing_fields)
+            return
+
         distributionset = getUtility(IDistributionSet)
         distribution = distributionset.getByName(data['distribution'].lower())
         if distribution is not None:

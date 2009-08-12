@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Commit files straight to bzr branch."""
 
@@ -11,10 +12,12 @@ __all__ = [
 
 import os.path
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview
+
+from canonical.launchpad.interfaces import IMasterObject
+from lp.codehosting.vfs import make_branch_mirrorer
 
 
 class ConcurrentUpdateError(Exception):
@@ -43,11 +46,27 @@ class DirectBranchCommit:
     """
     is_open = False
     is_locked = False
+    commit_builder = None
 
     def __init__(self, db_branch, committer=None):
         """Create context for direct commit to branch.
 
-        :param db_branch: a Launchpad Branch object.
+        Before constructing a `DirectBranchCommit`, set up a server that
+        allows write access to lp-hosted:/// URLs:
+
+        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver.setUp()
+        try:
+            branchcommit = DirectBranchCommit(branch)
+            # ...
+        finally:
+            bzrserver.tearDown()
+
+        Or in tests, just call `useBzrBranches` before creating a
+        `DirectBranchCommit`.
+
+        :param db_branch: a Launchpad `Branch` object.
+        :param committer: the `Person` writing to the branch.
         """
         self.db_branch = db_branch
 
@@ -55,37 +74,51 @@ class DirectBranchCommit:
             committer = db_branch.owner
         self.committer = committer
 
-        self.bzrbranch = BzrBranch.open(self.db_branch.getPullURL())
+        # Directories we create on the branch, and their ids.
+        self.path_ids = {}
+
+        mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
+        self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
         self.bzrbranch.lock_write()
         self.is_locked = True
 
         try:
             self.revision_tree = self.bzrbranch.basis_tree()
             self.transform_preview = TransformPreview(self.revision_tree)
+            assert self.transform_preview.find_conflicts() == [], (
+                "TransformPreview is not in a consistent state.")
 
             self.is_open = True
         except:
             self.unlock()
-            self.is_locked = False
             raise
 
         self.files = set()
 
     def _getDir(self, path):
         """Get trans_id for directory "path."  Create if necessary."""
-        dir = self.revision_tree.path2id(path)
-        if dir:
+        path_id = self.path_ids.get(path)
+        if path_id:
+            # This is a path we've just created in the branch.
+            return path_id
+
+        if self.revision_tree.path2id(path):
+            # This is a path that was already in the branch.
             return self.transform_preview.trans_id_tree_path(path)
 
+        # Look up (or create) parent directory.
         parent_dir, dirname = os.path.split(path)
         if dirname:
             parent_id = self._getDir(parent_dir)
         else:
             parent_id = None
 
+        # Create new directory.
         dirfile_id = gen_file_id(path)
-        return self.transform_preview.new_directory(
+        path_id = self.transform_preview.new_directory(
             dirname, parent_id, dirfile_id)
+        self.path_ids[path] = path_id
+        return path_id
 
     def writeFile(self, path, contents):
         """Write file to branch; may be an update or a new file.
@@ -132,6 +165,7 @@ class DirectBranchCommit:
         assert self.is_open, "Committing closed DirectBranchCommit."
         assert self.is_locked, "Not locked at commit time."
 
+        builder = None
         try:
             self._checkForRace()
 
@@ -151,16 +185,22 @@ class DirectBranchCommit:
             builder.finish_inventory()
 
             new_rev_id = builder.commit(commit_message)
+            builder = None
 
             revno, old_rev_id = self.bzrbranch.last_revision_info()
             self.bzrbranch.set_last_revision_info(revno + 1, new_rev_id)
 
+            IMasterObject(self.db_branch).requestMirror()
+
         finally:
+            if builder:
+                builder.abort()
             self.unlock()
             self.is_open = False
 
     def unlock(self):
         """Release commit lock, if held."""
         if self.is_locked:
+            self.transform_preview.finalize()
             self.bzrbranch.unlock()
             self.is_locked = False

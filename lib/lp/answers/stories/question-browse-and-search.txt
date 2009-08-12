@@ -749,36 +749,16 @@ Entering an invalid project also displays an error message:
     ...     print message.renderContents()
     There is no project named 'invalid' registered in Launchpad
 
-There is a 'Choose' link available to help the user find an existing
-project. (Since this is a JavaScript link, we will need to extract it
-to mimick the user clicking on it.)
+If the browser supports javascript, there is a 'Choose' link available
+to help the user find an existing project. Since the test browser does
+not support javascript, it is turned into a "Find" link to the /people.
 
-    >>> choose_link = anon_browser.getLink('Choose')
-    >>> print choose_link.url
-    javascript:popup_window('@@popup-window?...
-    >>> [search_url] = re.findall(
-    ...     "popup_window\('([^']*')", choose_link.url)
+    >>> find_link = anon_browser.getLink('Find')
+    >>> print find_link.url
+    http://answers.launchpad.dev/people/
 
-    # XXX flacoste 2007-02-21 bug=51853:
-    # We should use directly search_url here but can't because of bug #51853.
-    # >>> anon_browser.open(search_url)
-    >>> anon_browser.open('http://answers.launchpad.dev/' + search_url)
-    >>> print anon_browser.title
-    Select a project
 
-The user can enter a search term and can select one of the matching
-item.
-
-    >>> anon_browser.getControl(name='search').value = 'mozilla'
-    >>> anon_browser.getControl('Search', index=0).click()
-    >>> print anon_browser.getLink('mozilla').text
-    mozilla
-    >>> print anon_browser.getLink('mozilla').attrs['onclick']
-    update('mozilla')
-
-(Since the resulting link is also a JavaScript link, simply copy the
-value in the text field.)
-
+The form field can be filled manually without using the ajax widget.
 
     >>> anon_browser.open('http://answers.launchpad.dev')
     >>> anon_browser.getControl(name='field.search_text').value = 'plugins'

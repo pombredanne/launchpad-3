@@ -1,6 +1,11 @@
 #!/usr/bin/python2.4
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # Stop lint warning about relative import:
 # pylint: disable-msg=W0403
+
 """Change the component of a package.
 
 This tool allows you to change the component of a package.  Changes won't

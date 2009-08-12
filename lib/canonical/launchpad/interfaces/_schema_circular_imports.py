@@ -1,4 +1,5 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
 
@@ -51,6 +52,8 @@ from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission)
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriber)
+from lp.soyuz.interfaces.archivedependency import (
+    IArchiveDependency)
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
@@ -74,6 +77,11 @@ IBranch['linkBug'].queryTaggedValue(
 IBranch['linkSpecification'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
 IBranch['product'].schema = IProduct
+IBranch['setTarget'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['project'].schema= IProduct
+IBranch['setTarget'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['source_package'].schema= \
+        ISourcePackage
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
@@ -89,6 +97,8 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['parent'].schema = \
         ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
+IBranchMergeProposal['nominateReviewer'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewVoteReference
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
 IHasBranches['getBranches'].queryTaggedValue(
@@ -160,10 +170,19 @@ patch_reference_property(
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
+patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getUploadersForPackage', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getUploadersForPackageset', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getPackagesetsForUploader', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getPackagesetsForSourceUploader', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getPackagesetsForSource', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getUploadersForComponent', IArchivePermission)
 patch_collection_return_type(
@@ -177,6 +196,9 @@ patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
 patch_entry_return_type(IArchive, 'newSubscription', IArchiveSubscriber)
+patch_plain_parameter_type(
+    IArchive, 'getArchiveDependency', 'dependency', IArchive)
+patch_entry_return_type(IArchive, 'getArchiveDependency', IArchiveDependency)
 patch_plain_parameter_type(
     IArchive, 'getPublishedSources', 'distroseries', IDistroSeries)
 patch_collection_return_type(

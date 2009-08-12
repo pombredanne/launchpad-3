@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0102
 
 __metaclass__ = type
@@ -7,9 +9,10 @@ from datetime import datetime, timedelta
 import pytz
 import unittest
 
-from zope.component import getAdapter
+from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus)
 from lp.translations.interfaces.translationcommonformat import (
@@ -1076,6 +1079,193 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         self.assertEquals(potmsgsets,
                           [self.potmsgset1, self.potmsgset2])
 
+    def test_findPOTMsgSetsContaining_ordering(self):
+        # As per bug 388473 findPOTMsgSetsContaining still used the old
+        # potmsgset.sequence for ordering. Check that this is fixed.
+        # This test will go away when potmsgset.sequence goes away.
+
+        # Give the method something to search for.
+        translation1 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset1,
+            translations=["Shared translation"])
+        translation2 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset2,
+            translations=["Another shared translation"])
+
+        # Mess with potmsgset.sequence.
+        removeSecurityProxy(self.potmsgset1).sequence = 2
+        removeSecurityProxy(self.potmsgset2).sequence = 1
+
+        potmsgsets = list(
+            self.devel_sr_pofile.findPOTMsgSetsContaining("translation"))
+
+        # Order ignores potmsgset.sequence.
+        self.assertEquals([self.potmsgset1, self.potmsgset2],
+                          potmsgsets)
+
+
+class TestPOFileSet(TestCaseWithFactory):
+    """Test PO file set methods."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        # Create a POFileSet to work with.
+        super(TestPOFileSet, self).setUp()
+        self.pofileset = getUtility(IPOFileSet)
+
+    def test_POFileSet_getPOFilesTouchedSince_none(self):
+        # Make sure getPOFilesTouchedSince returns nothing
+        # when there are no touched PO files.
+        now = datetime.now(pytz.UTC)
+        pofiles = self.pofileset.getPOFilesTouchedSince(now)
+        self.assertContentEqual([], pofiles)
+
+        week_ago = now - timedelta(7)
+        pofiles = self.pofileset.getPOFilesTouchedSince(week_ago)
+        self.assertContentEqual([], pofiles)
+
+        # Even when a POFile is touched, but earlier than
+        # what we are looking for, nothing is returned.
+        pofile = self.factory.makePOFile('sr')
+        pofile.date_changed = week_ago
+        pofiles = self.pofileset.getPOFilesTouchedSince(now)
+        self.assertContentEqual([], pofiles)
+
+    def test_POFileSet_getPOFilesTouchedSince_unshared(self):
+        # Make sure actual touched POFiles are returned by
+        # getPOFilesTouchedSince.
+        now = datetime.now(pytz.UTC)
+        yesterday = now - timedelta(1)
+
+        new_pofile = self.factory.makePOFile('sr')
+        new_pofile.date_changed = now
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([new_pofile], pofiles)
+
+        # An older file means is not returned.
+        week_ago = now - timedelta(7)
+        old_pofile = self.factory.makePOFile('sr')
+        old_pofile.date_changed = week_ago
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([new_pofile], pofiles)
+
+        # Unless we extend the time period we ask for.
+        pofiles = self.pofileset.getPOFilesTouchedSince(week_ago)
+        self.assertContentEqual([new_pofile, old_pofile], pofiles)
+
+    def test_POFileSet_getPOFilesTouchedSince_shared_in_product(self):
+        # Make sure actual touched POFiles and POFiles that are sharing
+        # with them in the same product are all returned by
+        # getPOFilesTouchedSince.
+
+        # We create a product with two series, and attach
+        # a POTemplate and Serbian POFile to each, making
+        # sure they share translations (potemplates have the same name).
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        series1 = self.factory.makeProductSeries(product=product,
+                                                 name='one')
+        series2 = self.factory.makeProductSeries(product=product,
+                                                 name='two')
+        potemplate1 = self.factory.makePOTemplate(name='shared',
+                                                  productseries=series1)
+        pofile1 = self.factory.makePOFile('sr', potemplate=potemplate1)
+        potemplate2 = self.factory.makePOTemplate(name='shared',
+                                                  productseries=series2)
+        pofile2 = potemplate2.getPOFileByLang('sr')
+
+        now = datetime.now(pytz.UTC)
+        yesterday = now - timedelta(1)
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
+
+        # Even if one of the sharing POFiles is older, it's still returned.
+        week_ago = now - timedelta(7)
+        pofile2.date_changed = week_ago
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
+
+        # A POFile in a different language is not returned.
+        pofile3 = self.factory.makePOFile('de', potemplate=potemplate2)
+        pofile3.date_changed = week_ago
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
+
+    def test_POFileSet_getPOFilesTouchedSince_shared_in_distribution(self):
+        # Make sure actual touched POFiles and POFiles that are sharing
+        # with them in the same distribution/sourcepackage are all returned
+        # by getPOFilesTouchedSince.
+
+        # We create a distribution with two series with the same
+        # sourcepackage in both, and attach a POTemplate and Serbian
+        # POFile to each, making sure they share translations
+        # (potemplates have the same name).
+        distro = self.factory.makeDistribution()
+        distro.official_rosetta = True
+        series1 = self.factory.makeDistroRelease(distribution=distro,
+                                                 name='one')
+        sourcepackagename = self.factory.makeSourcePackageName()
+        potemplate1 = self.factory.makePOTemplate(
+            name='shared', distroseries=series1,
+            sourcepackagename=sourcepackagename)
+        pofile1 = self.factory.makePOFile('sr', potemplate=potemplate1)
+
+        series2 = self.factory.makeDistroRelease(distribution=distro,
+                                                 name='two')
+        potemplate2 = self.factory.makePOTemplate(
+            name='shared', distroseries=series2,
+            sourcepackagename=sourcepackagename)
+        pofile2 = potemplate2.getPOFileByLang('sr')
+
+        # Now the test actually starts.
+        now = datetime.now(pytz.UTC)
+        yesterday = now - timedelta(1)
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
+
+        # Even if one of the sharing POFiles is older, it's still returned.
+        week_ago = now - timedelta(7)
+        pofile2.date_changed = week_ago
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
+
+        # A POFile in a different language is not returned.
+        pofile3 = self.factory.makePOFile('de', potemplate=potemplate2)
+        pofile3.date_changed = week_ago
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
+
+    def test_POFileSet_getPOFilesTouchedSince_external_pofiles(self):
+        # Make sure POFiles which are in different products
+        # are not returned even though they have the same potemplate name.
+        series1 = self.factory.makeProductSeries(name='one')
+        series1.product.official_rosetta = True
+        series2 = self.factory.makeProductSeries(name='two')
+        series2.product.official_rosetta = True
+        self.assertNotEqual(series1.product, series2.product)
+
+        potemplate1 = self.factory.makePOTemplate(name='shared',
+                                                  productseries=series1)
+        pofile1 = self.factory.makePOFile('sr', potemplate=potemplate1)
+
+        potemplate2 = self.factory.makePOTemplate(name='shared',
+                                                  productseries=series2)
+        pofile2 = self.factory.makePOFile('sr', potemplate=potemplate2)
+
+        # Now the test actually starts.
+        now = datetime.now(pytz.UTC)
+        yesterday = now - timedelta(1)
+        week_ago = now - timedelta(7)
+
+        # Second POFile has been modified earlier than yesterday,
+        # and is attached to a different product, even if the template
+        # name is the same.  It's not returned.
+        pofile2.date_changed = week_ago
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([pofile1], pofiles)
 
 
 class TestPOFileStatistics(TestCaseWithFactory):
@@ -1093,7 +1283,6 @@ class TestPOFileStatistics(TestCaseWithFactory):
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
                                                     sequence=1)
-
 
     def test_POFile_updateStatistics_currentCount(self):
         # Make sure count of translations which are active both

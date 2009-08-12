@@ -1,4 +1,5 @@
-# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IQuestionTarget browser views."""
 
@@ -105,6 +106,11 @@ class UserSupportLanguagesMixin:
 
 class QuestionCollectionLatestQuestionsView:
     """View used to display the latest questions on a question target."""
+
+    @cachedproperty
+    def latest_questions_url(self):
+        """The link to the latest questions."""
+        return canonical_url(self.context, rootsite='answers')
 
     @cachedproperty
     def getLatestQuestions(self, quantity=5):

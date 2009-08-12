@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=F0401
 
 """Tests for BranchMergeProposals."""
@@ -20,6 +22,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobType,
     CreateMergeProposalJob, MergeProposalCreatedJob)
@@ -30,7 +33,7 @@ from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
 from canonical.launchpad.ftests import (
-    ANONYMOUS, import_secret_test_key, login, logout, syncUpdate)
+    ANONYMOUS, import_secret_test_key, login, syncUpdate)
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
     BranchType, CodeReviewNotificationLevel, CodeReviewVote)
@@ -338,10 +341,10 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
             BranchMergeProposalStatus.MERGED)
 
     def test_set_status_invalid_status(self):
-        # IBranchMergeProposal.setStatus doesn't work in the case of superseded
-        # branches since a superseded branch requires more than just changing a
-        # few settings.  Because it's unknown, it should raisse an
-        # AssertionError.
+        # IBranchMergeProposal.setStatus doesn't work in the case of
+        # superseded branches since a superseded branch requires more than
+        # just changing a few settings.  Because it's unknown, it should
+        # raise an AssertionError.
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
@@ -391,36 +394,6 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         proposal.requestReview()
         self.assertEqual(
             proposal.date_created, proposal.date_review_requested)
-
-
-class TestBranchMergeProposalCanReview(TestCase):
-    """Test the different cases that makes a branch deletable or not."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        login('test@canonical.com')
-
-        factory = LaunchpadObjectFactory()
-        self.source_branch = factory.makeProductBranch()
-        self.target_branch = factory.makeProductBranch(
-            product=self.source_branch.product)
-        registrant = factory.makePerson()
-        self.proposal = self.source_branch.addLandingTarget(
-            registrant, self.target_branch)
-
-    def tearDown(self):
-        logout()
-
-    def test_validReviewer(self):
-        """A newly created branch can be deleted without any problems."""
-        self.assertEqual(self.proposal.isPersonValidReviewer(None),
-                         False, "No user cannot review code")
-        # The owner of the target branch is a valid reviewer.
-        self.assertEqual(
-            self.proposal.isPersonValidReviewer(
-                self.target_branch.owner),
-            True, "No user cannot review code")
 
 
 class TestBranchMergeProposalQueueing(TestCase):
@@ -944,21 +917,22 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         bmp1.nominateReviewer(beaver, wally)
         bmp2 = self._make_merge_proposal('beaver', 'gokart', 'brakes', True)
 
-        wally_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+        getter = BranchMergeProposalGetter
+        wally_proposals = getter.getProposalsForParticipant(
             wally, [BranchMergeProposalStatus.NEEDS_REVIEW], wally)
         self.assertEqual(wally_proposals.count(), 1)
 
-        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+        beave_proposals = getter.getProposalsForParticipant(
             beaver, [BranchMergeProposalStatus.NEEDS_REVIEW], beaver)
         self.assertEqual(beave_proposals.count(), 2)
 
         bmp1.rejectBranch(wally, '1')
 
-        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+        beave_proposals = getter.getProposalsForParticipant(
             beaver, [BranchMergeProposalStatus.NEEDS_REVIEW], beaver)
         self.assertEqual(beave_proposals.count(), 1)
 
-        beave_proposals = BranchMergeProposalGetter.getProposalsForParticipant(
+        beave_proposals = getter.getProposalsForParticipant(
             beaver, [BranchMergeProposalStatus.REJECTED], beaver)
         self.assertEqual(beave_proposals.count(), 1)
 
@@ -1231,6 +1205,18 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         job = MergeProposalCreatedJob.create(bmp)
         self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
 
+    def test_getOopsMailController(self):
+        """The registrant is notified about merge proposal creation issues."""
+        bmp = self.factory.makeBranchMergeProposal()
+        bmp.source_branch.requestMirror()
+        job = MergeProposalCreatedJob.create(bmp)
+        ctrl = job.getOopsMailController('1234')
+        self.assertEqual([bmp.registrant.preferredemail.email], ctrl.to_addrs)
+        message = (
+            'notifying people about the proposal to merge %s into %s' %
+            (bmp.source_branch.bzr_identity, bmp.target_branch.bzr_identity))
+        self.assertIn(message, ctrl.body)
+
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""
@@ -1462,6 +1448,21 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
         proposal, comment = job.run()
         self.assertEqual(proposal.source_branch, source)
         self.assertEqual(proposal.target_branch, target)
+
+    def test_getOopsMailController(self):
+        """The sender is notified when creating a bmp from email fails."""
+        key = import_secret_test_key()
+        signing_context = GPGSigningContext(key.fingerprint, password='test')
+        message, file_alias, source, target = (
+            self.factory.makeMergeDirectiveEmail(
+                signing_context=signing_context))
+        job = CreateMergeProposalJob.create(file_alias)
+        transaction.commit()
+        ctrl = job.getOopsMailController('1234')
+        self.assertEqual([message['From']], ctrl.to_addrs)
+        desc = ('creating a merge proposal from message with subject %s' %
+                message['Subject'])
+        self.assertIn(desc, ctrl.body)
 
     def test_iterReady_includes_ready_jobs(self):
         """Ready jobs should be listed."""

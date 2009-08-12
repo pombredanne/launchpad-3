@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for efficient translation file exports."""
@@ -14,23 +15,13 @@ from zope.interface import Interface
 from zope.schema import Bool, Int, Object, Text
 
 from canonical.launchpad import _
-from lp.services.worlddata.interfaces.language import ILanguage
 from lp.translations.interfaces.pofile import IPOFile
-from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.potmsgset import IPOTMsgSet
 from lp.translations.interfaces.translations import TranslationConstants
 
 
 class IVPOExportSet(Interface):
     """A collection of IVPOExport-providing rows."""
-
-    def get_pofile_rows(pofile):
-        """Return exportable rows belonging to the given PO file."""
-
-    def get_pofile_changed_rows(pofile):
-        """Return exportable rows belonging to the given PO file that
-        were changed compared to the imported/packaged rows.
-        """
 
     def get_distroseries_pofiles(series, date=None, component=None,
         languagepack=None):
@@ -57,15 +48,6 @@ class IVPOExportSet(Interface):
 class IVPOExport(Interface):
     """Shorthand of translation messages for efficient exports."""
 
-    potemplate = Object(
-        title=u"Template",
-        required=True, readonly=True, schema=IPOTemplate)
-
-    template_header = Text(
-        title=u"Template file header",
-        description=u"Same as IPOTemplate.header.",
-        required=True, readonly=True)
-
     pofile = Object(
         title=u"Translation file",
         required=True, readonly=True, schema=IPOFile)
@@ -74,30 +56,6 @@ class IVPOExport(Interface):
         title=u"Message divergence.",
         description=u"A POTemplate this is a divergence for, or None.",
         required=False, readonly=True)
-
-    language = Object(
-        title=u"Translation language",
-        required=True, readonly=True, schema=ILanguage)
-
-    variant = Text(
-        title=u"Language variant",
-        description=u"As in IPOFile.",
-        required=False, readonly=True)
-
-    translation_file_comment = Text(
-        title=u"Translation file comment",
-        description=u"Same as IPOFile.topcomment.",
-        required=False, readonly=True)
-
-    translation_header = Text(
-        title=u"Translation file header",
-        description=u"Same as IPOFile.header.",
-        required=True, readonly=True)
-
-    is_translation_header_fuzzy = Bool(
-        title=u"Translation header fuzzy flag",
-        description=u"Same as IPOFile.fuzzyheader.",
-        required=True, readonly=True)
 
     potmsgset = Object(
         title=u"See `IPOTMsgSet`.",
@@ -141,11 +99,6 @@ class IVPOExport(Interface):
         title=u"Message identifier (plural)",
         description=u"See IPOMsgID.pomsgid.",
         required=False, readonly=True)
-
-    is_fuzzy = Bool(
-        title=u"Message needs review",
-        description=u"As in ITranslationMessage.",
-        readonly=True, required=False)
 
     is_current = Bool(
         title=_("Whether this message is currently used in Launchpad"),

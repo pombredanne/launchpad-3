@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Question models."""
@@ -912,11 +914,15 @@ class QuestionSearch:
         query = ''
         constraints = self.getConstraints()
         if constraints:
-            query += (
-                'Question.id IN ('
-                    'SELECT Question.id FROM Question %s WHERE %s)' % (
-                        '\n'.join(self.getTableJoins()),
-                        ' AND '.join(constraints)))
+            joins = self.getTableJoins()
+            if len(joins) > 0:
+                # Make a slower query to accommodate the joins.
+                query += (
+                    'Question.id IN ('
+                        'SELECT Question.id FROM Question %s WHERE %s)' % (
+                            '\n'.join(joins), ' AND '.join(constraints)))
+            else:
+                query += ' AND '.join(constraints)
         return Question.select(
             query, prejoins=self.getPrejoins(),
             prejoinClauseTables=self.getPrejoinClauseTables(),

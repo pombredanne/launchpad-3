@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import ez_setup
 ez_setup.use_setuptools()
@@ -23,6 +24,7 @@ setup(
     install_requires=[
         'bzr',
         'feedvalidator',
+        'funkload',
         'launchpadlib',
         'lazr.smtptest',
         'lazr.uri',
@@ -63,6 +65,8 @@ setup(
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
             'twistd = twisted.scripts.twistd:run',
+            'start_librarian '
+                '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
         ]
     ),
 )

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mantis ExternalBugTracker utility."""
 
@@ -79,7 +80,9 @@ class Mantis(ExternalBugTracker):
     """An `ExternalBugTracker` for dealing with Mantis instances.
 
     For a list of tested Mantis instances and their behaviour when
-    exported from, see http://launchpad.canonical.com/MantisBugtrackers.
+    exported from, see:
+
+        https://dev.launchpad.net/Bugs/ExternalBugTrackers/Mantis
     """
 
     # Custom opener that automatically sends anonymous credentials to

@@ -216,14 +216,14 @@ packaging process. Here we test the code that links all of those.
 
 First, let's get some useful objects from the db.
 
-    >>> from canonical.launchpad.database import SourcePackageName
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> evolution = SourcePackageName.byName('evolution')
     >>> a52dec = SourcePackageName.byName('a52dec')
     >>> netapplet = SourcePackageName.byName('netapplet')
     >>> firefox = SourcePackageName.byName('mozilla-firefox')
     >>> pmount = SourcePackageName.byName('pmount')
 
-    >>> from canonical.launchpad.database import DistroSeries
+    >>> from lp.registry.model.distroseries import DistroSeries
     >>> warty = DistroSeries.get(1)
     >>> hoary = DistroSeries.get(3)
     >>> sarge = DistroSeries.get(7)
@@ -232,7 +232,7 @@ First, let's get some useful objects from the db.
 
 Now let's make sure that we can see a productseries for a source package.
 
-    >>> from canonical.launchpad.database import SourcePackage
+    >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> sp = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
     >>> sp.productseries.name
     u'1.0'
@@ -287,7 +287,7 @@ And if we want to link that productseries to a source package in that
 distroseries
 
     >>> from canonical.launchpad.interfaces import PackagingType
-    >>> from canonical.launchpad.database import Person
+    >>> from lp.registry.model.person import Person
     >>> foobar = Person.byName('name16')
     >>> PackagingUtil().createPackaging(
     ...     productseries=sp.productseries,

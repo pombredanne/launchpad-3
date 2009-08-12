@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -57,6 +61,13 @@
         path_expression="string:+review/${id}"
         attribute_to_parent="branch_merge_proposal"
         rootsite="code"/>
+    <browser:page
+        for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"
+        name="+reassign"
+        class="lp.code.browser.branchmergeproposal.CodeReviewVoteReassign"
+        facet="branches"
+        permission="launchpad.AnyPerson"
+        template="../templates/reviewrequest-reassign.pt"/>
     <facet
         facet="branches">
         <browser:url
@@ -343,6 +354,9 @@
         <browser:page
             name="+merges"
             template="../templates/branch-merges.pt"/>
+        <browser:page
+            name="++bug-links"
+            template="../templates/branch-bug-links.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branch.IBranch"
@@ -392,21 +406,21 @@
         class="lp.code.browser.branch.BranchEditWhiteboardView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+edit"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branch-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+reviewer"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchReviewerEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branch-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+edit-import"
         for="lp.code.interfaces.branch.IBranch"
@@ -453,14 +467,14 @@
         class="lp.bugs.browser.bugbranch.BranchLinkToBugView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-link-to-bug.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+linkblueprint"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.blueprints.browser.specificationbranch.BranchLinkToSpecificationView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-link-to-spec.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+addsubscriber"
         for="lp.code.interfaces.branch.IBranch"
@@ -504,14 +518,14 @@
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.AddBranchVisibilityTeamPolicyView"
-        permission="launchpad.Admin"
+        permission="launchpad.Commercial"
         template="../templates/branch-visibility-edit.pt"/>
     <browser:page
         name="+removebranchvisibilitypolicy"
         for="lp.code.interfaces.branchvisibilitypolicy.IHasBranchVisibilityPolicy"
         facet="overview"
         class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
-        permission="launchpad.Admin"
+        permission="launchpad.Commercial"
         template="../templates/branch-visibility-edit.pt"/>
     <browser:page
         name="+spark"
@@ -547,9 +561,6 @@
             name="+index"
             template="../templates/codereviewcomment-index.pt"/>
         <browser:page
-            name="+fragment"
-            template="../templates/codereviewcomment-fragment.pt"/>
-        <browser:page
             name="+comment-header"
             template="../templates/codereviewcomment-header.pt"/>
         <browser:page
@@ -559,17 +570,6 @@
             name="+comment-footer"
             template="../templates/codereviewcomment-footer.pt"/>
     </browser:pages>
-    <browser:page
-        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-        class="lp.code.browser.codereviewcomment.CodeReviewCommentSummary"
-        name="+fragment-summary"
-        permission="zope.Public"
-        template="../templates/codereviewcomment-fragment.pt"/>
-    <browser:page
-        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-        name="+macros"
-        permission="zope.Public"
-        template="../templates/codereviewcomment-macros.pt"/>
     <browser:page
         name="+reply"
         facet="branches"

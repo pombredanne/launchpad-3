@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
@@ -277,7 +281,13 @@
     permission="zope.Public"
     template="../templates/faq-listing.pt"
     />
-
+  <browser:page
+    for="lp.answers.interfaces.faqcollection.IFAQCollection"
+    class=".faqcollection.SearchFAQsView"
+    name="+portlet-listfaqs"
+    permission="zope.Public"
+    template="../templates/faqcollection-portlet-faqs.pt"
+    />
   <browser:page
     name="+createfaq"
     for="lp.answers.interfaces.faqtarget.IFAQTarget"

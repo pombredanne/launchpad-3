@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IProduct."""
@@ -35,8 +37,8 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ProductBugTracker, ProductNameField, PublicPersonChoice,
-    Summary, Title, URIField)
+    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
+    PublicPersonChoice, Summary, Title, URIField)
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
@@ -351,7 +353,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -368,7 +370,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "

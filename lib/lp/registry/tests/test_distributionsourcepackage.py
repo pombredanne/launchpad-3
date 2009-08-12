@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for DistributionSourcePackage."""
 
@@ -108,6 +109,25 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
             archive.name for archive in related_archives]
 
         self.assertEqual(related_archive_names, ['gedit-nightly'])
+
+    def test_development_version(self):
+        # IDistributionSourcePackage.development_version is the ISourcePackage
+        # for the current series of the distribution.
+        dsp = self.factory.makeDistributionSourcePackage()
+        series = self.factory.makeDistroRelease(distribution=dsp.distribution)
+        self.assertEqual(series, dsp.distribution.currentseries)
+        development_version = dsp.distribution.currentseries.getSourcePackage(
+            dsp.sourcepackagename)
+        self.assertEqual(development_version, dsp.development_version)
+
+    def test_development_version_no_current_series(self):
+        # IDistributionSourcePackage.development_version is the ISourcePackage
+        # for the current series of the distribution.
+        dsp = self.factory.makeDistributionSourcePackage()
+        currentseries = dsp.distribution.currentseries
+        # The current series is None by default.
+        self.assertIs(None, currentseries)
+        self.assertEqual(None, dsp.development_version)
 
     def test_does_not_include_copied_packages(self):
         # Packages that have been copied rather than uploaded are not

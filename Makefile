@@ -6,12 +6,13 @@ PYTHON=python${PYTHON_VERSION}
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
+BUILDOUT_CFG=buildout.cfg
 VERBOSITY=-vv
 
 TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
-SHHH=${PY} utilities/shhh.py
+SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
 LPCONFIG=development
@@ -43,10 +44,12 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(WADL_FILE): $(BZR_VERSION_INFO)
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@.tmp
+	mv $@.tmp $@
 
 $(API_INDEX): $(WADL_FILE)
-	bin/apiindex $(WADL_FILE) > $@
+	bin/apiindex $(WADL_FILE) > $@.tmp
+	mv $@.tmp $@
 
 apidoc: compile $(API_INDEX)
 
@@ -87,7 +90,7 @@ jscheck: build
 	@echo
 	@echo "Running the JavaScript integration test suite"
 	@echo
-	${PY} utilities/test-all-windmills.py
+	bin/jstest
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
@@ -127,11 +130,11 @@ download-cache:
 # warning before the eggs directory is made.  The target for the eggs directory
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
-	$(PYTHON) bootstrap.py --ez_setup-source=ez_setup.py \
+	$(SHHH) $(PYTHON) bootstrap.py --ez_setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
-$(PY): bin/buildout versions.cfg buildout.cfg setup.py
-	./bin/buildout configuration:instance_name=${LPCONFIG}
+$(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
+	$(SHHH) ./bin/buildout configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
 compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
@@ -176,6 +179,12 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
 
+start_librarian: build
+	bin/start_librarian
+
+stop_librarian:
+	bin/killservice librarian
+
 pull_branches: support_files
 	# Mirror the hosted branches in the development upload area to the
 	# mirrored area.
@@ -209,7 +218,7 @@ stop: build initscript-stop
 
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition. For use on production
-# servers, where we know we don't need the extra steps in a full 
+# servers, where we know we don't need the extra steps in a full
 # "make stop" because of how the code is deployed/built.
 initscript-stop:
 	bin/killservice librarian buildsequencer launchpad mailman

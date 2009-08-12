@@ -1,4 +1,5 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch targets."""
 
@@ -12,7 +13,8 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import isinstance as zope_isinstance
+from zope.security.proxy import (
+    removeSecurityProxy, isinstance as zope_isinstance)
 
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
@@ -127,6 +129,16 @@ class PackageBranchTarget(_BaseBranchTarget):
         # those cases.
         return bug.default_bugtask
 
+    def _retargetBranch(self, branch):
+        """Set the branch target to refer to this target.
+
+        This only updates the target related attributes of the branch, and
+        expects a branch without a security proxy as a parameter.
+        """
+        branch.product = None
+        branch.distroseries = self.sourcepackage.distroseries
+        branch.sourcepackagename = self.sourcepackage.sourcepackagename
+
 
 class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
@@ -180,6 +192,16 @@ class PersonBranchTarget(_BaseBranchTarget):
     def getBugTask(self, bug):
         """See `IBranchTarget`."""
         return bug.default_bugtask
+
+    def _retargetBranch(self, branch):
+        """Set the branch target to refer to this target.
+
+        This only updates the target related attributes of the branch, and
+        expects a branch without a security proxy as a parameter.
+        """
+        branch.product = None
+        branch.distroseries = None
+        branch.sourcepackagename = None
 
 
 class ProductBranchTarget(_BaseBranchTarget):
@@ -263,6 +285,16 @@ class ProductBranchTarget(_BaseBranchTarget):
             # Just choose the first task for the bug.
             task = bug.bugtasks[0]
         return task
+
+    def _retargetBranch(self, branch):
+        """Set the branch target to refer to this target.
+
+        This only updates the target related attributes of the branch, and
+        expects a branch without a security proxy as a parameter.
+        """
+        branch.product = self.product
+        branch.distroseries = None
+        branch.sourcepackagename = None
 
 
 def get_canonical_url_data_for_target(branch_target):

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -74,6 +76,12 @@ class FilePublishingBase:
 
     def publish(self, diskpool, log):
         """See IFilePublishing."""
+        # DDEB publication for PPAs is temporarily disabled, see bug #399444.
+        if (self.archive.is_ppa and
+            self.libraryfilealiasfilename.endswith('.ddeb')):
+            log.debug('Skipping DDEB disk publication.')
+            return
+
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
         # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')

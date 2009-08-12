@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -6,13 +10,19 @@
 
     <!-- HWDBApplication -->
     <class class="canonical.launchpad.systemhomes.HWDBApplication">
-        <allow interface="canonical.launchpad.interfaces.IHWDBApplication" />
+        <allow interface="lazr.restful.interfaces.ITopLevelEntryLink" />
+        <require
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IHWDBApplication" />
     </class>
 
     <securedutility
         class="canonical.launchpad.systemhomes.HWDBApplication"
         provides="canonical.launchpad.interfaces.IHWDBApplication">
-        <allow interface="canonical.launchpad.interfaces.IHWDBApplication" />
+        <allow interface="lazr.restful.interfaces.ITopLevelEntryLink" />
+        <require
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IHWDBApplication" />
     </securedutility>
 
     <browser:navigation
@@ -111,7 +121,9 @@
     </securedutility>
 
     <class class="canonical.launchpad.database.HWVendorID">
-        <allow interface="canonical.launchpad.interfaces.IHWVendorID" />
+        <require
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IHWVendorID" />
     </class>
 
     <browser:url
@@ -127,7 +139,9 @@
     </securedutility>
 
     <class class="canonical.launchpad.database.HWDevice">
-        <allow interface="canonical.launchpad.interfaces.IHWDevice" />
+        <require
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IHWDevice" />
     </class>
 
     <browser:url
@@ -155,7 +169,8 @@
     </securedutility>
 
     <class class="canonical.launchpad.database.HWDriver">
-        <allow
+        <require
+            permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IHWDriver" />
     </class>
 
@@ -173,7 +188,8 @@
     </securedutility>
 
     <class class="canonical.launchpad.database.HWDriverName">
-        <allow
+        <require
+            permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IHWDriverName" />
     </class>
 
@@ -184,7 +200,8 @@
         />
 
     <class class="canonical.launchpad.database.HWDriverPackageName">
-        <allow
+        <require
+            permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IHWDriverPackageName" />
     </class>
 
@@ -221,7 +238,8 @@
     </securedutility>
 
     <class class="canonical.launchpad.database.HWSubmissionDevice">
-        <allow
+        <require
+            permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IHWSubmissionDevice" />
     </class>
 

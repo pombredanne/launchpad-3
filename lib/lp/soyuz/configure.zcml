@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -273,7 +277,7 @@
     <!-- ArchiveDependency -->
 
     <class
-        class="canonical.launchpad.database.ArchiveDependency">
+        class="lp.soyuz.model.archivedependency.ArchiveDependency">
         <allow
             interface="lp.soyuz.interfaces.archivedependency.IArchiveDependency"/>
     </class>
@@ -334,9 +338,8 @@
     </securedutility>
 
     <!-- DistributionSourcePackageCache -->
-
     <class
-        class="canonical.launchpad.database.DistributionSourcePackageCache">
+        class="lp.soyuz.model.distributionsourcepackagecache.DistributionSourcePackageCache">
         <allow
             interface="lp.soyuz.interfaces.distributionsourcepackagecache.IDistributionSourcePackageCache"/>
     </class>

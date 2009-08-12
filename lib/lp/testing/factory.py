@@ -1,4 +1,5 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
 
@@ -573,7 +574,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
                    private=False, stacked_on=None, sourcepackage=None,
-                   **optional_branch_args):
+                   reviewer=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for `IBranchNamespace.createBranch` can be specified to
@@ -599,7 +600,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries = sourcepackage.distroseries
 
         if registrant is None:
-            registrant = owner
+            if owner.is_team:
+                registrant = owner.teamowner
+            else:
+                registrant = owner
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
@@ -620,6 +624,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
+        if reviewer is not None:
+            removeSecurityProxy(branch).reviewer = reviewer
         return branch
 
     def makePackageBranch(self, sourcepackage=None, distroseries=None,
@@ -1013,6 +1019,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
             email_address = person.preferredemail.email
         mail['From'] = email_address
+        mail['To'] = self.makePerson().preferredemail.email
         if subject is None:
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject

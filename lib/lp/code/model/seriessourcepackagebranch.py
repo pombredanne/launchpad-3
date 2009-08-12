@@ -1,4 +1,6 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0231
 
 """The content classes for links from source packages to branches.."""
@@ -129,4 +131,5 @@ class SeriesSourcePackageBranchSet:
             SeriesSourcePackageBranch,
             SeriesSourcePackageBranch.distroseries == distroseries.id,
             SeriesSourcePackageBranch.sourcepackagename ==
-            sourcepackagename.id).remove()
+            sourcepackagename.id,
+            SeriesSourcePackageBranch.pocket == pocket).remove()

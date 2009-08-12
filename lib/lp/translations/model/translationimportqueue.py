@@ -1,4 +1,6 @@
-# Copyright 2005-2009 Canonical Ltd. All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -143,7 +145,7 @@ class TranslationImportQueueEntry(SQLBase):
     @property
     def sourcepackage(self):
         """See ITranslationImportQueueEntry."""
-        from canonical.launchpad.database import SourcePackage
+        from lp.registry.model.sourcepackage import SourcePackage
 
         if self.sourcepackagename is None or self.distroseries is None:
             return None
@@ -343,8 +345,13 @@ class TranslationImportQueueEntry(SQLBase):
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
 
-        if (potemplate is None and (sourcepackagename is None or
-            self.sourcepackagename.name != sourcepackagename.name)):
+        is_for_distro = self.distroseries is not None
+        know_package = (
+            sourcepackagename is not None and
+            self.sourcepackagename is not None and
+            self.sourcepackagename.name == sourcepackagename.name)
+
+        if potemplate is None and is_for_distro and not know_package:
             # The source package from where this translation doesn't have the
             # template that this translation needs it, and thus, we look for
             # it in a different source package as a second try. To do it, we

@@ -1,5 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
-
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications for code review comments."""
 
@@ -119,6 +119,8 @@ class CodeReviewCommentMailer(BMPMailer):
             to_person = self.merge_proposal.registrant
         else:
             to_person = self.message.parent.owner
+        if to_person.hide_email_addresses:
+            return [self.merge_proposal.address]
         # Ensure the to header matches the envelope-to address.
         if to_person == recipient:
             to_email = email

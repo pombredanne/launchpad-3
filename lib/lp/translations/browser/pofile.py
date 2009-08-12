@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser code for Translation files."""
 
 __metaclass__ = type
@@ -492,6 +494,7 @@ class POFileTranslateView(BaseTranslationView):
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
                 self.errors.get(potmsgset))
+            view.zoomed_in_view = False
             self.translationmessage_views.append(view)
 
     def _submitTranslations(self):

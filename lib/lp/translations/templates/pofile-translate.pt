@@ -16,10 +16,14 @@
         color: lightgray;
     }
     </style>
+    <script type="text/javascript"
+      tal:condition="devmode"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
     <script type="text/javascript">
       registerLaunchpadFunction(insertAllExpansionButtons);
 
-      YUI().use('node', 'cookie', 'anim', function(Y) {
+      YUI().use('node', 'cookie', 'anim', 'lp.pofile', function(Y) {
 
           var hide_notification = function(node) {
               var hide_anim = new Y.Anim({
@@ -61,36 +65,7 @@
               });
           };
 
-          var setupSuggestionDismissal = function(e) {
-              Y.all('.dismiss_action').each(function(checkbox) {
-                  var classbase = checkbox.get('id');
-                  var current_class = classbase.replace(/dismiss/, 'current')
-                  var current_radios = Y.all('.'+current_class)
-                  var dismissables = Y.all('.'+classbase+'able');
-                  // The button and textarea cannot be fetched beforehand
-                  // because they are or may be created dynamically.
-                  var dismissable_inputs_class = 
-                      '.'+classbase+'able_button input, '+
-                      '.'+classbase+'able_button button, '+
-                      '.'+classbase+'able_button textarea';
-                  checkbox.on('click', function(e) {
-                      if(checkbox.get('checked')) {
-                          dismissables.addClass('dismissed');
-                          Y.all(dismissable_inputs_class).set(
-                              'disabled', true);
-                          current_radios.set('checked', true);
-                      }
-                      else
-                      {
-                          dismissables.removeClass('dismissed');
-                          Y.all(dismissable_inputs_class).set(
-                                  'disabled', false);
-                      }
-                  });
-              });
-          };
-
-          Y.on('domready', setupSuggestionDismissal);
+          Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
           Y.on('domready', updateNotificationBox);
       });
     </script>

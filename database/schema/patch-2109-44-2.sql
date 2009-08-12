@@ -1,3 +1,6 @@
+-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- GNU Affero General Public License version 3 (see the file LICENSE).
+
 SET client_min_messages=ERROR;
 
 -- This is half of a two part patch. The second half is patch-2109-48-0.sql,

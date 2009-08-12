@@ -19,7 +19,7 @@ To create a new Specification, use ISpecificationSet.new:
     ...     SpecificationImplementationStatus, SpecificationPriority)
     >>> productset = getUtility(IProductSet)
     >>> upstream_firefox = productset.get(4)
-    >>> from canonical.launchpad.database import Person
+    >>> from lp.registry.model.person import Person
     >>> sabdfl = Person.byName('sabdfl')
     >>> newspec = specset.new('mng', 'Support MNG Format',
     ...     'http://www.silly.me/SpecName', 'we really need this',
@@ -137,8 +137,6 @@ Now, let's do a bunch of changes, and see what the result looks like:
     New Title
     >>> print delta.summary
     New summary.
-    >>> print delta.whiteboard
-    New whiteboard comments.
     >>> print delta.specurl
     http://www.ubuntu.com/NewSpec
     >>> print delta.distroseries.name
@@ -173,6 +171,11 @@ Now, let's do a bunch of changes, and see what the result looks like:
     True
     >>> print delta.drafter['new'] == jdub
     True
+
+    >>> print delta.whiteboard['old'] is None
+    True
+    >>> print delta.whiteboard['new']
+    New whiteboard comments.
 
     >>> [linked_bug.id for linked_bug in delta.bugs_linked]
     [2]

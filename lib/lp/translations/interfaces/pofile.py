@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -260,6 +262,18 @@ class IPOFile(IRosettaStats):
     def getFullLanguageName():
         """Return full language name, including variant if applicable."""
 
+    def getTranslationRows():
+        """Return exportable rows of translation data.
+        
+        :return: a list of `VPOExport` objects.
+        """
+
+    def getChangedRows():
+        """Return exportable rows that differ from published translations.
+
+        :return: a list of `VPOExport` objects.
+        """
+
 
 class AlternativeLanguageVocabularyFactory:
     """Gets vocab for user's preferred languages, or all languages if not set.
@@ -317,9 +331,6 @@ class IPOFileAlternativeLanguage(Interface):
 class IPOFileSet(Interface):
     """A set of POFiles."""
 
-    def getPOFilesPendingImport():
-        """Return a list of PO files that have data to be imported."""
-
     def getDummy(potemplate, language):
         """Return a dummy pofile for the given po template and language."""
 
@@ -342,4 +353,13 @@ class IPOFileSet(Interface):
 
         The number of items in the sequence will only be less than batch_size
         if the end of the table has been reached.
+        """
+
+    def getPOFilesTouchedSince(date):
+        """Return IDs for PO files that might have been updated since `date`.
+
+        :param date: A datetime object to use as the starting date.
+
+        :return: a ResultSet over POFile IDs for directly and indirectly
+            (through sharing POFiles) touched POFiles since `date`.
         """
