@@ -1219,8 +1219,6 @@ def question_createfaq(context, view):
     """Return the page title to create a FAQ for a question."""
     return "Create a FAQ for %s" % view.faq_target.displayname
 
-question_edit = ContextId('Edit question #%s details')
-
 question_history = ContextId('History of question #%s')
 
 def question_index(context, view):
