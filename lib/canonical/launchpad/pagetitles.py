@@ -1,7 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""This module is used by the Launchpad webapp to determine titles for pages.
+"""*** PLEASE STOP ADDING TO THIS FILE ***
+
+Use the page_title attribute of the view.
+
+This module is used as a last resort by the Launchpad webapp to determine
+titles for pages.
 
 https://launchpad.canonical.com/LaunchpadTitles
 
@@ -174,8 +179,6 @@ branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
 branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
 
-branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
-
 branch_edit_subscription = ContextDisplayName(smartquote(
     'Edit subscription to branch "%s"'))
 
@@ -184,12 +187,6 @@ branch_index = ContextDisplayName(smartquote(
 
 def branch_merges(context, view):
     return 'Merges involving "%s" in Launchpad' % context.bzr_identity
-
-branch_link_to_bug = ContextDisplayName(smartquote(
-    'Link branch "%s" to a bug report'))
-
-branch_link_to_spec = ContextDisplayName(smartquote(
-    'Link branch "%s" to a blueprint'))
 
 def branch_listing_cross_product(context, view):
     """Return the view's page_title."""
@@ -227,11 +224,6 @@ branch_register_merge_proposal = 'Propose branch for merging'
 
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
-
-def branchsubscription_edit(context, view):
-    """Return the page title with the branch name."""
-    return smartquote(
-        'Edit subscription to branch "%s"' % context.branch.displayname)
 
 branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
 
