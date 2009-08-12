@@ -12,7 +12,6 @@ import sys
 import atexit
 import signal
 import subprocess
-import time
 
 from canonical.config import config
 from canonical.lazr.pidfile import make_pidfile, pidfile_path
@@ -272,10 +271,11 @@ def start_launchpad(argv=list(sys.argv)):
         # We just need the foreground process to sit around forever waiting
         # for the signal to shut everything down.  Normally, Zope itself would
         # be this master process, but we're not starting that up, so we need
-        # to do something else.  An infinite looping sleep of 1h seems fine
-        # since it won't busyloop and it will exit when a C-c is received.
-        while True:
-            time.sleep(3600)
+        # to do something else.
+        try:
+            signal.pause()
+        except KeyboardInterrupt:
+            pass
 
 
 def start_librarian():
