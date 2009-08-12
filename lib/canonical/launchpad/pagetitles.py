@@ -1230,8 +1230,6 @@ def question_index(context, view):
 
 question_linkbug = ContextId('Link question  #%s to a bug report')
 
-question_linkfaq = ContextId('Is question #%s a FAQ?')
-
 def question_listing(context, view):
     """Return the page title list questions."""
     return view.pagetitle
