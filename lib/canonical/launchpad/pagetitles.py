@@ -175,8 +175,6 @@ branch_associations = ContextDisplayName(smartquote(
 
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
-branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
-
 branch_edit_subscription = ContextDisplayName(smartquote(
     'Edit subscription to branch "%s"'))
 
