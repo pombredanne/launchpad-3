@@ -518,6 +518,12 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     custom_widget('whiteboard', TextAreaWidget, height=5)
     custom_widget('target', LaunchpadTargetWidget)
 
+    @property
+    def page_title(self):
+        return 'Edit question #%s details' % self.context.id
+
+    label = page_title
+
     def setUpFields(self):
         """Select the subset of fields to display.
 

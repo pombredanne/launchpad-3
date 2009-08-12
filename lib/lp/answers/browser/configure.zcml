@@ -200,7 +200,7 @@
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionEditView"
     permission="launchpad.AnyPerson"
-    template="../templates/question-edit.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:page
