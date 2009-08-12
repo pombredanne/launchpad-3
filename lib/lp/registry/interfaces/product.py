@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IProduct."""
@@ -8,7 +10,7 @@ __metaclass__ = type
 __all__ = [
     'InvalidProductName',
     'IProduct',
-    'IProductCommercialRestricted',
+    'IProductProjectReviewRestricted',
     'IProductDriverRestricted',
     'IProductEditRestricted',
     'IProductPublic',
@@ -35,8 +37,8 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ProductBugTracker, ProductNameField, PublicPersonChoice,
-    Summary, Title, URIField)
+    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
+    PublicPersonChoice, Summary, Title, URIField)
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
@@ -45,8 +47,8 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
-    ILaunchpadUsage)
+    IHasLogo, IHasMugshot,IHasSecurityContact, ILaunchpadUsage)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from lp.registry.interfaces.announcement import IMakesAnnouncements
@@ -60,7 +62,7 @@ from lp.registry.interfaces.project import IProject
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -276,8 +278,8 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
     """`IProduct` properties which require launchpad.Edit permission."""
 
 
-class IProductCommercialRestricted(Interface):
-    """`IProduct` properties which require launchpad.Commercial permission."""
+class IProductProjectReviewRestricted(Interface):
+    """`IProduct` properties which require launchpad.ProjectReview."""
 
     qualifies_for_free_hosting = exported(
         Bool(
@@ -316,7 +318,7 @@ class IProductCommercialRestricted(Interface):
             title=_("Project approved"),
             description=_(
                 "The project is legitimate and its license appears valid. "
-                "Not application to 'Other/Proprietary'.")))
+                "Not applicable to 'Other/Proprietary'.")))
 
 
 class IProductPublic(
@@ -351,7 +353,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -368,7 +370,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "
@@ -661,6 +663,9 @@ class IProductPublic(
     def getRelease(version):
         """Return the release for this product that has the version given."""
 
+    def getMilestonesAndReleases():
+        """Return all the milestones and releases for this product."""
+
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
@@ -686,13 +691,16 @@ class IProductPublic(
         this Product.
         """
 
+    @operation_parameters(
+        include_inactive=Bool(title=_("Include inactive"),
+                              required=False, default=False))
     @export_read_operation()
     @export_operation_as('get_timeline')
-    def getTimeline():
+    def getTimeline(include_inactive):
         """Return basic timeline data useful for creating a diagram."""
 
 
-class IProduct(IProductEditRestricted, IProductCommercialRestricted,
+class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
                IProductDriverRestricted, IProductPublic):
     """A Product.
 

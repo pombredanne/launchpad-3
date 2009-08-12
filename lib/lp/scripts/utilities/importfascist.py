@@ -1,4 +1,5 @@
-# Copyright Canonical Limited 2005.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import __builtin__
 import atexit
@@ -49,7 +50,7 @@ warned_database_imports = text_lines_to_set("""
     canonical.launchpad.scripts.gina.handlers
     canonical.launchpad.browser.distroseries
     canonical.launchpad.scripts.builddmaster
-    canonical.launchpad.scripts.po_import
+    lp.translations.scripts.po_import
     canonical.launchpad.systemhomes
     canonical.rosetta
     """)

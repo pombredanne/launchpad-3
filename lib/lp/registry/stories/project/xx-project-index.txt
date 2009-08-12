@@ -167,7 +167,7 @@ Inactive products are not included in that list, though.
 
     # Use the DB classes directly to avoid having to setup a zope interaction
     # (i.e. login()) and bypass the security proxy.
-    >>> from canonical.launchpad.database import Product
+    >>> from lp.registry.model.product import Product
     >>> firefox = Product.byName('firefox')
     >>> firefox.active = False
     >>> firefox.syncUpdate()
@@ -181,20 +181,6 @@ Inactive products are not included in that list, though.
     >>> firefox.active = True
     >>> firefox.syncUpdate()
 
-== URL Shortut to Access the Project's Products ==
-
-It is possible to access the project's product through the project URL.
-
-# XXX flacoste 2007-02-14:
-# Explain where this is used and why it is needed.
-
-  >>> browser.open('http://launchpad.dev/mozilla/firefox')
-  >>> browser.title
-  'Mozilla Firefox in Launchpad'
-  >>> print extract_text(find_main_content(browser.contents))
-  Details
-  ...Mozilla Firefox
-  ...Part of: the Mozilla Project...
 
 == Project bug subscriptions ==
 

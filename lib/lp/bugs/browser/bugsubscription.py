@@ -1,4 +1,5 @@
-# Copyright 2005,2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for BugSubscription."""
 
@@ -10,11 +11,11 @@ __all__ = [
 
 from zope.event import notify
 
+from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -50,9 +51,6 @@ class BugSubscriptionAddView(LaunchpadFormView):
 
     cancel_url = next_url
 
-    def validate_widgets(self, data, names=None):
-        super(BugSubscriptionAddView, self).validate_widgets(data, names)
-
 
 class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
@@ -63,7 +61,9 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
         The list is sorted such that subscriptions you can unsubscribe appear
         before all other subscriptions.
         """
-        direct_subscriptions = self.context.getDirectSubscriptions()
+        direct_subscriptions = [
+            SubscriptionAttrDecorator(subscription)
+            for subscription in self.context.getDirectSubscriptions()]
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:
@@ -79,4 +79,18 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
 
     def getSortedSubscriptionsFromDuplicates(self):
         """Get the list of subscriptions to duplicates of this bug."""
-        return self.context.getSubscriptionsFromDuplicates()
+        return [
+            SubscriptionAttrDecorator(subscription)
+            for subscription in self.context.getSubscriptionsFromDuplicates()]
+
+
+class SubscriptionAttrDecorator:
+    """A BugSubscription with added attributes for HTML/JS."""
+    delegates(IBugSubscription, 'subscription')
+
+    def __init__(self, subscription):
+        self.subscription = subscription
+
+    @property
+    def css_name(self):
+        return 'subscriber-%s' % self.subscription.person.id

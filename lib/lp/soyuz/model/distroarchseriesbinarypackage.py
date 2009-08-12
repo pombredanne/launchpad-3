@@ -1,5 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Classes to represent a binary package in a distroarchseries."""
@@ -10,10 +11,12 @@ __all__ = [
     'DistroArchSeriesBinaryPackage',
     ]
 
+from storm.locals import Desc, In
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.interfaces import IStore
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
 from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
@@ -23,8 +26,11 @@ from lp.soyuz.model.distroseriespackagecache import (
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.distroarchseriesbinarypackage import IDistroArchSeriesBinaryPackage
+from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
+    IDistroArchSeriesBinaryPackage)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+
+
 class DistroArchSeriesBinaryPackage:
     """A Binary Package in the context of a Distro Arch Series.
 
@@ -185,19 +191,18 @@ class DistroArchSeriesBinaryPackage:
     @property
     def publishing_history(self):
         """See IDistroArchSeriesBinaryPackage."""
-        return BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename = %s
-            """ % sqlvalues(
-                    self.distroarchseries,
-                    self.distribution.all_distro_archive_ids,
-                    self.binarypackagename),
-            distinct=True,
-            clauseTables=['BinaryPackageRelease'],
-            orderBy='-datecreated')
+        return IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackageRelease.binarypackagename == self.binarypackagename,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                self.distroarchseries,
+            In(
+                BinaryPackagePublishingHistory.archiveID,
+                self.distribution.all_distro_archive_ids),
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id
+            ).config(distinct=True).order_by(
+                Desc(BinaryPackagePublishingHistory.datecreated))
 
     @property
     def current_published(self):

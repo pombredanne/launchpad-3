@@ -31,7 +31,7 @@ publications for a given distroseries:
     >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
     ...     distribution=ubuntu, purpose=ArchivePurpose.PARTNER)
 
-    >>> dspr = ubuntu.getSourcePackage('mozilla-firefox')['0.9']
+    >>> dspr = ubuntu.getSourcePackage('mozilla-firefox').getVersion('0.9')
     >>> the_spr = dspr.sourcepackagerelease
 
     >>> initial_candidates = []

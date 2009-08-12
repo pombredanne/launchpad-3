@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -239,8 +241,9 @@ class ProductReleaseSet(object):
 
     def getFilesForReleases(self, releases):
         """See `IProductReleaseSet`."""
-        if len(list(releases)) == 0:
-            return ProductReleaseFile.select('1 = 2')
+        releases = list(releases)
+        if len(releases) == 0:
+            return EmptyResultSet()
         return ProductReleaseFile.select(
             """ProductReleaseFile.productrelease IN %s""" % (
             sqlvalues([release.id for release in releases])),

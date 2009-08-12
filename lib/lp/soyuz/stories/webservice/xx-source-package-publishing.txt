@@ -11,6 +11,16 @@ We need to insert some dependent fake data before continuing.
     >>> from lp.archiveuploader.tests import (
     ...     insertFakeChangesFileForAllPackageUploads)
     >>> insertFakeChangesFileForAllPackageUploads()
+    >>> from lp.registry.model.gpgkey import GPGKey
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> fake_signer = GPGKey.selectOneBy(owner=name16)
+    >>> ppa = getUtility(IPersonSet).getByName('cprov').archive
+    >>> for pub in ppa.getPublishedSources():
+    ...     pub = removeSecurityProxy(pub)
+    ...     pub.sourcepackagerelease.dscsigningkey = fake_signer
     >>> transaction.commit()
     >>> logout()
 
@@ -110,6 +120,9 @@ publication to play with first.
     date_superseded: None
     display_name: u'testwebservice 666 in warty'
     distro_series_link: u'http://.../ubuntu/warty'
+    package_creator_link: u'http://.../beta/~name16'
+    package_maintainer_link: u'http://.../beta/~name16'
+    package_signer_link: u'http://.../beta/~name16'
     pocket: u'Release'
     removal_comment: None
     removed_by_link: None
@@ -121,6 +134,31 @@ publication to play with first.
     source_package_version: u'666'
     status: u'Pending'
 
+
+Unsigned sources
+================
+
+For packages synced from another distribution, the source is likely to
+be unsigned.  In this case, the package_signer_link will be None.
+
+Make cprov's PPA packages unsigned:
+
+    >>> login("foo.bar@canonical.com")
+    >>> for pub in ppa.getPublishedSources():
+    ...     pub = removeSecurityProxy(pub)
+    ...     pub.sourcepackagerelease.dscsigningkey = None
+    >>> transaction.commit()
+    >>> logout()
+
+Query the source again:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     distro_series=warty['self_link'],
+    ...     source_name="testwebservice").jsonBody()
+
+    >>> print pubs['entries'][0]['package_signer_link']
+    None
 
 Privacy
 =======

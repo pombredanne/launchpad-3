@@ -35,3 +35,32 @@ An administrator may successfully access all of these pages.
     >>> admin_browser.title
     'Register a project group with Launchpad'
 
+A member of the registry admins team my access all of these pages, too.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> login('foo.bar@canonical.com')
+    >>> registry_member = factory.makePerson(
+    ...     name='reggie', email='reggie@example.com', password='test')
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> registry = celebs.registry_experts
+    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> logout()
+
+    >>> registry_browser = setupBrowser(
+    ...     auth='Basic reggie@example.com:test')
+
+    >>> registry_browser.open('http://launchpad.dev/projectgroups/+review')
+    >>> registry_browser.title
+    'Review Launchpad items'
+
+    >>> registry_browser.open('http://launchpad.dev/projectgroups/+all')
+    >>> registry_browser.title
+    'Project groups registered in Launchpad'
+
+    >>> registry_browser.open('http://launchpad.dev/projectgroups/+new')
+    >>> registry_browser.title
+    'Register a project group with Launchpad'
+
+    registry_member.leave(registry)

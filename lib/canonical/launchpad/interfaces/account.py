@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 """Account interfaces."""
 
@@ -17,7 +19,7 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
@@ -220,13 +222,6 @@ class IAccountPublic(Interface):
         readonly=True, required=False,
         value_type=Reference(schema=Interface))
 
-    def getUnvalidatedEmails():
-        """Get a list of the unvalidated email addresses for this account.
-
-        An unvalidated email address is one which the user has tried
-        to add to their account but has not yet replied to the
-        corresponding confirmation email."""
-
     def setPreferredEmail(email):
         """Set the given email address as this account's preferred one.
 
@@ -271,22 +266,8 @@ class IAccountPrivate(Interface):
         title=_("Key used to generate opaque OpenID identities."),
         readonly=True, required=True)
 
-    # XXX sinzui 2008-09-04 bug=264783:
-    # Remove this attribute.
-    new_openid_identifier = TextLine(
-        title=_("Key used to generate New opaque OpenID identities."),
-        readonly=True, required=True)
-
     password = PasswordField(
         title=_("Password."), readonly=False, required=True)
-
-    recently_authenticated_rps = List(
-        title=_("Most recently authenticated relying parties."),
-        description=_(
-            "A list of up to 10 `IOpenIDRPSummary` objects representing the "
-            "OpenID Relying Parties in which this account authenticated "
-            "most recently."),
-        readonly=False, required=True)
 
     def createPerson(self, rationale):
         """Create and return a new `IPerson` associated with this account."""
@@ -327,14 +308,12 @@ class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
 class IAccountSet(Interface):
     """Creation of and access to `IAccount` providers."""
 
-    def new(rationale, displayname, openid_mnemonic=None,
-            password=None, password_is_encrypted=False):
+    def new(rationale, displayname, password=None,
+            password_is_encrypted=False):
         """Create a new `IAccount`.
 
         :param rationale: An `AccountCreationRationale` value.
         :param displayname: The user's display name.
-        :param openid_mnemonic: The human-readable component in the account's
-            openid_identifier.
         :param password: A password.
         :param password_is_encrypted: If True, the password parameter has
             already been encrypted using the `IPasswordEncryptor` utility.
@@ -376,14 +355,3 @@ class IAccountSet(Interface):
          :raises LookupError: If the account is not found.
          """
 
-    def createOpenIDIdentifier(mnemonic):
-        """Return a unique openid_identifier for OpenID identity URIs.
-
-        The identifier takes for form of 'nnn/mnemonic', where 'nnn' is
-        a random three digit sequence.
-
-        :param mnemonic: A string token that a user can remember.
-            eg. his user name.
-        :return: a unique string that no other user has, nor has ever been
-            used in the past.
-        """

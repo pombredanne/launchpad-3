@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211, E0213
 
 """A collection of branches.
@@ -80,6 +82,9 @@ class IBranchCollection(Interface):
             are returned.
         """
 
+    def getTeamsWithBranches(person):
+        """Return the teams that person is a member of that have branches."""
+
     def inProduct(product):
         """Restrict the collection to branches in 'product'."""
 
@@ -87,7 +92,17 @@ class IBranchCollection(Interface):
         """Restrict the collection to branches in 'project'."""
 
     def inSourcePackage(package):
-        """Restrict the collection to branches in 'package'."""
+        """Restrict the collection to branches in 'package'.
+
+        A source package is effectively a sourcepackagename in a distro
+        series.
+        """
+
+    def inDistribution(distribution):
+        """Restrict the collection to branches in 'distribution'."""
+
+    def inDistroSeries(distro_series):
+        """Restrict the collection to branches in 'distro_series'."""
 
     def inDistributionSourcePackage(distro_source_package):
         """Restrict to branches in a 'package' for a 'distribution'."""

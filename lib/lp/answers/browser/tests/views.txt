@@ -452,8 +452,9 @@ distribution, source package, product and whiteboard.
     >>> print question_three.product
     None
 
-Since only a user with launchpad.Admin privilege can change the
-assignee and status whiteboard, the values won't have been changed:
+Since a user must have launchpad.Moderator privilege to change the
+assignee and launchpad.Admin privilege to change status whiteboard, the
+values are unchanged.
 
     >>> question_three.assignee is None
     True

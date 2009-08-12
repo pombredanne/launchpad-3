@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Announcement feed (syndication) views."""
 
@@ -118,7 +119,7 @@ class LaunchpadAnnouncementsFeed(AnnouncementsFeedBase):
         # item shall be an instance of `IFeedEntry`.
 
         # The quantity is defined in FeedBase or config file.
-        items = getUtility(IAnnouncementSet).announcements(
+        items = getUtility(IAnnouncementSet).getAnnouncements(
             limit=self.quantity)
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]
@@ -167,7 +168,7 @@ class TargetAnnouncementsFeed(AnnouncementsFeedBase):
         Called by getItems which may cache the results.
         """
         # The quantity is defined in FeedBase or config file.
-        items = self.context.announcements(limit=self.quantity)
+        items = self.context.getAnnouncements(limit=self.quantity)
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]
         return items

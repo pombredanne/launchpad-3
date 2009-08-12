@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Install Launchpad integration code into the Mailman module."""
 
 import os
@@ -91,6 +93,8 @@ PUBLIC_EXTERNAL_ARCHIVER = '/usr/bin/mhonarc \
 -add \
 -dbfile %(var_dir)s/archives/private/%%(listname)s.mbox/mhonarc.db \
 -outdir %(var_dir)s/mhonarc/%%(listname)s \
+-definevar ML-NAME=%%(listname)s \
+-rcfile %(var_dir)s/data/lp-mhonarc-common.mrc \
 -stderr %(var_dir)s/logs/mhonarc \
 -stdout %(var_dir)s/logs/mhonarc \
 -spammode \
@@ -150,8 +154,13 @@ REGISTER_BOUNCES_EVERY = %(register_bounces_every)d
             print >> handler_file, 'from', module, 'import *'
         finally:
             handler_file.close()
-    # Install the launchpad site templates.
+
     here = os.path.dirname(__file__)
+    # Install the MHonArc control file.
+    mhonarc_rc_file = os.path.join(here, 'lp-mhonarc-common.mrc')
+    runtime_data_dir = os.path.join(config.mailman.build_var_dir, 'data')
+    shutil.copy(mhonarc_rc_file, runtime_data_dir)
+    # Install the launchpad site templates.
     launchpad_template_path = os.path.join(here, 'sitetemplates')
     site_template_path = os.path.join(mailman_path, 'templates', 'site')
     if os.path.isdir(site_template_path):

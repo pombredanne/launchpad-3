@@ -55,15 +55,13 @@ requires the user to enter a bug number.
     >>> printBugBranchLinks(browser)
     Bug #9: Thunderbird crashes (Unknown &ndash; Unknown)
 
-Attempting to link to the same bug again gives an error.
+Attempting to link to the same bug again gives no error.
 
     >>> browser.getLink('Link to another bug report').click()
     >>> browser.getControl('The bug that is linked to.').value = "9"
     >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
-    There is 1 error.
-    Bug #9 is already linked to this branch
 
 The bug-branch link is also shown on the bug page.
 

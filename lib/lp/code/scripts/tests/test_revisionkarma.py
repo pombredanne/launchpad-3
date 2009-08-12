@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the cron script that updates revision karma."""
 
@@ -48,7 +49,8 @@ class TestRevisionKarma(TestCaseWithFactory):
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
-        branch.product = self.factory.makeProduct()
+        project = self.factory.makeProduct()
+        branch.setTarget(user=branch.owner, project=project)
         # Commit and switch to the script db user.
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)

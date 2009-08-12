@@ -58,11 +58,12 @@ PPA in order to be able to copy packages.
     Copy packages from PPA for Celso Providelo
     To be able to copy packages you have to participate in at least one
     PPA. Activate your own PPA or join a team with an active PPA.
+    Create a new PPA
 
 James will follow the advice and activate his PPA by clicking in the
 provided link.
 
-    >>> jblack_browser.getLink('Activate your own PPA').click()
+    >>> jblack_browser.getLink('Create a new PPA').click()
     >>> print jblack_browser.title
     Activate Personal Package Archive
 
@@ -367,7 +368,8 @@ contents). So, this copy is not allowed.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    The following source cannot be copied: pmount 0.1-1 in hoary
+    The following source cannot be copied:
+    pmount 0.1-1 in hoary
     (same version already building in the destination archive for Hoary)
 
 Now, knowing that pmount can only be copied within the same PPA if the
@@ -388,8 +390,8 @@ there are no binaries to be copied.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    The following source cannot be copied: pmount 0.1-1 in hoary
-    (source has no binaries to be copied)
+    The following source cannot be copied:
+    pmount 0.1-1 in hoary (source has no binaries to be copied)
 
 We will mark the pmount build completed, to emulate the situation
 described in bug #236407 when binaries were built but have to
@@ -425,10 +427,11 @@ binaries could not be published in the PPA.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    The following source cannot be copied: pmount 0.1-1 in hoary
+    The following source cannot be copied:
+    pmount 0.1-1 in hoary
     (same version has unpublished binaries in the destination
-     archive for Hoary, please wait for them to be published before
-     copying)
+    archive for Hoary, please wait for them to be published before
+    copying)
 
 Including binaries doesn't help either, since the copied source itself
 has unpublished binaries.
@@ -445,8 +448,8 @@ has unpublished binaries.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    The following source cannot be copied: pmount 0.1-1 in hoary
-    (source has no binaries to be copied)
+    The following source cannot be copied:
+    pmount 0.1-1 in hoary (source has no binaries to be copied)
 
 We will build and publish the architecture independent binary for
 pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
@@ -600,9 +603,10 @@ published in the archive.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    The following source cannot be copied: pmount 0.1-1 in hoary
+    The following source cannot be copied:
+    pmount 0.1-1 in hoary
     (same version already has published binaries in the destination
-     archive)
+    archive)
 
 Since pmount was built in his archive, the only alternative is to
 copy the binaries too. The copied binaries will be checked against
@@ -781,7 +785,7 @@ completely ignored.
     There is 1 error.
     The following sources cannot be copied:
     iceweasel 1.0 in hoary
-    (same version already has published binaries in the destination archive),
+    (same version already has published binaries in the destination archive)
     pmount 0.1-1 in hoary
     (same version already has published binaries in the destination archive)
 
@@ -843,26 +847,28 @@ insane because PPA-copy-ui is so cool.
 
     >>> jblack_browser.getControl("Copy Packages").click()
 
-Okay, all sources were copied to James Sandbox PPA on their
-corresponding series and are scheduled for rebuild.
+The 'mass-rebuild' is not allowed since only one instance of 'pmount -
+0.1-1' source can be built in a archive, so the copy candidates are
+conflicts and cannot be allowed.
 
     >>> messages = get_feedback_messages(jblack_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Packages copied to PPA for James Blackwell Sandbox:
-    pmount 0.1-1 in warty
+    There is 1 error.
+    The following sources cannot be copied:
     pmount 0.1-1 in grumpy
+    (same version already building in the destination archive for Warty)
     pmount 0.1-1 in hoary
+    (same version already building in the  destination archive for Warty)
 
-    >>> jblack_browser.getLink('PPA for James Blackwell Sandbox').click()
+Due to the copy error, nothing was copied to the destination PPA, not
+even the 'warty' source, which was not denied.
+
+    >>> jblack_browser.open('http://launchpad.dev/~jblack-sandbox/+archive')
     >>> print jblack_browser.title
     PPA for James Blackwell Sandbox
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source         Uploader  Published  Status   Series  Section  Build Status
-    pmount - 0.1-1 no signer            Pending   Hoary  Editors  i386
-    pmount - 0.1-1 no signer            Pending   Grumpy Editors  i386
-    pmount - 0.1-1 no signer            Pending   Warty  Editors  i386
 
 Not yet happy, James goes back to his PPA to check if the copy-package
 interface can be used to resurrect deleted packages.
@@ -908,7 +914,7 @@ deleted files will be re-published in his archive.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    pmount - 0.1-1              Pending    Hoary            Editors  i386
+    pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
@@ -1015,7 +1021,8 @@ packages since they would not be published in the destination anyway.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    The following source cannot be copied: foo 1.1 in hoary
+    The following source cannot be copied:
+    foo 1.1 in hoary
     (version older than the foo 2.0 in hoary published in hoary)
 
 However if he copies it to another suite is just works (tm) since PPAs
@@ -1044,7 +1051,7 @@ do not enforce coherent version ordering across suites.
         Status
     foo - 2.0  (changesfile)    Pending    Hoary            Base
     foo - 1.1  (changesfile)    Pending    Warty            Base
-    pmount - 0.1-1              Pending    Hoary            Editors  i386
+    pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
 
@@ -1075,9 +1082,10 @@ to copy the *same* version with different contents to grumpy in his PPA.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    The following source cannot be copied: foo 1.1 in hoary
+    The following source cannot be copied:
+    foo 1.1 in hoary
     (a different source with the same version is published in the
-     destination archive)
+    destination archive)
 
 James thinks that his last chance will be copying the just-uploaded
 foo-9.9 source from 'James-Friend's PPA.
@@ -1094,7 +1102,7 @@ foo-9.9 source from 'James-Friend's PPA.
 
 But James doesn't think straight, he sees that foo-9.9 failed to build
 in i386, but even though, he tries to copy it including binaries. He
-is told that the source cannot be copied.
+is told that the sources cannot be copied.
 
     >>> foo_pub_id = getPPAPubIDsFor('jblack-friends', 'foo')[0]
     >>> jblack_browser.getControl(
@@ -1110,8 +1118,8 @@ is told that the source cannot be copied.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    The following source cannot be copied: foo 9.9 in hoary
-    (source has no binaries to be copied)
+    The following source cannot be copied:
+    foo 9.9 in hoary (source has no binaries to be copied)
 
 No game, no matter what he tries, James can't break PPAs.
 

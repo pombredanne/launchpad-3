@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for SpecificationDependency."""
 
@@ -11,8 +12,7 @@ __all__ = [
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView)
-from canonical.widgets.popup import SinglePopupWidget
+    action, canonical_url, LaunchpadFormView)
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency, ISpecificationDependencyRemoval)
 
@@ -24,7 +24,6 @@ class SpecificationDependencyAddView(LaunchpadFormView):
     schema = ISpecificationDependency
     field_names = ['dependency']
     label = _('Depends On')
-    custom_widget('dependency', SinglePopupWidget)
 
     def setUpFields(self):
         """Override the setup to define own fields."""

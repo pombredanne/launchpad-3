@@ -767,7 +767,8 @@ HWDBApplication.vendorIDs().
 
 == Statistical methods ==
 
-We can query how often a given device appears in HWDB submissions.
+We can query how often a given device or a given driver appears in
+HWDB submissions.
 
     >>> print webservice.named_get(
     ...     '/+hwdb', 'numDevicesInSubmissions',
@@ -775,7 +776,12 @@ We can query how often a given device appears in HWDB submissions.
     ...     ).jsonBody()
     1
 
-We can pass the optional parameters driver_name...
+    >>> print webservice.named_get(
+    ...     '/+hwdb', 'numDevicesInSubmissions', driver_name='sd').jsonBody()
+    5
+
+We can ask how many given devices controlled by a given driver appear
+in HWDB submissions.
 
     >>> print webservice.named_get(
     ...     '/+hwdb', 'numDevicesInSubmissions',
@@ -788,7 +794,7 @@ We can pass the optional parameters driver_name...
     ...     driver_name='nonsense').jsonBody()
     0
 
-...package_name...
+This count can be limited to a package_name.
 
     >>> print webservice.named_get(
     ...     '/+hwdb', 'numDevicesInSubmissions',
@@ -801,7 +807,21 @@ We can pass the optional parameters driver_name...
     ...     package_name='nonsense').jsonBody()
     0
 
-...a reference to a distribution...
+    >>> print webservice.named_get(
+    ...     '/+hwdb', 'numDevicesInSubmissions', driver_name='sd',
+    ...     package_name='linux-image-2.6.24-19-generic').jsonBody()
+    5
+
+While the parameters for a device and for a driver are optional,
+specifying neither leads to an error.
+
+    >>> print webservice.named_get('/+hwdb', 'numDevicesInSubmissions')
+    HTTP/1.1 400 Bad Request
+    ...
+    ParameterError: Specify (bus, vendor_id, product_id) or driver_name.
+    <BLANKLINE>
+
+We can additionally pass a reference to a distribution...
 
     >>> ubuntu_url = webservice.getAbsoluteUrl('/ubuntu')
     >>> print webservice.named_get(
@@ -880,9 +900,9 @@ distroarchseries may be specified.
     Only one of `distribution`, `distroseries` or `distroarchseries` can
     be present.
 
-numSubmissionsWithDevice() returns the list [n1, n2] where n1 is the
-number of submissions mentioning a given device, and n2 is the number
-of all processed submissions, limited to the given distribution,
+numSubmissionsWithDevice() returns a dicitionary containing the
+number of submissions mentioning a given device or driver, and the
+number of all processed submissions, limited to the given distribution,
 distroseries or distroarchseries, if one of these parameters is
 specified.
 
@@ -892,7 +912,11 @@ specified.
     ...     ).jsonBody()
     {u'submissions_with_device': 1, u'all_submissions': 1}
 
-We can pass the optional parameters driver_name...
+    >>> print webservice.named_get(
+    ...     '/+hwdb', 'numSubmissionsWithDevice', driver_name='sd').jsonBody()
+    {u'submissions_with_device': 1, u'all_submissions': 1}
+
+The parameters for a device and a driver can be combined.
 
     >>> print webservice.named_get(
     ...     '/+hwdb', 'numSubmissionsWithDevice',
@@ -905,7 +929,7 @@ We can pass the optional parameters driver_name...
     ...     driver_name='nonsense').jsonBody()
     {u'submissions_with_device': 0, u'all_submissions': 1}
 
-...package_name...
+Additionally, a package_name can be passed.
 
     >>> print webservice.named_get(
     ...     '/+hwdb', 'numSubmissionsWithDevice',
@@ -918,7 +942,15 @@ We can pass the optional parameters driver_name...
     ...     package_name='nonsense').jsonBody()
     {u'submissions_with_device': 0, u'all_submissions': 1}
 
-...a reference to a distribution...
+If neither a device nor a driver is specified, an error is returned.
+
+    >>> print webservice.named_get(
+    ...     '/+hwdb', 'numSubmissionsWithDevice')
+    HTTP/1.1 400 Bad Request
+    ...
+    ParameterError: Specify (bus, vendor_id, product_id) or driver_name.
+
+The count can be limited to a distribution...
 
     >>> ubuntu_url = webservice.getAbsoluteUrl('/ubuntu')
     >>> print webservice.named_get(
@@ -933,7 +965,7 @@ We can pass the optional parameters driver_name...
     ...     distribution=debian_url).jsonBody()
     {u'submissions_with_device': 0, u'all_submissions': 0}
 
-...a reference to a distroseries...
+...or a distroseries...
 
     >>> hoary_url = webservice.getAbsoluteUrl('/ubuntu/hoary')
     >>> print webservice.named_get(
@@ -948,7 +980,7 @@ We can pass the optional parameters driver_name...
     ...     distroseries=warty_url).jsonBody()
     {u'submissions_with_device': 0, u'all_submissions': 0}
 
-...or a reference to a distroarchseries.
+...or a distroarchseries.
 
     >>> hoary_i386_url = webservice.getAbsoluteUrl('/ubuntu/hoary/i386')
     >>> print webservice.named_get(
@@ -997,10 +1029,10 @@ distroarchseries may be specified.
     Only one of `distribution`, `distroseries` or `distroarchseries` can
     be present.
 
-numOwnersOfDevice() returns the list [n1, n2] where n1 is the
-number of people which submitted at elast one hardware report
-mentioning the given device, and n2 is the number of all people
-who submitted a hardware report, limited to hardware reports for
+numOwnersOfDevice() returns a dictionary containing the number of
+people which submitted at least one hardware report mentioning the
+given device or driver, and the number of all people who submitted
+a hardware report. The result can be limited to hardware reports for
 the given distribution, distroseries or distroarchseries, if one
 of these parameters is specified.
 
@@ -1010,8 +1042,11 @@ of these parameters is specified.
     ...     ).jsonBody()
     {u'owners': 1, u'all_submitters': 1}
 
+    >>> print webservice.named_get(
+    ...     '/+hwdb', 'numOwnersOfDevice', driver_name='sd').jsonBody()
+    {u'owners': 1, u'all_submitters': 1}
 
-We can pass the optional parameters driver_name...
+A device and a driver can be specified simultaneously.
 
     >>> print webservice.named_get(
     ...     '/+hwdb', 'numOwnersOfDevice',
@@ -1024,7 +1059,14 @@ We can pass the optional parameters driver_name...
     ...     driver_name='nonsense').jsonBody()
     {u'owners': 0, u'all_submitters': 1}
 
-...package_name...
+Specifying neiher a device nor a driver leads to an error.
+
+    >>> print webservice.named_get('/+hwdb', 'numOwnersOfDevice')
+    HTTP/1.1 400 Bad Request
+    ...
+    ParameterError: Specify (bus, vendor_id, product_id) or driver_name.
+
+Additionally, a package_name can be passed...
 
     >>> print webservice.named_get(
     ...     '/+hwdb', 'numOwnersOfDevice',

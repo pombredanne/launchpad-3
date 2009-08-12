@@ -1,6 +1,8 @@
 #!/usr/bin/python2.4
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
 """ Expire all questions in the OPEN and NEEDSINFO states that didn't receive

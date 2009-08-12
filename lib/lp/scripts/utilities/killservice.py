@@ -1,6 +1,8 @@
 #!../bin/py
 
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # This module uses relative imports.
 # pylint: disable-msg=W0403
 __metaclass__ = type

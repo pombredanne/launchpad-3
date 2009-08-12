@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Specific models for uploaded files"""
 
 __metaclass__ = type
@@ -192,7 +194,8 @@ class NascentUploadFile:
     def checkNameIsTaintFree(self):
         """Verify if the filename contains forbidden characters."""
         if not re_taint_free.match(self.filename):
-            raise UploadError("Tainted filename: '%s'." % (file))
+            raise UploadError(
+                "Invalid character(s) in filename: '%s'." % self.filename)
 
     def checkSizeAndCheckSum(self):
         """Check the md5sum and size of the nascent file.

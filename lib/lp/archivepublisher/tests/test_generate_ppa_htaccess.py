@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test the generate_ppa_htaccess.py script. """
 
 import crypt
@@ -492,7 +494,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         [email] = pop_notifications()
         self.assertEqual(
             email['Subject'],
-            "PPA subscription cancelled for PPA for Celso Providelo")
+            "PPA access cancelled for PPA for Celso Providelo")
         self.assertEqual(email['To'], "test@canonical.com")
         self.assertEqual(
             email['From'], "PPA for Celso Providelo <noreply@launchpad.net>")
@@ -502,20 +504,19 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         self.assertEqual(
             body,
             "Hello Sample Person,\n\n"
-            "Launchpad: cancellation of archive subscription\n"
-            "-----------------------------------------------\n\n"
-            "Your subscription to the private software archive "
-                "\"PPA for Celso\n"
-            "Providelo\", which is hosted by Launchpad, has been "
+            "Launchpad: cancellation of archive access\n"
+            "-----------------------------------------\n\n"
+            "Your access to the private software archive "
+                "\"PPA for Celso Providelo\",\n"
+            "which is hosted by Launchpad, has been "
                 "cancelled.\n\n"
             "You will now no longer be able to download software from this "
                 "archive.\n"
             "If you think this cancellation is in error, you should contact "
                 "the owner\n"
             "of the archive to verify it.\n\n"
-            "You can contact the archive owner by visiting his/her Launchpad "
-                "page\n"
-            "here:\n\n"
+            "You can contact the archive owner by visiting their Launchpad "
+                "page here:\n\n"
             "<http://launchpad.dev/~cprov>\n\n"
             "If you have any concerns you can contact the Launchpad team by "
                 "emailing\n"

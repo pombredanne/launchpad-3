@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -11,6 +12,7 @@ __all__ = [
     'TeamEditView',
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
+    'TeamMailingListSubscribersView',
     'TeamMapView',
     'TeamMapData',
     'TeamMemberAddView',
@@ -19,6 +21,7 @@ __all__ = [
 
 from urllib import quote
 from datetime import datetime
+import math
 import pytz
 
 from zope.app.form.browser import TextAreaWidget
@@ -28,8 +31,7 @@ from zope.interface import Interface, implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from canonical.widgets import (
-    HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
+from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -41,9 +43,11 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -165,9 +169,6 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     """View for editing team details."""
     schema = ITeam
 
-    # teamowner cannot be a HiddenUserWidget or the edit form would change the
-    # owner to the person doing the editing.
-    custom_widget('teamowner', SinglePopupWidget, visible=False)
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
@@ -183,6 +184,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         # class list.
         self.field_names = list(self.field_names)
         self.field_names.remove('contactemail')
+        self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
         self.conditionallyOmitVisibility()
 
@@ -700,6 +702,40 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
              not requester.inTeam(celebrities.mailing_list_experts))):
             return False
         return self.getListInState(*PURGE_STATES) is not None
+
+
+class TeamMailingListSubscribersView(LaunchpadView):
+    """The list of people subscribed to a team's mailing list."""
+
+    max_columns = 4
+
+    @cachedproperty
+    def subscribers(self):
+        return BatchNavigator(
+            self.context.mailing_list.getSubscribers(), self.request)
+
+    def renderTable(self):
+        html = ['<table style="max-width: 80em">']
+        items = self.subscribers.currentBatch()
+        assert len(items) > 0, (
+            "Don't call this method if there are no subscribers to show.")
+        # When there are more than 10 items, we use multiple columns, but
+        # never more columns than self.max_columns.
+        columns = int(math.ceil(len(items) / 10.0))
+        columns = min(columns, self.max_columns)
+        rows = int(math.ceil(len(items) / float(columns)))
+        for i in range(0, rows):
+            html.append('<tr>')
+            for j in range(0, columns):
+                index = i + (j * rows)
+                if index >= len(items):
+                    break
+                subscriber_link = PersonFormatterAPI(items[index]).link(None)
+                html.append(
+                    '<td style="width: 20em">%s</td>' % subscriber_link)
+            html.append('</tr>')
+        html.append('</table>')
+        return '\n'.join(html)
 
 
 class TeamMailingListModerationView(MailingListTeamBaseView):

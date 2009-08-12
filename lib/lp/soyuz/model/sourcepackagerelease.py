@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -31,9 +33,8 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.translationimportqueue import (
+from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
-from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
@@ -572,12 +573,9 @@ class SourcePackageRelease(SQLBase):
         return change
 
     def attachTranslationFiles(self, tarball_alias, is_published,
-        importer=None):
+                               importer=None):
         """See ISourcePackageRelease."""
-        client = getUtility(ILibrarianClient)
-
-        tarball_file = client.getFileByAlias(tarball_alias.id)
-        tarball = tarball_file.read()
+        tarball = tarball_alias.read()
 
         if importer is None:
             importer = getUtility(ILaunchpadCelebrities).rosetta_experts

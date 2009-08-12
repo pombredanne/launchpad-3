@@ -1,0 +1,200 @@
+Access to HWDB tables
+=====================
+
+The access to most HWDB tables is restricted to members of the team
+"canonical".
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> hwdb_team = getUtility(IPersonSet).getByName('hwdb-team')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv.inTeam(hwdb_team)
+    False
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> sample_person.inTeam(hwdb_team)
+    True
+
+
+HWDriver
+--------
+
+    >>> from canonical.launchpad.interfaces.hwdb import IHWDriverSet
+    >>> login(ANONYMOUS)
+    >>> for driver in getUtility(IHWDriverSet).search(name='sd'):
+    ...     print driver.name
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('no-priv@canonical.com')
+    >>> for driver in getUtility(IHWDriverSet).search(name='sd'):
+    ...     print driver.name
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('test@canonical.com')
+    >>> for driver in getUtility(IHWDriverSet).search(name='sd'):
+    ...     print driver.name
+    sd
+
+
+HWDriverName
+------------
+
+    >>> logout()
+    >>> login(ANONYMOUS)
+    >>> for name in getUtility(IHWDriverSet).all_driver_names():
+    ...     print name.name
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('no-priv@canonical.com')
+    >>> for name in getUtility(IHWDriverSet).all_driver_names():
+    ...     print name.name
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('test@canonical.com')
+    >>> for name in getUtility(IHWDriverSet).all_driver_names():
+    ...     print name.name
+    ahci
+    ehci_hcd
+    ...
+
+
+HWDriverPackageName
+-------------------
+
+    >>> logout()
+    >>> login(ANONYMOUS)
+    >>> for name in getUtility(IHWDriverSet).all_package_names():
+    ...     print name.package_name
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('no-priv@canonical.com')
+    >>> for name in getUtility(IHWDriverSet).all_package_names():
+    ...     print name.package_name
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('test@canonical.com')
+    >>> for name in getUtility(IHWDriverSet).all_package_names():
+    ...     print name.package_name
+    linux-image-2.6.24-19-generic
+
+
+HWVendorID
+----------
+
+    >>> from canonical.launchpad.interfaces.hwdb import HWBus, IHWVendorIDSet
+    >>> logout()
+    >>> login(ANONYMOUS)
+    >>> print getUtility(IHWVendorIDSet).getByBusAndVendorID(
+    ...     HWBus.PCI, '0x10de').bus.title
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('no-priv@canonical.com')
+    >>> print getUtility(IHWVendorIDSet).getByBusAndVendorID(
+    ...     HWBus.PCI, '0x10de').bus.title
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('test@canonical.com')
+    >>> print getUtility(IHWVendorIDSet).getByBusAndVendorID(
+    ...     HWBus.PCI, '0x10de').bus.title
+    PCI
+
+
+HWDevice
+--------
+
+    >>> from canonical.launchpad.interfaces.hwdb import IHWDeviceSet
+    >>> logout()
+    >>> login(ANONYMOUS)
+    >>> print getUtility(IHWDeviceSet).getByDeviceID(
+    ...     HWBus.PCI, '0x10de', '0x0455').name
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('no-priv@canonical.com')
+    >>> print getUtility(IHWDeviceSet).getByDeviceID(
+    ...     HWBus.PCI, '0x10de', '0x0455').name
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('test@canonical.com')
+    >>> print getUtility(IHWDeviceSet).getByDeviceID(
+    ...     HWBus.PCI, '0x10de', '0x0455').name
+    MCP65 USB Controller
+
+
+HWSubmissionDevice
+------------------
+
+    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionDeviceSet
+    >>> logout()
+    >>> login(ANONYMOUS)
+    >>> print getUtility(IHWSubmissionDeviceSet).get(1).hal_device_id
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('no-priv@canonical.com')
+    >>> print getUtility(IHWSubmissionDeviceSet).get(1).hal_device_id
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('test@canonical.com')
+    >>> print getUtility(IHWSubmissionDeviceSet).get(1).hal_device_id
+    11
+
+
+Methods of IHWDBApplication
+---------------------------
+
+    >>> from canonical.launchpad.interfaces.hwdb import IHWDBApplication
+    >>> app = getUtility(IHWDBApplication)
+    >>> logout()
+    >>> login(ANONYMOUS)
+    >>> print app.numOwnersOfDevice(
+    ...     bus=HWBus.PCI, vendor_id='0x10de', product_id='0x0455')
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('no-priv@canonical.com')
+    >>> print app.numOwnersOfDevice(
+    ...     bus=HWBus.PCI, vendor_id='0x10de', product_id='0x0455')
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('test@canonical.com')
+    >>> print app.numOwnersOfDevice(
+    ...     bus=HWBus.PCI, vendor_id='0x10de', product_id='0x0455')
+    {...}

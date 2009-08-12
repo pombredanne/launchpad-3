@@ -26,52 +26,8 @@
     distribution and upstream maintainers share bugs, patches, and translations
     efficiently.</p>
 
-  <p class="informational message" tal:condition="view/status_message"
-     tal:content="view/status_message">
-     Status Message Here
-  </p>
-  <p class="error message" tal:condition="view/error_message"
-     tal:content="view/error_message">
-     Error Message Here
-  </p>
-
-  <p class="informational message" tal:condition="not: context/productseries">
-    Launchpad does not know the upstream project series for this package.
-    If you know the correct details, please let us know.
-  </p>
-
-  <form tal:attributes="action request/getURL" method="POST">
-
-    <div class="field">
-
-      <label tal:content="view/productseries_widget/label">The Label</label>
-
-      <span
-        tal:condition="view/productseries_widget/required"
-        class="fieldRequired"
-        title="Required">(Required)</span>
-
-
-      <div tal:content="structure view/productseries_widget">
-        <input type="text" style="width:100%"/>
-      </div>
-
-      <p class="formHelp"
-         tal:condition="view/productseries_widget/hint"
-         tal:content="view/productseries_widget/hint">Some Help Text
-      </p>
-
-    </div>
-
-    <div class="actions">
-      <input
-        type="submit"
-        name="packaging"
-        value="Change"
-        />
-    </div>
-
-  </form>
+  <div metal:use-macro="context/@@launchpad_form/form">
+  </div>
 
 </div>
 </body>

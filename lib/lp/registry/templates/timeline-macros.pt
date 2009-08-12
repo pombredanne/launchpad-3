@@ -20,32 +20,44 @@
   </div>
 
   <!-- Opera ignores overflow:hidden for iframe, so use scrolling=no. -->
-  <iframe tal:condition="auto_resize | nothing"
-          src="+timeline-graph?resize_frame=timeline-iframe"
-          id="timeline-iframe" name='timeline-iframe'
-          style="display: none"
+  <iframe id="timeline-iframe" name='timeline-iframe'
+          style="display: none; border: 0"
           scrolling="no"
-          width="100%" height="170px"></iframe>
-  <iframe tal:condition="not: auto_resize | nothing"
-          src="+timeline-graph"
-          id="timeline-iframe" name='timeline-iframe'
-          style="display: none"
-          scrolling="no"
-          width="100%" height="170px"></iframe>
+          width="100%" height="116px"></iframe>
   <script>
-    YUI().use('node', function(Y) {
-        if (Y.UA.ie) {
-            return;
-        }
-        var loading_el = Y.get('#timeline-loading');
-        loading_el.setStyle('display', 'block');
-        var iframe = Y.get('#timeline-iframe');
-        Y.on('load', function(e) {
-            loading_el.setStyle('display', 'none');
-            iframe.setStyle('display', 'block');
-        }, iframe);
-    });
+  function timeline_iframe(auto_resize, include_inactive) {
+      var timeline_url = "+timeline-graph?";
+      if (include_inactive == 'true') {
+          timeline_url += "include_inactive=true&";
+      }
+
+      if (auto_resize == 'true') {
+          timeline_url += 'resize_frame=timeline-iframe&';
+      }
+      YUI().use('node', function(Y) {
+          if (Y.UA.ie) {
+              return;
+          }
+          var loading_el = Y.get('#timeline-loading');
+          loading_el.setStyle('display', 'block');
+          var iframe = Y.get('#timeline-iframe');
+          iframe.set('src', timeline_url);
+          Y.on('load', function(e) {
+              loading_el.setStyle('display', 'none');
+              iframe.setStyle('display', 'block');
+          }, iframe);
+      });
+  }
   </script>
+  <script
+    tal:define="
+      auto_resize auto_resize | nothing;
+      include_inactive include_inactive | nothing"
+    tal:content="string:
+      timeline_iframe(
+        '${auto_resize}',
+        '${include_inactive}');
+      "/>
 </metal:timeline-iframe>
 
 </html>

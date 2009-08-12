@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDiff."""
@@ -25,7 +27,15 @@ from canonical.launchpad import _
 class IDiff(Interface):
     """A diff that is stored in the Library."""
 
-    text = Text(title=_('Textual contents of a diff.'), readonly=True)
+    text = Text(
+        title=_('Textual contents of a diff.'), readonly=True,
+        description=_("The text may be cut off at a defined maximum size."))
+
+    oversized = Bool(
+        readonly=True,
+        description=_(
+            "True if the size of the content is over the defined maximum "
+            "size."))
 
     diff_text = exported(
         Bytes(title=_('Content of this diff'), required=True, readonly=True))

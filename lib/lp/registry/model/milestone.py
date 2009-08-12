@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 """Milestone model classes."""
 
@@ -157,7 +159,8 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     @property
     def title(self):
         """See IMilestone."""
-        if self.code_name is None:
+        if not self.code_name:
+            # XXX sinzui 2009-07-16 bug=400477: code_name may be None or ''.
             return self.displayname
         return ('%s "%s"') % (self.displayname, self.code_name)
 

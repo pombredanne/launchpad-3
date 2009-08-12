@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces related to bug nomination."""
@@ -20,8 +22,11 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated, IHasOwner
-from canonical.launchpad.interfaces.validation import can_be_nominated_for_serieses
+from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
+from lp.registry.interfaces.role import IHasOwner
+from canonical.launchpad.interfaces.validation import (
+    can_be_nominated_for_serieses)
+
 class NominationError(Exception):
     """The bug cannot be nominated for this release."""
 

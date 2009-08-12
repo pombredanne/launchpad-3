@@ -71,8 +71,12 @@ in order to facilitate uploads.
 name16 does not have any package set based upload permissions for 'bar'
 at present.
 
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> ubuntu_archive = ubuntu.main_archive
     >>> print_permission(
-    ...     ap_set.packagesetsForSourceUploader('bar', name16))
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'bar', name16))
 
 Now put in place a package set, add 'bar' to it and define a permission
 for the former.
@@ -103,19 +107,21 @@ Now 'bar' is included by the 'foo' package set.
 
 name16 has no package set based upload privileges for 'bar' yet.
 
-    >>> ap_set.isSourceUploadAllowed('bar', name16)
+    >>> ap_set.isSourceUploadAllowed(ubuntu_archive, 'bar', name16)
     False
 
 Now we define a permission for name16 to upload to the 'foo' package set.
 
-    >>> ignore_this = ap_set.newPackagesetUploader(name16, foo_ps)
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, name16, foo_ps)
     >>> print_permission(
-    ...     ap_set.packagesetsForSourceUploader('bar', name16))
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'bar', name16))
           name16:   foo-pkg-set ->               UPLOAD (implicit)
 
 And, voila, name16 has a package set based upload authorization for 'bar'.
 
-    >>> ap_set.isSourceUploadAllowed('bar', name16)
+    >>> ap_set.isSourceUploadAllowed(ubuntu_archive, 'bar', name16)
     True
 
 With the authorization above the upload should work again.

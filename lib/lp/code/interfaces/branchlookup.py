@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 """Utility for looking up branches by name."""
@@ -16,8 +18,14 @@ from zope.interface import Interface
 class ILinkedBranchTraversable(Interface):
     """A thing that can be traversed to find a thing linked to a branch."""
 
-    def traverse(self, name):
-        """Return the object beneath this one that matches 'name'."""
+    def traverse(self, name, segments):
+        """Return the object beneath this one that matches 'name'.
+
+        :param name: The name of the object being traversed to.
+        :param segments: Remaining path segments.
+        :return: An `ILinkedBranchTraversable` object if traversing should
+            continue, an `ICanHasLinkedBranch` object otherwise.
+        """
 
 
 class ILinkedBranchTraverser(Interface):
@@ -40,7 +48,7 @@ class ILinkedBranchTraverser(Interface):
         :return: One of
             * `IProduct`
             * `IProductSeries`
-            * (ISourcePackage, PackagePublishingPocket)
+            * `ISuiteSourcePackage`
             * `IDistributionSourcePackage`
         """
 

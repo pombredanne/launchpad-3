@@ -72,46 +72,9 @@
       </style>
     </noscript>
 
-    <metal:load-javascript
-      use-macro="context/@@+main-template-macros/load-javascript" />
+    <metal:page-javascript
+      use-macro="context/@@+main-template-macros/page-javascript" />
 
-    <script type="text/javascript">
-      YUI().use('node', function(Y) {
-          Y.on('load', function(e) {
-              sortables_init();
-              initInlineHelp();
-              activateCollapsibles();
-              activateFoldables();
-              activateConstrainBugExpiration();
-          }, window);
-
-          // Hook up the function that dismisses the help window if we click
-          // anywhere outside of it.
-          Y.on('click', handleClickOnPage, window);
-      });
-    </script>
-
-    <tal:needs_json tal:condition="request/needs_json">
-      <script type="text/javascript"
-        tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
-      <script type="text/javascript"
-        tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
-    </tal:needs_json>
-    <tal:needs-gmap2 condition="request/needs_gmap2">
-      <tal:devmode condition="devmode">
-        <script type="text/javascript"
-                tal:attributes="src string:http://maps.google.com/maps?file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};"
-                ></script>
-      </tal:devmode>
-      <tal:not-devmode condition="not: devmode">
-        <script type="text/javascript"
-                tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};"
-                ></script>
-      </tal:not-devmode>
-    </tal:needs-gmap2>
-    <script type="text/javascript"
-            tal:define="lp_js string:${icingroot}/build"
-            tal:attributes="src string:${lp_js}/lp/mapping.js"></script>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>

@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question views."""
 
@@ -371,6 +372,11 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     similar_questions = None
     similar_faqs = None
 
+    @property
+    def cancel_url(self):
+        """Return the url `IQuestionTarget`."""
+        return canonical_url(self.context)
+
     def setUpFields(self):
         """Set up the form_fields from the schema and custom_widgets."""
         # Add our language field with a vocabulary specialized for
@@ -535,8 +541,6 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     @action(u"Continue", name="change")
     def change_action(self, action, data):
         """Update the Question from the request form data."""
-        if self.shouldWarnAboutUnsupportedLanguage():
-            return self.template()
         self.updateContextFromData(data)
         self.request.response.redirect(canonical_url(self.context))
 

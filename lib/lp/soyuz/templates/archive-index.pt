@@ -24,7 +24,8 @@
           </script>
         </tal:archive_js>
       </tal:devmode>
-      <script type="text/javascript">
+      <script type="text/javascript" id="repository-size-update"
+              tal:condition="view/archive_url">
 YUI().use('io-base', 'lazr.anim', 'node', 'soyuz-base',
           'soyuz.update_archive_build_statuses', function(Y) {
 
@@ -142,7 +143,7 @@ tr#package-counters p{
         <metal:build-status-summary
             use-macro="archive/@@+macros/build-status-summary" />
 
-	<div class="actions">
+        <div class="actions">
           <tal:builds
             define="link context/menu:context/builds"
             condition="link/enabled"
@@ -162,7 +163,7 @@ tr#package-counters p{
       <table id="archive-details-table">
         <tbody>
           <tr id="upload-hint"
-	      tal:condition="context/required:launchpad.Append">
+              tal:condition="context/required:launchpad.Append">
             <th>Upload packages:</th>
             <td>
               <tt>dput ppa:<tal:owner-name

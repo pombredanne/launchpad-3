@@ -1,6 +1,8 @@
 #!/usr/bin/python2.4
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
 import crypt, filecmp, os, pytz, tempfile
@@ -144,7 +146,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         send_to_person = token.person
         ppa_name = token.archive.displayname
         ppa_owner_url = canonical_url(token.archive.owner)
-        subject = "PPA subscription cancelled for %s" % ppa_name
+        subject = "PPA access cancelled for %s" % ppa_name
         template = get_email_template("ppa-subscription-cancelled.txt")
 
         assert not send_to_person.isTeam(), (

@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
 
@@ -72,10 +73,12 @@ from canonical.launchpad.webapp import (
     canonical_url, custom_widget, safe_action, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
-from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
-from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
+from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
+from canonical.widgets.bugtask import NewLineToSpacesWidget
+from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
@@ -657,18 +660,6 @@ class FileBugViewBase(LaunchpadFormView):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
 
-    @property
-    def advanced_filebug_url(self):
-        """The URL to the advanced bug filing form.
-
-        If a token was passed to this view, it will be be passed through
-        to the advanced bug filing form via the returned URL.
-        """
-        url = urlappend(canonical_url(self.context), '+filebug-advanced')
-        if self.extra_data_token is not None:
-            url = urlappend(url, self.extra_data_token)
-        return url
-
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
         if self.extra_data_token is not None:
@@ -803,24 +794,13 @@ class FileBugViewBase(LaunchpadFormView):
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
 
-    This view skips searching for duplicates.
+    This view exists only to redirect from +filebug-advanced to +filebug.
     """
-    schema = IBugAddForm
-    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
-    # hack to make the action decorator Just Work across
-    # inheritance. Technically, this isn't needed for this class,
-    # because it defines no further actions, but I've added it just to
-    # preclude mysterious bugs if/when another action is defined in this
-    # class!
-    actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=40)
-    custom_widget('tags', BugTagsWidget)
-    template = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-advanced.pt")
-    advanced_form = True
-
-    def showFileBugForm(self):
-        return self.template()
+    def initialize(self):
+        filebug_url = canonical_url(
+            self.context, rootsite='bugs', view_name='+filebug')
+        self.request.response.redirect(filebug_url,
+        status=HTTP_MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
@@ -1012,15 +992,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         return self._getSelectedProduct()
 
 
-class ProjectFileBugAdvancedView(FileBugAdvancedView):
-    """Advanced filebug page for IProject."""
-
-    # Make inheriting the base class' actions work.
-    actions = FileBugAdvancedView.actions
-    schema = IProjectBugAddForm
-    can_decide_security_contact = False
-
-
 class FrontPageFileBugMixin:
     """Provides common methods for front-page bug-filing forms."""
 
@@ -1142,39 +1113,6 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
             return bugtarget
 
 
-class FrontPageFileBugAdvancedView(FrontPageFileBugMixin,
-                                   FileBugAdvancedView):
-    """Browser view class for the top-level +filebug-advanced page."""
-    schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', LaunchpadTargetWidget)
-
-    # Make inheriting the base class' actions work.
-    actions = FileBugAdvancedView.actions
-    can_decide_security_contact = False
-
-    @property
-    def initial_values(self):
-        return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
-
-    def validate(self, data):
-        """Ensures that the target uses Malone for its bug tracking.
-
-        If the target does use Malone, further validation is carried out by
-        FileBugViewBase.validate()
-        """
-        product_or_distro = self.getProductOrDistroFromContext()
-
-        # If we have a context that we can test for Malone use, we do so.
-        if (product_or_distro is not None and
-            not product_or_distro.official_malone):
-            self.setFieldError(
-                'bugtarget',
-                "%s does not use Launchpad as its bug tracker" %
-                product_or_distro.displayname)
-        else:
-            return super(FrontPageFileBugAdvancedView, self).validate(data)
-
-
 class BugTargetBugListingView:
     """Helper methods for rendering bug listings."""
 
@@ -1224,6 +1162,10 @@ class BugCountDataItem:
 
 class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     """View for the Bugs front page."""
+
+    # We have a custom searchtext widget here so that we can set the
+    # width of the search box properly.
+    custom_widget('searchtext', NewLineToSpacesWidget, displayWidth=36)
 
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (

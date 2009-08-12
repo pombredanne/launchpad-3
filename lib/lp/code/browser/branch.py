@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
 
@@ -21,6 +22,7 @@ __all__ = [
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
+    'DecoratedBug',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
@@ -34,12 +36,15 @@ import simplejson
 from zope.app.form.browser import TextAreaWidget
 from zope.traversing.interfaces import IPathAdapter
 from zope.component import getUtility, queryAdapter
+from zope.event import notify
 from zope.formlib import form
-from zope.interface import Interface, implements
+from zope.interface import Interface, implements, providedBy
 from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, Text
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.uri import URI
 
 from canonical.cachedproperty import cachedproperty
@@ -66,6 +71,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
+from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
 from lp.code.enums import BranchType, UICreatableBranchType
 from lp.code.interfaces.branch import (
@@ -127,7 +133,7 @@ class BranchNavigation(Navigation):
         """Traverses to an `IBugBranch`."""
         bug = getUtility(IBugSet).get(bugid)
 
-        for bug_branch in bug.bug_branches:
+        for bug_branch in bug.linked_branches:
             if bug_branch.branch == self.context:
                 return bug_branch
 
@@ -265,7 +271,7 @@ class BranchContextMenu(ContextMenu):
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
     def link_bug(self):
-        if self.context.related_bugs:
+        if self.context.linked_bugs:
             text = 'Link to another bug report'
         else:
             text = 'Link to a bug report'
@@ -289,6 +295,20 @@ class BranchContextMenu(ContextMenu):
         text = 'Edit import source or review import'
         return Link('+edit-import', text, icon='edit', enabled=True)
 
+
+class DecoratedBug:
+    """Provide some additional attributes to a normal bug."""
+    delegates(IBug)
+
+    def __init__(self, context, branch):
+        self.context = context
+        self.branch = branch
+
+    @property
+    def bugtask(self):
+        """Return the bugtask for the branch project, or the default bugtask.
+        """
+        return self.branch.target.getBugTask(self.context)
 
 class BranchView(LaunchpadView, FeedsMixin):
 
@@ -447,6 +467,12 @@ class BranchView(LaunchpadView, FeedsMixin):
         return len(self.landing_candidates) > 5
 
     @cachedproperty
+    def linked_bugs(self):
+        """Return a list of DecoratedBugs linked to the branch."""
+        return [DecoratedBug(bug, self.context)
+            for bug in self.context.linked_bugs]
+
+    @cachedproperty
     def latest_code_import_results(self):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
@@ -497,6 +523,15 @@ class BranchView(LaunchpadView, FeedsMixin):
             return False
         return self.context.target.collection.getBranches().count() > 1
 
+    def translations_sources(self):
+        """Anything that automatically exports its translations here.
+
+        Produces a list, so that the template can easily check whether
+        there are any translations sources.
+        """
+        # Actually only ProductSeries currently do that.
+        return list(self.context.getProductSeriesPushingTranslations())
+
 
 class DecoratedMergeProposal:
     """Provide some additional attributes to a normal branch merge proposal.
@@ -542,7 +577,6 @@ class BranchEditSchema(Interface):
     the user to be able to edit it.
     """
     use_template(IBranch, include=[
-        'owner',
         'name',
         'url',
         'description',
@@ -550,6 +584,7 @@ class BranchEditSchema(Interface):
         'whiteboard',
         ])
     private = copy_field(IBranch['private'], readonly=False)
+    owner = copy_field(IBranch['owner'], readonly=False)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -566,9 +601,16 @@ class BranchEditFormView(LaunchpadEditFormView):
     @action('Change Branch', name='change')
     def change_action(self, action, data):
         # If the owner or product has changed, add an explicit notification.
+        # We take our own snapshot here to make sure that the snapshot records
+        # changes to the owner and private, and we notify the listeners
+        # explicitly below rather than the notification that would normally be
+        # sent in updateContextFromData.
+        branch_before_modification = Snapshot(
+            self.context, providing=providedBy(self.context))
         if 'owner' in data:
-            new_owner = data['owner']
+            new_owner = data.pop('owner')
             if new_owner != self.context.owner:
+                self.context.setOwner(new_owner, self.user)
                 self.request.response.addNotification(
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
@@ -584,7 +626,13 @@ class BranchEditFormView(LaunchpadEditFormView):
                 else:
                     self.request.response.addNotification(
                         "The branch is now publicly accessible.")
-        if self.updateContextFromData(data):
+        if self.updateContextFromData(data, notify_modified=False):
+            # Notify the object has changed with the snapshot that was taken
+            # earler.
+            field_names = [
+                form_field.__name__ for form_field in self.form_fields]
+            notify(ObjectModifiedEvent(
+                self.context, branch_before_modification, field_names))
             # Only specify that the context was modified if there
             # was in fact a change.
             self.context.date_last_modified = UTC_NOW

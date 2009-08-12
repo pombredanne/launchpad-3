@@ -1,3 +1,6 @@
+-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- GNU Affero General Public License version 3 (see the file LICENSE).
+
 BEGIN;
 -- Mark all comments from somebody else than the ticket submitter
 -- as an answer. Otherwise, no answers posted before the new

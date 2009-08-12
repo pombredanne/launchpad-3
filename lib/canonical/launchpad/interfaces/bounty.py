@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Bounty interfaces."""
@@ -22,7 +24,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, PublicPersonChoice
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 
 
 class BountyDifficulty(DBEnumeratedType):

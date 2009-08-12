@@ -1,4 +1,5 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing helpers"""
 
@@ -26,6 +27,7 @@ __all__ = [
 
 import logging
 
+
 def reset_logging():
     """Reset the logging system back to defaults
 
@@ -51,6 +53,9 @@ def reset_logging():
     for handler in root.handlers:
         root.removeHandler(handler)
 
+    # Set the root logger's log level back to the default level: WARNING.
+    root.setLevel(logging.WARNING)
+
     # Clean out the guts of the logging module. We don't want handlers that
     # have already been closed hanging around for the atexit handler to barf
     # on, for example.
@@ -60,6 +65,7 @@ def reset_logging():
     # Reset the setup
     import zope.testing.testrunner
     zope.testing.testrunner.configure_logging()
+
 
 # This import registers the 'doctest' Unicode codec.
 import canonical.testing.doctestcodec

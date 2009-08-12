@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -430,10 +432,11 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, build_state=None, name=None, user=None):
+    def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
+                        user=None):
         """See IHasBuildRecords."""
         return getUtility(IBuildSet).getBuildsForBuilder(
-            self.id, build_state, name, user)
+            self.id, build_state, name, arch_tag, user)
 
     def slaveStatus(self):
         """See IBuilder."""

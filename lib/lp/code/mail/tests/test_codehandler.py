@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing the CodeHandler."""
 
@@ -292,7 +293,8 @@ class TestCodeHandler(TestCaseWithFactory):
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
-        notification = pop_notifications()[0]
+        notification = pop_notifications(
+            sort_key=lambda m: m['X-Envelope-To'])[0]
         self.assertEqual('subject', notification['Subject'])
         expected_body = ('Review: Abstain ebailiwick\n'
                          ' vote Abstain EBAILIWICK\n'
@@ -730,6 +732,7 @@ class TestCodeHandler(TestCaseWithFactory):
             )
         self.assertEqual(notification['to'],
             mail['from'])
+        self.assertEqual(0, bmp.all_comments.count())
 
 
 class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):

@@ -330,7 +330,7 @@ An IBranch.
 An IBugBranch.
 
     >>> bug = getUtility(IBugSet).get(1)
-    >>> bug_branch = bug.addBranch(
+    >>> bug_branch = bug.linkBranch(
     ...     branch, getUtility(IPersonSet).getByName('sabdfl'))
 
     >>> canonical_url(bug_branch)
@@ -365,8 +365,9 @@ the merge proposal)
 
 == POTemplates and so on ==
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPOTemplateSet, ITranslationGroupSet)
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> from lp.translations.interfaces.translationgroup import (
+    ...     ITranslationGroupSet)
 
 Most Rosetta pages hang off IPOTemplateSubset objects, of which there are two
 varieties: distribution and upstream.

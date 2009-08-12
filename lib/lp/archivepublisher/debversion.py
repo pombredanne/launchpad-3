@@ -1,4 +1,5 @@
-# Copyright (C) 2005-2007  Canonical Ltd.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Parse and compare Debian version strings.
 

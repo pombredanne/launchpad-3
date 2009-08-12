@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -27,38 +31,6 @@
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
       for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
       factory="canonical.launchpad.browser.personproduct.PersonProductBreadcrumbBuilder"
-      permission="zope.Public"
-      />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      layer="canonical.launchpad.layers.CodeLayer"
-      name="+branches" />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      class="lp.code.browser.branchlisting.PersonProductOwnedBranchesView"
-      permission="zope.Public"
-      facet="branches"
-      name="+branches"
-      template="../templates/personproduct-branches.pt"
-      />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      class="lp.code.browser.branchlisting.PersonProductTeamBranchesView"
-      facet="branches"
-      name="+portlet-teambranches"
-      template="../templates/person-portlet-teambranches.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      class="lp.code.browser.branchlisting.PersonProductCodeSummaryView"
-      facet="branches"
-      name="+codesummary"
-      template="../templates/person-codesummary.pt"
       permission="zope.Public"
       />
 

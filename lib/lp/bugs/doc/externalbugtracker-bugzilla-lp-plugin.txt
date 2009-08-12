@@ -283,7 +283,7 @@ remote server and passing it a 'changed_since' parameter.
     >>> changed_since = datetime(2008, 6, 11, 9, 0, 0, 0)
     >>> bug_ids = bugzilla.getModifiedRemoteBugs([1, 2], changed_since)
     CALLED Launchpad.get_bugs({'changed_since':
-        <DateTime u'20080611T09:00:00' at...>,
+        <DateTime ...'20080611T09:00:00' at...>,
         'ids': [1, 2],
         'permissive': True})
 
@@ -296,7 +296,7 @@ both bugs 1 and 2 back from getModifiedRemoteBugs()
     >>> changed_since = datetime(2008, 6, 10, 9, 0, 0, 0)
     >>> bug_ids = bugzilla.getModifiedRemoteBugs([1, 2], changed_since)
     CALLED Launchpad.get_bugs({'changed_since':
-        <DateTime u'20080610T09:00:00' at...>,
+        <DateTime ...'20080610T09:00:00' at...>,
         'ids': [1, 2],
         'permissive': True})
 

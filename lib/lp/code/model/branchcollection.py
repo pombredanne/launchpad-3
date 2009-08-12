@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
 
@@ -22,7 +23,7 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.person import Owner
+from lp.registry.model.person import Owner, Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
@@ -176,6 +177,21 @@ class GenericBranchCollection:
         proposals.order_by(Desc(CodeReviewComment.vote))
         return proposals
 
+    def getTeamsWithBranches(self, person):
+        """See `IBranchCollection`."""
+        # This method doesn't entirely fit with the intent of the
+        # BranchCollection conceptual model, but we're not quite sure how to
+        # fix it just yet.  Perhaps when bug 337494 is fixed, we'd be able to
+        # sensibly be able to move this method to another utility class.
+        branch_query = self._getBranchIdQuery()
+        branch_query.columns = (Branch.ownerID,)
+        return self.store.find(
+            Person,
+            Person.id == TeamParticipation.teamID,
+            TeamParticipation.person == person,
+            TeamParticipation.team != person,
+            Person.id.is_in(branch_query))
+
     def inProduct(self, product):
         """See `IBranchCollection`."""
         return self._filterBy(
@@ -187,6 +203,17 @@ class GenericBranchCollection:
             [Product.project == project.id],
             table=Product,
             join=Join(Product, Branch.product == Product.id))
+
+    def inDistribution(self, distribution):
+        """See `IBranchCollection`."""
+        return self._filterBy(
+            [DistroSeries.distribution == distribution],
+            table=Distribution,
+            join=Join(DistroSeries, Branch.distroseries == DistroSeries.id))
+
+    def inDistroSeries(self, distro_series):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.distroseries == distro_series])
 
     def inDistributionSourcePackage(self, distro_source_package):
         """See `IBranchCollection`."""

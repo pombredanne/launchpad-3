@@ -328,8 +328,6 @@
         replace="structure overview_menu/received_invitations/fmt:link" />
     </p>
   </div>
-
-  <div tal:replace="structure context/@@+portlet-latestquestions" />
   </div>
 </body>
 </html>

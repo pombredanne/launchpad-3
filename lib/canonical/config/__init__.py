@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 '''
 Configuration information pulled from launchpad.conf.
 
@@ -407,7 +409,7 @@ class DatabaseConfig:
         'main_master', 'main_slave', 'auth_master', 'auth_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'randomise_select_results',
-        'soft_request_timeout'])
+        'soft_request_timeout', 'storm_cache', 'storm_cache_size'])
     _db_config_required_attrs = frozenset([
         'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave'])
 

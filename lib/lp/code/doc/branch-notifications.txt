@@ -203,7 +203,15 @@ to allow email filtering.
     # A helper function to print out the To header and
     # email body
     >>> def print_to_and_body(email):
-    ...     print 'To: %s\n%s' % (email['To'], email.get_payload(decode=True))
+    ...     attachment = ''
+    ...     if email.is_multipart():
+    ...         root = email.get_payload()
+    ...         body = root[0].get_payload(decode=True)
+    ...         if len(root) > 1:
+    ...             attachment = '\n' + root[1].get_payload(decode=True)
+    ...     else:
+    ...         body = email.get_payload(decode=True)
+    ...     print 'To: %s\n%s%s' % (email['To'], body, attachment)
 
 We need to create some sufficiently large diffs to compare against.
 
@@ -256,12 +264,13 @@ unsubscribe link.
     To: Foo Bar <foo.bar@canonical.com>
     Test message.
     <BLANKLINE>
-    0 1 ... 5999...
+    ...
     Your team Launchpad Developers is subscribed to branch
     lp://dev/~name12/firefox/main.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
     <BLANKLINE>
+    0 1 ... 5999...
 
 
     >>> print_to_and_body(notifications.pop(0))
@@ -277,9 +286,10 @@ Mark's unsubscription link is to his personal branch subscription.
     To: Mark Shuttleworth <mark@hbd.com>
     Test message.
     <BLANKLINE>
-    0 1 ... 5999...
+    ...
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    0 1 ... 5999...
 
 And just to be sure, lets create one with 800 lines.
 
@@ -305,6 +315,7 @@ Diff for celso:
     >>> print_to_and_body(notifications.pop(0))
     To: Celso Providelo <celso.providelo@canonical.com>
     Test message.
+    ...
     <BLANKLINE>
     0 1 ... 799...
 
@@ -313,6 +324,7 @@ Diff for daf:
     >>> print_to_and_body(notifications.pop(0))
     To: Dafydd Harries <daf@canonical.com>
     Test message.
+    ...
     <BLANKLINE>
     0 1 ... 799...
 
@@ -321,6 +333,7 @@ Everything for Foo Bar:
     >>> print_to_and_body(notifications.pop(0))
     To: Foo Bar <foo.bar@canonical.com>
     Test message.
+    ...
     <BLANKLINE>
     0 1 ... 799...
 
@@ -338,6 +351,7 @@ And everything for mark:
     >>> print_to_and_body(notifications.pop(0))
     To: Mark Shuttleworth <mark@hbd.com>
     Test message.
+    ...
     <BLANKLINE>
     0 1 ... 799...
 

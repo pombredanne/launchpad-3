@@ -1,4 +1,9 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
 
@@ -467,6 +472,40 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # addresses for maintainer and changed-by which must be ignored.
         self.assertEmail()
 
+    def testUploadSendsEmailToPeopleInArchivePermissions(self):
+        """PPA uploads result in notifications to ArchivePermission uploaders.
+
+        Anyone listed as an uploader in ArchivePermissions will automatically
+        get an upload notification email.
+
+        See https://bugs.edge.launchpad.net/soyuz/+bug/397077
+        """
+        # Create the extra permissions. We're making an extra team and
+        # adding it to cprov's upload permission, plus name12.
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        email = "contact@example.com"
+        name = "Team"
+        team = self.factory.makeTeam(email=email, displayname=name)
+        name12 = getUtility(IPersonSet).getByName("name12")
+        cprov.archive.newComponentUploader(name12, "main")
+        cprov.archive.newComponentUploader(team, "main")
+
+        # Process the upload.
+        upload_dir = self.queueUpload("bar_1.0-1", "~cprov/ppa/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        name12_email = "%s <%s>" % (
+            name12.displayname, name12.preferredemail.email)
+        team_email = "%s <%s>" % (team.displayname, team.preferredemail.email)
+
+        # We expect the recipients to be:
+        #  - the package signer (name15),
+        #  - the team in the extra permissions,
+        #  - name12 who is in the extra permissions.
+        expected_recipients = (
+            self.name16_recipient, name12_email, team_email)
+        self.assertEmail(ppa_header="cprov", recipients=expected_recipients)
+
     def testPPADistroSeriesOverrides(self):
         """It's possible to override target distroserieses of PPA uploads.
 
@@ -593,8 +632,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             pub_foocomm.sourcepackagerelease.component.name, 'partner')
         self.assertEqual(pub_foocomm.component.name, 'main')
 
-    def testUploadSignedByNonUbuntero(self):
-        """Check if a non-ubuntero can upload to his PPA."""
+    def testUploadSignedByCodeOfConductNonSigner(self):
+        """Check if a CoC non-signer can upload to his PPA."""
         self.name16.activesignatures[0].active = False
         self.layer.commit()
 
@@ -603,7 +642,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA uploads must be signed by an 'ubuntero'.")
+            "PPA uploads must be signed by an Ubuntu Code of Conduct signer.")
         self.assertTrue(self.name16.archive is not None)
 
     def testUploadSignedByBetaTesterMember(self):
@@ -1005,6 +1044,57 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Upload a higher version of bar that relies on the official
         # orig.tar.gz availability.
         self.uploadHigherBarToUbuntu()
+
+    def testErrorMessagesWithUnicode(self):
+        """Check that unicode errors messages are handled correctly.
+
+        Some error messages can contain the PPA display name, which may
+        sometimes contain unicode characters.  There was a bug
+        https://bugs.edge.launchpad.net/bugs/275509 reported about getting
+        upload errors related to unicode.  This only happened when the
+        uploder was attaching a .orig.tar.gz file with different contents
+        than the one already in the PPA.
+        """
+        # Ensure the displayname of the PPA has got unicode in it.
+        self.name16.archive.displayname = u"unicode PPA name: áří"
+
+        # Upload the first version.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
+
+        # The same 'bar' version will fail due to the conflicting
+        # file contents.
+        upload_dir = self.queueUpload("bar_1.0-1-ppa-orig", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # The error message should be sane, and not one about unicode
+        # errors.
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            'File bar_1.0.orig.tar.gz already exists in unicode PPA name: '
+            'áří, but uploaded version has different '
+            'contents. See more information about this error in '
+            'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            'File bar_1.0-1.diff.gz already exists in unicode PPA name: '
+            'áří, but uploaded version has different contents. See more '
+            'information about this error in '
+            'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            'Files specified in DSC are broken or missing, skipping package '
+            'unpack verification.')
+
+        # Also, the email generated should be sane.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
+
+        self.assertTrue(
+            "File bar_1.0.orig.tar.gz already exists in unicode PPA name: "
+            "áří" in body)
+
 
     def testPPAConflictingOrigFiles(self):
         """When available, the official 'orig.tar.gz' restricts PPA uploads.

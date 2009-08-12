@@ -165,7 +165,7 @@ list.
 
   * a distroseries sourcepackage
 
-    >>> from canonical.launchpad.database import SourcePackage
+    >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> from canonical.launchpad.interfaces import ISourcePackage
     >>> distro_series_sp_task = bugtaskset.get(16)
     >>> expected_target = SourcePackage(
@@ -1155,6 +1155,7 @@ it can also be invoked directly.
 
     >>> thunderbird.name = 'thunderbird'
     >>> thunderbird.displayname = 'Mozilla Thunderbird'
+    >>> transaction.commit()
 
     >>> upstream_task.bugtargetdisplayname
     u'Mozilla Thunderbird NG'
@@ -1242,7 +1243,7 @@ If a mentoring offer gets made...
 ... or a branch gets linked to the bug...
 
     >>> branch = factory.makeAnyBranch()
-    >>> bug_three.addBranch(branch, no_priv)
+    >>> bug_three.linkBranch(branch, no_priv)
     <BugBranch at ...>
 
 ... the properties for the bugtasks reflect this.
@@ -1265,7 +1266,6 @@ If a mentoring offer gets made...
 It's possible to get a list of bugs similar to the current bug by
 accessing the similar_bugs property of its bug tasks.
 
-    >>> from operator import attrgetter
     >>> new_ff_bug = factory.makeBug(product=firefox, title="Firefox")
     >>> ff_bugtask = new_ff_bug.bugtasks[0]
 

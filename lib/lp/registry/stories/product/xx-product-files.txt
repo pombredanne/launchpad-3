@@ -163,7 +163,7 @@ If a release is added to the new series the series will appear in
 the list.
 
     >>> # Add a release to the empty series.
-    >>> firefox_owner.open('http://launchpad.dev/firefox')
+    >>> firefox_owner.open('http://launchpad.dev/firefox/+series')
     >>> firefox_owner.getLink('3.0').click()
     >>> firefox_owner.getLink('Create milestone').click()
     >>> firefox_owner.getControl('Name').value = '3.14159'

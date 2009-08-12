@@ -569,6 +569,8 @@
                     tal:content="structure error"
                     >An error message.</div>
                 </div>
+                <p><a href="/+help/tag-search.html"
+                      target="help">Tag search help</a></p>
               </td>
 	      <td>
                 <div condition="view/shouldShowTagsCombinatorWidget"

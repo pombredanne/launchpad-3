@@ -32,7 +32,7 @@ discarded immediately.
     ... Hi, I am not a member of Launchpad (yet).
     ... """)
     >>> vette_watcher.wait_for_discard('aardvark')
-    >>> len(smtpd.getMessages())
+    >>> len(list(smtpd))
     0
 
 
@@ -70,7 +70,7 @@ gets discarded.
     ... Hi, I am not a verified member of Launchpad (yet).
     ... """)
     >>> vette_watcher.wait_for_discard('beaver')
-    >>> len(smtpd.getMessages())
+    >>> len(list(smtpd))
     0
 
 
@@ -85,7 +85,7 @@ team's administrator.
     >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
     >>> smtpd.reset()
-    >>> smtpd.getMailboxSize()
+    >>> len(list(smtpd))
     0
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
@@ -100,7 +100,7 @@ team's administrator.
 The team administrator will receive a notification of the held message.
 
     >>> smtpd_watcher.wait_for_personal_traffic('no-priv@canonical.com')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -165,7 +165,7 @@ rejection notice to Anne.
     0
 
     >>> smtpd_watcher.wait_for_personal_traffic('anne.person@example.com')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -177,7 +177,9 @@ rejection notice to Anne.
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    X-RcptTo: anne.person@example.com
     <BLANKLINE>
     Your request to the Itest-one mailing list
     <BLANKLINE>
@@ -192,8 +194,6 @@ rejection notice to Anne.
     at:
     <BLANKLINE>
         itest-one-owner@lists.launchpad.dev
-    <BLANKLINE>
-    <BLANKLINE>
 
 Anne posts another message to the mailing list, but she is still not
 subscribed to it.  The team administrator deems this message to be spam and
@@ -209,7 +209,7 @@ discards it.  No rejection notice is sent to Anne.
     ... """)
 
     >>> vette_watcher.wait_for_hold('itest-one', 'donkey')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -240,7 +240,7 @@ discards it.  No rejection notice is sent to Anne.
     >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     0
-    >>> len(smtpd.getMessages())
+    >>> len(list(smtpd))
     0
 
 Now Anne posts another message to the mailing list she is not subscribed to.
@@ -256,7 +256,7 @@ This time, her message is on topic and is accepted.
     ... """)
 
     >>> vette_watcher.wait_for_hold('itest-one', 'elephant')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -303,7 +303,7 @@ This time, her message is on topic and is accepted.
 This message is delivered to the archive.
 
     >>> smtpd_watcher.wait_for_list_traffic('itest-one', personal=True)
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -323,7 +323,9 @@ This message is delivered to the archive.
     ...
     Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    X-RcptTo: archive@mail-archive.dev
     <BLANKLINE>
     Hi, I am still not yet a member of this team's list.
     _______________________________________________
@@ -331,8 +333,6 @@ This message is delivered to the archive.
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 
 Unsubscribed team member
@@ -378,7 +378,7 @@ the mailing list, she will not get a copy of the message.
 
 Only the archiver gets the message delivery.
 
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -432,7 +432,7 @@ differing only in the headers used to do VERP bounce detection.
 
     >>> smtpd_watcher.wait_for_mbox_delivery('falcon')
     >>> smtpd_watcher.wait_for_mbox_delivery('falcon')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     2
     >>> from operator import itemgetter
@@ -448,7 +448,9 @@ Here's the copy sent to Anne...
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    X-RcptTo: anne.person@example.com
     <BLANKLINE>
     Hi, I am now a member of this team's list!
     _______________________________________________
@@ -456,8 +458,6 @@ Here's the copy sent to Anne...
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 ...and the copy sent to the archives.
 
@@ -469,7 +469,9 @@ Here's the copy sent to Anne...
     ...
     Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    X-RcptTo: archive@mail-archive.dev
     <BLANKLINE>
     Hi, I am now a member of this team's list!
     _______________________________________________
@@ -477,8 +479,6 @@ Here's the copy sent to Anne...
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 In addition, the in-house MHonArc archiver has archived this message.
 
@@ -498,7 +498,7 @@ validated yet.
     ... Hi, I am not a verified member of this team (yet).
     ... """)
     >>> vette_watcher.wait_for_discard('giraffe')
-    >>> len(smtpd.getMessages())
+    >>> len(list(smtpd))
     0
 
 However, once she validates this address, she can post from it.
@@ -520,7 +520,7 @@ However, once she validates this address, she can post from it.
 
     >>> smtpd_watcher.wait_for_mbox_delivery('gerbil')
     >>> smtpd_watcher.wait_for_mbox_delivery('gerbil')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     2
     >>> messages.sort(key=itemgetter('sender'))
@@ -533,7 +533,9 @@ However, once she validates this address, she can post from it.
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    X-RcptTo: anne.person@example.com
     <BLANKLINE>
     Hi, I am now a verified member of this team!
     _______________________________________________
@@ -541,8 +543,6 @@ However, once she validates this address, she can post from it.
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
     >>> print messages[1].as_string()
     From: aperson@example.org
@@ -552,7 +552,9 @@ However, once she validates this address, she can post from it.
     ...
     Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    Received: by smtp2mbox
+    ...
+    X-MailFrom: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    X-RcptTo: archive@mail-archive.dev
     <BLANKLINE>
     Hi, I am now a verified member of this team!
     _______________________________________________
@@ -560,8 +562,6 @@ However, once she validates this address, she can post from it.
     Post to     : itest-one@lists.launchpad.dev
     Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
-    <BLANKLINE>
-    <BLANKLINE>
 
 There should also be no held requests pending.
 
@@ -592,7 +592,7 @@ Because she is not a team member, her message is held for moderation.
     ... Hi, I am not a team member.
     ... """)
     >>> vette_watcher.wait_for_hold('itest-one', 'horse')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     1
     >>> print messages[0].as_string()
@@ -637,7 +637,7 @@ not need to re-subscribe to the mailing list.
     # Wait for mailing list deliveries to both recipients.
     >>> smtpd_watcher.wait_for_mbox_delivery('iguana')
     >>> smtpd_watcher.wait_for_mbox_delivery('iguana')
-    >>> messages = smtpd.getMessages()
+    >>> messages = list(smtpd)
     >>> len(messages)
     2
     >>> messages.sort(key=itemgetter('sender'))
@@ -666,7 +666,7 @@ have their posts held for moderation.
     <DBItem PersonalStanding.UNKNOWN...
 
     >>> def print_message_summaries():
-    ...     messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
+    ...     messages = sorted(smtpd, key=itemgetter('sender'))
     ...     print 'Number of messages:', len(messages)
     ...     for message in messages:
     ...         print message['sender']
@@ -793,7 +793,7 @@ post to just that mailing list without further approval required.
     ... """)
     >>> smtpd_watcher.wait_for_mbox_delivery('otter')
     >>> smtpd_watcher.wait_for_mbox_delivery('otter')
-    >>> messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
+    >>> messages = sorted(smtpd, key=itemgetter('sender'))
     >>> len(messages)
     2
     >>> for message in messages:
@@ -829,7 +829,7 @@ messages to the list.
     ... """ % config.mailman.archive_address)
 
     >>> vette_watcher.wait_for_discard('narwhale')
-    >>> len(smtpd.getMessages())
+    >>> len(list(smtpd))
     0
 
 

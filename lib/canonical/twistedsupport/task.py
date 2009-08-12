@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tools for managing long-running or difficult tasks with Twisted."""
 
@@ -36,6 +37,12 @@ class ITaskSource(Interface):
         """Stop generating tasks.
 
         Any subsequent calls to `stop` are silently ignored.
+
+        :return: A Deferred that will fire when the source is stopped.  It is
+            possible that tasks may be produced until this deferred fires.
+            The deferred will fire with a boolean; True if the source is still
+            stopped, False if the source has been restarted since stop() was
+            called.
         """
 
 
@@ -57,6 +64,9 @@ class ITaskConsumer(Interface):
 
         :param task: The interface for this is defined by the task source.
         """
+
+    def noTasksFound():
+        """Called when no tasks were found."""
 
     def taskProductionFailed(reason):
         """Called when the task source fails to produce a task.
@@ -96,6 +106,10 @@ class PollingTaskSource:
             clock = reactor
         self._clock = clock
         self._looping_call = None
+        # _polling_lock is used to prevent concurrent attempts to poll for
+        # work, and to delay the firing of the deferred returned from stop()
+        # until any poll in progress at the moment of the call is complete.
+        self._polling_lock = defer.DeferredLock()
 
     def start(self, task_consumer):
         """See `ITaskSource`."""
@@ -112,14 +126,28 @@ class PollingTaskSource:
                 # task and the consumer need to figure out how to get output
                 # back to the end user.
                 task_consumer.taskStarted(task)
-        d = defer.maybeDeferred(self._task_producer)
-        d.addCallbacks(got_task, task_consumer.taskProductionFailed)
+            else:
+                task_consumer.noTasksFound()
+        def task_failed(reason):
+            # If task production fails, we inform the consumer of this, but we
+            # don't let any deferred it returns delay subsequent polls.
+            task_consumer.taskProductionFailed(reason)
+        def poll():
+            # If stop() has been called before the lock was acquired, don't
+            # actually poll for more work.
+            if self._looping_call:
+                d = defer.maybeDeferred(self._task_producer)
+                return d.addCallbacks(got_task, task_failed)
+        return self._polling_lock.run(poll)
 
     def stop(self):
         """See `ITaskSource`."""
         if self._looping_call is not None:
             self._looping_call.stop()
             self._looping_call = None
+        def _return_still_stopped():
+            return self._looping_call is None
+        return self._polling_lock.run(_return_still_stopped)
 
 
 class AlreadyRunningError(Exception):
@@ -153,6 +181,22 @@ class ParallelLimitedTaskConsumer:
         self._worker_limit = worker_limit
         self._worker_count = 0
         self._terminationDeferred = None
+        self._stopping_lock = None
+
+    def _stop(self):
+        def _release_or_stop(still_stopped):
+            if still_stopped and self._worker_count == 0:
+                self._terminationDeferred.callback(None)
+                # Note that in this case we don't release the lock: we don't
+                # want to try to fire the _terminationDeferred twice!
+            else:
+                self._stopping_lock.release()
+        def _call_stop(ignored):
+            return self._task_source.stop()
+        d = self._stopping_lock.acquire()
+        d.addCallback(_call_stop)
+        d.addCallback(_release_or_stop)
+        return d
 
     def consume(self, task_source):
         """Start consuming tasks from 'task_source'.
@@ -167,9 +211,7 @@ class ParallelLimitedTaskConsumer:
             raise AlreadyRunningError(self, self._task_source)
         self._task_source = task_source
         self._terminationDeferred = defer.Deferred()
-        # This merely begins polling. This means that we acquire our initial
-        # batch of work at the rate of one task per polling interval. As long
-        # as the polling interval is small, this is probably OK.
+        self._stopping_lock = defer.DeferredLock()
         task_source.start(self)
         return self._terminationDeferred
 
@@ -185,12 +227,27 @@ class ParallelLimitedTaskConsumer:
             raise NotRunningError(self)
         self._worker_count += 1
         if self._worker_count >= self._worker_limit:
-            self._task_source.stop()
+            self._stop()
+        else:
+            self._task_source.start(self)
         d = defer.maybeDeferred(task)
         # We don't expect these tasks to have interesting return values or
         # failure modes.
         d.addErrback(log.err)
         d.addCallback(self._taskEnded)
+
+    def noTasksFound(self):
+        """See `ITaskConsumer`.
+
+        Called when the producer found no tasks.  If we are not currently
+        running any workers, exit.
+
+        This will only actually happen if the very first production doesn't
+        find any jobs, if we actually start any jobs then the exit condition
+        in _taskEnded will always be reached before this one.
+        """
+        if self._worker_count == 0:
+            self._stop()
 
     def taskProductionFailed(self, reason):
         """See `ITaskConsumer`.
@@ -212,9 +269,7 @@ class ParallelLimitedTaskConsumer:
         """
         if self._task_source is None:
             raise NotRunningError(self)
-        self._task_source.stop()
-        if self._worker_count == 0:
-            self._terminationDeferred.callback(None)
+        self._stop()
 
     def _taskEnded(self, ignored):
         """Handle a task reaching completion.
@@ -228,8 +283,7 @@ class ParallelLimitedTaskConsumer:
         """
         self._worker_count -= 1
         if self._worker_count == 0:
-            self._task_source.stop()
-            self._terminationDeferred.callback(None)
+            self._stop()
         elif self._worker_count < self._worker_limit:
             self._task_source.start(self)
         else:

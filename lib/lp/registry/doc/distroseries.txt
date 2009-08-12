@@ -21,7 +21,8 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet,
+    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet)
+    >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
     >>> distroseriesset = getUtility(IDistroSeriesSet)
 
@@ -86,7 +87,8 @@ To search the set of IDistroSeriess, use IDistroSeriesSet.search:
 
 DistroSeries.getPublishedReleases:
 
-    >>> from canonical.launchpad.database import SourcePackageName, DistroSeries
+    >>> from lp.registry.model.distroseries import DistroSeries
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> warty2 = DistroSeries.get(1)
 
 Passing a ISourcePackageName as argument:
@@ -441,18 +443,16 @@ netapplet are translatable in Hoary.
    >>> from canonical.launchpad.interfaces import (
    ...     ISourcePackage,
    ...     IDistroSeriesBinaryPackage,
-   ...     IDistroSeriesSourcePackageRelease,
-   ...     ISourcePackagePublishingHistory)
+   ...     IDistroSeriesSourcePackageRelease)
 
-
-   >>> pmount_src_name =  SourcePackageName.byName('pmount')
+   >>> pmount_src_name = SourcePackageName.byName('pmount')
    >>> pmount_source = hoary.getSourcePackage(pmount_src_name)
    >>> ISourcePackage.providedBy(pmount_source)
    True
 
    >>> from lp.soyuz.model.binarypackagename import (
    ...                                       BinaryPackageName)
-   >>> pmount_bin_name =  BinaryPackageName.byName('pmount')
+   >>> pmount_bin_name = BinaryPackageName.byName('pmount')
    >>> pmount_drbp = hoary.getBinaryPackage(pmount_bin_name)
    >>> IDistroSeriesBinaryPackage.providedBy(pmount_drbp)
    True
@@ -484,8 +484,6 @@ Most recent published history row:
 
    >>> netapplet_srcrel =  hoary.getSourcePackage('netapplet').currentrelease
    >>> spph = netapplet_srcrel.current_published
-   >>> verifyObject(ISourcePackagePublishingHistory, spph)
-   True
 
    >>> spph.section.name
    u'web'
@@ -578,11 +576,6 @@ the future.
    pmount 0.1-2 in hoary
 
    >>> hoary_pub_source = hoary_pub_sources[0]
-
-   >>> from canonical.launchpad.interfaces import (
-   ...     ISourcePackagePublishingHistory)
-   >>> verifyObject(ISourcePackagePublishingHistory, hoary_pub_source)
-   True
 
    >>> hoary_pub_source.sourcepackagerelease.name
    u'alsa-utils'
@@ -964,3 +957,18 @@ earlier development state of a distroseries) are possible:
 
     >>> len(latest_uploads)
     0
+
+
+== Getting build records for a distro series ==
+
+IDistroSeries inherits the IHasBuildRecords interfaces and therefore provides
+a getBuildRecords() method.
+
+    >>> builds = ubuntu['warty'].getBuildRecords(name='firefox')
+    >>> for build in builds:
+    ...     print build.title
+    hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+
+For further options that can be used with getBuildRecords(), please
+see hasbuildrecords.txt

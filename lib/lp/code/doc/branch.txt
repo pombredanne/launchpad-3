@@ -116,9 +116,9 @@ the branch, whereas the owner is the current owner of the branch.
     >>> print new_branch.owner.name
     registrant
 
-A user can create a branch where the owner is either themselves,
-or a team that they are a member of.  The registrant is not writable,
-whereas the owner is.
+A user can create a branch where the owner is either themselves, or a team
+that they are a member of.  Neither the owner nor the registrant are writable,
+but the owner can be set using the `setOwner` method.
 
     >>> login('admin@canonical.com')
     >>> new_branch.registrant = factory.makePerson()
@@ -126,7 +126,8 @@ whereas the owner is.
       ...
     ForbiddenAttribute: ('registrant', <Branch ...>)
 
-    >>> new_branch.owner = factory.makePerson(name='new-owner')
+    >>> team = factory.makeTeam(name='new-owner', owner=new_branch.owner)
+    >>> new_branch.setOwner(new_owner=team, user=new_branch.owner)
     >>> print new_branch.registrant.name
     registrant
     >>> print new_branch.owner.name
