@@ -10,7 +10,7 @@ from unittest import TestLoader
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.translator import TranslatorSet
+from lp.translations.model.translator import TranslatorSet
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.testing import TestCaseWithFactory
