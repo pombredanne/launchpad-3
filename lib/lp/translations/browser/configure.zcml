@@ -732,9 +732,17 @@
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
+            name="+translations-to-review"
+            facet="translations"
+            class="lp.translations.browser.person.PersonTranslationView"
+            permission="zope.Public"
+            template="../templates/person-translations-to-review.pt"
+            layer="canonical.launchpad.layers.TranslationsLayer"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
             name="+translations-to-review-table"
             facet="translations"
-            class="lp.registry.browser.person.PersonTranslationView"
+            class="lp.translations.browser.person.PersonTranslationView"
             permission="zope.Public"
             template="../templates/person-translations-to-review-table.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>

@@ -63,13 +63,15 @@ from lp.bugs.model.bugtarget import HasBugsBase
 from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
 from lp.services.worlddata.model.language import Language
-from canonical.launchpad.database.pofiletranslator import POFileTranslator
+from lp.translations.model.pofile import POFile
+from lp.translations.model.pofiletranslator import POFileTranslator
+from lp.translations.model.potemplate import POTemplate
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
 from lp.registry.model.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
-from canonical.launchpad.database.translator import Translator
+from lp.translations.model.translator import Translator
 from canonical.launchpad.event.interfaces import (
     IJoinTeamEvent, ITeamInvitationEvent)
 from canonical.launchpad.helpers import (
@@ -809,9 +811,7 @@ class Person(
         sure to enforce distinctness.
         """
         # Avoid circular imports.
-        from canonical.launchpad.database.pofile import POFile
-        from canonical.launchpad.database.potemplate import POTemplate
-        from canonical.launchpad.database.translationgroup import (
+        from lp.translations.model.translationgroup import (
             TranslationGroup)
         from lp.registry.model.distribution import Distribution
         from lp.registry.model.distroseries import DistroSeries
@@ -897,11 +897,6 @@ class Person(
             the query.  Combine it with the query's other conditions
             using `And`.
         """
-        # Avoid circular imports.
-        from canonical.launchpad.database.pofile import POFile
-        from canonical.launchpad.database.pofiletranslator import (
-            POFileTranslator)
-
         join_condition = And(
             POFileTranslator.personID == self.id,
             POFileTranslator.pofileID == POFile.id)
@@ -925,9 +920,6 @@ class Person(
 
     def getReviewableTranslationFiles(self, no_older_than=None):
         """See `IPerson`."""
-        # Avoid circular import.
-        from canonical.launchpad.database.pofile import POFile
-
         if self.isTeam():
             # A team as such does not work on translations.  Skip the
             # search for ones the team has worked on.
@@ -948,9 +940,6 @@ class Person(
 
     def suggestReviewableTranslationFiles(self, no_older_than=None):
         """See `IPerson`."""
-        # Avoid circular import.
-        from canonical.launchpad.database.pofile import POFile
-
         tables = self._composePOFileReviewerJoins()
 
         # Pick files that this person has no recent POFileTranslator entry

@@ -997,14 +997,6 @@
             template="../templates/person-specfeedback.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            name="+translations-to-review"
-            facet="translations"
-            class="lp.registry.browser.person.PersonTranslationView"
-            permission="zope.Public"
-            template="../templates/person-translations-to-review.pt"
-            layer="canonical.launchpad.layers.TranslationsLayer"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
             name="+specworkload"
             facet="specifications"
             class="lp.registry.browser.person.PersonSpecWorkloadView"
