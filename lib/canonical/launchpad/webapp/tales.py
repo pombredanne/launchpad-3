@@ -453,7 +453,19 @@ class ObjectFormatterAPI:
         return self.url()
 
     def traverse(self, name, furtherPath):
-        if name in self.traversable_names:
+        if name.startswith('link:') or name.startswith('url:'):
+            rootsite = name.split(':')[1]
+            extra_path = None
+            if len(furtherPath) > 0:
+                extra_path = '/'.join(reversed(furtherPath))
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
+            if name.startswith('link:'):
+                return self.link(extra_path, rootsite=rootsite)
+            else:
+                return self.url(extra_path, rootsite=rootsite)
+        elif name in self.traversable_names:
             if len(furtherPath) >= 1:
                 extra_path = '/'.join(reversed(furtherPath))
                 del furtherPath[:]
@@ -467,13 +479,16 @@ class ObjectFormatterAPI:
         else:
             raise TraversalError, name
 
-    def link(self, view_name):
+    def link(self, view_name, rootsite=None):
         """Return an HTML link to the object's page.
 
         The link consists of an icon followed by the object's name.
 
         :param view_name: If not None, the link will point to the page with
             that name on this object.
+        :param rootsite: If not None, return the URL to the page on the
+            specified rootsite.  Note this is available only for subclasses
+            that allow specifying the rootsite.
         """
         raise NotImplementedError(
             "No link implementation for %r, IPathAdapter implementation "
@@ -952,23 +967,6 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     final_traversable_names = {'local-time': 'local_time'}
     final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
-
-    def traverse(self, name, furtherPath):
-        """Special-case traversal for links with an optional rootsite."""
-        if name.startswith('link:') or name.startswith('url:'):
-            rootsite = name.split(':')[1]
-            extra_path = None
-            if len(furtherPath) > 0:
-                extra_path = '/'.join(reversed(furtherPath))
-            # Remove remaining entries in furtherPath so that traversal
-            # stops here.
-            del furtherPath[:]
-            if name.startswith('link:'):
-                return self.link(extra_path, rootsite=rootsite)
-            else:
-                return self.url(extra_path, rootsite=rootsite)
-        else:
-            return super(PersonFormatterAPI, self).traverse(name, furtherPath)
 
     def local_time(self):
         """Return the local time for this person."""
