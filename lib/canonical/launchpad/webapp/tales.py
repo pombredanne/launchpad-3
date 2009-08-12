@@ -977,12 +977,15 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             time_zone = self._context.time_zone
         return datetime.now(pytz.timezone(time_zone)).strftime('%T %Z')
 
-    def link(self, view_name, rootsite=None):
+    def url(self, view_name=None, rootsite='mainsite'):
+        return super(PersonFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='mainsite'):
         """Return an HTML link to the person's page containing an icon
         followed by the person's name.
         """
         person = self._context
-        url = canonical_url(person, rootsite=rootsite, view_name=view_name)
+        url = self.url(view_name, rootsite)
         custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
         if custom_icon is None:
             css_class = ObjectImageDisplayAPI(person).sprite_css()
@@ -1019,12 +1022,12 @@ class TeamFormatterAPI(PersonFormatterAPI):
 
     hidden = u'<hidden>'
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite='mainsite'):
         """See `ObjectFormatterAPI`."""
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
             return None
-        return super(TeamFormatterAPI, self).url(view_name)
+        return super(TeamFormatterAPI, self).url(view_name, rootsite)
 
     def api_url(self, context):
         """See `ObjectFormatterAPI`."""
@@ -1033,7 +1036,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
             return None
         return super(TeamFormatterAPI, self).api_url(context)
 
-    def link(self, view_name, rootsite=None):
+    def link(self, view_name, rootsite='mainsite'):
         """See `ObjectFormatterAPI`."""
         person = self._context
         if not check_permission('launchpad.View', person):

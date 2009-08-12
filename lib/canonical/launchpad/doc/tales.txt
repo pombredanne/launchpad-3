@@ -268,17 +268,29 @@ to simulate a browser request -- that's why we login() here.
     >>> print test_tales("bug/fmt:url/+text", bug=bug)
     http://bugs.launchpad.dev/bugs/1/+text
 
-    # Undo the custom setup we did above.
-
-    >>> login(ANONYMOUS)
 
 Persons and teams can also specify an alternate rootsite to fmt:url.
+
+    >>> login(ANONYMOUS,
+    ...     LaunchpadTestRequest(SERVER_URL='http://code.launchpad.net'))
 
     >>> print test_tales("person/fmt:url:bugs", person=sabdfl)
     http://bugs.launchpad.dev/~sabdfl
 
     >>> print test_tales("person/fmt:url:feeds", person=sabdfl)
     http://feeds.launchpad.dev/~sabdfl
+
+The default behaviour is to link to the mainsite.
+
+    >>> print test_tales("person/fmt:url", person=sabdfl)
+    http://launchpad.dev/~sabdfl
+
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> print test_tales("team/fmt:url", team=ubuntu_team)
+    http://launchpad.dev/~ubuntu-team
+
+    # Undo the custom setup we did above.
+    >>> login(ANONYMOUS)
 
 
 The fmt: namespace to get links
@@ -315,7 +327,6 @@ containing the person name and an icon.
     >>> test_tales("person/fmt:link", person=matsubara)
     u'<a href=".../~matsubara" class="sprite person-inactive">Diogo ...</a>'
 
-    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> test_tales("person/fmt:link", person=ubuntu_team)
     u'<a href=".../~ubuntu-team" class="sprite team">Ubuntu Team</a>'
 
