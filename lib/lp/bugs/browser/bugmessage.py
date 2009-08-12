@@ -46,7 +46,7 @@ class BugMessageAddFormView(LaunchpadFormView):
                 self.addError("Either a comment or attachment "
                               "must be provided.")
 
-    @action(u"Save Changes", name='save')
+    @action(u"Post comment", name='save')
     def save_action(self, action, data):
         """Add the comment and/or attachment."""
 

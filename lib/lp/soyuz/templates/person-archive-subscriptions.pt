@@ -14,7 +14,7 @@
   </div>
 
   <div metal:fill-slot="main">
-    <div class="portlet">
+    <div class="top-portlet">
       <tal:has_subscriptions condition="view/subscriptions_with_tokens">
         <div id="current_subscriptions">
           <p>Here's a list of all the private archives to which you have

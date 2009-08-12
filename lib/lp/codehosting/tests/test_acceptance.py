@@ -382,7 +382,7 @@ class AcceptanceTests(SSHTestCase):
         # rename as far as bzr is concerned: the URL changes.
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        branch.product = Product.byName('firefox')
+        branch.setTarget(user=branch.owner, project=Product.byName('firefox'))
         LaunchpadZopelessTestSetup().txn.commit()
 
         self.assertNotBranch(

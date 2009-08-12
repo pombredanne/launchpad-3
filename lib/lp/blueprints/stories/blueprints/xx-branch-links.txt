@@ -48,16 +48,6 @@ product's blueprints.
     >>> printSpecBranchLinks(browser)
     Support &lt;canvas&gt; Objects (Medium) - edit
 
-Attempting to link to the same blueprint again gives an error.
-
-    >>> browser.getLink('Link to another blueprint').click()
-    >>> browser.getControl('Blueprint').value = ['canvas']
-    >>> browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
-    There is 1 error.
-    The blueprint "Support &lt;canvas&gt; Objects" is already linked to this branch
-
 
 == From the blueprint page ==
 
