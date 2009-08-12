@@ -218,7 +218,7 @@ class ProjectOverviewMenu(ApplicationMenu):
         text = structured(
             'Download <abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
-        return Link('+rdf', text, icon='download')
+        return Link('+rdf', text, icon='download-icon')
 
     @enabled_with_permission('launchpad.Admin')
     def branch_visibility(self):

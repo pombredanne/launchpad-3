@@ -52,18 +52,13 @@
         Apache Server, and mention other projects such as APR.
       </div>
 
-      <ul tal:condition="context/homepageurl">
+      <ul id="external-links" class="horizontal"
+          tal:condition="context/homepageurl">
         <li>
-          <a rel="nofollow"
-            tal:attributes="href context/homepageurl;
-                            class string:sprite external-link">
-            <strong>Visit the <tal:name replace="context/title" />
-            home page &raquo;</strong>
-          </a>
+          <a rel="nofollow" class="sprite external-link"
+             tal:attributes="href context/homepageurl">Home page</a>
         </li>
       </ul>
-      <div class="discreet" style="text-align: right"
-            tal:content="structure context/menu:overview/rdf/fmt:link-icon" />
     </div>
 
     <div class="yui-g">
@@ -99,7 +94,7 @@
               </tal:releases>
             </dd>
           </dl>
-          <ul class="horizontal" style="float: right"
+          <ul class="horizontal"
               tal:condition="context/menu:overview/new_product/enabled">
             <li>
               <a tal:replace="structure context/menu:overview/new_product/fmt:link" />

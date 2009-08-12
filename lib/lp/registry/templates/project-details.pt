@@ -50,11 +50,16 @@
         <tal:none condition="not:context/bugtracker">None specified</tal:none>
       </dd>
     </dl>
-    <p id="registrant">
-      Registered
-      <tal:created replace="context/datecreated/fmt:approximatedate" />
-      by <tal:registrant replace="structure context/registrant/fmt:link" />
-    </p>
   </div>
+  <p id="registrant">
+    Registered
+    <tal:created replace="context/datecreated/fmt:approximatedate" />
+    by <tal:registrant replace="structure context/registrant/fmt:link" />
+  </p>
+  <ul class="horizontal">
+    <li>
+      <a tal:replace="structure context/menu:overview/rdf/fmt:link-icon" />
+    </li>
+  </ul>
 </div>
 </tal:root>
