@@ -1665,4 +1665,10 @@
         <allow
             interface="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet"/>
     </securedutility>
+    <adapter
+        name="bugs"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        for="zope.interface.Interface"
+        factory="lp.registry.browser.pillar.ObjectOnBugsVHostBreadcrumbBuilder"
+        permission="zope.Public"/>
 </configure>
