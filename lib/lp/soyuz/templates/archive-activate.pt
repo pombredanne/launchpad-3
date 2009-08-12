@@ -3,25 +3,24 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
   >
 <body>
 
-<div metal:fill-slot="main">
-
+<div metal:fill-slot="heading">
   <h1>Personal Package Archive Activation</h1>
+</div>
 
-  <p>
+<div metal:fill-slot="main">
+  <div class="top-portlet">
     A PPA is a place where you can build and publish your own packages.
     These can be custom versions of Ubuntu packages, or completely new
-    packages, and can be built for any <a href="/ubuntu/">supported
-    version of Ubuntu</a>. For more information, please see the
+    packages, and can be built for any
+    <a tal:attributes="href view/ubuntu/fmt:link">supported version of Ubuntu</a>.
+    For more information, please see the
     <a href="https://help.launchpad.net/Packaging/PPA">PPA help page</a>.
-  </p>
+  </div>
 
   <p tal:condition="view/is_private_team" id="ppa-privacy-statement">
     <img src="/@@/info" />
@@ -45,15 +44,15 @@
        </p>
     </div>
 
-  <div class="actions" metal:fill-slot="buttons">
-    <p tal:condition="not: context/ppas">
-      <img src="/@@/warning" />
-      Activating this PPA <b>will block</b> future renaming of
-      <tal:context replace="structure context/fmt:link" />
-    </p>
-    <input tal:replace="structure view/actions/field.actions.activate/render" />
-    or <a tal:attributes="href context/fmt:url">Cancel</a>
-  </div>
+    <div class="actions" metal:fill-slot="buttons">
+      <p tal:condition="not: context/ppas">
+        <img src="/@@/warning" />
+        Activating this PPA <b>will block</b> future renaming of
+        <tal:context replace="structure context/fmt:link" />
+      </p>
+      <input tal:replace="structure view/actions/field.actions.activate/render" />
+      or <a tal:attributes="href context/fmt:url">Cancel</a>
+    </div>
 
   </div>
 

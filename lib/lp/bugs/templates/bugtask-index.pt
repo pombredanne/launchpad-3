@@ -13,6 +13,8 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
+      <script type="text/javascript"
+        tal:content="string:var subscriber_ids = ${view/subscriber_ids_js};" />
       <tal:devmode condition="devmode">
        <script type="text/javascript"
                 tal:define="lp_js string:${icingroot}/build"
@@ -112,7 +114,7 @@
                               context.bug.duplicateof"
             >
             <a
-              tal:attributes="href link/url"
+              tal:attributes="href link/path"
               class="menu-link-mark-dupe sprite bug-dupe">Mark as duplicate</a>
             </span>
             <tal:block
@@ -329,7 +331,7 @@
                   Remember, this bug report is a duplicate.
                   Comment here only if you think the duplicate status is wrong.
               </div>
-              <h2>Comment</h2>
+              <h2>Add comment</h2>
               <form action="+addcomment"
                     method="post"
                     enctype="multipart/form-data"

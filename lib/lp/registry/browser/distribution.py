@@ -426,7 +426,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     def announcements(self):
         text = u'\u00BB More announcements'
-        enabled = bool(self.context.announcements().count())
+        enabled = bool(self.context.getAnnouncements().count())
         return Link('+announcements', text, enabled=enabled)
 
     def builds(self):

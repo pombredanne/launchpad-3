@@ -80,7 +80,9 @@ class Mantis(ExternalBugTracker):
     """An `ExternalBugTracker` for dealing with Mantis instances.
 
     For a list of tested Mantis instances and their behaviour when
-    exported from, see http://launchpad.canonical.com/MantisBugtrackers.
+    exported from, see:
+
+        https://dev.launchpad.net/Bugs/ExternalBugTrackers/Mantis
     """
 
     # Custom opener that automatically sends anonymous credentials to

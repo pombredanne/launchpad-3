@@ -8,7 +8,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'IBaseDistribution',
+    'IDerivativeDistribution',
     'IDistribution',
+    'IDistributionDriverRestricted',
     'IDistributionEditRestricted',
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
@@ -69,6 +72,10 @@ class DistributionNameField(PillarNameField):
 
 class IDistributionEditRestricted(IOfficialBugTagTargetRestricted):
     """IDistribution properties requiring launchpad.Edit permission."""
+
+
+class IDistributionDriverRestricted(Interface):
+    """IDistribution properties requiring launchpad.Driver permission."""
 
     def newSeries(name, displayname, title, summary, description,
                   version, parent_series, owner):
@@ -355,12 +362,20 @@ class IDistributionPublic(
         """
 
     def removeOldCacheItems(archive, log):
-        """Delete any cache records for removed packages."""
+        """Delete any cache records for removed packages.
+
+        Also purges all existing cache records for disabled archives.
+
+        :param archive: target `IArchive`.
+        :param log: the context logger object able to print DEBUG level
+            messages.
+        """
 
     def updateCompleteSourcePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the source package cache.
 
-        Consider every non-REMOVED sourcepackage.
+        Consider every non-REMOVED sourcepackage and entirely skips updates
+        for disabled archives.
 
         :param archive: target `IArchive`;
         :param log: logger object for printing debug level information;
@@ -523,6 +538,14 @@ class IDistribution(IDistributionEditRestricted, IDistributionPublic):
 writable_obt_field = copy_field(IDistribution['official_bug_tags'])
 writable_obt_field.readonly = False
 IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
+
+
+class IBaseDistribution(IDistribution):
+    """A Distribution that is the base for other Distributions."""
+
+
+class IDerivativeDistribution(IDistribution):
+    """A Distribution that derives from another Distribution."""
 
 
 class IDistributionSet(Interface):

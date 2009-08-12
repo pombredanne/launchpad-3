@@ -46,7 +46,7 @@ in the context of the bug page.
 
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
-  >>> link = browser.getLink(id='unsubscribe-name16')
+  >>> link = browser.getLink(id='unsubscribe-subscriber-16')
   >>> print link.mech_link.url
   +subscribe
 
@@ -101,7 +101,7 @@ subscribing Foo Bar, and unsubscribing the Launchpad team.
 
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
-  >>> browser.getLink(id='unsubscribe-launchpad').mech_link.url
+  >>> browser.getLink(id='unsubscribe-subscriber-57').mech_link.url
   '+subscribe'
 
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
@@ -209,7 +209,7 @@ is presented with the Unsubscribe link instead.
   Also notified:
   Mark Shuttleworth
 
-  >>> stevea_browser.getLink(id='unsubscribe-stevea').mech_link.url
+  >>> stevea_browser.getLink(id='unsubscribe-subscriber-11').mech_link.url
   '+subscribe'
 
 When he chooses to unsubscribe, he will be unsubscribed from bug #2, the

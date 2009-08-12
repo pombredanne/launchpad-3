@@ -468,7 +468,8 @@ class FakeBranchPuller:
     def acquireBranchToPull(self):
         branches = sorted(
             [branch for branch in self._branch_set
-            if branch.next_mirror_time is not None],
+             if branch.next_mirror_time is not None
+             and branch.branch_type != BranchType.REMOTE],
             key=operator.attrgetter('next_mirror_time'))
         if branches:
             branch = branches[-1]

@@ -682,7 +682,13 @@
         permission="launchpad.AnyPerson"
         template="../templates/productseries-export.pt"
         class="lp.translations.browser.productseries.ProductSeriesTranslationsExportView"/>
-
+    <browser:page
+        name="+link-translations-branch"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        permission="launchpad.Edit"
+        template="../templates/productseries-link-translations-branch.pt"
+        class="lp.registry.browser.productseries.LinkTranslationsBranchView"/>
 
 <!-- Person views -->
 

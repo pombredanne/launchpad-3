@@ -673,7 +673,7 @@ likely to be thrown.
     ...     IBinaryPackageNameSet).queryByName('commercialpackage')
     >>> cache_with_unicode = DistroSeriesPackageCache(
     ...     archive=ubuntu.main_archive, distroseries=warty,
-    ...     binarypackagename=binary_name, summaries=u"“unicode“") 
+    ...     binarypackagename=binary_name, summaries=u"“unicode“")
     >>> transaction.commit()
     >>> flush_database_updates()
 
@@ -683,3 +683,64 @@ The following line fails unless the content class FTI column is RawStr:
 
     >>> cache.fti
     "'\xc3\xa2\xc2\x80\xc2\x9cunicode\xc3\xa2\xc2\x80\xc2\x9c':1B"
+
+
+Disabled archives caches
+========================
+
+Once recognized as disabled, archives have their caches purged, so
+they won't be listed in package searches anymore.
+
+First, we rebuild and examinate the caches for Celso's PPA.
+
+    # Helper functions for completing rebuilding and dumping cache
+    # contents for a given Archive.
+    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
+    >>> logger = QuietFakeLogger()
+    >>> def rebuild_caches(archive):
+    ...     ubuntu.removeOldCacheItems(archive=archive, log=logger)
+    ...     ubuntu.updateCompleteSourcePackageCache(
+    ...         archive=archive, ztm=transaction, log=logger)
+    ...     for series in ubuntu.serieses:
+    ...         series.removeOldCacheItems(archive=archive, log=logger)
+    ...         series.updateCompletePackageCache(
+    ...             archive=archive, ztm=transaction, log=logger)
+    ...     archive.updateArchiveCache()
+    >>> def print_caches(archive):
+    ...     source_caches = DistributionSourcePackageCache.selectBy(
+    ...         archive=archive)
+    ...     binary_caches = DistroSeriesPackageCache.selectBy(
+    ...         archive=archive)
+    ...     print '%d sources cached [%d]' % (
+    ...         archive.sources_cached, source_caches.count())
+    ...     print '%d binaries cached [%d]' % (
+    ...         archive.binaries_cached, binary_caches.count())
+
+    >>> rebuild_caches(cprov.archive)
+
+    >>> print_caches(cprov.archive)
+    3 sources cached [3]
+    2 binaries cached [2]
+
+When Celso's PPA gets disabled and the indexes rebuilt, the cache
+records are removed.
+
+    >>> cprov.archive.enabled = False
+
+    >>> rebuild_caches(cprov.archive)
+
+    >>> print_caches(cprov.archive)
+    0 sources cached [0]
+    0 binaries cached [0]
+
+If by any chance, the disabled PPA gets re-enabled, the cache records
+will be re-created when the indexes are rebuilt.
+
+    >>> cprov.archive.enabled = True
+
+    >>> rebuild_caches(cprov.archive)
+
+    >>> print_caches(cprov.archive)
+    3 sources cached [3]
+    2 binaries cached [2]
+

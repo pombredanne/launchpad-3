@@ -541,10 +541,6 @@
         <allow
             interface="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"/>
     </class>
-    <utility
-        name="SourcePackageName"
-        component="lp.registry.model.sourcepackagename.SourcePackageNameVocabulary"
-        provides="zope.schema.interfaces.IVocabularyFactory"/>
     <facet
         facet="overview">
 
@@ -745,7 +741,7 @@
                 modify
                 retarget
                 retract
-                set_publication_date
+                setPublicationDate
                 destroySelf"/>
     </class>
 
@@ -1363,6 +1359,9 @@
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
+        <require
+            permission="launchpad.Append"
+            interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description                                                                                         translation_focus translationgroup translationpermission                                                                                         driver members owner security_contact mirror_admin                                                                                         homepage_content icon logo mugshot enable_bug_expiration                                                                                         bug_reporting_guidelines official_blueprints                                                                                         official_malone official_rosetta official_answers                                                                                         official_bug_tags"/>

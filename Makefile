@@ -44,10 +44,12 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(WADL_FILE): $(BZR_VERSION_INFO)
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@.tmp
+	mv $@.tmp $@
 
 $(API_INDEX): $(WADL_FILE)
-	bin/apiindex $(WADL_FILE) > $@
+	bin/apiindex $(WADL_FILE) > $@.tmp
+	mv $@.tmp $@
 
 apidoc: compile $(API_INDEX)
 
@@ -88,7 +90,7 @@ jscheck: build
 	@echo
 	@echo "Running the JavaScript integration test suite"
 	@echo
-	${PY} utilities/test-all-windmills.py
+	bin/jstest
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
@@ -216,7 +218,7 @@ stop: build initscript-stop
 
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition. For use on production
-# servers, where we know we don't need the extra steps in a full 
+# servers, where we know we don't need the extra steps in a full
 # "make stop" because of how the code is deployed/built.
 initscript-stop:
 	bin/killservice librarian buildsequencer launchpad mailman
