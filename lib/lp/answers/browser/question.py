@@ -197,6 +197,17 @@ class QuestionSubscriptionView(LaunchpadView):
             self.context, question_unmodified, list(modified_fields)))
 
     @property
+    def page_title(self):
+        return 'Subscription to question #%s' % self.context.id
+
+    @property
+    def label(self):
+        if self.subscription:
+            return 'Unsubscribe from question'
+        else:
+            return 'Subscribe to question'
+
+    @property
     def subscription(self):
         """Establish if this user has a subscription"""
         if self.user is None:
