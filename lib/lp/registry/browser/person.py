@@ -67,6 +67,7 @@ __all__ = [
     'SearchSubscribedQuestionsView',
     'TeamAddMyTeamsView',
     'TeamEditLocationView',
+    'TeamEditMenu',
     'TeamJoinView',
     'TeamBreadcrumbBuilder',
     'TeamLeaveView',
@@ -1126,18 +1127,22 @@ class PersonEditNavigationMenu(NavigationMenu):
         return Link(target, text)
 
 
-class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
+class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
+    def profile(self):
+        target = ''
+        text = 'Overview'
+        return Link(target, text)
 
-    usedfor = ITeam
-    facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
-             'add_member', 'proposed_members',
-             'memberships', 'received_invitations',
-             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
-             'editlanguages', 'map', 'polls',
-             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
-             'reassign', 'related_projects',
-             'activate_ppa']
+    def polls(self):
+        target = '+polls'
+        text = 'Polls'
+        return Link(target, text)
+
+    @enabled_with_permission('launchpad.View')
+    def members(self):
+        target = '+members'
+        text = 'Members'
+        return Link(target, text)
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1283,28 +1288,26 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
+class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
+
+    usedfor = ITeam
+    facet = 'overview'
+    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
+             'add_member', 'proposed_members',
+             'memberships', 'received_invitations',
+             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
+             'editlanguages', 'map', 'polls',
+             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
+             'reassign', 'related_projects',
+             'activate_ppa']
+
+
+class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
     """A top-level menu for navigation within a Team."""
 
     usedfor = ITeam
     facet = 'overview'
     links = ['profile', 'polls', 'members', 'ppas']
-
-    def profile(self):
-        target = ''
-        text = 'Overview'
-        return Link(target, text)
-
-    def polls(self):
-        target = '+polls'
-        text = 'Polls'
-        return Link(target, text)
-
-    @enabled_with_permission('launchpad.View')
-    def members(self):
-        target = '+members'
-        text = 'Members'
-        return Link(target, text)
 
 
 class ActiveBatchNavigator(BatchNavigator):
@@ -5443,7 +5446,7 @@ class ITeamEditMenu(Interface):
    """A marker interface for the edit navigation menu."""
 
 
-class TeamEditMenu(NavigationMenu, TeamOverviewMenu):
+class TeamEditMenu(NavigationMenu, TeamMenuMixin):
     """A menu for different aspects of editing a team."""
 
     usedfor = ITeamEditMenu
@@ -5460,4 +5463,4 @@ class TeamEditMenu(NavigationMenu, TeamOverviewMenu):
 
 classImplements(TeamEditView, ITeamEditMenu)
 provideAdapter(
-   TeamEditMenu, [ITeamEditMenu], INavigationMenu, name="overview")
+    TeamEditMenu, [ITeamEditMenu], INavigationMenu, name="overview")

@@ -802,7 +802,8 @@
                 PersonOverviewNavigationMenu
                 PersonEditNavigationMenu
                 PersonRelatedSoftwareNavigationMenu
-                TeamOverviewNavigationMenu"/>
+                TeamOverviewNavigationMenu
+                TeamEditMenu"/>
         <browser:url
             for="lp.registry.interfaces.person.IPerson"
             path_expression="string:~${name}"
