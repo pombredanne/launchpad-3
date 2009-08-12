@@ -170,13 +170,7 @@ bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_associations = ContextDisplayName(smartquote(
-    '"%s" branch associations'))
-
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
-
-branch_edit_subscription = ContextDisplayName(smartquote(
-    'Edit subscription to branch "%s"'))
 
 branch_index = ContextDisplayName(smartquote(
     '"%s" branch in Launchpad'))

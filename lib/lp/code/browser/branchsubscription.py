@@ -149,6 +149,15 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
 class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
 
     @property
+    def label(self):
+        return "Edit subscription to branch"
+
+    @property
+    def page_title(self):
+        return smartquote(
+            'Edit subscription to branch "%s"' % self.context.displayname)
+
+    @property
     def initial_values(self):
         subscription = self.context.getSubscription(self.user)
         if subscription is None:
