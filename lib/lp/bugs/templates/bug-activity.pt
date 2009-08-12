@@ -1,20 +1,19 @@
-<html
-  xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
->
-  <body>
-<div metal:fill-slot="main">
+<bug-activity
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    metal:use-macro="view/macro:page/main_only">
 
-  <div id="maincontent">
-    <p tal:content="structure view/current_bugtask/fmt:link" />
+  <div metal:fill-slot="heading">
     <h1>Activity log for bug #<span tal:replace="context/bug/id" /></h1>
+  </div>
 
+  <div metal:fill-slot="main">
+    <div class="top-portlet">
+      <p tal:content="structure context/fmt:link" />
+    </div>
+    <div class="yui-g">
     <table class="listing">
       <thead>
         <tr>
@@ -39,9 +38,6 @@
         </tr>
       </tbody>
     </table>
+    </div>
   </div>
-
-</div>
-
-</body>
-</html>
+</bug-activity>
