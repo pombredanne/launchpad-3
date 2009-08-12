@@ -116,7 +116,7 @@
                               context.bug.duplicateof"
             >
             <a
-              tal:attributes="href link/url"
+              tal:attributes="href link/path"
               class="menu-link-mark-dupe sprite bug-dupe">Mark as duplicate</a>
             </span>
             <tal:block

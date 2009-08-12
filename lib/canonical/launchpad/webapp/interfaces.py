@@ -210,6 +210,8 @@ class ILink(ILinkData):
         "The full url this link points to.  Set by the menus infrastructure. "
         "None before it is set.")
 
+    path = Attribute("The path portion of the URL.")
+
     linked = Attribute(
         "A boolean value saying whether this link should appear as a "
         "clickable link in the UI.  The general rule is that a link to "
