@@ -3595,11 +3595,6 @@ class PersonEditView(BasePersonEditView):
     # account with full knowledge of the consequences.
     i_know_this_is_an_openid_security_issue_input = None
 
-    @property
-    def cancel_url(self):
-        """The URL that the 'Cancel' link should return to."""
-        return canonical_url(self.context)
-
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
 
@@ -3669,7 +3664,6 @@ class PersonEditView(BasePersonEditView):
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
 
 
 class PersonBrandingView(BrandingChangeView):
