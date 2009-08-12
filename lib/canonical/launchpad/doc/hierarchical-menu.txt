@@ -106,6 +106,33 @@ closest to the hierarchy root.
         url='http://launchpad.dev/joy-of-cooking/spam'
         text='Spam'>]
 
+    >>> request = make_fake_request(
+    ...     'http://bugs.launchpad.dev/joy-of-cooking/spam',
+    ...     [root, cookbook, recipe])
+    >>> hierarchy2 = getMultiAdapter((recipe, request), name='+hierarchy')
+    >>> hierarchy2.items()
+    [<Breadcrumb url='http://launchpad.dev/joy-of-cooking' text='Joy of
+    cooking'>, <Breadcrumb url='http://bugs.launchpad.dev/joy-of-cooking/spam'
+    text='Spam'>]
+
+    >>> request = make_fake_request('http://bugs.launchpad.dev/')
+    >>> hierarchy3 = getMultiAdapter((recipe, request), name='+hierarchy')
+    >>> hierarchy3.items()
+    []
+
+    >>> class CookbookBugsBreadcrumbBuilder(BreadcrumbBuilder):
+    ...     text = 'Bugs'
+    ...     url = 'http://bugs.launchpad.dev/joy-of-cooking/+open-bugs'
+    >>> provideAdapter(
+    ...     CookbookBugsBreadcrumbBuilder, [ICookbook], IBreadcrumbBuilder,
+    ...     name='bugs')
+    >>> hierarchy2.items()
+    [<Breadcrumb url='http://launchpad.dev/joy-of-cooking' text='Joy of
+    cooking'>, <Breadcrumb
+    url='http://bugs.launchpad.dev/joy-of-cooking/+open-bugs' text='Bugs'>,
+    <Breadcrumb url='http://bugs.launchpad.dev/joy-of-cooking/spam'
+    text='Spam'>]
+
 The ICooker object contains a path prefix, a segment of the path that
 does not correspond to any object, it's only used to split traversal
 domains. The `Hierarchy` model copes fine with objects like that.
