@@ -406,21 +406,21 @@
         class="lp.code.browser.branch.BranchEditWhiteboardView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+edit"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branch-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+reviewer"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchReviewerEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/branch-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+edit-import"
         for="lp.code.interfaces.branch.IBranch"
@@ -467,14 +467,14 @@
         class="lp.bugs.browser.bugbranch.BranchLinkToBugView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-link-to-bug.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+linkblueprint"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.blueprints.browser.specificationbranch.BranchLinkToSpecificationView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-link-to-spec.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+addsubscriber"
         for="lp.code.interfaces.branch.IBranch"
