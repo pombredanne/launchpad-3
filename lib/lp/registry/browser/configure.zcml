@@ -1954,7 +1954,7 @@
         for="lp.registry.interfaces.distribution.IDerivativeDistribution"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
-        permission="launchpad.Driver"
+        permission="launchpad.Append"
         template="../templates/distroseries-add.pt">
     </browser:page>
 

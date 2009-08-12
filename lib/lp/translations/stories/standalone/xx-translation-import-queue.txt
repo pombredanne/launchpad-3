@@ -287,6 +287,7 @@ to manage Ubuntu uploads.
     >>> from lp.registry.model.distribution import Distribution
     >>> from lp.translations.model.translationimportqueue import (
     ...     TranslationImportQueue)
+    >>> login('admin@canonical.com')
     >>> queue = TranslationImportQueue()
     >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
     >>> hoary = ubuntu['hoary']

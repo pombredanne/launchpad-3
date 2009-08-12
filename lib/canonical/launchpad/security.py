@@ -765,13 +765,13 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class DriveDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
+class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
     """Distribution drivers, owners, and admins may plan releases.
 
     Drivers of `IDerivativeDistribution`s can create series. Owners and
     admins can create series for all `IDistribution`s.
     """
-    permission = 'launchpad.Driver'
+    permission = 'launchpad.Append'
     usedfor = IDistribution
 
     def checkAuthenticated(self, user):
