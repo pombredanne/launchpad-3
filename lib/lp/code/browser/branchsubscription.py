@@ -263,13 +263,11 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
 
     @property
     def page_title(self):
-        """Rendered as the title of the page."""
         return smartquote(
             'Edit subscription to branch "%s"' % self.branch.displayname)
 
     @property
     def label(self):
-        """Rendered as the form heading."""
         return "Edit subscription to branch for %s" % self.person.displayname
 
     def initialize(self):
