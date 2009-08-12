@@ -29,6 +29,7 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget, TextWidget
 
 from canonical.cachedproperty import cachedproperty
+from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.interfaces.build import IBuildSet
@@ -41,7 +42,6 @@ from canonical.launchpad.webapp import (
     stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from lazr.delegates import delegates
 from canonical.widgets import HiddenUserWidget
@@ -365,7 +365,7 @@ class BuilderEditView(LaunchpadEditFormView):
         if builder_was_modified:
             notification = 'The builder "%s" was updated successfully.' % (
                 self.context.title)
-            self.request.response.addNotification(structured(notification))
+            self.request.response.addNotification(notification)
 
         return builder_was_modified
 
@@ -373,4 +373,15 @@ class BuilderEditView(LaunchpadEditFormView):
     def next_url(self):
         """Redirect back to the builder-index page."""
         return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """Return the url to which we want to go to if user cancels."""
+        return self.next_url
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return smartquote(
+            'Change details for builder "%s"' % self.context.title)
 

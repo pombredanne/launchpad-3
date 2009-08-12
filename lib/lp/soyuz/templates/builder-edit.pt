@@ -8,7 +8,9 @@
 >
   <body>
     <metal:heading fill-slot="heading">
-      <h1>Change build machine details</h1>
+      <h1 tal:content="view/page_title">
+        Change details for Bob the builder
+      </h1>
     </metal:heading>
    
   <div metal:fill-slot="main">
