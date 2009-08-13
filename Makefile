@@ -130,11 +130,13 @@ download-cache:
 # warning before the eggs directory is made.  The target for the eggs directory
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
-	$(SHHH) $(PYTHON) bootstrap.py --ez_setup-source=ez_setup.py \
+	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
+                --ez_setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
 $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
-	$(SHHH) ./bin/buildout configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
+	$(SHHH) PYTHONPATH= ./bin/buildout \
+                configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
 compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \

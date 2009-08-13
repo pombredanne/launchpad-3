@@ -135,7 +135,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from canonical.launchpad.webapp.tales import PersonFormatterAPI, FormattersAPI
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -147,8 +147,8 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget, vocabulary_to_choice_edit_items,
-    TextLineEditorWidget)
+    InlineEditPickerWidget, TextAreaEditorWidget,
+    TextLineEditorWidget, vocabulary_to_choice_edit_items)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -1001,6 +1001,20 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     def user_is_admin(self):
         """Is the user a Launchpad admin?"""
         return check_permission('launchpad.Admin', self.context)
+
+    @property
+    def bug_description_html(self):
+        """The bug's description as HTML."""
+        formatter = FormattersAPI
+        hide_email = formatter(self.context.bug.description).obfuscate_email()
+        description = formatter(hide_email).text_to_html()
+        return TextAreaEditorWidget(
+            self.context.bug,
+            'description',
+            canonical_url(self.context, view_name='+edit'),
+            id="edit-description",
+            title="Bug Description",
+            value=description)
 
 
 class BugTaskPortletView:

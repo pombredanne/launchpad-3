@@ -89,11 +89,9 @@ information specified in the extra filebug data.
 
 Some extra text was appended to the description.
 
-    >>> print find_tag_by_id(
-    ...     user_browser.contents, 'bug-description').renderContents()
-    <p>Binary package hint: mozilla-firefox</p>
-    <p>A bug description.</p>
-    <p>This should be added to the description.</p>
+    >>> find_tag_by_id(
+    ...     user_browser.contents, 'edit-description').renderContents()
+    '...<p>Binary package hint: mozilla-firefox</p>\n<p>A bug description...'
 
 Two attachments were added.
 
