@@ -8,7 +8,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'IBaseDistribution',
+    'IDerivativeDistribution',
     'IDistribution',
+    'IDistributionDriverRestricted',
     'IDistributionEditRestricted',
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
@@ -69,6 +72,10 @@ class DistributionNameField(PillarNameField):
 
 class IDistributionEditRestricted(IOfficialBugTagTargetRestricted):
     """IDistribution properties requiring launchpad.Edit permission."""
+
+
+class IDistributionDriverRestricted(Interface):
+    """IDistribution properties requiring launchpad.Driver permission."""
 
     def newSeries(name, displayname, title, summary, description,
                   version, parent_series, owner):
@@ -531,6 +538,14 @@ class IDistribution(IDistributionEditRestricted, IDistributionPublic):
 writable_obt_field = copy_field(IDistribution['official_bug_tags'])
 writable_obt_field.readonly = False
 IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
+
+
+class IBaseDistribution(IDistribution):
+    """A Distribution that is the base for other Distributions."""
+
+
+class IDerivativeDistribution(IDistribution):
+    """A Distribution that derives from another Distribution."""
 
 
 class IDistributionSet(Interface):

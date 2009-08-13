@@ -1945,6 +1945,16 @@
         permission="launchpad.Admin"
         template="../templates/distroseries-add.pt">
     </browser:page>
+
+    <browser:page
+        name="+addseries"
+        for="lp.registry.interfaces.distribution.IDerivativeDistribution"
+        class="lp.registry.browser.distroseries.DistroSeriesAddView"
+        facet="overview"
+        permission="launchpad.Append"
+        template="../templates/distroseries-add.pt">
+    </browser:page>
+
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"
