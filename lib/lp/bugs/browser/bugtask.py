@@ -46,7 +46,6 @@ import pytz
 import re
 from simplejson import dumps
 import urllib
-from urlparse import urlparse, urlunparse
 from operator import attrgetter, itemgetter
 
 from zope import component
