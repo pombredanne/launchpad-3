@@ -1243,9 +1243,6 @@
             <browser:page
                 name="+index"
                 template="../templates/people-index.pt"/>
-            <browser:page
-                name="+portlet-stats"
-                template="../templates/people-portlet-stats.pt"/>
         </browser:pages>
         <browser:page
             name="+requestmerge"

@@ -15,7 +15,9 @@
     <h1 metal:fill-slot="application-heading">People and teams</h1>
 
     <div metal:fill-slot="main">
-      <div tal:replace="structure context/@@+portlet-stats" />
+      There are currently <span tal:replace="view/peopleCount" /> people
+      and <span tal:replace="view/teamsCount" /> teams registered in
+      Launchpad.
       <tal:block define="has_batch view/searchPeopleBatchNavigator">
         <div>
           <form class="central" name="search" action="." method="GET">
