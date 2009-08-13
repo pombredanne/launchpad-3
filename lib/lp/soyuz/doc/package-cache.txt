@@ -715,6 +715,9 @@ First, we rebuild and examinate the caches for Celso's PPA.
     ...         archive.sources_cached, source_caches.count())
     ...     print '%d binaries cached [%d]' % (
     ...         archive.binaries_cached, binary_caches.count())
+    >>> def print_search_results(text, user=None):
+    ...     for ppa in ubuntu.searchPPAs(text, user=user):
+    ...         print ppa.displayname
 
     >>> rebuild_caches(cprov.archive)
 
@@ -722,19 +725,55 @@ First, we rebuild and examinate the caches for Celso's PPA.
     3 sources cached [3]
     2 binaries cached [2]
 
-When Celso's PPA gets disabled and the indexes rebuilt, the cache
-records are removed.
+    >>> print_search_results('pmount')
+    PPA for Celso Providelo
+
+When Celso's PPA gets disabled, the indexes remain in the DB.
 
     >>> cprov.archive.enabled = False
 
+    >>> print_caches(cprov.archive)
+    3 sources cached [3]
+    2 binaries cached [2]
+
+However the disabled PPA is not included in search results for
+anonymous requests or requests from users with no view permission to
+Celso's PPA.
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> print_search_results('pmount')
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> print_search_results('pmount', user=no_priv)
+
+Only the owner of the PPA can still find it until the changes are
+removed.
+
+    >>> print_search_results('pmount', user=cprov)
+    PPA for Celso Providelo
+
+When indexes rebuilt the cache records are removed and not even the
+owner is able to find the disabled PPA.
+
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> rebuild_caches(cprov.archive)
 
     >>> print_caches(cprov.archive)
     0 sources cached [0]
     0 binaries cached [0]
 
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> print_search_results('pmount', user=cprov)
+
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
 If by any chance, the disabled PPA gets re-enabled, the cache records
-will be re-created when the indexes are rebuilt.
+will be re-created when the indexes are rebuilt and the ppa becomes
+publicly searchable again.
 
     >>> cprov.archive.enabled = True
 
@@ -744,3 +783,5 @@ will be re-created when the indexes are rebuilt.
     3 sources cached [3]
     2 binaries cached [2]
 
+    >>> print_search_results('cprov')
+    PPA for Celso Providelo

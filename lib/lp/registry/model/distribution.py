@@ -1228,7 +1228,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
                 clauses.append("""
-                (Archive.private = FALSE OR
+                ((Archive.private = FALSE AND Archive.enabled = TRUE) OR
                  Archive.owner = %s OR
                  %s IN (SELECT TeamParticipation.person
                         FROM TeamParticipation
@@ -1237,7 +1237,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
                 """ % sqlvalues(user, user, user))
         else:
-            clauses.append("Archive.private = FALSE")
+            clauses.append(
+                "Archive.private = FALSE AND Archive.enabled = TRUE")
 
 
         query = ' AND '.join(clauses)
