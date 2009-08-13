@@ -19,7 +19,7 @@ The page contains a link back to the bug page:
 The title repeats the bug number for clarity.
 
     >>> print extract_text(main_content.h1)
-    Activity log for bug #3
+    Activity log for bug #3 - Bug Title Test
 
 The activity log itself is presented as a table.
 

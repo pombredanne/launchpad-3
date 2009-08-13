@@ -6,7 +6,10 @@
     metal:use-macro="view/macro:page/main_only">
 
   <div metal:fill-slot="heading">
-    <h1>Activity log for bug #<span tal:replace="context/bug/id" /></h1>
+    <h1>
+      Activity log for bug #<span tal:replace="context/bug/id" /> -
+      <span tal:replace="context/bug/title" />
+    </h1>
   </div>
 
   <div metal:fill-slot="main">
