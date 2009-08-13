@@ -36,6 +36,14 @@ class BugLinkView(LaunchpadFormView):
 
     focused_element_id = 'bug'
 
+    @property
+    def page_title(self):
+        return 'Link question #%s to a bug report' % self.context.id
+
+    @property
+    def label(self):
+        return 'Link question to a bug report'
+
     @action(_('Link'))
     def linkBug(self, action, data):
         """Link to the requested bug. Publish an ObjectModifiedEvent and
