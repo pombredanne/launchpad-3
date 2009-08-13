@@ -46,7 +46,7 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
-from canonical.launchpad.webapp.menu import structured, NavigationMenu
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
@@ -62,7 +62,6 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
-from canonical.launchpad.webapp.menu import NavigationMenu
 
 
 class TeamPrivacyAdapter:

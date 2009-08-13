@@ -1133,17 +1133,6 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Overview'
         return Link(target, text)
 
-    def polls(self):
-        target = '+polls'
-        text = 'Polls'
-        return Link(target, text)
-
-    @enabled_with_permission('launchpad.View')
-    def members(self):
-        target = '+members'
-        text = 'Members'
-        return Link(target, text)
-
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
@@ -5432,7 +5421,7 @@ class EmailToPersonView(LaunchpadFormView):
 
 
 class ITeamEditMenu(Interface):
-   """A marker interface for the edit navigation menu."""
+    """A marker interface for the edit navigation menu."""
 
 
 class TeamEditMenu(NavigationMenu, TeamMenuMixin):

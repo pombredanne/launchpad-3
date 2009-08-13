@@ -9,8 +9,6 @@ __all__ = [
     'BrandingChangeView',
     ]
 
-from canonical.launchpad.interfaces import IHasIcon, IHasLogo, IHasMugshot
-
 from canonical.widgets.image import ImageChangeWidget
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView)
