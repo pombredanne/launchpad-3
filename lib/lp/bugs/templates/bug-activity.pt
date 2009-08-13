@@ -10,10 +10,8 @@
   </div>
 
   <div metal:fill-slot="main">
-    <div class="top-portlet">
-      <p tal:content="structure context/fmt:link" />
-    </div>
     <div class="yui-g">
+    <div class="top-portlet">
     <table class="listing">
       <thead>
         <tr>
@@ -38,6 +36,7 @@
         </tr>
       </tbody>
     </table>
+    </div>
     </div>
   </div>
 </bug-activity>
