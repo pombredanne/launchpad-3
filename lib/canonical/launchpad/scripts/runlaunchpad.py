@@ -265,7 +265,18 @@ def start_launchpad(argv=list(sys.argv)):
     # Create the ZCML override file based on the instance.
     config.generate_overrides()
 
-    main(argv)
+    if config.launchpad.launch:
+        main(argv)
+    else:
+        # We just need the foreground process to sit around forever waiting
+        # for the signal to shut everything down.  Normally, Zope itself would
+        # be this master process, but we're not starting that up, so we need
+        # to do something else.
+        try:
+            signal.pause()
+        except KeyboardInterrupt:
+            pass
+
 
 def start_librarian():
     """Start the Librarian in the background."""
