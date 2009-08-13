@@ -50,7 +50,7 @@ from lp.translations.interfaces.distroserieslanguage import (
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.hwdb import (
-    IHWDBApplication, IHWDevice, IHWDriver, IHWDriverName,
+    IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
     IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
@@ -1886,6 +1886,10 @@ class ViewHWSubmissionDevice(ViewHWDBBase):
 
 class ViewHWDBApplication(ViewHWDBBase):
     usedfor = IHWDBApplication
+
+
+class ViewHWDeviceClass(ViewHWDBBase):
+    usedfor = IHWDeviceClass
 
 
 class ViewArchive(AuthorizationBase):

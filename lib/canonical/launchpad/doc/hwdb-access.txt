@@ -143,9 +143,32 @@ HWDevice
 
     >>> logout()
     >>> login('test@canonical.com')
-    >>> print getUtility(IHWDeviceSet).getByDeviceID(
-    ...     HWBus.PCI, '0x10de', '0x0455').name
+    >>> device = getUtility(IHWDeviceSet).getByDeviceID(
+    ...     HWBus.PCI, '0x10de', '0x0455')
+    >>> print device.name
     MCP65 USB Controller
+
+
+HWDeviceClass
+-------------
+
+    >>> device_class = device.getOrAddDeviceClass(12, 3)
+    >>> print device_class.main_class
+    12
+
+    >>> logout()
+    >>> login(ANONYMOUS)
+    >>> print device_class.main_class
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> logout()
+    >>> login('no-priv@canonical.com')
+    >>> print device_class.main_class
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
 
 
 HWSubmissionDevice
