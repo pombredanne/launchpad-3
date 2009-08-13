@@ -50,7 +50,7 @@ if the user is not logged in, they will be asked to log in.
 When linking from a branch to a bug, the bug widget is used.  This
 requires the user to enter a bug number.
 
-    >>> browser.getControl('The bug number or bug nickname').value = "9"
+    >>> browser.getControl('Bug #').value = "9"
     >>> browser.getControl('Continue').click()
     >>> printBugBranchLinks(browser)
     Bug #9: Thunderbird crashes (Unknown &ndash; Unknown)
@@ -58,7 +58,7 @@ requires the user to enter a bug number.
 Attempting to link to the same bug again gives no error.
 
     >>> browser.getLink('Link to another bug report').click()
-    >>> browser.getControl('The bug number or bug nickname').value = "9"
+    >>> browser.getControl('Bug #').value = "9"
     >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message

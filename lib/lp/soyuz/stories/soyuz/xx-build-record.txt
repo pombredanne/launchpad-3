@@ -465,9 +465,9 @@ Adding new builder:
 
     >>> cprov_browser.open("http://launchpad.dev/+builds/+new")
 
-Administration of a builder:
+Changing details of a builder:
 
-    >>> cprov_browser.open("http://launchpad.dev/+builds/bob/+admin")
+    >>> cprov_browser.open("http://launchpad.dev/+builds/bob/+edit")
 
 Adding new builder still denied for non-members (Edgar, no membership):
 

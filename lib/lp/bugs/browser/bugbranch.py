@@ -89,7 +89,6 @@ class BranchLinkToBugView(LaunchpadFormView):
 
     @property
     def label(self):
-        """Rendered as the form heading."""
         return "Link to a bug report"
 
     @property

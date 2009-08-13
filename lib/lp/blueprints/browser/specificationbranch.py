@@ -110,7 +110,6 @@ class BranchLinkToSpecificationView(LaunchpadFormView):
 
     @property
     def label(self):
-        """Rendered as the form heading."""
         return "Link to a blueprint"
 
     @property

@@ -597,12 +597,10 @@ class BranchEditFormView(LaunchpadEditFormView):
 
     @property
     def page_title(self):
-        """The page title."""
         return 'Edit %s' % self.context.displayname
 
     @property
     def label(self):
-        """The form takes the label as the <h1> tag."""
         return self.page_title
 
     @property
@@ -642,7 +640,7 @@ class BranchEditFormView(LaunchpadEditFormView):
                     self.request.response.addNotification(
                         "The branch is now publicly accessible.")
         if 'reviewer' in data:
-            reviewer = data['reviewer']
+            reviewer = data.pop('reviewer')
             if reviewer != self.context.code_reviewer:
                 if reviewer == self.context.owner:
                     # Clear the reviewer if set to the same as the owner.

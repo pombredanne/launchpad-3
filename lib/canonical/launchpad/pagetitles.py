@@ -369,12 +369,6 @@ build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
-builder_admin = ContextTitle('Administer %s builder')
-
-builder_cancel = ContextTitle('Cancel job for %s')
-
-builder_edit = ContextTitle('Edit build machine %s')
-
 builder_history = ContextTitle('Build history for %s')
 
 builder_index = ContextTitle('Build machine %s')
@@ -1116,19 +1110,13 @@ productserieslanguage_index = ContextTitle('%s')
 
 productseries_export = ContextTitle('Download translations for "%s"')
 
-productseries_linkbranch = ContextTitle('Link an existing branch to %s')
-
 productseries_link_translations_branch = ContextTitle(
     "Set translations export branch for %s")
 
 productseries_index = ContextTitle('%s')
 
-productseries_delete = ContextTitle('Delete %s')
-
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
-
-productseries_review = ContextTitle('Review %s')
 
 productseries_translations = ContextTitle('Translations overview for %s')
 
@@ -1138,8 +1126,6 @@ productseries_translations_settings = 'Settings for translations'
 
 productseries_translations_bzr_import = (
     'Request translations import from Bazaar branch')
-
-productseries_ubuntupkg = 'Ubuntu source package'
 
 project_add = 'Register a project group with Launchpad'
 
@@ -1204,13 +1190,6 @@ rosetta_about = 'About Launchpad Translations'
 rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
-
-def productseries_edit(context, view):
-    """Return the page title for changing a product series details."""
-    return 'Change %s %s details' % (
-        context.product.displayname, context.name)
-
-productseries_new = ContextDisplayName('Register a new %s release series')
 
 def question_add(context, view):
     """Return the page title to add a question."""
