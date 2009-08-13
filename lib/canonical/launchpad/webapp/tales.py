@@ -1127,7 +1127,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
         """
         return queryAdapter(self._context, IPathAdapter, 'image').sprite_css()
 
-    def link(self, view_name):
+    def link(self, view_name, rootsite=None):
         """Return html including a link, description and icon.
 
         Icon and link are optional, depending on type and permissions.
@@ -1143,7 +1143,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
 
         summary = self._make_link_summary()
         if check_permission(self._link_permission, self._context):
-            url = self.url(view_name)
+            url = self.url(view_name, rootsite)
         else:
             url = ''
         if url:
