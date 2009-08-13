@@ -159,19 +159,15 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
 
-class ProjectOverviewMenu(ApplicationMenu):
+class ProjectAdminMenuMixin:
 
-    usedfor = IProject
-    facet = 'overview'
-    links = [
-        'branding', 'driver', 'reassign', 'top_contributors', 'mentorship',
-        'announce', 'announcements', 'branch_visibility', 'rdf',
-        'new_product']
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def new_product(self):
-        text = 'Register another project in %s' % self.context.displayname
-        return Link('+newproduct', text, icon='edit')
+
+class ProjectEditMenuMixin(ProjectAdminMenuMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -189,6 +185,21 @@ class ProjectOverviewMenu(ApplicationMenu):
         text = 'Appoint driver'
         summary = 'Appoint the driver of this project group'
         return Link('+driver', text, summary, icon='edit')
+
+
+class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'overview'
+    links = [
+        'branding', 'driver', 'reassign', 'top_contributors', 'mentorship',
+        'announce', 'announcements', 'branch_visibility', 'rdf',
+        'new_product', 'administer', 'milestones']
+
+    @enabled_with_permission('launchpad.Edit')
+    def new_product(self):
+        text = 'Register another project in %s' % self.context.displayname
+        return Link('+newproduct', text, icon='edit')
 
     def top_contributors(self):
         text = 'More contributors'
@@ -214,6 +225,10 @@ class ProjectOverviewMenu(ApplicationMenu):
         enabled = bool(self.context.getAnnouncements())
         return Link('+announcements', text, enabled=enabled)
 
+    def milestones(self):
+        text = 'See all milestones'
+        return Link('+milestones', text)
+
     def rdf(self):
         text = structured(
             'Download <abbr title="Resource Description Framework">'
@@ -230,7 +245,7 @@ class IProjectActionMenu(Interface):
     """Marker interface for views that use ProjectActionMenu."""
 
 
-class ProjectActionMenu(NavigationMenu):
+class ProjectActionMenu(ProjectAdminMenuMixin, NavigationMenu):
 
     usedfor = IProjectActionMenu
     facet = 'overview'
@@ -250,10 +265,18 @@ class ProjectActionMenu(NavigationMenu):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+review', text, icon='edit')
+
+class IProjectEditMenu(Interface):
+    """A marker interface for the 'Change details' navigation menu."""
+
+
+class ProjectEditNavigationMenu(NavigationMenu, ProjectEditMenuMixin):
+    """A sub-menu for different aspects of editing a Project's details."""
+
+    usedfor = IProjectEditMenu
+    facet = 'overview'
+    title = 'Change project group'
+    links = ('branding', 'reassign', 'driver', 'administer')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -325,6 +348,7 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
 
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
+    implements(IProjectEditMenu)
 
     label = "Change project group details"
     schema = IProject

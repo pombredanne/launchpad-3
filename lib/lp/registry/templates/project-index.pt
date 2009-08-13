@@ -94,9 +94,11 @@
               </tal:releases>
             </dd>
           </dl>
-          <ul class="horizontal"
-              tal:condition="context/menu:overview/new_product/enabled">
+          <ul>
             <li>
+              <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
+            </li>
+            <li tal:condition="context/menu:overview/new_product/enabled">
               <a tal:replace="structure context/menu:overview/new_product/fmt:link" />
             </li>
           </ul>

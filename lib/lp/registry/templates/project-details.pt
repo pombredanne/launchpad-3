@@ -7,7 +7,7 @@
 <div id="portlet-details" class="portlet">
   <h2>Project group information</h2>
   <div class="two-column-list" tal:define="overview_menu context/menu:overview">
-    <dl tal:condition="context/required:launchpad.Admin">
+    <dl tal:condition="context/required:launchpad.Admin" id="status">
       <dt>Status:</dt>
       <dd>
         <tal:block condition="context/active">Active</tal:block>
@@ -18,7 +18,7 @@
         </tal:block>
       </dd>
     </dl>
-    <dl>
+    <dl id="maintainer">
       <dt>Maintainer:</dt>
       <dd>
         <a tal:replace="structure context/owner/fmt:link" />
@@ -26,7 +26,7 @@
           content="structure overview_menu/reassign/fmt:icon" />
       </dd>
     </dl>
-    <dl>
+    <dl id="driver">
       <dt>Driver:</dt>
       <dd>
         <tal:no-driver condition="not:context/driver">
@@ -39,7 +39,7 @@
           content="structure overview_menu/driver/fmt:icon" />
       </dd>
     </dl>
-    <dl>
+    <dl id="bug-tracker">
       <dt>Bug tracker:</dt>
       <dd>
         <a
