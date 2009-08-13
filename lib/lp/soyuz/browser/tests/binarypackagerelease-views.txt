@@ -1,9 +1,5 @@
 = BinaryPackageRelease Pages =
 
-The view class for IBinaryPackageRelease is exposed via a traversal of
-a IBuild, i.e, by traversing a 'name' in an IBuild you can access an
-raw (may be unpublished) IBinaryPackageRelease.
-
   >>> from zope.component import getMultiAdapter
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.database import BinaryPackageRelease
@@ -18,9 +14,10 @@ Get a "mock" request:
   >>> mock_form = {}
   >>> request = TestRequest(form=mock_form)
 
-Let's instantiate the view for +index:
+Let's instantiate the view for +portlet-details:
 
-  >>> pmount_view = getMultiAdapter((pmount_bin, request), name="+index")
+  >>> pmount_view = getMultiAdapter(
+  ...     (pmount_bin, request), name="+portlet-details")
 
 Main functionality of this class is to provide abstracted model of the
 stored package relationships. They are provided as a
