@@ -14,6 +14,7 @@ __all__ = [
     'BugTargetView',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
+    'BugTaskBreadcrumbBuilder',
     'BugTaskEditView',
     'BugTaskExpirableListingView',
     'BugTaskListingItem',
@@ -116,6 +117,7 @@ from lp.registry.interfaces.project import IProject
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnexpectedFormData)
 
@@ -3476,3 +3478,12 @@ class BugActivityItem:
                 return_dict[key] = cgi.escape(return_dict[key])
 
         return "%(old_value)s &#8594; %(new_value)s" % return_dict
+
+
+class BugTaskBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IBugTask`."""
+    @property
+    def text(self):
+        return "%s: %s" % (
+            self.context.bug.displayname,
+            self.context.bug.title)
