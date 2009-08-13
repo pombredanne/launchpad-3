@@ -462,9 +462,15 @@ class ObjectFormatterAPI:
             # stops here.
             del furtherPath[:]
             if name.startswith('link:'):
-                return self.link(extra_path, rootsite=rootsite)
+                if rootsite is None:
+                    return self.link(extra_path)
+                else:
+                    return self.link(extra_path, rootsite=rootsite)
             else:
-                return self.url(extra_path, rootsite=rootsite)
+                if rootsite is None:
+                    self.url(extra_path)
+                else:
+                    return self.url(extra_path, rootsite=rootsite)
         elif name in self.traversable_names:
             if len(furtherPath) >= 1:
                 extra_path = '/'.join(reversed(furtherPath))
@@ -1163,7 +1169,7 @@ class PillarFormatterAPI(CustomizableFormatter):
         displayname = self._context.displayname
         return {'displayname': displayname}
 
-    def url(self, view_name=None, rootsite='mainsite'):
+    def url(self, view_name=None, rootsite=None):
         """See `ObjectFormatterAPI`.
 
         The default URL for a pillar is to the mainsite.
@@ -1179,25 +1185,24 @@ class PillarFormatterAPI(CustomizableFormatter):
 
         html = super(PillarFormatterAPI, self).link(view_name)
         context = self._context
-        if IProduct.providedBy(context) or IProject.providedBy(context):
-            custom_icon = ObjectImageDisplayAPI(
-                context)._get_custom_icon_url()
-            url = self.url(view_name, rootsite)
-            summary = self._make_link_summary()
-            if custom_icon is None:
-                css_class = ObjectImageDisplayAPI(context).sprite_css()
-                html = (u'<a href="%s" class="%s">%s</a>') % (
-                    url, css_class, summary)
-            else:
-                html = (u'<a href="%s" class="bg-image" '
-                         'style="background-image: url(%s)">%s</a>') % (
-                    url, custom_icon, summary)
-            if IProduct.providedBy(context):
-                license_status = context.license_status
-                if license_status != LicenseStatus.OPEN_SOURCE:
-                    html = '<span title="%s">%s (%s)</span>' % (
-                            license_status.description, html,
-                            license_status.title)
+        custom_icon = ObjectImageDisplayAPI(
+            context)._get_custom_icon_url()
+        url = self.url(view_name, rootsite)
+        summary = self._make_link_summary()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(context).sprite_css()
+            html = (u'<a href="%s" class="%s">%s</a>') % (
+                url, css_class, summary)
+        else:
+            html = (u'<a href="%s" class="bg-image" '
+                     'style="background-image: url(%s)">%s</a>') % (
+                url, custom_icon, summary)
+        if IProduct.providedBy(context):
+            license_status = context.license_status
+            if license_status != LicenseStatus.OPEN_SOURCE:
+                html = '<span title="%s">%s (%s)</span>' % (
+                        license_status.description, html,
+                        license_status.title)
         return html
 
 
@@ -1250,7 +1255,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
             html += ')'
         return html % replacements
 
-    def url(self, view_name):
+    def url(self, view_name, rootsite=None):
         """Return the URL to download the file."""
         return self._getDownloadURL(self._context.libraryfile)
 
@@ -1313,7 +1318,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 class PreviewDiffFormatterAPI(ObjectFormatterAPI):
     """Formatter for preview diffs."""
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """Use the url of the librarian file containing the diff.
         """
         librarian_alias = self._context.diff_text
@@ -1442,7 +1447,7 @@ class CodeImportFormatterAPI(CustomizableFormatter):
                 'branch': self._context.branch.bzr_identity,
                }
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """See `ObjectFormatterAPI`."""
         # The url of a code import is the associated branch.
         # This is still here primarily for supporting branch deletion,
@@ -2083,7 +2088,7 @@ class LinkFormatterAPI(ObjectFormatterAPI):
         """Return the default representation of the link."""
         return self._context.render()
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """Return the URL representation of the link."""
         if self._context.enabled:
             return self._context.url
