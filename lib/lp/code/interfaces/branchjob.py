@@ -30,9 +30,10 @@ from lp.code.interfaces.branch import IBranch
 from lp.services.job.interfaces.job import IJob, IRunnableJob
 
 
-
 class IBranchJob(Interface):
     """A job related to a branch."""
+
+    id = Int(title=_("Identifier"), readonly=True, required=True)
 
     branch = Object(
         title=_('Branch to use for this job.'), required=False,
