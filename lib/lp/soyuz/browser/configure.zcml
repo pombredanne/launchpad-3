@@ -33,13 +33,6 @@
             attribute_to_parent="archive"
             urldata="lp.soyuz.browser.publishing.BinaryPublicationURL"/>
     </facet>
-    <browser:url
-        for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageRelease"
-        path_expression="name"
-        attribute_to_parent="build"/>
-    <browser:defaultView
-        for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageRelease"
-        name="+index"/>
     <browser:navigation
         module="lp.soyuz.browser.binarypackagerelease"
         classes="
@@ -49,9 +42,6 @@
         class="lp.soyuz.browser.binarypackagerelease.BinaryPackageView"
         facet="overview"
         permission="zope.Public">
-        <browser:page
-            name="+index"
-            template="../templates/binarypackagerelease-index.pt"/>
         <browser:page
             name="+portlet-details"
             template="../templates/binarypackagerelease-portlet-details.pt"/>
