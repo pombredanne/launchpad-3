@@ -491,8 +491,6 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
-distribution_branches = ContextTitle('Branches for %s')
-
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_change_mirror_admin = 'Change mirror administrator'
@@ -528,10 +526,6 @@ distribution_index = ContextTitle('%s in Launchpad')
 distribution_builds = ContextTitle('%s builds')
 
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
-
-distributionsourcepackage_branches = ContextTitle('Branches for the %s')
-distributionsourcepackage_branches_grouped = ContextTitle(
-    'Branches for the %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -1011,10 +1005,6 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
 
-def personproduct_branches(context, view):
-    """Return the view's heading."""
-    return view.heading
-
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
@@ -1321,8 +1311,6 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-sourcepackage_branches = ContextDisplayName('Branches of %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
