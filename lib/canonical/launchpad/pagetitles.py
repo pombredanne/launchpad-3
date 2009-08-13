@@ -1236,8 +1236,6 @@ question_reject = ContextId('Reject question #%s')
 
 question_subscription = ContextId('Subscription to question #%s')
 
-question_unlinkbugs = ContextId('Remove bug links from question #%s')
-
 questions_index = 'Launchpad Answers'
 
 def questiontarget_createfaq(context, view):
