@@ -6,39 +6,32 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/pillarindex"
+  metal:use-macro="view/macro:page/searchless"
   i18n:domain="launchpad"
 >
   <body>
     <h1 metal:fill-slot="heading">People and teams</h1>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-about" />
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-stats" />
-  </metal:rightportlets>
-
     <h1 metal:fill-slot="application-heading">People and teams</h1>
 
     <div metal:fill-slot="main">
-      <tal:block define="bn view/searchPeopleBatchNavigator">
-        <div align="center">
+      <div tal:replace="structure context/@@+portlet-stats" />
+      <tal:block define="has_batch view/searchPeopleBatchNavigator">
+        <div>
           <form class="central" name="search" action="." method="GET">
             <table style="margin-bottom: 1em;">
               <tr>
                 <td>
-                  <input type="text" name="name" size="35"
+                  <input type="text" name="name" size="50"
                          tal:attributes="value request/name|nothing"
                          />
                   <input
-                    tal:condition="not: bn"
+                    tal:condition="not: has_batch"
                     type="submit"
                     value="Search"
                   />
                   <input
-                    tal:condition="bn"
+                    tal:condition="has_batch"
                     type="submit"
                     value="Search Again"
                   />
@@ -110,29 +103,43 @@
           // --></script>
         </div>
 
-        <tal:block condition="not: bn">
-          <p id="application-summary">
-            Launchpad may create <b>duplicate profiles</b> for you
-            as it automatically reviews translation files, mailing lists and
-            other forums. If you find you have more than one profile here,
-            perhaps for multiple email addresses, you can
-            <a href="+requestmerge">merge the duplicate accounts</a>.
+        <tal:block condition="not: has_batch">
+          <div id="application-summary">
+            <p>Launchpad creates
+            <a href="https://help.launchpad.net/YourAccount">profiles</a> for
+            people based on Launchpad usage, as well as information collected
+            from public sources such as bug trackers, mailing lists, public
+            key servers, and published application translations.  You can
+            <a href="+me">manage your account</a> in Launchpad, and you can
+            <a href="+newteam">create teams of people</a> for organizing
+            around common interests, discussions or permissions.</p>
+
+            <p>Launchpad may create
+            <a href="https://help.launchpad.net/YourAccount/Merging">duplicate
+            profiles</a> for you as it automatically collects information from
+            public sources.  If you find you have more than one profile on
+            Launchpad, you can <a href="+requestmerge">request a merge</a> of
+            the duplicate profiles.
+
+            <p>As a Launchpad administrator, you can also service
+            <a href="+adminpeoplemerge">person merge requests</a> and
+            <a href="+adminteammerge">team merge requests</a>.
           </p>
         </tal:block>
-        <tal:block condition="bn">
+        <tal:block condition="has_batch">
           <tal:block
-            define="prev_url bn/prevBatchURL;
-            next_url bn/nextBatchURL;"
+            define="prev_url has_batch/prevBatchURL;
+            next_url has_batch/nextBatchURL;"
           >
             <table class="listing">
               <thead class="results">
                 <tr tal:condition="python:prev_url or next_url">
                   <td colspan="3">
-                    <div style="float: right; text-align: right;">
+                    <div style="text-align: right;">
                       <tal:block condition="prev_url">
                         <a tal:attributes="href prev_url">Previous</a>
                       </tal:block>
-                      <tal:block repeat="page_link bn/batchPageURLs">
+                      <tal:block repeat="page_link has_batch/batchPageURLs">
                         <a tal:attributes="href python:page_link.values()[0]"
                                 tal:content="python:page_link.keys()[0]"></a>
                       </tal:block>
@@ -152,7 +159,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr tal:repeat="person bn/currentBatch">
+                <tr tal:repeat="person has_batch/currentBatch">
                   <td><a tal:content="person/displayname"
                          tal:attributes="href person/fmt:url"/>
                   </td>

@@ -1281,13 +1281,6 @@
                 name="+mergerequest-sent"
                 template="../templates/people-mergerequest-sent.pt"/>
         </browser:pages>
-        <browser:pages
-            for="lp.registry.interfaces.person.IPersonSet"
-            permission="zope.Public">
-            <browser:page
-                name="+portlet-about"
-                template="../templates/people-portlet-about.pt"/>
-        </browser:pages>
     </facet>
     <browser:navigation
         module="lp.registry.browser.milestone"
