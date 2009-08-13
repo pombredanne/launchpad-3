@@ -1234,8 +1234,6 @@ def question_listing(context, view):
     """Return the page title list questions."""
     return view.pagetitle
 
-question_makebug = ContextId('Create bug report based on question #%s')
-
 question_reject = ContextId('Reject question #%s')
 
 question_subscription = ContextId('Subscription to question #%s')
