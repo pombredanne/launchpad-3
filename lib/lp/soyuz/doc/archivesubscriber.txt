@@ -150,7 +150,7 @@ cannot be created:
 
 Add another subscription for the test user, this time to mark's ppa:
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
     >>> mark = getUtility(IPersonSet).getByName("mark")
     >>> mark.archive.buildd_secret = "really secret"
     >>> mark.archive.private = True
@@ -231,7 +231,7 @@ finding a subscription for a particular user in a particular archive:
 By default the getBySubscriber() and getByArchive() methods return
 all current subscriptions, most recently created first:
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> for subscription in sub_set.getBySubscriber(new_sub.subscriber):
     ...     print subscription.archive.displayname
     ...     print subscription.date_created.date()
@@ -246,7 +246,7 @@ all current subscriptions, most recently created first:
 
 If we cancel one of the subscriptions:
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
     >>> new_sub_to_mark_ppa.status = ArchiveSubscriberStatus.CANCELLED
     >>> login("joe@example.com")
 
@@ -425,7 +425,7 @@ subscriber for this subscription:
 If the subscription is just for an individual, getNonActiveSubscribers()
 will return a list with the single subscriber as expected:
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
     >>> harrysmith = factory.makePerson(name="harrysmith",
     ...                                 displayname="Harry Smith",
     ...                                 password="test",

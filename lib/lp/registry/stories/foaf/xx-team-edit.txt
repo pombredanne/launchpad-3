@@ -8,7 +8,7 @@ details of that team.
     ...
     Unauthorized:...
 
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser.addHeader('Authorization', 'Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> browser.getLink('Change details').click()
     >>> browser.url

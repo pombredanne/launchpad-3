@@ -2266,7 +2266,7 @@ release pocket, but to do so we must have edit permissions on the archive.
 
 Let's log in as mark and it will work:
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
 
     >>> mark.archive.syncSources(sources, cprov.archive, "release")
 
@@ -2351,7 +2351,7 @@ As with syncSources() you need to have edit permission on the archive.
 
 Login as mark to continue.
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
     >>> mark.archive.syncSource("pack", "1.0", cprov.archive, "release")
     >>> [pack] = mark.archive.getPublishedSources(
     ...     name="pack", exact_match=True)

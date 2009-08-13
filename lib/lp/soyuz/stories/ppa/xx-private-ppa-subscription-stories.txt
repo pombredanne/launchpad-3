@@ -282,7 +282,7 @@ When Mark, a member of the Launchpad team, visits his profile and clicks
 'View your private PPA subscriptions', then he'll see a list of his current
 subscriptions.
 
-    >>> mark_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> mark_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> mark_browser.open(
     ...     "http://launchpad.dev/~mark")
 

@@ -9,14 +9,14 @@ the distribution owner, on the +selectmirroradmins page.
     ...
     Unauthorized: ...
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://localhost/ubuntu/+selectmirroradmins')
     >>> browser.url
     'http://localhost/ubuntu/+selectmirroradmins'
     >>> browser.getControl('Mirror Administrator').value
     'ubuntu-mirror-admins'
 
-    >>> browser.getControl('Mirror Administrator').value = 'mark@hbd.com'
+    >>> browser.getControl('Mirror Administrator').value = 'mark@example.com'
     >>> browser.getControl('Change').click()
 
     >>> browser.open('http://localhost/ubuntu/+selectmirroradmins')

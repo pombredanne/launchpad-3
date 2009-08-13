@@ -1192,7 +1192,7 @@ Launchpad project within Launchpad.net).
 
 Any html in the context title will be escaped to avoid XSS vulnerabilities.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> mark.displayname = (
     ...     "Mark Shuttleworth<br/><script>alert('XSS')</script>")
     >>> print test_tales("person/fmt:location_heading", person=mark)

@@ -42,7 +42,7 @@ member of Launchpad Beta Testers in order to demonstrate this.
 
 As we can see, mark cannot see the comments yet:
 
-    >>> mark_browser = setupBrowser(auth="Basic mark@hbd.com:test")
+    >>> mark_browser = setupBrowser(auth="Basic mark@example.com:test")
     >>> mark_browser.open(
     ...     'http://launchpad.dev/bugs/15/+watch/11/+comments')
     >>> print_comments(mark_browser.contents)

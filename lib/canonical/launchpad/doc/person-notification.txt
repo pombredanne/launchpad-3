@@ -53,7 +53,7 @@ sends it to the recipient.
     >>> from lp.testing.mail_helpers import print_emails
     >>> print_emails()
     From: bounces@canonical.com
-    To: Mark Shuttleworth <mark@hbd.com>
+    To: Mark Shuttleworth <mark@example.com>
     Subject: subject
     body
     ----------------------------------------

@@ -13,7 +13,7 @@ Perform Acknowledge process as Foo bar person:
   >>> admin_browser.title
   'Acknowledge code of conduct signature'
 
-  >>> admin_browser.getControl(name='field.owner').value = "mark@hbd.com"
+  >>> admin_browser.getControl(name='field.owner').value = "mark@example.com"
   >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
   >>> admin_browser.url
   'http://localhost:9000/codeofconduct/console/'

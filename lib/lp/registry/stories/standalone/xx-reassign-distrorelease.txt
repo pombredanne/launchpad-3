@@ -6,7 +6,7 @@
 
   >>> print http(r"""
   ... GET /ubuntu/grumpy/+reassign HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic test@canonical.com:test
   ... """)
   HTTP/1.1 403 Forbidden
   Content-Length: ...
@@ -18,8 +18,7 @@
 
   >>> print http(r"""
   ... POST /ubuntu/grumpy/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... 
+  ... Authorization: Basic mark@example.com:test
   ... field.owner=name16&existing=existing&CHANGE_OWNER=Change+Owner""")
   HTTP/1.1 303 See Other
   ... 
@@ -31,7 +30,7 @@
 
   >>> print http(r"""
   ... GET /ubuntu/grumpy/ HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -47,8 +46,7 @@
 
   >>> print http(r"""
   ... POST /ubuntu/grumpy/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... 
+  ... Authorization: Basic mark@example.com:test
   ... field.owner=ubuntu2&existing=new&CHANGE_OWNER=Change+Owner""")
   HTTP/1.1 303 See Other
   ... 
@@ -60,7 +58,7 @@
 
   >>> print http(r"""
   ... GET /ubuntu/grumpy/ HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Authorization: Basic mark@example.com:test
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

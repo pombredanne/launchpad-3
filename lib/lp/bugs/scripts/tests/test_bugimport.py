@@ -350,7 +350,7 @@ sample_bug = '''\
     <text>A comment from an anonymous user</text>
   </comment>
   <comment>
-    <sender email="mark@hbd.com">Mark Shuttleworth</sender>
+    <sender email="mark@example.com">Mark Shuttleworth</sender>
     <date>2005-01-01T13:00:00Z</date>
     <text>
 A comment from mark about CVE-2005-2730
@@ -499,7 +499,7 @@ class ImportBugTestCase(unittest.TestCase):
                          'A comment from an anonymous user')
 
         # Message 3:
-        self.assertEqual(message3.owner.preferredemail.email, 'mark@hbd.com')
+        self.assertEqual(message3.owner.preferredemail.email, 'mark@example.com')
         self.assertEqual(message3.datecreated.isoformat(),
                          '2005-01-01T13:00:00+00:00')
         self.assertEqual(message3.subject, 'Re: A test bug')

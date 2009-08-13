@@ -19,7 +19,7 @@ they can be managed on the +editwikinames page.
 
 Mark already has one WikiName registered.
 
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser.addHeader('Authorization', 'Basic mark@example.com:test')
     >>> browser.open('http://localhost/~mark/+editwikinames')
     >>> print_existing_wikinames(browser.contents)
     https://wiki.ubuntu.com/MarkShuttleworth

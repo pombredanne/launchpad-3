@@ -132,7 +132,7 @@ cannot access the page.
 
 Mark is in the registry admins team and is allowed to access the page.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> view = create_initialized_view(firefox, name='+review-license')
     >>> print view.label
     Review project

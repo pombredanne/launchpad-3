@@ -164,7 +164,7 @@ class TestPPAReport(unittest.TestCase):
             reporter.output.getvalue().splitlines(), [
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
-                'mark | Mark Shuttleworth | mark@hbd.com',
+                'mark | Mark Shuttleworth | mark@example.com',
                 '',
                 ]
             )
@@ -297,7 +297,7 @@ class TestPPAReport(unittest.TestCase):
             reporter.output.getvalue().splitlines(), [
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
-                'mark | Mark Shuttleworth | mark@hbd.com',
+                'mark | Mark Shuttleworth | mark@example.com',
                 '',
                 ]
             )

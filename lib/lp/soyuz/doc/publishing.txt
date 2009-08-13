@@ -303,7 +303,7 @@ The archive index is also available in in compressed formats.
     Binary: alsa-mixer
     Version: 1.0.8-1ubuntu1
     Section: base
-    Maintainer: Mark Shuttleworth <mark@hbd.com>
+    Maintainer: Mark Shuttleworth <mark@example.com>
     Architecture: all
     Standards-Version: 3.6.2
     Format: 1.0

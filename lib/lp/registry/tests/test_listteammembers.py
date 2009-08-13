@@ -15,7 +15,7 @@ ubuntuteam_default = [
     u'kinnison, daniel.silverstone@canonical.com',
     u'limi, limi@plone.org', 
     u'name16, foo.bar@canonical.com',
-    u'mark, mark@hbd.com',
+    u'mark, mark@example.com',
     u'stevea, steve.alexander@ubuntulinux.com',
     u'warty-gnome, --none--',
     ]
@@ -30,7 +30,7 @@ ubuntuteam_email = [
     u'foo.bar@canonical.com',
     u'jeff.waugh@ubuntulinux.com',
     u'limi@plone.org', 
-    u'mark@hbd.com',
+    u'mark@example.com',
     u'steve.alexander@ubuntulinux.com',
     ]
 
@@ -39,7 +39,7 @@ ubuntuteam_full = [
     u'ubuntu-team|11|stevea|steve.alexander@ubuntulinux.com|Steve Alexander|no',
     u'ubuntu-team|16|name16|foo.bar@canonical.com|Foo Bar|yes',
     u'ubuntu-team|19|warty-gnome|--none--|Warty Gnome Team|no',
-    u'ubuntu-team|1|mark|mark@hbd.com|Mark Shuttleworth|no',
+    u'ubuntu-team|1|mark|mark@example.com|Mark Shuttleworth|no',
     u'ubuntu-team|26|kinnison|daniel.silverstone@canonical.com|Daniel Silverstone|no',
     u'ubuntu-team|28|cprov|celso.providelo@canonical.com|Celso Providelo|no',
     u'ubuntu-team|33|edgar|edgar@monteparadiso.hr|Edgar Bursic|no',

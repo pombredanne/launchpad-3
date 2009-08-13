@@ -206,7 +206,7 @@ specifications:
 Specs from inactive products are filtered out.
 
  >>> from canonical.database.sqlbase import flush_database_updates
- >>> login('mark@hbd.com')
+ >>> login('mark@example.com')
  >>> upstream_firefox.active = False
  >>> flush_database_updates()
  >>> for spec in specset.specifications(filter=['install']):

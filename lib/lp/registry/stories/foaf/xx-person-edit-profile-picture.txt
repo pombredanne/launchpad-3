@@ -5,7 +5,7 @@ Users can change their profile picture on their Edit page.
 Note that we have chosen not to expose the ability to customise a user's icon
 or logo.
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~mark')
     >>> browser.url
     'http://launchpad.dev/~mark'

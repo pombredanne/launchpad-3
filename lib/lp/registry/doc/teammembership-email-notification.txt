@@ -53,7 +53,7 @@ generates a notification email only to Ubuntu Team administrators.
     >>> print_distinct_emails(include_reply_to=True)
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
     Reply-To: robertc@robertcollins.net
     Subject: lifeless wants to join
     <BLANKLINE>
@@ -73,7 +73,7 @@ and each of the team's admins.
 
     # Need to be logged in as a team admin to be able to change memberships of
     # that team.
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> setStatus(membership, TeamMembershipStatus.DECLINED, reviewer=mark)
     >>> len(stub.test_emails)
     6
@@ -81,7 +81,7 @@ and each of the team's admins.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
     Subject: lifeless declined by mark
     <BLANKLINE>
     The membership status of Robert Collins (lifeless) in the team Ubuntu
@@ -119,7 +119,7 @@ The same goes for approving a proposed member.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
     Subject: daf approved by mark
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
@@ -152,7 +152,7 @@ The same for deactivating a membership.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
     Subject: daf deactivated by mark
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
@@ -181,8 +181,8 @@ other's member) email address in the 'Reply-To' header of the message sent.
     >>> print_distinct_emails(include_reply_to=True)
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
-    Reply-To: mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
+    Reply-To: mark@example.com
     Subject: admins wants to join
     <BLANKLINE>
     Mark Shuttleworth (mark) wants to make Launchpad Administrators
@@ -222,7 +222,7 @@ member.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
     Subject: marilize joined ubuntu-team
     <BLANKLINE>
     Marilize Coetzee (marilize) has been added as a member of Ubuntu Team
@@ -241,14 +241,14 @@ only be activated if they accept the invitation.
 
     >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
     >>> mirror_admins.getTeamAdminsEmailAddresses()
-    ['mark@hbd.com']
+    ['mark@example.com']
     >>> ubuntu_team.addMember(mirror_admins, reviewer=cprov)
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: mark@hbd.com
+    To: mark@example.com
     Subject: Invitation for ubuntu-mirror-admins to join
     <BLANKLINE>
     Celso Providelo (cprov) has invited Mirror Administrators (ubuntu-
@@ -278,7 +278,7 @@ team which just became a member and to the admins of the hosting team.
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, karl@canonical.com, limi@plone.org,
-        mark@hbd.com
+        mark@example.com
     Subject: Invitation to ubuntu-mirror-admins accepted by mark
     <BLANKLINE>
     Mark Shuttleworth (mark) has accepted the invitation to make Mirror
@@ -311,7 +311,7 @@ Similarly, a notification is sent if the invitation is declined.
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         guilherme.salgado@canonical.com, jeff.waugh@ubuntulinux.com,
-        limi@plone.org, mark@hbd.com, test@canonical.com
+        limi@plone.org, mark@example.com, test@canonical.com
     Subject: Invitation to landscape-developers declined by mark
     <BLANKLINE>
     Mark Shuttleworth (mark) has declined the invitation to make Landscape
@@ -345,7 +345,7 @@ passing force_team_add=True to the addMember() method.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com,
-        limi@plone.org, mark@hbd.com
+        limi@plone.org, mark@example.com
     Subject: launchpad joined ubuntu-team
     <BLANKLINE>
     Launchpad Developers (launchpad) has been added as a member of Ubuntu
@@ -578,7 +578,7 @@ is automatically renewed.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        limi@plone.org, mark@hbd.com
+        limi@plone.org, mark@example.com
     Subject: jdub renewed automatically
     <BLANKLINE>
     The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
@@ -600,7 +600,7 @@ is automatically renewed.
     The Launchpad team
     ----------------------------------------
     From: Launchpad Administrators <noreply@launchpad.net>
-    To: mark@hbd.com
+    To: mark@example.com
     Subject: mark expired from team
     <BLANKLINE>
     Your membership in the Launchpad Administrators (admins) team has
@@ -656,7 +656,7 @@ sent to all team admins.
 
     >>> print_distinct_emails()
     From: Mirror Administrators <noreply@launchpad.net>
-    To: mark@hbd.com
+    To: mark@example.com
     Subject: karl extended their membership
     <BLANKLINE>
     Karl Tilbury (karl) renewed their own membership in the Mirror
@@ -687,7 +687,7 @@ notification.
 
     >>> cprov = personset.getByName('cprov')
     >>> cprov_membership = membershipset.getByPersonAndTeam(cprov, ubuntu_team)
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> setStatus(
     ...     cprov_membership, TeamMembershipStatus.ADMIN, reviewer=mark)
     >>> len(stub.test_emails)
@@ -695,7 +695,7 @@ notification.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@hbd.com
+        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
     Subject: cprov made admin by mark
     <BLANKLINE>
     The membership status of Celso Providelo (cprov) in the team Ubuntu Team
@@ -725,7 +725,7 @@ sent to the team administrators.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
-        foo.bar@canonical.com, limi@plone.org, mark@hbd.com
+        foo.bar@canonical.com, limi@plone.org, mark@example.com
     Subject: Membership change: jdub in ubuntu-team
     <BLANKLINE>
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
@@ -750,7 +750,7 @@ sense to the members of the team reading it.
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
-        foo.bar@canonical.com, karl@canonical.com, limi@plone.org, mark@hbd.com
+        foo.bar@canonical.com, karl@canonical.com, limi@plone.org, mark@example.com
     Subject: ubuntu-mirror-admins deactivated by mark
     <BLANKLINE>
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in

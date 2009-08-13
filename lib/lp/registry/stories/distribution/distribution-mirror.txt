@@ -304,7 +304,7 @@ Rsync URLs.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IDistributionMirrorSet
     >>> from canonical.launchpad.ftests import login, logout
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> example_mirror = mirrorset.getByName('invalid-mirror')
     >>> ftp_url = 'ftp://localhost:11375/invalid-mirror'

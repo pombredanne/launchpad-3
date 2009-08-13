@@ -37,7 +37,7 @@ to access those other objects:
     >>> bugset = getUtility(IBugSet)
     >>> personset = getUtility(IPersonSet)
     >>> bug_one = bugset.get(1)
-    >>> mark = personset.getByEmail('mark@hbd.com')
+    >>> mark = personset.getByEmail('mark@example.com')
 
 Next, we need to grab some values to provide for importance and status.
 
@@ -918,7 +918,7 @@ will also have it added to the count.
 Now, we'll log in as Mark Shuttleworth, who was assigned to this bug
 when it was marked private:
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
 
 And note that he can access and set the bugtask attributes:
 
@@ -944,7 +944,7 @@ No Privileges Person can't see the private bug, because he's not a subscriber:
 But if we add No Privileges Person to the Ubuntu Team, and because the Ubuntu
 Team *is* subscribed to the bug, No Privileges Person will see the private bug.
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
     >>> ubuntu_team.addMember(no_priv, reviewer=ubuntu_team.teamowner)
 
     >>> login("no-priv@canonical.com")

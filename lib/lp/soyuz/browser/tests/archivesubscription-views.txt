@@ -111,7 +111,7 @@ In this case the view will include validation errors:
 
 But the same person can be a subscriber of other archives:
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> view = create_initialized_view(
     ...     mark.archive, name="+subscriptions",
     ...     form={

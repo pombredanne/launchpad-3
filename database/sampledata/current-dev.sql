@@ -2302,7 +2302,7 @@ ALTER TABLE distroseriespackagecache ENABLE TRIGGER ALL;
 
 ALTER TABLE emailaddress DISABLE TRIGGER ALL;
 
-INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (1, 'mark@hbd.com', 1, 4, '2006-10-16 18:31:43.540582', 1);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (1, 'mark@example.com', 1, 4, '2006-10-16 18:31:43.540582', 1);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (2, 'robertc@robertcollins.net', 2, 4, '2006-10-16 18:31:43.542552', 2);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (3, 'carlos@canonical.com', 13, 4, '2006-10-16 18:31:43.542954', 13);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (4, 'daf@canonical.com', 14, 4, '2006-10-16 18:31:43.543302', 14);
@@ -8536,7 +8536,7 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 
  * Placeholder
 
-     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 1, 19, 1, 1, 'Mark Shuttleworth <mark@hbd.com>', '3.6.2', '1.0', 'alsa-mixer', 1, NULL, NULL, NULL);
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 1, 19, 1, 1, 'Mark Shuttleworth <mark@example.com>', '3.6.2', '1.0', 'alsa-mixer', 1, NULL, NULL, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4) warty; urgency=low
 
  * Placeholder

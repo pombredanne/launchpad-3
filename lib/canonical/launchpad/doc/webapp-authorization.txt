@@ -15,7 +15,7 @@ something/required:permission.Name.
     >>> login('test@canonical.com')
     >>> check_permission('launchpad.Edit', sample_person)
     True
-    >>> mark = personset.getByEmail('mark@hbd.com')
+    >>> mark = personset.getByEmail('mark@example.com')
     >>> check_permission('launchpad.Edit', mark)
     False
 

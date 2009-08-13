@@ -192,7 +192,7 @@ announcements, and vice versa.
 You can change the title, summary or URL of an announcement only through the
 modify() method.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> kubuntu_release.title = 'Foo'
     Traceback (most recent call last):
       ...

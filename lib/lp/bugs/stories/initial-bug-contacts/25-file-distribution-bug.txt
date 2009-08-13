@@ -2,7 +2,7 @@ Filing a public bug on a distribution source package subscribes the bug
 reporter, the distribution bug supervisor, if there is one, and all the
 package subscribers, if there are any.
 
-    >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
+    >>> browser.addHeader("Authorization", "Basic mark@example.com:test")
 
     >>> browser.open(
     ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox/"
@@ -66,7 +66,7 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     >>> print browser.url.replace(other_bug_id, "BUG-ID")
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/BUG-ID
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
 
     >>> subscriber_names(bugset.get(other_bug_id))
     [u'mark', u'ubuntu-team']

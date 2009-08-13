@@ -78,7 +78,7 @@ The user receives a confirmation email.
     1
     >>> from_addr, to_addrs, body = test_emails.pop()
     >>> to_addrs
-    ['mark@hbd.com']
+    ['mark@example.com']
     >>> print_mail_body(body)
     >
     > Hello Mark Shuttleworth,
@@ -196,7 +196,7 @@ Let's try requesting an export in MO format:
     1
     >>> from_addr, to_addrs, body = test_emails.pop()
     >>> to_addrs
-    ['mark@hbd.com']
+    ['mark@example.com']
     >>> print_mail_body(body)
     > 
     > Hello Mark Shuttleworth,

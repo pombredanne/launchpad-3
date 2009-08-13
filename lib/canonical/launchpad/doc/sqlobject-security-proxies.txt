@@ -9,7 +9,7 @@ Do some imports.
 
 Login as Mark.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
 
 Get Mark's person and another person, wrapped in security proxies.
 

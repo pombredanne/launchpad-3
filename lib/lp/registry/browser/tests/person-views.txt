@@ -22,9 +22,9 @@ the world.
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> person_set = getUtility(IPersonSet)
-    >>> mark = person_set.getByEmail('mark@hbd.com')
+    >>> mark = person_set.getByEmail('mark@example.com')
     >>> mark.preferredemail.email
-    u'mark@hbd.com'
+    u'mark@example.com'
     >>> mark.hide_email_addresses
     False
 
@@ -51,7 +51,7 @@ email addresses.
     >>> view.visible_email_address_description
     'This email address is only visible to Launchpad users.'
     >>> view.visible_email_addresses
-    [u'mark@hbd.com']
+    [u'mark@example.com']
 
 As for Sample Person, he has chosen not to disclose his email addresses.
 

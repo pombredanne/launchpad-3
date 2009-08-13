@@ -17,7 +17,7 @@ Mark is an administrator for at least one project that does not have a
 valid open source license so he is displayed the voucher redemption
 page.
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)

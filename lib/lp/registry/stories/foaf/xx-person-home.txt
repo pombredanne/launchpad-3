@@ -32,7 +32,7 @@ A logged in user such as Sample Person, can see Mark's addresses.
     >>> sample_browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'contact-details'))
-    Email: mark@hbd.com
+    Email: mark@example.com
     ...
 
 As for Sample Person, he has chosen not to disclose his email addresses.
@@ -157,7 +157,7 @@ yourself; others won't see it:
     >>> "Signed Ubuntu Code of Conduct:" in browser.contents
     False
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
     Bragging rights
