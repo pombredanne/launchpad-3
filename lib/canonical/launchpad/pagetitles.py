@@ -1159,9 +1159,6 @@ project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 
-project_branches = ContextTitle(
-    smartquote("%s's Bazaar branches registered in Launchpad"))
-
 project_bugs = ContextTitle('Bugs in %s')
 
 project_edit = 'Change project group details'

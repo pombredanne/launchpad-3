@@ -1423,6 +1423,7 @@ class ProjectBranchesView(BranchListingView):
 
     no_sort_by = (BranchListingSort.DEFAULT,)
     extra_columns = ('author', 'product')
+    heading_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProject(self.context)
