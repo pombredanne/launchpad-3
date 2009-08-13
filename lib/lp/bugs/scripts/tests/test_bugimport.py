@@ -176,18 +176,18 @@ class GetPersonTestCase(unittest.TestCase):
         # Test that getPerson() can correctly create new users when
         # they have a short name that conflicts with an existing user
         # in the database.
-        person1 = getUtility(IPersonSet).getByName('sabdfl')
+        person1 = getUtility(IPersonSet).getByName('mark')
         self.assertNotEqual(person1, None)
 
         product = getUtility(IProductSet).getByName('netapplet')
         importer = bugimport.BugImporter(product, 'bugs.xml', 'bug-map.pickle')
         personnode = ET.fromstring('''\
         <person xmlns="https://launchpad.net/xmlns/2006/bugs"
-                name="sabdfl" email="foo@example.com">Foo User</person>''')
+                name="mark" email="foo@example.com">Foo User</person>''')
         person2 = importer.getPerson(personnode)
         self.assertNotEqual(person2, None)
         self.assertNotEqual(person1.id, person2.id)
-        self.assertNotEqual(person2.name, 'sabdfl')
+        self.assertNotEqual(person2.name, 'mark')
 
     def test_find_existing_person(self):
         # Test that getPerson() returns an existing person.
@@ -202,7 +202,7 @@ class GetPersonTestCase(unittest.TestCase):
         importer = bugimport.BugImporter(product, 'bugs.xml', 'bug-map.pickle')
         personnode = ET.fromstring('''\
         <person xmlns="https://launchpad.net/xmlns/2006/bugs"
-                name="sabdfl" email="foo@example.com">Foo User</person>''')
+                name="mark" email="foo@example.com">Foo User</person>''')
         self.assertEqual(importer.getPerson(personnode), person)
 
     def test_nobody_person(self):

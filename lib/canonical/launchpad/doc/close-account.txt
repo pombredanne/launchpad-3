@@ -21,7 +21,7 @@ ACTIVE
 >>> print mark_account.displayname
 Mark Shuttleworth
 >>> print mark_person.name
-sabdfl
+mark
 >>> print mark_person.displayname
 Mark Shuttleworth
 
@@ -43,7 +43,7 @@ Lets close his account.
 0
 >>> print out
 >>> print err
-INFO...Closing sabdfl's account
+INFO...Closing mark's account
 
 
 Now, start a new transaction so we can see the changes the script made.

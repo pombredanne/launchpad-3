@@ -58,7 +58,7 @@ tooltip containing the package details.
 
     >>> print anon_browser.getLink('mozilla-firefox (Ubuntu)').attrs['title']
     Latest release: 0.9, uploaded to main on 2004-09-27 11:57:13+00:00...
-    by Mark Shuttleworth (sabdfl), maintained by Mark Shuttleworth (sabdfl)
+    by Mark Shuttleworth (mark), maintained by Mark Shuttleworth (mark)
 
     >>> print anon_browser.getLink('mozilla-firefox (Debian)').attrs['title']
     No current release for this source package in Debian

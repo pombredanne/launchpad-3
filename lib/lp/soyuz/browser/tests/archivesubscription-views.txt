@@ -24,9 +24,9 @@ First, ensure that the archives we'll be using are private:
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov.archive.buildd_secret = 'boing'
     >>> cprov.archive.private = True
-    >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
-    >>> sabdfl.archive.buildd_secret = 'boing'
-    >>> sabdfl.archive.private = True
+    >>> mark = getUtility(IPersonSet).getByName("mark")
+    >>> mark.archive.buildd_secret = 'boing'
+    >>> mark.archive.private = True
     >>> transaction.commit()
     >>> logout()
 
@@ -113,7 +113,7 @@ But the same person can be a subscriber of other archives:
 
     >>> login('mark@hbd.com')
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions",
+    ...     mark.archive, name="+subscriptions",
     ...     form={
     ...         'field.subscriber': 'spiv',
     ...         'field.description': "spiv's still my friend",
@@ -130,7 +130,7 @@ subscriber, but the date_expires must be in the future:
 
     >>> transaction.commit()
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions",
+    ...     mark.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
@@ -148,7 +148,7 @@ So we try again with an expiry date in the future:
     >>> import datetime
     >>> future_date = datetime.date.today() + datetime.timedelta(30)
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions",
+    ...     mark.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
@@ -256,7 +256,7 @@ PersonArchiveSubscriptions View
 The PersonArchiveSubscriptions view displays all the archive subscriptions
 for a person.
 
-    >>> view = create_initialized_view(sabdfl, name="+archivesubscriptions")
+    >>> view = create_initialized_view(mark, name="+archivesubscriptions")
     >>> view.subscriptions_with_tokens
     []
 

@@ -28,7 +28,7 @@ project has no driver then None is returned.
     >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
 
 Neither Mozilla nor Firefox has a driver set.
 
@@ -44,7 +44,7 @@ Thus the effective driver for Firefox is None.
 
 Setting the driver for the Mozilla project trickles down to Firefox.
 
-    >>> mozilla.driver = sabdfl
+    >>> mozilla.driver = mark
 
 But since the effective_driver is a cached property it will not show
 up on this view instance.
@@ -56,14 +56,14 @@ Creating a new view shows the new driver.
 
     >>> view = create_initialized_view(firefox, name='+index')
     >>> print view.effective_driver.name
-    sabdfl
+    mark
 
 Setting the driver for Firefox shows that it is used for the product,
 after a new view is obtained.
 
     >>> firefox.driver = cprov
     >>> print view.effective_driver.name
-    sabdfl
+    mark
     >>> view = create_initialized_view(firefox, name='+index')
     >>> print view.effective_driver.name
     cprov
@@ -142,7 +142,7 @@ Adding the Commercial Admin to the registry experts team will allow him access.
     >>> commercial_member = getUtility(IPersonSet).getByEmail(
     ...     'commercial-member@canonical.com')
     >>> registry_experts = getUtility(IPersonSet).getByName('registry')
-    >>> registry_experts.addMember(commercial_member, reviewer=sabdfl)
+    >>> registry_experts.addMember(commercial_member, reviewer=mark)
     >>> login('commercial-member@canonical.com')
     >>> view = create_initialized_view(firefox, name='+review-license')
     >>> print view.label

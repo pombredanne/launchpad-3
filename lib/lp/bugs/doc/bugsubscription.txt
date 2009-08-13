@@ -75,9 +75,9 @@ IBug.getDirectSubscribers().
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
 
-    >>> sabdfl = personset.getByName("sabdfl")
+    >>> mark = personset.getByName("mark")
 
-    >>> linux_source_bug.subscribe(sabdfl, sabdfl)
+    >>> linux_source_bug.subscribe(mark, mark)
     <BugSubscription ...>
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
@@ -697,7 +697,7 @@ to new subscribers.
 
 Another example, this time for an upstream:
 
-    >>> firefox.setBugSupervisor(sabdfl, sabdfl)
+    >>> firefox.setBugSupervisor(mark, mark)
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -710,7 +710,7 @@ Again, only Foo Bar is explicitly subscribed:
     ...  for subscription in new_bug.subscriptions]
     [u'Foo Bar']
 
-But the upstream Firefox bug supervisor, sabdfl, is implicitly added to the
+But the upstream Firefox bug supervisor, mark, is implicitly added to the
 recipients list.
 
     >>> getSubscribers(new_bug)
@@ -720,7 +720,7 @@ If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
 supervisor will be subscribed:
 
     >>> ubuntu_task = getUtility(IBugTaskSet).createTask(
-    ...     bug=new_bug, distribution=ubuntu, owner=sabdfl)
+    ...     bug=new_bug, distribution=ubuntu, owner=mark)
 
     >>> print '\n'.join(getSubscribers(new_bug))
     foo.bar@canonical.com
@@ -853,9 +853,9 @@ subscriptions themselves, rather than the subscribers.
     >>> params = CreateBugParams(
     ...     title="one more test bug",
     ...     comment="one more test description",
-    ...     owner=sabdfl)
+    ...     owner=mark)
     >>> ff_bug = firefox.createBug(params)
-    >>> ff_bug.subscribe(lifeless, sabdfl)
+    >>> ff_bug.subscribe(lifeless, mark)
     <BugSubscription at ...>
     >>> for subscription in ff_bug.getDirectSubscriptions():
     ...     print '%s (%s)' % (
@@ -890,7 +890,7 @@ where no notification should be sent.
     >>> from lazr.lifecycle.event import ObjectCreatedEvent
     >>> transaction.commit()
     >>> stub.test_emails = []
-    >>> bug_subscription = bug_six.subscribe(sabdfl, lifeless)
+    >>> bug_subscription = bug_six.subscribe(mark, lifeless)
     >>> notify(ObjectCreatedEvent(bug_subscription))
     >>> transaction.commit()
     >>> len(stub.test_emails)

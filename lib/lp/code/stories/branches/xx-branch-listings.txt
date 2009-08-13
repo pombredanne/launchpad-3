@@ -220,10 +220,10 @@ We display badges for associated bugs.
     >>> branchSummary(browser)
     /~name12/firefox/main
       Linked to a bug
-    /~sabdfl/firefox/release--0.9.1
-    /~sabdfl/firefox/release-0.8
-    /~sabdfl/firefox/release-0.9
-    /~sabdfl/firefox/release-0.9.2
+    /~mark/firefox/release--0.9.1
+    /~mark/firefox/release-0.8
+    /~mark/firefox/release-0.9
+    /~mark/firefox/release-0.9.2
       Linked to a bug
 
 If the bug is not visible to the user that is looking at the page, then the
@@ -240,10 +240,10 @@ Now the badge is still shown for Sample Person...
     >>> branchSummary(browser)
     /~name12/firefox/main
       Linked to a bug
-    /~sabdfl/firefox/release--0.9.1
-    /~sabdfl/firefox/release-0.8
-    /~sabdfl/firefox/release-0.9
-    /~sabdfl/firefox/release-0.9.2
+    /~mark/firefox/release--0.9.1
+    /~mark/firefox/release-0.8
+    /~mark/firefox/release-0.9
+    /~mark/firefox/release-0.9.2
       Linked to a bug
 
 ... but not for an anonymous user.
@@ -252,10 +252,10 @@ Now the badge is still shown for Sample Person...
     >>> branchSummary(anon_browser)
     /~name12/firefox/main
       Linked to a bug
-    /~sabdfl/firefox/release--0.9.1
-    /~sabdfl/firefox/release-0.8
-    /~sabdfl/firefox/release-0.9
-    /~sabdfl/firefox/release-0.9.2
+    /~mark/firefox/release--0.9.1
+    /~mark/firefox/release-0.8
+    /~mark/firefox/release-0.9
+    /~mark/firefox/release-0.9.2
 
 
 == Sorting Branch Listings ==

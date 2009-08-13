@@ -739,12 +739,12 @@ as teams:
     [(u'matsubara', False)]
 
     >>> [(p.name, p.is_valid_person) for p in vocab.search('mark@hbd.com')]
-    [(u'sabdfl', True)]
+    [(u'mark', True)]
 
     >>> [(p.name, getattr(p.teamowner, 'name', None))
     ...  for p in vocab.search('ubuntu-team')]
-    [(u'doc', None), (u'name18', u'sabdfl'),
-     (u'ubuntu-security', u'kamion'), (u'ubuntu-team', u'sabdfl')]
+    [(u'doc', None), (u'name18', u'mark'),
+     (u'ubuntu-security', u'kamion'), (u'ubuntu-team', u'mark')]
 
 But it doesn't include merged accounts:
 

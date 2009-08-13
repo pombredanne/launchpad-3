@@ -99,7 +99,7 @@ When a valid PPA is chosen the dependency is added, a notification
 is rendered on top of the page and the list of dependencies available
 for removal is updated.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -112,7 +112,7 @@ for removal is updated.
 
 Trying to add a dependency that is already recorded results in a error.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -178,7 +178,7 @@ dependencies is refreshed.
 
     >>> admin_browser.getControl(
     ...     name="field.selected_dependencies").value = [
-    ...     'sabdfl/ppa', 'no-priv/ppa']
+    ...     'mark/ppa', 'no-priv/ppa']
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -377,7 +377,7 @@ RELEASE.
     >>> admin_browser.getControl(
     ...     "Use all Ubuntu components available.").selected = True
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
 
     >>> admin_browser.getControl(
     ...     "Basic (only released packages).").selected = True
@@ -440,7 +440,7 @@ PPA context page and the action won't be executed.
 
     >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
     >>> admin_browser.getControl(
-    ...     name="field.selected_dependencies").value = ['sabdfl/ppa']
+    ...     name="field.selected_dependencies").value = ['mark/ppa']
     >>> admin_browser.getControl(
     ...     "Default (security dependencies and recommended updates)."
     ...     ).selected = True

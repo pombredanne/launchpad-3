@@ -130,7 +130,7 @@ directory: xpi/translation_domain/
 
 Get hold of a person.
 
-    >>> mark = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> print mark.displayname
     Mark Shuttleworth
 

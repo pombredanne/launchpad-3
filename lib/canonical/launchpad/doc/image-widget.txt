@@ -165,7 +165,7 @@ creates a new database object for us.
 
 
 # This section is commented out because we are not doing the autoscaling
-# magic for 1.0 (sabdfl - 2007-03-29)
+# magic for 1.0 (mark - 2007-03-29)
 
 #=== The LogoTiedWithMugshotWidget ===
 #

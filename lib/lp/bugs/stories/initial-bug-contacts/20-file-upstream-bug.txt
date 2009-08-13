@@ -15,7 +15,7 @@ well.
     >>> print browser.url.replace(bug_id, "BUG-ID")
     http://bugs.launchpad.dev/firefox/+bug/BUG-ID
 
-Now sabdfl (because he's the bug reporter), guadamen (because they are
+Now mark (because he's the bug reporter), guadamen (because they are
 the product bug supervisor), and lifeless (because he is a subscriber to
 mozilla) are subscribed to this bug:
 

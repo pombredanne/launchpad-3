@@ -31,7 +31,7 @@ Notification for a FAILEDTOBUILD (failed) build record:
   >>> failed_candidate.buildstate.name
   'FAILEDTOBUILD'
   >>> failed_candidate.sourcepackagerelease.creator.name
-  u'sabdfl'
+  u'mark'
 
   >>> failed_candidate.notify()
 
@@ -134,7 +134,7 @@ Notification for a pending (NEEDSBUILD) build record:
   >>> pending_candidate.buildstate.name
   'NEEDSBUILD'
   >>> pending_candidate.sourcepackagerelease.creator.name
-  u'sabdfl'
+  u'mark'
 
   >>> pending_candidate.notify()
 
@@ -202,7 +202,7 @@ Notification for a BUILDING build record:
   >>> building_candidate.buildstate.name
   'BUILDING'
   >>> building_candidate.sourcepackagerelease.creator.name
-  u'sabdfl'
+  u'mark'
 
   >>> building_candidate.notify()
 
@@ -270,7 +270,7 @@ Notification for a SUPERSEDED build record:
   >>> superseded_candidate.buildstate.name
   'SUPERSEDED'
   >>> superseded_candidate.sourcepackagerelease.creator.name
-  u'sabdfl'
+  u'mark'
 
   >>> superseded_candidate.notify()
 
@@ -495,11 +495,11 @@ We also make 'Foo Bar' the source signer.
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
-Since 'sabdfl' is the 'creator' it makes the failed-to-build source
+Since 'mark' is the 'creator' it makes the failed-to-build source
 look like a 'sponsored' upload.
 
   >>> print failed_candidate.sourcepackagerelease.creator.name
-  sabdfl
+  mark
 
 Finally we issue the notification.
 
@@ -511,7 +511,7 @@ people involved with the source are notified.
  * 'cprov' who owns the PPA where the source is being built;
  * 'name16' who signed the source upload;
 
-However, 'sabdfl' who was listed as the creator of the source revision is
+However, 'mark' who was listed as the creator of the source revision is
 not notified because he is not in the PPA team or its owner.
 
   >>> notifications = pop_notifications()
@@ -523,14 +523,14 @@ not notified because he is not in the PPA team or its owner.
   celso.providelo@canonical.com
   foo.bar@canonical.com
 
-If the failed build candidate is for a PPA where sabdfl is a member,
+If the failed build candidate is for a PPA where mark is a member,
 he will be notified.
 
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> team = factory.makeTeam(owner=cprov, email="team@example.com")
-  >>> sabdfl = failed_candidate.sourcepackagerelease.creator
-  >>> team.addMember(sabdfl, sabdfl)
+  >>> mark = failed_candidate.sourcepackagerelease.creator
+  >>> team.addMember(mark, mark)
   >>> discard = pop_notifications() # Discard team join email.
   >>> team_ppa = factory.makeArchive(owner=team)
   >>> naked_candidate = removeSecurityProxy(failed_candidate)

@@ -17,10 +17,10 @@ Switch to admin, and check the link to change team members appears, and works.
 
   >>> admin_browser.open("http://localhost/ubuntu")
   >>> admin_browser.getLink("Change members").click()
-  >>> admin_browser.getControl("Members").value = 'sabdfl'
+  >>> admin_browser.getControl("Members").value = 'mark'
   >>> admin_browser.getControl("Change").click()
   >>> admin_browser.contents
   '...Updated on...'
   >>> admin_browser.getControl("Members").value
-  'sabdfl'
+  'mark'
 

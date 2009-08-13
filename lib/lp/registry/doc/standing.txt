@@ -171,7 +171,7 @@ personal standing gets updated to Good also.
     >>> message = post_message('mark@hbd.com', 'test-one')
     >>> message.approve(foobar)
     >>> script.main()
-    >>> mark = person_set.getByName('sabdfl')
+    >>> mark = person_set.getByName('mark')
     >>> mark.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 

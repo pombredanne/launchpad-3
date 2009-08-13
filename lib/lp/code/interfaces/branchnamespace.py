@@ -219,7 +219,7 @@ class IBranchNamespaceSet(Interface):
         'distribution', 'distroseries' and 'sourcepackagename'.
 
         'parse' returns a dict which maps the names of these elements (e.g.
-        'person', 'product') to the values of these elements (e.g. 'sabdfl',
+        'person', 'product') to the values of these elements (e.g. 'mark',
         'firefox'). If the given path doesn't include a particular kind of
         element, the dict maps that element name to None.
 

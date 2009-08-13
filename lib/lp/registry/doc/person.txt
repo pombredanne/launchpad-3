@@ -966,7 +966,7 @@ most karma.
     ...     print "%s: %s" % (person.name, person.karma)
     name16: 241
     name12: 138
-    sabdfl: 130
+    mark: 130
 
 
 == Packages related to a person ==
@@ -988,8 +988,8 @@ archives.
 The 3rd method returns SourcePackageReleases uploaded by the person in
 question to any PPA.
 
-    >>> sabdfl = personset.getByName('sabdfl')
-    >>> for sprelease in sabdfl.getLatestMaintainedPackages():
+    >>> mark = personset.getByName('mark')
+    >>> for sprelease in mark.getLatestMaintainedPackages():
     ...     print (sprelease.name,
     ...            sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
@@ -1001,7 +1001,7 @@ question to any PPA.
     (u'mozilla-firefox', u'Ubuntu Warty', u'0.9')
     (u'evolution', u'Ubuntu Hoary', u'1.0')
 
-    >>> for sprelease in sabdfl.getLatestUploadedButNotMaintainedPackages():
+    >>> for sprelease in mark.getLatestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name,
     ...            sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
@@ -1012,34 +1012,34 @@ question to any PPA.
     (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
-    >>> sabdfl_spreleases = sabdfl.getLatestUploadedPPAPackages()
-    >>> for sprelease in sabdfl_spreleases:
+    >>> mark_spreleases = mark.getLatestUploadedPPAPackages()
+    >>> for sprelease in mark_spreleases:
     ...     print (sprelease.name,
     ...            sprelease.version,
     ...            sprelease.creator.name,
     ...            sprelease.maintainer.name,
     ...            sprelease.upload_archive.owner.name,
     ...            sprelease.upload_distroseries.fullseriesname)
-    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'sabdfl', u'Ubuntu Warty')
+    (u'iceweasel', u'1.0', u'mark', u'name16', u'mark', u'Ubuntu Warty')
 
 We will change modify the first SourcePackageRelease to reproduce the
 issue mentioned in bug 157303, where source with same creator and
 maintainer got omitted from the results:
 
-    >>> any_spr = sabdfl_spreleases[0]
+    >>> any_spr = mark_spreleases[0]
     >>> naked_spr = removeSecurityProxy(any_spr)
-    >>> naked_spr.maintainer = sabdfl
+    >>> naked_spr.maintainer = mark
     >>> flush_database_updates()
 
-    >>> sabdfl_spreleases = sabdfl.getLatestUploadedPPAPackages()
-    >>> for sprelease in sabdfl_spreleases:
+    >>> mark_spreleases = mark.getLatestUploadedPPAPackages()
+    >>> for sprelease in mark_spreleases:
     ...     print (sprelease.name,
     ...            sprelease.version,
     ...            sprelease.creator.name,
     ...            sprelease.maintainer.name,
     ...            sprelease.upload_archive.owner.name,
     ...            sprelease.upload_distroseries.fullseriesname)
-    (u'iceweasel', u'1.0', u'sabdfl', u'sabdfl', u'sabdfl', u'Ubuntu Warty')
+    (u'iceweasel', u'1.0', u'mark', u'mark', u'mark', u'Ubuntu Warty')
 
 
 == Packages a Person is subscribed to ==
@@ -1087,7 +1087,7 @@ project groups and projects.
     ...     print "%s: %s (%s)" % (
     ...         pillar_type, pillar.title, pillar.name)
 
-    >>> for pillarname in sabdfl.getOwnedOrDrivenPillars():
+    >>> for pillarname in mark.getOwnedOrDrivenPillars():
     ...     print_pillar(pillarname)
     distribution: Ubuntu Linux (ubuntu)
     distribution: Redhat Advanced Server (redhat)
@@ -1113,7 +1113,7 @@ To obtain active projects owned by a person or team, we can use the
 getOwnedProjects() method of IPerson.  This method returns
 projects ordered by displayname.
 
-    >>> for project in sabdfl.getOwnedProjects():
+    >>> for project in mark.getOwnedProjects():
     ...     print project.displayname
     Derby
     Tomcat
@@ -1133,7 +1133,7 @@ The method does not return inactive projects.
     >>> login_person(registry_member)
     >>> derby = getUtility(IProductSet).getByName('derby')
     >>> derby.active = False
-    >>> for project in sabdfl.getOwnedProjects():
+    >>> for project in mark.getOwnedProjects():
     ...     print project.displayname
     Tomcat
     alsa-utils
@@ -1150,13 +1150,13 @@ David does not own any projects.
 The results returned can be filtered by providing a token to refine the
 search.
 
-    >>> for project in sabdfl.getOwnedProjects(match_name='java'):
+    >>> for project in mark.getOwnedProjects(match_name='java'):
     ...     print project.displayname
     Tomcat
 
 Searching for a non-existent project returns no matches.
 
-    >>> list(sabdfl.getOwnedProjects(match_name='nosuchthing'))
+    >>> list(mark.getOwnedProjects(match_name='nosuchthing'))
     []
 
 
@@ -1251,9 +1251,9 @@ But from these two, only one has started.
 Just for fun, lets check the SAB. He should have one spec for which he
 is the approver.
 
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> filter = [SpecificationFilter.APPROVER]
-    >>> for spec in sabdfl.specifications(filter=filter):
+    >>> for spec in mark.specifications(filter=filter):
     ...     print spec.name
     extension-manager-upgrades
 

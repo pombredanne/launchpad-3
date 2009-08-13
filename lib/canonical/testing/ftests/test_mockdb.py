@@ -187,9 +187,9 @@ class MockDbTestCase(unittest.TestCase):
             self.assertEqual(name, 'stub')
 
             # Query with list parameters.
-            cur.execute("SELECT name FROM Person WHERE name=%s", ('sabdfl',))
+            cur.execute("SELECT name FROM Person WHERE name=%s", ('mark',))
             name = cur.fetchone()[0]
-            self.assertEqual(name, 'sabdfl')
+            self.assertEqual(name, 'mark')
 
             # Query with dictionary parameters.
             cur.execute(
@@ -216,7 +216,7 @@ class MockDbTestCase(unittest.TestCase):
             con = self.connect()
             cur = con.cursor()
             if mode != 'replay':
-                cur.execute("SELECT name FROM Person WHERE name='sabdfl'")
+                cur.execute("SELECT name FROM Person WHERE name='mark'")
             else:
                 # Issue an unexpected query in replay mode. A RetryTest
                 # exception should be raised.
@@ -232,7 +232,7 @@ class MockDbTestCase(unittest.TestCase):
             cur = con.cursor()
             query = "SELECT name FROM Person WHERE name=%s"
             if mode != 'replay':
-                cur.execute(query, ('sabdfl',))
+                cur.execute(query, ('mark',))
             else:
                 # Issue a query with unexpected bound parameters in replay
                 # mode. A RetryTest should be raised.
@@ -412,7 +412,7 @@ class MockDbTestCase(unittest.TestCase):
 
             # Confirm fetchone() behavior.
             cur.execute(
-                    "SELECT name FROM Person WHERE name IN ('stub', 'sabdfl')"
+                    "SELECT name FROM Person WHERE name IN ('stub', 'mark')"
                     )
             self.failUnless(cur.rowcount in (-1, 2)) # Ambiguous state.
             cur.fetchone()
@@ -423,7 +423,7 @@ class MockDbTestCase(unittest.TestCase):
             # Confirm fetchall() behavior.
             cur.execute("""
                     SELECT name FROM Person
-                    WHERE name IN ('stub', 'sabdfl', 'carlos')
+                    WHERE name IN ('stub', 'mark', 'carlos')
                     """)
             cur.fetchall()
             self.failUnlessEqual(cur.rowcount, 3)

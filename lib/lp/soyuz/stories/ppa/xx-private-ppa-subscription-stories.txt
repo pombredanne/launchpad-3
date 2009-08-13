@@ -272,8 +272,8 @@ a user Mark who is a member of the Launchpad team,
     >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> launchpad.addMember(sabdfl, foobar)
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> launchpad.addMember(mark, foobar)
     >>> import transaction
     >>> transaction.commit()
     >>> logout()
@@ -284,7 +284,7 @@ subscriptions.
 
     >>> mark_browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> mark_browser.open(
-    ...     "http://launchpad.dev/~sabdfl")
+    ...     "http://launchpad.dev/~mark")
 
     >>> mark_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(mark_browser.contents)
@@ -300,10 +300,10 @@ access details are displayed.
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    deb http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
+    deb http://mark:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
         YOUR_UBUNTU_VERSION_HERE main #Personal access of
         Mark Shuttleworth to PPA for Celso Providelo
-    deb-src http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
+    deb-src http://mark:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
         YOUR_UBUNTU_VERSION_HERE main #Personal access of
         Mark Shuttleworth to PPA for Celso Providelo
 
@@ -312,7 +312,7 @@ subscriptions reflects the confirmed subscription, providing a normal
 link to view the details.
 
     >>> mark_browser.open(
-    ...     "http://launchpad.dev/~sabdfl/+archivesubscriptions")
+    ...     "http://launchpad.dev/~mark/+archivesubscriptions")
     >>> print_subscriptions_for_person(mark_browser.contents)
     Archive
     PPA for Celso Providelo     View

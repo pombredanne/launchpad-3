@@ -1271,10 +1271,10 @@ Mark's PPA:
     >>> cprov_archive.require_virtualized = True
     >>> for build_file in candidate.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = False
-    >>> sabdfl_archive = getUtility(IPersonSet).getByName('sabdfl').archive
+    >>> mark_archive = getUtility(IPersonSet).getByName('mark').archive
 
     >>> unused_dep = cprov_archive.addArchiveDependency(
-    ...      sabdfl_archive, PackagePublishingPocket.RELEASE,
+    ...      mark_archive, PackagePublishingPocket.RELEASE,
     ...      getUtility(IComponentSet)['main'])
 
     >>> commit()
@@ -1320,7 +1320,7 @@ We will create the required publication in Mark's PPA and try again.
     >>> last_stub_mail_count = len(stub.test_emails)
 
     >>> create_binary_publication_for(
-    ...    sabdfl_archive, hoary, PackagePublishingStatus.PUBLISHED)
+    ...    mark_archive, hoary, PackagePublishingStatus.PUBLISHED)
 
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
@@ -1332,7 +1332,7 @@ We will create the required publication in Mark's PPA and try again.
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
      deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-     deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
+     deb http://ppa.launchpad.dev/mark/ppa/ubuntu hoary main
     Suite: hoary
     Ogre-component: main
     Archive Purpose: PPA

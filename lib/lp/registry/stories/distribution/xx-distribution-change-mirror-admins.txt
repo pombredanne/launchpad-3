@@ -21,5 +21,5 @@ the distribution owner, on the +selectmirroradmins page.
 
     >>> browser.open('http://localhost/ubuntu/+selectmirroradmins')
     >>> browser.getControl('Mirror Administrator').value
-    'sabdfl'
+    'mark'
 

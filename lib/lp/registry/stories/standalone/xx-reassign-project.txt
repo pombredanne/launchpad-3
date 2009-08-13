@@ -33,7 +33,7 @@
   ... POST /mozilla/+reassign HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... 
-  ... field.owner=sabdfl&existing=existing&CHANGE_OWNER=Change+Owner""")
+  ... field.owner=mark&existing=existing&CHANGE_OWNER=Change+Owner""")
   HTTP/1.1 303 See Other
   ... 
   Location: .

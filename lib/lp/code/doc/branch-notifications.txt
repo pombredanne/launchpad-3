@@ -166,7 +166,7 @@ And to make sure we have them:
     jdub
     cprov
     daf
-    sabdfl
+    mark
     launchpad
 
 The getNotificationRecipients method returns an instance of

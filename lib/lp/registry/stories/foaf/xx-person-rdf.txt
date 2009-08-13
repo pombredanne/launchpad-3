@@ -62,7 +62,7 @@ output:
 
     >>> from canonical.launchpad.ftests import set_branding
     >>> mark_browser = setupBrowser(auth='Basic mark@hbd.com:test')
-    >>> mark_browser.open('http://launchpad.dev/~sabdfl/+branding')
+    >>> mark_browser.open('http://launchpad.dev/~mark/+branding')
     >>> set_branding(mark_browser, icon=False)
     >>> mark_browser.getControl('Change Branding').click()
 
@@ -102,7 +102,7 @@ Now, generate the RDF itself:
         <foaf:member>
           <foaf:Person>
             <foaf:name>Mark Shuttleworth</foaf:name>
-            <foaf:nick>sabdfl</foaf:nick>
+            <foaf:nick>mark</foaf:nick>
             <foaf:img rdf:resource="http://.../logo.png"/>
             <foaf:img rdf:resource="http://.../mugshot.png"/>
             <foaf:mbox_sha1sum>AE66EB0C5FB38548B843EA8EFA71707A8F822E06</foaf:mbox_sha1sum>

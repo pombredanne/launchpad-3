@@ -37,7 +37,7 @@ to access those other objects:
     >>> bugset = getUtility(IBugSet)
     >>> personset = getUtility(IPersonSet)
     >>> bug_one = bugset.get(1)
-    >>> sabdfl = personset.getByEmail('mark@hbd.com')
+    >>> mark = personset.getByEmail('mark@hbd.com')
 
 Next, we need to grab some values to provide for importance and status.
 
@@ -52,7 +52,7 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> evolution = productset.get(5)
     >>> upstream_task = bugtaskset.createTask(
-    ...     bug=bug_one, product=evolution, owner=sabdfl,
+    ...     bug=bug_one, product=evolution, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.product == evolution
     True
@@ -65,7 +65,7 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> ubuntu = distroset.get(1)
     >>> distro_task = bugtaskset.createTask(
-    ...     bug=bug_one, distribution=ubuntu, owner=sabdfl,
+    ...     bug=bug_one, distribution=ubuntu, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_task.distribution == ubuntu
     True
@@ -79,7 +79,7 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> warty = distoseriesset.get(1)
     >>> distro_series_task = bugtaskset.createTask(
-    ...     bug=bug_one, distroseries=warty, owner=sabdfl,
+    ...     bug=bug_one, distroseries=warty, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_series_task.distroseries == warty
     True
@@ -124,7 +124,7 @@ list.
     >>> firefox_1_0 = firefox.getSeries("1.0")
 
     >>> productseries_task = bugtaskset.createTask(
-    ...     owner=sabdfl, bug=bug_one, productseries=firefox_1_0)
+    ...     owner=mark, bug=bug_one, productseries=firefox_1_0)
     >>> IProductSeriesBugTask.providedBy(productseries_task)
     True
 
@@ -1059,7 +1059,7 @@ the latter is not exposed in `IBugTask`, so the `bugtargetdisplayname`
 is used here.
 
     >>> upstream_task = bugtaskset.createTask(
-    ...     bug=bug_one, product=netapplet, owner=sabdfl,
+    ...     bug=bug_one, product=netapplet, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.bugtargetdisplayname
     u'NetApplet'
@@ -1114,16 +1114,16 @@ to the same series. The nominations are implicitly accepted and have
 targetnamecache updated.
 
     >>> new_bug, new_bug_event = bugset.createBugWithoutTarget(
-    ...     CreateBugParams(sabdfl, 'New Bug', comment='New Bug'))
+    ...     CreateBugParams(mark, 'New Bug', comment='New Bug'))
 
     >>> bugtaskset.createTask(
-    ...     bug=new_bug, owner=sabdfl,
+    ...     bug=new_bug, owner=mark,
     ...     distribution=ubuntu,
     ...     sourcepackagename=(
     ...         sourcepackagenameset.queryByName('mozilla-firefox')))
     <BugTask at ...>
 
-    >>> new_bug.addNomination(sabdfl, ubuntu.currentseries)
+    >>> new_bug.addNomination(mark, ubuntu.currentseries)
     <BugNomination at ...>
 
 The first task has been created and successfully nominated to Hoary.
@@ -1134,7 +1134,7 @@ The first task has been created and successfully nominated to Hoary.
     mozilla-firefox (Ubuntu Hoary)
 
     >>> bugtaskset.createTask(
-    ...     bug=new_bug, owner=sabdfl,
+    ...     bug=new_bug, owner=mark,
     ...     distribution=ubuntu,
     ...     sourcepackagename=(
     ...         sourcepackagenameset.queryByName('alsa-utils')))
@@ -1338,7 +1338,7 @@ constraints will be violated.
 
     >>> bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distroseries=warty,
-    ...     owner=sabdfl, status=STATUS_NEW,
+    ...     owner=mark, status=STATUS_NEW,
     ...     importance=IMPORTANCE_MEDIUM)
     Traceback (most recent call last):
     ...

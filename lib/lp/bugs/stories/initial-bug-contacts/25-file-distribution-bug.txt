@@ -20,7 +20,7 @@ package subscribers, if there are any.
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/BUG-ID
 
 We should have four subscribers now. The bug reporter (also a package
-subscriber), sabdfl, the distro bug supervisor, ubuntu-team, and carlos
+subscriber), mark, the distro bug supervisor, ubuntu-team, and carlos
 and foobar, who are subscribed to the distribution.
 
     >>> from zope.component import getUtility
@@ -36,7 +36,7 @@ and foobar, who are subscribed to the distribution.
 
     >>> bugset = getUtility(IBugSet)
     >>> subscriber_names(bugset.get(bug_id))
-    [u'carlos', u'name16', u'sabdfl', u'ubuntu-team']
+    [u'carlos', u'name16', u'mark', u'ubuntu-team']
 
     >>> logout()
 
@@ -69,7 +69,7 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     >>> login("mark@hbd.com")
 
     >>> subscriber_names(bugset.get(other_bug_id))
-    [u'sabdfl', u'ubuntu-team']
+    [u'mark', u'ubuntu-team']
 
     >>> logout()
 
