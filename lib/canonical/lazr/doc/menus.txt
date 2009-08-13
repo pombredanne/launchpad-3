@@ -361,6 +361,11 @@ menu though one of its links.
     ...         text = 'Edit ingredients'
     ...         return Link(target, text)
 
+Menus can provide extra attributes that are available to the TAL processing.
+These are defined by the attribute 'extra_attributes'.  When the MenuAPI is
+processing the menu, each of these attributes is also available in the
+generated dictionary.
+
     >>> class RecipeJournalMenu(NavigationMenu):
     ...     usedfor = IRecipeJournalMenuMarker
     ...     facet = 'cookery'
@@ -969,6 +974,12 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
         enabled: True
         menu: None
         linked: True
+
+The attributes of the menu can be accessed with the normal path method.
+
+    >>> print test_tales('context/menu:navigation/journal_entries',
+    ...     context=recipe_journal_view, request=request)
+    42
 
 
 == Looking up the nearest navigation menu ==
