@@ -3498,6 +3498,4 @@ class BugTaskBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IBugTask`."""
     @property
     def text(self):
-        return "%s: %s" % (
-            self.context.bug.displayname,
-            self.context.bug.title)
+        return self.context.bug.displayname
