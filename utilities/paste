@@ -17,6 +17,7 @@ from urlparse import urljoin
 import _pythonpath
 
 from ClientCookie import Cookie, CookieJar
+from mechanize import HTTPRobotRulesProcessor
 
 from zope.testbrowser.browser import Browser
 
@@ -133,7 +134,6 @@ def main():
     # Remove the the check for robots.txt, since the one on
     # pastebin.ubuntu.com doesn't allow us to open the page. We're not
     # really a robot.
-    from mechanize._urllib2_support import HTTPRobotRulesProcessor
     browser.mech_browser.handlers = [
         handler for handler in browser.mech_browser.handlers
         if not isinstance(handler, HTTPRobotRulesProcessor)]
