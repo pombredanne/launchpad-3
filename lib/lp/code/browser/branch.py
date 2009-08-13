@@ -755,6 +755,10 @@ class BranchDeletionView(LaunchpadFormView):
     schema = IBranch
     field_names = []
 
+    @property
+    def page_title(self):
+        return smartquote('Delete branch "%s"' % self.context.displayname)
+
     @cachedproperty
     def display_deletion_requirements(self):
         """Normal deletion requirements, indication of permissions.
@@ -935,6 +939,10 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
     initial_focus_widget = 'name'
+
+    @property
+    def page_title(self):
+        return 'Register a branch'
 
     @property
     def initial_values(self):

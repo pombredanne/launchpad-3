@@ -170,17 +170,7 @@ bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_add = 'Register a branch'
-
-branch_associations = ContextDisplayName(smartquote(
-    '"%s" branch associations'))
-
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
-
-branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
-
-branch_edit_subscription = ContextDisplayName(smartquote(
-    'Edit subscription to branch "%s"'))
 
 branch_index = ContextDisplayName(smartquote(
     '"%s" branch in Launchpad'))
@@ -200,8 +190,6 @@ branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 branchmergeproposal_delete = 'Delete proposal to merge branch'
 
 branchmergeproposal_edit = ViewLabel()
-
-branchmergeproposal_commitmessage_edit = ViewLabel()
 
 branchmergeproposal_editstatus = ViewLabel()
 
