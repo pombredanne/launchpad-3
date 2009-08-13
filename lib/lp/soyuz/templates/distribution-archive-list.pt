@@ -13,6 +13,7 @@
   </div>
 
   <div metal:fill-slot="main">
+  <div class="top-portlet">
 
     <p>'Copy' archives containing packages copied from other archives (the
        main archive or PPAs) for a distribution.
@@ -64,6 +65,7 @@
 
     </tal:batch>
 
+  </div>
   </div>
 
 </body>
