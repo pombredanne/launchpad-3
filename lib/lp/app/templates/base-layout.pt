@@ -100,17 +100,19 @@
           use-macro="context/@@+base-layout-macros/location-tabs"/>
       </div>
 
-      <tal:maintenance replace="structure context/@@+maintenancemessage" />
-      <tal:notifications
-        define="notifications request/notifications"
-        condition="notifications">
-        <metal:notifications
-          use-macro="context/@@+base-layout-macros/notifications"/>
-      </tal:notifications>
-
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
         <div id="maincontent" class="yui-main">
+
+          <tal:maintenance
+            replace="structure context/@@+maintenancemessage" />
+          <tal:notifications
+            define="notifications request/notifications"
+            condition="notifications">
+            <metal:notifications
+              use-macro="context/@@+base-layout-macros/notifications"/>
+          </tal:notifications>
+
           <div class="yui-b"
             tal:attributes="
               lang view/lang|default_language|default;

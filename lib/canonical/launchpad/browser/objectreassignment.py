@@ -14,7 +14,7 @@ __all__ = ["ObjectReassignmentView"]
 from zope.app.form.interfaces import (
     IInputWidget, ConversionError, WidgetInputError)
 from zope.component import getUtility
-from zope.formlib.form import FormFields
+from zope.formlib.form import Actions, FormFields
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -95,9 +95,9 @@ class ObjectReassignmentView(LaunchpadFormView):
 
     @property
     def owner_widget(self):
-        return self.widgets[self.ownerOrMaintainerName]
+        return self.widgets['owner']
 
-    @action(_("Change Owner"), name="change")
+    @action("Change", name="change")
     def changeOwner(self, action, data):
         """Change the owner of self.context to the one choosen by the user."""
         newOwner = data['owner']
@@ -130,7 +130,7 @@ class ObjectReassignmentView(LaunchpadFormView):
         owner_name = request.form.get(self.owner_widget.name)
         if not owner_name:
             self.setFieldError(
-                self.ownerOrMaintainerName,
+                'owner',
                 "You have to specify the name of the person/team that's "
                 "going to be the new %s." % self.ownerOrMaintainerName)
             return None
@@ -143,7 +143,7 @@ class ObjectReassignmentView(LaunchpadFormView):
                 owner = self.owner_widget.getInputValue()
             except WidgetInputError:
                 self.setFieldError(
-                    self.ownerOrMaintainerName,
+                    'owner',
                     "The person/team named '%s' is not a valid owner for %s."
                     % (owner_name, self.contextName))
                 return None
@@ -156,7 +156,7 @@ class ObjectReassignmentView(LaunchpadFormView):
         else:
             if personset.getByName(owner_name):
                 self.setFieldError(
-                    self.ownerOrMaintainerName,
+                    'owner',
                     "There's already a person/team with the name '%s' in "
                     "Launchpad. Please choose a different name or select "
                     "the option to make that person/team the new owner, "
@@ -165,7 +165,7 @@ class ObjectReassignmentView(LaunchpadFormView):
 
             if not valid_name(owner_name):
                 self.setFieldError(
-                    self.ownerOrMaintainerName,
+                    'owner',
                     "'%s' is not a valid name for a team. Please make sure "
                     "it contains only the allowed characters and no spaces."
                     % owner_name)

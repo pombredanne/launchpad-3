@@ -19,16 +19,17 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_form/form">
-    <div metal:fill-slot="extra_info">
-      <dl>
-        <dt><strong>Current:</strong></dt>
-        <dd tal:content="view/ownerOrMaintainer/displayname" />
-      </dl>
+  <div metal:define-macro="object-reassignment">
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <div metal:fill-slot="extra_info">
+        <dl>
+          <dt><strong>Current:</strong></dt>
+          <dd tal:content="view/ownerOrMaintainer/displayname" />
+        </dl>
+      </div>
     </div>
   </div>
 
 </div>
-
 </body>
 </html>
