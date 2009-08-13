@@ -25,8 +25,13 @@
       </thead>
       <tbody>
         <tr tal:repeat="log context/bug/activity">
-          <td tal:content="python:log.datechanged.strftime('%d %b %y %H:%M')">
-            13 Sep 04 14:15
+          <tal:comment condition="nothing">
+            XXX: Gavin Panella 2009-08-12 bug=412963: Using strftime()
+            here because fmt:datetime changes timezone, even though we
+            always want to show only UTC.
+          </tal:comment>
+          <td tal:content="python:log.datechanged.strftime('%Y-%m-%d %T')">
+            2004-09-24 12:04:43
           </td>
           <td><tal:person tal:replace="structure log/person/fmt:link">person</tal:person></td>
 	  <td tal:content="log/whatchanged">description</td>

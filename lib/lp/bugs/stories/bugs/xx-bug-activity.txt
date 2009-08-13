@@ -7,11 +7,14 @@ The bug activity page is where you find the "changelog" of a bug.
     ...     'mozilla-firefox/+bug/3/+activity')
     >>> main_content = find_main_content(anon_browser.contents)
 
-The page heading contains a link back to the bug page.
+The page contains a link back to the bug page:
 
-    >>> bug_link = main_content.p.a
-    >>> print '%s --> %s' % (extract_text(bug_link), bug_link['href'])
-    Bug #3: Bug Title Test --> /debian/+source/mozilla-firefox/+bug/3
+    >>> document = find_tag_by_id(anon_browser.contents, 'document')
+    >>> bug_link = document.find(
+    ...     'a', href=lambda href: href.endswith('/+bug/3'))
+    >>> print '%s\n--> %s' % (extract_text(bug_link), bug_link['href'])
+    Bug #3
+    --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
 
 The title repeats the bug number for clarity.
 
@@ -27,9 +30,9 @@ The activity log itself is presented as a table.
     >>> for row in main_content.table('tr'):
     ...     print_row(row)
     Date | Who | What changed | Old value | New value | Message
-    10 Aug 05 16:30 | Sample Person | bug |  |  | assigned to source ...
-    10 Aug 05 16:30 | Sample Person | bug |  |  | assigned to source ...
-    24 Feb 06 21:34 | Foo Bar | mozilla-firefox: statusexplanation |  |  |
+    2005-08-10 16:30:32 | Sample Person | bug |  |  | assigned to source ...
+    2005-08-10 16:30:47 | Sample Person | bug |  |  | assigned to source ...
+    2006-02-24 21:34:52 | Foo Bar | mozilla-firefox: statusexplanation |  |  |
 
 
 == Activity interleaved with comments ==
