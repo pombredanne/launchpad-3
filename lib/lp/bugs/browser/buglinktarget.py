@@ -102,6 +102,14 @@ class BugsUnlinkView(LaunchpadFormView):
     schema = IUnlinkBugsForm
     custom_widget('bugs', LabeledMultiCheckBoxWidget)
 
+    @property
+    def page_title(self):
+        return 'Remove bug links from question #%s' % self.context.id
+
+    @property
+    def label(self):
+        return 'Remove links to bug reports'
+
     @action(_('Remove'))
     def unlinkBugs(self, action, data):
         response = self.request.response
