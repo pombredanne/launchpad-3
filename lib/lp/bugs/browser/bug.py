@@ -555,6 +555,21 @@ class BugEditView(BugEditViewBase):
         BugEditViewBase.__init__(self, context, request)
         self.notifications = []
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit Bug Information'
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return 'Edit %s ' % self.context.title
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
     def validate(self, data):
         """Make sure new tags are confirmed."""
         if 'tags' not in data:
