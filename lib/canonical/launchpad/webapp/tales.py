@@ -117,16 +117,25 @@ class MenuAPI:
         if menu is None:
             menu = queryAdapter(self._context, INavigationMenu, facet)
         if menu is not None:
-            menu.request = self._request
-            links_map = dict(
-                (link.name, link)
-                for link in menu.iterlinks(request_url=self._request_url()))
+            links_map = self._getMenuLinksAndAttributes(menu)
         else:
             # The object has the facet, but does not have a menu, this
             # is probably the overview menu with is the default facet.
             links_map = {}
         object.__setattr__(self, facet, links_map)
         return links_map
+
+    def _getMenuLinksAndAttributes(self, menu):
+        """Return a dict of the links and attributes of the menu."""
+        menu.request = self._request
+        result = dict(
+            (link.name, link)
+            for link in menu.iterlinks(request_url=self._request_url()))
+        extras = menu.extra_attributes
+        if extras is not None:
+            for attr in extras:
+                result[attr] = getattr(menu, attr, None)
+        return result
 
     def _has_facet(self, facet):
         """Does the object have the named facet?"""
@@ -182,9 +191,7 @@ class MenuAPI:
         if menu is None:
             return  {}
         else:
-            menu.request = self._request
-            links = list(menu.iterlinks(request_url=self._request_url()))
-            return dict((link.name, link) for link in links)
+            return self._getMenuLinksAndAttributes(menu)
 
     @property
     def navigation(self):
@@ -207,9 +214,7 @@ class MenuAPI:
         if menu is None or menu.disabled:
             return {}
         else:
-            menu.request = self._request
-            links = list(menu.iterlinks(request_url=self._request_url()))
-            return dict((link.name, link) for link in links)
+            return self._getMenuLinksAndAttributes(menu)
 
 
 class CountAPI:
