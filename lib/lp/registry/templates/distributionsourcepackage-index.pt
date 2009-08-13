@@ -21,12 +21,16 @@
 
 
 <tal:heading metal:fill-slot="heading">
+  <h1>
     &ldquo;<span tal:replace="context/name" />&rdquo; source package in
     <span tal:replace="context/distribution/displayname" />
+  </h1>
 </tal:heading>
 
 <tal:side metal:fill-slot="side">
-    <div class="yui-u first portlet involvement"
+    <tal:menu replace="structure view/@@+global-actions" />
+
+    <div class="portlet involvement"
          tal:define="distribution context/distribution">
       <h2>Get Involved</h2>
       <ul>
@@ -65,13 +69,14 @@
 
   <div class="top-portlet">
     <tal:project define="project context/upstream_product">
-      <tal:has_project condition="project">
-        <img width="64" height="64" src="/@@/product-logo"
-             style="float:left;"/>
+      <div style="padding:1em;" tal:condition="project">
+        <span style="float:left; padding-right:1em; padding-bottom:1em;" tal:replace="structure context/image:logo"/>
+        <!-- img width="64" height="64" src="/@@/product-logo"
+             style="float:left; padding-right:1em; padding-bottom:1em;"/-->
         <tal:summary content="structure project/summary" />
-      </tal:has_project>
+      </div>
       <tal:noproject condition="not: project">
-          This package is not linked to an upstream project.
+          This package is not linked to an upstream product.
       </tal:noproject>
     </tal:project>
   </div>
@@ -85,37 +90,50 @@ color:#3941BF;
 }
 </style>
 
-  <div class="yui-u first portlet" style="clear: left;">
-    This source package has <a class="bugscolour" href="blah">300 bugs</a> and <a class="answerscolour" href="blah">20 questions</a>
-  </div>
-
-  <div class="yui-u portlet">
-    <table class="form" id="packages_list">
-      <tr style="font-weight: bold"><td colspan=3>Karmic 9.10 (development focus)</td></tr>
+  <div style="clear:both;" class="yui-u">
+    <table class="listing" id="packages_list">
+      <tr style="font-weight: bold">
+        <td colspan=3> <a href="distroseries">Karmic 9.10</a> (development focus)
+        <span style="float:right;"><a href="blah"><img src="/@@/add"> Set upstream link</a> </span>
+        </td>
+      </tr>
       <tr>
-        <td>3.5</td>
+        <td><img style="padding-right:0.5em;" src="/@@/treeCollapsed">3.5</td>
         <td>Release (main)</td>
         <td>13 days ago</td>
       </tr>
-      <tr style="font-weight: bold"><td colspan=3>Jaunty 9.04 (current release)</td></tr>
+      <tr style="font-weight: bold">
+        <td style="padding-top:1em" colspan=3><a href="distroseries">Jaunty 9.04</a> (current release)
+        <span style="float:right;"><a href="product-series-page"><tal:icon replace="structure context/image:icon" />Mozilla 3.5 series</a> <img src="/@@/edit"> <img src="/@@/remove"></span>
+        </td>
+      </tr>
       <tr>
-        <td>3.5</td>
+        <td><img style="padding-right:0.5em;" src="/@@/treeCollapsed">3.5</td>
         <td>Release (main)</td>
         <td>13 days ago</td>
       </tr>
       <tr>
-        <td>3.4</td>
+        <td><img style="padding-right:0.5em;" src="/@@/treeCollapsed">3.5</td>
         <td>Security, Updates (main)</td>
         <td>18 days ago</td>
       </tr>
+      <!-- this needs to be a slightly different expander so we don't get all
+           the extra unnecessary table columns
       <tr tal:define="pub context/latest_overall_publication">
         <td tal:replace="structure pub/@@+listing-archive-detailed"/>
         <metal:js use-macro="pub/archive/@@+macros/expandable-table-js"/>
       </tr>
+      -->
     </table>
+
+    <p style="float:right; padding-top:1em">
+      <a href="+publishinghistory">See full publishing history</a>
+    </p>
+
   </div>
 
-  <div class="yui-u portlet"
+  <div class="yui-u">
+  <div class="portlet"
        tal:define="ppa_versions view/related_ppa_versions"
        tal:condition="ppa_versions" id="related-ppa-versions">
     <div id="slide-trigger">
@@ -125,7 +143,7 @@ color:#3941BF;
       </div>
     </div>
     <div class="widget-bd">
-      <p>The following <strong>unsupported</strong> and 
+      <p>The following <strong>unsupported</strong> and
          <strong>untrusted</strong> Personal Archives (PPAs) provide
          packages of
          '<span tal:replace="context/name" />':</p>
@@ -193,10 +211,7 @@ YUI({
 </script>
 
   </div>
-    <p style="text-align: left">
-      <a href="+publishinghistory">See full publishing history...</a>
-    </p>
-
+  </div>
 
 </tal:main>
 

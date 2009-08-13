@@ -15,8 +15,9 @@ __all__ = [
 import itertools
 import operator
 
-from zope.component import getUtility
+from zope.component import getUtility, provideAdapter
 from zope.formlib import form
+from zope.interface import implements, Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -34,7 +35,10 @@ from lp.answers.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, Link,
     Navigation, StandardLaunchpadFacets, action, canonical_url, redirection)
-from canonical.launchpad.webapp.menu import enabled_with_permission
+from canonical.launchpad.webapp.interfaces import INavigationMenu
+from canonical.launchpad.webapp.menu import (
+    enabled_with_permission, NavigationMenu)
+
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 from lazr.delegates import delegates
@@ -124,7 +128,24 @@ class DecoratedDistributionSourcePackageRelease:
         return self._package_diffs
 
 
+class IDistributionSourcePackageActionMenu(Interface):
+    """Marker interface for the action menu."""
+
+
+class DistributionSourcePackageActionMenu(NavigationMenu):
+    """Action menu for distro source packages."""
+    usedfor = IDistributionSourcePackageActionMenu
+    facet = 'overview'
+    title = 'Actions'
+    links = ('change_log',)
+
+    def change_log(self):
+        text = 'View full change log'
+        return Link('+changelog', text)
+
+
 class DistributionSourcePackageView(LaunchpadFormView):
+    implements(IDistributionSourcePackageActionMenu)
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -349,6 +370,10 @@ class DistributionSourcePackageView(LaunchpadFormView):
             DecoratedDistributionSourcePackageRelease(
                 dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
             for (dspr, spphs) in dspr_pubs]
+
+provideAdapter(
+    DistributionSourcePackageActionMenu, [IDistributionSourcePackageActionMenu],
+    INavigationMenu, name="overview")
 
 
 class DistributionSourcePackageEditView(LaunchpadEditFormView):
