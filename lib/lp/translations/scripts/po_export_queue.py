@@ -19,9 +19,12 @@ from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.poexportrequest import (
     IPOExportRequestSet)
 from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
@@ -42,7 +45,6 @@ class ExportResult:
     """
 
     def __init__(self, person, requested_exports, logger):
-        self.name = person.name
         self.person = person
         self.url = None
         self.failure = None
@@ -50,9 +52,54 @@ class ExportResult:
 
         self.requested_exports = list(requested_exports)
         export_requested_at = self._getExportRequestOrigin()
+        self.name = self._getShortRequestName(export_requested_at)
+
         self.request_url = canonical_url(
             export_requested_at,
             rootsite='translations') + '/+export'
+
+    def _getShortRequestName(self, request):
+        """Return a short request name for use in email subjects."""
+        if IPOFile.providedBy(request):
+            title = '%s translation of %s' % (
+                request.language.englishname,
+                request.potemplate.name)
+            productseries = request.potemplate.productseries
+            distroseries = request.potemplate.distroseries
+            sourcepackagename = request.potemplate.sourcepackagename
+        elif IPOTemplate.providedBy(request):
+            title = '%s template' % (request.name)
+            productseries = request.productseries
+            distroseries = request.distroseries
+            sourcepackagename = request.sourcepackagename
+        elif IProductSeries.providedBy(request):
+            title = None
+            productseries = request
+            distroseries = None
+            sourcepackagename = None
+        elif ISourcePackage.providedBy(request):
+            title = None
+            productseries = None
+            distroseries = request.distroseries
+            sourcepackagename = request.sourcepackagename
+        else:
+            raise AssertionError(
+                "We can not figure out short name for this translation "
+                "export origin.")
+
+        if productseries is not None:
+            root = '%s %s' % (
+                productseries.product.displayname,
+                productseries.name)
+        else:
+            root = '%s %s %s' % (
+                distroseries.distribution.displayname,
+                distroseries.displayname,
+                sourcepackagename.name)
+        if title is not None:
+            return '%s - %s' % (root, title)
+        else:
+            return root
 
     def _getExportRequestOrigin(self):
         """Figure out where an export request was made."""
@@ -219,7 +266,7 @@ class ExportResult:
             simple_sendmail(
                 from_addr=config.rosetta.admin_email,
                 to_addrs=[recipient],
-                subject='Launchpad.net Translation Download: %s' % self.name,
+                subject='Launchpad translation download: %s' % self.name,
                 body=body)
 
         if self.failure is None:
@@ -240,7 +287,7 @@ class ExportResult:
             from_addr=config.rosetta.admin_email,
             to_addrs=[config.launchpad.errors_address],
             subject=(
-                'Launchpad.net Translation Download Errors: %s' % self.name),
+                'Launchpad translation download errors: %s' % self.name),
             body=admins_email_body)
 
     def addFailure(self):

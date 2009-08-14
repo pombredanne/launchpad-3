@@ -56,16 +56,13 @@ We need to make sure the Librarian data has settled into place.
 
 The user receives a confirmation email.
 
-    >>> def print_mail_body(body):
-    ...     lines = body[body.index('\n\n')+2:].split('\n')
-    ...     for line in lines:
-    ...         print ">", line
-
+    >>> from lp.translations.tests.helpers import print_mail_subject_and_body
     >>> from lp.services.mail.stub import test_emails
     >>> len(test_emails)
     1
     >>> from_addr, to_addrs, body = test_emails.pop()
-    >>> print_mail_body(body)
+    >>> print_mail_subject_and_body(body)
+    Subject: Launchpad translation download: Evolution trunk
     > Hello ...,
     >
     > The translation files you requested from Launchpad are ready for
