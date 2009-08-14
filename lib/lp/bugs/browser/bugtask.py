@@ -62,6 +62,7 @@ from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.traversing.interfaces import IPathAdapter
@@ -3495,6 +3496,18 @@ class BugActivityItem:
 
 class BugTaskBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IBugTask`."""
+
     @property
     def text(self):
         return self.context.bug.displayname
+
+    def make_breadcrumb(self):
+        """Return a breadcrumb for this `BugTask`.
+
+        If the user does not have permission to view the bug for
+        whatever reason, don't return a breadcrumb.
+        """
+        try:
+            return super(BugTaskBreadcrumbBuilder, self).make_breadcrumb()
+        except Unauthorized:
+            return None
