@@ -3,22 +3,20 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
+<div metal:fill-slot="heading">
+  <h1>Source package publishing history</h1>
+</div>
 
 <div metal:fill-slot="main">
 
-  <h1>Source package publishing history</h1>
+  <div class="yui-u">
+  <div class="top-portlet">
 
     <table id="publishing-summary" class="listing">
        <thead>
@@ -40,9 +38,13 @@
        </tbody>
     </table>
 
+  </div>
+
   <p>
     <a href=".">&laquo;back</a>
   </p>
+
+  </div>
 
 </div>
 </body>
