@@ -1,52 +1,68 @@
-<table
+<div id="table-details" class="two-column-list"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  id="table-details"
-  class="summary"
   tal:define="overview_menu context/menu:overview">
-  <tbody>
-    <tr>
-      <th>Driver:</th>
-      <td>
-        <tal:nodriver condition="not:context/driver">None</tal:nodriver>
-        <tal:driver condition="context/driver">
-          <a tal:replace="structure context/driver/fmt:link" />
-        </tal:driver>
-        <tal:edit-driver
-          replace="structure overview_menu/driver/fmt:icon" />
-      </td>
-    </tr>
-    <tr>
-      <th>Members:</th>
-      <td>
-        <tal:nomembers condition="not:context/members">None</tal:nomembers>
-        <tal:members condition="context/members">
-          <a tal:replace="structure context/members/fmt:link" />
-        </tal:members>
-        <tal:edit-members
-          replace="structure overview_menu/members/fmt:icon" />
-      </td>
-    </tr>
-    <tr>
-      <th>Uploaders:</th>
-    </tr>
-    <tr tal:repeat="permission context/uploaders">
-      <th><tal:component replace="permission/component/name" /></th>
-      <td>
-        <a tal:replace="structure permission/person/fmt:link" />
-      </td>
-    </tr>
-    <tr>
-      <th>Mirror admins:</th>
-      <td>
-        <tal:nomembers condition="not:context/mirror_admin">None</tal:nomembers>
-        <tal:members condition="context/mirror_admin">
-          <a tal:replace="structure context/mirror_admin/fmt:link" />
-        </tal:members>
-        <tal:mirror_admin
-          replace="structure overview_menu/mirror_admin/fmt:icon" />
-      </td>
-    </tr>
-  </tbody>
-</table>
+  <dl id="owner" tal:condition="context/owner">
+    <dt>Maintainer:</dt>
+    <dd><a tal:replace="structure context/owner/fmt:link" /></dd>
+  </dl>
+
+  <dl id="driver">
+    <dt>Driver:</dt>
+    <dd>
+      <tal:nodriver condition="not:context/driver">None</tal:nodriver>
+      <tal:driver condition="context/driver">
+        <a tal:replace="structure context/driver/fmt:link" />
+      </tal:driver>
+      <a tal:replace="structure overview_menu/driver/fmt:icon" />
+    </dd>
+  </dl>
+
+  <dl id="uploaders">
+    <dt>Uploaders:</dt>
+
+    <dd>
+      <table style="font-size: 108%;">
+        <tr tal:repeat="permission context/uploaders">
+          <td><tal:component replace="permission/component/name" /></td>
+          <td><a tal:replace="structure permission/person/fmt:link" /></td>
+        </tr>
+      </table>
+    </dd>
+  </dl>
+
+  <dl id="members">
+    <dt>Members:</dt>
+    <dd>
+      <tal:nomembers condition="not:context/members">None</tal:nomembers>
+      <tal:members condition="context/members">
+        <a tal:replace="structure context/members/fmt:link" />
+      </tal:members>
+      <a replace="structure overview_menu/members/fmt:icon" />
+    </dd>
+  </dl>
+
+  <dl id="mirror-admins">
+    <dt>Mirror admins:</dt>
+    <dd>
+      <tal:nomembers condition="not:context/mirror_admin">None</tal:nomembers>
+      <tal:members condition="context/mirror_admin">
+        <a tal:replace="structure context/mirror_admin/fmt:link" />
+      </tal:members>
+      <tal:mirror_admin
+        replace="structure overview_menu/mirror_admin/fmt:icon" />
+    </dd>
+  </dl>
+
+  <dl id="uses" tal:define="uses_launchpad view/uses_launchpad_for">
+    <tal:uses_launchpad condition="uses_launchpad">
+      <dt>Uses Launchpad for:</dt>
+      <dd><tal:uses content="structure uses_launchpad" />.</dd>
+    </tal:uses_launchpad>
+    <tal:no_launchpad condition="not: uses_launchpad">
+      <dt>Does not use Launchpad for development.</dt>
+      <dd></dd>
+    </tal:no_launchpad>
+  </dl>
+</div>
