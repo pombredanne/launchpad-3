@@ -560,3 +560,8 @@ pre.wrap {
   word-wrap: break-word;
 }
 
+ul.language, li.language             {
+  list-style-image: url(/@@/language);
+  /* Disable .language sprite. */
+  background: inherit;
+}
