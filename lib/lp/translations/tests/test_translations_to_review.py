@@ -10,6 +10,7 @@ from unittest import TestLoader
 
 from zope.security.proxy import removeSecurityProxy
 
+from lp.translations.model.pofiletranslator import POFileTranslatorSet
 from lp.translations.model.translator import TranslatorSet
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -212,6 +213,17 @@ class TestSuggestReviewableTranslationFiles(TestCaseWithFactory,
         # the person is already working on.
         self.assertFalse(self.pofile in self._suggestReviewables())
 
+    def test_suggestReviewableTranslationFiles_ignores_old_involvement(self):
+        # After a person's involvement with a translation grows old
+        # enough, it becomes eligible for suggestion again.
+        poftset = POFileTranslatorSet()
+        involvement = poftset.getForPersonPOFile(self.person, self.pofile)
+        removeSecurityProxy(involvement).date_last_touched -= timedelta(366)
+        suggestions = self._suggestReviewables(
+            no_older_than=involvement.date_last_touched + timedelta(1))
+
+        self.assertEqual([self.pofile], suggestions)
+
     def test_suggestReviewableTranslationFiles_no_translation_group(self):
         # Only translations that fall under the same translation group
         # are suggested.
@@ -228,6 +240,7 @@ class TestSuggestReviewableTranslationFiles(TestCaseWithFactory,
         # Translations without unreviewed suggestions are ignored.
         other_pofile = self._makeOtherPOFile(with_unreviewed=False)
         self.assertFalse(other_pofile in self._suggestReviewables())
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
