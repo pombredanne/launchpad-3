@@ -62,6 +62,10 @@ class BatchNavigator(lazr.batchnavigator.BatchNavigator):
     def max_batch_size(self):
         return config.launchpad.max_batch_size
 
+    @property
+    def multiple_pages(self):
+        return self.batch.total() > self.batch.size
+
 
 class TableBatchNavigator(BatchNavigator):
     """See canonical.launchpad.interfaces.ITableBatchNavigator."""

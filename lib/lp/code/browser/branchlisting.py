@@ -526,10 +526,6 @@ class BranchListingBatchNavigator(TableBatchNavigator,
         """Return a list of BranchListingItems."""
         return self.decoratedBranches(self.visible_branches_for_view)
 
-    @cachedproperty
-    def multiple_pages(self):
-        return self.batch.total() > self.batch.size
-
     @property
     def table_class(self):
         # XXX: MichaelHudson 2007-10-18 bug=153894: This means there are two
