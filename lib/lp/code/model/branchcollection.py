@@ -413,6 +413,12 @@ class VisibleBranchCollection(GenericBranchCollection):
             self._exclude_from_search + exclude_from_search)
 
     def _getPrivateBranchSubQuery(self):
+        """Return a subquery to get the private branches the user can see.
+
+        If the user is None (which is used for anonymous access), then there
+        is no subquery.  Otherwise return the branch ids for the private
+        branches that the user owns or is subscribed to.
+        """
         # Everyone can see public branches.
         person = self._user
         if person is None:
