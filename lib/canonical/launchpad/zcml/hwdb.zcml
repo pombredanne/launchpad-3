@@ -235,6 +235,13 @@
         parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
         />
 
+    <securedutility
+        class="canonical.launchpad.database.hwdb.HWDeviceClassSet"
+        provides="canonical.launchpad.interfaces.IHWDeviceClassSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDeviceClassSet" />
+    </securedutility>
+
     <class class="canonical.launchpad.database.HWSubmissionDevice">
         <require
             permission="launchpad.View"

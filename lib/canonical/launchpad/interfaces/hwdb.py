@@ -16,6 +16,7 @@ __all__ = [
     'IHWDBApplication',
     'IHWDevice',
     'IHWDeviceClass',
+    'IHWDeviceClassSet',
     'IHWDeviceDriverLink',
     'IHWDeviceDriverLinkSet',
     'IHWDeviceNameVariant',
@@ -64,8 +65,10 @@ from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, export_write_operation, exported,
-    operation_parameters, operation_returns_collection_of, webservice_error)
+    export_destructor_operation, export_read_operation,
+    export_write_operation, exported, operation_parameters,
+    operation_returns_collection_of, operation_returns_entry,
+    webservice_error)
 
 
 def validate_new_submission_key(submission_key):
@@ -690,8 +693,7 @@ class IHWDeviceClass(Interface):
     """The capabilities of a device."""
     export_as_webservice_entry()
 
-    id = exported(
-        Int(title=u'Device class ID', required=True, readonly=True))
+    id = Int(title=u'Device class ID', required=True, readonly=True)
     device = Reference(schema=Interface)
     main_class = exported(
         Int(
@@ -701,6 +703,21 @@ class IHWDeviceClass(Interface):
         Int(
             title=u'The sub class of this device', required=False,
             readonly=True))
+
+    @export_destructor_operation()
+    def delete():
+        """Delete this record."""
+
+
+class IHWDeviceClassSet(Interface):
+    """The set of IHWDeviceClass records."""
+
+    def get(id):
+        """Return an `IHWDeviceClass` record with the given database ID.
+
+        :param id: The database ID.
+        :return: An `IHWDeviceClass` instance.
+        """
 
 
 VENDOR_ID_DESCRIPTION = u"""Allowed values of the vendor ID depend on the
@@ -832,7 +849,8 @@ class IHWDevice(Interface):
         main_class=copy_field(IHWDeviceClass['main_class']),
         sub_class=copy_field(IHWDeviceClass['sub_class']))
     @export_write_operation()
-    def getOrAddDeviceClass(main_class, sub_class=None):
+    @operation_returns_entry(IHWDeviceClass)
+    def getOrCreateDeviceClass(main_class, sub_class=None):
         """Return an `IHWDeviceClass` record or create a new one.
 
         :param main_class: The main class to be added.

@@ -58,13 +58,13 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
     HWSubmissionProcessingStatus, IHWDevice, IHWDeviceClass,
-    IHWDeviceDriverLink, IHWDeviceDriverLinkSet, IHWDeviceNameVariant,
-    IHWDeviceNameVariantSet, IHWDeviceSet, IHWDriver, IHWDriverName,
-    IHWDriverPackageName, IHWDriverSet, IHWSubmission, IHWSubmissionBug,
-    IHWSubmissionBugSet, IHWSubmissionDevice, IHWSubmissionDeviceSet,
-    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
-    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet,
-    IllegalQuery, ParameterError)
+    IHWDeviceClassSet, IHWDeviceDriverLink, IHWDeviceDriverLinkSet,
+    IHWDeviceNameVariant, IHWDeviceNameVariantSet, IHWDeviceSet, IHWDriver,
+    IHWDriverName, IHWDriverPackageName, IHWDriverSet, IHWSubmission,
+    IHWSubmissionBug, IHWSubmissionBugSet, IHWSubmissionDevice,
+    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
+    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
+    IHWVendorNameSet, IllegalQuery, ParameterError)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -772,15 +772,17 @@ class HWDevice(SQLBase):
         """See `IHWDevice.`"""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
-            HWDeviceClass, HWDeviceClass.device == self.id)
+            HWDeviceClass,
+            HWDeviceClass.device == self.id)
         result_set.order_by(HWDeviceClass.main_class, HWDeviceClass.sub_class)
         return result_set
 
-    def getOrAddDeviceClass(self, main_class, sub_class=None):
+    def getOrCreateDeviceClass(self, main_class, sub_class=None):
         """See `IHWDevice.`"""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
-            HWDeviceClass, HWDeviceClass.device == self.id,
+            HWDeviceClass,
+            HWDeviceClass.device == self.id,
             HWDeviceClass.main_class == main_class,
             HWDeviceClass.sub_class == sub_class)
         existing_record = result_set.one()
@@ -793,7 +795,8 @@ class HWDevice(SQLBase):
         """See `IHWDevice.`"""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
-            HWDeviceClass, HWDeviceClass.device == self.id,
+            HWDeviceClass,
+            HWDeviceClass.device == self.id,
             HWDeviceClass.main_class == main_class,
             HWDeviceClass.sub_class == sub_class)
         existing_record = result_set.one()
@@ -1056,6 +1059,21 @@ class HWDeviceClass(SQLBase):
     device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
     main_class = IntCol(notNull=True)
     sub_class = IntCol(notNull=False)
+
+    def delete(self):
+        """See `IHWDeviceClass`."""
+        store = Store.of(self)
+        store.remove(self)
+
+
+class HWDeviceClassSet:
+    """See `IHWDeviceClassSet`."""
+    implements(IHWDeviceClassSet)
+
+    def get(self, id):
+        """See `IHWDeviceClassSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(HWDeviceClass, HWDeviceClass.id == id).one()
 
 
 class HWSubmissionDevice(SQLBase):

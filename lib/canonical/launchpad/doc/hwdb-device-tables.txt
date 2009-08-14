@@ -1662,27 +1662,19 @@ data.
 Let's pretend that Plustek uses the inofficial class/subclass 0x10/0
 for their Optic Pro 12 scanner.
 
-    >>> device_class_optic_pro_ut12 = optic_pro_ut12.getOrAddDeviceClass(
+    >>> device_class_optic_pro_ut12 = optic_pro_ut12.getOrCreateDeviceClass(
     ...     main_class=0x10, sub_class=0)
     >>> device_class_optic_pro_ut12.main_class
     16
     >>> device_class_optic_pro_ut12.sub_class
     0
 
-If we call IHWDevice.getOrAddDeviceClass() for an existing class,
-the method returns the existing record.
-
-    >>> device_class_2 = optic_pro_ut12.getOrAddDeviceClass(
-    ...     main_class=0x10, sub_class=0)
-    >>> print device_class_optic_pro_ut12.id, device_class_2.id
-    1 1
-
 We can assign more than one class to devices. This should only be
 done for USB devices, which may have different classes for each
 of their interfaces. Let's add a second device class, "USB printer",
 for the scanner.
 
-    >>> device_class_printer = optic_pro_ut12.getOrAddDeviceClass(
+    >>> device_class_printer = optic_pro_ut12.getOrCreateDeviceClass(
     ...     main_class=0x07, sub_class=0x01)
     >>> print device_class_printer.device.name
     OpticPro UT12

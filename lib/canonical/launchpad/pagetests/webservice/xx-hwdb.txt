@@ -170,14 +170,13 @@ HWDevice.drivers returns the list of drivers associtaed with this device.
 We can add and retrieve class data, i.e., the type of a device (printer,
 scanner, sound device) for a device. Device 2 is a PCI USB controller,
 having the main PCI class 12 and sub-class 3. Let's add a new device
-class record for this device by calling device.getOrAddDevice(). This
+class record for this device by calling device.getOrCreateDevice(). This
 call returns a reference to a HWDeviceClass record.
 
     >>> class_info = webservice.named_post(
-    ...     '/+hwdb/+device/2', 'getOrAddDeviceClass', {}, main_class=12,
+    ...     '/+hwdb/+device/2', 'getOrCreateDeviceClass', {}, main_class=12,
     ...     sub_class=3).jsonBody()
     >>> pprint_entry(class_info)
-    id: 1
     main_class: 12
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device_class'
     self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/1'
@@ -186,30 +185,25 @@ call returns a reference to a HWDeviceClass record.
 A second call of this method returns the same record.
 
     >>> class_info = webservice.named_post(
-    ...     '/+hwdb/+device/2', 'getOrAddDeviceClass', {}, main_class=12,
+    ...     '/+hwdb/+device/2', 'getOrCreateDeviceClass', {}, main_class=12,
     ...     sub_class=3).jsonBody()
-    >>> pprint_entry(class_info)
-    id: 1
-    ...
+    >>> print class_info['self_link']
+    http://api.launchpad.dev/beta/+hwdb/+deviceclass/1
 
-The property device.classes returns the collection of all all classes
+The property device.classes returns the collection of all classes
 assigned to the device.
 
     >>> class_info = webservice.get('/+hwdb/+device/2/classes').jsonBody()
     >>> for entry in class_info['entries']:
     ...     pprint_entry(entry)
-    id: 1
     main_class: 12
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device_class'
     self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/1'
     sub_class: 3
 
-We can delete existing class data of a device by calling
-device.removeDeviceClass().
+We can delete existing class data by calling deviceclass.delete().
 
-    >>> print webservice.named_post(
-    ...     '/+hwdb/+device/2', 'removeDeviceClass', {}, main_class=12,
-    ...     sub_class=3)
+    >>> print webservice.delete(class_info['entries'][0]['self_link'])
     HTTP/1.1 200 Ok
     ...
 
