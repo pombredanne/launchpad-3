@@ -556,11 +556,11 @@ div.location-portlet h1 {
     }
 .involvement a.code {
     color: #d39f57;
-    background: url(/@@/images/code-arrow-right.png) right center no-repeat;
+    background: url(/@@/code-arrow-right.png) right center no-repeat;
     }
 .involvement a.blueprint {
     color: #5ba4c6;
-    background: url(/@@/images/blueprints-arrow-right.png) right center no-repeat;
+    background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
     }
 
 .announcements li {

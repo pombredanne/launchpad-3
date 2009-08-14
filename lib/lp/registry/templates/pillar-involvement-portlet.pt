@@ -24,7 +24,7 @@
     </li>
     <li tal:condition="context/official_blueprints">
       <a class="blueprint"
-        tal:attributes="href context/menu:specications/new/url">Register a Blueprint</a>
+        tal:attributes="href context/menu:specifications/new/url">Register a Blueprint</a>
     </li>
   </ul>
 </div>
