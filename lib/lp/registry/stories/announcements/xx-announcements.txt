@@ -265,7 +265,7 @@ But we do see it when there are published announcements.
 
     >>> anon_browser.open('http://launchpad.dev/apache')
     >>> count_show_links(anon_browser.contents)
-    2
+    1
     >>> anon_browser.open('http://launchpad.dev/tomcat')
     >>> count_show_links(anon_browser.contents)
     1
