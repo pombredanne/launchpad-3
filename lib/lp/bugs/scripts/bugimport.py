@@ -194,6 +194,7 @@ class BugImporter:
                     name=name, comment=('when importing bugs for %s' %
                                         self.product.displayname))
             else:
+                # EmailAddress and Person are in different stores.
                 person = getUtility(IPersonSet).get(address.personID)
 
             self.person_id_cache[email] = person.id
