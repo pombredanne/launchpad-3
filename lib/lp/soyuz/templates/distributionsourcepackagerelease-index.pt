@@ -20,28 +20,28 @@
 
 <div metal:fill-slot="side">
 <style>
-h2 {font-weight: bold;}
-.phistory {
-    border-top: 1px solid #d0d0d0;
+.side h2 {font-weight: bold;}
+.archheading { text-align: center; }
+.packageicon { text-align: center; }
 }
 </style>
 
   <div id="downloads" class="top-portlet downloads">
     <h2>Download source</h2>
     <ul>
-      <li id="files"> <a href="blah">alsa-utils_1.0.20.orig.tar.gz</a>
+      <li id="files"> <a href="blah">alsa-utils...orig.tar.gz</a>
         <div class="released"><span>(1.2 MiB)</span></div></li>
-      <li id="files"> <a href="blah">alsa-utils_1.0.20-2ubuntu1.diff.gz</a>
+      <li id="files"> <a href="blah">alsa-utils...tu1.diff.gz</a>
         <div class="released"><span>(42.4 KiB)</span></div></li>
-      <li id="files"> <a href="blah">alsa-utils_1.0.20-2ubuntu1.dsc</a>
+      <li id="files"> <a href="blah">alsa-utils...ubuntu1.dsc</a>
         <div class="released"><span>(1.6 KiB)</span></div></li>
     </ul>
   </div>
   <div id="package-diffs" class="top-portlet downloads">
     <h2>Available diffs</h2>
     <ul>
-    <li id="files"><a href="blah">1.0.9-4ubuntu1 to 1.0.9a-4ubuntu1</a>
-      <div class="released">(1.9 KiB)</div></li>
+    <li id="files"><a href="blah">1.0.9-4ubuntu1 to 1.0.9a-4ubuntu2</a>
+      <div class="released"><span>(1.9 KiB)</span></div></li>
       <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs"/>
     </ul>
   </div>
@@ -65,28 +65,28 @@ h2 {font-weight: bold;}
 
       <table class="listing">
 
-      <thead><tr><strong>
-      <td>Binary name</td>
-      <td colspan="3">Intrepid<img src="/@@/yes"></td>
-      <td colspan="3">Jaunty<img src="/@@/yes"></td>
-      <td colspan="3">Karmic<img src="/@@/no"></td>
+      <thead><tr class="archheading"><strong>
+      <td/>
+      <td colspan="3">Intrepid </td>
+      <td colspan="3">Jaunty </td>
+      <td colspan="3">Karmic </td>
       </strong></tr>
       <tr>
-        <td/>
-        <td>i386</td>
-        <td>amd64</td>
-        <td>lpia</td>
-        <td>i386</td>
-        <td>amd64</td>
-        <td>lpia</td>
-        <td>i386</td>
-        <td>amd64</td>
-        <td>lpia</td>
+        <td>Binary name</td>
+        <td>i386<img src="/@@/yes"></td>
+        <td>amd64<img src="/@@/yes"></td>
+        <td>lpia<img src="/@@/yes"></td>
+        <td>i386<img src="/@@/yes"></td>
+        <td>amd64<img src="/@@/yes"></td>
+        <td>lpia<img src="/@@/yes"></td>
+        <td>i386<img src="/@@/yes"></td>
+        <td>amd64<img src="/@@/yes"></td>
+        <td>lpia<img src="/@@/no"></td>
       </tr>
       </thead>
 
-      <tr>
-        <td><img src="/@@/treeCollapsed">foo-flimflam</td>
+      <tr class="packageicon">
+        <td style="text-align: left"><img src="/@@/treeCollapsed">foo-flimflam</td>
         <td><img src="/@@/package-binary"/></td>
         <td><img src="/@@/package-binary"/></td>
         <td><img src="/@@/package-binary"/></td>
@@ -97,8 +97,8 @@ h2 {font-weight: bold;}
         <td><img src="/@@/package-binary"/></td>
         <td/>
       </tr>
-      <tr>
-        <td><img src="/@@/treeCollapsed">foo-dev</td>
+      <tr class="packageicon">
+        <td style="text-align: left"><img src="/@@/treeCollapsed">foo-dev</td>
         <td><img src="/@@/package-binary"/></td>
         <td><img src="/@@/package-binary"/></td>
         <td><img src="/@@/package-binary"/></td>
@@ -109,8 +109,8 @@ h2 {font-weight: bold;}
         <td><img src="/@@/package-binary"/></td>
         <td/>
       </tr>
-      <tr>
-        <td><img src="/@@/treeExpanded">foo-bin</td>
+      <tr class="packageicon">
+        <td style="text-align: left"><img src="/@@/treeExpanded">foo-bin</td>
         <td><img src="/@@/package-binary"/></td>
         <td><img src="/@@/package-binary"/></td>
         <td><img src="/@@/package-binary"/></td>

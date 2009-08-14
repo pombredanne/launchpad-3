@@ -132,16 +132,22 @@ class IDistributionSourcePackageActionMenu(Interface):
     """Marker interface for the action menu."""
 
 
-class DistributionSourcePackageActionMenu(NavigationMenu):
+class DistributionSourcePackageActionMenu(NavigationMenu,
+                                          DistributionSourcePackageOverviewMenu):
     """Action menu for distro source packages."""
     usedfor = IDistributionSourcePackageActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('change_log',)
+    links = ('change_log', 'subscribe', 'edit')
 
     def change_log(self):
         text = 'View full change log'
         return Link('+changelog', text)
+
+
+provideAdapter(
+    DistributionSourcePackageActionMenu, [IDistributionSourcePackageActionMenu],
+    INavigationMenu, name="overview")
 
 
 class DistributionSourcePackageView(LaunchpadFormView):
@@ -370,10 +376,6 @@ class DistributionSourcePackageView(LaunchpadFormView):
             DecoratedDistributionSourcePackageRelease(
                 dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
             for (dspr, spphs) in dspr_pubs]
-
-provideAdapter(
-    DistributionSourcePackageActionMenu, [IDistributionSourcePackageActionMenu],
-    INavigationMenu, name="overview")
 
 
 class DistributionSourcePackageEditView(LaunchpadEditFormView):

@@ -19,7 +19,6 @@
   </tal:devmode>
 </metal:block>
 
-
 <tal:heading metal:fill-slot="heading">
   <h1>
     &ldquo;<span tal:replace="context/name" />&rdquo; source package in
@@ -28,6 +27,10 @@
 </tal:heading>
 
 <tal:side metal:fill-slot="side">
+<style>
+.side h2 {font-weight: bold;}
+</style>
+
     <tal:menu replace="structure view/@@+global-actions" />
 
     <div class="portlet involvement"
@@ -49,6 +52,10 @@
         </a>
         </li>
     </div>
+
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div class="portlet"
+       tal:replace="structure context/@@+portlet-structural-subscribers"/>
 </tal:side>
 
 <tal:main metal:fill-slot="main">
@@ -67,34 +74,27 @@
      Field specific error for the hidden packaging field.
   </p>
 
-  <div class="top-portlet">
+  <div class="yui-u">
+  <div class="portlet">
     <tal:project define="project context/upstream_product">
       <div style="padding:1em;" tal:condition="project">
         <span style="float:left; padding-right:1em; padding-bottom:1em;" tal:replace="structure context/image:logo"/>
         <!-- img width="64" height="64" src="/@@/product-logo"
              style="float:left; padding-right:1em; padding-bottom:1em;"/-->
-        <tal:summary content="structure project/summary" />
+        <span class="summary" tal:content="structure project/summary" />
       </div>
       <tal:noproject condition="not: project">
           This package is not linked to an upstream product.
       </tal:noproject>
     </tal:project>
-  </div>
+  </div><!--portlet -->
+  </div><!--yui-u -->
 
-<style>
-.bugscolour {
-color:#A02C35;
-}
-.answerscolour {
-color:#3941BF;
-}
-</style>
 
   <div style="clear:both;" class="yui-u">
     <table class="listing" id="packages_list">
       <tr style="font-weight: bold">
-        <td colspan=3> <a href="distroseries">Karmic 9.10</a> (development focus)
-        <span style="float:right;"><a href="blah"><img src="/@@/add"> Set upstream link</a> </span>
+        <td colspan=3><a href="distroseries">Karmic 9.10</a> (development focus)<span style="float:right;"><a href="blah"><img src="/@@/add"> Set upstream link</a> </span>
         </td>
       </tr>
       <tr>
@@ -103,8 +103,7 @@ color:#3941BF;
         <td>13 days ago</td>
       </tr>
       <tr style="font-weight: bold">
-        <td style="padding-top:1em" colspan=3><a href="distroseries">Jaunty 9.04</a> (current release)
-        <span style="float:right;"><a href="product-series-page"><tal:icon replace="structure context/image:icon" />Mozilla 3.5 series</a> <img src="/@@/edit"> <img src="/@@/remove"></span>
+        <td style="padding-top:1em" colspan=3><a href="distroseries">Jaunty 9.04</a> (current release)<span style="float:right;"><a href="product-series-page"><tal:icon replace="structure context/image:icon" />Mozilla 3.5 series</a> <img src="/@@/edit"> <img src="/@@/remove"></span>
         </td>
       </tr>
       <tr>
