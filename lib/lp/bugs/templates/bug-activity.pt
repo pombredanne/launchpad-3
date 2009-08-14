@@ -7,7 +7,7 @@
 
   <div metal:fill-slot="heading">
     <h1>
-      Activity log for bug #<span tal:replace="context/bug/id" /> -
+      Activity log for bug #<span tal:replace="context/bug/id" />:
       <span tal:replace="context/bug/title" />
     </h1>
   </div>
