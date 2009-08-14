@@ -10,7 +10,6 @@ __all__ = [
 
 import os
 import psycopg2
-import textwrap
 import traceback
 from StringIO import StringIO
 from zope.component import getAdapter, getUtility
@@ -125,10 +124,10 @@ class ExportResult:
                 implicit_potemplates.add(potemplate)
                 pofiles.add(request)
             if potemplate.displayname != last_template_name:
-                    self.logger.debug(
-                        'Exporting objects for %s, related to template %s'
-                        % (self.person.displayname, potemplate.displayname))
-                    last_template_name = potemplate.displayname
+                self.logger.debug(
+                    'Exporting objects for %s, related to template %s'
+                    % (self.person.displayname, potemplate.displayname))
+                last_template_name = potemplate.displayname
 
             # Determine productseries or sourcepackage for any
             # productseries/sourcepackage an export was requested at.
