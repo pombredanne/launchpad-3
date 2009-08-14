@@ -257,7 +257,7 @@ Including 'inactive' PPAs:
 
     >>> result = ubuntu.searchPPAs(show_inactive=True)
     >>> [archive.owner.name for archive in result]
-    [u'cprov', u'no-priv', u'mark']
+    [u'cprov', u'mark', u'no-priv']
 
     >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
     >>> [archive.owner.name for archive in result]
@@ -464,4 +464,3 @@ their packages in the correct archive.
     >>> contrib_archive = ubuntutest.getArchiveByComponent('contrib')
     >>> print contrib_archive.displayname
     Primary Archive for Ubuntu Test
-

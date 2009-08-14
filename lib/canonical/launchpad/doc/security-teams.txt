@@ -61,7 +61,7 @@ Shuttleworth are both subscribed to the bug.
     ...     return sorted(subscriber.name for subscriber in subscribers)
 
     >>> subscriber_names(bug)
-    [u'name16', u'mark']
+    [u'mark', u'name16']
 
 If the bug were not reported as security-related, only Foo Bar would
 have been subscribed:
@@ -276,4 +276,3 @@ affects are subscribed to it.
     Bug Reporter
     Distribution Security Contact
     Product Security Contact
-
