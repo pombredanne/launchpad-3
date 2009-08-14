@@ -889,7 +889,8 @@ class TestTranslationCredits(TestCaseWithFactory):
         self.pofile = self.factory.makePOFile('sr')
         self.potemplate = self.pofile.potemplate
         
-        self.potmsgset = self.factory.makePOTMsgSet(potemplate=self.potemplate, sequence=1)
+        self.potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.potemplate, sequence=1)
         self.credits_potmsgset = self.factory.makePOTMsgSet(
             singular=u'translator-credits', potemplate=self.potemplate)
     
