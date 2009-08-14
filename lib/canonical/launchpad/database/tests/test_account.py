@@ -154,14 +154,13 @@ class EmailManagementTests(TestCaseWithFactory):
 
     def test_validated_emails(self):
         account = self.factory.makeAccount("Test Account")
-        preferred_email = account.preferredemail
-        new_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             "new-email@example.org", None, account,
             EmailAddressStatus.NEW)
         validated_email = self.factory.makeEmail(
             "validated-email@example.org", None, account,
             EmailAddressStatus.VALIDATED)
-        old_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             "old@example.org", None, account,
             EmailAddressStatus.OLD)
         transaction.commit()
@@ -172,10 +171,10 @@ class EmailManagementTests(TestCaseWithFactory):
         new_email = self.factory.makeEmail(
             "new-email@example.org", None, account,
             EmailAddressStatus.NEW)
-        validated_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             "validated-email@example.org", None, account,
             EmailAddressStatus.VALIDATED)
-        old_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             "old@example.org", None, account,
             EmailAddressStatus.OLD)
         transaction.commit()
