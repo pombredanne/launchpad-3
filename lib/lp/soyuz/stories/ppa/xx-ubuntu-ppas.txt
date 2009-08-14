@@ -873,7 +873,7 @@ quickly 'retry' the failure.
 At this point anyone can also visualise that 'cdrkit' source is being
 built in Celso's PPA.
 
-    >>> anon_browser.getLink('View PPA').click()
+    >>> anon_browser.getLink('PPA for Celso Providelo').click()
     >>> print_build_status(anon_browser.contents)
     Source                    Build Status
     cdrkit - 1.0              /@@/build-needed i386

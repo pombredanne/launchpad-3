@@ -1849,6 +1849,22 @@ form.archive-subscription-activation button:hover {
     text-decoration: underline;
 }
 
+/* Colored build status. */
+.buildstatusNEEDSBUILD     {color: gray;}
+.buildstatusBUILDING       {color: black;}
+.buildstatusFULLYBUILT     {color: green;}
+.buildstatusFAILEDTOBUILD  {color: red;}
+.buildstatusMANUALDEPWAIT  {color: red;}
+.buildstatusCHROOTWAIT     {color: red;}
+.buildstatusSUPERSEDED     {color: red;}
+.buildstatusFAILEDTOUPLOAD {color: red;}
+
+/* Shaded buildlog */
+div #buildlog-tail {
+    background-color: #f6f6f6;
+    padding: 10px;
+}
+
 /* Disabled PPAs when linkified (uploaders) should be gray and when not
    linkified should be lined-through. */
 a.ppa-icon-inactive {
