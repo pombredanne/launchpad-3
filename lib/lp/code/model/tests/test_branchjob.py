@@ -37,6 +37,7 @@ from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.code.bzr import (
     BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, RepositoryFormat,
     REPOSITORY_FORMAT_UPGRADE_PATH)
@@ -849,6 +850,25 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self.branch, self.tree = self.create_branch_and_tree()
         return self._commitFilesToTree(files, 'First commit')
 
+    def _makeRosettaUploadJob(self):
+        """Create a `RosettaUploadJob`."""
+        # RosettaUploadJob's parent BranchJob is joined to Job through
+        # BranchJob.job, but in tests those two ids can also be the same.
+        # This may hide broken joins, so make sure that the ids are not
+        # identical.
+        # There are at least as many Jobs as BranchJobs, so we can whack
+        # the two out of any accidental sync by advancing the Job.id
+        # sequence.
+        dummy = Job()
+        dummy.sync()
+        dummy.destroySelf()
+
+        # Now create the RosettaUploadJob.
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job.job.sync()
+        job.context.sync()
+        return job
+
     def _commitFilesToTree(self, files, commit_message=None):
         """Add files to the tree.
 
@@ -913,7 +933,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self.branch = self.factory.makeAnyBranch()
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job = self._makeRosettaUploadJob()
         verifyObject(IRosettaUploadJob, job)
 
     def test_upload_pot(self):
@@ -1079,7 +1099,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Add a job and complete it -> not in ready state.
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job = self._makeRosettaUploadJob()
         job.job.start()
         job.job.complete()
         ready_jobs = list(RosettaUploadJob.iterReady())
@@ -1093,9 +1113,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Put the job in ready state.
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
-        job.context.sync()
+        job = self._makeRosettaUploadJob()
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([], ready_jobs)
 
@@ -1105,9 +1123,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Put the job in ready state.
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
-        job.context.sync()
+        job = self._makeRosettaUploadJob()
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([job], ready_jobs)
 
@@ -1116,9 +1132,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
-        job.context.sync()
+        job = self._makeRosettaUploadJob()
         unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
             self.branch))
         self.assertEqual([job.context], unfinished_jobs)
@@ -1128,8 +1142,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
+        job = self._makeRosettaUploadJob()
         job.job.start()
         job.job.complete()
         unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
@@ -1141,8 +1154,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
+        job = self._makeRosettaUploadJob()
         job.job.start()
         job.job.complete()
         job.job._status = JobStatus.FAILED

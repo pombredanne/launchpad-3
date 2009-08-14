@@ -6,24 +6,22 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
+<div metal:fill-slot="main" tal:define="branches view/branches">
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+  <div style="float:right" id="floating-links"
+       tal:define="menu context/menu:overview">
+    <div tal:define="link menu/branch_visibility"
+         tal:condition="link/enabled"
+         tal:content="structure link/render" />
+  </div>
 
-<metal:heading fill-slot="pageheading">
   <h1>Bazaar branches for <tal:project-name replace="context/displayname"/></h1>
-</metal:heading>
-
-<div metal:fill-slot="main"
-     tal:define="branches view/branches">
 
   <tal:branchlisting content="structure branches/@@+branch-listing" />
 
