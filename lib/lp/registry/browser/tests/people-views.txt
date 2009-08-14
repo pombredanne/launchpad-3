@@ -1,0 +1,16 @@
+==============================
+Searching for people and teams
+==============================
+
+The view behind the /people page provides searching for people and teams.  The
+view knows how many people and teams are currently registered in Launchpad.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> person_set = getUtility(IPersonSet)
+
+    >>> view = create_initialized_view(person_set, '+index')
+    >>> view.number_of_people
+    48
+    >>> view.number_of_teams
+    17

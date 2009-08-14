@@ -1348,34 +1348,39 @@ class TeamMembershipView(LaunchpadView):
         return self.proposed_memberships or self.invited_memberships
 
 
-class FOAFSearchView:
-
+class FOAFSearchView(LaunchpadView):
+    """Search for people and teams on the /people page."""
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.results = []
 
-    def teamsCount(self):
-        return getUtility(IPersonSet).teamsCount()
+    @property
+    def number_of_people(self):
+        return self.context.peopleCount()
 
-    def peopleCount(self):
-        return getUtility(IPersonSet).peopleCount()
+    @property
+    def number_of_teams(self):
+        return self.context.teamsCount()
 
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
-
         if not name:
             return None
-
         searchfor = self.request.get("searchfor")
         if searchfor == "peopleonly":
-            results = getUtility(IPersonSet).findPerson(name)
+            results = self.context.findPerson(name)
         elif searchfor == "teamsonly":
-            results = getUtility(IPersonSet).findTeam(name)
+            results = self.context.findTeam(name)
         else:
-            results = getUtility(IPersonSet).find(name)
-
+            results = self.context.find(name)
         return BatchNavigator(results, self.request)
+
+    @property
+    def is_admin(self):
+        """Is the logged in user a Launchpad administrator?"""
+        return (self.user is not None and
+                self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
 class PersonAddView(LaunchpadFormView):
