@@ -77,11 +77,10 @@
   <div class="yui-u">
   <div class="top-portlet">
     <tal:project define="project context/upstream_product">
-      <div style="padding:1em;" tal:condition="project">
-        <span style="float:left; padding-right:1em; padding-bottom:1em;" tal:replace="structure context/image:logo"/>
-        <!-- img width="64" height="64" src="/@@/product-logo"
-             style="float:left; padding-right:1em; padding-bottom:1em;"/-->
-        <span class="summary" tal:content="structure project/summary" />
+      <div tal:condition="project">
+        <div style="float:left; padding:0 1em 1em 0;"
+             tal:content="structure context/image:logo"/>
+        <div class="summary" tal:content="structure project/summary" />
       </div>
       <tal:noproject condition="not: project">
           This package is not linked to an upstream product.
@@ -94,7 +93,9 @@
   <div style="clear:both;" class="yui-u">
     <table class="listing" id="packages_list">
       <tr style="font-weight: bold">
-        <td colspan=3><a href="distroseries">Karmic 9.10</a> (development focus)<span style="float:right;"><a href="blah"><img src="/@@/add"> Set upstream link</a> </span>
+        <td colspan=3>
+        <div style="float:right;"><a href="blah"><img src="/@@/add"> Set upstream link</a> </div>
+        <a href="distroseries">Karmic 9.10</a> (development focus)
         </td>
       </tr>
       <tr>
@@ -103,7 +104,9 @@
         <td>13 days ago</td>
       </tr>
       <tr style="font-weight: bold">
-        <td style="padding-top:1em" colspan=3><a href="distroseries">Jaunty 9.04</a> (current release)<span style="float:right;"><a href="product-series-page"><tal:icon replace="structure context/image:icon" />Mozilla 3.5 series</a> <img src="/@@/edit"> <img src="/@@/remove"></span>
+        <td style="padding-top:1em" colspan=3>
+        <div style="float:right;"><a href="product-series-page"><tal:icon replace="structure context/image:icon" />Mozilla 3.5 series</a> <img src="/@@/edit"> <img src="/@@/remove"></div>
+        <a href="distroseries">Jaunty 9.04</a> (current release)
         </td>
       </tr>
       <tr>
