@@ -896,8 +896,8 @@ class TestTranslationCredits(TestCaseWithFactory):
     def test_prepareTranslationCredits_extending(self):
         person = self.factory.makePerson()
         
-        upstream_contributor = "Upstream Contributor <name@project.org>"
-        excepted_credits_text = "%s\n\nLaunchpad Contributions:\n  %s %s" % (
+        upstream_contributor = u"Upstream Contributor <name@project.org>"
+        excepted_credits_text = u"%s\n\nLaunchpad Contributions:\n  %s %s" % (
             upstream_contributor, person.displayname, canonical_url(person))
         
         # Add the upstream translation contributor to 'translator-credits'.
