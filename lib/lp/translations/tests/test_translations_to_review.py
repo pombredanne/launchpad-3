@@ -114,28 +114,37 @@ class ReviewableTranslationFilesTest:
         next_day = self.base_time + timedelta(1, 0, 0)
         self.assertEqual(self._getReviewables(no_older_than=next_day), [])
 
-    def test_NotTranslatingInLaunchpad(self):
+    def test_getReviewableTranslationFiles_not_translating_in_launchpad(self):
         # We don't see products/distros that don't use Launchpad for
         # translations.
         self.supercontext.official_rosetta = False
         self.assertEqual(self._getReviewables(), [])
 
-    def test_NonReviewer(self):
+    def test_getReviewableTranslationFiles_non_reviewer(self):
         # The method does not show translations that the user is not a
         # reviewer for.
         self.supercontext.translationgroup = None
         self.assertEqual(self._getReviewables(), [])
 
-    def test_OtherLanguage(self):
+    def test_getReviewableTranslationFiles_other_language(self):
         # We only get translations in languages that the person is a
         # reviewer for.
         self.pofile.language = LanguageSet().getLanguageByCode('de')
         self.assertEqual(self._getReviewables(), [])
 
-    def test_NoNewSuggestions(self):
+    def test_getReviewableTranslationFiles_no_new_suggestions(self):
         # Translation files only show up if they have new suggestions.
         self.suggestion.date_created -= timedelta(2)
         self.pofile.updateStatistics()
+        self.assertEqual(self._getReviewables(), [])
+
+    def test_getReviewableTranslationFiles_ignores_english(self):
+        # POFiles that "translate to English" are ignored.
+        english = LanguageSet().getLanguageByCode('en')
+        TranslatorSet().new(
+            translationgroup=self.translationgroup, language=english,
+            translator=self.person)
+        self.pofile.language = english
         self.assertEqual(self._getReviewables(), [])
 
 
