@@ -163,12 +163,8 @@ class NavigationMenuTabs(LaunchpadView):
 
     def initialize(self):
         menuapi = MenuAPI(self.context)
-        # Split the property retrieval into two steps, so that the
-        # AttributeError doesn't cause __getattr__ to be called, which
-        # then causes a confusing exception of its own.
-        navigation = MenuAPI.navigation.fget(menuapi)
         self.links = sorted([
-            link for link in navigation.values()
+            link for link in menuapi.navigation.values()
             if (link.enabled or config.devmode)],
             key=operator.attrgetter('sort_key'))
         self.title = None
