@@ -75,7 +75,7 @@
   </p>
 
   <div class="yui-u">
-  <div class="portlet">
+  <div class="top-portlet">
     <tal:project define="project context/upstream_product">
       <div style="padding:1em;" tal:condition="project">
         <span style="float:left; padding-right:1em; padding-bottom:1em;" tal:replace="structure context/image:logo"/>
