@@ -33,6 +33,7 @@ from lp.translations.interfaces.translationrelicensingagreement import (
     TranslationRelicensingAgreementOptions)
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
+from lp.translations.model.productserieslanguage import ProductSeriesLanguage
 
 
 class PersonTranslationsMenu(NavigationMenu):
@@ -110,6 +111,13 @@ class PersonTranslationView(LaunchpadView):
         return not (
             translationmessage.potmsgset.hide_translations_from_anonymous)
 
+    def _composeReviewLinks(self, pofiles):
+        """Compose URLs for reviewing given `POFile`s."""
+        return [
+            canonical_url(pofile) + '/+translate?show=new_suggestions'
+            for pofile in pofiles
+            ]
+
     def _findBestCommonReviewLinks(self, pofiles):
         """Find best links to a bunch of related `POFile`s.
 
@@ -127,9 +135,7 @@ class PersonTranslationView(LaunchpadView):
         if len(pofiles) == 1:
             # Simple case: one translation file.  Go straight to
             # translation page for its unreviewed strings.
-            return [
-                canonical_url(first_pofile) +
-                "/+translate?show=new_suggestions"]
+            return self._composeReviewLinks(pofiles)
 
         productseries = set(
             pofile.potemplate.productseries
@@ -163,7 +169,7 @@ class PersonTranslationView(LaunchpadView):
 
         # Different release series of the same product.  Link to each of
         # the individual POFiles.
-        return pofiles
+        return self._composeReviewLinks(pofiles)
 
     def _describeReviewableTarget(self, target, link, strings_count):
         """Produce dict to describe a reviewable target.
