@@ -308,6 +308,8 @@ class GetPersonTestCase(TestCaseWithFactory):
         self.failUnlessEqual(
             PersonCreationRationale.BUGIMPORT,
             person.creation_rationale)
+        # The person's email addresses are hidden by default.
+        self.failUnless(person.hide_email_addresses)
 
 
 class GetMilestoneTestCase(unittest.TestCase):
