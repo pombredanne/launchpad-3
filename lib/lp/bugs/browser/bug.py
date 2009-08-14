@@ -549,17 +549,13 @@ class BugEditView(BugEditViewBase):
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('tags', BugTagsWidget)
     next_url = None
+    label = 'Edit Bug Information'
 
     _confirm_new_tags = False
 
     def __init__(self, context, request):
         BugEditViewBase.__init__(self, context, request)
         self.notifications = []
-
-    @property
-    def label(self):
-        """The form label."""
-        return 'Edit Bug Information'
 
     @property
     def page_title(self):
