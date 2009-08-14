@@ -23,6 +23,7 @@ class BugMessageAddFormView(LaunchpadFormView):
 
     schema = IBugMessageAddForm
     initial_focus_widget = None
+    label = 'Add a comment or attachment'
 
     @property
     def initial_values(self):
