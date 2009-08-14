@@ -107,7 +107,7 @@ class BuildContextMenu(ContextMenu):
     def retry(self):
         """Only enabled for build records that are active."""
         text = 'Retry build'
-        return Link('+retry', text, icon='edit',
+        return Link('+retry', text, icon='retry',
                     enabled=self.context.can_be_retried)
 
     @enabled_with_permission('launchpad.Admin')
@@ -169,6 +169,18 @@ class BuildView(LaunchpadView):
             return None
 
         return ProxiedLibraryFileAlias(changesfile, self.context)
+
+    @cachedproperty
+    def is_ppa(self):
+        return self.context.archive.is_ppa
+
+    @cachedproperty
+    def buildqueue(self):
+        return self.context.buildqueue_record
+
+    @cachedproperty
+    def component(self):
+        return self.context.current_component
 
     @cachedproperty
     def files(self):

@@ -67,6 +67,18 @@ Let's instantiate the view for +index:
     >>> hoary_failed_build_view = getMultiAdapter(
     ...     (hoary_failed_build, empty_request), name="+index")
 
+`BuildView` has some cached properties that are used multiple times in
+the related templates.
+
+    >>> print hoary_failed_build_view.is_ppa
+    False
+
+    >>> print hoary_failed_build_view.buildqueue
+    None
+
+    >>> print hoary_failed_build_view.component.name
+    main
+
 'BuildView.user_can_retry_build' property checks not only the
 user's permissions to retry but also if a build is in a status that it
 can be retried.
@@ -197,7 +209,86 @@ is True:
     >>> cprov_failed_build_view.has_done_upload
     True
 
-= BuildRecordsView =
+
+== BuildRescoringView ==
+
+`BuildRescoringView` is uses for setting new values to the
+corresponding `BuildQueue.lastscore` record for a `Build`.
+
+It redirect users to the `Build` page when the build cannot be
+rescored.
+
+    >>> print cprov_failed_build.can_be_rescored
+    False
+
+    >>> view = create_initialized_view(
+    ...    cprov_failed_build, name="+rescore")
+
+    >>> view.request.response.getStatus()
+    302
+    >>> print view.request.response.getHeader('Location')
+    http://launchpad.dev/~cprov/+archive/ppa/+build/26
+
+Canceled 'Rescore' form redirects users back to the Build page.
+
+    # Fetch an PENDING build from the sampledata.
+    >>> pending_build = ubuntu.getBuildRecords(
+    ...      build_state=BuildStatus.NEEDSBUILD)[0]
+
+    >>> view = create_initialized_view(
+    ...    pending_build, name="+rescore")
+
+    >>> print view.cancel_url
+    http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11
+
+The 'priority' field only accepts long integer values.
+
+    >>> view = create_initialized_view(
+    ...    pending_build, name="+rescore", form={
+    ...    'field.priority': str(2 ** 31 + 1),
+    ...    'field.actions.rescore': 'Rescore',
+    ...    })
+
+    >>> for error in view.errors:
+    ...     print error
+    ('priority', u'Priority', 2147483649 2147483648)
+
+    >>> view = create_initialized_view(
+    ...    pending_build, name="+rescore", form={
+    ...    'field.priority': '-' + str(2 ** 31 + 1),
+    ...    'field.actions.rescore': 'Rescore',
+    ...    })
+
+    >>> for error in view.errors:
+    ...     print error
+    ('priority', u'Priority', -2147483649 -2147483648)
+
+Submitting valid values will update the build 'score' and redirect
+users to the build page with an appropriate notification.
+
+    >>> print pending_build.buildqueue_record.lastscore
+    10
+
+    >>> view = create_initialized_view(
+    ...    pending_build, name="+rescore", form={
+    ...    'field.priority': '0',
+    ...    'field.actions.rescore': 'Rescore',
+    ...    })
+
+    >>> view.request.response.getStatus()
+    302
+    >>> print view.request.response.getHeader('Location')
+    http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11
+
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Build rescored to 0.
+
+    >>> print pending_build.buildqueue_record.lastscore
+    0
+
+
+== BuildRecordsView ==
 
 The BuildRecordsView can also be used to filter by architecture tag.
 
