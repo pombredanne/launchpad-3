@@ -412,7 +412,8 @@ class BugViewMixin:
     @cachedproperty
     def subscriber_ids(self):
         """Return a dictionary mapping a css_name to user name."""
-        subscribers = self.direct_subscribers.union(self.duplicate_subscribers)
+        subscribers = self.direct_subscribers.union(
+            self.duplicate_subscribers)
 
         # The current user has to be in subscribers_id so
         # in case the id is needed for a new subscription.
