@@ -9,17 +9,19 @@ translation resources from the Launchpad portal.
 ExportResult class is used to control the list of exported files that succeed
 and the ones that failed with the error associated.
 
-  >>> import transaction
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> from lp.services.mail.stub import test_emails
-  >>> from lp.translations.scripts.po_export_queue import ExportResult
+    >>> import transaction
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.services.mail.stub import test_emails
+    >>> from lp.translations.scripts.po_export_queue import ExportResult
+    >>> import logging
+    >>> logger = logging.getLogger()
 
-  # Function to print mail content without headers.
-  >>> def print_mail_body(body):
-  ...     lines = body[body.index('\n\n')+2:].split('\n')
-  ...     for line in lines:
-  ...         print ">", line
+    # Function to print mail content without headers.
+    >>> def print_mail_body(body):
+    ...     lines = body[body.index('\n\n')+2:].split('\n')
+    ...     for line in lines:
+    ...         print ">", line
 
 When there is an error, the system will notify it.
 
@@ -29,10 +31,10 @@ exception handling so we can get the exception error:
     >>> from lp.translations.model.potemplate import POTemplate
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
+    >>> personset = getUtility(IPersonSet)
+    >>> carlos = personset.getByName('carlos')
 
-    >>> result = ExportResult('testing export')
-    >>> result.object_names.append(potemplate.displayname)
-    >>> result.object_names.append(pofile.title)
+    >>> result = ExportResult(carlos, [potemplate, pofile], logger)
 
 Record the error.
 
@@ -50,9 +52,7 @@ Once we are done, we should notify the user that everything failed, but
 given that we set a URL, the notification will detect the programming error.
 In this example, 'carlos' will be the one that did the request.
 
-  >>> personset = getUtility(IPersonSet)
-  >>> carlos = personset.getByName('carlos')
-  >>> result.notify(carlos)
+  >>> result.notify()
   Traceback (most recent call last):
   ...
   AssertionError: We cannot have a URL for the export and a failure.
@@ -60,15 +60,15 @@ In this example, 'carlos' will be the one that did the request.
 In this case, it should be None, so the notify works.
 
   >>> result.url = None
-  >>> result.notify(carlos)
+  >>> result.notify()
 
   # We need to commit the transaction to get the emails in the queue.
   >>> transaction.commit()
 
 As usual, when there is an error, two emails should be sent:
 
-  >>> len(test_emails) == 2
-  True
+  >>> len(test_emails)
+  2
 
   >>> while len(test_emails) > 0:
   ...     from_addrs, to_addrs, body = test_emails.pop()
@@ -84,12 +84,19 @@ One is for the user with the error notification.
   >>> print carlos_addrs
   ['carlos@canonical.com']
   >>> print_mail_body(carlos_body)
-  > 
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
-  > 
+  >
   > Launchpad encountered problems exporting the files you requested.
   > The Launchpad Translations team has been notified of this problem.
   > Please reply to this email for further assistance.
+  >
+  > If you want to retry your request, you can do so at
+  >
+  >   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+ex=
+  > port.
+  >
+  > --
+  > Automatic message from Launchpad.net =E2=80=94 https://launchpad.net/
   >
 
 And the other to the admins.  This one lists the files that were being
@@ -98,23 +105,29 @@ exported as context to help tracking down any bugs.
   >>> print admins_addrs
   ['launchpad-error-reports@lists.canonical.com']
   >>> print_mail_body(admins_body)
-  > 
   > Hello admins,
-  > 
+  >
   > Launchpad encountered problems exporting translation files
-  > requested by Carlos Perell=C3=B3 Mar=C3=ADn.
+  > requested by Carlos Perell=C3=B3 Mar=C3=ADn (carlos) at
+  >
+  >   http://translations.launchpad.../trunk/+pots/evolution-2.2/+ex=
+  > port
   >
   > This means we have a bug in Launchpad that needs to be fixed
-  > before this export can proceed.  Here is the list of failed
-  > files and the error we got:
-  > 
+  > before this export can proceed.  Here is the error we got:
+  >
   > Traceback (most recent call last):
   ...
   > AssertionError: It's just an error for testing purposes
   >
-  > The failed request involved these objects:
-  > evolution-2.2 in Evolution trunk
-  > Spanish (es) translation of evolution-2.2 in Evolution trunk
+  >
+  > Failed export request included:
+  >   * evolution-2.2 in Evolution trunk
+  >   * Spanish (es) translation of evolution-2.2 in Evolution trunk
+  >
+  > --
+  > Automatic message from Launchpad.net =E2=80=94 https://launchpad.net/
+  >
 
 As a special case, some error messages are poisoned with non-ASCII characters
 and can't be reported without triggering an error themselves.  Those are
@@ -124,10 +137,10 @@ specially handled and reported.
   ...     raise AssertionError, "Really nasty \xc3 non-ASCII error!"
   ... except AssertionError:
   ...     result.addFailure()
-  >>> result.notify(carlos)
+  >>> result.notify()
   >>> transaction.commit()
-  >>> len(test_emails) == 2
-  True
+  >>> len(test_emails)
+  2
 
   >>> carlos_body = None
   >>> admins_body = None
@@ -141,38 +154,52 @@ specially handled and reported.
 The user's notification looks no different from that for an ordinary error.
 
   >>> print_mail_body(carlos_body)
-  > 
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
-  > 
+  >
   > Launchpad encountered problems exporting the files you requested.
   > The Launchpad Translations team has been notified of this problem.
   > Please reply to this email for further assistance.
+  >
+  > If you want to retry your request, you can do so at
+  >
+  >   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+ex=
+  > port.
+  >
+  > --
+  > Automatic message from Launchpad.net =E2=80=94 https://launchpad.net/
   >
 
 The one for the administrators, however, does not include the unprintable
 exception text.
 
   >>> print_mail_body(admins_body)
-  > 
   > Hello admins,
-  > 
+  >
   > A UnicodeDecodeError occurred while trying to notify you of a
   > failure during a translation export requested by Carlos ...
+  > (carlos) at
   >
-  > The failed request involved these objects:
-  > evolution-2.2 in Evolution trunk
-  > Spanish (es) translation of evolution-2.2 in Evolution trunk
+  >   http://translations.launchpad.../trunk/+pots/evolution-2.2/+ex=
+  > port
+  >
+  > Failed export request included:
+  >   * evolution-2.2 in Evolution trunk
+  >   * Spanish (es) translation of evolution-2.2 in Evolution trunk
+  >
+  > --
+  > Automatic message from Launchpad.net =E2=80=94 https://launchpad.net/
+  >
 
 
 Finally, there is the case when there are no errors at all. This is the usual
 case.
 
-  >>> result = ExportResult('testing export')
+  >>> result = ExportResult(carlos, [potemplate, pofile], logger)
 
 As noted before, result.url should be set to the URL where the user can
 download the requested files. If we don't set it, the export will fail:
 
-  >>> result.notify(carlos)
+  >>> result.notify()
   Traceback (most recent call last):
   ...
   AssertionError: On success, an exported URL is expected.
@@ -183,28 +210,39 @@ So let's add it:
 
 And notify the user.
 
-  >>> result.notify(carlos)
+  >>> result.notify()
 
   # We need to commit the transaction to get the email in the queue.
   >>> transaction.commit()
 
 In this case, there are no errors, so we should get just a single email
 
-  >>> len(test_emails) == 1
-  True
+  >>> len(test_emails)
+  1
 
   >>> from_addrs, to_addrs, body = test_emails.pop()
 
   >>> print to_addrs
   ['carlos@canonical.com']
   >>> print_mail_body(body)
-  > 
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
-  > 
+  >
   > The translation files you requested from Launchpad are ready for
   > download from the following location:
-  > 
-  >     http://someplace.com/somefile.tar.gz
+  >
+  >   http://someplace.com/somefile.tar.gz
+  >
+  > Note: this link will expire in about 1 week.  If you want to
+  > download these translations again, you will have to request
+  > them again at
+  >
+  >   http://translations.launchpad.../trunk/+pots/evolution-2.2/+ex=
+  > port
+  >
+  > --
+  > Automatic message from Launchpad.net =E2=80=94 https://launchpad.net/
+  >
+
 
 
 == process_queue() ==
@@ -236,7 +274,6 @@ Once a new entry has been added, the queue has content.
 
 Once the queue is processed, the queue is empty again.
 
-    >>> import logging
     >>> process_queue(transaction, logging.getLogger())
     INFO:...Stored file at http://.../po_evolution-2.2.pot
 
@@ -254,13 +291,23 @@ The confirmation email shows no errors at all.
     >>> print to_addrs
     ['carlos@canonical.com']
     >>> print_mail_body(body)
-    > 
     > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
-    > 
+    >
     > The translation files you requested from Launchpad are ready for
     > download from the following location:
-    > 
+    >
     >     http://localhost:58000/.../po_evolution-2.2.pot
+    >
+    > Note: this link will expire in about 1 week.  If you want to
+    > download these translations again, you will have to request
+    > them again at
+    >
+    >   http://translations.launchpad.../trunk/+pots/evolution-2.2/+ex=
+    > port
+    >
+    > --
+    > Automatic message from Launchpad.net =E2=80=94 https://launchpad.net/
+    >
 
 Let's have a closer look at what is being exported. Usually all messages are
 exported but not all messages are equal. Some messages have been imported

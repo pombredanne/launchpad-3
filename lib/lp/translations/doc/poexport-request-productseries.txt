@@ -66,13 +66,21 @@ The user receives a confirmation email.
     1
     >>> from_addr, to_addrs, body = test_emails.pop()
     >>> print_mail_body(body)
-    >
     > Hello ...,
     >
     > The translation files you requested from Launchpad are ready for
     > download from the following location:
     >
-    >     http://localhost:58000/.../launchpad-export.tar.gz
+    >   http://localhost:58000/.../launchpad-export.tar.gz
+    >
+    > Note: this link will expire in about 1 week.  If you want to
+    > download these translations again, you will have to request
+    > them again at
+    >
+    >   http://translations.launchpad.dev/evolution/trunk/+export
+    >
+    > --
+    > Automatic message from Launchpad.net...
 
 The email contains a URL linking to where the exported file can be downloaded.
 
