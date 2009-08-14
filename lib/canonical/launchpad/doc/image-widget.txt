@@ -365,7 +365,6 @@ an image with a byte size smaller than person_mugshot.max_size BUT dimensions
 smaller than person_mugshot.dimensions, it must be rejected.
 
     >>> import PIL.Image
-    >>> from canonical.launchpad.fields import MugshotImageUpload
     >>> person_mugshot = IPerson['mugshot'].bind(salgado)
     >>> logo_file_name = os.path.join(
     ...     os.path.dirname(canonical.launchpad.__file__),

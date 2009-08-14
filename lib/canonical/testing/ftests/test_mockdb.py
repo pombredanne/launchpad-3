@@ -63,7 +63,7 @@ class MockDbTestCase(unittest.TestCase):
         self.failUnless(self.mode in ('record', 'replay'))
 
         if self.mode != 'replay':
-            # If we are already in replay mode don't close connections, 
+            # If we are already in replay mode don't close connections,
             # as these close events won't be in the script and will fail.
             self.closeConnections()
 
@@ -165,8 +165,7 @@ class MockDbTestCase(unittest.TestCase):
             connection_string = re.sub(
                     r"dbname=\S*", r"dbname=not_a_sausage", connection_string)
             self.assertRaises(
-                    psycopg2.OperationalError, self.connect, connection_string
-                    )
+                psycopg2.OperationalError, self.connect, connection_string)
 
     @dont_retry
     def testNoopSession(self):
@@ -524,7 +523,8 @@ class MockDbTestCase(unittest.TestCase):
             if mode != 'direct':
                 # We only do this test against our mock db. psycopg1 gives
                 # a SystemError if fetchall is called before a query issued!
-                self.assertRaises(psycopg2.Error, cur.fetchall) # No query yet.
+                # No query yet.
+                self.assertRaises(psycopg2.Error, cur.fetchall)
 
             # This should raise an exeption as an UPDATE query returns no
             # results.
@@ -546,9 +546,8 @@ class MockDbTestCase(unittest.TestCase):
             # empty list.
             self.failUnlessEqual(cur.fetchall(), [])
 
- 
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(MockDbTestCase))
     return suite
-
