@@ -566,7 +566,7 @@ distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 distroseries_translationsadmin = ContextTitle(
     'Admin translation options for %s')
 
-distroseries_builds = ContextTitle('Builds for %s')
+distroseries_builds = ContextTitle('%s builds')
 
 distroseries_queue = ContextTitle('Queue for %s')
 
