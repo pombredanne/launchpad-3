@@ -11,12 +11,6 @@
 >
 <body>
 
-<metal:heading fill-slot="heading">
-  <h1>Change the <tal:role replace="view/ownerOrMaintainerName" /> of
-        <tal:thing replace="view/contextName" />
-  </h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
   <div metal:define-macro="object-reassignment">

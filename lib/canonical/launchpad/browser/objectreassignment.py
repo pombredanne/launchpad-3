@@ -53,6 +53,14 @@ class ObjectReassignmentView(LaunchpadFormView):
     schema = IObjectReassignment
     custom_widget('existing', LaunchpadRadioWidget)
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Change the %s of %s' % (
+            self.ownerOrMaintainerName, self.contextName)
+
+    page_title = label
+
     def setUpFields(self):
         super(ObjectReassignmentView, self).setUpFields()
         self.form_fields = FormFields(
