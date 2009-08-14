@@ -35,8 +35,7 @@ from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressAlreadyTaken, IEmailAddressSet)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -166,41 +165,36 @@ class BugImporter:
             person = None
 
         if person is None:
-            person = getUtility(IPersonSet).getByEmail(email)
-            if person is None:
+            address = getUtility(IEmailAddressSet).getByEmail(email)
+            if address is None:
                 self.logger.debug('creating person for %s' % email)
-                # has the short name been taken?
+                # Has the short name been taken?
                 if name is not None:
-                    person = getUtility(IPersonSet).getByName(name)
-                    if person is not None:
+                    if getUtility(IPersonSet).getByName(name) is not None:
                         name = None
-                try:
-                    person, address = (
-                        getUtility(IPersonSet).createPersonAndEmail(
-                            email=email, name=name, displayname=displayname,
-                            rationale=PersonCreationRationale.BUGIMPORT,
-                            comment='when importing bugs for %s' % (
-                                self.product.displayname,)))
-                except EmailAddressAlreadyTaken:
-                    # The user has an Account and and EmailAddress
-                    # linked to that account. Create a Person without
-                    # an email address then link the existing email
-                    # address in.
-                    person =  (
-                        getUtility(IPersonSet).createPersonWithoutEmail(
-                            name=name, displayname=displayname,
-                            rationale=PersonCreationRationale.BUGIMPORT,
-                            comment='when importing bugs for %s' % (
-                                self.product.displayname,)))
-                    address = getUtility(IEmailAddressSet).getByEmail(email)
-                    assert address.account is not None, (
-                        "Email address not linked to an Account: %s " % email)
-                    assert address.person is None, (
-                        "Email address linked to a Person: %s" % email)
-                    # Link the address to the person.
-                    address.person = person
-                    # Link the person to the account.
-                    person.account = address.account
+                person, address = (
+                    getUtility(IPersonSet).createPersonAndEmail(
+                        email=email, name=name, displayname=displayname,
+                        rationale=PersonCreationRationale.BUGIMPORT,
+                        comment=('when importing bugs for %s' %
+                                 self.product.displayname)))
+            elif address.personID is None:
+                # The user has an Account and and EmailAddress linked
+                # to that account.
+                assert address.accountID is not None, (
+                    "Email address not linked to an Account: %s " % email)
+                self.logger.debug(
+                    'creating person from account for %s' % email)
+                # Has the short name been taken?
+                if name is not None:
+                    if getUtility(IPersonSet).getByName(name) is not None:
+                        name = None
+                person = address.account.createPerson(
+                    rationale=PersonCreationRationale.BUGIMPORT,
+                    name=name, comment=('when importing bugs for %s' %
+                                        self.product.displayname))
+            else:
+                person = getUtility(IPersonSet).get(address.personID)
 
             self.person_id_cache[email] = person.id
 
