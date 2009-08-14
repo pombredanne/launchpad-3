@@ -98,7 +98,7 @@ from zope.formlib.form import FormFields
 from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import getUtility, provideAdapter
+from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
@@ -149,8 +149,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, INavigationMenu, IOpenLaunchBag, NotFoundError,
-    UnexpectedFormData)
+    ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
 from lp.answers.interfaces.questionenums import QuestionParticipation
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -2387,12 +2386,17 @@ class PersonVouchersView(LaunchpadFormView):
             globalErrorUtility.raising(info, self.request)
 
 
-class PersonLanguagesView(LaunchpadView):
+class PersonLanguagesView(LaunchpadFormView):
+    schema = Interface
 
-    def initialize(self):
-        request = self.request
-        if request.method == "POST" and "SAVE-LANGS" in request.form:
-            self.submitLanguages()
+    @property
+    def label(self):
+        if self.is_current_user:
+            return "Your language preferences"
+        else:
+            return "%s's language preferences" % self.context.displayname
+
+    page_title = label
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -2423,7 +2427,14 @@ class PersonLanguagesView(LaunchpadView):
         """Return True when the Context is also the User."""
         return self.user == self.context
 
-    def submitLanguages(self):
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    @action(_("Save"), name="save")
+    def submitLanguages(self, action, data):
         '''Process a POST request to the language preference form.
 
         This list of languages submitted is compared to the list of
@@ -3565,6 +3576,12 @@ class PersonEditHomePageView(BasePersonEditView):
     custom_widget(
         'homepage_content', TextAreaWidget, height=30, width=30)
 
+    @property
+    def label(self):
+        return 'Change home page for %s' % self.context.displayname
+
+    page_title = label
+
 
 class PersonEditView(BasePersonEditView):
     """The Person 'Edit' page."""
@@ -4391,7 +4408,7 @@ class TeamReassignmentView(ObjectReassignmentView):
                 status=TeamMembershipStatus.ADMIN, force_team_add=True)
 
 
-class PersonLatestQuestionsView(LaunchpadView):
+class PersonLatestQuestionsView(LaunchpadFormView):
     """View used by the porlet displaying the latest questions made by
     a person.
     """
@@ -5440,5 +5457,3 @@ class TeamEditMenu(NavigationMenu, TeamMenuMixin):
 
 
 classImplements(TeamEditView, ITeamEditMenu)
-provideAdapter(
-    TeamEditMenu, [ITeamEditMenu], INavigationMenu, name="overview")
