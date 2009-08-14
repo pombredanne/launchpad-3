@@ -36,7 +36,7 @@ and foobar, who are subscribed to the distribution.
 
     >>> bugset = getUtility(IBugSet)
     >>> subscriber_names(bugset.get(bug_id))
-    [u'carlos', u'name16', u'mark', u'ubuntu-team']
+    [u'carlos', u'mark', u'name16', u'ubuntu-team']
 
     >>> logout()
 

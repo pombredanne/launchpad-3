@@ -185,14 +185,14 @@ to allow inactive PPA results.
     packages to help my friends.
     3
     3
-    PPA for No Privileges Person
-    I am not allowed to say, I have no privs.
-    0
-    0
     PPA for Mark Shuttleworth
     packages to help the humanity (you know, ubuntu)
     1
     1
+    PPA for No Privileges Person
+    I am not allowed to say, I have no privs.
+    0
+    0
 
 This checkbox value is propagated to subsequent searches:
 

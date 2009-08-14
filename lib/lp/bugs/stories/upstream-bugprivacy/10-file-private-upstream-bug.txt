@@ -99,7 +99,7 @@ subscribed instead.
     >>> bug = getUtility(IBugSet).get(other_bug_id)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
-    [u'name16', u'mark']
+    [u'mark', u'name16']
 
     >>> logout()
 
