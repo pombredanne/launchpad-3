@@ -35,6 +35,7 @@ __all__ = [
     'Zeca',
     ]
 
+import glob
 import os
 import cgi
 
@@ -95,12 +96,19 @@ class LookUp(Resource):
 
         filename = '%s.%s' % (keyid, action)
 
-        path = os.path.join(self.root, filename)
-
         try:
+            path = os.path.join(self.root, filename)
             fp = open(path)
         except IOError:
-            content = 'Key Not Found'
+            # GPG might request a key ID from us, but we name the keys by
+            # fingerprint. Let's glob.
+            if filename.startswith('0x'):
+                filename = filename[2:]
+            keys = glob.glob(os.path.join(self.root, '*'+filename))
+            if len(keys) == 1:
+                content = open(keys[0]).read()
+            else:
+                content = 'Key Not Found'
         else:
             content = cgi.escape(fp.read())
             fp.close()
