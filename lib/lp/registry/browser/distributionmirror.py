@@ -241,8 +241,6 @@ class DistributionMirrorEditView(LaunchpadEditFormView):
     field_names = ["name", "displayname", "description", "http_base_url",
                    "ftp_base_url", "rsync_base_url", "speed", "country",
                    "content", "official_candidate"]
-    label = "Change mirror details"
-
     @property
     def label(self):
         """See `LaunchpadFormView`."""
