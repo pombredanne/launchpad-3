@@ -136,10 +136,10 @@
              replace="structure batch/@@+navigation-links-upper"/>
           </tal:block>
           <table class="listing">
-            <thead class="results">
+            <thead>
               <tr>
                 <th>Name</th>
-                <th>ID</th>
+                <th>Launchpad ID</th>
                 <th>Karma</th>
               </tr>
             </thead>
@@ -153,6 +153,10 @@
               </tr>
             </tbody>
           </table>
+          <tal:block condition="batch/multiple_pages">
+            <tal:navigation
+             replace="structure batch/@@+navigation-links-upper"/>
+          </tal:block>
         </tal:block>
       </tal:block>
     </div>
