@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'get_status_count',
     'MilestoneOverlayMixin',
-    'RegistryEditForm',
+    'RegistryEditFormView',
     'RegistryDeleteViewMixin',
     'StatusCount',
     ]
