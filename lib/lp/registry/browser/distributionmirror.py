@@ -135,7 +135,16 @@ class DistributionMirrorDeleteView(LaunchpadFormView):
 
     schema = IDistributionMirror
     field_names = []
-    label = "Delete this distribution mirror"
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Delete mirror %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @action(_("Delete Mirror"), name="delete")
     def delete_action(self, action, data):
@@ -153,9 +162,10 @@ class DistributionMirrorDeleteView(LaunchpadFormView):
             "Mirror %s has been deleted." % self.context.title)
         self.context.destroySelf()
 
-    @action(_("Cancel"), name="cancel")
-    def cancel_action(self, action, data):
-        self.next_url = canonical_url(self.context)
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class DistributionMirrorAddView(LaunchpadFormView):
@@ -165,9 +175,22 @@ class DistributionMirrorAddView(LaunchpadFormView):
     field_names = ["displayname", "description", "http_base_url",
                    "ftp_base_url", "rsync_base_url", "speed", "country",
                    "content", "official_candidate"]
-    label = "Create a new distribution mirror"
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return "Register a new mirror for %s" % self.context.title
 
-    @action(_("Create Mirror"), name="create")
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @action(_("Register Mirror"), name="create")
     def create_action(self, action, data):
         mirror = self.context.newMirror(
             owner=self.user, speed=data['speed'], country=data['country'],
@@ -186,7 +209,21 @@ class DistributionMirrorReviewView(LaunchpadEditFormView):
 
     schema = IDistributionMirror
     field_names = ['status', 'whiteboard']
-    label = "Review mirror"
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Review mirror %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action(_("Save"), name="save")
     def action_save(self, action, data):
@@ -205,6 +242,21 @@ class DistributionMirrorEditView(LaunchpadEditFormView):
                    "ftp_base_url", "rsync_base_url", "speed", "country",
                    "content", "official_candidate"]
     label = "Change mirror details"
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Edit mirror %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action(_("Save"), name="save")
     def action_save(self, action, data):

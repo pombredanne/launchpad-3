@@ -449,15 +449,9 @@ debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
 
-distributionmirror_delete = ContextTitle('Delete mirror %s')
-
-distributionmirror_edit = ContextTitle('Edit mirror %s')
-
 distributionmirror_index = ContextTitle('Mirror %s')
 
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
-
-distributionmirror_review = ContextTitle('Review mirror %s')
 
 distribution_add = 'Register a new distribution'
 
@@ -485,8 +479,6 @@ distribution_memberteam = ContextTitle(
     smartquote("Change %s's distribution team"))
 
 distribution_mirrors = ContextTitle("Mirrors of %s")
-
-distribution_newmirror = ContextTitle("Register a new mirror for %s")
 
 distribution_series = ContextTitle("%s version history")
 

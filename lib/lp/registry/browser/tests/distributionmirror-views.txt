@@ -1,38 +1,130 @@
-= DistributionMirror Pages =
+DistributionMirror Pages
+========================
 
-== Reviewing a distribution mirror ==
+Registering a mirror
+--------------------
+
+Only full functionality distributions may have mirrors.
+IDerivativeDistributions cannot use the form.
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     extract_text, find_tag_by_id)
+
+    >>> distribution = factory.makeDistribution(name='youbuntu')
+    >>> distribution.full_functionality
+    False
+
+    >>> login_person(distribution.owner)
+    >>> view = create_initialized_view(
+    ...     distribution, '+newmirror', principal=distribution.owner)
+    >>> content = find_tag_by_id(view.render(), 'not-full-functionality')
+    >>> print extract_text(content)
+    This functionality is not yet available...
+
+Ubuntu is an IBaseDistributions and is full functionality. It can have
+mirrors.
+
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> owner = ubuntu.owner.teamowner
+    >>> login_person(owner)
+    >>> view = create_initialized_view(ubuntu, '+newmirror', principal=owner)
+    >>> content = find_tag_by_id(view.render(), 'full-functionality')
+    >>> print extract_text(content)
+    To register a new mirror...
+
+The view provides a label, page_title, and cancel_url
+
+    >>> print view.label
+    Register a new mirror for Ubuntu Linux
+
+    >>> print view.page_title
+    Register a new mirror for Ubuntu Linux
+
+    >>> print view.cancel_url
+    http://launchpad.dev/ubuntu
+
+A HTTP or FTP URL is required to register a mirror.
+
+    >>> view.field_names
+    ['displayname', 'description', 'http_base_url', 'ftp_base_url',
+     'rsync_base_url', 'speed', 'country', 'content', 'official_candidate']
+
+    >>> form = {
+    ...     'field.displayname': 'Illuminati',
+    ...     'field.description': 'description',
+    ...     'field.http_base_url': 'http://secret.me/',
+    ...     'field.ftp_base_url': '',
+    ...     'field.rsync_base_url': '',
+    ...     'field.speed': 'S128K',
+    ...     'field.country': '1',
+    ...     'field.content': 'ARCHIVE',
+    ...     'field.official_candidate': 'on',
+    ...     'field.actions.create': 'Register Mirror',
+    ...     }
+    >>> view = create_initialized_view(ubuntu, '+newmirror', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/ubuntu/+mirror/secret.me-archive
+
+
+Reviewing a distribution mirror
+-------------------------------
 
 This page allows mirror admins to set the status of a given mirror.  The
 status can be PENDING_REVIEW, UNOFFICIAL and OFFICIAL.  When the status is
 changed we also store the person who changed it and the date it was changed.
 
-    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
-    >>> from canonical.launchpad.browser import DistributionMirrorReviewView
-    >>> from canonical.launchpad.interfaces import IDistributionMirrorSet
-    >>> mirror = getUtility(IDistributionMirrorSet).getByName(
-    ...     'canonical-archive')
+    >>> mirror = ubuntu.getMirrorByName('secret.me-archive')
     >>> print mirror.status.name
-    OFFICIAL
+    PENDING_REVIEW
     >>> print mirror.date_reviewed, mirror.reviewer
     None None
+
+The view provides a label, page_title, and cancel_url.
+
+    >>> view =  create_initialized_view(mirror, '+review')
+    >>> print view.label
+    Review mirror Illuminati
+
+    >>> print view.page_title
+    Review mirror Illuminati
+
+    >>> print view.cancel_url
+    http://launchpad.dev/ubuntu/+mirror/secret.me-archive
 
 If the status is not changed, the reviewer and date_reviewed won't be
 changed either.
 
     >>> login('karl@canonical.com')
-    >>> harness = LaunchpadFormHarness(mirror, DistributionMirrorReviewView)
-    >>> harness.submit('save', {'field.status': mirror.status.name})
+    >>> review_form = {
+    ...     'field.status': mirror.status.name,
+    ...     'field.actions.save': 'Save',
+    ...     }
+    >>> view =  create_initialized_view(mirror, '+review', form=review_form)
+    >>> view.errors
+    []
+
     >>> print mirror.status.name
-    OFFICIAL
+    PENDING_REVIEW
     >>> print mirror.date_reviewed, mirror.reviewer
     None None
 
 When the status is changed, though, both reviewer and date_reviewed are
 changed.
 
-    >>> harness.submit('save', {'field.status': 'UNOFFICIAL'})
+    >>> review_form['field.status'] = 'OFFICIAL'
+    >>> view =  create_initialized_view(mirror, '+review', form=review_form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/ubuntu/+mirror/secret.me-archive
+
     >>> print mirror.status.name
-    UNOFFICIAL
+    OFFICIAL
     >>> print mirror.reviewer.name
     karl
 
@@ -46,3 +138,69 @@ changed.
     >>> abs((mirror.date_reviewed.date() - utc_now.date()).days) <= 1
     True
 
+
+Edit distribution mirror
+-----------------------
+
+The +edit view provides a label, page_title, and cancel_url.
+
+    >>> view =  create_initialized_view(mirror, '+edit')
+    >>> print view.label
+    Edit mirror Illuminati
+
+    >>> print view.page_title
+    Edit mirror Illuminati
+
+    >>> print view.cancel_url
+    http://launchpad.dev/ubuntu/+mirror/secret.me-archive
+
+The user can edit the mirror fields.
+
+    >>> view.field_names
+    ['name', 'displayname', 'description', 'http_base_url', 'ftp_base_url',
+     'rsync_base_url', 'speed', 'country', 'content', 'official_candidate']
+
+    >>> print mirror.ftp_base_url
+    None
+
+    >>> form['field.ftp_base_url'] = 'ftp://secret.me/'
+    >>> form['field.actions.save'] = 'Save'
+    >>> view = create_initialized_view(mirror, '+edit', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/ubuntu/+mirror/secret.me-archive
+
+    >>> print mirror.ftp_base_url
+    ftp://secret.me/
+
+
+Delete distribution mirror
+--------------------------
+
+The +delete view provides a label, page_title, and cancel_url.
+
+    >>> view =  create_initialized_view(mirror, '+delete')
+    >>> print view.label
+    Delete mirror Illuminati
+
+    >>> print view.page_title
+    Delete mirror Illuminati
+
+    >>> print view.cancel_url
+    http://launchpad.dev/ubuntu/+mirror/secret.me-archive
+
+Deletion is permanent.
+
+    >>> form = {
+    ...     'field.actions.delete': 'Delete Mirror',
+    ...     }
+    >>> view =  create_initialized_view(mirror, '+delete', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/ubuntu
+
+    >>> transaction.commit()
+    >>> print ubuntu.getMirrorByName('secret.me-archive')
+    None
