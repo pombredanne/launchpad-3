@@ -532,10 +532,6 @@ distroarchseriesbinarypackage_index = ContextTitle('%s')
 
 distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
-def distroseries_add(context, view):
-    """Return the page title to change the driver."""
-    return view.page_title
-
 distroseries_addport = ContextTitle('Add a port of %s')
 
 distroseries_admin = ContextTitle('Administer %s')

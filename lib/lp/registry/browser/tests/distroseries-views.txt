@@ -180,7 +180,7 @@ A distroseries is created using the distroseries view.
     >>> print view.page_title
     Register a series in Ubuntu
     >>> print view.label
-    Register a new series
+    Register a series in Ubuntu
 
     >>> print view.cancel_url
     http://launchpad.dev/ubuntu

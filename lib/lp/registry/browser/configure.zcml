@@ -1946,7 +1946,7 @@
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../templates/distroseries-add.pt">
+        template="../../app/templates/generic-edit.pt">
     </browser:page>
 
     <browser:page
@@ -1955,7 +1955,7 @@
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Append"
-        template="../templates/distroseries-add.pt">
+        template="../../app/templates/generic-edit.pt">
     </browser:page>
 
     <browser:page
