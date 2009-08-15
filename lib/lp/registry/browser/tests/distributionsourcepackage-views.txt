@@ -112,3 +112,45 @@ The view also calculates the url for finding further PPA versions.
     >>> print ubuntu_gedit_view.further_ppa_versions_url
     http://launchpad.dev/ubuntutest/+ppas?name_filter=gedit
 
+
+Editing a distribution source package
+-------------------------------------
+
+The +edit view allows users to edit a DistributionSourcePackage. The
+view provides a label, page_title and cancel_url.
+
+    >>> distribution = factory.makeDistribution(
+    ...     name='youbuntu', displayname='Youbuntu')
+    >>> sourcepackagename = factory.makeSourcePackageName(name='bonkers')
+    >>> package = factory.makeDistributionSourcePackage(
+    ...     sourcepackagename=sourcepackagename, distribution=distribution)
+    >>> view = create_initialized_view(package, '+edit')
+    >>> print view.label
+    Edit ...bonkers... package in Youbuntu
+
+    >>> print view.page_title
+    Edit ...bonkers... package in Youbuntu
+
+    >>> print view.cancel_url
+    http://launchpad.dev/youbuntu/+source/bonkers
+
+The view allows the user the set the bug_reporting_guidelines field.
+
+    >>> view.field_names
+    ['bug_reporting_guidelines']
+
+    >>> print package.bug_reporting_guidelines
+    None
+
+    >>> form = {
+    ...     'field.bug_reporting_guidelines': 'guidelines',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(package, '+edit', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu/+source/bonkers
+
+    >>> print package.bug_reporting_guidelines
+    guidelines

@@ -522,7 +522,7 @@
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageEditView"
         name="+edit"
         facet="overview"
-        template="../templates/distributionsourcepackage-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:pages
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="canonical.launchpad.webapp.publisher.LaunchpadView"
