@@ -129,13 +129,6 @@
         permission="launchpad.Edit"
         template="../templates/milestone-add.pt"/>
     <browser:page
-        name="+addport"
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.DistroArchSeriesAddView"
-        facet="overview"
-        permission="launchpad.Admin"
-        template="../templates/distroseries-addport.pt"/>
-    <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="canonical.launchpad.browser.AskAQuestionButtonView"
