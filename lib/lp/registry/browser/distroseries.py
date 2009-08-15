@@ -361,7 +361,17 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     @property
     def label(self):
         """See `LaunchpadFormView`."""
-        return 'Change %s details' % self.context.title
+        return 'Edit %s details' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
@@ -399,6 +409,16 @@ class DistroSeriesAdminView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Administer %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """Override `LaunchpadFormView`.

@@ -113,14 +113,14 @@
         name="+edit"
         class="lp.registry.browser.distroseries.DistroSeriesEditView"
         facet="overview"
-        template="../templates/distroseries-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Admin"
         name="+admin"
         class="lp.registry.browser.distroseries.DistroSeriesAdminView"
         facet="overview"
-        template="../templates/distroseries-admin.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+addmilestone"
         for="lp.registry.interfaces.distroseries.IDistroSeries"

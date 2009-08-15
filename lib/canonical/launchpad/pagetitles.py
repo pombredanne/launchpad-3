@@ -534,13 +534,9 @@ distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
 distroseries_addport = ContextTitle('Add a port of %s')
 
-distroseries_admin = ContextTitle('Administer %s')
-
 distroseries_bugs = ContextTitle('Bugs in %s')
 
 distroseries_cvereport = ContextDisplayName('CVE report for %s')
-
-distroseries_edit = ContextTitle('Edit details of %s')
 
 def distroseries_index(context, view):
     """Return the distribution and version page title."""
