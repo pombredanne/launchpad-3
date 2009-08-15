@@ -776,11 +776,21 @@ class DistributionSetView:
 class DistributionAddView(LaunchpadFormView):
 
     schema = IDistribution
-    label = "Create a new distribution"
+    label = "Register a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
                    "domainname", "members",
                    "official_malone", "official_blueprints",
                    "official_rosetta", "official_answers"]
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action("Save", name='save')
     def save_action(self, action, data):

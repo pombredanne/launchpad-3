@@ -9,7 +9,7 @@ share a common base class which is responsible for ordering the mirrors by
 country.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> login("foo.bar@canonical.com")
@@ -227,3 +227,45 @@ The DistributionPackageSearchView includes substring matches by default.
     >>> for pkg in search_results:
     ...     print pkg.name
     mozilla-firefox
+
+
+Registering a distribution
+==========================
+
+The +add view of the DistributionSet allows admins to register distributions.
+
+    >>> distributionset = getUtility(IDistributionSet)
+    >>> view = create_view(distributionset, '+add')
+    >>> print view.label
+    Register a new distribution
+
+    >>> print view.page_title
+    Register a new distribution
+
+The view provides a cancel link.
+
+    >>> print view.cancel_url
+    http://launchpad.dev/distros
+
+The view accepts the basic fields to register a distribution.
+
+    >>> view.field_names
+    ['name', 'displayname', 'title', 'summary', 'description', 'domainname',
+     'members', 'official_malone', 'official_blueprints', 'official_rosetta',
+     'official_answers']
+
+    >>> form = {
+    ...     'field.name': 'youbuntu',
+    ...     'field.displayname': 'YoUbuntu',
+    ...     'field.title': 'YoUbuntu OS',
+    ...     'field.summary': 'summary',
+    ...     'field.description': 'description',
+    ...     'field.domainname': 'youbuntu.me',
+    ...     'field.members': 'landscape-developers',
+    ...     'field.actions.save': 'Save',
+    ...     }
+    >>> view = create_initialized_view(distributionset, '+add', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu

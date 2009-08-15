@@ -2037,7 +2037,7 @@
         class="lp.registry.browser.distribution.DistributionAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../templates/distribution-add.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:menus
         classes="
             DistributionFacets

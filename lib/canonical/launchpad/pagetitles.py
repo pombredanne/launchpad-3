@@ -459,8 +459,6 @@ distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
 
 distributionmirror_review = ContextTitle('Review mirror %s')
 
-distribution_add = 'Register a new distribution'
-
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
