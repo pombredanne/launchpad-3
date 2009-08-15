@@ -389,7 +389,7 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
     def change_action(self, action, data):
         """Update the context and redirects to its overviw page."""
         if not self.context.distribution.full_functionality:
-                self.updateDateReleased(data.get('status'))
+            self.updateDateReleased(data.get('status'))
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Your changes have been applied.')

@@ -68,7 +68,6 @@ package.
 
     # Give the creators of the above source packages some soyuz
     # karma for their efforts.
-    >>> from lp.registry.interfaces.karma import IKarmaCacheManager
     >>> from lp.registry.model.karma import KarmaCategory
     >>> soyuz_category = KarmaCategory.byName('soyuz')
     >>> sourcepackagerelease = gedit_nightly_src_breezy.sourcepackagerelease

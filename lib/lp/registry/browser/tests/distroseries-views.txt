@@ -1,9 +1,6 @@
 DistroSeries view classes
 =========================
 
-    >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
 Let's use ubuntu/hoary for these tests.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
