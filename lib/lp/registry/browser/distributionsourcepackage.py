@@ -142,7 +142,7 @@ class DistributionSourcePackageActionMenu(NavigationMenu,
 
     def change_log(self):
         text = 'View full change log'
-        return Link('+changelog', text)
+        return Link('+changelog', text, icon="info")
 
 
 provideAdapter(
