@@ -229,8 +229,12 @@ The DistributionPackageSearchView includes substring matches by default.
     mozilla-firefox
 
 
+Distribution modification views
+===============================
+
+
 Registering a distribution
-==========================
+--------------------------
 
 The +add view of the DistributionSet allows admins to register distributions.
 
@@ -269,3 +273,52 @@ The view accepts the basic fields to register a distribution.
     []
     >>> print view.next_url
     http://launchpad.dev/youbuntu
+
+    >>> distribution = distributionset.getByName("youbuntu")
+    >>> print distribution.name
+    youbuntu
+
+
+Editing a distribution
+----------------------
+
+The +edit view allows an owner or admin to change a distribution. It provides
+a label, page_title, and cancel_url.
+
+    >>> view = create_view(distribution, '+edit')
+    >>> print view.label
+    Change YoUbuntu details
+
+    >>> print view.page_title
+    Change YoUbuntu details
+
+    >>> print view.cancel_url
+    http://launchpad.dev/youbuntu
+
+The view accepts most of the distribution fields.
+
+    >>> distribution.official_malone
+    False
+
+    >>> view.field_names
+    ['displayname', 'title', 'summary', 'description',
+     'bug_reporting_guidelines', 'icon', 'logo', 'mugshot', 'official_malone',
+     'enable_bug_expiration', 'official_blueprints', 'official_rosetta',
+     'official_answers', 'translation_focus']
+
+    >>> del form['field.name']
+    >>> del form['field.actions.save']
+    >>> form['field.bug_reporting_guidelines'] = 'guidelines'
+    >>> form['field.official_malone'] = 'on'
+    >>> form['field.actions.change'] = 'Change'
+    >>> view = create_initialized_view(distribution, '+edit', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu
+
+    >>> print distribution.bug_reporting_guidelines
+    guidelines
+
+    >>> distribution.official_malone
+    True

@@ -811,7 +811,6 @@ class DistributionAddView(LaunchpadFormView):
 class DistributionEditView(LaunchpadEditFormView):
 
     schema = IDistribution
-    label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
                    'bug_reporting_guidelines', 'icon', 'logo', 'mugshot',
                    'official_malone', 'enable_bug_expiration',
@@ -821,6 +820,21 @@ class DistributionEditView(LaunchpadEditFormView):
     custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Change %s details' % self.context.displayname
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""

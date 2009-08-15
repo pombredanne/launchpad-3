@@ -1964,7 +1964,7 @@
         class="lp.registry.browser.distribution.DistributionEditView"
         name="+edit"
         facet="overview"
-        template="../templates/distribution-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:editform
         name="+selectmemberteam"
         for="lp.registry.interfaces.distribution.IDistribution"

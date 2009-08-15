@@ -471,9 +471,6 @@ distribution_change_mirror_admin = 'Change mirror administrator'
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
-distribution_edit = 'Change distribution details'
-# We don't mention its name here, because that might be what you're changing.
-
 distribution_language_pack_admin = ContextTitle(
     'Change the language pack administrator for %s')
 
