@@ -322,3 +322,43 @@ The view accepts most of the distribution fields.
 
     >>> distribution.official_malone
     True
+
+
+Changing a distribution mirror administrator
+--------------------------------------------
+
+the +selectmirroradmins allows the owner or admin to change the mirror
+administrator.
+
+    >>> view = create_view(distribution, '+selectmirroradmins')
+    >>> print view.label
+    Change YoUbuntu's mirror administrator
+
+    >>> print view.page_title
+    Change YoUbuntu's mirror administrator
+
+    >>> print view.cancel_url
+    http://launchpad.dev/youbuntu
+
+The view accepts the mirror_admin field.
+
+    >>> print distribution.mirror_admin.name
+    name16
+
+    >>> view.field_names
+    ['mirror_admin']
+
+    >>> form = {
+    ...     'field.mirror_admin': 'no-priv',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     distribution, '+selectmirroradmins', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu
+
+    >>> print distribution.mirror_admin.name
+    no-priv
+

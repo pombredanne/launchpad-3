@@ -12,6 +12,7 @@ __all__ = [
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
     'DistributionBreadcrumbBuilder',
+    'DistributionChangeMirrorAdminView',
     'DistributionCountryArchiveMirrorsView',
     'DistributionDisabledMirrorsView',
     'DistributionEditView',
@@ -828,11 +829,6 @@ class DistributionEditView(RegistryEditFormView):
         """See `LaunchpadFormView`."""
         return 'Change %s details' % self.context.displayname
 
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
-
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
         # enable_bug_expiration is disabled by JavaScript when official_malone
@@ -841,6 +837,17 @@ class DistributionEditView(RegistryEditFormView):
         official_malone = data.get('official_malone', False)
         if not official_malone:
             data['enable_bug_expiration'] = False
+
+
+class DistributionChangeMirrorAdminView(RegistryEditFormView):
+    """A view to change the mirror administrator."""
+    schema = IDistribution
+    field_names = ['mirror_admin']
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return "Change %s's mirror administrator" % self.context.displayname
 
 
 class DistributionCountryArchiveMirrorsView(LaunchpadView):
