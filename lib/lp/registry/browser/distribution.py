@@ -78,6 +78,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets.image import ImageChangeWidget
 
+from lp.registry.browser import RegistryEditFormView
+
 
 class UsesLaunchpadMixin:
     """This mixin is used for the overview page of products and distros."""
@@ -808,7 +810,7 @@ class DistributionAddView(LaunchpadFormView):
         self.next_url = canonical_url(distribution)
 
 
-class DistributionEditView(LaunchpadEditFormView):
+class DistributionEditView(RegistryEditFormView):
 
     schema = IDistribution
     field_names = ['displayname', 'title', 'summary', 'description',
@@ -827,11 +829,6 @@ class DistributionEditView(LaunchpadEditFormView):
         return 'Change %s details' % self.context.displayname
 
     @property
-    def page_title(self):
-        """The page title."""
-        return self.label
-
-    @property
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
@@ -844,11 +841,6 @@ class DistributionEditView(LaunchpadEditFormView):
         official_malone = data.get('official_malone', False)
         if not official_malone:
             data['enable_bug_expiration'] = False
-
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
 
 
 class DistributionCountryArchiveMirrorsView(LaunchpadView):
