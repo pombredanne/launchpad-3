@@ -12,6 +12,7 @@ __all__ = [
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
     'DistributionBreadcrumbBuilder',
+    'DistributionChangeMembersView',
     'DistributionChangeMirrorAdminView',
     'DistributionCountryArchiveMirrorsView',
     'DistributionDisabledMirrorsView',
