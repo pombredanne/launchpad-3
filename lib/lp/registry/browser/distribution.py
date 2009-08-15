@@ -847,7 +847,18 @@ class DistributionChangeMirrorAdminView(RegistryEditFormView):
     @property
     def label(self):
         """See `LaunchpadFormView`."""
-        return "Change %s's mirror administrator" % self.context.displayname
+        return "Change the %s mirror administrator" % self.context.displayname
+
+
+class DistributionChangeMembersView(RegistryEditFormView):
+    """A view to change the members team."""
+    schema = IDistribution
+    field_names = ['members']
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return "Change the %s members team" % self.context.displayname
 
 
 class DistributionCountryArchiveMirrorsView(LaunchpadView):

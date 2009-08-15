@@ -474,9 +474,6 @@ distribution_language_pack_admin = ContextTitle(
 
 distribution_members = ContextTitle('%s distribution members')
 
-distribution_memberteam = ContextTitle(
-    smartquote("Change %s's distribution team"))
-
 distribution_mirrors = ContextTitle("Mirrors of %s")
 
 distribution_newmirror = ContextTitle("Register a new mirror for %s")

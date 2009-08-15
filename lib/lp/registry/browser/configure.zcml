@@ -1965,14 +1965,13 @@
         name="+edit"
         facet="overview"
         template="../../app/templates/generic-edit.pt"/>
-    <browser:editform
+    <browser:page
         name="+selectmemberteam"
         for="lp.registry.interfaces.distribution.IDistribution"
-        schema="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionChangeMembersView"
         facet="overview"
-        fields="members"
         permission="launchpad.Edit"
-        template="../templates/distribution-memberteam.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+selectmirroradmins"
         for="lp.registry.interfaces.distribution.IDistribution"
