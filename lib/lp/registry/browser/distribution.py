@@ -69,7 +69,7 @@ from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
+    enabled_with_permission, GetitemNavigation,
     LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
     StandardLaunchpadFacets, stepthrough, stepto)
 from canonical.launchpad.webapp.interfaces import (
