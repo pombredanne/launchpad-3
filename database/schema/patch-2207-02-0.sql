@@ -6,6 +6,12 @@ ALTER TABLE BugNotificationRecipient
         FOREIGN KEY (bug_notification) REFERENCES BugNotification
             ON DELETE CASCADE;
 
+ALTER TABLE BugNotificationAttachment
+    DROP CONSTRAINT bugnotificationattachment_bug_notification_fkey,
+    ADD CONSTRAINT bugnotificationattachment__bug_notification__fk
+        FOREIGN KEY (bug_notification) REFERENCES BugNotification
+            ON DELETE CASCADE;
+
 -- Backup historical data until we can deal with it per Bug #407288.
 -- We keep the person foreign key constraint so this data is modified
 -- by Person merges.
