@@ -45,6 +45,9 @@ class ModifiedBranchesScript(LaunchpadScript):
         self.now_timestamp = datetime.utcnow()
 
     def add_my_options(self):
+        self.parser.set_defaults(
+            strip_prefix='/srv/',
+            append_suffix='/**')
         self.parser.add_option(
             "-s", "--since", metavar="DATE",
             help="A date in the format YYYY-MM-DD.  Branches that "
@@ -53,6 +56,14 @@ class ModifiedBranchesScript(LaunchpadScript):
             "-l", "--last-hours", metavar="HOURS", type="int",
             help="Return the branches that have been modified in "
             "the last HOURS number of hours.")
+        self.parser.add_option(
+            "--strip-prefix", metavar="PREFIX",
+            help="The prefix to remove from the branch locations.  "
+            "Defaults to '/srv/'.")
+        self.parser.add_option(
+            "--append-suffix", metavar="SUFFIX",
+            help="A suffix to append to the end of the branch locations.  "
+            "Defaults to '/**'.")
 
     def get_last_modified_epoch(self):
         """Return the timezone aware datetime for the last modified epoch. """
@@ -84,6 +95,14 @@ class ModifiedBranchesScript(LaunchpadScript):
         if branch.branch_type == BranchType.HOSTED:
             yield os.path.join(config.codehosting.hosted_branches_root, path)
 
+    def print_location(self, location):
+        """Print the branch location stripping prefix, and appending suffix as
+        configured.
+        """
+        if location.startswith(self.options.strip_prefix):
+            location = location[len(self.options.strip_prefix):]
+        print location + self.options.append_suffix
+
     def main(self):
         last_modified = self.get_last_modified_epoch()
         self.logger.info(
@@ -95,7 +114,7 @@ class ModifiedBranchesScript(LaunchpadScript):
         for branch in collection.getBranches():
             self.logger.info(branch.unique_name)
             for location in self.branch_locations(branch):
-                print location
+                self.print_location(location)
 
         self.logger.info("Done.")
 
