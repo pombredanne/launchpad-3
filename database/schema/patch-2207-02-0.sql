@@ -1,5 +1,11 @@
 SET client_min_messages=ERROR;
 
+ALTER TABLE BugNotificationRecipient
+    DROP CONSTRAINT bugnotificationrecipient_bug_notification_fkey,
+    ADD CONSTRAINT bugnotificationrecipient__bug_notification__fk
+        FOREIGN KEY (bug_notification) REFERENCES BugNotification
+            ON DELETE CASCADE;
+
 -- Backup historical data until we can deal with it per Bug #407288.
 -- We keep the person foreign key constraint so this data is modified
 -- by Person merges.

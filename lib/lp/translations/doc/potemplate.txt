@@ -76,7 +76,7 @@ When we create a template, it is initialized with a default header.
 This method gives us the IPOTemplate that belongs to this subset and its name
 is the given one.
 
-    >>> from canonical.launchpad.database import ProductSeries
+    >>> from lp.registry.model.productseries import ProductSeries
     >>> productseries = ProductSeries.get(3)
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=productseries)

@@ -86,7 +86,7 @@ class StructuralSubscription(SQLBase):
                 #   here because importing it from the top
                 #   doesn't play well with the loading
                 #   sequence.
-                from canonical.launchpad.database import (
+                from lp.registry.model.distributionsourcepackage import (
                     DistributionSourcePackage)
                 return DistributionSourcePackage(
                     self.distribution, self.sourcepackagename)

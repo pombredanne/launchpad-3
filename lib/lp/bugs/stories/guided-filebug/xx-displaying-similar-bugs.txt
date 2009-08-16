@@ -28,6 +28,8 @@ the advanced bug filing route, they're shown a list of bugs similar to
 the summary entered (assuming some are found).
 
     >>> user_browser.open("http://bugs.launchpad.dev/firefox/+filebug")
+    >>> print find_tag_by_id(user_browser.contents, 'frequent-bugs')
+    <h2 id="frequent-bugs">Most frequently reported bugs</h2>
     >>> user_browser.getControl("Summary").value = 'a'
     >>> user_browser.getControl("Continue").click()
 

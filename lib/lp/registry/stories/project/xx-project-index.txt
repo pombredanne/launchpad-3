@@ -167,7 +167,7 @@ Inactive products are not included in that list, though.
 
     # Use the DB classes directly to avoid having to setup a zope interaction
     # (i.e. login()) and bypass the security proxy.
-    >>> from canonical.launchpad.database import Product
+    >>> from lp.registry.model.product import Product
     >>> firefox = Product.byName('firefox')
     >>> firefox.active = False
     >>> firefox.syncUpdate()

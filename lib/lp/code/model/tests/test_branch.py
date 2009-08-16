@@ -39,7 +39,8 @@ from lp.code.enums import (
     BranchVisibilityRule, CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
-    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
+    BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
@@ -57,7 +58,6 @@ from lp.code.model.branchmergeproposal import (
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
@@ -213,8 +213,7 @@ class TestBranch(TestCaseWithFactory):
         # attribute is updated too.
         branch = self.factory.makeAnyBranch()
         new_owner = self.factory.makePerson()
-        login('admin@canonical.com')
-        branch.owner = new_owner
+        removeSecurityProxy(branch).owner = new_owner
         # Call the function that is normally called through the event system
         # to auto reload the fields updated by the db triggers.
         update_trigger_modified_fields(branch)
@@ -1054,9 +1053,9 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
-        self.product = getUtility(IProductSet).getByName('firefox')
+        self.product = self.factory.makeProduct()
 
-        self.user = getUtility(IPersonSet).getByName('no-priv')
+        self.user = self.factory.makePerson()
         self.source = self.factory.makeProductBranch(
             name='source-branch', owner=self.user, product=self.product)
         self.target = self.factory.makeProductBranch(
@@ -1069,7 +1068,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def test_junkSource(self):
         """Junk branches cannot be used as a source for merge proposals."""
-        self.source.product = None
+        self.source.setTarget(user=self.source.owner)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
@@ -1078,12 +1077,13 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         """The product of the target branch must match the product of the
         source branch.
         """
-        self.target.product = None
+        self.target.setTarget(user=self.target.owner)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
 
-        self.target.product = getUtility(IProductSet).getByName('bzr')
+        project = self.factory.makeProduct()
+        self.target.setTarget(user=self.target.owner, project=project)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
@@ -1097,12 +1097,13 @@ class BranchAddLandingTarget(TestCaseWithFactory):
     def test_dependentBranchSameProduct(self):
         """The dependent branch, if it is there, must be for the same product.
         """
-        self.dependent.product = None
+        self.dependent.setTarget(user=self.dependent.owner)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target, self.dependent)
 
-        self.dependent.product = getUtility(IProductSet).getByName('bzr')
+        project = self.factory.makeProduct()
+        self.dependent.setTarget(user=self.dependent.owner, project=project)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target, self.dependent)
@@ -1648,6 +1649,150 @@ class TestBranchSpecLinks(TestCaseWithFactory):
         branch.unlinkSpecification(spec, self.user)
 
         self.assertEqual(branch.spec_links.count(), 0)
+
+
+class TestBranchSetOwner(TestCaseWithFactory):
+    """Tests for IBranch.setOwner."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_owner_sets_team(self):
+        # The owner of the branch can set the owner of the branch to be a team
+        # they are a member of.
+        branch = self.factory.makeAnyBranch()
+        team = self.factory.makeTeam(owner=branch.owner)
+        login_person(branch.owner)
+        branch.setOwner(team, branch.owner)
+        self.assertEqual(team, branch.owner)
+
+    def test_owner_cannot_set_nonmember_team(self):
+        # The owner of the branch cannot set the owner to be a team they are
+        # not a member of.
+        branch = self.factory.makeAnyBranch()
+        team = self.factory.makeTeam()
+        login_person(branch.owner)
+        self.assertRaises(
+            BranchCreatorNotMemberOfOwnerTeam,
+            branch.setOwner,
+            team, branch.owner)
+
+    def test_owner_cannot_set_other_user(self):
+        # The owner of the branch cannot set the new owner to be another
+        # person.
+        branch = self.factory.makeAnyBranch()
+        person = self.factory.makePerson()
+        login_person(branch.owner)
+        self.assertRaises(
+            BranchCreatorNotOwner,
+            branch.setOwner,
+            person, branch.owner)
+
+    def test_admin_can_set_any_team_or_person(self):
+        # A Launchpad admin can set the branch to be owned by any team or
+        # person.
+        branch = self.factory.makeAnyBranch()
+        team = self.factory.makeTeam()
+        # To get a random administrator, choose the admin team owner.
+        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+        login_person(admin)
+        branch.setOwner(team, admin)
+        self.assertEqual(team, branch.owner)
+        person = self.factory.makePerson()
+        branch.setOwner(person, admin)
+        self.assertEqual(person, branch.owner)
+
+    def test_bazaar_experts_can_set_any_team_or_person(self):
+        # A bazaar expert can set the branch to be owned by any team or
+        # person.
+        branch = self.factory.makeAnyBranch()
+        team = self.factory.makeTeam()
+        # To get a random administrator, choose the admin team owner.
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        login_person(experts)
+        branch.setOwner(team, experts)
+        self.assertEqual(team, branch.owner)
+        person = self.factory.makePerson()
+        branch.setOwner(person, experts)
+        self.assertEqual(person, branch.owner)
+
+
+class TestBranchSetTarget(TestCaseWithFactory):
+    """Tests for IBranch.setTarget."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_not_both_project_and_source_package(self):
+        # Only one of project or source_package can be passed in, not both.
+        branch = self.factory.makePersonalBranch()
+        project = self.factory.makeProduct()
+        source_package = self.factory.makeSourcePackage()
+        login_person(branch.owner)
+        self.assertRaises(
+            BranchTargetError,
+            branch.setTarget,
+            user=branch.owner, project=project, source_package=source_package)
+
+    def test_junk_branch_to_project_branch(self):
+        # A junk branch can be moved to a project.
+        branch = self.factory.makePersonalBranch()
+        project = self.factory.makeProduct()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, project=project)
+        self.assertEqual(project, branch.target.context)
+
+    def test_junk_branch_to_package_branch(self):
+        # A junk branch can be moved to a source package.
+        branch = self.factory.makePersonalBranch()
+        source_package = self.factory.makeSourcePackage()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, source_package=source_package)
+        self.assertEqual(source_package, branch.target.context)
+
+    def test_project_branch_to_other_project_branch(self):
+        # Move a branch from one project to another.
+        branch = self.factory.makeProductBranch()
+        project = self.factory.makeProduct()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, project=project)
+        self.assertEqual(project, branch.target.context)
+
+    def test_project_branch_to_package_branch(self):
+        # Move a branch from a project to a package.
+        branch = self.factory.makeProductBranch()
+        source_package = self.factory.makeSourcePackage()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, source_package=source_package)
+        self.assertEqual(source_package, branch.target.context)
+
+    def test_project_branch_to_junk_branch(self):
+        # Move a branch from a project to junk.
+        branch = self.factory.makeProductBranch()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner)
+        self.assertEqual(branch.owner, branch.target.context)
+
+    def test_package_branch_to_other_package_branch(self):
+        # Move a branch from one package to another.
+        branch = self.factory.makePackageBranch()
+        source_package = self.factory.makeSourcePackage()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, source_package=source_package)
+        self.assertEqual(source_package, branch.target.context)
+
+    def test_package_branch_to_project_branch(self):
+        # Move a branch from a package to a project.
+        branch = self.factory.makePackageBranch()
+        project = self.factory.makeProduct()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner, project=project)
+        self.assertEqual(project, branch.target.context)
+
+    def test_package_branch_to_junk_branch(self):
+        # Move a branch from a package to junk.
+        branch = self.factory.makePackageBranch()
+        login_person(branch.owner)
+        branch.setTarget(user=branch.owner)
+        self.assertEqual(branch.owner, branch.target.context)
 
 
 def test_suite():

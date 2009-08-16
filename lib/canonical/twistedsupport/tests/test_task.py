@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, succeed
 from twisted.internet.task import Clock
 
 from zope.interface import implements
@@ -49,14 +49,19 @@ class LoggingSource:
 
     implements(ITaskSource)
 
-    def __init__(self, log):
+    def __init__(self, log, stop_deferred=None):
         self._log = log
+        if stop_deferred is None:
+            self.stop_deferred = succeed(True)
+        else:
+            self.stop_deferred = stop_deferred
 
     def start(self, consumer):
         self._log.append(('start', consumer))
 
     def stop(self):
         self._log.append('stop')
+        return self.stop_deferred
 
 
 class TestPollingTaskSource(TestCase):
@@ -143,6 +148,16 @@ class TestPollingTaskSource(TestCase):
         clock.advance(interval)
         # No more calls were made.
         self.assertEqual(0, self._num_task_producer_calls)
+
+    def test_stop_deferred_fires_immediately_if_no_polling(self):
+        # Calling stop when the source is not polling returns a deferred that
+        # fires immediately with True.
+        task_source = self.makeTaskSource()
+        task_source.start(NoopTaskConsumer())
+        stop_deferred = task_source.stop()
+        stop_calls = []
+        stop_deferred.addCallback(stop_calls.append)
+        self.assertEqual([True], stop_calls)
 
     def test_start_multiple_times_polls_immediately(self):
         # Starting a task source multiple times polls immediately.
@@ -240,6 +255,76 @@ class TestPollingTaskSource(TestCase):
         produced_deferreds[0].callback(None)
         clock.advance(interval)
         self.assertEqual(len(produced_deferreds), 2)
+
+    def test_stop_deferred_doesnt_fire_until_polling_finished(self):
+        # If there is a call to the task producer outstanding when stop() is
+        # called, stop() returns a deferred that fires when the poll finishes.
+        # The value fired with is True if the source is still stopped when the
+        # deferred fires.
+        produced_deferred = Deferred()
+        def producer():
+            return produced_deferred
+        task_source = self.makeTaskSource(task_producer=producer)
+        task_source.start(NoopTaskConsumer())
+        # The call to start calls producer.  It returns produced_deferred
+        # which has not been fired, so stop returns a deferred that has not
+        # been fired.
+        stop_deferred = task_source.stop()
+        stop_called = []
+        stop_deferred.addCallback(stop_called.append)
+        self.assertEqual([], stop_called)
+        # When the task producing deferred fires, the stop deferred fires with
+        # 'True' to indicate that the source is still stopped.
+        produced_deferred.callback(None)
+        self.assertEqual([True], stop_called)
+
+    def test_stop_deferred_fires_with_false_if_source_restarted(self):
+        # If there is a call to the task producer outstanding when stop() is
+        # called, stop() returns a deferred that fires when the poll finishes.
+        # The value fired with is False if the source is no longer stopped
+        # when the deferred fires.
+        produced_deferred = Deferred()
+        def producer():
+            return produced_deferred
+        task_source = self.makeTaskSource(task_producer=producer)
+        task_source.start(NoopTaskConsumer())
+        # The call to start calls producer.  It returns produced_deferred
+        # which has not been fired so stop returns a deferred that has not
+        # been fired.
+        stop_deferred = task_source.stop()
+        stop_called = []
+        stop_deferred.addCallback(stop_called.append)
+        # Now we restart the source.
+        task_source.start(NoopTaskConsumer())
+        self.assertEqual([], stop_called)
+        # When the task producing deferred fires, the stop deferred fires with
+        # 'False' to indicate that the source has been restarted.
+        produced_deferred.callback(None)
+        self.assertEqual([False], stop_called)
+
+    def test_stop_start_stop_when_polling_doesnt_poll_again(self):
+        # If, while task acquisition is in progress, stop(), start() and
+        # stop() again are called in sequence, we shouldn't try to acquire
+        # another job when the first acquisition completes.
+        produced_deferreds = []
+        def producer():
+            d = Deferred()
+            produced_deferreds.append(d)
+            return d
+        task_source = self.makeTaskSource(task_producer=producer)
+        # Start the source.  This calls the producer.
+        task_source.start(NoopTaskConsumer())
+        self.assertEqual(1, len(produced_deferreds))
+        task_source.stop()
+        # If we start it again, this does not call the producer because
+        # the above call is still in process.
+        task_source.start(NoopTaskConsumer())
+        self.assertEqual(1, len(produced_deferreds))
+        # If we now stop the source and the initial poll for a task completes,
+        # we don't poll again.
+        task_source.stop()
+        produced_deferreds[0].callback(None)
+        self.assertEqual(1, len(produced_deferreds))
 
     def test_taskStarted_deferred_doesnt_delay_polling(self):
         # If taskStarted returns a deferred, we don't wait for it to fire
@@ -354,7 +439,7 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.consume(source)
         self.assertRaises(AlreadyRunningError, consumer.consume, source)
 
-    def test_consume_returns_deferred_doesnt_fire_until_tasks(self):
+    def test_consumer_doesnt_finish_until_tasks_finish(self):
         # `consume` returns a Deferred that fires when no more tasks are
         # running, but only after we've actually done something.
         consumer = self.makeConsumer()
@@ -363,7 +448,7 @@ class TestParallelLimitedTaskConsumer(TestCase):
         d.addCallback(log.append)
         self.assertEqual([], log)
 
-    def test_consume_returns_deferred_fires_when_tasks_done(self):
+    def test_consumer_finishes_when_tasks_done(self):
         # `consume` returns a Deferred that fires when no more tasks are
         # running.
         consumer = self.makeConsumer()
@@ -373,7 +458,7 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.taskStarted(lambda: None)
         self.assertEqual([None], task_log)
 
-    def test_consume_returns_deferred_fires_if_no_tasks_found(self):
+    def test_consumer_finishes_if_no_tasks_found(self):
         # `consume` returns a Deferred that fires if no tasks are found when
         # no tasks are running.
         consumer = self.makeConsumer()
@@ -383,7 +468,37 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.noTasksFound()
         self.assertEqual([None], task_log)
 
-    def test_consume_deferred_no_fire_if_no_tasks_found_and_job_running(self):
+    def test_consumer_doesnt_finish_until_stop_deferred_fires(self):
+        # The Deferred returned by `consume` does not fire until the deferred
+        # returned by the source's stop() method fires with True to indicate
+        # that the source is still stopped.
+        consumer = self.makeConsumer()
+        consume_log = []
+        stop_deferred = Deferred()
+        source = LoggingSource([], stop_deferred)
+        d = consumer.consume(source)
+        d.addCallback(consume_log.append)
+        consumer.noTasksFound()
+        self.assertEqual([], consume_log)
+        stop_deferred.callback(True)
+        self.assertEqual([None], consume_log)
+
+    def test_consumer_doesnt_finish_if_stop_doesnt_stop(self):
+        # The Deferred returned by `consume` does not fire when the deferred
+        # returned by the source's stop() method fires with False to indicate
+        # that the source has been restarted.
+        consumer = self.makeConsumer()
+        consume_log = []
+        stop_deferred = Deferred()
+        source = LoggingSource([], stop_deferred)
+        d = consumer.consume(source)
+        d.addCallback(consume_log.append)
+        consumer.noTasksFound()
+        self.assertEqual([], consume_log)
+        stop_deferred.callback(False)
+        self.assertEqual([], consume_log)
+
+    def test_consumer_doesnt_finish_if_no_tasks_found_and_job_running(self):
         # If no tasks are found while a job is running, the Deferred returned
         # by `consume` is not fired.
         consumer = self.makeConsumer()
@@ -402,7 +517,7 @@ class TestParallelLimitedTaskConsumer(TestCase):
         del log[:]
         # Finishes immediately, all tasks are done.
         consumer.taskStarted(lambda: None)
-        self.assertEqual(['stop'], log)
+        self.assertEqual(1, log.count('stop'))
 
     def test_taskStarted_before_consume_raises_error(self):
         # taskStarted can only be called after we have started consuming. This
@@ -427,6 +542,18 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.taskStarted(lambda: log.append('task'))
         self.assertEqual(['task'], log)
 
+    def test_taskStarted_restarts_source(self):
+        # If, after the task passed to taskStarted has been started, the
+        # consumer is not yet at its worker_limit, it starts the source again
+        # in order consume as many pending jobs as we can as quickly as we
+        # can.
+        log = []
+        consumer = self.makeConsumer()
+        consumer.consume(LoggingSource(log))
+        del log[:]
+        consumer.taskStarted(self._neverEndingTask)
+        self.assertEqual([('start', consumer)], log)
+
     def test_reaching_working_limit_stops_source(self):
         # Each time taskStarted is called, we start a worker. When we reach
         # the worker limit, we tell the source to stop generating work.
@@ -437,10 +564,10 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.consume(source)
         del log[:]
         consumer.taskStarted(self._neverEndingTask)
-        self.assertEqual([], log)
+        self.assertEqual(0, log.count('stop'))
         for i in range(worker_limit - 1):
             consumer.taskStarted(self._neverEndingTask)
-        self.assertEqual(['stop'], log)
+        self.assertEqual(1, log.count('stop'))
 
     def test_passing_working_limit_stops_source(self):
         # If we have already reached the worker limit, and taskStarted is

@@ -14,10 +14,11 @@ import transaction
 from psycopg2 import IntegrityError
 from zope.component import getUtility
 from zope.interface import implements
-from storm.locals import SQL, Max, Min
+from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
 from canonical.database import postgresql
+from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.hwdb import HWSubmission
@@ -26,16 +27,17 @@ from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from lp.services.scripts.base import (
-    LaunchpadCronScript, SilentLaunchpadScriptFailure)
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
+from lp.bugs.model.bugnotification import BugNotification
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
 from lp.registry.model.mailinglist import MailingListSubscription
 from lp.registry.model.person import Person
+from lp.services.scripts.base import (
+    LaunchpadCronScript, SilentLaunchpadScriptFailure)
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -414,13 +416,107 @@ class MailingListSubscriptionPruner(TunableLoop):
         transaction.commit()
 
 
+class PersonEmailAddressLinkChecker(TunableLoop):
+    """Report invalid references between the authdb and main replication sets.
+
+    We can't use referential integrity to ensure references remain valid,
+    so we have to check regularly for any bugs that creep into our code.
+
+    We don't repair links yet, but could add this feature. I'd
+    rather track down the source of problems and fix problems there
+    and avoid automatic repair, which might be dangerous. In particular,
+    replication lag introduces a number of race conditions that would
+    need to be addressed.
+    """
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(PersonEmailAddressLinkChecker, self).__init__(log, abort_time)
+
+        self.person_store = IMasterStore(Person)
+        self.email_store = IMasterStore(EmailAddress)
+
+        # This query detects invalid links between Person and EmailAddress.
+        # The first part detects difference in opionion about what Account
+        # is linked to. The second part detects EmailAddresses linked to
+        # non existent Person records.
+        query = """
+            SELECT Person.id, EmailAddress.id
+            FROM EmailAddress, Person
+            WHERE EmailAddress.person = Person.id
+                AND Person.account IS DISTINCT FROM EmailAddress.account
+            UNION
+            SELECT NULL, EmailAddress.id
+            FROM EmailAddress LEFT OUTER JOIN Person
+                ON EmailAddress.person = Person.id
+            WHERE EmailAddress.person IS NOT NULL
+                AND Person.id IS NULL
+            """
+        # We need to issue this query twice, waiting between calls
+        # for all pending database changes to replicate. The known
+        # bad set are the entries common in both results.
+        bad_links_1 = set(self.person_store.execute(query))
+        transaction.abort()
+
+        self.blockForReplication()
+
+        bad_links_2 = set(self.person_store.execute(query))
+        transaction.abort()
+
+        self.bad_links = bad_links_1.intersection(bad_links_2)
+
+    def blockForReplication(self):
+        start = time.time()
+        while True:
+            lag = self.person_store.execute(
+                "SELECT replication_lag();").get_one()[0]
+            if lag < (time.time() - start):
+                return
+            # Guestimate on how long we should wait for. We cap
+            # it as several hours of lag can clear in an instant
+            # in some cases.
+            naptime = min(300, lag)
+            self.log.debug(
+                "Waiting for replication. Lagged %s secs. Napping %s secs."
+                % (lag, naptime))
+            time.sleep(naptime)
+
+    def isDone(self):
+        return not self.bad_links
+
+    def __call__(self, chunksize):
+        for counter in range(0, int(chunksize)):
+            if not self.bad_links:
+                return
+            person_id, emailaddress_id = self.bad_links.pop()
+            if person_id is None:
+                person = None
+            else:
+                person = self.person_store.get(Person, person_id)
+            emailaddress = self.email_store.get(EmailAddress, emailaddress_id)
+            self.report(person, emailaddress)
+            # We don't repair... yet.
+            # self.repair(person, emailaddress)
+        transaction.abort()
+
+    def report(self, person, emailaddress):
+        if person is None:
+            self.log.error(
+                "Corruption - '%s' is linked to a non-existant Person."
+                % emailaddress.email)
+        else:
+            self.log.error(
+                "Corruption - '%s' and '%s' reference different Accounts."
+                % (emailaddress.email, person.name))
+
+
 class PersonPruner(TunableLoop):
 
     maximum_chunk_size = 1000
 
     def __init__(self, log, abort_time=None):
         super(PersonPruner, self).__init__(log, abort_time)
-        self.offset = 0
+        self.offset = 1
         self.store = IMasterStore(Person)
         self.log.debug("Creating LinkedPeople temporary table.")
         self.store.execute(
@@ -497,7 +593,7 @@ class PersonPruner(TunableLoop):
         subquery = """
             SELECT person FROM UnlinkedPeople
             WHERE id BETWEEN %d AND %d
-            """ % (self.offset, self.offset + chunk_size)
+            """ % (self.offset, self.offset + chunk_size - 1)
         people_ids = ",".join(
             str(item[0]) for item in self.store.execute(subquery).get_all())
         self.offset += chunk_size
@@ -526,12 +622,38 @@ class PersonPruner(TunableLoop):
                 "Deleted the following unlinked people: %s" % people_ids)
         except IntegrityError:
             # This case happens when a Person is linked to something
-            # during the run. It is unlikely to occur, so just ignore it again.
-            # Everything will clear up next run.
+            # during the run. It is unlikely to occur, so just ignore
+            # it again. Everything will clear up next run.
             transaction.abort()
             self.log.warning(
                 "Failed to delete %d Person records. Left for next time."
                 % chunk_size)
+
+
+class BugNotificationPruner(TunableLoop):
+    """Prune `BugNotificationRecipient` records no longer of interest.
+
+    We discard all rows older than 30 days that have been sent. We
+    keep 30 days worth or records to help diagnose email delivery issues.
+    """
+    maximum_chunk_size = 10000
+
+    def _to_remove(self):
+        return IMasterStore(BugNotification).find(
+            BugNotification.id,
+            BugNotification.date_emailed < THIRTY_DAYS_AGO)
+
+    def isDone(self):
+        return self._to_remove().any() is None
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+        ids_to_remove = list(self._to_remove()[:chunk_size])
+        num_removed = IMasterStore(BugNotification).find(
+            BugNotification,
+            In(BugNotification.id, ids_to_remove)).remove()
+        transaction.commit()
+        self.log.debug("Removed %d rows" % num_removed)
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
@@ -624,6 +746,8 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         super(HourlyDatabaseGarbageCollector, self).add_my_options()
         # By default, abort any tunable loop taking more than 15 minutes.
         self.parser.set_defaults(abort_task=900)
+        # And abort the script if it takes more than 55 minutes.
+        self.parser.set_defaults(abort_script=55*60)
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -633,6 +757,8 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionAuthorEmailLinker,
         HWSubmissionEmailLinker,
         MailingListSubscriptionPruner,
+        PersonEmailAddressLinkChecker,
+        BugNotificationPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

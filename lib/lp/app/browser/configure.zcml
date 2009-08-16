@@ -14,4 +14,11 @@
         template="../templates/base-layout-macros.pt"
         permission="zope.Public"
         />
+    <browser:page
+        for="*"
+        name="+related-pages"
+        class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+        template="../templates/navigationmenu-related-pages.pt"
+        permission="zope.Public"
+        />
 </configure>

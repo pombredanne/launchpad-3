@@ -4,7 +4,7 @@ allow them. -- Guilherme Salgado, 2006-10-27
 
     These are the variables that will be defined in each setup hook once we
     move to a generic test used for all objects that can be reassigned.
-    >>> from canonical.launchpad.database import DistributionMirror
+    >>> from lp.registry.model.distributionmirror import DistributionMirror
     >>> context = DistributionMirror.byName('archive-mirror')
     >>> owner_attribute_name = 'owner'
     >>> context_url = (
@@ -43,7 +43,7 @@ First we'll enter an unexistent name.
 We also try to use the name of an unvalidated account, which can't be used as
 the owner of something.
 
-    >>> from canonical.launchpad.database import Person
+    >>> from lp.registry.model.person import Person
     >>> Person.byName('matsubara').is_valid_person_or_team
     False
     >>> browser.getControl(name='field.owner').value = 'matsubara'

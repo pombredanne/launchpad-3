@@ -46,12 +46,19 @@ content are positioned using the "yui-t4", "yui-main", "yui-b", and
           <div id="locationbar"> ...
              <form id="globalsearch" ...
              <div id="lp-hierarchy" class="home">...
-             <div id="lp-apps" ...
+          <div class="location-portlet top-portlet">
+            <img ...
+            <h1>Waffles</h1>
+            <!-- Application Menu -->
+            <ul>...
+          </div>...
           <div class="yui-t4">
             <div id="maincontent" class="yui-main">
               <div class="yui-b" dir="ltr">
-                <h1>Heading</h1>
-                <!-- future breadcrumb rule -->
+                <div>
+                  <h2>Heading</h2>
+                  <!-- future breadcrumb rule -->
+                </div>
                 <div class="top-portlet">
                   <p class="registered">
                     Registered on 2005-09-16
@@ -100,12 +107,20 @@ content to take up all the horizontal space.
           <div id="locationbar"> ...
              <form id="globalsearch" ...
              <div id="lp-hierarchy" class="home">...
-             <div id="lp-apps" ...
+          <div class="location-portlet top-portlet">
+            <img ...
+            <h1>Waffles</h1>
+            <!-- Application Menu -->
+            <ul>...
+          </div>...
           <div id="maincontent" class="yui-main">
             <div class="yui-b" dir="ltr">
-              <h1>Heading</h1>
-              <!-- future breadcrumb rule -->
+              <div>
+                <h2>Waffles</h2>
+                <!-- future breadcrumb rule -->
+              </div>
               <div class="top-portlet">
+                <h1>Heading</h1>
                 <p class="registered">
                   Registered on 2005-09-16
                   by <a class="sprite team" href="#">Illuminati team</a>
@@ -148,13 +163,21 @@ slots are rendered, as are the application tabs.
           <div id="locationbar">
             <div id="logincontrol"><a href="...">Log in / Register</a></div>
             <div id="lp-hierarchy" class="home">...
-            <div id="lp-apps" ...
           </div><!--id="locationbar"-->
+          <div class="location-portlet top-portlet">
+            <img ...
+            <h1>Waffles</h1>
+            <!-- Application Menu -->
+            <ul>...
+          </div>...
           <div id="maincontent" class="yui-main">
             <div class="yui-b" dir="ltr">
-              <h1>Heading</h1>
-              <!-- future breadcrumb rule -->
+              <div>
+                <h2>Waffles</h2>
+                <!-- future breadcrumb rule -->
+              </div>
               <div class="top-portlet">
+                <h1>Heading</h1>
                 <p class="registered">
                   Registered on 2005-09-16
                   by <a class="sprite team" href="#">Illuminati team</a>
@@ -237,7 +260,8 @@ test. The template controlled the heading.
     >>> print content.h1
     <h1>Heading</h1>
 
-The page heading slot's default behaviour is to use the context.title.
+The page heading slot's default behaviour is to use the context.title and
+place it in a <h2>.
 
     >>> class DefaultHeadingView(LaunchpadView):
     ...     """A simple view to test base-layout."""
@@ -251,8 +275,8 @@ The page heading slot's default behaviour is to use the context.title.
 
     >>> view = DefaultHeadingView(user, request)
     >>> content = find_tag_by_id(view.render(), 'maincontent')
-    >>> print content.h1
-    <h1>Waffles</h1>
+    >>> print content.h2
+    <h2>Waffles</h2>
 
 
 Public and private presentation

@@ -3,9 +3,6 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
   i18n:domain="launchpad">
 
   <div metal:define-macro="form">
@@ -71,7 +68,7 @@
                tal:replace="structure action/render"
           />
         <tal:has-cancel-link condition="view/cancel_url">
-          <tal:or condition="view/has_available_actions">or</tal:or>
+          <tal:or condition="view/has_available_actions">or&nbsp;</tal:or>
           <a tal:attributes="href view/cancel_url">Cancel</a>
         </tal:has-cancel-link>
       </div>

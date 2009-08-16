@@ -27,7 +27,7 @@ count:len gives you a number which is len(thing).
 
 To display the icon for a milestone, use image:icon:
 
-   >>> from canonical.launchpad.database import MilestoneSet
+   >>> from lp.registry.model.milestone import MilestoneSet
    >>> milestone = MilestoneSet().get(1)
    >>> test_tales("milestone/image:icon", milestone=milestone)
    '<img ... src="/@@/milestone" />'
@@ -63,7 +63,7 @@ an actual launchpad user.
 
 We also have image:icon for KarmaCategory:
 
-    >>> from canonical.launchpad.database import KarmaCategory
+    >>> from lp.registry.model.karma import KarmaCategory
     >>> for category in KarmaCategory.select(orderBy='title'):
     ...     print test_tales("category/image:icon", category=category)
     <img ... title="Answer Tracker" src="/@@/question" />
@@ -112,6 +112,45 @@ And finally Copy archives.
 
     >>> print test_tales("archive/image:icon", archive=copy)
     <img ... src="/@@/distribution" />
+
+PPAs have a 'link' formatter, which returns the appropriate HTML used
+for referring to them in other pages.
+
+    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+    <a href="/~sabdfl/+archive/ppa"
+       class="sprite ppa-icon">PPA for Mark Shuttleworth</a>
+
+Disabled PPAs links use a different icon and are only linkified for users
+with launchpad.View on them.
+
+    >>> login('foo.bar@canonical.com')
+    >>> sabdfl.archive.enabled = False
+
+    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+    <a href="/~sabdfl/+archive/ppa" class="sprite ppa-icon-inactive">PPA
+    for Mark Shuttleworth</a>
+
+    >>> login(ANONYMOUS)
+
+    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+    <span class="sprite ppa-icon-inactive">PPA for Mark Shuttleworth</span>
+
+Private PPAs links are not rendered for users without launchpad.View
+on them.
+
+    >>> login('foo.bar@canonical.com')
+    >>> sabdfl.archive.enabled = True
+    >>> sabdfl.archive.buildd_secret = 'x'
+    >>> sabdfl.archive.private = True
+
+    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+    <a href="/~sabdfl/+archive/ppa" class="sprite ppa-icon">PPA
+    for Mark Shuttleworth</a>
+
+    >>> login(ANONYMOUS)
+
+    >>> print test_tales("ppa/fmt:link", ppa=sabdfl.archive)
+
 
 We also have icons for builds which may have different dimensions.
 
@@ -1012,6 +1051,42 @@ do with 'None/fmt:foo'.
     >>> test_tales('foo/fmt:exactduration', foo=None)
     ''
 
+
+== The fmt: namespace to get a location heading ==
+
+The `fmt:location_heading` is used when you want a heading for the nearest
+object that implements IHasLogo.
+
+    >>> print test_tales("series/fmt:location_heading", series=ubuntu['warty'])
+    <h2>Ubuntu Linux</h2>
+    >>> print test_tales("ppa/fmt:location_heading", ppa=sabdfl.archive)
+    <h2>Mark Shuttleworth</h2>
+
+This can be used together with the `image:logo` formatter which
+also returns the logo of the nearest object that provides a logo.
+
+    >>> print test_tales("series/image:logo", series=ubuntu['warty'])
+    <img ... src="/@@/distribution-logo" />
+    >>> print test_tales("ppa/image:logo", ppa=sabdfl.archive)
+    <img ... src="/@@/person-logo" />
+
+If the current context itself defines the location (ie. it implements
+IHasLogo) then an h1 heading will be used instead.
+
+    >>> print test_tales("person/fmt:location_heading", person=sabdfl)
+    <h1>Mark Shuttleworth</h1>
+
+Similarly to the `image:logo` formatter, if the object cannot produce a
+logo, the title defaults to 'Launchpad.net' (differentiating from
+the Launchpad project within Launchpad.net).
+
+    >>> from canonical.launchpad.webapp.publisher import rootObject
+    >>> print test_tales(
+    ...     "root_object/fmt:location_heading", root_object=rootObject)
+    <h2>Launchpad.net</h2>
+    >>> print test_tales(
+    ...     "root_object/image:logo", root_object=rootObject)
+    <img ... src="/@@/launchpad-logo" />
 
 == The lp: namespace for presenting DBSchema items ==
 

@@ -762,9 +762,26 @@ He becomes able to copy to the context PPA.
     >>> view.can_copy_to_context_ppa
     True
 
-'Foo Bar' user has no PPA, so he cannot perform copies at all.
+When the No-Priv's PPA is disabled it's not available as a
+'Destination Archive' option anymore.
 
+    # Disable No-Priv's PPA.
     >>> login('foo.bar@canonical.com')
+    >>> no_priv.archive.enabled = False
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+copy-packages")
+
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+
+    # Re-enable No-Priv's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> no_priv.archive.enabled = True
+
+'Foo Bar' user has no PPA, so he cannot perform copies at all.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages")

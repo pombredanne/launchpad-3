@@ -182,7 +182,7 @@ filtering.
 
     >>> from canonical.database.constants import UTC_NOW
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> from canonical.launchpad.database import Specification
+    >>> from lp.blueprints.model.specification import Specification
     >>> a = Specification(name='a', title='A', summary='AA', owner=carlos,
     ...                   product=firefox, productseries=onezero,
     ...                   specurl='http://wbc.com/two', goal_proposer=carlos,

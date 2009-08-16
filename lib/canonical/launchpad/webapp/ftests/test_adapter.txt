@@ -292,7 +292,7 @@ Now begin a request, and issue a number of statements:
     >>> set_request_started()
     >>> store.execute('SELECT 1', noresult=True)
     >>> store.execute('SELECT 2', noresult=True)
-    >>> for starttime, endtime, statement in get_request_statements():
+    >>> for starttime, endtime, db_id, statement in get_request_statements():
     ...     print statement
     SELECT 1
     SELECT 2
