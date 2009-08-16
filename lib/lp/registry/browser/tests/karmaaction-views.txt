@@ -1,0 +1,43 @@
+KarmaAction views
+=================
+
+    >>> from lp.registry.interfaces.karma import IKarmaActionSet
+
+    >>> karmaactionset = getUtility(IKarmaActionSet)
+    >>> action = karmaactionset.getByName('branchcreated')
+
+The karma action +edit view allow an admin to edit a karma action. The
+view provides a label, page_title and a cancel_url
+
+    >>> view = create_initialized_view(action, '+index')
+    >>> print view.label
+    Edit New branch registered karma action
+
+    >>> print view.page_title
+    Edit New branch registered karma action
+
+    >>> print view.cancel_url
+    http://launchpad.dev/karmaaction
+
+The admin can edit the karma action's fields.
+
+    >>> view.field_names
+    ['name', 'category', 'points', 'title', 'summary']
+
+    >>> action.points
+    1
+
+    >>> login('admin@canonical.com')
+    >>> form = {
+    ...     'field.points': '2',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(action, '+index', form=form)
+    >>> view.errors
+    []
+
+    >>> print view.next_url
+    http://launchpad.dev/karmaaction
+
+    >>> action.points
+    2

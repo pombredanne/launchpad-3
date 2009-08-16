@@ -580,7 +580,7 @@
             for="lp.registry.interfaces.karma.IKarmaAction"
             class="lp.registry.browser.karma.KarmaActionEditView"
             permission="launchpad.Admin"
-            template="../templates/karmaaction-edit.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:url
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             path_expression="string:karmaaction"

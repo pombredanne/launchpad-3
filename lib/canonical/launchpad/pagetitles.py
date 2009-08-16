@@ -634,8 +634,6 @@ hwdb_submit_hardware_data = (
 
 karmaaction_index = 'Karma actions'
 
-karmaaction_edit = 'Edit karma action'
-
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
 
 language_index = ContextDisplayName("%s in Launchpad")
