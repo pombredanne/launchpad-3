@@ -454,15 +454,6 @@
         facet="overview"
         permission="launchpad.ProjectReview"
         template="../templates/project-add.pt"/>
-    <browser:pages
-        for="lp.registry.interfaces.project.IProjectSet"
-        facet="overview"
-        class="lp.registry.browser.project.ProjectSetView"
-        permission="launchpad.ProjectReview">
-        <browser:page
-            name="+review"
-            template="../templates/registry-review.pt"/>
-    </browser:pages>
     <browser:url
         for="lp.registry.interfaces.project.IProjectSeries"
         path_expression="string:+series/${name}"

@@ -1171,8 +1171,6 @@ products_all = 'Upstream projects registered in Launchpad'
 
 projects_all = 'Project groups registered in Launchpad'
 
-registry_review = 'Review Launchpad items'
-
 related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
