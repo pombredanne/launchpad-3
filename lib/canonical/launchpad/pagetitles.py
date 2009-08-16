@@ -1306,8 +1306,6 @@ def sourcepackage_index(context, view):
     """Return the page title for a source package in a distroseries."""
     return '%s source packages' % context.distroseries.title
 
-sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
-
 sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackagenames_index = 'Source package name set'
