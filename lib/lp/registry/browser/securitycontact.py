@@ -21,6 +21,16 @@ class SecurityContactEditView(LaunchpadFormView):
     field_names = ['security_contact']
 
     @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Edit %s security contact' % self.context.displayname
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
     def initial_values(self):
         return {
             'security_contact': self.context.security_contact}
@@ -55,3 +65,5 @@ class SecurityContactEditView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+    cancel_url = next_url
