@@ -281,7 +281,13 @@
     permission="zope.Public"
     template="../templates/faq-listing.pt"
     />
-
+  <browser:page
+    for="lp.answers.interfaces.faqcollection.IFAQCollection"
+    class=".faqcollection.SearchFAQsView"
+    name="+portlet-listfaqs"
+    permission="zope.Public"
+    template="../templates/faqcollection-portlet-faqs.pt"
+    />
   <browser:page
     name="+createfaq"
     for="lp.answers.interfaces.faqtarget.IFAQTarget"

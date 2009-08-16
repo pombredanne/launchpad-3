@@ -36,7 +36,6 @@ from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet, IPersonalArchiveSubscription)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
-from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
 from canonical.widgets import DateWidget
@@ -117,8 +116,8 @@ class ArchiveSubscribersView(LaunchpadFormView):
         # If this archive is not private, then we should not be
         # managing the subscribers.
         if not self.context.private:
-            self.request.response.addNotification(structured(
-                "Only private archives can have subscribers."))
+            self.request.response.addNotification(
+                "Only private archives can have subscribers.")
             self.request.response.redirect(
                 canonical_url(self.context))
             return
@@ -197,7 +196,7 @@ class ArchiveSubscribersView(LaunchpadFormView):
                 'subscriber_individuals': subscriber_individuals,
                 }
 
-        self.request.response.addNotification(structured(notification))
+        self.request.response.addNotification(notification)
 
         # Just ensure a redirect happens (back to ourselves).
         self.next_url = str(self.request.URL)
@@ -240,7 +239,7 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 
         notification = "The access for %s has been updated." % (
             self.context.subscriber.displayname)
-        self.request.response.addNotification(structured(notification))
+        self.request.response.addNotification(notification)
 
     @action(u'Cancel access', name='cancel')
     def cancel_subscription(self, action, data):
@@ -250,7 +249,7 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
         notification = "You have cancelled %s's subscription to %s." % (
             self.context.subscriber.displayname,
             self.context.archive.displayname)
-        self.request.response.addNotification(structured(notification))
+        self.request.response.addNotification(notification)
 
     @property
     def next_url(self):
@@ -315,11 +314,11 @@ class PersonArchiveSubscriptionView(LaunchpadView):
 
             token = self.context.archive.newAuthToken(self.context.subscriber)
 
-            self.request.response.addNotification(structured(
+            self.request.response.addNotification(
                 "Launchpad has generated the new password you requested "
                 "for your access to the archive %s. Please follow "
                 "the instructions below to update your custom "
-                "\"sources.list\"." % self.context.archive.displayname))
+                "\"sources.list\"." % self.context.archive.displayname)
 
             self.request.response.redirect(self.request.getURL())
 
