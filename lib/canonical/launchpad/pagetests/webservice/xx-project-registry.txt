@@ -169,6 +169,18 @@ Projects are available at their canonical URL on the API virtual host.
     title: u'Mozilla Firefox'
     wiki_url: None
 
+In Launchpad project names may not have uppercase letters in their
+name.  As a convenience, requests for projects using the wrong case
+are redirected to the correct location.
+
+    >>> firefox = webservice.get('/FireFox').jsonBody()
+    Traceback (most recent call last):
+    ...
+    ValueError: HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/firefox
+    ...
+
 Some entries for projects are only available to admins.  Here we see
 several that are not available to non-privileged users marked as
 'redacted'.

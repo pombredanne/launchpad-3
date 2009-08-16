@@ -246,7 +246,8 @@ class ParallelLimitedTaskConsumer:
         find any jobs, if we actually start any jobs then the exit condition
         in _taskEnded will always be reached before this one.
         """
-        self._stop()
+        if self._worker_count == 0:
+            self._stop()
 
     def taskProductionFailed(self, reason):
         """See `ITaskConsumer`.

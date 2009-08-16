@@ -23,6 +23,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
+    'ProductSeriesUbuntuPackagingView',
     'ProductSeriesView',
     ]
 
@@ -471,6 +472,15 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
             canonical_url(self.context.product, path_only_if_possible=True))
 
 
+class ProductSeriesUbuntuPackagingView(ProductSeriesView):
+    """A view to show series package in Ubuntu."""
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Ubuntu source packaging'
+
+
 class ProductSeriesEditView(LaunchpadEditFormView):
     """A View to edit the attributes of a series."""
     schema = IProductSeries
@@ -478,6 +488,17 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         'name', 'summary', 'status', 'branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
@@ -497,6 +518,11 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
 
 class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     """A view to remove a productseries from a product."""
@@ -506,8 +532,13 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Delete %s series %s' % (
+        return 'Delete %s %s series' % (
             self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @cachedproperty
     def milestones(self):
@@ -575,6 +606,17 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     field_names = ['branch']
 
     @property
+    def label(self):
+        """The form label."""
+        return 'Link an existing branch to %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
@@ -592,9 +634,10 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the product series page."""
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):
@@ -631,8 +674,23 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
     """A view to review and change the series `IProduct` and name."""
     schema = IProductSeries
     field_names = ['product', 'name']
-    label = 'Review product series details'
     custom_widget('name', TextWidget, width=20)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Administer %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
