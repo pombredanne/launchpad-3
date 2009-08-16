@@ -1238,8 +1238,6 @@ def questiontarget_createfaq(context, view):
 
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
-securitycontact_edit = ContextDisplayName("Edit %s security contact")
-
 series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
 shipit_adminrequest = 'ShipIt admin request'
