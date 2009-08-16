@@ -26,7 +26,7 @@ __all__ = [
     'active_publishing_status',
     'inactive_publishing_status',
     'name_priority_map',
-    'pocketsuffix'
+    'pocketsuffix',
     ]
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
@@ -36,6 +36,8 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
@@ -112,57 +114,6 @@ class PackagePublishingStatus(DBEnumeratedType):
         are no longer required in the archive.  The publications for
         those packages are marked as "obsolete" and are subsequently
         removed during domination and death row processing.
-        """)
-
-
-class PackagePublishingPocket(DBEnumeratedType):
-    """Package Publishing Pocket
-
-    A single distroseries can at its heart be more than one logical
-    distroseries as the tools would see it. For example there may be a
-    distroseries called 'hoary' and a SECURITY pocket subset of that would
-    be referred to as 'hoary-security' by the publisher and the distro side
-    tools.
-    """
-
-    RELEASE = DBItem(0, """
-        Release
-
-        The package versions that were published
-        when the distribution release was made.
-        For releases that are still under development,
-        packages are published here only.
-        """)
-
-    SECURITY = DBItem(10, """
-        Security
-
-        Package versions containing security fixes for the released
-        distribution.
-        It is a good idea to have security updates turned on for your system.
-        """)
-
-    UPDATES = DBItem(20, """
-        Updates
-
-        Package versions including new features after the distribution
-        release has been made.
-        Updates are usually turned on by default after a fresh install.
-        """)
-
-    PROPOSED = DBItem(30, """
-        Proposed
-
-        Package versions including new functions that should be widely
-        tested, but that are not yet part of a default installation.
-        People who "live on the edge" will test these packages before they
-        are accepted for use in "Updates".
-        """)
-
-    BACKPORTS = DBItem(40, """
-        Backports
-
-        Backported packages.
         """)
 
 
@@ -1094,15 +1045,6 @@ class IPublishingSet(Interface):
         used with an ArchiveSourcePublication passed in as
         the source_package_pub, allowing the use of the cached results.
         """
-
-pocketsuffix = {
-    PackagePublishingPocket.RELEASE: "",
-    PackagePublishingPocket.SECURITY: "-security",
-    PackagePublishingPocket.UPDATES: "-updates",
-    PackagePublishingPocket.PROPOSED: "-proposed",
-    PackagePublishingPocket.BACKPORTS: "-backports",
-}
-
 
 active_publishing_status = (
     PackagePublishingStatus.PENDING,
