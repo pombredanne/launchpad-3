@@ -95,13 +95,11 @@ class ModifiedBranchesScript(LaunchpadScript):
         if branch.branch_type == BranchType.HOSTED:
             yield os.path.join(config.codehosting.hosted_branches_root, path)
 
-    def print_location(self, location):
-        """Print the branch location stripping prefix, and appending suffix as
-        configured.
-        """
+    def process_location(self, location):
+        """Strip the defined prefix, and append the suffix as configured."""
         if location.startswith(self.options.strip_prefix):
             location = location[len(self.options.strip_prefix):]
-        print location + self.options.append_suffix
+        return location + self.options.append_suffix
 
     def main(self):
         last_modified = self.get_last_modified_epoch()
@@ -114,7 +112,7 @@ class ModifiedBranchesScript(LaunchpadScript):
         for branch in collection.getBranches():
             self.logger.info(branch.unique_name)
             for location in self.branch_locations(branch):
-                self.print_location(location)
+                print self.process_location(location)
 
         self.logger.info("Done.")
 
