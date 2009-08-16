@@ -52,7 +52,8 @@ class SecurityContactEditView(LaunchpadFormView):
                 # The security contact doesn't have a preferred email address,
                 # so it must be a team.
                 assert security_contact.isTeam(), (
-                    "Expected security contact with no email address to be a team.")
+                    "Expected security contact with no email address "
+                    "to be a team.")
                 security_contact_display_value = security_contact.displayname
 
             self.request.response.addNotification(
