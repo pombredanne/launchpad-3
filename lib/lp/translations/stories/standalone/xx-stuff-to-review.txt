@@ -1,0 +1,28 @@
+= Stuff to Review =
+
+When a translations reviewer visits their own homepage, it shows a list
+of translations that they could or should be reviewing.
+
+    >>> login('foo.bar@canonical.com')
+    >>> user = factory.makePerson(
+    ...     name='xowzx', email='xowzx@example.com', password="test")
+    >>> logout()
+
+    >>> browser = setupBrowser(auth='Basic xowzx@example.com:test')
+    >>> homepage = 'http://translations.launchpad.dev/~xowzx'
+
+    >>> def add_pofile(translationgroup):
+    ...     """Create a POFile managed by `translationgroup`."""
+    ...     pofile = factory.makePOFile(language_code='km')
+    ...     pofile.productseries.product.translationgroup = translationgroup
+    ...     return pofile
+
+    >>> def contribute(user, pofile):
+    ...     """Let `user` add a suggestion to `pofile`."""
+    ...     potmsgset = factory.makePOTMsgSet(
+    ...         potemplate=pofile.potemplate, singular='x', sequence=1)
+    ...     factory.makeTranslationMessage(
+    ...         potmsgset=potmsgset, pofile=pofile, translator=user,
+    ...         translations=['y'])
+
+    >>> browser.open(homepage)
