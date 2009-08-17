@@ -590,3 +590,10 @@ pre.wrap {
   word-wrap: break-word;
 }
 
+/* ==== Listing tables ==== */
+
+table.listing thead {
+  color: #9f2b33;
+  font-size: 1.125em;
+  font-weight: bold;
+}
