@@ -180,7 +180,7 @@ Delete distribution mirror
 
 The +delete view provides a label, page_title, and cancel_url.
 
-    >>> view =  create_initialized_view(mirror, '+delete')
+    >>> view = create_initialized_view(mirror, '+delete')
     >>> print view.label
     Delete mirror Illuminati
 
@@ -204,3 +204,144 @@ Deletion is permanent.
     >>> transaction.commit()
     >>> print ubuntu.getMirrorByName('secret.me-archive')
     None
+
+
+Viewing a mirror
+----------------
+
+The archive mirror page summarizes the current state of the mirror.
+
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from canonical.launchpad.testing.pages import (
+    ...     extract_text, find_tag_by_id)
+
+    >>> login('no-priv@canonical.com')
+    >>> user = getUtility(ILaunchBag).user
+
+    >>> archive_mirror = ubuntu.getMirrorByName('archive-mirror2')
+    >>> view = create_initialized_view(
+    ...     archive_mirror, '+index', principal=user)
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+
+The page contains a source list...
+
+    >>> print extract_text(find_tag_by_id(content, 'sources-list-entries'))
+    deb http://localhost:11375/valid-mirror2/ YOUR_UBUNTU_VERSION_HERE main
+    deb-src http://localhost:11375/valid-mirror2/ YOUR_UBUNTU_VERSION_HERE main
+
+and the select control that lets you update them.
+
+    >>> print extract_text(find_tag_by_id(content, 'field.series'))
+    Choose your Ubuntu version
+      Hoary (5.04)
+      Warty (4.10)
+
+The last probed information is present.
+
+    >>> print extract_text(find_tag_by_id(content, 'last-probe'))
+    Last probe
+    This mirror was last verified ...
+
+The information found is also shown.
+
+    >>> print extract_text(find_tag_by_id(content, 'arches'))
+    Version                     Architecture  Status
+    The Hoary Hedgehog Release  i386          One hour behind
+    The Warty Warthog Release   i386          Two hours behind
+
+    >>> print extract_text(find_tag_by_id(content, 'sources'))
+    Version                      Status
+    The Hoary Hedgehog Release   Up to date
+    The Warty Warthog Release    Six hours behind
+
+The cd mirror page summarizes the current state of the mirror.
+The last probed information is present.
+
+    >>> cd_mirror = ubuntu.getMirrorByName('releases-mirror2')
+    >>> view = create_initialized_view(
+    ...     cd_mirror, '+index', principal=user)
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print extract_text(find_tag_by_id(content, 'last-probe'))
+    Last probe
+    This mirror was last verified ...
+
+The information found is also shown.
+
+    >>> print extract_text(find_tag_by_id(content, 'serieses'))
+    Version                     Flavours
+    The Hoary Hedgehog Release  Ubuntu, Edubuntu
+    The Warty Warthog Release   Ubuntu, Kubuntu
+
+
+Distribution mirror RSS
+-----------------------
+
+Any user can see the RSS for an archive mirror
+
+    >>> view = create_initialized_view(
+    ...     ubuntu, '+archivemirrors-rss', principal=user,
+    ...     server_url='http://launchpad.dev/ubuntu/+archivemirrors-rss')
+    >>> print view()
+    <?xml version="1.0"...?>
+    <rss xmlns:mirror="https://launchpad.net/" version="2.0">
+      <channel>
+        <title>Ubuntu Archive Mirrors Status</title>
+        <link>http://launchpad.dev/ubuntu/+archivemirrors-rss</link>
+        <description>Status of Ubuntu Archive Mirrors</description>
+        ...
+        <item>
+          <title>Archive-mirror</title>
+          <link>http://localhost:11375/valid-mirror/</link>
+          <description>
+          </description>
+          <mirror:bandwidth>...</mirror:bandwidth>
+          <mirror:location>
+            <mirror:continent>Europe</mirror:continent>
+            <mirror:country>France</mirror:country>
+            <mirror:countrycode>FR</mirror:countrycode>
+          </mirror:location>
+          <guid>http://localhost:11375/valid-mirror/</guid>
+        </item>
+        ...
+      </channel>
+    </rss>
+
+    >>> print view.request.response.getHeader('content-type')
+    text/xml;charset=utf-8
+
+Any user can see the RSS for an CD mirror
+
+    >>> view = create_initialized_view(
+    ...     ubuntu, '+cdmirrors-rss', principal=user,
+    ...     server_url='http://launchpad.dev/ubuntu/+cdmirrors-rss')
+    >>> print view()
+    <?xml version="1.0"...?>
+    <rss ...
+      <channel>
+        <title>Ubuntu CD Mirrors Status</title>
+        <link>...</link>
+        <description>...</description>
+        ...
+        <item>
+          <title>Releases-mirror</title>
+          <link>http://localhost:11375/valid-mirror/releases/</link>
+          <description>...</description>
+          <mirror:bandwidth>...</mirror:bandwidth>
+          <mirror:location>
+            <mirror:continent>Europe</mirror:continent>
+            <mirror:country>France</mirror:country>
+            <mirror:countrycode>FR</mirror:countrycode>
+          </mirror:location>
+          <guid>http://localhost:11375/valid-mirror/releases/</guid>
+        </item>
+        <item>
+        ...
+        </item>
+        <item>
+        ...
+        </item>
+      </channel>
+    </rss>
+
+    >>> print view.request.response.getHeader('content-type')
+    text/xml;charset=utf-8

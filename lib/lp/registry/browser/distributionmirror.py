@@ -3,11 +3,15 @@
 
 __metaclass__ = type
 
-__all__ = ['DistributionMirrorEditView',
-           'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
-           'DistributionMirrorView', 'DistributionMirrorReviewView',
-           'DistributionMirrorReassignmentView',
-           'DistributionMirrorDeleteView']
+__all__ = [
+    'DistributionMirrorEditView',
+    'DistributionMirrorOverviewMenu',
+    'DistributionMirrorAddView',
+    'DistributionMirrorView',
+    'DistributionMirrorReviewView',
+    'DistributionMirrorReassignmentView',
+    'DistributionMirrorDeleteView'
+    ]
 
 from datetime import datetime
 import pytz
