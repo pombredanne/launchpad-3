@@ -1194,6 +1194,32 @@ class TestPOFileSet(TestCaseWithFactory):
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
         self.assertContentEqual([pofile1, pofile2], pofiles)
 
+    def test_POFileSet_getPOFilesTouchedSince_bug_414832(self):
+        # Make sure that all relevant POFiles are returned,
+        # even the sharing ones with smaller IDs.
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        series1 = self.factory.makeProductSeries(product=product,
+                                                 name='one')
+        series2 = self.factory.makeProductSeries(product=product,
+                                                 name='two')
+        potemplate1 = self.factory.makePOTemplate(name='shared',
+                                                  productseries=series1)
+        pofile1 = self.factory.makePOFile('sr', potemplate=potemplate1)
+        potemplate2 = self.factory.makePOTemplate(name='shared',
+                                                  productseries=series2)
+        pofile2 = potemplate2.getPOFileByLang('sr')
+        now = datetime.now(pytz.UTC)
+        yesterday = now - timedelta(1)
+        week_ago = now - timedelta(7)
+        pofile1.date_changed = week_ago
+
+        # Let's make sure the condition from the bug holds,
+        # since pofile2 is created implicitely with the makePOTemplate call.
+        self.assertTrue(pofile1.id < pofile2.id)
+        pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
+        self.assertContentEqual([pofile1, pofile2], pofiles)
+
     def test_POFileSet_getPOFilesTouchedSince_shared_in_distribution(self):
         # Make sure actual touched POFiles and POFiles that are sharing
         # with them in the same distribution/sourcepackage are all returned
