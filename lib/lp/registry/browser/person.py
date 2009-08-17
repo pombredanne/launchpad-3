@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
+    'FOAFSearchMenu'
     'FOAFSearchView',
     'EmailToPersonView',
     'PersonAccountAdministerView',
@@ -198,6 +199,7 @@ from lp.blueprints.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
     enabled_with_active_mailing_list)
+from lp.registry.browser.menu import TopLevelContextMenuMixin
 from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
@@ -627,28 +629,13 @@ class PersonSetNavigation(Navigation):
             canonical_url(me, request=self.request), status=303)
 
 
-class PersonSetContextMenu(ContextMenu):
+class PersonSetContextMenu(TopLevelContextMenuMixin):
 
     usedfor = IPersonSet
 
-    links = ['products', 'distributions', 'people', 'meetings', 'newteam',
+    links = ['products', 'distributions', 'people', 'meetings',
+             'register_team',
              'adminpeoplemerge', 'adminteammerge', 'mergeaccounts']
-
-    def products(self):
-        return Link('/projects/', 'View projects')
-
-    def distributions(self):
-        return Link('/distros/', 'View distributions')
-
-    def people(self):
-        return Link('/people/', 'View people')
-
-    def meetings(self):
-        return Link('/sprints/', 'View meetings')
-
-    def newteam(self):
-        text = 'Register a team'
-        return Link('+newteam', text, icon='add')
 
     def mergeaccounts(self):
         text = 'Merge accounts'
@@ -1348,8 +1335,21 @@ class TeamMembershipView(LaunchpadView):
         return self.proposed_memberships or self.invited_memberships
 
 
+class IFOAFSearchMenu(Interface):
+    """Marker class for FOAF search menu."""
+
+
+class FOAFSearchMenu(NavigationMenu, TopLevelContextMenuMixin):
+    """Navigation menu for FOAF search."""
+
+    usedfor = IFOAFSearchMenu
+
+
 class FOAFSearchView(LaunchpadView):
     """Search for people and teams on the /people page."""
+
+    implements(IFOAFSearchMenu)
+
     def __init__(self, context, request):
         self.context = context
         self.request = request

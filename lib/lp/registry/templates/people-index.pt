@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/searchless"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
   <body>

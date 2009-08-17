@@ -794,6 +794,7 @@
         <browser:menus
             module="lp.registry.browser.person"
             classes="
+                FOAFSearchMenu
                 PersonFacets
                 PersonOverviewMenu
                 TeamOverviewMenu
