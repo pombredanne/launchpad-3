@@ -118,7 +118,7 @@ instead.
 
     >>> anon_browser.open('http://launchpad.dev/projects?text=ubuntu')
     >>> print_search_results(anon_browser)
-    sprite distribution Ubuntu
+    bg-image Ubuntu
     sprite distribution ubuntutest
     sprite product Evolution
     sprite product Tomcat

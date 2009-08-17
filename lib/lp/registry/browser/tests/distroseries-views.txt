@@ -1,4 +1,5 @@
-= DistroSeries view classes =
+DistroSeries view classes
+=========================
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -137,10 +138,43 @@ initial value remains.
     True
 
 
+Editing distroseries
+--------------------
+
+The distroseries edit view allows the editor to change series. The form
+uses the displayname, title, and description fields.
+
+    >>> view = create_initialized_view(hoary, '+edit')
+    >>> print view.label
+    Change The Hoary Hedgehog Release details
+
+    >>> [field.__name__ for field in view.form_fields]
+    ['displayname', 'title', 'summary', 'description']
+
+Series that belong to derivative distributions also contain the status field.
+
+    >>> youbuntu = factory.makeDistribution(name='youbuntu')
+    >>> yo_series = factory.makeDistroRelease(name='melon')
+    >>> youbuntu.full_functionality
+    False
+
+    >>> yo_driver = factory.makePerson(name='yo-driver')
+    >>> youbuntu.driver = yo_driver
+    >>> login_person(yo_driver)
+    >>> view = create_initialized_view(yo_series, '+edit')
+    >>> print view.label
+    Change ... details
+
+    >>> [field.__name__ for field in view.form_fields]
+    ['displayname', 'title', 'summary', 'description', 'status']
+
+
 Creating distroseries
 ---------------------
 
 A distroseries is created using the distroseries view.
+
+    >>> login('foo.bar@canonical.com')
 
     >>> view = create_view(ubuntu, '+addseries')
     >>> print view.page_title
@@ -179,10 +213,93 @@ A distroseries is created whent the required field are submitted.
     # Save this series to test name and version constraints.
     >>> transaction.commit()
 
+
+Drivers can create distroseries
+-------------------------------
+
+Users who are appointed as drivers of a distribution can create a series.
+Most distributions are an `IDerivativeDistribution`.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login_person(yo_driver)
+    >>> view = create_view(youbuntu, name='+addseries')
+    >>> check_permission('launchpad.Driver', view)
+    True
+
+    >>> yo_form = dict(form)
+    >>> yo_form['field.name'] = 'island'
+    >>> yo_form['field.displayname'] = 'Island'
+    >>> yo_form['field.title'] = 'YouBuntu Island'
+    >>> view = create_initialized_view(
+    ...     youbuntu, name='+addseries', form=yo_form, principal=yo_driver)
+    >>> view.errors
+    []
+
+    >>> yo_series = youbuntu.getSeries('island')
+    >>> print yo_series.displayname
+    Island
+
+Ubuntu is an exception. It's drivers cannot create series because Ubuntu
+is an `IBaseDistribution`.
+
+    >>> ubuntu.full_functionality
+    True
+
+    >>> login_person(ubuntu.owner.teamowner)
+    >>> ubuntu.driver = yo_driver
+    >>> login_person(yo_driver)
+    >>> view = create_view(youbuntu, name='+addseries')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
+Editing Distroseries
+--------------------
+
+The series driver (release manager) can edit a series if the series belongs
+to a `IDerivativeDistribution`.
+
+    >>> print yo_series.driver.name
+    yo-driver
+
+    >>> login_person(yo_driver)
+    >>> view = create_view(yo_series, name='+edit')
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+    >>> yo_form = dict(form)
+    >>> del yo_form['field.actions.create']
+    >>> yo_form['field.displayname'] = 'Mountain'
+    >>> yo_form['field.title'] = 'YouBuntu Mountain'
+    >>> yo_form['field.summary'] = 'Mountain summary'
+    >>> yo_form['field.description'] = 'Mountain description'
+    >>> yo_form['field.actions.change'] = 'Change'
+    >>> view = create_initialized_view(
+    ...     yo_series, name='+edit', form=yo_form, principal=yo_driver)
+    >>> view.errors
+    []
+
+    >>> print yo_series.displayname
+    Mountain
+
+Drivers of an `IBaseDistribution` such as Ubuntu cannot edit a series.
+
+    >>> login_person(ubuntu.owner.teamowner)
+    >>> hoary.driver = yo_driver
+    >>> login_person(yo_driver)
+
+    >>> view = create_view(hoary, name='+edit')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
 Distroseries name
 -----------------
 
 The distroseries name is unique.
+
+    >>> login('foo.bar@canonical.com')
 
     >>> form['field.name'] = 'sane'
     >>> form['field.version'] = '2009.07'
