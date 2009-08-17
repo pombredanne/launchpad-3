@@ -9,13 +9,11 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.webapp import ContextMenu, Link
+from canonical.launchpad.webapp import Link
 
 
-class TopLevelContextMenuMixin(ContextMenu):
+class TopLevelContextMenuMixin:
     """Context menu shared by top level collection objects."""
-
-    links = ['products', 'distributions', 'people', 'meetings']
 
     def products(self):
         return Link('/projects/', 'View projects')

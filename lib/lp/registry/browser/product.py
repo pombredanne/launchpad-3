@@ -91,10 +91,10 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, sorted_version_numbers,
-    stepthrough, stepto, structured)
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
+    canonical_url, custom_widget, enabled_with_permission,
+    sorted_version_numbers, stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -547,7 +547,7 @@ class ProductSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview']
 
 
-class ProductSetContextMenu(TopLevelContextMenuMixin):
+class ProductSetContextMenu(ContextMenu, TopLevelContextMenuMixin):
 
     usedfor = IProductSet
 

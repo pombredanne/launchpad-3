@@ -629,7 +629,7 @@ class PersonSetNavigation(Navigation):
             canonical_url(me, request=self.request), status=303)
 
 
-class PersonSetContextMenu(TopLevelContextMenuMixin):
+class PersonSetContextMenu(ContextMenu, TopLevelContextMenuMixin):
 
     usedfor = IPersonSet
 
@@ -1344,6 +1344,8 @@ class FOAFSearchMenu(NavigationMenu, TopLevelContextMenuMixin):
 
     usedfor = IFOAFSearchMenu
     facet = 'overview'
+
+    links = ['products', 'distributions', 'people', 'meetings']
 
 
 class FOAFSearchView(LaunchpadView):

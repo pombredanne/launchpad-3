@@ -14,6 +14,10 @@
 
     <h1 metal:fill-slot="application-heading">People and teams</h1>
 
+    <tal:side metal:fill-slot="side">
+      <tal:menu replace="structure view/@@+global-actions" />
+    </tal:side>
+
     <div metal:fill-slot="main">
       There are currently <span tal:replace="view/number_of_people" /> people
       and <span tal:replace="view/number_of_teams" /> teams registered in
