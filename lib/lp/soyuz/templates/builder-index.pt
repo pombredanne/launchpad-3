@@ -18,6 +18,8 @@
 
   <div metal:fill-slot="main" tal:define="job context/currentjob">
     <div class="top-portlet">
+      <span style="float:right;"
+        tal:content="structure view/menu:overview/edit/fmt:icon-link" />
       <p><tal:title content="context/title">Bob the builder</tal:title>
          builds
          <tal:arch content="context/processor/title">Intel 386</tal:arch>
@@ -58,11 +60,6 @@
               <div tal:content="structure job/logtail/fmt:text-to-html">
                 Things are crashing and burning all over the place.
               </div>
-
-              <p> Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.</p>
-              <p> Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.</p>
-              <p> Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.</p>
-              <p> Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.Much more information normally here. Blah blah blah.</p>
             </tal:logtail>
           </tal:job>
         </div><!-- portlet -->
@@ -79,21 +76,23 @@
             </dd>
             <dt>Location:</dt>
             <dd tal:content="context/url" />
-            <dt>Manual mode:</dt>
-            <dd><span tal:replace="context/manual">False</span>
-                <button value="toggle">Toggle</button>
-            </dd>
-            <dt>Owner</dt>
+            <dt>Owner:</dt>
             <dd><a tal:replace="structure context/owner/fmt:link">OWNER</a>
             </dd>
+            <dt>Mode:</dt>
+            <dd>
+              <tal:manual condition="context/manual">This builder is in
+                manual-mode and not accepting jobs from the auto-build system.
+              </tal:manual>
+              <tal:auto condition="not: context/manual">This builder is in
+                auto-mode and accepting jobs from the auto-build system.
+              </tal:auto>
+              <form action="https://launchpad.dev/builders/bob/+mode" method="post" enctype="multipart/form-data"><input id="field.manual" name="field.manual" type="checkbox" value="on" /><input type="submit" name="UPDATE_SUBMIT" value="Toggle" /></form>
+            </dd>
           </dl>
-          <ul>
-            <li><a
-              tal:replace="structure view/menu:overview/edit/fmt:icon-link" />
-            </li>
-          </ul>
         </div><!-- portlet -->
       </div><!-- yui-u -->
+      <tal:menu replace="structure view/@@+related-pages" />
     </div>
   </div>
 </body>

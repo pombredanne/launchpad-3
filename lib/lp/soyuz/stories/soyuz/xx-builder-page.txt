@@ -9,29 +9,29 @@ builder state. In the sampledata, the builder 'bob' is building
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Bob The Builder
-    Current status
+    Bob The Builder builds Intel 386 binaries and is owned by
+    Launchpad Buildd Admins.
+    ...
+
+    >>> print extract_text(find_portlet(
+    ...     anon_browser.contents, 'View full history Current status'))
+    View full history Current status
     i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
-    Started ... ago
+    Started ... ago.
+    Tail of the builder log at ...
     Dummy sampledata entry, not processing
-    Last updated ...
 
 The anonymous user can see the builder details portlet and it contains
 information about the builder itself, like name, architecture,
 location and description.
 
     >>> print extract_text(
-    ...     find_portlet(anon_browser.contents, 'Bob The Builder details'))
-    Bob The Builder details
-    Name: Bob The Builder
+    ...     find_portlet(anon_browser.contents, 'Builder information'))
+    Builder information
     Architecture: Intel 386
     Location: http://localhost:8221/
-    Virtual: False
-    Description
-      The default build-slave
-    Status
-      Disabled
-    Owner
-      Launchpad Buildd Admins
+    Manual mode: False
+    Owner: Launchpad Buildd Admins
 
 The builder status is now displayed as normal text and not as as a
 notification alert.

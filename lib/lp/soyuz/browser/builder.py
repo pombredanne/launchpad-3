@@ -114,9 +114,10 @@ class IBuilderRelatedPagesMenu(Interface):
 class BuilderRelatedPagesMenu(NavigationMenu):
     """Related pages and contextual actions for a builder."""
 
-    usedfor = IBuilderRelatedPagesMenu
+#    usedfor = IBuilderRelatedPagesMenu
+    usedfor = IBuilder
     facet = 'overview'
-    links = ('history', 'edit', 'mode', 'cancel', 'admin',)
+    links = ('history', 'edit', 'mode')
 
     def history(self):
         text = 'View full history'
@@ -129,25 +130,16 @@ class BuilderRelatedPagesMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def mode(self):
-        text = 'Change mode'
+        text = 'Toggle mode'
         return Link('+mode', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def cancel(self):
-        text = 'Cancel current job'
-        return Link('+cancel', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def admin(self):
-        text = 'Administer builder'
-        return Link('+admin', text, icon='edit')
+#from canonical.launchpad.webapp.interfaces import INavigationMenu
+#from zope.component import provideAdapter
 
-from canonical.launchpad.webapp.interfaces import INavigationMenu
-from zope.component import provideAdapter
-
-provideAdapter(
-    BuilderRelatedPagesMenu, [IBuilderRelatedPagesMenu], INavigationMenu,
-    name="overview")
+#provideAdapter(
+#    BuilderRelatedPagesMenu, [IBuilderRelatedPagesMenu], INavigationMenu,
+#    name="overview")
 
 
 class BuilderOverviewMenu(ApplicationMenu):
