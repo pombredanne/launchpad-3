@@ -71,7 +71,7 @@
       <tal:results condition="view/search">
         <h2>Results</h2>
 
-     <ul tal:condition="view/results">
+     <ul id="matches" tal:condition="view/results">
        <li tal:repeat="code view/results">
            <a tal:replace="structure code/owner/fmt:link">OWNER</a>
            <a tal:attributes="href code/id"
