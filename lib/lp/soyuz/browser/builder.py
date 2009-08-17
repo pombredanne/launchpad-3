@@ -25,7 +25,6 @@ import pytz
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget, TextWidget
 
@@ -38,9 +37,9 @@ from lp.soyuz.interfaces.builder import IBuilderSet, IBuilder
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, NavigationMenu,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission, stepthrough)
+    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets,
+    action, canonical_url, custom_widget, enabled_with_permission,
+    stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
