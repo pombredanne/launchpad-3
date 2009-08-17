@@ -28,7 +28,7 @@
         <dl tal:define="languages view/browserLanguages">
           <dt>
             <strong>Your browser languages:</strong>
-          <dt>
+          </dt>
           <dd class="sprite language"
             tal:condition="languages"
             tal:repeat="lang languages"
