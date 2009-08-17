@@ -4,12 +4,12 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-details">
 
-  <h2>Recent activity</h2>
+  <h2>Latest release</h2>
 
   <tal:current define="cr context/currentrelease">
 
     <tal:has_currentrelease condition="cr">
-      <b>Latest release:</b>
+      <b>Version:</b>
       <a tal:content="cr/version"
          tal:attributes="href cr/fmt:url">3.2.1-3</a><br />
       <tal:details

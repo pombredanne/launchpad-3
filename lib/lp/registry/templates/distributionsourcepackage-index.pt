@@ -35,7 +35,7 @@
 
     <div class="portlet involvement"
          tal:define="distribution context/distribution">
-      <h2>Get Involved</h2>
+      <h2>Get involved</h2>
       <ul>
         <li>
         <a tal:define="link context/menu:bugs/filebug"
