@@ -40,11 +40,7 @@ Foo Bar, a administrator, can see and access 'Change Details' form.
     >>> admin_browser.getLink('Change details').click()
 
     >>> print admin_browser.title
-    Edit details of The Warty Warthog Release
-
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    Change The Warty Warthog Release details
-    ...
+    Edit The Warty Warthog Release details
 
 He can modify any presentation/infromational fields of the
 distroseries in question.:
