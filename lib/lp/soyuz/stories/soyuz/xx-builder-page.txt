@@ -57,8 +57,8 @@ the builder actions.
     >>> cprov_browser.getLink('bob').click()
 
 Celso sees both the Change details and Toggle mode actions, which are
-displayed in context. See 'xx-builds-pages.txt' for documentation about
-'Show build history'.'
+displayed in context as shown below. See 'xx-builds-pages.txt' for
+documentation about 'Show build history'.'
 
 Celso can modify the location and the visible details of the builder.
 

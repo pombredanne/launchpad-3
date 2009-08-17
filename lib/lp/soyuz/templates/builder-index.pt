@@ -57,7 +57,8 @@
             <tal:logtail condition="job/logtail">
               <h3>Tail of the builder log at
                  <span tal:replace="view/now"/></h3>
-              <div tal:content="structure job/logtail/fmt:text-to-html">
+              <div tal:content="structure job/logtail/fmt:text-to-html"
+                   id="buildlog-tail">
                 Things are crashing and burning all over the place.
               </div>
             </tal:logtail>
