@@ -1860,10 +1860,16 @@ form.archive-subscription-activation button:hover {
 .buildstatusSUPERSEDED     {color: red;}
 .buildstatusFAILEDTOUPLOAD {color: red;}
 
-/* Shaded buildlog */
-div #buildlog-tail {
+/* Shaded logging area. */
+div.logtail {
     background-color: #f6f6f6;
-    padding: 10px;
+    padding: 5px;
+    border: solid gray;
+    border-width: 1px;
+    font: 100% monospace;
+    -moz-border-radius: 5px;
+    -o-border-radius: 5px;
+    -webkit-border-radius: 5px;
 }
 
 /* Disabled PPAs when linkified (uploaders) should be gray and when not
