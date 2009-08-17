@@ -96,7 +96,9 @@
                 <input id="field.manual" name="field.manual" type="hidden"
                        value="on" tal:condition="not: context/manual" />
                 <button type="submit" name="field.actions.update"
-                       id="field.actions.update">Toggle mode</button>
+                        id="field.actions.update"
+                        tal:content="view/toggle_mode_text">
+                  Switch to x-mode</button>
               </form>
             </dd>
           </dl>

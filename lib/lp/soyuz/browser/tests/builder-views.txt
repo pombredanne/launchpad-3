@@ -20,6 +20,13 @@ Let's instantiate the view for +index:
     >>> builder_view.page_title
     u'Builder \u201cBob The Builder\u201d'
 
+The BuilderView provides a helper for the text to use on the toggle
+mode button.
+
+    >>> print builder_view.toggle_mode_text
+    Switch to manual-mode
+
+
 == Builder history ==
 
 Let's instantiate a view for +history:

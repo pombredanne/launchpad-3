@@ -128,7 +128,7 @@ automatic (AUTO) mode.
     Location: http://localhost:8221/
     Owner: Launchpad Buildd Admins
     Mode: This builder is in auto-mode and accepting jobs from the
-    auto-build system. Toggle mode
+    auto-build system. Switch to manual-mode
 
 He clicks on the Toggle mode button to put the builder into manual mode.
 
@@ -142,7 +142,7 @@ He can see now, in the details portlet that the builder is in manual-mode.
     Builder information
     ...
     Mode: This builder is in manual-mode and not accepting jobs from the
-    auto-build system. Toggle mode
+    auto-build system. Switch to auto-mode
 
 And a relevant notification is displayed after the mode toggle.
 Via the 'edit' form Celso can also modify the 'builderok',

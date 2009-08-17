@@ -276,19 +276,6 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         context = self.overrideHiddenBuilder(context)
         super(BuilderView, self).__init__(context, request)
 
-    def cancelBuildJob(self):
-        """Cancel curent job in builder."""
-        builder_id = self.request.form.get('BUILDERID')
-        if not builder_id:
-            return
-        # XXX cprov 2005-10-14
-        # The 'self.context.slave.abort()' seems to work with the new
-        # BuilderSlave class added by dsilvers, but I won't release it
-        # until we can test it properly, since we can only 'abort' slaves
-        # in BUILDING state it does depends of the major issue for testing
-        # Auto Build System, getting slave building something sane.
-        return '<p>Cancel (%s). Not implemented yet.</p>' % builder_id
-
     @property
     def default_build_state(self):
         """Present all jobs by default."""
@@ -316,6 +303,13 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         return smartquote(
             'Builder "%s"' % self.context.title)
 
+    @property
+    def toggle_mode_text(self):
+        """Return the text to use on the toggle mode button."""
+        if self.context.manual:
+            return "Switch to auto-mode"
+        else:
+            return "Switch to manual-mode"
 
 class BuilderSetAddView(LaunchpadFormView):
     """View class for adding new Builders."""
