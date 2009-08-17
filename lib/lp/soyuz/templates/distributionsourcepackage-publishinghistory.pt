@@ -15,7 +15,6 @@
 
 <div metal:fill-slot="main">
 
-  <div class="yui-u">
   <div class="top-portlet">
 
     <table id="publishing-summary" class="listing">
@@ -43,8 +42,6 @@
   <p>
     <a href=".">&laquo;back</a>
   </p>
-
-  </div>
 
 </div>
 </body>
