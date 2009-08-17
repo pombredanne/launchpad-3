@@ -137,16 +137,41 @@ class PersonTranslationView(LaunchpadView):
             # translation page for its unreviewed strings.
             return self._composeReviewLinks(pofiles)
 
+        templates = set(pofile.potemplate for pofile in pofiles)
+
         productseries = set(
-            pofile.potemplate.productseries
-            for pofile in pofiles
-            if pofile.potemplate.productseries)
+            template.productseries
+            for template in templates
+            if template.productseries)
+
+        products = set(series.product for series in productseries)
+
+        sourcepackagenames = set(
+            template.sourcepackagename
+            for template in templates
+            if template.sourcepackagename)
+        
+        distroseries = set(
+            template.distroseries
+            for template in templates
+            if template.distroseries)
+
+        assert len(products) <= 1, "Got more than one product."
+        assert len(sourcepackagenames) <= 1, "Got more than one package."
+        assert len(distroseries) <= 1, "Got more than one distroseries."
+        assert len(products) + len(sourcepackagenames) == 1, (
+            "Didn't get POFiles for exactly one package or one product.")
         
         first_template = first_pofile.potemplate
-        if first_template.sourcepackagename:
+
+        if len(templates) == 1:
+            # Multiple translations for one template.  Link to the
+            # template.
+            return [canonical_url(first_template)]
+
+        if sourcepackagenames:
             # Multiple POFiles for a source package.  Show its template
             # listing.
-            assert not productseries, "Found POFiles for mixed targets."
             distroseries = first_template.distroseries
             packagename = first_template.sourcepackagename
             return [canonical_url(distroseries.getSourcePackage(packagename))]

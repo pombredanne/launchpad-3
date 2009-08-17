@@ -60,7 +60,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
         links = self.view._findBestCommonReviewLinks([pofile])
         self.assertEqual(self.view._composeReviewLinks([pofile]), links)
 
-    def test_findBestCommonReviewLinks_wild_product_mix(self):
+    def test_findBestCommonReviewLinks_product_wild_mix(self):
         # A combination of wildly different POFiles in the same product
         # yields links to the individual POFiles.
         pofile1 = self.factory.makePOFile(language_code='sux')
@@ -92,22 +92,71 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertEqual([canonical_url(productserieslanguage)], links)
 
     def test_findBestCommonReviewLinks_different_languages(self):
-        pass
-    def test_findBestCommonReviewLinks_different_series(self):
-        pass
-    def test_findBestCommonReviewLinks_different_series_and_languages(self):
-        pass
-    def test_findBestCommonReviewLinks_different_series_and_templates(self):
-        pass
-    def test_findBestCommonReviewLinks_different_packages(self):
-        pass
-    def test_findBestCommonReviewLinks_different_packages_and_languages(self):
-        pass
-    def test_findBestCommonReviewLinks_different_packages_and_templates(self):
-        pass
+        # If the POFiles differ only in language, we get a link to the
+        # overview for the template.
+        pofile1 = self.factory.makePOFile(language_code='nl')
+        template = pofile1.potemplate
+        pofile2 = self.factory.makePOFile(
+            potemplate=template, language_code='lo')
 
-    def test_findBestCommonReviewLinks_wild_package_mix(self):
-        pass
+        links = self.view._findBestCommonReviewLinks([pofile1, pofile2])
+
+        self.assertEqual([canonical_url(template)], links)
+
+    def test_findBestCommonReviewLinks_sharing_pofiles(self):
+        # In a Product, two POFiles may share their translations.  For
+        # now, we link to each individually.  We may want to make this
+        # more clever in the future.
+        pofile1 = self.factory.makePOFile(language_code='nl')
+        template1 = pofile1.potemplate
+        series1 = template1.productseries
+        series2 = self.factory.makeProductSeries(product=series1.product)
+        template2 = self.factory.makePOTemplate(
+            productseries=series2, name=template1.name,
+            translation_domain=template1.translation_domain)
+        pofile2 = template2.getPOFileByLang('nl')
+
+        pofiles = [pofile1, pofile2]
+        links = self.view._findBestCommonReviewLinks(pofiles)
+
+        self.assertEqual(self.view._composeReviewLinks(pofiles), links)
+
+    def test_findBestCommonReviewLinks_package_different_languages(self):
+        # For package POFiles in the same template but different
+        # languages, we link to the template.
+        package = self.factory.makeSourcePackage()
+        package.distroseries.distribution.official_rosetta = True
+        template = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        pofile1 = self.factory.makePOFile(
+            potemplate=template, language_code='nl')
+        pofile2 = self.factory.makePOFile(
+            potemplate=template, language_code='ka')
+
+        links = self.view._findBestCommonReviewLinks([pofile1, pofile2])
+        self.assertEqual([canonical_url(template)], links)
+
+    def test_findBestCommonReviewLinks_package_different_templates(self):
+        # For package POFiles in different templates, we to the
+        # package's template list.  There is no "source package series
+        # language" page.
+        package = self.factory.makeSourcePackage()
+        package.distroseries.distribution.official_rosetta = True
+        template1 = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        template2 = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        pofile1 = self.factory.makePOFile(
+            potemplate=template1, language_code='nl')
+        pofile2 = self.factory.makePOFile(
+            potemplate=template2, language_code='nl')
+
+        links = self.view._findBestCommonReviewLinks([pofile1, pofile2])
+
+        self.assertEqual([canonical_url(package)], links)
 
 
 def test_suite():
