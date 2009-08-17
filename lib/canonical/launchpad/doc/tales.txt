@@ -335,8 +335,8 @@ The link can make the URL go to a specific app.
     >>> print test_tales("pillar/fmt:link:translations", pillar=ubuntu)
     <a ...http://translations.launchpad.dev/ubuntu...
 
-    >>> print test_tales("person/fmt:url:feeds", person=sabdfl)
-    http://feeds.launchpad.dev/~sabdfl
+    >>> print test_tales("person/fmt:url:feeds", person=mark)
+    http://feeds.launchpad.dev/~mark
 
     >>> print test_tales("bug/fmt:url:mainsite", bug=bug)
     http://launchpad.dev/bugs/1
@@ -347,8 +347,8 @@ the mainsite.
     >>> print test_tales("pillar/fmt:link", pillar=ubuntu)
     <a ...http://launchpad.dev/ubuntu...
 
-    >>> print test_tales("person/fmt:link", person=sabdfl)
-    <a ...http://launchpad.dev/~sabdfl...
+    >>> print test_tales("person/fmt:link", person=mark)
+    <a ...http://launchpad.dev/~mark...
 
     >>> print test_tales("team/fmt:link", team=ubuntu_team)
     <a ...http://launchpad.dev/~ubuntu-team...
