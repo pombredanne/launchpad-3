@@ -637,14 +637,13 @@
             name="+search"
             class="lp.soyuz.browser.distroarchseries.DistroArchSeriesPackageSearchView"
             template="../templates/distroarchseries-search.pt"/>
-        <browser:editform
-            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
-            permission="launchpad.Admin"
+        <browser:page
             name="+admin"
-            schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
-            facet="overview"
-            fields="architecturetag official supports_virtualized"
-            template="../templates/distroarchseries-admin.pt"/>
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesAdminView"
+            permission="launchpad.Admin"
+            template="../templates/distroarchseries-admin.pt"
+            facet="overview"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
