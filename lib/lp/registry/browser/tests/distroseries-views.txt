@@ -231,14 +231,23 @@ A distroseries is created whent the required field are submitted.
     # Save this series to test name and version constraints.
     >>> transaction.commit()
 
+Administrators can create series, but normal users cannot.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> check_permission('launchpad.Driver', view)
+    True
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Driver', view)
+    False
+
 
 Drivers can create distro series
 --------------------------------
 
 Users who are appointed as drivers of a distribution can create a series.
 Most distributions are an `IDerivativeDistribution`.
-
-    >>> from canonical.launchpad.webapp.authorization import check_permission
 
     >>> login_person(yo_driver)
     >>> view = create_view(youbuntu, name='+addseries')
