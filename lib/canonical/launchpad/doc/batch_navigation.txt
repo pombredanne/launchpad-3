@@ -49,10 +49,13 @@ Some sample data.
 This section demonstrates that batching generates sensible SQL queries when used
 with SQLObject, i.e. that it puts appropriate LIMIT clauses on queries.
 
-Imports:
+Imports and initialization:
 
   >>> from canonical.launchpad.database import EmailAddress
   >>> from canonical.ftests.pgsql import CursorWrapper
+  >>> from canonical.launchpad.interfaces import IStore
+  >>> ignore = IStore(EmailAddress) # Prime the database connection.
+  ... # (Priming is important if this test is run in isolation).
   >>> CursorWrapper.record_sql = True
 
 Prepare a query, and create a batch of the results:

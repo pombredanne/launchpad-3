@@ -142,7 +142,7 @@ If it's a new dependency everything is fine.
 
 Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
 
-    >>> admin_browser.reload()
+    >>> admin_browser.open(admin_browser.url) # Reload will set old form values.
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
