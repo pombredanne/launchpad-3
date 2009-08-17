@@ -1343,6 +1343,7 @@ class FOAFSearchMenu(NavigationMenu, TopLevelContextMenuMixin):
     """Navigation menu for FOAF search."""
 
     usedfor = IFOAFSearchMenu
+    facet = 'overview'
 
 
 class FOAFSearchView(LaunchpadView):
