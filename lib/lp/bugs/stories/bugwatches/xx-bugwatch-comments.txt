@@ -83,7 +83,7 @@ The comments are also visible on their own pages to members of the
 Launchpad Beta Testers team such as mark:
 
     >>> mark_browser.open(
-    ...     'http://launchpad.dev/redfish/+bug/15/comments/1')
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/comments/1')
     >>> print_comments(mark_browser.contents)
     <p>Package: gnome-volume-<wbr></wbr>manager<br />
     Version: 1.2.0-1<br />
@@ -125,11 +125,12 @@ be visible to him:
     >>> logout()
 
     >>> mark_browser.open(
-    ...     'http://launchpad.dev/redfish/+bug/15/comments/1')
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/comments/1')
     >>> print_comments(mark_browser.contents)
 
 Anonymous users can't see the comment either.
 
-    >>> anon_browser.open('http://launchpad.dev/redfish/+bug/15/comments/1')
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/comments/1')
     >>> print_comments(anon_browser.contents)
 

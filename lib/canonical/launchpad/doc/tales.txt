@@ -268,17 +268,25 @@ to simulate a browser request -- that's why we login() here.
     >>> print test_tales("bug/fmt:url/+text", bug=bug)
     http://bugs.launchpad.dev/bugs/1/+text
 
-    # Undo the custom setup we did above.
 
-    >>> login(ANONYMOUS)
+fmt:url accepts an rootsite extension to make URLs to a specific application.
 
-Persons and teams can also specify an alternate rootsite to fmt:url.
+    >>> login(ANONYMOUS,
+    ...     LaunchpadTestRequest(SERVER_URL='http://code.launchpad.net'))
 
     >>> print test_tales("person/fmt:url:bugs", person=mark)
     http://bugs.launchpad.dev/~mark
 
     >>> print test_tales("person/fmt:url:feeds", person=mark)
     http://feeds.launchpad.dev/~mark
+
+    >>> print test_tales("pillar/fmt:url:answers", pillar=ubuntu)
+    http://answers.launchpad.dev/ubuntu
+
+    >>> print test_tales("bug/fmt:url:mainsite", bug=bug)
+    http://launchpad.dev/bugs/1
+
+    >>> login(ANONYMOUS)
 
 
 The fmt: namespace to get links
@@ -318,6 +326,34 @@ containing the person name and an icon.
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> test_tales("person/fmt:link", person=ubuntu_team)
     u'<a href=".../~ubuntu-team" class="sprite team">Ubuntu Team</a>'
+
+The link can make the URL go to a specific app.
+
+    >>> login(ANONYMOUS,
+    ...     LaunchpadTestRequest(SERVER_URL='http://code.launchpad.net'))
+
+    >>> print test_tales("pillar/fmt:link:translations", pillar=ubuntu)
+    <a ...http://translations.launchpad.dev/ubuntu...
+
+    >>> print test_tales("person/fmt:url:feeds", person=sabdfl)
+    http://feeds.launchpad.dev/~sabdfl
+
+    >>> print test_tales("bug/fmt:url:mainsite", bug=bug)
+    http://launchpad.dev/bugs/1
+
+The default behaviour for pillars, persons, and teams is to link to
+the mainsite.
+
+    >>> print test_tales("pillar/fmt:link", pillar=ubuntu)
+    <a ...http://launchpad.dev/ubuntu...
+
+    >>> print test_tales("person/fmt:link", person=sabdfl)
+    <a ...http://launchpad.dev/~sabdfl...
+
+    >>> print test_tales("team/fmt:link", team=ubuntu_team)
+    <a ...http://launchpad.dev/~ubuntu-team...
+
+    >>> login(ANONYMOUS)
 
 The person's displayname is escaped to prevent markup from being
 interpreted by the browser. For example, a script added to Sample

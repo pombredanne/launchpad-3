@@ -465,8 +465,6 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
-distribution_branches = ContextTitle('Branches for %s')
-
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_change_mirror_admin = 'Change mirror administrator'
@@ -502,10 +500,6 @@ distribution_index = ContextTitle('%s in Launchpad')
 distribution_builds = ContextTitle('%s builds')
 
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
-
-distributionsourcepackage_branches = ContextTitle('Branches for the %s')
-distributionsourcepackage_branches_grouped = ContextTitle(
-    'Branches for the %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -566,7 +560,7 @@ distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 distroseries_translationsadmin = ContextTitle(
     'Admin translation options for %s')
 
-distroseries_builds = ContextTitle('Builds for %s')
+distroseries_builds = ContextTitle('%s builds')
 
 distroseries_queue = ContextTitle('Queue for %s')
 
@@ -896,10 +890,6 @@ person_answer_contact_for = ContextDisplayName(
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
-def person_branches(context, view):
-    """Return the view's heading."""
-    return view.heading
-
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
@@ -989,10 +979,6 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
 
-def personproduct_branches(context, view):
-    """Return the view's heading."""
-    return view.heading
-
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
@@ -1044,8 +1030,6 @@ potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 product_admin = ContextTitle('Administer %s in Launchpad')
 
 product_bugs = ContextDisplayName('Bugs in %s')
-
-product_branches = ContextDisplayName("Bazaar branches of %s")
 
 product_code_index = ContextDisplayName("Bazaar branches of %s")
 
@@ -1130,9 +1114,6 @@ productseries_translations_bzr_import = (
 project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
-
-project_branches = ContextTitle(
-    smartquote("%s's Bazaar branches registered in Launchpad"))
 
 project_bugs = ContextTitle('Bugs in %s')
 
@@ -1289,8 +1270,6 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-sourcepackage_branches = ContextDisplayName('Branches of %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
