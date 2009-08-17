@@ -15,3 +15,10 @@ The migration succeeds.
 
     >>> retcode
     0
+
+
+# The script modified the database, even though the database layer may
+# not have noticed it.
+
+    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+    >>> LaunchpadTestSetup().force_dirty_database()

@@ -454,15 +454,6 @@
         facet="overview"
         permission="launchpad.ProjectReview"
         template="../templates/project-add.pt"/>
-    <browser:pages
-        for="lp.registry.interfaces.project.IProjectSet"
-        facet="overview"
-        class="lp.registry.browser.project.ProjectSetView"
-        permission="launchpad.ProjectReview">
-        <browser:page
-            name="+review"
-            template="../templates/registry-review.pt"/>
-    </browser:pages>
     <browser:url
         for="lp.registry.interfaces.project.IProjectSeries"
         path_expression="string:+series/${name}"
@@ -480,8 +471,11 @@
     <browser:menus
         classes="
             ProjectFacets
+            ProjectActionMenu
+            ProjectEditNavigationMenu
             ProjectOverviewMenu
             ProjectBountiesMenu
+            ProjectBugsMenu
             ProjectSeriesSpecificationsMenu
             ProjectSpecificationsMenu
             ProjectSetContextMenu
@@ -577,7 +571,7 @@
             for="lp.registry.interfaces.karma.IKarmaAction"
             class="lp.registry.browser.karma.KarmaActionEditView"
             permission="launchpad.Admin"
-            template="../templates/karmaaction-edit.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:url
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             path_expression="string:karmaaction"
@@ -1689,14 +1683,17 @@
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"/>
     </browser:pages>
+    <browser:page
+        name="+ubuntupkg"
+        facet="overview"
+        template="../templates/productseries-ubuntupkg.pt"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesUbuntuPackagingView"
+        permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
         permission="zope.Public">
-        <browser:page
-            name="+ubuntupkg"
-            facet="overview"
-            template="../templates/productseries-ubuntupkg.pt"/>
         <browser:page
             name="+status"
             facet="overview"
@@ -1761,13 +1758,6 @@
         facet="overview"
         permission="launchpad.Admin"
         template="../templates/productseries-review.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+link-translations-branch"
-        class="lp.registry.browser.productseries.LinkTranslationsBranchView"
-        template="../templates/productseries-link-translations-branch.pt"
-        facet="translations"
-        permission="launchpad.Edit"/>
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -1949,6 +1939,16 @@
         permission="launchpad.Admin"
         template="../templates/distroseries-add.pt">
     </browser:page>
+
+    <browser:page
+        name="+addseries"
+        for="lp.registry.interfaces.distribution.IDerivativeDistribution"
+        class="lp.registry.browser.distroseries.DistroSeriesAddView"
+        facet="overview"
+        permission="launchpad.Append"
+        template="../templates/distroseries-add.pt">
+    </browser:page>
+
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"

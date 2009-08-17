@@ -2,14 +2,17 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = [ 'MessageSharingMerge' ]
+__all__ = [
+    'MessageSharingMerge'
+    ]
 
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.scripts.base import (
@@ -146,6 +149,8 @@ def bequeathe_flags(source_message, target_message, incumbents=None):
 
 class MessageSharingMerge(LaunchpadScript):
 
+    template_set = None
+
     def add_my_options(self):
         self.parser.add_option('-d', '--distribution', dest='distribution',
             help="Distribution to merge messages for.")
@@ -165,6 +170,16 @@ class MessageSharingMerge(LaunchpadScript):
         self.parser.add_option('-x', '--dry-run', dest='dry_run',
             action='store_true',
             help="Dry run, don't really make any changes.")
+
+    def _setUpUtilities(self):
+        """Prepare a few members that several methods need.
+
+        Calling this again later does nothing.
+        """
+        if self.template_set is None:
+            self.template_set = getUtility(IPOTemplateSet)
+            self.compare_template_precedence = (
+                self.template_set.compareSharingPrecedence)
 
     def main(self):
         actions = (
@@ -214,7 +229,9 @@ class MessageSharingMerge(LaunchpadScript):
                     "Unknown source package name: '%s'" %
                         self.options.sourcepackage)
 
-        subset = getUtility(IPOTemplateSet).getSharingSubset(
+        self._setUpUtilities()
+
+        subset = self.template_set.getSharingSubset(
                 product=product, distribution=distribution,
                 sourcepackagename=sourcepackagename)
         equivalence_classes = subset.groupEquivalentPOTemplates(
@@ -228,7 +245,7 @@ class MessageSharingMerge(LaunchpadScript):
             templates = equivalence_classes[name]
             self.logger.info(
                 "Merging equivalence class '%s': %d template(s) (%d / %d)" % (
-                    name, len(templates) + 1, number, class_count))
+                    name, len(templates), number + 1, class_count))
             self.logger.debug("Templates: %s" % str(templates))
 
             if self.options.merge_potmsgsets:
@@ -250,6 +267,7 @@ class MessageSharingMerge(LaunchpadScript):
 
     def _mergePOTMsgSets(self, potemplates):
         """Merge POTMsgSets for given sequence of sharing templates."""
+        self._setUpUtilities()
 
         # Map each POTMsgSet key (context, msgid, plural) to its
         # representative POTMsgSet.
@@ -267,8 +285,7 @@ class MessageSharingMerge(LaunchpadScript):
         # through the templates, starting at the most representative and
         # moving towards the least representative.  For any unique potmsgset
         # key we find, the first POTMsgSet is the representative one.
-        templateset = getUtility(IPOTemplateSet)
-        order_check = OrderingCheck(cmp=templateset.compareSharingPrecedence)
+        order_check = OrderingCheck(cmp=self.compare_template_precedence)
 
         for template in potemplates:
             order_check.check(template)
@@ -288,13 +305,7 @@ class MessageSharingMerge(LaunchpadScript):
             # translation messages.  We don't need do this for subordinates
             # because the algorithm will refuse to add new duplicates to the
             # representative POTMsgSet anyway.
-            existing_tms = self._scrubPOTMsgSetTranslations(representative)
-
-            # Keep track of current/imported TranslationMessages for
-            # representative.  These will matter when we try to merge
-            # subordinate TranslationMessages into the representative, some
-            # of which may be current or imported as well.
-            current_tms, imported_tms = self._findUsedMessages(existing_tms)
+            self._scrubPOTMsgSetTranslations(representative)
 
             seen_potmsgsets = set([representative])
 
@@ -345,8 +356,8 @@ class MessageSharingMerge(LaunchpadScript):
 
     def _mergeTranslationMessages(self, potemplates):
         """Share `TranslationMessage`s between templates where possible."""
-        templateset = getUtility(IPOTemplateSet)
-        order_check = OrderingCheck(cmp=templateset.compareSharingPrecedence)
+        self._setUpUtilities()
+        order_check = OrderingCheck(cmp=self.compare_template_precedence)
         for template in potemplates:
             order_check.check(template)
             for potmsgset in template.getPOTMsgSets(False):
@@ -361,7 +372,13 @@ class MessageSharingMerge(LaunchpadScript):
         potmsgset (because we start out with one) and potemplate (because
         that's sorted out in the nested dicts).
         """
-        return (tm.language, tm.variant) + tuple(tm.all_msgstrs)
+        tm = removeSecurityProxy(tm)
+        msgstr_ids = [
+            getattr(tm, 'msgstr%dID' % form)
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)
+            ]
+            
+        return (tm.language, tm.variant) + tuple(msgstr_ids)
 
     def _mapExistingMessages(self, potmsgset):
         """Map out the existing TranslationMessages for `potmsgset`.
@@ -386,33 +403,6 @@ class MessageSharingMerge(LaunchpadScript):
             per_template[tm.potemplate].append(tm)
 
         return existing_tms
-
-    def _findUsedMessages(self, translations):
-        """Fish current and imported messages out of translations dict.
-
-        :param translations: a dict as returned by
-            `_mapExistingMessages` or `_scrubPOTMsgSetTranslations`.  All
-            information is taken from this dict; no other messages are
-            considered.
-        :return: a pair of dicts, each mapping (potemplate, language,
-            variant) to a TranslationMessage or to None.  The dicts map
-            out current and imported messages, respectively.  Shared
-            messages have a POTemplate of None.
-        """
-        current_messages = {}
-        imported_messages = {}
-        for per_template in translations.itervalues():
-            for tms in per_template.itervalues():
-                assert len(tms) == 1, (
-                    "Unexpected list size: %d items." % len(tms))
-                tm = tms[0]
-                key = (tm.potemplate, tm.language, tm.variant)
-                if tm.is_current:
-                    current_messages[key] = tm
-                if tm.is_imported:
-                    imported_messages[key] = tm
-
-        return current_messages, imported_messages
 
     def _scrubPOTMsgSetTranslations(self, potmsgset):
         """Map out translations for `potmsgset`, and eliminate duplicates.
@@ -487,41 +477,6 @@ class MessageSharingMerge(LaunchpadScript):
         # message can be merged into the twin without problems.
         return filter_clashes(clashing_current, clashing_imported, twin)
 
-    def _findClashesFromDicts(self, existing_tms, current_tms, imported_tms,
-                              message):
-        """Like `_findClashes`, but from cached dicts.
-        
-        This saves some database querying for the common case.
-
-        :param existing_tms: a dict as returned by
-            `_mapExistingMessages`.
-        :param current_tms: a dict as returned by `_findUsedMessages`.
-        """
-        twins_dict = existing_tms.get(
-            self._getPOTMsgSetTranslationMessageKey(message))
-        if twins_dict is None:
-            twin = None
-        else:
-            twins = twins_dict.get(message.potemplate)
-            if twins is None:
-                twin = None
-            else:
-                assert len(twins) == 1, "Did not expect %d twins." % (
-                    len(twins))
-                twin = twins[0]
-
-        subkey = message.potemplate, message.language, message.variant
-        if message.is_current:
-            clashing_current = current_tms.get(subkey)
-        else:
-            clashing_current = None
-        if message.is_imported:
-            clashing_imported = imported_tms.get(subkey)
-        else:
-            clashing_imported = None
-
-        return filter_clashes(clashing_current, clashing_imported, twin)
-
     def _saveByDiverging(self, message, target_potmsgset, source_potmsgset):
         """Avoid a TranslationMessage clash during POTMsgSet merge.
 
@@ -539,8 +494,10 @@ class MessageSharingMerge(LaunchpadScript):
             # This message was shared.  Maybe we can still save it for at
             # least one template by making it diverged.
             target_ttis = source_potmsgset.getAllTranslationTemplateItems()
-            for tti in target_ttis:
-                if self._divergeTo(message, target_potmsgset, tti.potemplate):
+            target_templates = [tti.potemplate for tti in target_ttis]
+            target_templates.sort(self.compare_template_precedence)
+            for template in target_templates:
+                if self._divergeTo(message, target_potmsgset, template):
                     return True
 
         # No, there's no place where this message can be preserved.  It'll

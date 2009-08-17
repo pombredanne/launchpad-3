@@ -261,7 +261,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         reviewer = self.factory.makePerson()
         login_person(branch.owner)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': reviewer})
+        view.initialize()
+        view.change_action.success({'reviewer': reviewer})
         self.assertEqual(reviewer, branch.reviewer)
         # Last modified has been updated.
         self.assertSqlAttributeEqualsDate(
@@ -274,7 +275,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         login_person(branch.owner)
         branch.reviewer = self.factory.makePerson()
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': branch.owner})
+        view.initialize()
+        view.change_action.success({'reviewer': branch.owner})
         self.assertIs(None, branch.reviewer)
         # Last modified has been updated.
         self.assertSqlAttributeEqualsDate(
@@ -287,7 +289,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         modified_date = datetime(2007, 1, 1, tzinfo=pytz.UTC)
         branch = self.factory.makeAnyBranch(date_created=modified_date)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': branch.owner})
+        view.initialize()
+        view.change_action.success({'reviewer': branch.owner})
         self.assertIs(None, branch.reviewer)
         # Last modified has not been updated.
         self.assertEqual(modified_date, branch.date_last_modified)
