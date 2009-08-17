@@ -311,6 +311,12 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
             buildstart = self.context.currentjob.buildstart
             return datetime.datetime.now(UTC) - buildstart
 
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return smartquote(
+            'Builder "%s"' % self.context.title)
+
 
 class BuilderSetAddView(LaunchpadFormView):
     """View class for adding new Builders."""
