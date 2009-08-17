@@ -29,13 +29,38 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.view = PersonTranslationView(person, LaunchpadTestRequest())
 
     def _makeReviewer(self):
-        """Set up the person we're looking at as a reviewer."""
+        """Set up the person we're looking at as a Dutch reviewer."""
         owner = self.factory.makePerson()
         self.translationgroup = self.factory.makeTranslationGroup(owner=owner)
         dutch = LanguageSet().getLanguageByCode('nl')
         TranslatorSet().new(
             translationgroup=self.translationgroup, language=dutch,
             translator=self.view.context)
+
+    def _makePOFiles(self, count, previously_worked_on):
+        """Create `count` `POFile`s that the view's person can review.
+
+        :param count: Number of POFiles to create.
+        :param previously_worked_on: Whether these should be POFiles
+            that the person has already worked on.
+        """
+        pofiles = []
+        for counter in xrange(count):
+            pofile = self.factory.makePOFile(language_code='nl')
+            product = pofile.potemplate.productseries.product
+            product.translationgroup = self.translationgroup
+
+            if previously_worked_on:
+                potmsgset = self.factory.makePOTMsgSet(
+                    potemplate=pofile.potemplate, singular='x', sequence=1)
+                self.factory.makeTranslationMessage(
+                    potmsgset=potmsgset, pofile=pofile,
+                    translator=self.view.context, translations=['y'])
+
+            removeSecurityProxy(pofile).unreviewed_count = 1
+            pofiles.append(pofile)
+
+        return pofiles
 
     def test_translation_groups(self):
         # translation_groups lists the translation groups a person is
@@ -297,6 +322,72 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         self.assertEqual(1, len(description))
         self.assertEqual(canonical_url(package), description[0]['link'])
+
+    def test_num_projects_and_packages_to_review(self):
+        # num_projects_and_packages_to_review counts the number of
+        # reviewable targets that the person has worked on.
+        self._makeReviewer()
+
+        self._makePOFiles(1, True)
+
+        self.assertEqual(1, self.view.num_projects_and_packages_to_review)
+
+    def test_num_projects_and_packages_to_review_zero(self):
+        # num_projects_and_packages does not count new suggestions.
+        self._makeReviewer()
+
+        self._makePOFiles(1, False)
+
+        self.assertEqual(0, self.view.num_projects_and_packages_to_review)
+
+    def test_top_projects_and_packages_to_review(self):
+        # top_projects_and_packages_to_review tries to name at least one
+        # translation target that the person has worked on, and at least
+        # one random suggestion that the person hasn't worked on.
+        self._makeReviewer()
+        pofile_worked_on = self._makePOFiles(1, True)[0]
+        pofile_not_worked_on = self._makePOFiles(1, False)[0]
+
+        targets = self.view.top_projects_and_packages_to_review
+
+        expected_links = self.view._composeReviewLinks(
+            [pofile_worked_on, pofile_not_worked_on])
+        self.assertEqual(
+            set(expected_links), set(item['link'] for item in targets))
+
+    def test_top_projects_and_packages_caps_existing_involvement(self):
+        # top_projects_and_packages will return at most 9 POFiles that
+        # the person has already worked on.
+        self._makeReviewer()
+        self._makePOFiles(10, True)
+
+        targets = self.view.top_projects_and_packages_to_review
+
+        self.assertEqual(9, len(targets))
+        self.assertEqual(9, len(set(item['link'] for item in targets)))
+
+    def test_top_projects_and_packages_caps_suggestions(self):
+        # top_projects_and_packages will suggest at most 10 POFiles that
+        # the person has not worked on.
+        self._makeReviewer()
+        self._makePOFiles(11, False)
+
+        targets = self.view.top_projects_and_packages_to_review
+
+        self.assertEqual(10, len(targets))
+        self.assertEqual(10, len(set(item['link'] for item in targets)))
+
+    def test_top_projects_and_packages_caps_total(self):
+        # top_projects_and_packages will show at most 10 POFiles
+        # overall.  The last one will be a suggestion.
+        self._makeReviewer()
+        pofiles_worked_on = self._makePOFiles(11, True)
+        pofiles_not_worked_on = self._makePOFiles(11, False)
+
+        targets = self.view.top_projects_and_packages_to_review
+
+        self.assertEqual(10, len(targets))
+        self.assertEqual(10, len(set(item['link'] for item in targets)))
 
 
 def test_suite():
