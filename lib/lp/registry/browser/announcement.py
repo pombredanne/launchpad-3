@@ -21,7 +21,6 @@ from zope.interface import implements, Interface
 from zope.schema import Choice, TextLine
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 
 from lp.registry.interfaces.announcement import IAnnouncement
 
@@ -70,6 +69,12 @@ class AnnouncementMenuMixin:
         text = 'Delete announcement'
         return Link('+delete', text, icon='trash-icon')
 
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
+
 
 class AnnouncementContextMenu(ContextMenu, AnnouncementMenuMixin):
     """The menu for working with an Announcement."""
@@ -98,6 +103,19 @@ class AnnouncementEditNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
         else:
             self.view = None
             self.context = context
+
+
+class IAnnouncementCreateMenu(Interface):
+    """A marker interface for creation announcement navigation menu."""
+
+
+class AnnouncementCreateNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
+    """A sub-menu for different aspects of modifying an announcement."""
+
+    usedfor = IAnnouncementCreateMenu
+    facet = 'overview'
+    title = 'Create announcement'
+    links = ('announce', )
 
 
 class AnnouncementFormMixin:
@@ -268,6 +286,9 @@ class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
 
 class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     """A view class for pillars which have announcements."""
+    implements(IAnnouncementCreateMenu)
+
+    batch_size = 5
 
     @cachedproperty
     def feed_url(self):
@@ -299,7 +320,7 @@ class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     def announcement_nav(self):
         return BatchNavigator(
             self.announcements, self.request,
-            size=config.launchpad.default_batch_size)
+            size=self.batch_size)
 
 
 class AnnouncementSetView(HasAnnouncementsView):

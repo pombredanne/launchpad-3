@@ -3,53 +3,73 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad">
 
-<body>
+  <metal:atom fill-slot="head_epilogue">
+    <link rel="alternate" type="application/atom+xml" tal:attributes="
+               href view/feed_url;
+               title string:Announcements for ${context/displayname}" />
+  </metal:atom>
 
-<metal:portlets fill-slot="portlets">
-</metal:portlets>
+  <body>
+    <tal:heading metal:fill-slot="heading">
+      <h1>News and announcements</h1>
+    </tal:heading>
+    <div metal:fill-slot="main">
+      <p tal:condition="not: view/announcement_nav/batch/listlength">
+        There are no announcements for this project.
+      </p>
 
-<metal:atom fill-slot="head_epilogue">
-  <link rel="alternate" type="application/atom+xml" tal:attributes="
-             href view/feed_url;
-             title string:Announcements for ${context/displayname}" />
-</metal:atom>
+      <div tal:condition="view/announcement_nav/batch/listlength"
+           id="announcements">
+        <tal:per_announcement
+           repeat="announcement view/announcement_nav/currentBatch"
+           replace="structure announcement/@@+listing-detailed" />
+      </div>
+      <div class="lesser"
+           tal:content="structure view/announcement_nav/@@+navigation-links-lower"
+           />
+    </div>
 
-<p metal:fill-slot="help">
-  Project administrators can publish additional announcements, edit these
-  announcements or retract them.
-</p>
+    <tal:side metal:fill-slot="side"
+              define="announcements view/announcement_nav/currentBatch;
+                      overview_menu context/menu:overview">
 
-<div metal:fill-slot="main">
+      <tal:menu replace="structure view/@@+global-actions" />
 
-  <h1>News and announcements</h1>
+      <div class="portlet">
+        <h2>
+          <span style="float: right;">
+            <a title="Atom 1.0 feed"
+               tal:attributes="href view/feed_url"><img src="/@@/rss.png"/></a>
+          </span>
+          Announcements
+        </h2>
 
-  <p tal:condition="view/announcement_nav/batch/listlength">
-    These announcements are available as an 
-    <a tal:attributes="href view/feed_url">
-      <img src="/@@/rss" alt="" /> Atom/RSS feed</a>.
-  </p>
+        <p tal:condition="not: view/announcement_nav/batch/listlength">
+          <tal:name replace="context/displayname" /> has no announcements.
+        </p>
 
-  <p tal:condition="not: view/announcement_nav/batch/listlength">
-    There are no announcements for this project.
-  </p>
-
-  <div tal:condition="view/announcement_nav/batch/listlength" id="announcements">
-    <tal:per_announcement
-        repeat="announcement view/announcement_nav/currentBatch"
-        replace="structure announcement/@@+listing-detailed" />
-  </div>
-
-  <div class="lesser"
-       tal:content="structure view/announcement_nav/@@+navigation-links-lower"
-       />
-
-</div>
-</body>
+        <tal:announcements tal:condition="view/announcement_nav/batch/listlength">
+          <ul>
+            <li tal:repeat="announcement announcements">
+              <img src="/@@/warning" alt="[Not published]"
+                   title="This is not yet a public announcement"
+                   tal:condition="not: announcement/published" />
+              <a tal:attributes="href string:#${announcement/id}"
+                 tal:content="announcement/title">
+                Announcement title
+              </a>
+              <strong
+                 tal:condition="announcement/date_announced"
+                 tal:content="announcement/date_announced/fmt:displaydate" />
+              <br />
+              <br />
+            </li>
+          </ul>
+        </tal:announcements>
+      </div>
+    </tal:side>
+  </body>
 </html>
