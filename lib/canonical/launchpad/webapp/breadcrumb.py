@@ -40,9 +40,9 @@ class Breadcrumb:
             self.__class__.__name__, self.url, self.text, icon_repr)
 
 
-# Since this adapter now provides a default value for the 'url' attribute, we
-# could easily convert it into an adapter for IBreadcrumb, just changing the
-# Hierarchy view.
+# XXX: salgado, 2009-08-17: Since this adapter now provides a default
+# value for the 'url' attribute, we could easily convert it into an
+# adapter for IBreadcrumb, just changing the Hierarchy view.
 class BreadcrumbBuilder:
     """See `IBreadcrumbBuilder`.
 
