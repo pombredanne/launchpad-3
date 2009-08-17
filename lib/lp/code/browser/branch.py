@@ -117,11 +117,9 @@ class BranchURL:
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
-    def items(self):
+    def objects(self):
         """See `Hierarchy`."""
-        return self._breadcrumbs(
-            (obj, canonical_url(obj))
-            for obj in IHasBranchTarget(self.context).target.components)
+        return IHasBranchTarget(self.context).target.components
 
 
 class BranchNavigation(Navigation):

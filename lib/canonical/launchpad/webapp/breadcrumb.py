@@ -16,6 +16,7 @@ from zope.traversing.interfaces import IPathAdapter
 from zope.component import queryAdapter
 from zope.interface import implements
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IBreadcrumb, IBreadcrumbBuilder)
 
@@ -39,6 +40,9 @@ class Breadcrumb:
             self.__class__.__name__, self.url, self.text, icon_repr)
 
 
+# Since this adapter now provides a default value for the 'url' attribute, we
+# could easily convert it into an adapter for IBreadcrumb, just changing the
+# Hierarchy view.
 class BreadcrumbBuilder:
     """See `IBreadcrumbBuilder`.
 
@@ -46,11 +50,15 @@ class BreadcrumbBuilder:
     """
     implements(IBreadcrumbBuilder)
 
+    rootsite = 'mainsite'
     text = None
-    url = None
 
     def __init__(self, context):
         self.context = context
+
+    @property
+    def url(self):
+        return canonical_url(self.context, rootsite=self.rootsite)
 
     @property
     def icon(self):
