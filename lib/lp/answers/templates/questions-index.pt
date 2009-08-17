@@ -81,11 +81,7 @@
               tal:condition="projects"
               style="list-style: none;">
             <li tal:repeat="project projects">
-              <a href="#"
-                 tal:attributes="href project/fmt:url">
-                <img alt="" tal:replace="structure project/image:icon" />
-                <span tal:replace="project/displayname" />
-              </a>
+              <a tal:replace="structure project/fmt:link:answers"/>
             </li>
           </ul>
         </div>
@@ -110,28 +106,29 @@
           </table>
         </div>
       </div>
-                        <div id="application-footer">
-                          <div>
-                            <strong
-                              tal:content="view/answered_question_count"
-                            >52</strong>
-                            questions answered and
-                            <strong
-                              tal:content="view/solved_question_count"
-                            >52</strong>
-                            questions solved out of
-                          </div>
-                          <div>
-                            <strong
-                              tal:content="view/question_count"
-                            >318</strong>
-                            questions asked across
-                            <strong
-                              tal:content="view/projects_with_questions_count"
-                            >28</strong>
-                            projects
-                          </div>
-                        </div>
+
+      <div id="application-footer">
+        <div>
+          <strong
+            tal:content="view/answered_question_count"
+          >52</strong>
+          questions answered and
+          <strong
+            tal:content="view/solved_question_count"
+          >52</strong>
+          questions solved out of
+        </div>
+        <div>
+          <strong
+            tal:content="view/question_count"
+          >318</strong>
+          questions asked across
+          <strong
+            tal:content="view/projects_with_questions_count"
+          >28</strong>
+          projects
+        </div>
+      </div>
 
     </div><!--main-->
 

@@ -10,9 +10,25 @@ to be fixed, and so forth.
     >>> anon_browser.title
     '...Blackhole Trash folder...'
 
-The bug id in the upper left corner of the page is linked to the bug itself.
+The breadcrumbs and other navigation include a link to the bug itself.
 
-    >>> anon_browser.getLink('Bug #2').click()
+    >>> print_location(anon_browser.contents)
+    Hierarchy: Launchpad > Debian > ?mozilla-firefox? package > Bug #2 (blackhole)
+    Tabs:
+    * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
+    * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
+    * Bugs (selected) - http://bugs.launchpad.dev/debian/+source/mozilla-firefox
+    * Blueprints - not linked
+    * Translations - not linked
+    * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
+    Main heading: Blackhole Trash folder
+
+The bug id in the upper left corner of the main page content is also
+linked to the bug itself.
+
+    >>> bug_link = first_tag_by_class(
+    ...     anon_browser.contents, 'object identifier').a
+    >>> anon_browser.open(bug_link.get('href'))
     >>> print anon_browser.title
     Bug #2 in Tomcat:...Blackhole Trash folder...
 
