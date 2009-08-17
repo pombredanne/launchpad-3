@@ -51,8 +51,6 @@ what the viewer can expect to find here
 
     >>> main_content = find_main_content(anon_browser.contents)
     >>> print extract_text(main_content)
-    Details...
-    ...
     Copy Archives related to Ubuntu Linux
     'Copy' archives containing packages copied from other archives
     (the main archive or PPAs) for a distribution.
