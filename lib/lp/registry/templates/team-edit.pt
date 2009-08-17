@@ -10,13 +10,6 @@
   i18n:domain="launchpad"
 >
 
-<div metal:fill-slot="heading">
-    <h1>
-      Edit &#8220;<span tal:replace="context/displayname">
-      Foo</span>&#8221; team
-    </h1>
-</div>
-
 <body>
   <div metal:fill-slot="main">
 

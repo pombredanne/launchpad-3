@@ -169,6 +169,12 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     """View for editing team details."""
     schema = ITeam
 
+    @property
+    def label(self):
+      return 'Edit "%s" team' % self.context.displayname
+
+    page_title = label
+
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
