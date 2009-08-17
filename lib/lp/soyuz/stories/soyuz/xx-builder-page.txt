@@ -107,8 +107,8 @@ Celso changes the builder title and the change takes effect immediately.
 
     # Submitting the change details form redirects to the index page
     # for the builder.
-    >>> print cprov_browser.title
-    Build machine Donkey builder
+    >>> print backslashreplace(cprov_browser.title)
+    Builder \u201cDonkey builder\u201d
 
 Then restores it once he realises his mistake.
 
@@ -167,8 +167,8 @@ transient failures or is used for another purpose.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds')
     >>> cprov_browser.getLink('bob').click()
-    >>> print cprov_browser.title
-    Build machine Bob The Builder
+    >>> print backslashreplace(cprov_browser.title)
+    Builder \u201cBob The Builder\u201d
 
 Celso can toggle the active bit using the Change details form.
 
@@ -202,8 +202,8 @@ Farm list. Celso cannot see the link to it.
 But Celso can access the deactivated builder via its URL.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds/bob')
-    >>> print cprov_browser.title
-    Build machine Bob The Builder
+    >>> print backslashreplace(cprov_browser.title)
+    Builder \u201cBob The Builder\u201d
 
 
 == Actions permissions ==
