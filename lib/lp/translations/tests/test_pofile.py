@@ -1194,9 +1194,12 @@ class TestPOFileSet(TestCaseWithFactory):
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
         self.assertContentEqual([pofile1, pofile2], pofiles)
 
-    def test_POFileSet_getPOFilesTouchedSince_bug_414832(self):
+    def test_POFileSet_getPOFilesTouchedSince_smaller_ids(self):
         # Make sure that all relevant POFiles are returned,
         # even the sharing ones with smaller IDs.
+        # This is a test for bug #414832 which caused sharing POFiles
+        # of the touched POFile not to be returned if they had
+        # IDs smaller than the touched POFile.
         product = self.factory.makeProduct()
         product.official_rosetta = True
         series1 = self.factory.makeProductSeries(product=product,
