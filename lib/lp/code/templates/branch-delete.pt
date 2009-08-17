@@ -3,20 +3,15 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
 <body>
 
-<metal:heading fill-slot="before_nav_menu"
-               tal:content="structure context/@@+heading"/>
+  <h1 metal:fill-slot="heading">
+    Delete branch
+  </h1>
 
-<div metal:fill-slot="main">
-
-  <h1>Delete branch</h1>
+  <div metal:fill-slot="main">
 
   <tal:has-stacked-branches condition="view/stacked_branches_count">
     This branch cannot be deleted as it has
@@ -79,6 +74,6 @@
 
   </tal:has-no-stacked-branches>
 
-</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+</div>
 </body>
 </html>
