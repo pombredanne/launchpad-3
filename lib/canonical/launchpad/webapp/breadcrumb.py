@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'Breadcrumb',
     'BreadcrumbBuilder',
-    'PillarOnVHostBreadcrumbBuilder',
     ]
 
 
