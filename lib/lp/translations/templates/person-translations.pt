@@ -30,7 +30,7 @@
           tal:replace="structure context/@@+translations-to-review-table" />
         <span style="float:right"
               tal:condition="python: view.num_projects_and_packages_to_review > 1">
-          <a href="+translations-to-review">
+          <a href="+translations-to-review" id="translations-to-review-link">
             See all
             <tal:num tal:replace="view/num_projects_and_packages_to_review">
               16
