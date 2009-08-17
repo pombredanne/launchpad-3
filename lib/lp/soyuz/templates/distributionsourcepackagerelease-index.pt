@@ -21,28 +21,23 @@
 <div metal:fill-slot="side">
 <style>
 .side h2 {font-weight: bold;}
-.archheading { text-align: center; }
+.archheading { text-align: center; font-weight: bold; }
 .packageicon { text-align: center; }
-table.listing tr.thead th { border-right-style: 1px solid #d2d2d2; }
-}
+.b-right {border-right: 1px solid #d2d2d2; }
 </style>
 
   <div id="downloads" class="top-portlet downloads">
     <h2>Download source</h2>
     <ul>
-      <li id="files"> <a href="blah">alsa-utils...orig.tar.gz</a>
-        <div class="released"><span>(1.2 MiB)</span></div></li>
-      <li id="files"> <a href="blah">alsa-utils...tu1.diff.gz</a>
-        <div class="released"><span>(42.4 KiB)</span></div></li>
-      <li id="files"> <a href="blah">alsa-utils...ubuntu1.dsc</a>
-        <div class="released"><span>(1.6 KiB)</span></div></li>
+      <li id="files"> <a href="blah">alsa-utils...orig.tar.gz (1.2 MiB)</a>
+      <li id="files"> <a href="blah">alsa-utils...tu1.diff.gz (42.4 KiB)</a>
+      <li id="files"> <a href="blah">alsa-utils...ubuntu1.dsc (1.6 KiB)</a>
     </ul>
   </div>
   <div id="package-diffs" class="top-portlet downloads">
     <h2>Available diffs</h2>
     <ul>
-    <li id="files"><a href="blah">1.0.9-4ubuntu1 to 1.0.9a-4ubuntu2</a>
-      <div class="released"><span>(1.9 KiB)</span></div></li>
+    <li id="files"><a href="blah">1.0.9-4ubuntu1 to 1.0.9a-4ubuntu2 (1.9 KiB)</a>
       <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs"/>
     </ul>
   </div>
@@ -56,7 +51,7 @@ table.listing tr.thead th { border-right-style: 1px solid #d2d2d2; }
   </div>
 
   <div class="yui-u">
-    <div class="portlet">
+    <div class="top-portlet">
       <h2>Binary packages produced in
         <span tal:replace="context/distribution/displayname" />
         for this version of
@@ -65,21 +60,24 @@ table.listing tr.thead th { border-right-style: 1px solid #d2d2d2; }
       </h2>
 
       <table class="listing">
+      <colgroup span="1" class="b-right"/>
+      <colgroup span="3" class="b-right"/>
+      <colgroup span="3" class="b-right"/>
 
-      <thead><tr class="archheading"><strong>
+      <thead><tr class="archheading">
       <td/>
       <td colspan="3">Intrepid </td>
       <td colspan="3">Jaunty </td>
       <td colspan="3">Karmic </td>
-      </strong></tr>
+      </tr>
       <tr>
         <td>Binary name</td>
         <td>i386<img src="/@@/yes"></td>
         <td>amd64<img src="/@@/yes"></td>
-        <td>lpia<img src="/@@/yes"></td>
+        <td class="border-right" >lpia<img src="/@@/yes"></td>
         <td>i386<img src="/@@/yes"></td>
         <td>amd64<img src="/@@/yes"></td>
-        <td>lpia<img src="/@@/yes"></td>
+        <td class="border-right" >lpia<img src="/@@/yes"></td>
         <td>i386<img src="/@@/yes"></td>
         <td>amd64<img src="/@@/yes"></td>
         <td>lpia<img src="/@@/no"></td>
@@ -135,11 +133,13 @@ table.listing tr.thead th { border-right-style: 1px solid #d2d2d2; }
             <div>Conflicts: <a href="blah">aabrowser-3.1 (<< 3.1~b4~hg20090317)</a></div>
             <div>Provides: <a href="blah">aabrowser-3.1</a></div>
             <div>Replaces: <a href="blah">aabrowser-3.1</a></div>
+            <div style="display:none;">
             <div>Suggests:</div>
             <div>Recommends:</div>
             <div>Pre-Depends on:</div>
             <div>Enhances:</div>
             <div>Breaks:</div>
+            </div>
             </div>
         </td>
       </tr>
