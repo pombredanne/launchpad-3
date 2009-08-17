@@ -215,12 +215,12 @@ class PersonTranslationView(LaunchpadView):
             strings_wording = '%d strings'
 
         return {
-                'target': target,
-                'count': strings_count,
-                'link': link,
-                'count_wording': strings_wording % strings_count,
-                'is_product': is_product,
-            }
+            'target': target,
+            'count': strings_count,
+            'link': link,
+            'count_wording': strings_wording % strings_count,
+            'is_product': is_product,
+        }
 
     def _setHistoryHorizon(self):
         """If not already set, set `self.history_horizon`."""

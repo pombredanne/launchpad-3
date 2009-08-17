@@ -158,6 +158,64 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         self.assertEqual([canonical_url(package)], links)
 
+    def test_describeReviewableTarget_string_count(self):
+        # _describeReviewableTarget puts out a human-readable
+        # description of how many strings need review.
+        product = self.factory.makeProduct()
+
+        description = self.view._describeReviewableTarget(
+            product, canonical_url(product), 0)
+        self.assertEqual(description['count'], 0)
+        self.assertEqual(description['count_wording'], '0 strings')
+
+        # Singular applies for exactly 1 string.
+        description = self.view._describeReviewableTarget(
+            product, canonical_url(product), 1)
+        self.assertEqual(description['count'], 1)
+        self.assertEqual(description['count_wording'], '1 string')
+
+
+        description = self.view._describeReviewableTarget(
+            product, canonical_url(product), 2)
+        self.assertEqual(description['count'], 2)
+        self.assertEqual(description['count_wording'], '2 strings')
+
+    def test_describeReviewableTarget_product(self):
+        # _describeReviewableTarget describes a Product with reviewable
+        # translations.
+        product = self.factory.makeProduct()
+        link = canonical_url(product)
+
+        description = self.view._describeReviewableTarget(product, link, 99)
+
+        expected_description = {
+            'target': product,
+            'count': 99,
+            'count_wording': "99 strings",
+            'is_product': True,
+            'link': link,
+        }
+        self.assertEqual(expected_description, description)
+
+    def test_describeReviewableTarget_package(self):
+        # _describeReviewableTarget describes a package with reviewable
+        # translations.
+        package = self.factory.makeSourcePackage()
+        package.distroseries.distribution.official_rosetta = True
+        target = (package.sourcepackagename, package.distroseries)
+        link = canonical_url(package)
+
+        description = self.view._describeReviewableTarget(target, link, 42)
+
+        expected_description = {
+            'target': package,
+            'count': 42,
+            'count_wording': "42 strings",
+            'is_product': False,
+            'link': link,
+        }
+        self.assertEqual(expected_description, description)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
