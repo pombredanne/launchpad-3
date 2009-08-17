@@ -1139,11 +1139,13 @@ class BugTargetBugListingView:
 
         series_buglistings = []
         for series in serieses:
-            series_buglistings.append(
-                dict(
-                    title=series.name,
-                    url=canonical_url(series) + "/+bugs",
-                    count=series.open_bugtasks.count()))
+            series_bug_count = series.open_bugtasks.count()
+            if series_bug_count > 0:
+                series_buglistings.append(
+                    dict(
+                        title=series.name,
+                        url=canonical_url(series) + "/+bugs",
+                        count=series_bug_count))
 
         return series_buglistings
 
