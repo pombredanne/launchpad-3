@@ -747,6 +747,7 @@ class BranchMergeProposalCommitMessageEditView(MergeProposalEditView):
 
     schema = IBranchMergeProposal
     label = "Edit merge proposal commit message"
+    page_title = label
     field_names = ['commit_message']
 
     @action('Update', name='update')

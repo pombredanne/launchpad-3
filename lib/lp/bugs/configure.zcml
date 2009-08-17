@@ -263,6 +263,12 @@
         <adapter
             factory="lp.bugs.browser.bugtask.assignee_renderer"
             name="assignee"/>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            factory="lp.bugs.browser.bugtask.BugTaskBreadcrumbBuilder"
+            permission="zope.Public"/>
+
         
         <!-- NullBugTask -->
         

@@ -86,12 +86,14 @@ After approving the nominated bugs, the listing is empty.
     # (i.e. login()) and bypass the security proxy.
     >>> from canonical.launchpad.database import Bug
     >>> from lp.registry.model.distribution import Distribution
+    >>> login('admin@canonical.com')
     >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
     >>> bug_one = Bug.get(1)
-    >>> hoary_nomination = bug_one.getNominationFor(hoary)
+    >>> hoary_nomination_id = bug_one.getNominationFor(hoary).id
+    >>> logout()
     >>> nomination_control = admin_browser.getControl(
-    ...     name='field.review_action_%s' % hoary_nomination.id)
+    ...     name='field.review_action_%s' % hoary_nomination_id)
     >>> nomination_control.getControl(value='ACCEPT').click()
     >>> admin_browser.getControl('Save changes').click()
     >>> for message in get_feedback_messages(admin_browser.contents):
