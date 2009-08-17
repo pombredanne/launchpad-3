@@ -7,6 +7,10 @@ Let's use ubuntu/hoary for these tests.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 
+
+Administering distroseries
+--------------------------
+
 The +admin view allows administrators to change a series. It provides a
 label, page_title, and cancel_url
 
@@ -145,8 +149,8 @@ initial value remains.
     True
 
 
-Editing distroseries
---------------------
+Editing distro series
+---------------------
 
 The distroseries edit view allows the editor to change series. The form
 uses the displayname, title, and description fields.
@@ -183,8 +187,8 @@ Series that belong to derivative distributions also contain the status field.
     ['displayname', 'title', 'summary', 'description', 'status']
 
 
-Creating distroseries
----------------------
+Creating distro series
+----------------------
 
 A distroseries is created using the distroseries view.
 
@@ -228,8 +232,8 @@ A distroseries is created whent the required field are submitted.
     >>> transaction.commit()
 
 
-Drivers can create distroseries
--------------------------------
+Drivers can create distro series
+--------------------------------
 
 Users who are appointed as drivers of a distribution can create a series.
 Most distributions are an `IDerivativeDistribution`.
@@ -268,8 +272,8 @@ is an `IBaseDistribution`.
     False
 
 
-Editing Distroseries
---------------------
+Drivers editing distro series
+.............................
 
 The series driver (release manager) can edit a series if the series belongs
 to a `IDerivativeDistribution`.
