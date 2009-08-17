@@ -4,23 +4,17 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only"
-  i18n:domain="launchpad"
->
+  i18n:domain="launchpad">
+  <body>
+    <div metal:fill-slot="main">
+      <div tal:condition="not: context/last_probe_record">
+        <div metal:use-macro="context/@@launchpad_form/form" />
+      </div>
 
-<body>
-
-<div metal:fill-slot="main">
-
-  <div tal:condition="not: context/last_probe_record">
-    <div metal:use-macro="context/@@launchpad_form/form" />
-  </div>
-
-  <p tal:condition="context/last_probe_record">
-    This mirror can't be deleted because it has been probed already.
-  </p>
-
-</div>
-
-</body>
+      <p tal:condition="context/last_probe_record">
+        This mirror can't be deleted because it has been probed already.
+      </p>
+    </div>
+  </body>
 </html>
 
