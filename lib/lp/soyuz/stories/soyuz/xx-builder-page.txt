@@ -30,8 +30,9 @@ location and description.
     Builder information
     Architecture: Intel 386
     Location: http://localhost:8221/
-    Manual mode: False
     Owner: Launchpad Buildd Admins
+    Mode: This builder is in auto-mode and accepting jobs from the
+    auto-build system.
 
 The builder status is now displayed as normal text and not as as a
 notification alert.
@@ -55,14 +56,9 @@ the builder actions.
     >>> cprov_browser.open('http://launchpad.dev/builders')
     >>> cprov_browser.getLink('bob').click()
 
-Celso sees the available actions in the 'Actions' portlet.
-
-    >>> print extract_text(find_tag_by_id(cprov_browser.contents, 'actions'))
-    Show build history
-    Change details
-    Change mode
-
-See 'xx-builds-pages.txt' for documentation about 'Show build history'.'
+Celso sees both the Change details and Toggle mode actions, which are
+displayed in context. See 'xx-builds-pages.txt' for documentation about
+'Show build history'.'
 
 Celso can modify the location and the visible details of the builder.
 
@@ -125,43 +121,30 @@ By looking at 'details' portlet, Celso realises the builder is in
 automatic (AUTO) mode.
 
     >>> details_portlet = find_portlet(
-    ...     cprov_browser.contents, "Bob The Builder details")
+    ...     cprov_browser.contents, "Builder information")
     >>> print str(extract_text(details_portlet))
-    Bob The Builder details
-    Name: Bob The Builder
+    Builder information
     Architecture: Intel 386
     Location: http://localhost:8221/
-    Virtual: False
-    Description
-      The default build-slave
-    Status
-      Disabled
-    Owner
-      Launchpad Buildd Admins
+    Owner: Launchpad Buildd Admins
+    Mode: This builder is in auto-mode and accepting jobs from the
+    auto-build system. Toggle mode
 
-He goes to the 'Change Mode' action page and change it to manual mode.
+He clicks on the Toggle mode button to put the builder into manual mode.
 
-    >>> cprov_browser.getLink("Change mode").click()
-    >>> cprov_browser.getControl(name="field.manual").value = True
-    >>> cprov_browser.getControl("Change").click()
+    >>> cprov_browser.getControl(name="field.actions.update").click()
 
-He can see now, in the details portlet that it say 'MANUAL' now.
+He can see now, in the details portlet that the builder is in manual-mode.
 
     >>> details_portlet = find_portlet(
-    ...     cprov_browser.contents, "Bob The Builder details")
+    ...     cprov_browser.contents, "Builder information")
     >>> print str(extract_text(details_portlet))
-    Bob The Builder details
-    Name: Bob The Builder
-    Architecture: Intel 386
-    Location: http://localhost:8221/
-    Virtual: False
-    Description
-      The default build-slave
-    Status
-      Disabled
-    Owner
-      Launchpad Buildd Admins
+    Builder information
+    ...
+    Mode: This builder is in manual-mode and not accepting jobs from the
+    auto-build system. Toggle mode
 
+And a relevant notification is displayed after the mode toggle.
 Via the 'edit' form Celso can also modify the 'builderok',
 'failure_notes', 'virtualized' and 'virtual machine' fields. All the
 consequences of those modifications are covered in the buildd-admin
@@ -229,10 +212,13 @@ Normal users, such as No Privileges Person are not shown links, nor
 can he access the pages by directly via URL.
 
     >>> user_browser.open("http://localhost/+builds/bob")
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'actions'))
-    Show build history
-    Change details (disabled)
-    Change mode (disabled)
+    >>> user_browser.getLink('Change details')
+    Traceback (most recent call last):
+    LinkNotFoundError
+
+    >>> user_browser.getControl(name="field.actions.update")
+    Traceback (most recent call last):
+    LookupError: name 'field.actions.update'
 
     >>> user_browser.open("http://localhost/+builds/bob/+edit")
     Traceback (most recent call last):
@@ -247,10 +233,13 @@ can he access the pages by directly via URL.
 The same is true for the anonymous user:
 
     >>> anon_browser.open("http://localhost/+builds/bob")
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'actions'))
-    Show build history
-    Change details (disabled)
-    Change mode (disabled)
+    >>> anon_browser.getLink('Change details')
+    Traceback (most recent call last):
+    LinkNotFoundError
+
+    >>> anon_browser.getControl(name="field.actions.update")
+    Traceback (most recent call last):
+    LookupError: name 'field.actions.update'
 
     >>> anon_browser.open("http://localhost/+builds/bob/+edit")
     Traceback (most recent call last):

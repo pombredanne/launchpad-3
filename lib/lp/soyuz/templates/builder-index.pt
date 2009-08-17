@@ -87,7 +87,16 @@
               <tal:auto condition="not: context/manual">This builder is in
                 auto-mode and accepting jobs from the auto-build system.
               </tal:auto>
-              <form action="https://launchpad.dev/builders/bob/+mode" method="post" enctype="multipart/form-data"><input id="field.manual" name="field.manual" type="checkbox" value="on" /><input type="submit" name="UPDATE_SUBMIT" value="Toggle" /></form>
+              <form tal:attributes="action view/menu:overview/mode/fmt:url"
+                    tal:condition="view/menu:overview/mode/enabled"
+                    method="post" style="display:inline">
+                <input type="hidden" value="" name="field.manual.used"
+                       id="field.manual.used" class="hiddenType"/>
+                <input id="field.manual" name="field.manual" type="hidden"
+                       value="on" tal:condition="not: context/manual" />
+                <button type="submit" name="field.actions.update"
+                       id="field.actions.update">Toggle mode</button>
+              </form>
             </dd>
           </dl>
         </div><!-- portlet -->

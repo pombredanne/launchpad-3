@@ -108,39 +108,6 @@ class BuilderSetOverviewMenu(ApplicationMenu):
         text = 'Register a new build machine'
         return Link('+new', text, icon='add')
 
-class IBuilderRelatedPagesMenu(Interface):
-    """A marker interface for the Builder links menu."""
-
-class BuilderRelatedPagesMenu(NavigationMenu):
-    """Related pages and contextual actions for a builder."""
-
-#    usedfor = IBuilderRelatedPagesMenu
-    usedfor = IBuilder
-    facet = 'overview'
-    links = ('history', 'edit', 'mode')
-
-    def history(self):
-        text = 'View full history'
-        return Link('+history', text, icon='info')
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def mode(self):
-        text = 'Toggle mode'
-        return Link('+mode', text, icon='edit')
-
-
-#from canonical.launchpad.webapp.interfaces import INavigationMenu
-#from zope.component import provideAdapter
-
-#provideAdapter(
-#    BuilderRelatedPagesMenu, [IBuilderRelatedPagesMenu], INavigationMenu,
-#    name="overview")
-
 
 class BuilderOverviewMenu(ApplicationMenu):
     """Overview Menu for IBuilder."""
@@ -305,8 +272,6 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
     Implements useful actions for the page template.
     """
     __used_for__ = IBuilder
-
-    implements(IBuilderRelatedPagesMenu)
 
     def __init__(self, context, request):
         context = self.overrideHiddenBuilder(context)

@@ -472,7 +472,7 @@
     <browser:menus
         classes="
             BuilderFacets
-            BuilderRelatedPagesMenu"
+            BuilderOverviewMenu"
         module="lp.soyuz.browser.builder"/>
     <browser:defaultView
         for="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"
