@@ -515,8 +515,6 @@ structural_subscriptions_manage = ContextTitle(
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
-distroarchseries_admin = ContextTitle('Administer %s')
-
 distroarchseries_index = ContextTitle('%s in Launchpad')
 
 distroarchseries_builds = ContextTitle('%s builds')
