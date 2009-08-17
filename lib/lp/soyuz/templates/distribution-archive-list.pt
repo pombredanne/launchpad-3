@@ -3,17 +3,17 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <body>
 
-  <div metal:fill-slot="main">
-
+  <div metal:fill-slot="heading">
     <h1>Copy Archives related to <tal:title replace="context/title" /></h1>
+  </div>
+
+  <div metal:fill-slot="main">
+  <div class="top-portlet">
 
     <p>'Copy' archives containing packages copied from other archives (the
        main archive or PPAs) for a distribution.
@@ -55,7 +55,7 @@
         </tbody>
       </table>
 
-      <tal:navigation_bottom 
+      <tal:navigation_bottom
         replace="structure view/batchnav/@@+navigation-links-lower" />
 
       <div id="empty-result" tal:condition="not: batch">
@@ -65,6 +65,7 @@
 
     </tal:batch>
 
+  </div>
   </div>
 
 </body>
