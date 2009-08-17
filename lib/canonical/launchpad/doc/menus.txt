@@ -220,6 +220,7 @@ they are as we expect.
     linked: True
     menu: None
     name: foo
+    path: /sesamestreet/+foo
     render: <bound method FacetLink.render ...>
     selected: False
     site: None
@@ -236,6 +237,7 @@ they are as we expect.
     linked: True
     menu: None
     name: bar
+    path: /sesamestreet/+bar
     render: <bound method FacetLink.render ...>
     selected: False
     site: None
@@ -476,6 +478,7 @@ they are as we expect.
     linked: True
     menu: None
     name: first
+    path: /sesamestreet/number73/+first
     render: <bound method MenuLink.render ...>
     site: None
     sort_key: 0
@@ -541,6 +544,7 @@ they are as we expect.
     linked: True
     menu: None
     name: first
+    path: /sesamestreet/number73/+firstcontext
     render: <bound method MenuLink.render ...>
     site: None
     sort_key: 0

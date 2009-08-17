@@ -25,7 +25,8 @@
         <h3>Projects:</h3>
         <ul>
           <li tal:repeat="product context/products">
-            <tal:link replace="structure product/fmt:link" />
+            <tal:link replace="structure product/fmt:link:translations" />
+            <tal:link replace="structure product/fmt:url:translations" />
           </li>
         </ul>
       </tal:products>

@@ -11,7 +11,7 @@
   <div tal:condition="not:context/private" id="privacy-text">
     <a
       tal:condition="link/enabled"
-      tal:attributes="href link/url; title link/text"
+      tal:attributes="href link/path; title link/text"
       class="sprite edit"
       id="privacy-link"
     >This report is public</a>
@@ -21,7 +21,7 @@
   <div tal:condition="context/private" id="privacy-text">
     <a
       tal:condition="link/enabled"
-      tal:attributes="href link/url; title link/text"
+      tal:attributes="href link/path; title link/text"
       class="sprite edit"
       id="privacy-link"
     >This report is <strong>private</strong></a>
