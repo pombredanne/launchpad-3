@@ -794,19 +794,20 @@
         <browser:menus
             module="lp.registry.browser.person"
             classes="
-                FOAFSearchMenu
+                PeopleSearchMenu
+                PersonBugsMenu
+                PersonEditNavigationMenu
                 PersonFacets
                 PersonOverviewMenu
-                TeamOverviewMenu
-                PersonBugsMenu
+                PersonOverviewNavigationMenu
+                PersonRelatedSoftwareNavigationMenu
+                PersonSetContextMenu
                 PersonSpecsMenu
                 TeamBugsMenu
+                TeamOverviewMenu
+                TeamOverviewNavigationMenu
                 TeamSpecsMenu
-                PersonSetContextMenu
-                PersonOverviewNavigationMenu
-                PersonEditNavigationMenu
-                PersonRelatedSoftwareNavigationMenu
-                TeamOverviewNavigationMenu"/>
+                "/>
         <browser:url
             for="lp.registry.interfaces.person.IPerson"
             path_expression="string:~${name}"
@@ -1243,7 +1244,7 @@
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="zope.Public"
-            class="lp.registry.browser.person.FOAFSearchView">
+            class="lp.registry.browser.person.PeopleSearchView">
             <browser:page
                 name="+index"
                 template="../templates/people-index.pt"/>

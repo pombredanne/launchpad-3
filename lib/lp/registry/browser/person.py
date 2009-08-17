@@ -10,12 +10,12 @@ __metaclass__ = type
 __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
-    'FOAFSearchMenu'
-    'FOAFSearchView',
     'EmailToPersonView',
+    'PeopleSearchMenu'
+    'PeopleSearchView',
     'PersonAccountAdministerView',
-    'PersonAdministerView',
     'PersonAddView',
+    'PersonAdministerView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
@@ -31,10 +31,10 @@ __all__ = [
     'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
     'PersonEditJabberIDsView',
+    'PersonEditLocationView',
     'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
-    'PersonEditLocationView',
     'PersonFacets',
     'PersonGPGView',
     'PersonIndexView',
@@ -43,8 +43,8 @@ __all__ = [
     'PersonNavigation',
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
-    'PersonRdfView',
     'PersonRdfContentsView',
+    'PersonRdfView',
     'PersonRelatedBugTaskSearchListingView',
     'PersonRelatedSoftwareView',
     'PersonReportedBugTaskSearchListingView',
@@ -52,9 +52,9 @@ __all__ = [
     'PersonSetContextMenu',
     'PersonSetNavigation',
     'PersonSpecFeedbackView',
-    'PersonSpecsMenu',
-    'PersonSpecWorkloadView',
     'PersonSpecWorkloadTableView',
+    'PersonSpecWorkloadView',
+    'PersonSpecsMenu',
     'PersonSubscribedBugTaskSearchListingView',
     'PersonView',
     'PersonVouchersView',
@@ -67,14 +67,14 @@ __all__ = [
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
     'TeamAddMyTeamsView',
+    'TeamBreadcrumbBuilder',
     'TeamEditLocationView',
     'TeamJoinView',
-    'TeamBreadcrumbBuilder',
     'TeamLeaveView',
-    'TeamNavigation',
-    'TeamOverviewMenu',
     'TeamMembershipView',
     'TeamMugshotView',
+    'TeamNavigation',
+    'TeamOverviewMenu',
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'archive_to_person',
@@ -1335,23 +1335,23 @@ class TeamMembershipView(LaunchpadView):
         return self.proposed_memberships or self.invited_memberships
 
 
-class IFOAFSearchMenu(Interface):
-    """Marker class for FOAF search menu."""
+class IPeopleSearchMenu(Interface):
+    """Marker class for people search menu."""
 
 
-class FOAFSearchMenu(NavigationMenu, TopLevelContextMenuMixin):
-    """Navigation menu for FOAF search."""
+class PeopleSearchMenu(NavigationMenu, TopLevelContextMenuMixin):
+    """Navigation menu for people search."""
 
-    usedfor = IFOAFSearchMenu
+    usedfor = IPeopleSearchMenu
     facet = 'overview'
 
     links = ['products', 'distributions', 'people', 'meetings']
 
 
-class FOAFSearchView(LaunchpadView):
+class PeopleSearchView(LaunchpadView):
     """Search for people and teams on the /people page."""
 
-    implements(IFOAFSearchMenu)
+    implements(IPeopleSearchMenu)
 
     def __init__(self, context, request):
         self.context = context
