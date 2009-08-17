@@ -14,14 +14,49 @@
 <div metal:fill-slot="main" >
 
   <div metal:use-macro="context/@@launchpad_form/form">
-    <p metal:fill-slot="extra_info" class="documentDescription">
-      Your preferred languages are used to configure some Launchpad applications
-      to work with the languages you know. Launchpad Translations allows you
-      to translate a project into your preferred languages. Launchpad Answers
-      allows you to ask and answer questions in your preferred languages.
-      Launchpad's default language is English, which is the only language for
-      most Launchpad features.
-    </p>
+    <div metal:fill-slot="extra_info">
+      <p class="documentDescription">
+        Your preferred languages are used to configure some Launchpad
+        applications to work with the languages you know.
+        Launchpad Translations allows you to translate a project into your
+        preferred languages. Launchpad Answers allows you to ask and answer
+        questions in your preferred languages.  Launchpad's default language
+        is English, which is the only language for most Launchpad features.
+      </p>
+
+      <div class="two-column-list" style="max-width: 45em;">
+        <dl tal:define="languages view/browserLanguages">
+          <dt>
+            <strong>Your browser languages:</strong>
+          <dt>
+          <dd class="sprite language"
+            tal:condition="languages"
+            tal:repeat="lang languages"
+            tal:content="lang/englishname"/>
+          <dd tal:condition="not: languages">
+            No configured languages
+          </dd>
+        </dl>
+
+        <dl tal:define="country view/requestCountry"
+            tal:condition="country" >
+          <dt>
+            <strong>Languages in <tal:country replace="country/name" />
+            </strong>
+          </dt>
+          <tal:languages define="languages country/languages">
+            <dd class="sprite language"
+              tal:condition="languages"
+              tal:repeat="lang country/languages"
+              tal:content="lang/englishname"/>
+            <dd tal:condition="not: languages">
+              No languages are currently registered as being spoken in
+              <tal:country replace="country/name" />.
+            </dd>
+          </tal:languages>
+        </dl>
+      </div>
+    </div>
 
     <div metal:fill-slot="widgets">
       <input name="redirection_url" type="hidden"
@@ -45,13 +80,6 @@
       </div>
 
     </div>
-  </div>
-
-  <div class="yui-g">
-    <div class="first yui-u"
-         tal:content="structure context/@@+portlet-countrylangs" />
-    <div class="yui-u"
-         tal:content="structure context/@@+portlet-browserlangs" />
   </div>
 
 </div>
