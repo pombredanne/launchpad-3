@@ -911,8 +911,6 @@ people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
-active_reviews = ContextDisplayName('Pending proposals for %s')
-
 person_archive_subscription = ContextDisplayName('%s')
 
 person_archive_subscriptions = 'Private PPA access'

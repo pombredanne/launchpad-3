@@ -9,9 +9,8 @@ __all__ = [
     'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
     'PersonActiveReviewsView',
-    'PersonApprovedMergesView',
     'ProductActiveReviewsView',
-    'ProductApprovedMergesView',
+    'ProjectActiveReviewsView',
     ]
 
 
@@ -199,116 +198,142 @@ class PersonRequestedReviewsView(PersonBMPListingView):
             self.getUserFromContext(), self._queue_status)
 
 
-class PersonApprovedMergesView(PersonBMPListingView):
-    """Branch merge proposals that have been approved for the person."""
-
-    extra_columns = ['date_reviewed']
-    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
-
-    @property
-    def heading(self):
-        return "Approved merges for %s" % self.context.displayname
-
-    @property
-    def no_proposal_message(self):
-        """Shown when there is no table to show."""
-        return "%s has no approved merges." % self.context.displayname
-
-
 class ActiveReviewsView(BranchMergeProposalListingView):
     """Branch merge proposals for a context that are needing review."""
 
     show_diffs = False
 
     # The grouping classifications.
+    APPROVED = 'approved'
     TO_DO = 'to_do'
     ARE_DOING = 'are_doing'
     CAN_DO = 'can_do'
     MINE = 'mine'
     OTHER = 'other'
+    WIP = 'wip'
 
-    def _getProposals(self):
+    def getProposals(self):
         """Get the proposals for the view."""
-        return []
+        raise NotImplementedError(self.getProposals)
 
-    def _getReviewGroup(self, proposal, votes):
-        """Return one of MINE, TO_DO, CAN_DO, ARE_DOING, or OTHER.
+    def _getReviewGroup(self, proposal, votes, reviewer):
+        """One of APPROVED, MINE, TO_DO, CAN_DO, ARE_DOING, OTHER or WIP.
 
-        These groupings define the different tables that the user is able to
-        see.
+        These groupings define the different tables that the user is able
+        to see.
 
-        If the source branch is owned by the user, or the proposal was
-        registered by the user, then the group is MINE.
+        Proposals with a status of CODE_APPROVED or WORK_IN_PROGRESS are the
+        groups APPROVED or WIP respectively.
 
-        If there is a pending vote reference for the logged in user, then the
-        group is TO_DO as the user is expected to review.  If there is a vote
-        reference where it is not pending, this means that the user has
+        If the source branch is owned by the reviewer, or the proposal was
+        registered by the reviewer, then the group is MINE.
+
+        If the reviewer is a team, there is no MINE, nor can a team vote, so
+        there is no ARE_DOING.  Since a team can't really have TO_DOs, they
+        are explicitly checked for, so all possibles are CAN_DO.
+
+        If there is a pending vote reference for the reviewer, then the group
+        is TO_DO as the reviewer is expected to review.  If there is a vote
+        reference where it is not pending, this means that the reviewer has
         reviewed, so the group is ARE_DOING.  If there is a pending review
-        requested of a team that the user is in, then the review becomes a
+        requested of a team that the reviewer is in, then the review becomes a
         CAN_DO.  All others are OTHER.
         """
-        if (self.user is not None and
-            (proposal.source_branch.owner == self.user or
-             (self.user.inTeam(proposal.source_branch.owner) and
-              proposal.registrant == self.user))):
+        bmp_status = BranchMergeProposalStatus
+        if proposal.queue_status == bmp_status.CODE_APPROVED:
+            return self.APPROVED
+        if proposal.queue_status == bmp_status.WORK_IN_PROGRESS:
+            return self.WIP
+
+        if (reviewer is not None and
+            (proposal.source_branch.owner == reviewer or
+             (reviewer.inTeam(proposal.source_branch.owner) and
+              proposal.registrant == reviewer))):
             return self.MINE
 
         result = self.OTHER
 
         for vote in votes:
-            if self.user is not None:
-                if vote.reviewer == self.user:
+            if reviewer is not None:
+                if vote.reviewer == reviewer and not reviewer.is_team:
                     if vote.comment is None:
                         return self.TO_DO
                     else:
                         return self.ARE_DOING
                 # Since team reviews are always pending, and we've eliminated
-                # the case where the reviewer is ther person, then if the user
+                # the case where the reviewer is ther person, then if the reviewer
                 # is in the reviewer team, it is a can do.
-                if self.user.inTeam(vote.reviewer):
+                if reviewer.inTeam(vote.reviewer):
                     result = self.CAN_DO
         return result
+
+    def _getReviewer(self):
+        """The user whose point of view are the groupings are for."""
+        return self.user
 
     def initialize(self):
         # Work out the review groups
         self.review_groups = {}
         self.getter = getUtility(IBranchMergeProposalGetter)
-        proposals = self._getProposals()
+        reviewer = self._getReviewer()
+        # Listify so it works well being passed into getting the votes and
+        # summaries.
+        proposals = list(self.getProposals())
         all_votes = self.getter.getVotesForProposals(proposals)
         vote_summaries = self.getter.getVoteSummariesForProposals(proposals)
         for proposal in proposals:
             proposal_votes = all_votes[proposal]
             review_group = self._getReviewGroup(
-                proposal, proposal_votes)
+                proposal, proposal_votes, reviewer)
             self.review_groups.setdefault(review_group, []).append(
                 BranchMergeProposalListingItem(
                     proposal, vote_summaries[proposal], None, proposal_votes))
             if proposal.preview_diff is not None:
                 self.show_diffs = True
+        # Sort each collection...
         self.proposal_count = len(proposals)
 
-    @property
-    def other_heading(self):
-        """Return the heading to be used for the OTHER group.
-
-        If there is no user, or there are no reviews in any user specific
-        group, then don't show a heading for the OTHER group.
-        """
-        if self.user is None:
-            return None
-        personal_review_count = (
-            len(self.review_groups.get(self.TO_DO, [])) +
-            len(self.review_groups.get(self.CAN_DO, [])) +
-            len(self.review_groups.get(self.MINE, [])) +
-            len(self.review_groups.get(self.ARE_DOING, [])))
-        if personal_review_count > 0:
-            return _('Other reviews')
+    @cachedproperty
+    def headings(self):
+        """Return a dict of headings for the groups."""
+        reviewer = self._getReviewer()
+        headings = {
+            self.APPROVED: 'Approved reviews ready to land',
+            self.TO_DO: 'Reviews I have to do',
+            self.ARE_DOING: 'Reviews I am doing',
+            self.CAN_DO: 'Reviews requested I can do',
+            self.MINE: 'Reviews I am waiting on',
+            self.OTHER: 'Other reviews I am not actively reviewing',
+            self.WIP: 'Work in progress'}
+        if reviewer is None:
+            # If there is no reviewer, then there will be no TO_DO, ARE_DOING,
+            # CAN_DO or MINE, and we are not in a person context.
+            headings[self.OTHER] = 'Reviews requested or in progress'
+        elif self.user.inTeam(reviewer):
+            # The user is either looking at their own person review page, or a
+            # reviews for a team that they are a member of.  The default
+            # headings are good.
+            pass
+        elif reviewer.is_team:
+            # Looking at a person team page.
+            name = reviewer.displayname
+            headings[self.CAN_DO] = 'Reviews %s can do' % name
+            headings[self.OTHER] = 'Reviews %s is not actively reviewing' % name
         else:
-            return None
+            # A user is looking at someone elses personal review page.
+            name = reviewer.displayname
+            headings[self.TO_DO] = 'Reviews %s has to do' % name
+            headings[self.ARE_DOING] = 'Reviews %s is doing' % name
+            headings[self.CAN_DO] = 'Reviews %s can do' % name
+            headings[self.MINE] = 'Reviews %s is waiting on' % name
+            headings[self.OTHER] = 'Reviews %s is not actively reviewing' % name
+        return headings
 
     @property
     def heading(self):
         return "Active code reviews for %s" % self.context.displayname
+
+    page_title = heading
 
     @property
     def no_proposal_message(self):
@@ -319,34 +344,44 @@ class ActiveReviewsView(BranchMergeProposalListingView):
 class PersonActiveReviewsView(ActiveReviewsView):
     """Branch merge proposals for the person that are needing review."""
 
-    def _getProposals(self):
+    def getProposals(self):
         """See `ActiveReviewsView`."""
-        return list(self.getter.getProposalsForParticipant(
-            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW],
-            self.user))
+        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        own_branches = collection.ownedBy(self.context)
+        own_proposals = collection.getMergeProposals(
+            [BranchMergeProposalStatus.CODE_APPROVED,
+             BranchMergeProposalStatus.NEEDS_REVIEW,
+             BranchMergeProposalStatus.WORK_IN_PROGRESS])
+
+        requested_reviews = collection.getMergeProposalsForReviewer(
+            self.context,
+            [BranchMergeProposalStatus.CODE_APPROVED,
+             BranchMergeProposalStatus.NEEDS_REVIEW])
+
+        return own_proposals.union(requested_reviews)
 
 
 class ProductActiveReviewsView(ActiveReviewsView):
     """Branch merge proposals for the product that are needing review."""
 
-    def _getProposals(self):
+    def getProposals(self):
         """See `ActiveReviewsView`."""
-        return list(self.getter.getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW],
-            self.user))
+        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        collection = collection.inProduct(self.context)
+        proposals = collection.getMergeProposals(
+            [BranchMergeProposalStatus.CODE_APPROVED,
+             BranchMergeProposalStatus.NEEDS_REVIEW,])
+        return proposals
 
 
-class ProductApprovedMergesView(BranchMergeProposalListingView):
-    """Branch merge proposals for the product that have been approved."""
+class ProjectActiveReviewsView(ActiveReviewsView):
+    """Branch merge proposals for the project that are needing review."""
 
-    extra_columns = ['date_reviewed']
-    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
-
-    @property
-    def heading(self):
-        return "Approved merges for %s" % self.context.displayname
-
-    @property
-    def no_proposal_message(self):
-        """Shown when there is no table to show."""
-        return "%s has no approved merges." % self.context.displayname
+    def getProposals(self):
+        """See `ActiveReviewsView`."""
+        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        collection = collection.inProject(self.context)
+        proposals = collection.getMergeProposals(
+            [BranchMergeProposalStatus.CODE_APPROVED,
+             BranchMergeProposalStatus.NEEDS_REVIEW,])
+        return proposals

@@ -911,13 +911,6 @@ class PersonBranchCountMixin:
             [BranchMergeProposalStatus.NEEDS_REVIEW]).count()
 
     @cachedproperty
-    def approved_merge_count(self):
-        """The number of approved proposals for self.person's branches."""
-        return self._getCountCollection().ownedBy(
-            self.person).getMergeProposals(
-            [BranchMergeProposalStatus.CODE_APPROVED]).count()
-
-    @cachedproperty
     def requested_review_count(self):
         """Return the number of review requests for self.person."""
         return self._getCountCollection().getMergeProposalsForReviewer(
@@ -931,7 +924,7 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'approved_merges', 'requested_reviews']
+             'active_reviews', 'requested_reviews']
 
     def owned(self):
         return Link(
@@ -961,11 +954,6 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         else:
             summary = 'Proposals %s has submitted' % self.context.displayname
         return Link('+activereviews', text, summary=summary)
-
-    def approved_merges(self):
-        text = get_plural_text(
-            self.approved_merge_count, 'approved merge', 'approved merges')
-        return Link('+approvedmerges', text)
 
     def addbranch(self):
         if self.user is None:
@@ -1132,26 +1120,7 @@ class PersonProductCodeSummaryView(PersonCodeSummaryView):
         return self.context.person
 
 
-class ProductReviewCountMixin:
-    """A mixin used by the menu and the code index view."""
-
-    def _getProposalCount(self, status):
-        """Return a count of proposals with the specified status."""
-        collection = IBranchCollection(self.context).visibleByUser(self.user)
-        return collection.getMergeProposals([status]).count()
-
-    @cachedproperty
-    def active_review_count(self):
-        """Return the number of active reviews for the user."""
-        return self._getProposalCount(BranchMergeProposalStatus.NEEDS_REVIEW)
-
-    @cachedproperty
-    def approved_merge_count(self):
-        """Return the number of active reviews for the user."""
-        return self._getProposalCount(BranchMergeProposalStatus.CODE_APPROVED)
-
-
-class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
+class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
@@ -1159,7 +1128,6 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
         'branch_add',
         'list_branches',
         'active_reviews',
-        'approved_merges',
         'code_import',
         'branch_visibility',
         ]
@@ -1174,19 +1142,20 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
         summary = 'List the branches for this project'
         return Link('+branches', text, summary, icon='add')
 
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for the user."""
+        collection = IBranchCollection(self.context).visibleByUser(self.user)
+        return collection.getMergeProposals(
+            [BranchMergeProposalStatus.NEEDS_REVIEW,
+             BranchMergeProposalStatus.CODE_APPROVED]).count()
+
     def active_reviews(self):
         if self.active_review_count == 1:
             text = 'pending proposal'
         else:
             text = 'pending proposals'
         return Link('+activereviews', text)
-
-    def approved_merges(self):
-        if self.approved_merge_count == 1:
-            text = 'unmerged proposal'
-        else:
-            text = 'unmerged proposals'
-        return Link('+approvedmerges', text)
 
     @enabled_with_permission('launchpad.Commercial')
     def branch_visibility(self):
@@ -1243,7 +1212,7 @@ class ProductBranchListingView(BranchListingView):
 
 
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin, ProductReviewCountMixin):
+                           ProductDownloadFileMixin):
     """Initial view for products on the code virtual host."""
 
     show_set_development_focus = True
