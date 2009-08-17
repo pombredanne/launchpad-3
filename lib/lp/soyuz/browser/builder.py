@@ -421,3 +421,45 @@ class BuilderEditView(LaunchpadEditFormView):
         return smartquote(
             'Change details for builder "%s"' % self.context.title)
 
+
+class BuilderModeView(LaunchpadEditFormView):
+    """View class for specifically changing builder mode."""
+
+    schema = IBuilder
+
+    field_names = ['manual']
+
+    @action(_('Change'), name='update')
+    def change_details(self, action, data):
+        """Update the builder with the new mode."""
+        builder_was_modified = self.updateContextFromData(data)
+
+        if builder_was_modified:
+            mode_str = "auto"
+            if self.context.manual:
+                mode_str = "manual"
+
+            notification = 'The builder "%s" is now in %s-mode.' % (
+                self.context.title,
+                mode_str,
+                )
+            self.request.response.addNotification(notification)
+
+        return builder_was_modified
+
+    @property
+    def next_url(self):
+        """Redirect back to the builder-index page."""
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """Return the url to which we want to go to if user cancels."""
+        return self.next_url
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return smartquote(
+            'Change the build-mode for builder "%s"' % self.context.title)
+

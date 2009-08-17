@@ -457,14 +457,13 @@
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"
         facet="overview"/>
-    <browser:editform
+    <browser:page
         name="+mode"
         for="lp.soyuz.interfaces.builder.IBuilder"
-        schema="lp.soyuz.interfaces.builder.IBuilder"
-        facet="overview"
-        fields="manual"
+        class="lp.soyuz.browser.builder.BuilderModeView"
         permission="launchpad.Edit"
-        template="../templates/builder-mode.pt"/>
+        template="../templates/builder-mode.pt"
+        facet="overview"/>
     <browser:menus
         classes="
             BuilderSetFacets
