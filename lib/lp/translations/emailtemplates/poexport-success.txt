@@ -11,5 +11,5 @@ them again at
 
   %(request_url)s
 
---
-Automatic message from Launchpad.net — https://launchpad.net/
+-- 
+Automatic message from Launchpad.net.

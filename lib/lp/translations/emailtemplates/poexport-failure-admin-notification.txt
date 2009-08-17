@@ -1,4 +1,4 @@
-Hello admins,
+Hello Launchpad administrators,
 
 Launchpad encountered problems exporting translation files
 requested by %(person)s (%(person_id)s) at
@@ -12,5 +12,5 @@ before this export can proceed.  Here is the error we got:
 
 %(failed_requests)s
 
---
-Automatic message from Launchpad.net — https://launchpad.net/
+-- 
+Automatic message from Launchpad.net.

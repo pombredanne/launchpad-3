@@ -8,5 +8,5 @@ If you want to retry your request, you can do so at
 
   %(request_url)s.
 
---
-Automatic message from Launchpad.net — https://launchpad.net/
+-- 
+Automatic message from Launchpad.net.

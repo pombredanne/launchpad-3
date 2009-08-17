@@ -38,7 +38,7 @@ class ExportResult:
 
     This class has three main attributes:
 
-     - person: A person requesting this export.
+     - person: The person requesting this export.
      - url: The Librarian URL for any successfully exported files.
      - failure: Failure gotten while exporting.
     """
@@ -138,7 +138,9 @@ class ExportResult:
                     potemplate.sourcepackagename)
                 sourcepackages.add(sourcepackage)
             else:
-                pass
+                raise AssertionError(
+                    "Requesting a translation export which belongs to "
+                    "neither a ProductSeries nor a SourcePackage.")
 
         if len(pofiles) == 1 and len(direct_potemplates) == 0:
             # One POFile was requested.
@@ -162,18 +164,21 @@ class ExportResult:
 
         if IPOTemplate.providedBy(export_requested_at):
             if len(sourcepackages) > 0:
-                sp = sourcepackages.pop()
-                if sp.getCurrentTranslationTemplates().count() == 1:
-                    export_requested_at = sp
+                container = sourcepackages.pop()
             elif len(productseries) > 0:
-                ps = productseries.pop()
-                if ps.getCurrentTranslationTemplates().count() == 1:
-                    export_requested_at = ps
+                container = productseries.pop()
+            else:
+                raise AssertionError(
+                    "Requesting a translation export which belongs to "
+                    "neither a ProductSeries nor a SourcePackage.")
+            if container.getCurrentTranslationTemplates().count() == 1:
+                export_requested_at = container
 
         return export_requested_at
 
 
     def _getRequestedExportsNames(self):
+        """Return a list of display names for requested exports."""
         requested_names = []
         for translation_object in self.requested_exports:
             if IPOTemplate.providedBy(translation_object):
@@ -187,7 +192,7 @@ class ExportResult:
     def _getFailureEmailBody(self):
         """Send an email notification about the export failing."""
         template = helpers.get_email_template(
-            'poexport-failure.txt', 'translations').decode('utf-8')
+            'poexport-failure.txt', 'translations')
         return template % {
             'person' : self.person.displayname,
             'request_url' : self.request_url,
@@ -199,7 +204,7 @@ class ExportResult:
         if len(failed_requests) > 0:
             failed_requests_text = 'Failed export request included:\n'
             failed_requests_text += '\n'.join(
-                ['  * ' + request for request in failed_requests])
+                '  * ' + request for request in failed_requests)
         else:
             failed_requests_text = 'There were no export requests.'
         return failed_requests_text
@@ -208,7 +213,7 @@ class ExportResult:
         """Send an email notification about failed export to admins."""
         template = helpers.get_email_template(
             'poexport-failure-admin-notification.txt',
-            'translations').decode('utf-8')
+            'translations')
         failed_requests = self._getFailedRequestsDescription()
         return template % {
             'person' : self.person.displayname,
@@ -222,7 +227,7 @@ class ExportResult:
         """Send an email notification to admins about UnicodeDecodeError."""
         template = helpers.get_email_template(
             'poexport-failure-unicodedecodeerror.txt',
-            'translations').decode('utf-8')
+            'translations')
         failed_requests = self._getFailedRequestsDescription()
         return template % {
             'person' : self.person.displayname,
@@ -234,7 +239,7 @@ class ExportResult:
     def _getSuccessEmailBody(self):
         """Send an email notification about the export working."""
         template = helpers.get_email_template(
-            'poexport-success.txt', 'translations').decode('utf-8')
+            'poexport-success.txt', 'translations')
         return template % {
             'person' : self.person.displayname,
             'download_url' : self.url,
