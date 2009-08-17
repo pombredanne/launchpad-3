@@ -216,6 +216,88 @@ class TestPersonTranslationView(TestCaseWithFactory):
         }
         self.assertEqual(expected_description, description)
 
+    def test_aggregateTranslationTargets(self):
+        # _aggregateTranslationTargets represents a series of POFiles as
+        # a series of target descriptions, aggregating where possible.
+
+        # Trivial case: no POFiles means no targets.
+        self.assertEqual([], self.view._aggregateTranslationTargets([]))
+
+        # Basic case: one POFile yields its product or package.
+        pofile = self.factory.makePOFile(language_code='ca')
+
+        description = self.view._aggregateTranslationTargets([pofile])
+
+        expected_links = self.view._composeReviewLinks([pofile])
+        expected_description = [{
+            'target': pofile.potemplate.productseries.product,
+            'count': 0,
+            'count_wording': "0 strings",
+            'is_product': True,
+            'link': expected_links[0],
+        }]
+        self.assertEqual(expected_description, description)
+
+    def test_aggregateTranslationTargets_product_and_package(self):
+        # _aggregateTranslationTargets keeps a product and a package
+        # separate.
+        product_pofile = self.factory.makePOFile(language_code='th')
+        removeSecurityProxy(product_pofile).unreviewed_count = 1
+
+        package = self.factory.makeSourcePackage()
+        package.distroseries.distribution.official_rosetta = True
+        package_template = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        package_pofile = self.factory.makePOFile(
+            potemplate=package_template, language_code='th')
+        removeSecurityProxy(package_pofile).unreviewed_count = 2
+
+        descriptions = self.view._aggregateTranslationTargets(
+            [product_pofile, package_pofile])
+        links = set(entry['link'] for entry in descriptions)
+
+        expected_links = set(
+            self.view._composeReviewLinks([product_pofile, package_pofile]))
+        self.assertEqual(expected_links, links)
+
+    def test_aggregateTranslationTargets_bundles_productseries(self):
+        # _aggregateTranslationTargets describes POFiles for the same
+        # ProductSeries together.
+        pofile1 = self.factory.makePOFile(language_code='es')
+        series = pofile1.potemplate.productseries
+        template2 = self.factory.makePOTemplate(productseries=series)
+        pofile2 = self.factory.makePOFile(
+            language_code='br', potemplate=template2)
+        
+        description = self.view._aggregateTranslationTargets(
+            [pofile1, pofile2])
+
+        self.assertEqual(1, len(description))
+        self.assertEqual(canonical_url(series), description[0]['link'])
+
+    def test_aggregateTranslationTargets_bundles_package(self):
+        # _aggregateTranslationTargets describes POFiles for the same
+        # ProductSeries together.
+        package = self.factory.makeSourcePackage()
+        package.distroseries.distribution.official_rosetta = True
+        template1 = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        pofile1 = self.factory.makePOFile(
+            language_code='es', potemplate=template1)
+        template2 = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        pofile2 = self.factory.makePOFile(
+            language_code='br', potemplate=template2)
+        
+        description = self.view._aggregateTranslationTargets(
+            [pofile1, pofile2])
+
+        self.assertEqual(1, len(description))
+        self.assertEqual(canonical_url(package), description[0]['link'])
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
