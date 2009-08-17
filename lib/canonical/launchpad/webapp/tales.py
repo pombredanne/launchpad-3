@@ -458,7 +458,25 @@ class ObjectFormatterAPI:
         return self.url()
 
     def traverse(self, name, furtherPath):
-        if name in self.traversable_names:
+        if name.startswith('link:') or name.startswith('url:'):
+            rootsite = name.split(':')[1]
+            extra_path = None
+            if len(furtherPath) > 0:
+                extra_path = '/'.join(reversed(furtherPath))
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
+            if name.startswith('link:'):
+                if rootsite is None:
+                    return self.link(extra_path)
+                else:
+                    return self.link(extra_path, rootsite=rootsite)
+            else:
+                if rootsite is None:
+                    self.url(extra_path)
+                else:
+                    return self.url(extra_path, rootsite=rootsite)
+        elif name in self.traversable_names:
             if len(furtherPath) >= 1:
                 extra_path = '/'.join(reversed(furtherPath))
                 del furtherPath[:]
@@ -472,13 +490,16 @@ class ObjectFormatterAPI:
         else:
             raise TraversalError, name
 
-    def link(self, view_name):
+    def link(self, view_name, rootsite=None):
         """Return an HTML link to the object's page.
 
         The link consists of an icon followed by the object's name.
 
         :param view_name: If not None, the link will point to the page with
             that name on this object.
+        :param rootsite: If not None, return the URL to the page on the
+            specified rootsite.  Note this is available only for subclasses
+            that allow specifying the rootsite.
         """
         raise NotImplementedError(
             "No link implementation for %r, IPathAdapter implementation "
@@ -958,23 +979,6 @@ class PersonFormatterAPI(ObjectFormatterAPI):
     final_traversable_names = {'local-time': 'local_time'}
     final_traversable_names.update(ObjectFormatterAPI.final_traversable_names)
 
-    def traverse(self, name, furtherPath):
-        """Special-case traversal for links with an optional rootsite."""
-        if name.startswith('link:') or name.startswith('url:'):
-            rootsite = name.split(':')[1]
-            extra_path = None
-            if len(furtherPath) > 0:
-                extra_path = '/'.join(reversed(furtherPath))
-            # Remove remaining entries in furtherPath so that traversal
-            # stops here.
-            del furtherPath[:]
-            if name.startswith('link:'):
-                return self.link(extra_path, rootsite=rootsite)
-            else:
-                return self.url(extra_path, rootsite=rootsite)
-        else:
-            return super(PersonFormatterAPI, self).traverse(name, furtherPath)
-
     def local_time(self):
         """Return the local time for this person."""
         time_zone = 'UTC'
@@ -982,12 +986,22 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             time_zone = self._context.time_zone
         return datetime.now(pytz.timezone(time_zone)).strftime('%T %Z')
 
-    def link(self, view_name, rootsite=None):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+    def url(self, view_name=None, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a person is to the mainsite.
+        """
+        return super(PersonFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        Return an HTML link to the person's page containing an icon
+        followed by the person's name. The default URL for a person is to
+        the mainsite.
         """
         person = self._context
-        url = canonical_url(person, rootsite=rootsite, view_name=view_name)
+        url = self.url(view_name, rootsite)
         custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
         if custom_icon is None:
             css_class = ObjectImageDisplayAPI(person).sprite_css()
@@ -1024,12 +1038,16 @@ class TeamFormatterAPI(PersonFormatterAPI):
 
     hidden = u'<hidden>'
 
-    def url(self, view_name=None):
-        """See `ObjectFormatterAPI`."""
+    def url(self, view_name=None, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a team is to the mainsite. None is returned
+        when the user does not have permission to review the team.
+        """
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
             return None
-        return super(TeamFormatterAPI, self).url(view_name)
+        return super(TeamFormatterAPI, self).url(view_name, rootsite)
 
     def api_url(self, context):
         """See `ObjectFormatterAPI`."""
@@ -1038,8 +1056,12 @@ class TeamFormatterAPI(PersonFormatterAPI):
             return None
         return super(TeamFormatterAPI, self).api_url(context)
 
-    def link(self, view_name, rootsite=None):
-        """See `ObjectFormatterAPI`."""
+    def link(self, view_name, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a team is to the mainsite. None is returned
+        when the user does not have permission to review the team.
+        """
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
@@ -1116,7 +1138,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
         """
         return queryAdapter(self._context, IPathAdapter, 'image').sprite_css()
 
-    def link(self, view_name):
+    def link(self, view_name, rootsite=None):
         """Return html including a link, description and icon.
 
         Icon and link are optional, depending on type and permissions.
@@ -1132,7 +1154,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
 
         summary = self._make_link_summary()
         if check_permission(self._link_permission, self._context):
-            url = self.url(view_name)
+            url = self.url(view_name, rootsite)
         else:
             url = ''
         if url:
@@ -1152,33 +1174,40 @@ class PillarFormatterAPI(CustomizableFormatter):
         displayname = self._context.displayname
         return {'displayname': displayname}
 
-    def link(self, view_name):
+    def url(self, view_name=None, rootsite=None):
+        """See `ObjectFormatterAPI`.
+
+        The default URL for a pillar is to the mainsite.
+        """
+        return super(PillarFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='mainsite'):
         """The html to show a link to a Product, Project or distribution.
 
         In the case of Products or Project groups we display the custom
-        icon, if one exists."""
+        icon, if one exists. The default URL for a pillar is to the mainsite.
+        """
 
         html = super(PillarFormatterAPI, self).link(view_name)
         context = self._context
-        if IProduct.providedBy(context) or IProject.providedBy(context):
-            custom_icon = ObjectImageDisplayAPI(
-                context)._get_custom_icon_url()
-            url = canonical_url(context, view_name=view_name)
-            summary = self._make_link_summary()
-            if custom_icon is None:
-                css_class = ObjectImageDisplayAPI(context).sprite_css()
-                html = (u'<a href="%s" class="%s">%s</a>') % (
-                    url, css_class, summary)
-            else:
-                html = (u'<a href="%s" class="bg-image" '
-                         'style="background-image: url(%s)">%s</a>') % (
-                    url, custom_icon, summary)
-            if IProduct.providedBy(context):
-                license_status = context.license_status
-                if license_status != LicenseStatus.OPEN_SOURCE:
-                    html = '<span title="%s">%s (%s)</span>' % (
-                            license_status.description, html,
-                            license_status.title)
+        custom_icon = ObjectImageDisplayAPI(
+            context)._get_custom_icon_url()
+        url = self.url(view_name, rootsite)
+        summary = self._make_link_summary()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(context).sprite_css()
+            html = (u'<a href="%s" class="%s">%s</a>') % (
+                url, css_class, summary)
+        else:
+            html = (u'<a href="%s" class="bg-image" '
+                     'style="background-image: url(%s)">%s</a>') % (
+                url, custom_icon, summary)
+        if IProduct.providedBy(context):
+            license_status = context.license_status
+            if license_status != LicenseStatus.OPEN_SOURCE:
+                html = '<span title="%s">%s (%s)</span>' % (
+                        license_status.description, html,
+                        license_status.title)
         return html
 
 
@@ -1231,7 +1260,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
             html += ')'
         return html % replacements
 
-    def url(self, view_name):
+    def url(self, view_name, rootsite=None):
         """Return the URL to download the file."""
         return self._getDownloadURL(self._context.libraryfile)
 
@@ -1294,7 +1323,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 class PreviewDiffFormatterAPI(ObjectFormatterAPI):
     """Formatter for preview diffs."""
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """Use the url of the librarian file containing the diff.
         """
         librarian_alias = self._context.diff_text
@@ -1423,7 +1452,7 @@ class CodeImportFormatterAPI(CustomizableFormatter):
                 'branch': self._context.branch.bzr_identity,
                }
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """See `ObjectFormatterAPI`."""
         # The url of a code import is the associated branch.
         # This is still here primarily for supporting branch deletion,
@@ -2064,7 +2093,7 @@ class LinkFormatterAPI(ObjectFormatterAPI):
         """Return the default representation of the link."""
         return self._context.render()
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """Return the URL representation of the link."""
         if self._context.enabled:
             return self._context.url

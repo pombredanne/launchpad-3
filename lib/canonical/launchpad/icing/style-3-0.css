@@ -179,7 +179,16 @@ div.columns div.right div.portlet {
 #colophon {
     float: none;
     }
+#globalsearch {
+  float: none;
+  display: auto;
+  font-weight: inherit;
+  margin-right: auto;
+}
 
+#globalsearch input {
+  font-size: inherit;
+}
 
 /* Page layout */
 .yui-d0 {
@@ -195,8 +204,24 @@ div.columns div.right div.portlet {
 .footer {
     clear: both;
     margin-top: 2em;
-    border-top: 1px solid #cdd3dd;
     padding-top: 0.5em;
+    }
+.footer .lp-arcana {
+    background: url(/@@/footer-background.png) top left repeat-x;
+    padding: 0.8em;
+    -moz-border-radius: 3px 3px 0 0;
+    -webkit-border-radius: 3px 3px 0 0;
+    border-radius: 3px 3px 0 0;
+    }
+.footer .lp-arcana img {
+    vertical-align: middle;
+    }
+.footer .lp-arcana .search-icon {
+    background: url(icon-sprites) 100% -191px no-repeat;
+    }
+.footer .colophon {
+    margin: 3em 3em 1em 3em;
+    text-align: center;
     }
 .portlet, .aside {
     clear: both;
@@ -424,7 +449,7 @@ div.location-portlet h1 {
 /* The text of the first tab should align with the heading directly
    above it */
 .location-portlet li:first-child a, .location-portlet li:first-child span {
-    margin-left: -0.5em; 
+    margin-left: -0.5em;
 }
 .location-portlet li a:link, .location-portlet li a:visited {
     color: #000;
