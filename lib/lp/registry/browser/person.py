@@ -2387,10 +2387,12 @@ class PersonVouchersView(LaunchpadFormView):
 
 
 class PersonLanguagesView(LaunchpadFormView):
+    """Edit preferred languages for a person or team."""
     schema = Interface
 
     @property
     def label(self):
+        """The form label."""
         if self.is_current_user:
             return "Your language preferences"
         else:
@@ -2429,6 +2431,7 @@ class PersonLanguagesView(LaunchpadFormView):
 
     @property
     def next_url(self):
+        """Redirect to this url after successfully processing the form."""
         return canonical_url(self.context)
 
     cancel_url = next_url
@@ -3578,6 +3581,7 @@ class PersonEditHomePageView(BasePersonEditView):
 
     @property
     def label(self):
+        """The form label."""
         return 'Change home page for %s' % self.context.displayname
 
     page_title = label

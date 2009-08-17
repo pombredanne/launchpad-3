@@ -171,7 +171,8 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
 
     @property
     def label(self):
-      return 'Edit "%s" team' % self.context.displayname
+        """The form label."""
+        return 'Edit "%s" team' % self.context.displayname
 
     page_title = label
 

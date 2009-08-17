@@ -61,8 +61,9 @@
     <div metal:fill-slot="widgets">
       <input name="redirection_url" type="hidden"
             tal:attributes="value view/getRedirectionURL" />
-      <div class="listbox">
-        <div tal:repeat="language view/visible_checked_languages">
+      <div class="listbox" style="width: 60em;">
+        <div style="width: 32%; float: left;"
+             tal:repeat="language view/visible_checked_languages">
           <label>
             <input type="checkbox" checked="checked"
                   tal:attributes="name language/code;" />
@@ -70,10 +71,11 @@
           </label>
           <hr tal:condition="repeat/language/end" style="margin:0px; height:2px;" />
         </div>
-        <div tal:repeat="language view/visible_unchecked_languages">
+        <div style="width: 32%; float: left;"
+             tal:repeat="language view/visible_unchecked_languages">
           <label>
             <input type="checkbox"
-                  tal:attributes="name language/code;" />
+                   tal:attributes="name language/code;" />
             <span tal:replace="language/englishname">Spanish</span>
           </label>
         </div>
