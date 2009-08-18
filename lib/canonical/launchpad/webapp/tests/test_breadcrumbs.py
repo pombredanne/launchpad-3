@@ -34,11 +34,11 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(TestCaseWithFactory):
         self.package_bug = self.factory.makeBugTask(
             target=self.source_package)
         self.package_bug_url = canonical_url(self.package_bug)
+        self.root = RootObject()
 
     def _getBreadcrumbsURLs(self, url, traversed_objects):
         request = make_fake_request(url, traversed_objects)
-        hierarchy = getMultiAdapter(
-            (RootObject(), request), name='+hierarchy')
+        hierarchy = getMultiAdapter((self.root, request), name='+hierarchy')
         return [crumb.url for crumb in hierarchy.items()]
 
     def test_root_on_mainsite(self):

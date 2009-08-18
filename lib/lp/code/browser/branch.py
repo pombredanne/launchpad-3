@@ -117,6 +117,7 @@ class BranchURL:
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
+    @property
     def objects(self):
         """See `Hierarchy`."""
         return IHasBranchTarget(self.context).target.components
