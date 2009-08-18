@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'IRegistryCollectionNavigationMenu',
+    'RegistryCollectionActionMenuBase',
     'RegistryCollectionNavigationMenu',
     'TopLevelMenuMixin',
     ]
@@ -49,7 +50,7 @@ class TopLevelMenuMixin:
     def create_account(self):
         text = 'Create an account'
         # Only enable this link for anonymous users.
-        enabled = self.context.user is None
+        enabled = self.user is None
         return Link('/people/+login', text, icon='add', enabled=enabled)
 
     def request_merge(self):
@@ -78,7 +79,7 @@ class IRegistryCollectionNavigationMenu(Interface):
 
 
 class RegistryCollectionNavigationMenu(NavigationMenu, TopLevelMenuMixin):
-    """Navigation menu for people search."""
+    """Navigation menu for top level registry collections."""
 
     usedfor = IRegistryCollectionNavigationMenu
     facet = 'overview'
@@ -89,10 +90,16 @@ class RegistryCollectionNavigationMenu(NavigationMenu, TopLevelMenuMixin):
         'distributions',
         'people',
         'meetings',
-        'register_team',
-        'register_project',
-        'create_account',
-        'request_merge',
-        'admin_merge_people',
-        'admin_merge_teams'
         ]
+
+
+class RegistryCollectionActionMenuBase(NavigationMenu, TopLevelMenuMixin):
+    """Action menu for top level registry collections.
+
+    Because of the way menus work, you need to subclass this menu class and
+    set the `usedfor` attribute on the subclass.  `usedfor` should point to
+    the interface of the context object, so we can't do that for you.
+    """
+    facet = 'overview'
+    links = ['register_team', 'register_project', 'create_account',
+             'request_merge', 'admin_merge_people', 'admin_merge_teams']

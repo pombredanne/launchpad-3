@@ -200,7 +200,8 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, TopLevelMenuMixin)
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase,
+    TopLevelMenuMixin)
 from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
@@ -1334,6 +1335,11 @@ class TeamMembershipView(LaunchpadView):
     @property
     def have_pending_members(self):
         return self.proposed_memberships or self.invited_memberships
+
+
+class PersonSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for `PeopleSearchView`."""
+    usedfor = IPersonSet
 
 
 class PeopleSearchView(LaunchpadView):
