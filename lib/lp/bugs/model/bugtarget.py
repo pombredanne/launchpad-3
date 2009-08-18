@@ -162,7 +162,6 @@ class HasBugsBase:
             statuses = BugTaskStatus.items
         statuses = list(statuses)
 
-        from_tables = ['BugTask', 'Bug']
         count_column = """
             COUNT (CASE WHEN BugTask.status = %s
                         THEN BugTask.id ELSE NULL END)"""

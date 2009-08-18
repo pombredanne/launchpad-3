@@ -463,7 +463,6 @@ class FileBugViewBase(LaunchpadFormView):
         security_related = data.get("security_related", False)
         distribution = data.get(
             "distribution", getUtility(ILaunchBag).distribution)
-        product = getUtility(ILaunchBag).product
 
         context = self.context
         if distribution is not None:
@@ -1072,7 +1071,7 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
         """See FileBugViewBase."""
         try:
             bugtarget = self.widgets['bugtarget'].getInputValue()
-        except InputErrors, error:
+        except InputErrors:
             return None
         if IDistributionSourcePackage.providedBy(bugtarget):
             return bugtarget.distribution
