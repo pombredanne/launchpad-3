@@ -21,7 +21,7 @@
       There are currently <tal:count tal:replace="view/number_of_people" />
       people and <tal:count tal:replace="view/number_of_teams" /> teams
       registered in Launchpad.
-      <tal:block define="batch view/searchPeopleBatchNavigator">
+      <tal:search define="batch view/searchPeopleBatchNavigator">
         <div>
           <form class="central" name="search" action="." method="GET">
             <table style="margin-bottom: 1em;">
@@ -127,11 +127,11 @@
             the duplicate profiles.</p>
           </div>
         </tal:block>
-        <tal:block condition="batch">
-          <tal:block condition="batch/has_multiple_pages">
+        <tal:batch tal:condition="batch">
+          <tal:multipage tal:condition="batch/has_multiple_pages">
             <tal:navigation
              replace="structure batch/@@+navigation-links-upper"/>
-          </tal:block>
+          </tal:multipage>
           <table class="listing">
             <thead>
               <tr>
@@ -150,12 +150,12 @@
               </tr>
             </tbody>
           </table>
-          <tal:block condition="batch/has_multiple_pages">
+          <tal:multipage condition="batch/has_multiple_pages">
             <tal:navigation
              replace="structure batch/@@+navigation-links-upper"/>
-          </tal:block>
-        </tal:block>
-      </tal:block>
+          </tal:multipage>
+        </tal:batch>
+      </tal:search>
     </div>
   </body>
 </html>
