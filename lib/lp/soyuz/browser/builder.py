@@ -21,6 +21,7 @@ __all__ = [
 
 import datetime
 import operator
+import os
 import pytz
 
 from zope.component import getUtility
@@ -300,6 +301,12 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
     @property
     def page_title(self):
         """Return a relevant page title for this view."""
+        template_base = os.path.basename(self.template.filename)
+
+        if 'builder-history' in template_base:
+            return smartquote(
+                'Build history for "%s"' % self.context.title)
+
         return smartquote(
             'Builder "%s"' % self.context.title)
 
