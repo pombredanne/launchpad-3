@@ -1363,8 +1363,7 @@ class PeopleSearchView(LaunchpadView):
     implements(IPeopleSearchNavigationMenu)
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(PeopleSearchView, self).__init__(context, request)
         self.results = []
 
     @property
