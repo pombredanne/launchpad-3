@@ -454,15 +454,6 @@
         facet="overview"
         permission="launchpad.ProjectReview"
         template="../templates/project-add.pt"/>
-    <browser:pages
-        for="lp.registry.interfaces.project.IProjectSet"
-        facet="overview"
-        class="lp.registry.browser.project.ProjectSetView"
-        permission="launchpad.ProjectReview">
-        <browser:page
-            name="+review"
-            template="../templates/registry-review.pt"/>
-    </browser:pages>
     <browser:url
         for="lp.registry.interfaces.project.IProjectSeries"
         path_expression="string:+series/${name}"
@@ -580,7 +571,7 @@
             for="lp.registry.interfaces.karma.IKarmaAction"
             class="lp.registry.browser.karma.KarmaActionEditView"
             permission="launchpad.Admin"
-            template="../templates/karmaaction-edit.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:url
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             path_expression="string:karmaaction"

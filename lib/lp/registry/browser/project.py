@@ -478,6 +478,7 @@ class ProjectAddProductView(ProductAddView):
 class ProjectSetView(LaunchpadView):
 
     header = "Project groups registered in Launchpad"
+    page_title = header
 
     def __init__(self, context, request):
         super(ProjectSetView, self).__init__(context, request)

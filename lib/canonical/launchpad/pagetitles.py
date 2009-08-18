@@ -628,8 +628,6 @@ hwdb_submit_hardware_data = (
 
 karmaaction_index = 'Karma actions'
 
-karmaaction_edit = 'Edit karma action'
-
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
 
 language_index = ContextDisplayName("%s in Launchpad")
@@ -728,8 +726,6 @@ logintoken_validategpg = 'Confirm OpenPGP key'
 logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
 logintoken_validateteamemail = 'Confirm e-mail address'
-
-mailinglists_review = 'Pending mailing lists requests'
 
 # main_template has the code to insert one of these titles.
 
@@ -1156,8 +1152,6 @@ products_all = 'Upstream projects registered in Launchpad'
 
 projects_all = 'Project groups registered in Launchpad'
 
-registry_review = 'Review Launchpad items'
-
 related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
@@ -1222,8 +1216,6 @@ def questiontarget_createfaq(context, view):
     return "Create a FAQ for %s" % context.displayname
 
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
-
-securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
 series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
@@ -1290,8 +1282,6 @@ sourcepackage_export = ContextTitle('Download translations for %s')
 def sourcepackage_index(context, view):
     """Return the page title for a source package in a distroseries."""
     return '%s source packages' % context.distroseries.title
-
-sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 
