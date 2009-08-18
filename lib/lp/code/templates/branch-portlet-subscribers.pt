@@ -31,7 +31,7 @@
     </div>
 
     <div>
-      <h2>Default Review Team</h2>
+      <h2>Review Team</h2>
       <dl>
         <dt>
           <tal:owner tal:replace="structure context/code_reviewer/fmt:link" />

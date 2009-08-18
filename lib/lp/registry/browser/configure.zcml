@@ -113,14 +113,14 @@
         name="+edit"
         class="lp.registry.browser.distroseries.DistroSeriesEditView"
         facet="overview"
-        template="../templates/distroseries-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Admin"
         name="+admin"
         class="lp.registry.browser.distroseries.DistroSeriesAdminView"
         facet="overview"
-        template="../templates/distroseries-admin.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+addmilestone"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -128,13 +128,6 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/milestone-add.pt"/>
-    <browser:page
-        name="+addport"
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.DistroArchSeriesAddView"
-        facet="overview"
-        permission="launchpad.Admin"
-        template="../templates/distroseries-addport.pt"/>
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -154,19 +147,17 @@
             classes="
                 CodeOfConductContextMenu
                 CodeOfConductSetContextMenu
-                SignedCodeOfConductContextMenu
-                SignedCodeOfConductSetContextMenu"/>
+                SignedCodeOfConductOverviewMenu
+                SignedCodeOfConductSetOverviewMenu"/>
         <browser:defaultView
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
             name="+index"/>
-        <browser:pages
+        <browser:page
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
             class="lp.registry.browser.codeofconduct.CodeOfConductView"
-            permission="zope.Public">
-            <browser:page
-                template="../templates/codeofconduct-index.pt"
-                name="+index"/>
-        </browser:pages>
+            permission="zope.Public"
+            template="../templates/codeofconduct-index.pt"
+            name="+index"/>
         <browser:page
             name="+download"
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
@@ -178,8 +169,7 @@
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductAddView"
             permission="launchpad.AnyPerson"
-            template="../templates/signedcodeofconduct-add.pt">
-                </browser:page>
+            template="../templates/signedcodeofconduct-add.pt"/>
         <browser:url
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             path_expression="string:codeofconduct"
@@ -246,14 +236,12 @@
         <browser:defaultView
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"
             name="+index"/>
-        <browser:pages
+        <browser:page
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductAdminView"
-            permission="launchpad.Admin">
-            <browser:page
-                template="../templates/codeofconduct-admin.pt"
-                name="+index"/>
-        </browser:pages>
+            permission="launchpad.Admin"
+            template="../templates/codeofconduct-admin.pt"
+            name="+index"/>
         <browser:addform
             name="+new"
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"
@@ -454,15 +442,6 @@
         facet="overview"
         permission="launchpad.ProjectReview"
         template="../templates/project-add.pt"/>
-    <browser:pages
-        for="lp.registry.interfaces.project.IProjectSet"
-        facet="overview"
-        class="lp.registry.browser.project.ProjectSetView"
-        permission="launchpad.ProjectReview">
-        <browser:page
-            name="+review"
-            template="../templates/registry-review.pt"/>
-    </browser:pages>
     <browser:url
         for="lp.registry.interfaces.project.IProjectSeries"
         path_expression="string:+series/${name}"
@@ -480,8 +459,11 @@
     <browser:menus
         classes="
             ProjectFacets
+            ProjectActionMenu
+            ProjectEditNavigationMenu
             ProjectOverviewMenu
             ProjectBountiesMenu
+            ProjectBugsMenu
             ProjectSeriesSpecificationsMenu
             ProjectSpecificationsMenu
             ProjectSetContextMenu
@@ -519,7 +501,7 @@
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageEditView"
         name="+edit"
         facet="overview"
-        template="../templates/distributionsourcepackage-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:pages
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="canonical.launchpad.webapp.publisher.LaunchpadView"
@@ -558,7 +540,7 @@
         template="../templates/pillar-listing-simple.pt"/>
     <browser:page
         name="+get-involved"
-        for="lp.registry.interfaces.pillar.IPillar"
+        for="*"
         class="lp.registry.browser.pillar.PillarView"
         facet="overview"
         permission="zope.Public"
@@ -577,7 +559,7 @@
             for="lp.registry.interfaces.karma.IKarmaAction"
             class="lp.registry.browser.karma.KarmaActionEditView"
             permission="launchpad.Admin"
-            template="../templates/karmaaction-edit.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:url
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             path_expression="string:karmaaction"
@@ -1619,6 +1601,7 @@
             ProductSetFacets
             ProductSetContextMenu
             ProductNavigationMenu
+            ProductActionNavigationMenu
             ProductEditNavigationMenu"
         module="lp.registry.browser.product"/>
     <browser:page
@@ -1688,14 +1671,17 @@
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"/>
     </browser:pages>
+    <browser:page
+        name="+ubuntupkg"
+        facet="overview"
+        template="../templates/productseries-ubuntupkg.pt"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesUbuntuPackagingView"
+        permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
         permission="zope.Public">
-        <browser:page
-            name="+ubuntupkg"
-            facet="overview"
-            template="../templates/productseries-ubuntupkg.pt"/>
         <browser:page
             name="+status"
             facet="overview"
@@ -1760,13 +1746,6 @@
         facet="overview"
         permission="launchpad.Admin"
         template="../templates/productseries-review.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+link-translations-branch"
-        class="lp.registry.browser.productseries.LinkTranslationsBranchView"
-        template="../templates/productseries-link-translations-branch.pt"
-        facet="translations"
-        permission="launchpad.Edit"/>
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -1946,8 +1925,18 @@
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../templates/distroseries-add.pt">
+        template="../../app/templates/generic-edit.pt">
     </browser:page>
+
+    <browser:page
+        name="+addseries"
+        for="lp.registry.interfaces.distribution.IDerivativeDistribution"
+        class="lp.registry.browser.distroseries.DistroSeriesAddView"
+        facet="overview"
+        permission="launchpad.Append"
+        template="../../app/templates/generic-edit.pt">
+    </browser:page>
+
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"

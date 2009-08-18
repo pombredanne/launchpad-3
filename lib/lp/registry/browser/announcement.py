@@ -291,6 +291,11 @@ class HasAnnouncementsView(LaunchpadView, FeedsMixin):
                     limit=5, published_only=published_only)
 
     @cachedproperty
+    def show_announcements(self):
+        return (self.latest_announcements.count() > 0
+            or check_permission('launchpad.Edit', self.context))
+
+    @cachedproperty
     def announcement_nav(self):
         return BatchNavigator(
             self.announcements, self.request,
