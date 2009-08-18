@@ -447,13 +447,6 @@
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"
         facet="overview"/>
-    <browser:page
-        name="+mode"
-        for="lp.soyuz.interfaces.builder.IBuilder"
-        class="lp.soyuz.browser.builder.BuilderModeView"
-        permission="launchpad.Edit"
-        template="../templates/builder-mode.pt"
-        facet="overview"/>
     <browser:menus
         classes="
             BuilderSetFacets

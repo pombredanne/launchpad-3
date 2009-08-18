@@ -145,6 +145,11 @@ He can see now, in the details portlet that the builder is in manual-mode.
     auto-build system. Switch to auto-mode
 
 And a relevant notification is displayed after the mode toggle.
+
+    >>> messages = get_feedback_messages(cprov_browser.contents)
+    >>> print messages
+    [u'The builder "Bob The Builder" was updated successfully.']
+
 Via the 'edit' form Celso can also modify the 'builderok',
 'failure_notes', 'virtualized' and 'virtual machine' fields. All the
 consequences of those modifications are covered in the buildd-admin
@@ -157,6 +162,13 @@ case is to bring the builder back to work.
     >>> cprov_browser.getControl(name="field.builderok").value = True
     >>> cprov_browser.getControl(name="field.manual").value = False
     >>> cprov_browser.getControl("Change").click()
+
+Changing the details via the Change details page also generates a
+notification.
+
+    >>> messages = get_feedback_messages(cprov_browser.contents)
+    >>> print messages
+    [u'The builder "Bob The Builder" was updated successfully.']
 
 
 == Marking a builder as inactive ==
@@ -208,24 +220,23 @@ But Celso can access the deactivated builder via its URL.
 
 == Actions permissions ==
 
-Normal users, such as No Privileges Person are not shown links, nor
-can he access the pages by directly via URL.
+Normal users, such as No Privileges Person are not shown the
+Change details link.
 
     >>> user_browser.open("http://localhost/+builds/bob")
     >>> user_browser.getLink('Change details')
     Traceback (most recent call last):
     LinkNotFoundError
 
+Nor is the toggle mode control included on the index page.
+
     >>> user_browser.getControl(name="field.actions.update")
     Traceback (most recent call last):
     LookupError: name 'field.actions.update'
 
-    >>> user_browser.open("http://localhost/+builds/bob/+edit")
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
+Nor can they access the edit page directly via URL.
 
-    >>> user_browser.open("http://localhost/+builds/bob/+mode")
+    >>> user_browser.open("http://localhost/+builds/bob/+edit")
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -246,8 +257,4 @@ The same is true for the anonymous user:
     ...
     Unauthorized: ...
 
-    >>> anon_browser.open("http://localhost/+builds/bob/+mode")
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...
 

@@ -46,49 +46,16 @@ mock_form:
     5
 
 
-== Builder mode ==
+== Builder edit ==
 
-Let's instantiate the view for +mode:
+Let's instantiate the view for +edit and check that the correct title,
+fields and actions are displayed:
 
 This page requires launchpad.Edit permission and the builder is owned
 by mark. we nee to log in as mark or any other member of admin team
 
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
-
-Before the request, the builder is not in manual mode.
-
-    >>> builder.manual
-    False
-
-Build an special request containing the fields we want to change:
-
-    >>> builder_view = create_initialized_view(
-    ...     builder, name="+mode", method="POST", form={
-    ...         'field.manual': 'on',
-    ...         'field.actions.update': 'Update',
-    ...         })
-
-We've changed the builder mode to MANUAL
-
-    >>> builder.manual
-    True
-
-The view redirects back to the builder index page with an appropriate
-notification.
-
-    >>> print builder_view.next_url
-    http://launchpad.dev/builders/bob
-
-    >>> for notification in builder_view.request.notifications:
-    ...     print notification.message
-    The builder "Bob The Builder" is now in manual-mode.
-
-
-== Builder edit ==
-
-Let's instantiate the view for +edit and check that the correct title,
-fields and actions are displayed:
 
     >>> builder_view = create_initialized_view(builder, name="+edit")
     >>> builder_view.page_title
@@ -129,18 +96,18 @@ builder.
     ...         builder.vm_host,
     ...         )
     >>> print_builder_info(builder)
-    bob: manual=True, vm_host=None.
+    bob: manual=False, vm_host=None.
 
     >>> builder_view = create_initialized_view(
     ...     builder, name="+edit", method="POST", form={
     ...         'field.name': u'biscoito',
-    ...         'field.manual': '',
+    ...         'field.manual': 'on',
     ...         'field.vm_host': 'foobar-host.ppa',
-    ...         'field.actions.update': 'Update',
+    ...         'field.actions.update': 'Change',
     ...         })
 
     >>> print_builder_info(builder)
-    biscoito: manual=False, vm_host=foobar-host.ppa.
+    biscoito: manual=True, vm_host=foobar-host.ppa.
 
 After editing a builder, a relevant notification is added to the view.
 

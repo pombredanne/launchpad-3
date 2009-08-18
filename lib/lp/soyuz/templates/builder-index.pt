@@ -88,7 +88,7 @@
               <tal:auto condition="not: context/manual">This builder is in
                 auto-mode and accepting jobs from the auto-build system.
               </tal:auto>
-              <form tal:attributes="action view/menu:overview/mode/fmt:url"
+              <form tal:attributes="action view/menu:overview/edit/fmt:url"
                     tal:condition="view/menu:overview/mode/enabled"
                     method="post" style="display:inline">
                 <input type="hidden" value="" name="field.manual.used"
