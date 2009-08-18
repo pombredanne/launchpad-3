@@ -52,30 +52,6 @@
             </div>
           </div>
         </div>
-        <tal:most-common-bugs condition="view/most_common_bugs">
-          <div class="portlet">
-            <h2 id="frequent-bugs">Most frequently reported bugs</h2>
-            <table class="listing" id="most-common-bugs">
-              <thead>
-                <tr><th colspan="2">Summary</th></tr>
-              </thead>
-              <tbody>
-                <tr tal:repeat="bug view/most_common_bugs"
-                    tal:attributes="title bug/description/fmt:shorten/150"
-                    title="bug description goes here">
-                  <td class="amount" tal:content="bug/id" width="10%">1</td>
-                  <td>
-                    <a href="#"
-                       tal:content="bug/title"
-                       tal:attributes="href bug/fmt:url">
-                      Firefox doesn't work
-                    </a>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </tal:most-common-bugs>
       </tal:uses-malone>
 
     </div>
