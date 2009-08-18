@@ -1,4 +1,5 @@
-= Linking a product series to a branch =
+Linking a product series to a branch
+====================================
 
 To make it a bit more obvious to the newer Launchpad user,
 there is an action item for product series to link to an existing

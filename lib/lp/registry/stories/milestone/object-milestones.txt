@@ -88,7 +88,9 @@ including the inactive ones. They do not include the bug and blueprint counts
 
 === Projects ===
 
-The main project page has a portlet "Active milestones":
+The project "All milestones" page lists all milestones for all products and
+series, including the inactive ones. They do not include the bug and blueprint
+counts (because they are costly to retrieve).
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from lp.registry.tests.test_project_milestone import (
@@ -98,15 +100,6 @@ The main project page has a portlet "Active milestones":
     >>> test_helper.setUpProjectMilestoneTests()
     >>> logout()
     >>> anon_browser.open('http://launchpad.dev/gnome')
-    >>> print milestones_in_portlet(anon_browser)
-    2011-04-01  1.2
-    2010-04-02  1.1.
-    2010-04-01  1.1
-
-The project "All milestones" page lists all milestones for all products and
-series, including the inactive ones. They do not include the bug and blueprint
-counts (because they are costly to retrieve).
-
     >>> anon_browser.getLink('See all milestones').click()
     >>> print all_milestones(anon_browser)
     GNOME 2.1.6  None        This is an inactive milestone
@@ -211,13 +204,13 @@ To make it easy to refer to the bugs, we'll give each bug a nickname:
 
     >>> bug_1_nickname = 'test-bug-1'
     >>> browser.open(bug_1_url)
-    >>> browser.getLink('Update description').click()
+    >>> browser.getLink(url='+edit').click()
     >>> browser.getControl('Nickname').value = bug_1_nickname
     >>> browser.getControl('Change').click()
 
     >>> bug_2_nickname = 'test-bug-2'
     >>> browser.open(bug_2_url)
-    >>> browser.getLink('Update description').click()
+    >>> browser.getLink(url='+edit').click()
     >>> browser.getControl('Nickname').value = bug_2_nickname
     >>> browser.getControl('Change').click()
 

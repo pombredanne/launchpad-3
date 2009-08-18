@@ -575,7 +575,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
                    private=False, stacked_on=None, sourcepackage=None,
-                   **optional_branch_args):
+                   reviewer=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for `IBranchNamespace.createBranch` can be specified to
@@ -625,6 +625,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
+        if reviewer is not None:
+            removeSecurityProxy(branch).reviewer = reviewer
         return branch
 
     def makePackageBranch(self, sourcepackage=None, distroseries=None,
@@ -750,16 +752,19 @@ class LaunchpadObjectFactory(ObjectFactory):
                                 product=None, review_diff=None,
                                 initial_comment=None, source_branch=None):
         """Create a proposal to merge based on anonymous branches."""
-        if product is not None:
-            target = IBranchTarget(product)
-        elif target_branch is not None:
+        if target_branch is not None:
             target = target_branch.target
         elif source_branch is not None:
             target = source_branch.target
         elif dependent_branch is not None:
             target = dependent_branch.target
         else:
-            target = IBranchTarget(self.makeProduct())
+            # Create a target product branch, and use that target.  This is
+            # needed to make sure we get a branch target that has the needed
+            # security proxy.
+            target_branch = self.makeProductBranch(product)
+            target = target_branch.target
+
         if target_branch is None:
             target_branch = self.makeBranchTargetBranch(target)
         if source_branch is None:

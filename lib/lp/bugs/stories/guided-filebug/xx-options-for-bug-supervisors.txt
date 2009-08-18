@@ -75,4 +75,5 @@ assignee, and the bug will be filed with those choices.
     Triaged
     High
     Andrew Bennetts
+    ...
     1.0
