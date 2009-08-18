@@ -392,3 +392,7 @@ class BuilderEditView(LaunchpadEditFormView):
         return smartquote(
             'Change details for builder "%s"' % self.context.title)
 
+    @property
+    def label(self):
+        """The form label should be the same as the pagetitle."""
+        return self.page_title
