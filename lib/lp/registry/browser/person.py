@@ -199,7 +199,7 @@ from lp.blueprints.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
     enabled_with_active_mailing_list)
-from lp.registry.browser.menu import TopLevelContextMenuMixin
+from lp.registry.browser.menu import TopLevelMenuMixin
 from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
@@ -629,7 +629,7 @@ class PersonSetNavigation(Navigation):
             canonical_url(me, request=self.request), status=303)
 
 
-class PersonSetContextMenu(ContextMenu, TopLevelContextMenuMixin):
+class PersonSetContextMenu(ContextMenu, TopLevelMenuMixin):
 
     usedfor = IPersonSet
 
@@ -1335,23 +1335,32 @@ class TeamMembershipView(LaunchpadView):
         return self.proposed_memberships or self.invited_memberships
 
 
-class IPeopleSearchMenu(Interface):
-    """Marker class for people search menu."""
+class IPeopleSearchNavigationMenu(Interface):
+    """Marker interface for people search navigation menu."""
 
 
-class PeopleSearchMenu(NavigationMenu, TopLevelContextMenuMixin):
+class PeopleSearchNavigationMenu(NavigationMenu, TopLevelMenuMixin):
     """Navigation menu for people search."""
 
-    usedfor = IPeopleSearchMenu
+    usedfor = IPeopleSearchNavigationMenu
     facet = 'overview'
 
-    links = ['products', 'distributions', 'people', 'meetings']
+    links = ['products', 'distributions', 'people', 'meetings',
+             'register_team', 'register_project']
+
+    def initialize(self):
+        """See `MenuBase`."""
+        if self.context.user is None:
+            # Make a copy of the links so as not to permanently mutate the
+            # class attribute.
+            self.links = PeopleSearchNavigationMenu.links[:]
+            self.links.append('create_account')
 
 
 class PeopleSearchView(LaunchpadView):
     """Search for people and teams on the /people page."""
 
-    implements(IPeopleSearchMenu)
+    implements(IPeopleSearchNavigationMenu)
 
     def __init__(self, context, request):
         self.context = context

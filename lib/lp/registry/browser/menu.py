@@ -5,27 +5,27 @@
 
 __metaclass__ = type
 __all__ = [
-    'TopLevelContextMenuMixin',
+    'TopLevelMenuMixin',
     ]
 
 
-from canonical.launchpad.webapp import Link
+from canonical.launchpad.webapp.menu import Link
 
 
-class TopLevelContextMenuMixin:
-    """Context menu shared by top level collection objects."""
+class TopLevelMenuMixin:
+    """Menu shared by top level collection objects."""
 
     def products(self):
-        return Link('/projects/', 'View projects')
+        return Link('/projects/', 'View projects', icon='info')
 
     def distributions(self):
-        return Link('/distros/', 'View distributions')
+        return Link('/distros/', 'View distributions', icon='info')
 
     def people(self):
-        return Link('/people/', 'View people')
+        return Link('/people/', 'View people', icon='info')
 
     def meetings(self):
-        return Link('/sprints/', 'View meetings')
+        return Link('/sprints/', 'View meetings', icon='info')
 
     def register_project(self):
         text = 'Register a project'
@@ -34,3 +34,7 @@ class TopLevelContextMenuMixin:
     def register_team(self):
         text = 'Register a team'
         return Link('/people/+newteam', text, icon='add')
+
+    def create_account(self):
+        text = 'Create an account'
+        return Link('/people/+login', text, icon='add')

@@ -82,7 +82,7 @@ from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from lp.registry.browser.distribution import UsesLaunchpadMixin
-from lp.registry.browser.menu import TopLevelContextMenuMixin
+from lp.registry.browser.menu import TopLevelMenuMixin
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
@@ -547,7 +547,7 @@ class ProductSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview']
 
 
-class ProductSetContextMenu(ContextMenu, TopLevelContextMenuMixin):
+class ProductSetContextMenu(ContextMenu, TopLevelMenuMixin):
 
     usedfor = IProductSet
 
