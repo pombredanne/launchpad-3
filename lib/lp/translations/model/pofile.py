@@ -564,9 +564,8 @@ class POFile(SQLBase, POFileMixIn):
                     text = u''
                 else:
                     # Strip existing Launchpad contribution lists.
-                    # See bug #392154 for details.
                     header_index = text.find(LP_CREDIT_HEADER)
-                    if (header_index > -1):
+                    if header_index != -1:
                         text = text[:header_index]
                     else:
                         text += u'\n\n'
