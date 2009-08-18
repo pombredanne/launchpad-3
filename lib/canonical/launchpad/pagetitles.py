@@ -449,17 +449,9 @@ debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
 
-distributionmirror_delete = ContextTitle('Delete mirror %s')
-
-distributionmirror_edit = ContextTitle('Edit mirror %s')
-
 distributionmirror_index = ContextTitle('Mirror %s')
 
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
-
-distributionmirror_review = ContextTitle('Review mirror %s')
-
-distribution_add = 'Register a new distribution'
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
@@ -467,24 +459,14 @@ distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
-distribution_change_mirror_admin = 'Change mirror administrator'
-
 distribution_cvereport = ContextTitle('CVE reports for %s')
-
-distribution_edit = 'Change distribution details'
-# We don't mention its name here, because that might be what you're changing.
 
 distribution_language_pack_admin = ContextTitle(
     'Change the language pack administrator for %s')
 
 distribution_members = ContextTitle('%s distribution members')
 
-distribution_memberteam = ContextTitle(
-    smartquote("Change %s's distribution team"))
-
 distribution_mirrors = ContextTitle("Mirrors of %s")
-
-distribution_newmirror = ContextTitle("Register a new mirror for %s")
 
 distribution_series = ContextTitle("%s version history")
 
@@ -504,8 +486,6 @@ distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
-
-distributionsourcepackage_edit = ContextTitle("Edit details of %s")
 
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
@@ -528,19 +508,9 @@ distroarchseriesbinarypackage_index = ContextTitle('%s')
 
 distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
-def distroseries_add(context, view):
-    """Return the page title to change the driver."""
-    return view.page_title
-
-distroseries_addport = ContextTitle('Add a port of %s')
-
-distroseries_admin = ContextTitle('Administer %s')
-
 distroseries_bugs = ContextTitle('Bugs in %s')
 
 distroseries_cvereport = ContextDisplayName('CVE report for %s')
-
-distroseries_edit = ContextTitle('Edit details of %s')
 
 def distroseries_index(context, view):
     """Return the distribution and version page title."""
