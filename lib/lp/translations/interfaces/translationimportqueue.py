@@ -457,7 +457,7 @@ class IEditTranslationImportQueueEntry(Interface):
     file_type = Choice(
         title=_("File Type"),
         description=_(
-            "The type of the file being imported imported."),
+            "The type of the file being imported."),
         required=True,
         vocabulary = TranslationFileType)
 

@@ -105,7 +105,6 @@ status is returned.
 
 >>> check("/projectgroups", auth=True)
 >>> check("/projectgroups/+all", auth=True)
->>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
@@ -433,7 +432,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/builders/bob/")
 >>> check_redirect("/+builds", status=301)
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
->>> check("/ubuntu/+source/pmount/0.1-1/+build/7/pmount/")
 
 >>> check_redirect("/support/", status=301)
 

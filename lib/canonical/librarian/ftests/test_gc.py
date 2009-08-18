@@ -96,7 +96,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Connect to the database as a user with file upload privileges,
         # in this case the PostgreSQL default user who happens to be an
         # administrator on launchpad development boxes.
-        self.layer.switchDbUser(dbuser='launchpad')
+        self.layer.switchDbUser(dbuser='testadmin')
         ztm = self.layer.txn
 
         ztm.begin()
@@ -123,6 +123,8 @@ class TestLibrarianGarbageCollection(TestCase):
         f2.last_accessed = past
         f1.date_created = past
         f2.date_created = past
+        f1.content.datecreated = past
+        f2.content.datecreated = past
 
         del f1, f2
 

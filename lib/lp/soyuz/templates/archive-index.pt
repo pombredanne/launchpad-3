@@ -182,7 +182,8 @@ tr#package-counters p{
                 </p>
             </td>
           </tr>
-          <tr id="archive-dependencies" tal:condition="archive_active">
+          <tr id="archive-dependencies"
+              tal:condition="view/show_dependencies">
             <th>Build dependencies:</th>
             <td>
               <ul>
