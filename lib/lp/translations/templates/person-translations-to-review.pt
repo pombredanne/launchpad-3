@@ -16,8 +16,35 @@
         These translations are available to be reviewed by
         <tal:person replace="structure context/fmt:link">R. Viewer</tal:person>:
       </p>
-      <metal:translations-to-review
-        tal:replace="structure context/@@+translations-to-review-table" />
+
+      <table class="listing" id="translations-to-review-table">
+        <tr tal:repeat="target_info view/all_projects_and_packages_to_review">
+          <td>
+            <tal:product condition="target_info/is_product"
+                         replace="structure target_info/target/fmt:link">
+              alsa-utils
+            </tal:product>
+            <tal:package condition="not: target_info/is_product">
+              <a tal:attributes="href target_info/target/fmt:url">
+                <img src="/@@/distribution" />
+                <tal:packagename replace="target_info/target/name">
+                  alsa-utils
+                </tal:packagename>
+              </a>
+            </tal:package>
+          </td>
+          <td>
+            needs
+            <a tal:attributes="href target_info/link">
+              <tal:stringcount replace="target_info/count_wording">
+                1 string
+              </tal:stringcount>
+              reviewed
+            </a>
+          </td>
+        </tr>
+      </table>
+
     </tal:work-to-do>
     <tal:no-work condition="not: view/num_projects_and_packages_to_review">
       <p>
