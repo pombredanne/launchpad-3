@@ -751,6 +751,27 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         return [{'launchpad_id': old_launchpad_id}]
 
 
+class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
+    """A test implementation of the Bugzilla 3.4 XML-RPC API."""
+
+    # Map namespaces onto method names.
+    methods = {
+        'Bugzilla': ['version'],
+        'Test': ['login_required'],
+        }
+
+    # Methods that require authentication.
+    auth_required_methods = [
+        'login_required',
+        ]
+
+    def version(self):
+        """Return the version of Bugzilla being used."""
+        # This is to work around the old "xmlrpclib tries to expand
+        # sequences of length 1" problem (see above).
+        return [{'version': '3.4.1+'}]
+
+
 class TestMantis(Mantis):
     """Mantis ExternalSystem for use in tests.
 
