@@ -16,7 +16,8 @@ from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from canonical.launchpad.webapp import GetitemNavigation, LaunchpadEditFormView
+from canonical.launchpad.webapp import (
+    GetitemNavigation, LaunchpadEditFormView)
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
