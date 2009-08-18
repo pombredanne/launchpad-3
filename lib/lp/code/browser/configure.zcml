@@ -427,7 +427,7 @@
         class="lp.code.browser.codeimport.CodeImportEditView"
         facet="branches"
         permission="launchpad.Edit"
-        template="../templates/codeimport-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+delete"
         for="lp.code.interfaces.branch.IBranch"
