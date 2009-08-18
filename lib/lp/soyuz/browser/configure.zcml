@@ -638,6 +638,13 @@
             fields="architecturetag official supports_virtualized"
             template="../templates/distroarchseries-admin.pt"/>
         <browser:page
+            name="+addport"
+            for="lp.registry.interfaces.distroseries.IDistroSeries"
+            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesAddView"
+            facet="overview"
+            permission="launchpad.Admin"
+            template="../templates/distroseries-addport.pt"/>
+        <browser:page
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
             class="lp.registry.browser.person.PersonMaintainedPackagesView"

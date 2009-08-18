@@ -116,14 +116,25 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
     field_names = ['productseries']
 
     @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Define upstream link for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
     def cancel_url(self):
         return canonical_url(self.context)
 
     @action(_("Change"), name="change")
     def change(self, action, data):
         self.context.setPackaging(data['productseries'], self.user)
-        self.status_message = 'Upstream link updated, thank you!'
+        self.request.response.addNotification('Upstream link updated.')
         self.next_url = canonical_url(self.context)
+
 
 class SourcePackageView(BuildRecordsView):
 

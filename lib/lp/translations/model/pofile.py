@@ -1584,8 +1584,7 @@ class POFileSet:
         # and its ProductSeries and DistroSeries, if they are defined.
         OtherPOT = ClassAlias(POTemplate)
         OtherPOTJoin = Join(
-            OtherPOT, And(OtherPOT.name == MatchingPOT.name,
-                          OtherPOT.id >= MatchingPOT.id))
+            OtherPOT, And(OtherPOT.name == MatchingPOT.name))
         OtherProductSeries = ClassAlias(ProductSeries)
         OtherProductSeriesJoin = LeftJoin(
             OtherProductSeries,
