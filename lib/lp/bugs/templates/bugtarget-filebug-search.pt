@@ -1,24 +1,18 @@
-<html
+<filebug-search
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
->
-<body>
+  metal:use-macro="view/macro:page/main_only">
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestbugs|nothing" />
-</metal:leftportlets>
+  <div metal:fill-slot="heading">
+    <div tal:condition="view/isPrivate" id="privacy" class="aside private">
+      This report will be private, though you can disclose it later.
+    </div>
+    <h1>Report a bug</h1>
+  </div>
 
 <div metal:fill-slot="main">
-
-      <div tal:condition="view/isPrivate" id="privacy" class="aside private"
-      >This report will be private, though you can disclose it later.</div>
-      <h1>Report a bug</h1>
 
 <metal:not_uses_malone
     use-macro="context/@@+filebug-macros/not_uses_malone" />
@@ -83,8 +77,6 @@
     </table>
   </tal:most-common-bugs>
 </tal:uses_malone>
+</div>
 
-
-    </div>
-  </body>
-</html>
+</filebug-search>
