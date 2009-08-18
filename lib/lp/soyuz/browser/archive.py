@@ -479,6 +479,16 @@ class ArchiveViewBase(LaunchpadView):
         """Return a dict representation of the build counters."""
         return self.context.getBuildCounters()
 
+    @property
+    def show_dependencies(self):
+        """Whether or not to present the archive-dependencies section.
+
+        The dependencies section is presented if there are any dependency set
+        or if the user has permission to change it.
+        """
+        can_edit = check_permission('launchpad.Edit', self.context)
+        return can_edit or self.context.dependencies
+
 
 class ArchiveSourcePackageListViewBase(ArchiveViewBase):
     """Common features for archive views with lists of packages."""

@@ -63,7 +63,21 @@ class DistroArchSeriesAddView(LaunchpadFormView):
     schema = IDistroArchSeries
     field_names = ['architecturetag', 'processorfamily', 'official',
                    'supports_virtualized']
-    label = _('Create a port')
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`"""
+        return 'Add a port of %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action(_('Continue'), name='continue')
     def create_action(self, action, data):

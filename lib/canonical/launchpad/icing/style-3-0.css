@@ -28,6 +28,7 @@ Remove this section when the old templates and these declarations are gone.
     -moz-border-radius: 0;
     -o-border-radius: 0;
     -webkit-border-radius: 0;
+    -khtml-border-radius: 0;
     font-size: inherit !important;
     }
 #portlets .portlet h2, div.aside h2 {
@@ -211,6 +212,7 @@ div.columns div.right div.portlet {
     padding: 0.8em;
     -moz-border-radius: 3px 3px 0 0;
     -webkit-border-radius: 3px 3px 0 0;
+    -khtml-border-radius: 3px 3px 0 0;
     border-radius: 3px 3px 0 0;
     }
 .footer .lp-arcana img {
@@ -481,6 +483,7 @@ div.location-portlet h1 {
     border: 1px solid #dedede;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
+    -khtml-border-radius: 5px;
     border-radius: 5px;
     padding: 0.5em;
     color: #484848;
@@ -505,6 +508,7 @@ div.location-portlet h1 {
     border: 1px solid #4f843c;
     -moz-border-radius: 3px;
     -webkit-border-radius: 3px;
+    -khtml-border-radius: 3px;
     border-radius: 3px;
     background: #4f843c url(/@@/bg-project-downloads.png) center right no-repeat;
     padding: 6%;
@@ -521,6 +525,7 @@ div.location-portlet h1 {
 .downloads .released span {
     -moz-border-radius: 0 0 5px 5px;
     -webkit-border-radius: 0 0 5px 5px;
+    -khtml-border-radius: 0 0 5px 5px;
     border-radius: 0 0 5px 5px;
     background: #d3e3c7;
     padding: 0.2em 1em;
@@ -546,21 +551,21 @@ div.location-portlet h1 {
     color: #b9413e;
     background: url(/@@/bugs-arrow-right.png) right center no-repeat;
     }
-.involvement a.question {
+.involvement a.answers {
     color: #5265b2;
     background: url(/@@/answers-arrow-right.png) right center no-repeat;
     }
-.involvement a.translate {
+.involvement a.translations {
     color: #c5458e;
     background: url(/@@/translations-arrow-right.png) right center no-repeat;
     }
 .involvement a.code {
     color: #d39f57;
-    background: url(/@@/images/code-arrow-right.png) right center no-repeat;
+    background: url(/@@/code-arrow-right.png) right center no-repeat;
     }
-.involvement a.blueprint {
+.involvement a.blueprints {
     color: #5ba4c6;
-    background: url(/@@/images/blueprints-arrow-right.png) right center no-repeat;
+    background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
     }
 
 .announcements li {
