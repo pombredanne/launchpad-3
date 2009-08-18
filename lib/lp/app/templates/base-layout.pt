@@ -68,8 +68,8 @@
       </style>
     </noscript>
 
-    <metal:load-javascript
-      use-macro="context/@@+base-layout-macros/load-javascript" />
+    <metal:page-javascript
+        use-macro="context/@@+base-layout-macros/page-javascript" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
 
@@ -132,6 +132,23 @@
       <metal:footer
         use-macro="context/@@+base-layout-macros/footer"/>
     </div><!-- yui-d0-->
+
+    <div id="help-pane" class="invisible">
+      <div id="help-body">
+        <tal:XXX condition="nothing">
+          # XXX mars 2008-11-07 bug=295254:
+          # We use this ugly src="" hack to get rid of an IE6 security
+          # warning.  See bug #295234.
+        </tal:XXX>
+        <iframe
+          id="help-pane-content"
+          class="invisible"
+          src="javascript:void(0);"></iframe>
+      </div>
+      <div id="help-footer">
+        <span id="help-close"></span>
+      </div>
+    </div>
 
     <metal:lp-client-cache
       use-macro="context/@@+base-layout-macros/lp-client-cache" />
