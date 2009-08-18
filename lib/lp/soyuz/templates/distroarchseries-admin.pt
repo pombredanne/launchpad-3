@@ -8,7 +8,7 @@
 >
   <body>
     <metal:heading fill-slot="heading">
-      <h1>Administer architecture release</h1>
+      <h1 tal:content="view/page_title"/>
     </metal:heading>
 
 <div metal:fill-slot="main">
