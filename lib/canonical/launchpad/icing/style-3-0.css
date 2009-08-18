@@ -593,7 +593,8 @@ pre.wrap {
 /* ==== Listing tables ==== */
 
 table.listing thead {
-  color: #9f2b33;
-  font-size: 1.125em;
+  font-size: 116%;
+}
+table.listing th {
   font-weight: bold;
 }

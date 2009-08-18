@@ -551,7 +551,7 @@ class ProductSetContextMenu(ContextMenu, TopLevelMenuMixin):
 
     usedfor = IProductSet
 
-    links = ['products', 'distributions', 'people', 'meetings',
+    links = ['projects', 'distributions', 'people', 'meetings',
              'all', 'register_project', 'register_team', 'review_licenses']
 
     def all(self):

@@ -6,7 +6,7 @@ The view behind the /people page provides searching for people and teams.  The
 view knows how many people and teams are currently registered in Launchpad.
 
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> person_set = getUtility(IPersonSet)
 
     >>> view = create_initialized_view(person_set, '+index')
@@ -14,26 +14,6 @@ view knows how many people and teams are currently registered in Launchpad.
     48
     >>> view.number_of_teams
     17
-
-The view also knows whether the logged in user, such as Foo Bar is a Launchpad
-administrator or not.
-
-    >>> view.is_admin
-    True
-
-But the anonymous user is not an administrator.
-
-    >>> logout()
-    >>> view = create_initialized_view(person_set, '+index')
-    >>> view.is_admin
-    False
-
-Sample Person is also not an administrator.
-
-    >>> login('test@canonical.com')
-    >>> view = create_initialized_view(person_set, '+index')
-    >>> view.is_admin
-    False
 
 
 Batch navigator
@@ -68,3 +48,12 @@ Searching for just teams returns the testing Spanish team.
     >>> view = create_initialized_view(person_set, '+index', form=form)
     >>> print_batch(view.searchPeopleBatchNavigator())
     <Person at ... testing-spanish-team (testing Spanish team)>
+
+
+Menus
+=====
+
+The view has a navigation menu containing links to other top level
+collections.
+
+    >>> view = create_initialized_view

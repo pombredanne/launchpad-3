@@ -17,9 +17,9 @@
     </tal:side>
 
     <div metal:fill-slot="main">
-      There are currently <span tal:replace="view/number_of_people" /> people
-      and <span tal:replace="view/number_of_teams" /> teams registered in
-      Launchpad.
+      There are currently <tal:count tal:replace="view/number_of_people" />
+      people and <tal:count tal:replace="view/number_of_teams" /> teams
+      registered in Launchpad.
       <tal:block define="batch view/searchPeopleBatchNavigator">
         <div>
           <form class="central" name="search" action="." method="GET">
@@ -124,16 +124,10 @@
             public sources.  If you find you have more than one profile on
             Launchpad, you can <a href="+requestmerge">request a merge</a> of
             the duplicate profiles.</p>
-
-            <p tal:condition="view/is_admin">As a Launchpad administrator, you
-            can also service
-            <a href="+adminpeoplemerge">person merge requests</a> and
-            <a href="+adminteammerge">team merge requests</a>.
-            </p>
           </div>
         </tal:block>
         <tal:block condition="batch">
-          <tal:block condition="batch/multiple_pages">
+          <tal:block condition="batch/has_multiple_pages">
             <tal:navigation
              replace="structure batch/@@+navigation-links-upper"/>
           </tal:block>
@@ -155,7 +149,7 @@
               </tr>
             </tbody>
           </table>
-          <tal:block condition="batch/multiple_pages">
+          <tal:block condition="batch/has_multiple_pages">
             <tal:navigation
              replace="structure batch/@@+navigation-links-upper"/>
           </tal:block>

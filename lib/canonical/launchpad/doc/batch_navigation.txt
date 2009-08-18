@@ -93,7 +93,7 @@ Multiple pages
 
 The batch navigator tells us whether multiple pages will be used.
 
-    >>> batch_nav.multiple_pages
+    >>> batch_nav.has_multiple_pages
     True
 
 

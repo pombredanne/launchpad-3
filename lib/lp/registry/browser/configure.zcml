@@ -773,7 +773,6 @@
         <browser:menus
             module="lp.registry.browser.person"
             classes="
-                PeopleSearchNavigationMenu
                 PersonBugsMenu
                 PersonEditNavigationMenu
                 PersonFacets
@@ -786,6 +785,11 @@
                 TeamOverviewMenu
                 TeamOverviewNavigationMenu
                 TeamSpecsMenu
+                "/>
+        <browser:menus
+            module="lp.registry.browser.menu"
+            classes="
+                RegistryCollectionNavigationMenu
                 "/>
         <browser:url
             for="lp.registry.interfaces.person.IPerson"

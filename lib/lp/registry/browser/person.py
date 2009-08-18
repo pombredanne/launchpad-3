@@ -199,7 +199,8 @@ from lp.blueprints.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
     enabled_with_active_mailing_list)
-from lp.registry.browser.menu import TopLevelMenuMixin
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, TopLevelMenuMixin)
 from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
@@ -633,7 +634,7 @@ class PersonSetContextMenu(ContextMenu, TopLevelMenuMixin):
 
     usedfor = IPersonSet
 
-    links = ['products', 'distributions', 'people', 'meetings',
+    links = ['projects', 'distributions', 'people', 'meetings',
              'register_team',
              'adminpeoplemerge', 'adminteammerge', 'mergeaccounts']
 
@@ -1335,32 +1336,10 @@ class TeamMembershipView(LaunchpadView):
         return self.proposed_memberships or self.invited_memberships
 
 
-class IPeopleSearchNavigationMenu(Interface):
-    """Marker interface for people search navigation menu."""
-
-
-class PeopleSearchNavigationMenu(NavigationMenu, TopLevelMenuMixin):
-    """Navigation menu for people search."""
-
-    usedfor = IPeopleSearchNavigationMenu
-    facet = 'overview'
-
-    links = ['products', 'distributions', 'people', 'meetings',
-             'register_team', 'register_project']
-
-    def initialize(self):
-        """See `MenuBase`."""
-        if self.context.user is None:
-            # Make a copy of the links so as not to permanently mutate the
-            # class attribute.
-            self.links = PeopleSearchNavigationMenu.links[:]
-            self.links.append('create_account')
-
-
 class PeopleSearchView(LaunchpadView):
     """Search for people and teams on the /people page."""
 
-    implements(IPeopleSearchNavigationMenu)
+    implements(IRegistryCollectionNavigationMenu)
 
     def __init__(self, context, request):
         super(PeopleSearchView, self).__init__(context, request)
@@ -1386,12 +1365,6 @@ class PeopleSearchView(LaunchpadView):
         else:
             results = self.context.find(name)
         return BatchNavigator(results, self.request)
-
-    @property
-    def is_admin(self):
-        """Is the logged in user a Launchpad administrator?"""
-        return (self.user is not None and
-                self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
 class PersonAddView(LaunchpadFormView):

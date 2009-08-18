@@ -488,7 +488,7 @@ class BranchListingBatchNavigator(TableBatchNavigator,
         # XXX: MichaelHudson 2007-10-18 bug=153894: This means there are two
         # ways of sorting a one-page branch listing, which is a confusing and
         # incoherent.
-        if self.multiple_pages:
+        if self.has_multiple_pages:
             return "listing"
         else:
             return "listing sortable"
