@@ -109,22 +109,31 @@
         </div>
 
         <tal:block condition="not: batch">
-          <div id="application-summary">
+          <div id="application-summary"
+               tal:define="menu view/menu:overview">
             <p>Launchpad creates
             <a href="https://help.launchpad.net/YourAccount">profiles</a> for
             people based on Launchpad usage, as well as information collected
             from public sources such as bug trackers, mailing lists, public
-            key servers, and published application translations.  You can
-            <a href="+me">manage your account</a> in Launchpad, and you can
-            <a href="+newteam">create teams of people</a> for organizing
-            around common interests, discussions or permissions.</p>
+            key servers, and published application translations.
+            <tal:manage tal:condition="not: menu/create_account/enabled">You
+            can
+            <a href="/people/+me">manage your account</a> in Launchpad, and
+            you can
+            <a href="" tal:attributes="href menu/register_team/url">create
+            teams of people</a> for organizing
+            around common interests, discussions or
+            permissions.</tal:manage>  You can also
+            <a href="" tal:attributes="href menu/register_project/url">create
+            a new project</a> in Launchpad.</p>
 
             <p>Launchpad may create
             <a href="https://help.launchpad.net/YourAccount/Merging">duplicate
             profiles</a> for you as it automatically collects information from
             public sources.  If you find you have more than one profile on
-            Launchpad, you can <a href="+requestmerge">request a merge</a> of
-            the duplicate profiles.</p>
+            Launchpad, you can
+            <a href="" tal:attributes="href menu/request_merge/url">request a
+            merge</a> of the duplicate profiles.</p>
           </div>
         </tal:block>
         <tal:batch tal:condition="batch">
