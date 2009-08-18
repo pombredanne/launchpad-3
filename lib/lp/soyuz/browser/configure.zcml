@@ -642,8 +642,7 @@
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
             class="lp.soyuz.browser.distroarchseries.DistroArchSeriesAdminView"
             permission="launchpad.Admin"
-            template="../templates/distroarchseries-admin.pt"
-            facet="overview"/>
+            template="../templates/distroarchseries-admin.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"

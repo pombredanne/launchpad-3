@@ -106,4 +106,4 @@ class DistroArchSeriesAdminView(LaunchpadEditFormView):
 
     @property
     def page_title(self):
-        return smartquote("Administer %s" % self.title)
+        return smartquote("Administer %s" % self.context.title)
