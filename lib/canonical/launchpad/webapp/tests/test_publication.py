@@ -88,7 +88,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         next_oops = error_reporting_utility.getLastOopsReport()
 
         # Ensure the OOPS mentions the correct exception
-        self.assertNotEqual(repr(next_oops).find(exception.__name__), -1)
+        self.assertNotEqual(repr(next_oops).find("DisconnectionError"), -1)
 
         # Ensure that it is different to the last logged OOPS.
         self.assertNotEqual(repr(last_oops), repr(next_oops))
