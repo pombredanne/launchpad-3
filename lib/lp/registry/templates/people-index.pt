@@ -12,8 +12,6 @@
   <body>
     <h1 metal:fill-slot="heading">People and teams</h1>
 
-    <h1 metal:fill-slot="application-heading">People and teams</h1>
-
     <tal:side metal:fill-slot="side">
       <tal:menu replace="structure view/@@+global-actions" />
     </tal:side>
