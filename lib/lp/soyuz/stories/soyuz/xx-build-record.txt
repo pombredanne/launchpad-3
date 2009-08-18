@@ -169,7 +169,7 @@ how long it took.
     Build status
     Failed to upload on Bob The Builder
     Started ... ago
-    Finished on ... (took 1 minute, 0.0 seconds)
+    Finished ... (took 1 minute, 0.0 seconds)
     buildlog (7 bytes)
     uploadlog (7 bytes)
 
@@ -195,7 +195,7 @@ Administrators can retry failed builds using the 'retry' icon in the
     Build status
     Failed to upload Retry build on Bob The Builder
     Started ... ago
-    Finished on ... (took 1 minute, 0.0 seconds)
+    Finished ... (took 1 minute, 0.0 seconds)
     buildlog (7 bytes)
     uploadlog (7 bytes)
 
@@ -225,7 +225,7 @@ is changed.
     Build status
     Failed to upload Retry build on Bob The Builder
     Started ... ago
-    Finished on ... (took 1 minute, 0.0 seconds)
+    Finished ... (took 1 minute, 0.0 seconds)
     buildlog (7 bytes)
     uploadlog (7 bytes)
 

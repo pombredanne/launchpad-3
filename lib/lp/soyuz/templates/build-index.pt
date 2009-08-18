@@ -18,7 +18,7 @@
       <p class="discreet">
         Created <span
           tal:attributes="title context/datecreated/fmt:datetime"
-          tal:content="context/datecreated/fmt:approximatedate"
+          tal:content="context/datecreated/fmt:displaydate"
           >2005-10-05 5:45</span>
       </p>
       </div>
@@ -182,16 +182,16 @@
       </tal:building>
       <tal:built condition="context/was_built">
         <li tal:condition="context/buildduration">
-          Started on <span
+          Started <span
            tal:define="start context/calculated_buildstart"
            tal:attributes="title start/fmt:datetime"
-           tal:content="start/fmt:approximatedate">2008-01-01</span>
+           tal:content="start/fmt:displaydate">2008-01-01</span>
         </li>
       </tal:built>
       <li tal:condition="context/datebuilt">
-        Finished on <span
+        Finished <span
           tal:attributes="title context/datebuilt/fmt:datetime"
-          tal:content="context/datebuilt/fmt:approximatedate">2008-01-01</span>
+          tal:content="context/datebuilt/fmt:displaydate">2008-01-01</span>
         <tal:duration condition="context/buildduration">
           (took <span tal:replace="context/buildduration/fmt:exactduration"/>)
         </tal:duration>
