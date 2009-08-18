@@ -7,6 +7,7 @@ __all__ = [
     'BasePollView',
     'PollAddView',
     'PollContextMenu',
+    'PollEditNavigationMenu',
     'PollEditView',
     'PollNavigation',
     'PollOptionAddView',
@@ -17,13 +18,14 @@ __all__ = [
 
 from zope.event import notify
 from zope.component import getUtility
+from zope.interface import implements, Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
 
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, Link,
-    Navigation, stepthrough)
+    Navigation, NavigationMenu, stepthrough)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollOptionSet, IPollSubset, IVoteSet, PollAlgorithm,
@@ -31,13 +33,10 @@ from lp.registry.interfaces.poll import (
 from canonical.launchpad.helpers import shortlist
 
 
-class PollContextMenu(ContextMenu):
-
-    usedfor = IPoll
-    links = ['showall', 'addnew', 'edit']
+class PollEditLinksMixin:
 
     def showall(self):
-        text = 'Show option details'
+        text = 'Show options'
         return Link('+options', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -49,6 +48,21 @@ class PollContextMenu(ContextMenu):
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
+
+
+class PollContextMenu(ContextMenu, PollEditLinksMixin):
+    usedfor = IPoll
+    links = ['showall', 'addnew', 'edit']
+
+
+class IPollEditMenu(Interface):
+    """A marker interface for the 'Change details' navigation menu."""
+
+
+class PollEditNavigationMenu(NavigationMenu, PollEditLinksMixin):
+    usedfor = IPollEditMenu
+    facet = 'overview'
+    links = ['showall', 'addnew', 'edit']
 
 
 class PollNavigation(Navigation):
@@ -353,6 +367,7 @@ class PollAddView(LaunchpadFormView):
 
 class PollEditView(LaunchpadEditFormView):
 
+    implements(IPollEditMenu)
     schema = IPoll
     label = "Edit poll details"
     field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
@@ -372,6 +387,11 @@ class PollOptionEditView(LaunchpadEditFormView):
     field_names = ["name", "title"]
     custom_widget("title", TextWidget, width=30)
 
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context.poll, view_name='+options')
+
     @action("Save", name="save")
     def save_action(self, action, data):
         self.updateContextFromData(data)
@@ -381,6 +401,7 @@ class PollOptionEditView(LaunchpadEditFormView):
 class PollOptionAddView(LaunchpadFormView):
     """Create a new option in a given poll."""
 
+    implements(IPollEditMenu)
     schema = IPollOption
     label = "Create new poll option"
     field_names = ["name", "title"]

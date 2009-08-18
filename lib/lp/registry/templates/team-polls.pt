@@ -78,8 +78,8 @@
 
     <br />
     <tal:block tal:condition="request/lp:person">
-      <ul class="add" tal:condition="context/required:launchpad.Edit">
-        <li><a href="+newpoll">Set up a new poll</a></li>
+      <ul tal:condition="context/required:launchpad.Edit">
+        <li><a class="sprite add" href="+newpoll">Set up a new poll</a></li>
       </ul>
     </tal:block>
 
