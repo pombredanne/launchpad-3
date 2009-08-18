@@ -792,7 +792,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
             else:
                 raise xmlrpclib.Fault(
                     300,
-                    "The username or password you entered does not exist.")
+                    "The username or password you entered is not valid.")
 
 
 class TestMantis(Mantis):
