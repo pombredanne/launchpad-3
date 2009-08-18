@@ -71,10 +71,12 @@
      Field specific error for the hidden packaging field.
   </p>
 
-  <div class="top-portlet" tal:define="newbugs context/new_bugtasks/count">
+  <div class="top-portlet"
+       tal:define="newbugs context/new_bugtasks/count;
+                   open_questions view/open_questions/count">
     This package has
     <a tal:attributes="href view/menu:overview/new_bugs/url"><tal:newbugs content="newbugs"/> untriaged bug<tal:plural content="string:s" condition="python: newbugs!=1"/></a>
-     and <a tal:attributes="href view/menu:overview/open_questions/url"><tal:openq content="view/open_questions/count"/> open questions.</a>
+     and <a tal:attributes="href view/menu:overview/open_questions/url"><tal:openq content="open_questions"/> open question<tal:plural content="string:s" condition="python: open_questions!=1"/>.</a>
   </div>
 
   <div class="yui-g">
