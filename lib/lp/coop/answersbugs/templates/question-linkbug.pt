@@ -7,10 +7,6 @@
 
 <body>
 
-<tal:heading metal:fill-slot="heading">
-  <h1 tal:content="view/label">Link question to a bug report</h1>
-</tal:heading>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
