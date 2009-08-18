@@ -59,7 +59,8 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
     INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
+    UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus,
+    UserCannotEditBugTaskMilestone)
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
@@ -724,6 +725,14 @@ class BugTask(SQLBase, BugTaskMixin):
         # This property is not needed. Code should inline this implementation.
         return self.pillar.official_malone
 
+    def transitionToMilestone(self, new_milestone, user):
+        """See `IBugTask`."""
+        if not self.userCanEditMilestone(user):
+            raise UserCannotEditBugTaskMilestone(
+                "User does not have sufficient permissions "
+                "to edit the bug task milestone.")
+        else:
+            self.milestone = new_milestone
 
     def transitionToImportance(self, new_importance, user):
         """See `IBugTask`."""
