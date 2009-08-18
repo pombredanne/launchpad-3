@@ -46,7 +46,6 @@
              alt=""
              style="margin: 0 9em 1em 0"/>
         <br />
-
         <input id="text" type="text" name="field.text" size="50" />
         <input type="submit" value="Search Launchpad" />
       </form>
@@ -59,11 +58,11 @@
         <strong tal:content="view/blueprint_count/fmt:intcomma">123</strong>&nbsp;blueprints,
         and&nbsp;counting...
       </div>
-      <div id="home-description">Launchpad is a unique collaboration and
-      <a href="http://bazaar-vcs.org/">Bazaar</a>
-      code hosting platform for software projects. <a
-      href="/+tour"
-      >Read more...</a></div>
+      <div id="home-description">
+        Launchpad is a code hosting and software collaboration platform.<br />
+        <span class="smaller">Launchpad is open source -- you can <a href="https://dev.launchpad.net/">join the community</a> of people
+        who help improve it.</span>
+      </div>
       <div id="home-page" style="width:90%; max-width:80em; margin:auto;">
         <div class="three column left" id="featured-projects">
           <h2>Featured projects</h2>
@@ -89,27 +88,27 @@
           <h2>What&#8217;s new?</h2>
           <ul style="padding: 0; margin: auto;">
            <li class="news">
-              <a href="http://blog.launchpad.net/?p=819">
-                <strong>Series dashboards</strong><br />
-           		  Plan your project's development and releases with Launchpad's new series overview pages.
+              <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
+                <strong>Launchpad now open source!</strong><br />
+           		  Get the code to Launchpad and join our development community.
               </a>
            </li>
            <li class="news">
-              <a href="http://blog.launchpad.net/?p=816">
-                <strong>Project history timelines</strong><br />
-           		  See a project's progress in terms of its series, milestones and releases.
+              <a href="http://blog.launchpad.net/general/exporting-translations-to-a-bazaar-branch">
+                <strong>Export translations to Bazaar branches</strong><br />
+           		  Have Launchpad automatically commit your project's translations to a branch of code.
               </a>
            </li>
            <li class="news">
-              <a href="http://blog.launchpad.net/code/sparklines">
-                <strong>Branch sparklines</strong><br />
-           		  At-a-glance indicators of a project's development activity.
+              <a href="http://blog.launchpad.net/cool-new-stuff/automatically-import-files-to-launchpad-using-product-release-finder">
+                <strong>Automatic release file imports</strong><br />
+           		  Launchpad will find and automatically import your project's release files.
               </a>
            </li>
            <li class="news">
-              <a href="http://blog.launchpad.net/?p=797">
-                <strong>New bug tag search!</strong><br />
-           		  Now find bugs based on their tags.
+              <a href="http://blog.launchpad.net/translations/sharing-translations">
+                <strong>Share translations between releases</strong><br />
+           		  Translate a phrase once, have it show up in all your releases.
               </a>
            </li>
            <li class="news">
@@ -120,7 +119,7 @@
            </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2009-06-24.
+            Updated 2009-08-03.
             <a href="http://blog.launchpad.net">Read our blog!</a>
           </div>
         </div>

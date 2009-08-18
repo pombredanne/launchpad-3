@@ -13,12 +13,14 @@ __all__ = [
     'ProjectBountiesMenu',
     'ProjectBrandingView',
     'ProjectBreadcrumbBuilder',
+    'ProjectBugsMenu',
     'ProjectEditView',
     'ProjectFacets',
     'ProjectMaintainerReassignmentView',
     'ProjectNavigation',
     'ProjectRdfView',
     'ProjectReviewView',
+    'ProjectActionMenu',
     'ProjectOverviewMenu',
     'ProjectSeriesSpecificationsMenu',
     'ProjectSetBreadcrumbBuilder',
@@ -34,6 +36,7 @@ from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.interface import implements, Interface
 from zope.schema import Choice
 
 from z3c.ptcompat import ViewPageTemplateFile
@@ -41,6 +44,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
@@ -61,7 +65,6 @@ from canonical.launchpad.webapp import (
     canonical_url, custom_widget, enabled_with_permission, stepthrough,
     structured)
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.widgets.popup import SinglePopupWidget
 
 
 class ProjectNavigation(Navigation):
@@ -138,41 +141,33 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     def bugs(self):
         site = 'bugs'
         text = 'Bugs'
-
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def answers(self):
         site = 'answers'
         text = 'Answers'
-
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def specifications(self):
         site = 'blueprints'
         text = 'Blueprints'
-
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def translations(self):
         site = 'translations'
         text = 'Translations'
-
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
 
-class ProjectOverviewMenu(ApplicationMenu):
+class ProjectAdminMenuMixin:
 
-    usedfor = IProject
-    facet = 'overview'
-    links = [
-        'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'announce', 'announcements', 'administer',
-        'branch_visibility', 'rdf', 'subscribe']
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
+
+class ProjectEditMenuMixin(ProjectAdminMenuMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -182,13 +177,29 @@ class ProjectOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change maintainer'
-        return Link('+reassign', text, icon='edit')
+        summary = 'Change the maintainer of this project group'
+        return Link('+reassign', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
-        summary = 'Someone with permission to set goals for all projects'
+        summary = 'Appoint the driver of this project group'
         return Link('+driver', text, summary, icon='edit')
+
+
+class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'overview'
+    links = [
+        'branding', 'driver', 'reassign', 'top_contributors', 'mentorship',
+        'announce', 'announcements', 'branch_visibility', 'rdf',
+        'new_product', 'administer', 'milestones']
+
+    @enabled_with_permission('launchpad.Edit')
+    def new_product(self):
+        text = 'Register another project in %s' % self.context.displayname
+        return Link('+newproduct', text, icon='edit')
 
     def top_contributors(self):
         text = 'More contributors'
@@ -211,28 +222,61 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     def announcements(self):
         text = 'More announcements'
-        enabled = bool(self.context.announcements())
+        enabled = bool(self.context.getAnnouncements())
         return Link('+announcements', text, enabled=enabled)
+
+    def milestones(self):
+        text = 'See all milestones'
+        return Link('+milestones', text)
 
     def rdf(self):
         text = structured(
             'Download <abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
-        return Link('+rdf', text, icon='download')
-
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+review', text, icon='edit')
+        return Link('+rdf', text, icon='download-icon')
 
     @enabled_with_permission('launchpad.Admin')
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit', site='mainsite')
 
+
+class IProjectActionMenu(Interface):
+    """Marker interface for views that use ProjectActionMenu."""
+
+
+class ProjectActionMenu(ProjectAdminMenuMixin, NavigationMenu):
+
+    usedfor = IProjectActionMenu
+    facet = 'overview'
+    title = 'Action menu'
+    links = ('subscribe', 'edit', 'administer')
+
+    # XXX: salgado, bug=412178, 2009-08-10: This should be shown in the +index
+    # page of the project's bugs facet, but that would require too much work
+    # and I just want to convert this page to 3.0, so I'll leave it here for
+    # now.
     def subscribe(self):
         text = 'Subscribe to bug mail'
         return Link('+subscribe', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
+
+
+class IProjectEditMenu(Interface):
+    """A marker interface for the 'Change details' navigation menu."""
+
+
+class ProjectEditNavigationMenu(NavigationMenu, ProjectEditMenuMixin):
+    """A sub-menu for different aspects of editing a Project's details."""
+
+    usedfor = IProjectEditMenu
+    facet = 'overview'
+    title = 'Change project group'
+    links = ('branding', 'reassign', 'driver', 'administer')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -287,12 +331,24 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
         return Link('+addquestion', text, icon='add')
 
 
+class ProjectBugsMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'bugs'
+    links = ['new']
+
+    def new(self):
+        text = 'Report a Bug'
+        return Link('+filebug', text, icon='add')
+
+
 class ProjectView(HasAnnouncementsView, FeedsMixin):
-    pass
+    implements(IProjectActionMenu)
 
 
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
+    implements(IProjectEditMenu)
 
     label = "Change project group details"
     schema = IProject
@@ -320,7 +376,6 @@ class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
     field_names = ['name', 'owner', 'active', 'reviewed']
-    custom_widget('registrant', SinglePopupWidget)
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.
@@ -423,6 +478,7 @@ class ProjectAddProductView(ProductAddView):
 class ProjectSetView(LaunchpadView):
 
     header = "Project groups registered in Launchpad"
+    page_title = header
 
     def __init__(self, context, request):
         super(ProjectSetView, self).__init__(context, request)

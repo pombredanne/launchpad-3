@@ -30,7 +30,7 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.linkedbranch import get_linked_branch, NoLinkedBranch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet)
+    IDistroSeries, IDistroSeriesSet, NoSuchDistroSeries)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
@@ -66,7 +66,7 @@ class RootTraversable:
 
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name):
+    def traverse(self, name, segments):
         """See `ITraversable`.
 
         :raise NoSuchProduct: If 'name' doesn't match an existing pillar.
@@ -103,7 +103,7 @@ class ProductTraversable(_BaseTraversable):
     adapts(IProduct)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name):
+    def traverse(self, name, segments):
         """See `ITraversable`.
 
         :raises NoSuchProductSeries: if 'name' doesn't match an existing
@@ -125,12 +125,18 @@ class DistributionTraversable(_BaseTraversable):
     adapts(IDistribution)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name):
+    def traverse(self, name, segments):
         """See `ITraversable`."""
-        # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
-        # could also try to find a package and then return a reference to its
-        # development focus.
-        return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
+        try:
+            return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
+        except NoSuchDistroSeries:
+            sourcepackage = self.context.getSourcePackage(name)
+            if sourcepackage is None:
+                if segments:
+                    raise
+                else:
+                    raise NoSuchSourcePackageName(name)
+            return sourcepackage
 
 
 class DistroSeriesTraversable:
@@ -146,7 +152,7 @@ class DistroSeriesTraversable:
         self.distroseries = distroseries
         self.pocket = pocket
 
-    def traverse(self, name):
+    def traverse(self, name, segments):
         """See `ITraversable`."""
         sourcepackage = self.distroseries.getSourcePackage(name)
         if sourcepackage is None:
@@ -171,7 +177,7 @@ class LinkedBranchTraverser:
         traversable = RootTraversable()
         while segments:
             name = segments.pop(0)
-            context = traversable.traverse(name)
+            context = traversable.traverse(name, segments)
             traversable = adapt(context, ILinkedBranchTraversable)
             if traversable is None:
                 break
@@ -333,7 +339,7 @@ class BranchLookup:
             namespace_set = getUtility(IBranchNamespaceSet)
             segments = iter(path.lstrip('~').split('/'))
             branch = namespace_set.traverse(segments)
-            suffix =  '/'.join(segments)
+            suffix = '/'.join(segments)
             if not check_permission('launchpad.View', branch):
                 raise NoSuchBranch(path)
             if suffix == '':

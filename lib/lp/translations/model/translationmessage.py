@@ -14,6 +14,7 @@ from datetime import datetime
 import pytz
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+from storm.expr import And
 from storm.locals import SQL
 from storm.store import Store
 from zope.interface import implements
@@ -85,7 +86,7 @@ class TranslationMessageMixIn:
         return self.potmsgset.makeHTMLID('_'.join(elements))
 
     def setPOFile(self, pofile):
-        """See `ITransationMessage`."""
+        """See `ITranslationMessage`."""
         self.browser_pofile = pofile
 
 
@@ -448,6 +449,28 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             # message.  This should not occur after migration, since
             # suggestions will always be shared.
             self.destroySelf()
+
+    def findIdenticalMessage(self, target_potmsgset, target_potemplate):
+        """See `ITranslationMessage`."""
+        store = Store.of(self)
+
+        forms_match = (TranslationMessage.msgstr0 == self.msgstr0)
+        for form in xrange(1, TranslationConstants.MAX_PLURAL_FORMS):
+            form_name = 'msgstr%d' % form
+            form_value = getattr(self, form_name)
+            forms_match = And(
+                forms_match,
+                getattr(TranslationMessage, form_name) == form_value)
+
+        twins = store.find(TranslationMessage, And(
+            TranslationMessage.potmsgset == target_potmsgset,
+            TranslationMessage.potemplate == target_potemplate,
+            TranslationMessage.language == self.language,
+            TranslationMessage.variant == self.variant,
+            TranslationMessage.id != self.id,
+            forms_match))
+
+        return twins.order_by(TranslationMessage.id).first()
 
 
 class TranslationMessageSet:

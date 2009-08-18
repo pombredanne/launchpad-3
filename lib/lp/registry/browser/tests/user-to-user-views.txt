@@ -242,7 +242,7 @@ address set to an explicit address.
 
     >>> from email import message_from_string
     >>> def print_messages():
-    ...     message_ids = set()
+    ...     message_count = 0
     ...     message_subjects = set()
     ...     message_senders = set()
     ...     message_recipients = set()
@@ -250,7 +250,7 @@ address set to an explicit address.
     ...     while stub.test_emails:
     ...         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     ...         message = message_from_string(raw_msg)
-    ...         message_ids.add(message['message-id'])
+    ...         message_count += 1
     ...         message_subjects.add(message['subject'])
     ...         message_senders.add(message['from'])
     ...         message_recipients.add(message['to'])
@@ -260,7 +260,7 @@ address set to an explicit address.
     ...     print 'Bodies:'
     ...     for body in sorted(message_bodies):
     ...         print body
-    ...     print '# of Message-IDs:', len(message_ids)
+    ...     print '# of Messages:', message_count
     ...     print 'Recipients:'
     ...     for recipient in sorted(message_recipients):
     ...         print '   ', recipient
@@ -296,7 +296,7 @@ Non-members cannot are may only contact the team owner.
     using the "Contact this team" owner link on the GuadaMen team page.
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
-    # of Message-IDs: 1
+    # of Messages: 1
     Recipients:
         Foo Bar <foo.bar@canonical.com>
 
@@ -336,7 +336,7 @@ subject and body from the same sender.
     team page to each member directly.
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
-    # of Message-IDs: 10
+    # of Messages: 10
     Recipients:
         Alexander Limi <limi@plone.org>
         Celso Providelo <celso.providelo@canonical.com>
@@ -388,7 +388,7 @@ Foo Bar's message gets sent to each individual member of he team.
     team page to each member directly.
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
-    # of Message-IDs: 10
+    # of Messages: 10
     Recipients:
         Alexander Limi <limi@plone.org>
         Celso Providelo <celso.providelo@canonical.com>

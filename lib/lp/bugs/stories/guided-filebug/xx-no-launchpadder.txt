@@ -76,7 +76,7 @@ actually an email address.
 The same happens with the advanced filebug form:
 
     >>> user_browser.open(
-    ...     "http://launchpad.dev/products/alsa-utils/+filebug-advanced")
+    ...     "http://launchpad.dev/products/alsa-utils/+filebug")
     >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     alsa-utils (Unspecified) does not use Launchpad as its bug tracker.
@@ -95,7 +95,7 @@ Distributions have less options available if they don't use Launchpad:
 They get the same messages in the advanced filebug page:
 
     >>> user_browser.open(
-    ...     "http://launchpad.dev/distros/debian/+filebug-advanced")
+    ...     "http://launchpad.dev/distros/debian/+filebug")
     >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     Debian does not use Launchpad as its bug tracker.
@@ -117,7 +117,7 @@ Not even using the advanced filebug page:
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/distros/debian/+source/mozilla-firefox/"
-    ...     "+filebug-advanced")
+    ...     "+filebug")
     >>> for message in find_tags_by_class(user_browser.contents, 'highlight-message'):
     ...     print extract_text(message)
     Debian does not use Launchpad as its bug tracker.

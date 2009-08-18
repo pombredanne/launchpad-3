@@ -105,7 +105,6 @@ status is returned.
 
 >>> check("/projectgroups", auth=True)
 >>> check("/projectgroups/+all", auth=True)
->>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
@@ -340,10 +339,6 @@ The bug filing pages.
 >>> check("/ubuntu/+filebug", auth=True)
 >>> check("/ubuntu/+source/mozilla-firefox/+filebug", auth=True)
 
->>> check("/firefox/+filebug-advanced", auth=True)
->>> check("/ubuntu/+filebug-advanced", auth=True)
->>> check("/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True)
-
 Note that you should not be able to directly file a bug on a
 distroseries or sourcepackage; an IBugTask reported against a
 distroseries or sourcepackage is *targeted* to be fixed in that
@@ -353,6 +348,14 @@ or distrosourcepackage filebug page.
 >>> check_redirect("/ubuntu/warty/+filebug", auth=True)
 >>> check_redirect(
 ...     "/ubuntu/warty/+source/mozilla-firefox/+filebug", auth=True)
+
+The old +filebug-advanced form now redirects to the +filebug form.
+
+>>> check_redirect("/firefox/+filebug-advanced", auth=True, status=301)
+>>> check_redirect("/ubuntu/+filebug-advanced", auth=True, status=301)
+>>> check_redirect(
+...     "/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True,
+...     status=301)
 
 Approving/declining a bug nomination.
 
@@ -429,7 +432,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/builders/bob/")
 >>> check_redirect("/+builds", status=301)
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
->>> check("/ubuntu/+source/pmount/0.1-1/+build/7/pmount/")
 
 >>> check_redirect("/support/", status=301)
 

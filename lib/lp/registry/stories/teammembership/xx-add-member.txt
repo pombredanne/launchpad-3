@@ -17,7 +17,8 @@ Any administrator of a team can add new members to that team.
 
 Let's make sure that 'cprov' is now an Approved member of 'landscape-developers'
 
-    >>> from canonical.launchpad.database import Person, TeamMembership
+    >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.teammembership import TeamMembership
     >>> cprov = Person.byName('cprov')
     >>> landscape_team = Person.byName('landscape-developers')
     >>> cprov_landscape_membership = TeamMembership.selectOneBy(

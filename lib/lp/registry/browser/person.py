@@ -118,7 +118,6 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription, LocationWidget, PasswordChangeWidget)
-from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
@@ -616,14 +615,16 @@ class PersonSetNavigation(Navigation):
         if person is None:
             raise NotFoundError(name)
         # Redirect to /~name
-        return self.redirectSubTree(canonical_url(person))
+        return self.redirectSubTree(
+            canonical_url(person, request=self.request))
 
     @stepto('+me')
     def me(self):
         me = getUtility(ILaunchBag).user
         if me is None:
             raise Unauthorized("You need to be logged in to view this URL.")
-        return self.redirectSubTree(canonical_url(me), status=303)
+        return self.redirectSubTree(
+            canonical_url(me, request=self.request), status=303)
 
 
 class PersonSetContextMenu(ContextMenu):
@@ -2280,7 +2281,6 @@ class PersonVouchersView(LaunchpadFormView):
     """Form for displaying and redeeming commercial subscription vouchers."""
 
     custom_widget('voucher', LaunchpadDropdownWidget)
-    custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
         """Set up the fields for this view."""
@@ -2862,16 +2862,15 @@ class PersonView(LaunchpadView, FeedsMixin):
         """Return True if "Personal package archives" is to be shown.
 
         We display it if:
-        person has viewable ppa or current_user has lp.edit
+        person has any public PPA or current_user has lp.edit
         """
         # If the current user has edit permission, show the section.
         if check_permission('launchpad.Edit', self.context):
             return True
 
-        # If the current user is allowed to see any PPAs, show the
-        # section.
+        # If the current user has any public PPA, show the section.
         for ppa in self.context.ppas:
-            if check_permission('launchpad.View', ppa):
+            if not ppa.private:
                 return True
 
         return False

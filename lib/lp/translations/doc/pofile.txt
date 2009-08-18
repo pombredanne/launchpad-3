@@ -1038,7 +1038,8 @@ If you have a distroseries and want to know all the people who contributed
 translations on a given language for that distroseries, you can use
 the getPOFileContributorsByLanguage() method of IDistroSeries.
 
-    >>> from canonical.launchpad.database import DistroSeries, Language
+    >>> from canonical.launchpad.database import Language
+    >>> from lp.registry.model.distroseries import DistroSeries
     >>> hoary = DistroSeries.selectOneBy(name="hoary")
     >>> spanish = Language.selectOneBy(code="es")
     >>> [p.name for p in hoary.getPOFileContributorsByLanguage(spanish)]

@@ -479,7 +479,7 @@ happens when a voucher is redeemed.
 
 All the products are returned when no parameters are passed in.
 
-    >>> from canonical.launchpad.database import Product
+    >>> from lp.registry.model.product import Product
     >>> product_set.forReview().count() == Product.select().count()
     True
 

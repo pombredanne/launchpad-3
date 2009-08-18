@@ -29,15 +29,17 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget, TextWidget
 
 from canonical.cachedproperty import cachedproperty
+from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.builder import IBuilderSet, IBuilder
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link, Navigation,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission, stepthrough)
+    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets,
+    action, canonical_url, custom_widget, enabled_with_permission,
+    stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
@@ -110,7 +112,7 @@ class BuilderOverviewMenu(ApplicationMenu):
     """Overview Menu for IBuilder."""
     usedfor = IBuilder
     facet = 'overview'
-    links = ['history', 'edit', 'mode', 'cancel', 'admin']
+    links = ['history', 'edit', 'mode']
 
     def history(self):
         text = 'Show build history'
@@ -125,16 +127,6 @@ class BuilderOverviewMenu(ApplicationMenu):
     def mode(self):
         text = 'Change mode'
         return Link('+mode', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def cancel(self):
-        text = 'Cancel current job'
-        return Link('+cancel', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def admin(self):
-        text = 'Administer builder'
-        return Link('+admin', text, icon='edit')
 
 
 class CommonBuilderView:
@@ -315,8 +307,8 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
             return None
         else:
             UTC = pytz.timezone('UTC')
-            return (
-                datetime.datetime.now(UTC) - self.context.currentjob.buildstart)
+            buildstart = self.context.currentjob.buildstart
+            return datetime.datetime.now(UTC) - buildstart
 
 
 class BuilderSetAddView(LaunchpadFormView):
@@ -352,3 +344,44 @@ class BuilderSetAddView(LaunchpadFormView):
             )
         notify(ObjectCreatedEvent(builder))
         self.next_url = canonical_url(builder)
+
+
+class BuilderEditView(LaunchpadEditFormView):
+    """View class for changing builder details."""
+
+    schema = IBuilder
+
+    field_names = [
+        'name', 'title', 'description', 'processor', 'url', 'manual',
+        'owner', 'virtualized', 'builderok', 'failnotes', 'vm_host',
+        'active',
+        ]
+
+    @action(_('Change'), name='update')
+    def change_details(self, action, data):
+        """Update the builder with the data from the form."""
+        builder_was_modified = self.updateContextFromData(data)
+
+        if builder_was_modified:
+            notification = 'The builder "%s" was updated successfully.' % (
+                self.context.title)
+            self.request.response.addNotification(notification)
+
+        return builder_was_modified
+
+    @property
+    def next_url(self):
+        """Redirect back to the builder-index page."""
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """Return the url to which we want to go to if user cancels."""
+        return self.next_url
+
+    @property
+    def page_title(self):
+        """Return a relevant page title for this view."""
+        return smartquote(
+            'Change details for builder "%s"' % self.context.title)
+

@@ -14,13 +14,14 @@ __all__ = [
 from zope.schema import Choice
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
 
 class IHasBugSupervisor(IStructuralSubscriptionTarget):
 
-    bug_supervisor = Choice(
+    bug_supervisor = PublicPersonChoice(
         title=_("Bug Supervisor"),
         description=_(
             "The person or team responsible for bug management."),

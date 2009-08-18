@@ -21,7 +21,8 @@ __all__ = [
     'sendmail',
     'simple_sendmail',
     'simple_sendmail_from_person',
-    'raw_sendmail']
+    'raw_sendmail',
+    'validate_message']
 
 from binascii import b2a_qp
 import sha
@@ -292,6 +293,13 @@ def get_addresses_from_header(email_header):
         formataddr((name, address))
         for name, address in getaddresses([email_header])]
 
+def validate_message(message):
+    """Validate that the supplied message is suitable for sending."""
+    assert isinstance(message, Message), 'Not an email.Message.Message'
+    assert 'to' in message and bool(message['to']), 'No To: header'
+    assert 'from' in message and bool(message['from']), 'No From: header'
+    assert 'subject' in message and bool(message['subject']), \
+            'No Subject: header'
 
 def sendmail(message, to_addrs=None, bulk=True):
     """Send an email.Message.Message
@@ -316,12 +324,7 @@ def sendmail(message, to_addrs=None, bulk=True):
 
     Returns the Message-Id
     """
-    assert isinstance(message, Message), 'Not an email.Message.Message'
-    assert 'to' in message and bool(message['to']), 'No To: header'
-    assert 'from' in message and bool(message['from']), 'No From: header'
-    assert 'subject' in message and bool(message['subject']), \
-            'No Subject: header'
-
+    validate_message(message)
     if to_addrs is None:
         to_addrs = get_addresses_from_header(message['to'])
         if message['cc']:

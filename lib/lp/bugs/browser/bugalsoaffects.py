@@ -48,7 +48,8 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.bugtask import (
     BugTaskAlsoAffectsSourcePackageNameWidget)
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.popup import SearchForUpstreamPopupWidget
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
@@ -166,15 +167,18 @@ class ChooseProductStep(AlsoAffectsStep):
         # Tell the user to search for it using the popup widget as it'll allow
         # the user to register a new product if the one he is looking for is
         # not yet registered.
-        search_url = self.widgets['product'].popupHref()
+        widget_link_id = self.widgets['product'].show_widget_id
         self.setFieldError(
             'product',
-            structured(
-                'There is no project in Launchpad named "%s". Please '
-                '<a href="%s">search for it</a> as it may be registered with '
-                'a different name.',
-                entered_product,
-                search_url))
+            structured("""
+                There is no project in Launchpad named "%s". Please 
+                <a href="/projects"
+                onclick="YUI().use('event').Event.simulate(
+                         document.getElementById('%s'), 'click');
+                         return false;"
+                >search for it</a> as it may be
+                registered with a different name.""",
+                entered_product, widget_link_id))
 
     def main_action(self, data):
         """Perform the 'Continue' action."""

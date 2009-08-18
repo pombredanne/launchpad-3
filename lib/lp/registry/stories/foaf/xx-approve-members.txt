@@ -58,7 +58,8 @@ as an inactive one.
 
     # Need to do this check manually because the declined members are not
     # listed anywhere.
-    >>> from canonical.launchpad.database import Person, TeamMembershipSet
+    >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.teammembership import TeamMembershipSet
     >>> membership = TeamMembershipSet().getByPersonAndTeam(
     ...     Person.byName('name12'), Person.byName('ubuntu-team'))
     >>> membership.status.title

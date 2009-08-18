@@ -104,7 +104,13 @@ class MaloneHandler:
                 try:
                     if IBugEmailCommand.providedBy(command):
                         if bug_event is not None:
-                            notify(bug_event)
+                            try:
+                                notify(bug_event)
+                            except CreatedBugWithNoBugTasksError:
+                                rollback()
+                                raise IncomingEmailError(
+                                    get_error_message(
+                                        'no-affects-target-on-submit.txt'))
                         if (bugtask_event is not None and
                             not IObjectCreatedEvent.providedBy(bug_event)):
                             notify(bugtask_event)
@@ -146,8 +152,7 @@ class MaloneHandler:
                         self.processAttachments(bug, message, signed_msg)
                     elif IBugTaskEmailCommand.providedBy(command):
                         if bugtask_event is not None:
-                            if not IObjectCreatedEvent.providedBy(
-                                bug_event):
+                            if not IObjectCreatedEvent.providedBy(bug_event):
                                 notify(bugtask_event)
                             bugtask_event = None
                         bugtask, bugtask_event = command.execute(bug)
@@ -155,6 +160,11 @@ class MaloneHandler:
                         bug, bug_event = command.execute(bug, bug_event)
                     elif IBugTaskEditEmailCommand.providedBy(command):
                         if bugtask is None:
+                            if len(bug.bugtasks) == 0:
+                                rollback()
+                                raise IncomingEmailError(
+                                    get_error_message(
+                                        'no-affects-target-on-submit.txt'))
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:

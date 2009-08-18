@@ -817,7 +817,8 @@ Person directly to allow us access to an unproxied object, since
 _inTeam_cache is private, and TeamMembershipSet directly to allow us to
 call TeamMembership.setStatus, which is private).
 
-    >>> from canonical.launchpad.database import Person, TeamMembershipSet
+    >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.teammembership import TeamMembershipSet
     >>> no_priv = Person.selectOneBy(name='no-priv')
     >>> no_priv.inTeam(admins)
     False

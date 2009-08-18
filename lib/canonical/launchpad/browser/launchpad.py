@@ -173,6 +173,7 @@ class NavigationMenuTabs(LaunchpadView):
             menu = queryAdapter(self.context, INavigationMenu, name=facet)
             if menu is not None:
                 self.title = menu.title
+        self.enabled_links = [link for link in self.links if link.enabled]
 
     def render(self):
         if not self.links:
@@ -187,13 +188,16 @@ class LinkView(LaunchpadView):
     The link is not rendered if it's not enabled and we are not in development
     mode.
     """
-    AFTER_ICONS = ('edit', 'remove', 'trash-icon')
+    MODIFY_ICONS = ('edit', 'remove', 'trash-icon')
 
     @property
     def sprite_class(self):
         """Return the class used to display the link's icon."""
-        if self.context.icon in self.AFTER_ICONS:
-            return 'sprite-after'
+        if self.context.icon in self.MODIFY_ICONS:
+            # The 3.0 UI design says these are displayed like other icons
+            # But they do not have the same use so we want to keep this rule
+            # separate.
+            return 'sprite modify'
         else:
             return 'sprite'
 
@@ -661,7 +665,8 @@ class LaunchpadRootNavigation(Navigation):
             if self.request.method == 'POST':
                 raise POSTToNonCanonicalURL
             return self.redirectSubTree(
-                canonical_url(self.context) + canonical_name(name),
+                (canonical_url(self.context, request=self.request) +
+                 canonical_name(name)),
                 status=301)
 
         pillar = getUtility(IPillarNameSet).getByName(

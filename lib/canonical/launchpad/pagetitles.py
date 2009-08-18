@@ -1,7 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""This module is used by the Launchpad webapp to determine titles for pages.
+"""*** PLEASE STOP ADDING TO THIS FILE ***
+
+Use the page_title attribute of the view.
+
+This module is used as a last resort by the Launchpad webapp to determine
+titles for pages.
 
 https://launchpad.canonical.com/LaunchpadTitles
 
@@ -165,29 +170,13 @@ bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_add = 'Register a branch'
-
-branch_associations = ContextDisplayName(smartquote(
-    '"%s" branch associations'))
-
-branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
-
-branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
-
-branch_edit_subscription = ContextDisplayName(smartquote(
-    'Edit subscription to branch "%s"'))
+branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
 branch_index = ContextDisplayName(smartquote(
     '"%s" branch in Launchpad'))
 
 def branch_merges(context, view):
     return 'Merges involving "%s" in Launchpad' % context.bzr_identity
-
-branch_link_to_bug = ContextDisplayName(smartquote(
-    'Link branch "%s" to a bug report'))
-
-branch_link_to_spec = ContextDisplayName(smartquote(
-    'Link branch "%s" to a blueprint'))
 
 def branch_listing_cross_product(context, view):
     """Return the view's page_title."""
@@ -201,8 +190,6 @@ branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 branchmergeproposal_delete = 'Delete proposal to merge branch'
 
 branchmergeproposal_edit = ViewLabel()
-
-branchmergeproposal_commitmessage_edit = ViewLabel()
 
 branchmergeproposal_editstatus = ViewLabel()
 
@@ -225,11 +212,6 @@ branch_register_merge_proposal = 'Propose branch for merging'
 
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
-
-def branchsubscription_edit(context, view):
-    """Return the page title with the branch name."""
-    return smartquote(
-        'Edit subscription to branch "%s"' % context.branch.displayname)
 
 branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
 
@@ -387,12 +369,6 @@ build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
-builder_admin = ContextTitle('Administer %s builder')
-
-builder_cancel = ContextTitle('Cancel job for %s')
-
-builder_edit = ContextTitle('Edit build machine %s')
-
 builder_history = ContextTitle('Build history for %s')
 
 builder_index = ContextTitle('Build machine %s')
@@ -489,8 +465,6 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
-distribution_branches = ContextTitle('Branches for %s')
-
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_change_mirror_admin = 'Change mirror administrator'
@@ -526,10 +500,6 @@ distribution_index = ContextTitle('%s in Launchpad')
 distribution_builds = ContextTitle('%s builds')
 
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
-
-distributionsourcepackage_branches = ContextTitle('Branches for the %s')
-distributionsourcepackage_branches_grouped = ContextTitle(
-    'Branches for the %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -590,7 +560,7 @@ distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 distroseries_translationsadmin = ContextTitle(
     'Admin translation options for %s')
 
-distroseries_builds = ContextTitle('Builds for %s')
+distroseries_builds = ContextTitle('%s builds')
 
 distroseries_queue = ContextTitle('Queue for %s')
 
@@ -657,8 +627,6 @@ hwdb_submit_hardware_data = (
     'Submit New Data to the Launchpad Hardware Database')
 
 karmaaction_index = 'Karma actions'
-
-karmaaction_edit = 'Edit karma action'
 
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
 
@@ -758,8 +726,6 @@ logintoken_validategpg = 'Confirm OpenPGP key'
 logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
 logintoken_validateteamemail = 'Confirm e-mail address'
-
-mailinglists_review = 'Pending mailing lists requests'
 
 # main_template has the code to insert one of these titles.
 
@@ -920,10 +886,6 @@ person_answer_contact_for = ContextDisplayName(
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
-def person_branches(context, view):
-    """Return the view's heading."""
-    return view.heading
-
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
@@ -1013,10 +975,6 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
 
-def personproduct_branches(context, view):
-    """Return the view's heading."""
-    return view.heading
-
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
@@ -1068,8 +1026,6 @@ potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 product_admin = ContextTitle('Administer %s in Launchpad')
 
 product_bugs = ContextDisplayName('Bugs in %s')
-
-product_branches = ContextDisplayName("Bazaar branches of %s")
 
 product_code_index = ContextDisplayName("Bazaar branches of %s")
 
@@ -1134,16 +1090,13 @@ productserieslanguage_index = ContextTitle('%s')
 
 productseries_export = ContextTitle('Download translations for "%s"')
 
-productseries_linkbranch = ContextTitle('Link an existing branch to %s')
+productseries_link_translations_branch = ContextTitle(
+    "Set translations export branch for %s")
 
 productseries_index = ContextTitle('%s')
 
-productseries_delete = ContextTitle('Delete %s')
-
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
-
-productseries_review = ContextTitle('Review %s')
 
 productseries_translations = ContextTitle('Translations overview for %s')
 
@@ -1154,14 +1107,9 @@ productseries_translations_settings = 'Settings for translations'
 productseries_translations_bzr_import = (
     'Request translations import from Bazaar branch')
 
-productseries_ubuntupkg = 'Ubuntu source package'
-
 project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
-
-project_branches = ContextTitle(
-    smartquote("%s's Bazaar branches registered in Launchpad"))
 
 project_bugs = ContextTitle('Bugs in %s')
 
@@ -1204,8 +1152,6 @@ products_all = 'Upstream projects registered in Launchpad'
 
 projects_all = 'Project groups registered in Launchpad'
 
-registry_review = 'Review Launchpad items'
-
 related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
@@ -1219,13 +1165,6 @@ rosetta_about = 'About Launchpad Translations'
 rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
-
-def productseries_edit(context, view):
-    """Return the page title for changing a product series details."""
-    return 'Change %s %s details' % (
-        context.product.displayname, context.name)
-
-productseries_new = ContextDisplayName('Register a new %s release series')
 
 def question_add(context, view):
     """Return the page title to add a question."""
@@ -1278,8 +1217,6 @@ def questiontarget_createfaq(context, view):
 
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
-securitycontact_edit = ContextDisplayName("Edit %s security contact")
-
 series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
 shipit_adminrequest = 'ShipIt admin request'
@@ -1326,8 +1263,6 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
-sourcepackage_branches = ContextDisplayName('Branches of %s')
-
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
 sourcepackage_builds = ContextTitle('Builds for %s')
@@ -1347,8 +1282,6 @@ sourcepackage_export = ContextTitle('Download translations for %s')
 def sourcepackage_index(context, view):
     """Return the page title for a source package in a distroseries."""
     return '%s source packages' % context.distroseries.title
-
-sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 
@@ -1543,6 +1476,8 @@ translationgroup_edit = ContextTitle(smartquote(
 
 translationgroup_reassignment = ContextTitle(smartquote(
     'Change the owner of "%s" translation group'))
+
+reviewrequest_reassign = 'Reassign review request'
 
 translationgroups_index = 'Launchpad translation groups'
 

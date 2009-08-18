@@ -122,7 +122,7 @@ ILaunchpadStatisticSet is stored in the 'stats' attribute.
     ...     def value(self, name):
     ...         return self.stats[name]
 
-    >>> from canonical.launchpad.database import ProductSet
+    >>> from lp.registry.model.product import ProductSet
     >>> class FakeStatsProductSet(ProductSet):
     ...     """Provide fake statistics, not to depend on sample data."""
     ...     stats = FakeStatistics()

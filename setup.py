@@ -65,6 +65,8 @@ setup(
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
             'twistd = twisted.scripts.twistd:run',
+            'start_librarian '
+                '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
         ]
     ),
 )

@@ -48,6 +48,15 @@ the owned branches page.
     lp://dev/~name12/landscape/feature-x      Development
     ...
 
+There is a javascript variable used to find the branch sparks for each branch
+in the list, in the format of [id, url].
+
+    >>> def print_branch_sparks(browser):
+    ...     print extract_text(
+    ...         find_tag_by_id(browser.contents, 'branch-sparks'))
+    >>> print_branch_sparks(browser)
+    var branch_sparks = [["b-1", "http://.../+spark"], ...]];
+
 
 == Registered Branches ==
 
@@ -63,6 +72,10 @@ There is also a link which points to the registered branches page.
     lp://dev/~name12/landscape/feature-x      Development
     ...
 
+    >>> print_branch_sparks(browser)
+    var branch_sparks = [["b-1", "http://.../+spark"], ...]];
+
+
 == Subscribed branches ==
 
 From the persons main listing page, there is also a link to subscribed
@@ -77,6 +90,9 @@ branches.
     ...     print extract_text(row)
     lp://dev/~launchpad/gnome-terminal/launchpad  Development           ...
     lp://dev/~name12/+junk/junk.dev               Experimental  ...
+
+    >>> print_branch_sparks(browser)
+    var branch_sparks = [["b-1", "http://.../+spark"], ...]];
 
 
 == Person branch summary ==

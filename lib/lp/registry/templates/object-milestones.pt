@@ -35,12 +35,9 @@
         </tr>
       </thead>
       <tbody>
-        <tal:row condition="has_series" repeat="milestone milestones">
-          <tal:milestone replace="structure milestone/@@+pillar-table-row" />
-        </tal:row>
-        <tal:row condition="not: has_series" repeat="milestone milestones">
-          <tal:milestone replace="structure milestone/@@+productseries-table-row" />
-        </tal:row>
+          <tal:row
+            repeat="milestone milestones"
+            replace="structure milestone/@@+pillar-table-row" />
       </tbody>
     </table>
 

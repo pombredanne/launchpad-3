@@ -32,7 +32,6 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.person import Person
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationimportqueue import (
     collect_import_info)
@@ -62,13 +61,13 @@ from lp.translations.interfaces.translationmessage import (
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.interfaces.translations import TranslationConstants
-from lp.translations.interfaces.vpoexport import IVPOExportSet
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 
-from storm.expr import SQL
+from storm.expr import And, Join, LeftJoin, Or, SQL
+from storm.info import ClassAlias
 from storm.store import Store
 
 
@@ -498,6 +497,7 @@ class POFile(SQLBase, POFileMixIn):
     @property
     def contributors(self):
         """See `IPOFile`."""
+        from lp.registry.model.person import Person
         contributors = Person.select("""
             POFileTranslator.person = Person.id AND
             POFileTranslator.pofile = %s""" % quote(self),
@@ -1186,6 +1186,111 @@ class POFile(SQLBase, POFileMixIn):
 
         return file_content
 
+    def _selectRows(self, where=None, ignore_obsolete=True):
+        """Select translation message data.
+
+        Diverged messages come before shared ones.  The exporter relies
+        on this.
+        """
+        # Avoid circular import.
+        from lp.translations.model.vpoexport import VPOExport
+
+        # Prefetch all POTMsgSets for this template in one go.
+        potmsgsets = {}
+        for potmsgset in self.potemplate.getPOTMsgSets(ignore_obsolete):
+            potmsgsets[potmsgset.id] = potmsgset
+
+        # Names of columns that are selected and passed (in this order) to
+        # the VPOExport constructor.
+        column_names = [
+            'TranslationTemplateItem.potmsgset',
+            'TranslationTemplateItem.sequence',
+            'TranslationMessage.comment',
+            'TranslationMessage.is_current',
+            'TranslationMessage.is_imported',
+            'TranslationMessage.potemplate',
+            'potranslation0.translation',
+            'potranslation1.translation',
+            'potranslation2.translation',
+            'potranslation3.translation',
+            'potranslation4.translation',
+            'potranslation5.translation',
+        ]
+        columns = ', '.join(column_names)
+
+        # Obsolete translations are marked with a sequence number of 0,
+        # so they would get sorted to the front of the file during
+        # export. To avoid that, sequence numbers of 0 are translated to
+        # NULL and ordered to the end with NULLS LAST so that they
+        # appear at the end of the file.
+        sort_column_names = [
+            'TranslationMessage.potemplate NULLS LAST',
+            'CASE '
+                'WHEN TranslationTemplateItem.sequence = 0 THEN NULL '
+                'ELSE TranslationTemplateItem.sequence '
+            'END NULLS LAST',
+            'TranslationMessage.id',
+        ]
+        sort_columns = ', '.join(sort_column_names)
+
+        main_select = "SELECT %s" % columns
+        query = main_select + """
+            FROM TranslationTemplateItem
+            LEFT JOIN TranslationMessage ON
+                TranslationMessage.potmsgset =
+                    TranslationTemplateItem.potmsgset AND
+                TranslationMessage.is_current IS TRUE AND
+                TranslationMessage.language = %s
+            """ % sqlvalues(self.language)
+
+        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+            alias = "potranslation%d" % form
+            field = "TranslationMessage.msgstr%d" % form
+            query += "LEFT JOIN POTranslation AS %s ON %s.id = %s\n" % (
+                    alias, alias, field)
+
+        template_id = quote(self.potemplate)
+        conditions = [
+            "TranslationTemplateItem.potemplate = %s" % template_id,
+            "(TranslationMessage.potemplate IS NULL OR "
+                 "TranslationMessage.potemplate = %s)" % template_id,
+            ]
+
+        if self.variant:
+            conditions.append("TranslationMessage.variant = %s" % quote(
+                self.variant))
+        else:
+            conditions.append("TranslationMessage.variant IS NULL")
+
+        if ignore_obsolete:
+            conditions.append("TranslationTemplateItem.sequence <> 0")
+
+        if where:
+            conditions.append("(%s)" % where)
+
+        query += "WHERE %s" % ' AND '.join(conditions)
+        query += ' ORDER BY %s' % sort_columns
+
+        for row in Store.of(self).execute(query):
+            export_data = VPOExport(*row)
+            export_data.setRefs(self, potmsgsets)
+            yield export_data
+
+    def getTranslationRows(self):
+        """See `IVPOExportSet`."""
+        # Only fetch rows that belong to this POFile and are "interesting":
+        # they must either be in the current template (sequence != 0, so not
+        # "obsolete") or be in the current imported version of the translation
+        # (is_imported), or both.
+        return self._selectRows(
+            ignore_obsolete=False,
+            where="TranslationTemplateItem.sequence <> 0 OR "
+                "is_imported IS TRUE")
+
+    def getChangedRows(self):
+        """See `IVPOExportSet`."""
+        return self._selectRows(where="is_imported IS FALSE")
+
 
 class DummyPOFile(POFileMixIn):
     """Represents a POFile where we do not yet actually HAVE a POFile for
@@ -1385,17 +1490,17 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return None
 
+    def getTranslationRows(self):
+        """See `IPOFile`."""
+        return []
+
+    def getChangedRows(self):
+        """See `IPOFile`."""
+        return []
+
+
 class POFileSet:
     implements(IPOFileSet)
-
-    def getPOFilesPendingImport(self):
-        """See `IPOFileSet`."""
-        results = POFile.selectBy(
-            rawimportstatus=RosettaImportStatus.PENDING,
-            orderBy='-daterawimport')
-
-        for pofile in results:
-            yield pofile
 
     def getDummy(self, potemplate, language):
         return DummyPOFile(potemplate, language)
@@ -1451,6 +1556,77 @@ class POFileSet:
         """See `IPOFileSet`."""
         return POFile.select(
             "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
+
+    def getPOFilesTouchedSince(self, date):
+        """See `IPOFileSet`."""
+        # Avoid circular imports.
+        from lp.translations.model.potemplate import POTemplate
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.productseries import ProductSeries
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        # Find a matching POTemplate and its ProductSeries
+        # and DistroSeries, if they are defined.
+        MatchingPOT = ClassAlias(POTemplate)
+        MatchingPOTJoin = Join(
+            MatchingPOT, POFile.potemplate == MatchingPOT.id)
+        MatchingProductSeries = ClassAlias(ProductSeries)
+        MatchingProductSeriesJoin = LeftJoin(
+            MatchingProductSeries,
+            MatchingPOT.productseriesID == MatchingProductSeries.id)
+        MatchingDistroSeries = ClassAlias(DistroSeries)
+        MatchingDistroSeriesJoin = LeftJoin(
+            MatchingDistroSeries,
+            MatchingPOT.distroseriesID == MatchingDistroSeries.id)
+
+        # Find any sharing POTemplate corresponding to MatchingPOT
+        # and its ProductSeries and DistroSeries, if they are defined.
+        OtherPOT = ClassAlias(POTemplate)
+        OtherPOTJoin = Join(
+            OtherPOT, And(OtherPOT.name == MatchingPOT.name))
+        OtherProductSeries = ClassAlias(ProductSeries)
+        OtherProductSeriesJoin = LeftJoin(
+            OtherProductSeries,
+            OtherPOT.productseriesID == OtherProductSeries.id)
+        OtherDistroSeries = ClassAlias(DistroSeries)
+        OtherDistroSeriesJoin = LeftJoin(
+            OtherDistroSeries,
+            OtherPOT.distroseriesID == OtherDistroSeries.id)
+
+        # And find a sharing POFile corresponding to a sharing POTemplate,
+        # i.e. OtherPOT.
+        OtherPOFile = ClassAlias(POFile)
+        OtherPOFileJoin = Join(
+            OtherPOFile,
+            And(OtherPOFile.languageID == POFile.languageID,
+                OtherPOFile.potemplateID == OtherPOT.id))
+
+        source = store.using(
+            POFile, MatchingPOTJoin, MatchingProductSeriesJoin,
+            MatchingDistroSeriesJoin, OtherPOTJoin,
+            OtherProductSeriesJoin, OtherDistroSeriesJoin, OtherPOFileJoin)
+
+        results = source.find(
+            OtherPOFile,
+            And(POFile.date_changed >= date,
+                Or(
+                    # OtherPOT is a sharing template with MatchingPOT
+                    # in the same distribution and sourcepackagename.
+                    And(MatchingPOT.distroseriesID is not None,
+                        OtherPOT.distroseriesID is not None,
+                        (MatchingDistroSeries.distributionID ==
+                         OtherDistroSeries.distributionID),
+                        (MatchingPOT.sourcepackagenameID ==
+                         OtherPOT.sourcepackagenameID)),
+                    # OtherPOT is a sharing template with MatchingPOT
+                    # in the same product.
+                    And(MatchingPOT.productseriesID is not None,
+                        OtherPOT.productseriesID is not None,
+                        (MatchingProductSeries.productID ==
+                         OtherProductSeries.productID)) )))
+        results.config(distinct=True)
+        return results
 
 
 class POFileToTranslationFileDataAdapter:
@@ -1542,9 +1718,9 @@ class POFileToTranslationFileDataAdapter:
         # process so we have a single DB query to fetch all needed
         # information.
         if changed_rows_only:
-            rows = getUtility(IVPOExportSet).get_pofile_changed_rows(pofile)
+            rows = pofile.getChangedRows()
         else:
-            rows = getUtility(IVPOExportSet).get_pofile_rows(pofile)
+            rows = pofile.getTranslationRows()
 
         messages = []
         diverged_messages = set()

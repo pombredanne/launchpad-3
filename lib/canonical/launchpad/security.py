@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
-from zope.app.error.interfaces import IErrorReportingUtility
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
@@ -38,6 +37,8 @@ from lp.code.interfaces.codeimportmachine import (
     ICodeImportMachine)
 from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
+from lp.code.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
@@ -72,7 +73,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, PersonVisibility)
+    IPerson, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
@@ -764,6 +765,25 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
+    """Distribution drivers, owners, and admins may plan releases.
+
+    Drivers of `IDerivativeDistribution`s can create series. Owners and
+    admins can create series for all `IDistribution`s.
+    """
+    permission = 'launchpad.Append'
+    usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        if user.inTeam(self.obj.driver) and not self.obj.full_functionality:
+            # Drivers of derivative distributions can create a series that
+            # they will be the release manager for.
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(admins))
+
+
 class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
@@ -802,6 +822,11 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     usedfor = IDistroSeries
 
     def checkAuthenticated(self, user):
+        if (user.inTeam(self.obj.driver)
+            and not self.obj.distribution.full_functionality):
+            # The series driver (release manager) may edit a series if the
+            # distribution is an `IDerivativeDistribution`
+            return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.owner) or
                 user.inTeam(self.obj.distribution.owner) or
@@ -1333,9 +1358,17 @@ class EditPackageUpload(AdminByAdminsTeam):
     usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
-        """Return True if user has an ArchivePermission or is an admin."""
+        """Return True if user has an ArchivePermission or is an admin.
+
+        If it's a delayed-copy, check if the user can upload to its targeted
+        archive.
+        """
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
+
+        if self.obj.is_delayed_copy:
+            archive_append = AppendArchive(self.obj.archive)
+            return archive_append.checkAuthenticated(user)
 
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
@@ -1662,6 +1695,21 @@ class BranchMergeProposalView(AuthorizationBase):
                 AccessBranch(self.obj.target_branch).checkUnauthenticated())
 
 
+class CodeReviewVoteReferenceEdit(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ICodeReviewVoteReference
+
+    def checkAuthenticated(self, user):
+        """Only the affected teams may change the review request.
+
+        The registrant may reassign the request to another entity.
+        A member of the review team may assign it to themselves.
+        A person to whom it is assigned may delegate it to someone else.
+        """
+        return (user.inTeam(self.obj.reviewer) or
+                user.inTeam(self.obj.registrant))
+
+
 class CodeReviewCommentView(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = ICodeReviewComment
@@ -1876,18 +1924,24 @@ class ViewArchive(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the archive.
 
-        Anyone can see a public archive.
+        Anyone can see a public and enabled archive.
 
-        Only Launchpad admins and uploaders can view private archives.
+        Only Launchpad admins and uploaders can view private or disabled
+        archives.
         """
-        # No further checks are required if the archive is not private.
-        if not self.obj.private:
+        # No further checks are required if the archive is public and
+        # enabled.
+        if not self.obj.private and self.obj.enabled:
             return True
 
         # Administrator are allowed to view private archives.
         celebrities = getUtility(ILaunchpadCelebrities)
         if (user.inTeam(celebrities.admin)
             or user.inTeam(celebrities.commercial_admin)):
+            return True
+
+        # Owners can view the PPA.
+        if user.inTeam(self.obj.owner):
             return True
 
         # Uploaders can view private PPAs.
@@ -1898,24 +1952,38 @@ class ViewArchive(AuthorizationBase):
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
-        return not self.obj.private
+        return not self.obj.private and self.obj.enabled
 
 
 class AppendArchive(AuthorizationBase):
     """Restrict appending (upload and copy) operations on archives.
 
+    No one can upload to disabled archives.
+
     PPA upload rights are managed via `IArchive.canUpload`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
+
+    Appending to ubuntu main archives can also be done by the
+    'ubuntu-security' celebrity.
     """
     permission = 'launchpad.Append'
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
+        if not self.obj.enabled:
+            return False
+
         if user.inTeam(self.obj.owner):
             return True
 
         if self.obj.is_ppa and self.obj.canUpload(user):
+            return True
+
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (self.obj.is_main and
+            self.obj.distribution == celebrities.ubuntu and
+            user.inTeam(celebrities.ubuntu_security)):
             return True
 
         return False
@@ -2153,20 +2221,9 @@ class EditArchivePermissionSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if user.inTeam(celebrities.admin):
-            return True
-
-        techboard = getUtility(IPersonSet).getByName("techboard")
-        if techboard is None:
-            # We expect techboard to be present but it's not.  Log an
-            # OOPS.
-            error = AssertionError(
-                "'techboard' team is missing, has it been renamed?")
-            info = (error.__class__, error, None)
-            globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info)
-            return False
-        return user.inTeam(techboard)
+        return (
+            user.inTeam(celebrities.admin)
+            or user.inTeam(celebrities.ubuntu_techboard))
 
 
 class LinkOfficialSourcePackageBranches(AuthorizationBase):
@@ -2214,17 +2271,6 @@ class EditPackagesetSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if user.inTeam(celebrities.admin):
-            return True
-
-        techboard = getUtility(IPersonSet).getByName("techboard")
-        if techboard is None:
-            # We expect techboard to be present but it's not.  Log an
-            # OOPS.
-            error = AssertionError(
-                "'techboard' team is missing, has it been renamed?")
-            info = (error.__class__, error, None)
-            global_error_utility = getUtility(IErrorReportingUtility)
-            global_error_utility.raising(info)
-            return False
-        return user.inTeam(techboard)
+        return (
+            user.inTeam(celebrities.admin)
+            or user.inTeam(celebrities.ubuntu_techboard))

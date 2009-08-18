@@ -10,12 +10,8 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
+    <div metal:fill-slot="main">
       <h1>Administer code of conduct signatures</h1>
-    </metal:heading>
-
-<div metal:fill-slot="main">
-
       <p>
         As an admin, you can
         approve or reject code of conduct signatures,
@@ -75,7 +71,7 @@
       <tal:results condition="view/search">
         <h2>Results</h2>
 
-     <ul tal:condition="view/results">
+     <ul id="matches" tal:condition="view/results">
        <li tal:repeat="code view/results">
            <a tal:replace="structure code/owner/fmt:link">OWNER</a>
            <a tal:attributes="href code/id"
@@ -90,7 +86,6 @@
         </p>
       </tal:results>
 
-</div>
-
-</body>
+    </div>
+  </body>
 </html>

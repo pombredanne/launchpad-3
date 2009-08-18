@@ -210,10 +210,13 @@ class POTMsgSet(SQLBase):
                 'There is already a translation message in our database.')
         return DummyTranslationMessage(pofile, self)
 
-    def _getUsedTranslationMessage(
-        self, potemplate, language, variant, current=True):
+    def _getUsedTranslationMessage(self, potemplate, language, variant,
+                                   current=True):
         """Get a translation message which is either used in
-        Launchpad (current=True) or in an import (current=False)."""
+        Launchpad (current=True) or in an import (current=False).
+        
+        Prefers a diverged message if present.
+        """
         # Change 'is_current IS TRUE' and 'is_imported IS TRUE' conditions
         # carefully: they need to match condition specified in indexes,
         # or Postgres may not pick them up (in complicated queries,
@@ -239,17 +242,12 @@ class POTMsgSet(SQLBase):
             clauses.append(
                 'TranslationMessage.variant=%s' % sqlvalues(variant))
 
-        # This returns at most two messages:
-        # 1. a current translation for this particular potemplate.
-        # 2. a shared current translation for this.
-        messages = list(TranslationMessage.select(
-            ' AND '.join(clauses),
-            orderBy=['-COALESCE(potemplate, -1)']))
-        if len(messages) > 0:
-            return messages[0]
-        else:
-            return None
+        order_by = '-COALESCE(potemplate, -1)'
 
+        # This should find at most two messages: zero or one shared
+        # message, and zero or one diverged one.
+        return TranslationMessage.selectFirst(
+            ' AND '.join(clauses), orderBy=[order_by])
 
     def getCurrentTranslationMessage(self, potemplate,
                                      language, variant=None):
@@ -481,12 +479,8 @@ class POTMsgSet(SQLBase):
                 translations[pluralform] is not None):
                 translation = translations[pluralform]
                 # Find or create a POTranslation for the specified text
-                try:
-                    potranslations[pluralform] = (
-                        POTranslation.byTranslation(translation))
-                except SQLObjectNotFound:
-                    potranslations[pluralform] = (
-                        POTranslation(translation=translation))
+                potranslations[pluralform] = (
+                    POTranslation.getOrCreateTranslation(translation))
             else:
                 potranslations[pluralform] = None
         return potranslations

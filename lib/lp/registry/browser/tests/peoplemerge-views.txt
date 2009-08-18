@@ -17,12 +17,11 @@ A team (name21) can be merged into another (ubuntu-team).
     >>> print person_set.getByName('ubuntu-team').displayname
     Ubuntu Team
 
-    >>> form={'field.dupe_person' : 'name21',
-    ...       'field.target_person' : 'ubuntu-team',
-    ...       'field.actions.merge' : 'Merge'}
+    >>> form = {'field.dupe_person': 'name21',
+    ...         'field.target_person': 'ubuntu-team',
+    ...         'field.actions.merge': 'Merge'}
     >>> view = create_initialized_view(
-    ...     person_set, '+adminteammerge',
-    ...     form=form)
+    ...     person_set, '+adminteammerge', form=form)
     >>> len(view.errors)
     0
 
@@ -33,14 +32,29 @@ The old team is now renamed but the target team remains.
     >>> print person_set.getByName('ubuntu-team').displayname
     Ubuntu Team
 
+Teams which have superteams cannot be merged into other teams. This
+restriction was added as a fix to https://bugs.launchpad.net/bugs/290681.
+
+    >>> parent_team = factory.makeTeam()
+    >>> child_team = factory.makeTeam(name='child-team')
+    >>> random_team = factory.makeTeam()
+    >>> parent_team.addMember(
+    ...     child_team, reviewer=parent_team.teamowner, force_team_add=True)
+    >>> form = {'field.dupe_person': child_team.name,
+    ...         'field.target_person': random_team.name,
+    ...         'field.actions.deactivate_members_and_merge': 'Merge'}
+    >>> view = create_initialized_view(
+    ...     person_set, '+adminteammerge', form=form)
+    >>> view.errors
+    [u"child-team has super teams, so it can't be merged."]
+
 Attempting to merge a non-existent team results in an error.
 
-    >>> form={'field.dupe_person' : 'not-a-real-team',
-    ...       'field.target_person' : 'another-fake-team',
-    ...       'field.actions.merge' : 'Merge'}
+    >>> form = {'field.dupe_person': 'not-a-real-team',
+    ...         'field.target_person': 'another-fake-team',
+    ...         'field.actions.merge': 'Merge'}
     >>> view = create_initialized_view(
-    ...     person_set, '+adminteammerge',
-    ...     form=form)
+    ...     person_set, '+adminteammerge', form=form)
     >>> len(view.errors)
     2
     >>> for error in view.errors:
@@ -61,8 +75,8 @@ them to merge a profile which has no email address.
     ...     'email-less-person', PersonCreationRationale.UNKNOWN)
     >>> transaction.commit()
 
-    >>> form={'field.dupe_person' : person.name,
-    ...       'field.actions.continue' : 'Continue'}
+    >>> form = {'field.dupe_person': person.name,
+    ...        'field.actions.continue': 'Continue'}
     >>> view = create_initialized_view(
     ...     person_set, '+requestmerge', form=form)
     >>> len(view.errors)
@@ -76,11 +90,12 @@ them to merge a profile which has no email address.
 Admins, on the other hand, are allowed to merge people without a single email
 address.
 
-    >>> form={'field.dupe_person' : person.name,
-    ...       'field.target_person' : 'name16',
-    ...       'field.actions.merge' : 'Merge'}
+    >>> form = {'field.dupe_person': person.name,
+    ...         'field.target_person': 'name16',
+    ...         'field.actions.merge': 'Merge'}
     >>> view = create_initialized_view(
-    ...     person_set, '+adminpeoplemerge',
-    ...     form=form)
+    ...     person_set, '+adminpeoplemerge', form=form)
     >>> view.errors
     []
+    >>> print view.request.response.getHeader('location')
+    http://launchpad.dev/~name16

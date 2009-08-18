@@ -8,11 +8,14 @@
 >
 
   <body>
+    <tal:heading metal:fill-slot="heading">
+      <h1 tal:content="view/page_heading">
+        Pages matching "bazaar" in Launchpad
+      </h1>
+    </tal:heading>
+
     <div metal:fill-slot="main">
       <div class="top-portlet">
-        <h1 tal:content="view/page_heading">
-          Pages matching "bazaar" in Launchpad
-        </h1>
         <form tal:replace="structure view/@@+primary-search-form" />
       </div>
 

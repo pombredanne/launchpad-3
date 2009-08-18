@@ -44,13 +44,14 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer, WrongBranchMergeProposal)
+    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer,
+    WrongBranchMergeProposal)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.code.mail.branch import RecipientReason
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.mail.sendmail import validate_message
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
@@ -76,7 +77,7 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     # Transitioning to code approved, rejected or queued from
     # work in progress, needs review or merge failed needs the
     # user to be a valid reviewer, other states are fine.
-    valid_reviewer = proposal.isPersonValidReviewer(user)
+    valid_reviewer = proposal.target_branch.isPersonTrustedReviewer(user)
     if (next_state == rejected and not valid_reviewer):
         return False
     # Non-reviewers can toggle between code_approved and queued, but not
@@ -327,15 +328,6 @@ class BranchMergeProposal(SQLBase):
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = UTC_NOW
 
-    def isPersonValidReviewer(self, reviewer):
-        """See `IBranchMergeProposal`."""
-        if reviewer is None:
-            return False
-        # We trust Launchpad admins.
-        lp_admins = getUtility(ILaunchpadCelebrities).admin
-        return (reviewer.inTeam(self.target_branch.code_reviewer) or
-                reviewer.inTeam(lp_admins))
-
     def isMergable(self):
         """See `IBranchMergeProposal`."""
         # As long as the source branch has not been merged, rejected
@@ -346,7 +338,7 @@ class BranchMergeProposal(SQLBase):
         """Set the proposal to one of the two review statuses."""
         # Check the reviewer can review the code for the target branch.
         old_state = self.queue_status
-        if not self.isPersonValidReviewer(reviewer):
+        if not self.target_branch.isPersonTrustedReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
         self._transitionToState(next_state, reviewer)
@@ -558,7 +550,8 @@ class BranchMergeProposal(SQLBase):
             subject=subject, datecreated=_date_created)
         chunk = MessageChunk(message=message, content=content, sequence=1)
         return self.createCommentFromMessage(
-            message, vote, review_type, _notify_listeners=_notify_listeners)
+            message, vote, review_type, original_email=None,
+            _notify_listeners=_notify_listeners, _validate=False)
 
     def getUsersVoteReference(self, user, review_type=None):
         """Get the existing vote reference for the given user."""
@@ -624,8 +617,11 @@ class BranchMergeProposal(SQLBase):
             review_type=review_type)
 
     def createCommentFromMessage(self, message, vote, review_type,
-                                 original_email=None, _notify_listeners=True):
+                                 original_email, _notify_listeners=True,
+                                 _validate=True):
         """See `IBranchMergeProposal`."""
+        if _validate:
+            validate_message(original_email)
         # Lower case the review type.
         if review_type is not None:
             review_type = review_type.lower()
