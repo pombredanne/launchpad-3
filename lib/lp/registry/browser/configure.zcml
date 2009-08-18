@@ -147,19 +147,17 @@
             classes="
                 CodeOfConductContextMenu
                 CodeOfConductSetContextMenu
-                SignedCodeOfConductContextMenu
-                SignedCodeOfConductSetContextMenu"/>
+                SignedCodeOfConductOverviewMenu
+                SignedCodeOfConductSetOverviewMenu"/>
         <browser:defaultView
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
             name="+index"/>
-        <browser:pages
+        <browser:page
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
             class="lp.registry.browser.codeofconduct.CodeOfConductView"
-            permission="zope.Public">
-            <browser:page
-                template="../templates/codeofconduct-index.pt"
-                name="+index"/>
-        </browser:pages>
+            permission="zope.Public"
+            template="../templates/codeofconduct-index.pt"
+            name="+index"/>
         <browser:page
             name="+download"
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
@@ -171,8 +169,7 @@
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductAddView"
             permission="launchpad.AnyPerson"
-            template="../templates/signedcodeofconduct-add.pt">
-                </browser:page>
+            template="../templates/signedcodeofconduct-add.pt"/>
         <browser:url
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             path_expression="string:codeofconduct"
@@ -239,14 +236,12 @@
         <browser:defaultView
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"
             name="+index"/>
-        <browser:pages
+        <browser:page
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductAdminView"
-            permission="launchpad.Admin">
-            <browser:page
-                template="../templates/codeofconduct-admin.pt"
-                name="+index"/>
-        </browser:pages>
+            permission="launchpad.Admin"
+            template="../templates/codeofconduct-admin.pt"
+            name="+index"/>
         <browser:addform
             name="+new"
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"
