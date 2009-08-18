@@ -11,6 +11,17 @@
 
 <facet facet="branches">
 
+  <browser:defaultView
+      for="lp.registry.interfaces.product.IProductSet"
+      name="+project-cloud"/>
+  <browser:page
+      for="lp.registry.interfaces.product.IProductSet"
+      name="+project-cloud"
+      class="lp.code.browser.bazaar.BazaarProductView"
+      template="../templates/code-in-branches.pt"
+      permission="zope.Public"
+      />
+
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+project-cloud"
