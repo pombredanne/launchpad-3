@@ -92,7 +92,7 @@
 
   <div style="clear:both;" class="yui-u">
     <table class="listing" id="packages_list">
-      <tr style="font-weight: bold">
+      <tr class="section-heading shaded" style="font-weight: bold">
         <td colspan=3>
         <div style="float:right;"><a href="blah"><img src="/@@/add"> Set upstream link</a> </div>
         <a href="distroseries">Karmic 9.10</a> (development focus)
@@ -103,8 +103,8 @@
         <td>Release (main)</td>
         <td>13 days ago</td>
       </tr>
-      <tr style="font-weight: bold">
-        <td style="padding-top:1em" colspan=3>
+      <tr class="section-heading shaded" style="font-weight: bold">
+        <td colspan=3>
         <div style="float:right;"><a href="product-series-page"><tal:icon replace="structure context/image:icon" />Mozilla 3.5 series</a> <img src="/@@/edit"> <img src="/@@/remove"></div>
         <a href="distroseries">Jaunty 9.04</a> (current release)
         </td>
@@ -115,7 +115,7 @@
         <td>13 days ago</td>
       </tr>
       <tr>
-        <td><img style="padding-right:0.5em;" src="/@@/treeCollapsed">3.5</td>
+        <td><img style="padding-right:0.5em;" src="/@@/treeCollapsed">3.4</td>
         <td>Security, Updates (main)</td>
         <td>18 days ago</td>
       </tr>
