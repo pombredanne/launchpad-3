@@ -12,12 +12,19 @@
     <h1>Report a bug</h1>
   </div>
 
-<div metal:fill-slot="main">
+  <div metal:fill-slot="main">
+    <div class="yui-g">
 
-<metal:not_uses_malone
-    use-macro="context/@@+filebug-macros/not_uses_malone" />
+      <tal:does-not-use-malone condition="not: view/contextUsesMalone">
+        <div class="top-portlet">
+          <metal:not_uses_malone
+              use-macro="context/@@+filebug-macros/not_uses_malone" />
+        </div>
+      </tal:does-not-use-malone>
 
-<tal:uses_malone tal:condition="view/contextUsesMalone">
+      <tal:uses-malone tal:condition="view/contextUsesMalone">
+        <div class="top-portlet">
+
   <div metal:use-macro="context/@@launchpad_form/form">
     <table class="form" metal:fill-slot="widgets">
 
@@ -53,6 +60,9 @@
     </div>
   </div>
 
+        </div>
+        <div class="portlet">
+
   <tal:most-common-bugs condition="view/most_common_bugs">
     <h2 id="frequent-bugs">Most frequently reported bugs</h2>
 
@@ -76,7 +86,10 @@
       </tbody>
     </table>
   </tal:most-common-bugs>
-</tal:uses_malone>
-</div>
 
+        </div>
+      </tal:uses-malone>
+
+    </div>
+  </div>
 </filebug-search>
