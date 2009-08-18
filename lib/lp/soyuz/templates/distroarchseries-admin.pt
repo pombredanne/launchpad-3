@@ -7,10 +7,6 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="heading">
-      <h1 tal:content="view/page_title"/>
-    </metal:heading>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
