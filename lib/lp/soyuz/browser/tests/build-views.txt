@@ -212,10 +212,10 @@ is True:
 
 == BuildRescoringView ==
 
-`BuildRescoringView` is uses for setting new values to the
+`BuildRescoringView` is used for setting new values to the
 corresponding `BuildQueue.lastscore` record for a `Build`.
 
-It redirect users to the `Build` page when the build cannot be
+It redirects users to the `Build` page when the build cannot be
 rescored.
 
     >>> print cprov_failed_build.can_be_rescored
@@ -250,8 +250,8 @@ The 'priority' field only accepts long integer values.
     ...    })
 
     >>> for error in view.errors:
-    ...     print error
-    ('priority', u'Priority', 2147483649 2147483648)
+    ...     print '%s -> %s' % (error.widget_title, error.doc())
+    Priority -> Value is too big
 
     >>> view = create_initialized_view(
     ...    pending_build, name="+rescore", form={
@@ -260,8 +260,8 @@ The 'priority' field only accepts long integer values.
     ...    })
 
     >>> for error in view.errors:
-    ...     print error
-    ('priority', u'Priority', -2147483649 -2147483648)
+    ...     print '%s -> %s' % (error.widget_title, error.doc())
+    Priority -> Value is too small
 
 Submitting valid values will update the build 'score' and redirect
 users to the build page with an appropriate notification.

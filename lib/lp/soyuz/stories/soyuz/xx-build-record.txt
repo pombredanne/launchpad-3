@@ -37,22 +37,22 @@ shortcut.
 
     >>> build_url = "http://launchpad.dev/builders/+build/%d" % build.id
 
-Using the short-cut URL any user can prompty access the build
-page. It's title shortly describes the build.
+Using the short-cut URL any user can promptly access the build
+page. It's title briefly describes the build.
 
     >>> anon_browser.open(build_url)
     >>> print anon_browser.title
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
 
-On its body readers can see 2 sections, 'Build status' and 'Build
+In the page body readers can see 2 sections, 'Build status' and 'Build
 details'.
 
 Since builds respect a fixed workflow (pending -> buiding ->
-built|failed) along the time, readers are mostly interested in their
+built|failed), readers are mostly interested in their
 status. That's why this section comes first.
 
-Aside 'status' readers can see, at a glance, the context and links to
-the build context, source package, archive, series, pocket and
+Besides 'status' readers can see, at a glance, the context and links
+to the build context, source package, archive, series, pocket and
 component.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
@@ -69,8 +69,8 @@ component.
     Pocket: Release
     Component: main
 
-The 'Build details' section is constant to all status and contains
-links to all the relevant entities involed in this build.
+The 'Build details' section exists for all status and contains links
+to all the relevant entities involed in this build.
 
     >>> print anon_browser.getLink('testing - 1.0').url
     http://launchpad.dev/ubuntutest/+source/testing/1.0
@@ -85,7 +85,7 @@ links to all the relevant entities involed in this build.
     http://launchpad.dev/ubuntutest/breezy-autotest/i386
 
 Pending build records can be 'rescored', which will directly affect
-the instant they will get started. A link to the corresponding help text
+the time they will get started. A link to the corresponding help text
 about 'Build scores' is available.
 
     >>> print anon_browser.getLink("What's this").url
