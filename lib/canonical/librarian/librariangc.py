@@ -410,6 +410,7 @@ class UnreferencedContentPruner:
                     log.info("%s already deleted", path)
             else:
                 log.debug("Deleted %s", path)
+        self.con.rollback()
 
         self.index += chunksize
 
