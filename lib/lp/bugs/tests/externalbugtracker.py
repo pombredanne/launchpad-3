@@ -557,20 +557,21 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     def login(self, arguments):
         token_text = arguments['token']
-
         self._handleLoginToken(token_text)
+        self._setAuthCookie()
 
+        # We always return the same user ID.
+        # This has to be listified because xmlrpclib tries to expand
+        # sequences of length 1.
+        return [{'user_id': 42}]
+
+    def _setAuthCookie(self):
         # Generate some random cookies to use.
         random_cookie_1 = str(random.random())
         random_cookie_2 = str(random.random())
 
         self.setCookie('Bugzilla_login=%s;' % random_cookie_1)
         self.setCookie('Bugzilla_logincookie=%s;' % random_cookie_2)
-
-        # We always return the same user ID.
-        # This has to be listified because xmlrpclib tries to expand
-        # sequences of length 1.
-        return [{'user_id': 42}]
 
     def get_bugs(self, arguments):
         """Return a list of bug dicts for a given set of bug IDs."""
@@ -758,6 +759,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
     methods = {
         'Bugzilla': ['version'],
         'Test': ['login_required'],
+        'User': ['login'],
         }
 
     # Methods that require authentication.
@@ -765,11 +767,32 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         'login_required',
         ]
 
+    # The list of users that can log in.
+    users = [
+        {'login': 'foo.bar@canonical.com', 'password': 'test'},
+        ]
+
     def version(self):
         """Return the version of Bugzilla being used."""
         # This is to work around the old "xmlrpclib tries to expand
         # sequences of length 1" problem (see above).
         return [{'version': '3.4.1+'}]
+
+    def login(self, arguments):
+        login = arguments['login']
+        password = arguments['password']
+
+        # Clear the old login cookie for the sake of being thorough.
+        self.expireCookie(self.auth_cookie)
+
+        for user in self.users:
+            if user['login'] == login and user['password'] == password:
+                self._setAuthCookie()
+                return [{'id': self.users.index(user)}]
+            else:
+                raise xmlrpclib.Fault(
+                    300,
+                    "The username or password you entered does not exist.")
 
 
 class TestMantis(Mantis):

@@ -548,3 +548,31 @@ is currently connected.
 
     >>> server.Bugzilla.version()
     {'version': '3.4.1+'}
+
+
+Logging in
+----------
+
+Unlike TestBugzillaXMLRPCTransport, TestBugzillaAPIXMLRPCTransport uses
+the standard Bugzilla username and password system for authentication.
+Users can log in to the Bugzilla instance by calling User.login(). This
+method will return the user's user ID in a dict.
+
+    >>> server.User.login(
+    ...     {'login': 'foo.bar@canonical.com', 'password': 'test'})
+    {'id': 0}
+
+The Bugzilla_logincookie will now have been set for the transport, too.
+
+    >>> print bugzilla_transport.cookie_processor.cookiejar
+    <cookielib.CookieJar[<Cookie Bugzilla_login=...>,
+        <Cookie Bugzilla_logincookie=...>]>
+
+Trying to log in with an incorrect username or password will result in
+an error being raised.
+
+    >>> server.User.login(
+    ...     {'login': 'test@canonical.com', 'password': 'test'})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 300: 'The username or password you entered is not valid.'>
