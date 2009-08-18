@@ -178,11 +178,7 @@
                     <zeroOrMore>
                         <element name="alias">
                             <attribute name="target">
-                                <data type="integer">
-                                    <except>
-                                        <value/>
-                                    </except>
-                                </data>
+                                <text/>
                             </attribute>
                             <interleave>
                                 <element name="vendor">
@@ -314,11 +310,7 @@
                     <zeroOrMore>
                         <element name="target">
                             <attribute name="id">
-                                <data type="integer">
-                                    <except>
-                                        <value/>
-                                    </except>
-                                </data>
+                                <text/>
                             </attribute>
                             <interleave>
                                 <zeroOrMore>

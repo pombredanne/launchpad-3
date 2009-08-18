@@ -232,10 +232,10 @@ E: MODALIAS=scsi:t-0x05
       -->
     <aliases>
       <!-- alias: The "label name" of a device or system.
-               attribute target: The ID of the HAL node of the device
-               or system.
+               attribute target: The sysfs path of a device as given
+               in <udev>.
       -->
-      <alias target="65">
+      <alias target="/devices/pci0000:00/0000:00:1f.1/host3/target3:0:0/3:0:0:0">
 
         <!-- vendor: The vendor name shown on the device label.
         -->
@@ -349,11 +349,12 @@ E: MODALIAS=scsi:t-0x05
               plugin="find_network_controllers">
 
       <!-- target: Information about a device or software package the
-           question is about. The attribute "id" is the ID of a HAL device
-           node or of a software package.
+           question is about. The attribute "id" is the sysfs path of
+           a device as given in <udev>, or the ID of a software package
+           node.
            This node may appear multiple times.
        -->
-      <target id="42">
+      <target id="/devices/pci0000:00/0000:00:1a.0/usb3/3-0:1.0/usb_endpoint/usbdev3.1_ep81">
         <!-- driver: The driver which controls the target device. This tag
                  may appear more than once.
 
@@ -380,7 +381,7 @@ E: MODALIAS=scsi:t-0x05
       </target>
 
       <!-- ID of the 88E8055 PCI-E Gigabit Ethernet Controller -->
-      <target id="43"/>
+      <target id="/devices/pci0000:00/0000:00:1f.1"/>
 
       <!-- command: The command line of an external command required to
                ask this question.
@@ -413,7 +414,7 @@ E: MODALIAS=scsi:t-0x05
 
     <question name="internet_ping"
               plugin="internet_ping">
-      <target id="23"/>
+      <target id="/devices/pci0000:00/0000:00:1f.1"/>
       <command/>
       <answer type="multiple_choice">pass</answer>
       <answer_choices>
@@ -427,7 +428,7 @@ E: MODALIAS=scsi:t-0x05
     -->
     <question name="harddisk_speed"
               plugin="harddisk_speed">
-      <target id="87"/>
+      <target id="/devices/pci0000:00/0000:00:1f.1/host3/target3:0:0/3:0:0:0"/>
       <command>hdparm -t /dev/sda</command>
       <!-- answer: The answer to a "measurement question".
                attribute type: See above.
