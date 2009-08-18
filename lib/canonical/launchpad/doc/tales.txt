@@ -289,6 +289,30 @@ fmt:url accepts an rootsite extension to make URLs to a specific application.
     >>> login(ANONYMOUS)
 
 
+The fmt: namespace to get a web service URL
+-------------------------------------------
+
+The `fmt:api_url` expression gives you the absolute API path to an object.
+This path is everything after the web service version number.
+
+    >>> login(ANONYMOUS,
+    ...     LaunchpadTestRequest(SERVER_URL='http://bugs.launchpad.net'))
+
+    >>> bob = factory.makePerson(name='bob')
+    >>> print test_tales("person/fmt:api_url", person=bob)
+    /~bob
+
+    >>> freewidget = factory.makeProduct(name='freewidget')
+    >>> print test_tales("product/fmt:api_url", product=freewidget)
+    /freewidget
+
+    >>> debuntu = factory.makeProduct(name='debuntu')
+    >>> print test_tales("distro/fmt:api_url", distro=debuntu)
+    /debuntu
+
+    >>> login(ANONYMOUS)
+
+
 The fmt: namespace to get links
 -------------------------------
 
