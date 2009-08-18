@@ -505,8 +505,6 @@ distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
 
-distributionsourcepackage_edit = ContextTitle("Edit details of %s")
-
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
@@ -528,19 +526,9 @@ distroarchseriesbinarypackage_index = ContextTitle('%s')
 
 distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
-def distroseries_add(context, view):
-    """Return the page title to change the driver."""
-    return view.page_title
-
-distroseries_addport = ContextTitle('Add a port of %s')
-
-distroseries_admin = ContextTitle('Administer %s')
-
 distroseries_bugs = ContextTitle('Bugs in %s')
 
 distroseries_cvereport = ContextDisplayName('CVE report for %s')
-
-distroseries_edit = ContextTitle('Edit details of %s')
 
 def distroseries_index(context, view):
     """Return the distribution and version page title."""

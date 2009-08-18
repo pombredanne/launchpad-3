@@ -113,14 +113,14 @@
         name="+edit"
         class="lp.registry.browser.distroseries.DistroSeriesEditView"
         facet="overview"
-        template="../templates/distroseries-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Admin"
         name="+admin"
         class="lp.registry.browser.distroseries.DistroSeriesAdminView"
         facet="overview"
-        template="../templates/distroseries-admin.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+addmilestone"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -128,13 +128,6 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/milestone-add.pt"/>
-    <browser:page
-        name="+addport"
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.DistroArchSeriesAddView"
-        facet="overview"
-        permission="launchpad.Admin"
-        template="../templates/distroseries-addport.pt"/>
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -513,7 +506,7 @@
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageEditView"
         name="+edit"
         facet="overview"
-        template="../templates/distributionsourcepackage-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:pages
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         class="canonical.launchpad.webapp.publisher.LaunchpadView"
@@ -1937,7 +1930,7 @@
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../templates/distroseries-add.pt">
+        template="../../app/templates/generic-edit.pt">
     </browser:page>
 
     <browser:page
@@ -1946,7 +1939,7 @@
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Append"
-        template="../templates/distroseries-add.pt">
+        template="../../app/templates/generic-edit.pt">
     </browser:page>
 
     <browser:page
