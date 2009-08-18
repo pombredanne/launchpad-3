@@ -38,7 +38,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
     for="lp.answers.interfaces.question.IQuestion"
     class="lp.bugs.browser.buglinktarget.BugLinkView"
     permission="launchpad.AnyPerson"
-    template="../../app/templates/generic-edit.pt"
+    template="templates/question-linkbug.pt"
     />
 
   <browser:page

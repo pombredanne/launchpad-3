@@ -40,7 +40,7 @@ class QuestionMakeBugView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return 'Create a bug report based on question #%s' % self.context.id
+        return 'Create bug report based on question #%s' % self.context.id
 
     @property
     def label(self):

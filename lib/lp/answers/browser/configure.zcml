@@ -216,7 +216,7 @@
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionLinkFAQView"
     permission="launchpad.AnyPerson"
-    template="../../app/templates/generic-edit.pt"
+    template="../templates/question-linkfaq.pt"
     />
 
   <browser:page
