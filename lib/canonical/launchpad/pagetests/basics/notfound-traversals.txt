@@ -105,7 +105,6 @@ status is returned.
 
 >>> check("/projectgroups", auth=True)
 >>> check("/projectgroups/+all", auth=True)
->>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")

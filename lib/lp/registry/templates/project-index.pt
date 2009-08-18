@@ -122,24 +122,9 @@
       <div id="object-actions" class="top-portlet">
         <tal:menu replace="structure view/@@+global-actions" />
       </div>
-      <div id="involvement" class="portlet involvement"
-           tal:condition="context/products">
-        <h2>Get Involved</h2>
-        <ul>
-          <li>
-            <a class="bugs"
-              tal:attributes="href context/menu:bugs/new/url">Report a Bug</a>
-          </li>
-          <li>
-            <a class="question"
-              tal:attributes="href context/menu:answers/new/url">Ask a question</a>
-          </li>
-          <li>
-            <a class="translate"
-              tal:attributes="href context/menu:translations/overview/url">Help translate</a>
-          </li>
-        </ul>
-      </div>
+
+      <div tal:replace="structure context/@@+get-involved" />
+
       <tal:portlet tal:replace="structure context/@@+portlet-latestannouncements" />
     </tal:side>
 
