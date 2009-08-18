@@ -48,12 +48,3 @@ Searching for just teams returns the testing Spanish team.
     >>> view = create_initialized_view(person_set, '+index', form=form)
     >>> print_batch(view.searchPeopleBatchNavigator())
     <Person at ... testing-spanish-team (testing Spanish team)>
-
-
-Menus
-=====
-
-The view has a navigation menu containing links to other top level
-collections.
-
-    >>> view = create_initialized_view
