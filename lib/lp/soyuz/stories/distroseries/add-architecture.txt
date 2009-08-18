@@ -8,6 +8,11 @@ given distro series.
     >>> admin_browser.title
     'Add a port of The Hoary Hedgehog Release'
 
+There is a cancel link.
+
+    >>> admin_browser.getLink('Cancel')
+    <Link text='Cancel' url='http://launchpad.dev/ubuntu/hoary'>
+
 To register a new architecture one has to specify the architecture tag, the
 processor family and whether or not that architecture is officially supported
 and/or has PPA support.

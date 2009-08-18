@@ -382,10 +382,19 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     """Edit a distribution source package."""
 
     schema = IDistributionSourcePackage
-    label = "Change source package details"
     field_names = [
         'bug_reporting_guidelines',
         ]
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @action("Change", name='change')
     def change_action(self, action, data):

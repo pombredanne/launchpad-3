@@ -27,7 +27,7 @@
   >>> 'Administer code of conduct signatures' in browser.contents
   True
 
-  >>> browser.getLink("Register Someone's Signature").url
+  >>> browser.getLink("register signatures").url
   'http://localhost:9000/codeofconduct/console/+new'
 
 
