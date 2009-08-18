@@ -38,6 +38,7 @@ __all__ = [
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskStatus',
+    'UserCannotEditBugTaskMilestone',
     'valid_remote_bug_url']
 
 from zope.component import getUtility
@@ -325,6 +326,14 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
+class UserCannotEditBugTaskMilestone(Unauthorized):
+    """User not permitted to change milestone.
+
+    Raised when a user tries to transition to a milestone who doesn't have
+    the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
     webservice_error(400) #Bad request.
@@ -351,6 +360,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     milestone = exported(ReferenceChoice(
         title=_('Milestone'),
         required=False,
+        readonly=True,
         vocabulary='Milestone',
         schema=Interface)) # IMilestone
 
@@ -545,6 +555,18 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         IBugTask. When we move to context-less bug presentation (where the
         bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
         no longer useful.
+        """
+
+    @mutator_for(milestone)
+    @rename_parameters_as(new_milestone='milestone')
+    @operation_parameters(new_milestone=copy_field(milestone))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def transitionToMilestone(new_milestone, user):
+        """Set the BugTask milestone.
+
+        Set the bugtask milestone, making sure that the user is
+        authorised to do so.
         """
 
     @mutator_for(importance)

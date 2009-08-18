@@ -229,6 +229,7 @@
                     transitionToImportance
                     transitionToStatus
                     transitionToAssignee
+                    transitionToMilestone
                     transitionToTarget"/>
             
             <!-- XXX Brad Bollenbach 2006-09-29
