@@ -40,6 +40,7 @@ class MailingListsReviewView(LaunchpadFormView):
     """Present review page for mailing list creation requests."""
 
     schema = ReviewForm
+    page_title = 'Pending mailing lists requests'
 
     @cachedproperty
     def registered_lists(self):

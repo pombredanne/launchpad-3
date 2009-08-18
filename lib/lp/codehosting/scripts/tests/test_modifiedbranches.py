@@ -114,6 +114,69 @@ class TestModifiedBranchesLastModifiedEpoch(TestCase):
             script.get_last_modified_epoch())
 
 
+class TestModifiedBranchesStripPrefix(TestCase):
+    """Test the prefix stripping."""
+
+    def test_no_args(self):
+        # The prefix defaults for '/srv/' for the ease of the main callers.
+        # Still need to pass in one of --since or --last-hours.
+        script = ModifiedBranchesScript(
+            'modified-branches', test_args=['--last-hours=12'])
+        self.assertEqual('/srv/', script.options.strip_prefix)
+
+    def test_override(self):
+        # The default can be overrided with the --strip-prefix option.
+        # Still need to pass in one of --since or --last-hours.
+        script = ModifiedBranchesScript(
+            'modified-branches',
+            test_args=['--last-hours=12', '--strip-prefix=foo'])
+        self.assertEqual('foo', script.options.strip_prefix)
+
+    def test_prefix_is_stripped(self):
+        # If the location starts with the prefix, it is stripped.
+        script = ModifiedBranchesScript(
+            'modified-branches', test_args=['--last-hours=12'])
+        # Override the append_suffix as we aren't testing that here.
+        script.options.append_suffix = ''
+        location = script.process_location('/srv/testing')
+        self.assertEqual('testing', location)
+
+    def test_non_matching_location_unchanged(self):
+        # If the location doesn't match, it is left unchanged.
+        script = ModifiedBranchesScript(
+            'modified-branches', test_args=['--last-hours=12'])
+        # Override the append_suffix as we aren't testing that here.
+        script.options.append_suffix = ''
+        location = script.process_location('/var/testing')
+        self.assertEqual('/var/testing', location)
+
+
+class TestModifiedBranchesAppendSuffix(TestCase):
+    """Test the suffix appending."""
+
+    def test_no_args(self):
+        # The suffix defaults for '/**' for the ease of the main callers.
+        # Still need to pass in one of --since or --last-hours.
+        script = ModifiedBranchesScript(
+            'modified-branches', test_args=['--last-hours=12'])
+        self.assertEqual('/**', script.options.append_suffix)
+
+    def test_override(self):
+        # The default can be overrided with the --append-suffix option.
+        # Still need to pass in one of --since or --last-hours.
+        script = ModifiedBranchesScript(
+            'modified-branches',
+            test_args=['--last-hours=12', '--append-suffix=foo'])
+        self.assertEqual('foo', script.options.append_suffix)
+
+    def test_suffix_appended(self):
+        # The suffix is appended to all branch locations.
+        script = ModifiedBranchesScript(
+            'modified-branches', test_args=['--last-hours=12'])
+        location = script.process_location('/var/testing')
+        self.assertEqual('/var/testing/**', location)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 
